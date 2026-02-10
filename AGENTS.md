@@ -1,20 +1,89 @@
-# Instructions for AI Agents
+# AGENTS.md
 
-When working on this codebase, please adhere to the following guidelines:
+## 🤖 Persona & Mission
+You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ote)ex(ecution)]**, a high-performance, cross-platform command center for PC management.
+- **Goal:** Parity across Windows, Linux (CachyOS), and Android.
+- **Values:** Performance, MVVM Purity, and Zero-Config Networking.
 
-1.  **Maintain cross-platform compatibility (Windows and Linux) at all times.**
-    - Ensure code runs correctly on both operating systems.
-    - Avoid platform-specific APIs unless wrapped in appropriate abstractions.
+---
 
-2.  **Use MVVM pattern for the Avalonia UI.**
-    - Keep UI logic separate from business logic.
-    - Utilize ViewModels and data binding.
+## 🛠 Tech Stack & Environment
+- **Runtime:** .NET 10 (Current)
+- **UI Framework:** Avalonia UI (Cross-platform)
+- **Architecture:** 
+  - `Remex.Core`: Shared abstractions and models.
+  - `Remex.Host`: Headless background service (OS-specific logic here).
+  - `Remex.Client`: Shared UI logic for Desktop and Mobile.
+- **Pattern:** CommunityToolkit.Mvvm (Source Generators preferred).
 
-3.  **All API endpoints in Remex.Host must be documented in the README.**
-    - Whenever a new endpoint is added or modified, update the API Documentation section in `README.md`.
+---
 
-4.  **Prioritize .NET 10 performance features.**
-    - Leverage new features and optimizations available in .NET 10 where applicable.
+## 🚦 Core Directives (The "Laws")
 
-5.  **Ensure any changes are tested so that Linux compatibility isn't broken.**
-    - Verify changes on Linux or write tests that can catch platform-specific issues.
+### 1. Platform Abstraction First
+**Never** write platform-specific code (like `Registry.GetValue` or `systemctl`) directly in a Service or ViewModel.
+- **Rule:** Define an `interface` in `Remex.Core`. 
+- **Rule:** Implement the interface in `Remex.Host` using conditional compilation or OS-detection.
+- **Rule:** Use `RuntimeInformation.IsOSPlatform` to determine behavior at runtime.
+
+### 2. MVVM Purity
+- **No Code-Behind:** Avoid logic in `.xaml.cs` files. Use DataBindings and Commands.
+- **View-First:** The View should never know about the ViewModel's implementation details beyond the interface/properties.
+
+### 3. API & Communication
+- All remote execution commands must be documented in `/docs/API_CONTRACTS.md`.
+- Prefer **WebSockets** for real-time telemetry (CPU/GPU stats) to reduce overhead.
+- REST endpoints are for "One-Shot" actions (Lock, Reboot, Execute).
+
+---
+
+## 🏗 Project Structure Hints
+- `/Remex.Core`: Interfaces, DTOs, and Constants.
+- `/Remex.Host/Services`: Windows and Linux implementations of core interfaces.
+- `/Remex.Client/Views`: UI layout files.
+- `/Remex.Client/ViewModels`: Business logic for the dashboard.
+
+---
+
+## ⌨️ One-Command Executables
+*Agents must run these to verify work:*
+- **Build All:** `dotnet build`
+- **Run Host:** `dotnet run --project Remex.Host`
+- **Run Client:** `dotnet run --project Remex.Client`
+- **Test:** `dotnet test`
+
+---
+
+## 📝 Code Style Examples
+
+### Handling Platform Parity
+When implementing a feature like "Turn Off Screen," use this pattern:
+```csharp
+// In Remex.Core
+public interface IScreenService { void TurnOff(); }
+
+// In Remex.Host/Services
+public class ScreenService : IScreenService {
+    public void TurnOff() {
+        if (OperatingSystem.IsWindows()) { /* SendMessage WM_SYSCOMMAND */ }
+        else if (OperatingSystem.IsLinux()) { /* Process.Start("xset", "dpms force off") */ }
+    }
+}
+```
+
+---
+
+## 🚩 Boundaries (Do Not Touch)
+- **Do not** change the Port (5005) without updating the documentation.
+- **Do not** add heavy third-party dependencies without asking the Architect (User).
+- **Do not** use `Windows.Forms` or `WPF` namespaces. This project is **Avalonia only**.
+
+---
+
+## 🗓 Roadmap Checklist
+- [ ] Phase 1: Establish Ping/Pong between Client and Host.
+- [ ] Phase 2: Implementation of the "Lively Dashboard" (VariableSizedWrapGrid).
+- [ ] Phase 3: HWiNFO (Windows) and lmsensors (Linux) integration.
+- [ ] Phase 4: Remote Screen Snapshot API (100ms interval).
+
+***
