@@ -40,8 +40,11 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 ## 🏗 Project Structure Hints
 - `/Remex.Core`: Interfaces, DTOs, and Constants.
 - `/Remex.Host/Services`: Windows and Linux implementations of core interfaces.
-- `/Remex.Client/Views`: UI layout files.
-- `/Remex.Client/ViewModels`: Business logic for the dashboard.
+- `/Remex.Client`: **Shared class library** — all UI views, view-models, and resources live here.
+- `/Remex.Client.Desktop`: Thin desktop head (entry point + manifest only).
+- `/Remex.Client.Android`: Thin Android head (Activity + manifest only).
+
+> **⚠️ Shared-UI Rule:** When adding new UI features, always implement them in the shared `Remex.Client` project to ensure parity between Android and Desktop. The head projects (`Remex.Client.Desktop`, `Remex.Client.Android`) should contain **only** platform-specific initialization code.
 
 ---
 
@@ -49,7 +52,7 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 *Agents must run these to verify work:*
 - **Build All:** `dotnet build`
 - **Run Host:** `dotnet run --project Remex.Host`
-- **Run Client:** `dotnet run --project Remex.Client`
+- **Run Client (Desktop):** `dotnet run --project Remex.Client.Desktop`
 - **Test:** `dotnet test`
 
 ---
