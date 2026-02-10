@@ -1,7 +1,8 @@
-﻿using Avalonia;
+using Avalonia;
+using Remex.Client;
 using System;
 
-namespace Remex.Client;
+namespace Remex.Client.Desktop;
 
 class Program
 {
