@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Remex.Client.ViewModels"
+             x:Class="Remex.Client.Views.MainView"
+             x:DataType="vm:ConnectionViewModel">
+
+    <Design.DataContext>
+        <vm:ConnectionViewModel />
+    </Design.DataContext>
+
+    <Border Padding="32">
+        <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+
+            <!-- Title -->
+            <TextBlock Text="Remex — Ping / Pong"
+                       FontSize="24" FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+
+            <!-- Host address -->
+            <TextBox Text="{Binding HostAddress}"
+                     Watermark="ws://host:5005/ws"
+                     IsEnabled="{Binding !IsConnected}" />
+
+            <!-- Action buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+                <Button Content="Connect"
+                        Command="{Binding ConnectCommand}"
+                        Classes="accent" />
+                <Button Content="Ping"
+                        Command="{Binding SendPingCommand}" />
+                <Button Content="Disconnect"
+                        Command="{Binding DisconnectCommand}" />
+            </StackPanel>
+
+            <!-- Status -->
+            <Border Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Status:" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding StatusText}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Latency:" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding LatencyText}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Border>
+
+</UserControl>

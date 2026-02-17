@@ -1,0 +1,289 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Remex.Client.ViewModels"
+             xmlns:conv="using:Remex.Client.Converters"
+             x:Class="Remex.Client.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+  <UserControl.Styles>
+    <!-- ===== Base card style ===== -->
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#1E1E2E"/>
+      <Setter Property="CornerRadius" Value="16"/>
+      <Setter Property="Padding" Value="20"/>
+      <Setter Property="Margin" Value="8"/>
+      <Setter Property="BorderBrush" Value="#2A2A3E"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BoxShadow" Value="0 4 24 0 #40000000"/>
+      <Setter Property="Opacity" Value="0"/>
+      <Setter Property="RenderTransform" Value="translateY(20px)"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.card.loaded">
+      <Setter Property="Opacity" Value="1"/>
+      <Setter Property="RenderTransform" Value="none"/>
+    </Style>
+
+    <!-- ===== Card sizes ===== -->
+    <Style Selector="Border.card-small">
+      <Setter Property="Width" Value="220"/>
+      <Setter Property="MinHeight" Value="160"/>
+    </Style>
+    <Style Selector="Border.card-medium">
+      <Setter Property="Width" Value="456"/>
+      <Setter Property="MinHeight" Value="160"/>
+    </Style>
+    <Style Selector="Border.card-large">
+      <Setter Property="Width" Value="456"/>
+      <Setter Property="MinHeight" Value="336"/>
+    </Style>
+
+    <!-- ===== Card titles ===== -->
+    <Style Selector="TextBlock.card-title">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="#8888AA"/>
+      <Setter Property="Margin" Value="0 0 0 12"/>
+
+    </Style>
+
+    <!-- ===== Stat values ===== -->
+    <Style Selector="TextBlock.stat-value">
+      <Setter Property="FontSize" Value="28"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="#E0E0FF"/>
+    </Style>
+    <Style Selector="TextBlock.stat-label">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="#6666AA"/>
+    </Style>
+
+    <!-- ===== Status indicator ===== -->
+    <Style Selector="Ellipse.status-dot">
+      <Setter Property="Width" Value="10"/>
+      <Setter Property="Height" Value="10"/>
+      <Setter Property="Margin" Value="0 0 8 0"/>
+    </Style>
+
+    <!-- ===== Buttons ===== -->
+    <Style Selector="Button.dash-btn">
+      <Setter Property="Background" Value="#2A2A4A"/>
+      <Setter Property="Foreground" Value="#C0C0FF"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16 10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.dash-btn:pointerover">
+      <Setter Property="Background" Value="#3A3A5A"/>
+    </Style>
+    <Style Selector="Button.dash-btn-accent">
+      <Setter Property="Background" Value="#4A3AFF"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.dash-btn-accent:pointerover">
+      <Setter Property="Background" Value="#5A4AFF"/>
+    </Style>
+    <Style Selector="Button.dash-btn-danger">
+      <Setter Property="Background" Value="#3A1A1A"/>
+      <Setter Property="Foreground" Value="#FF6B6B"/>
+    </Style>
+    <Style Selector="Button.dash-btn-danger:pointerover">
+      <Setter Property="Background" Value="#4A2A2A"/>
+    </Style>
+
+    <!-- ===== Input ===== -->
+    <Style Selector="TextBox.host-input">
+      <Setter Property="Background" Value="#12121E"/>
+      <Setter Property="Foreground" Value="#C0C0FF"/>
+      <Setter Property="BorderBrush" Value="#2A2A3E"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="12 8"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontFamily" Value="Consolas, monospace"/>
+    </Style>
+
+    <!-- ===== Latency bar ===== -->
+    <Style Selector="Border.latency-bar">
+      <Setter Property="Background" Value="#4A3AFF"/>
+      <Setter Property="CornerRadius" Value="2"/>
+      <Setter Property="Margin" Value="1 0"/>
+      <Setter Property="VerticalAlignment" Value="Bottom"/>
+      <Setter Property="MinHeight" Value="2"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Height" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Setter>
+    </Style>
+  </UserControl.Styles>
+
+  <!-- ===== Root layout ===== -->
+  <ScrollViewer Background="#12121E" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="24">
+
+      <!-- Header -->
+      <TextBlock Text="REMEX"
+                 FontSize="24" FontWeight="Black" Foreground="#E0E0FF"
+                 Margin="8 0 0 4"/>
+      <TextBlock Text="Remote Execution Command Center"
+                 FontSize="13" Foreground="#6666AA"
+                 Margin="8 0 0 20"/>
+
+      <!-- Card grid -->
+      <WrapPanel Orientation="Horizontal">
+
+        <!-- ═══════════════ CONNECTION STATUS (Small) ═══════════════ -->
+        <Border Classes="card card-small loaded">
+          <StackPanel>
+            <TextBlock Classes="card-title" Text="Connection"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0 4 0 12">
+              <Ellipse Classes="status-dot">
+                <Ellipse.Fill>
+                  <SolidColorBrush Color="{Binding Connection.IsConnected,
+                    Converter={x:Static conv:BoolToColorConverter.Instance},
+                    ConverterParameter=#4ADE80|#FF6B6B}"/>
+                </Ellipse.Fill>
+              </Ellipse>
+              <TextBlock Classes="stat-value" FontSize="18"
+                         Text="{Binding Connection.StatusText}"/>
+            </StackPanel>
+
+            <TextBox Classes="host-input"
+                     Text="{Binding Connection.HostAddress}"
+                     IsEnabled="{Binding !Connection.IsConnected}"
+                     Watermark="ws://host:port/ws"/>
+          </StackPanel>
+        </Border>
+
+        <!-- ═══════════════ QUICK ACTIONS (Small) ═══════════════ -->
+        <Border Classes="card card-small loaded">
+          <StackPanel>
+            <TextBlock Classes="card-title" Text="Actions"/>
+
+            <StackPanel Spacing="8" Margin="0 8 0 0">
+              <Button Classes="dash-btn dash-btn-accent"
+                      Content="⚡ Connect"
+                      Command="{Binding Connection.ConnectCommand}"
+                      HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn"
+                      Content="📡 Ping"
+                      Command="{Binding Connection.SendPingCommand}"
+                      HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn dash-btn-danger"
+                      Content="✕ Disconnect"
+                      Command="{Binding Connection.DisconnectCommand}"
+                      HorizontalAlignment="Stretch"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ═══════════════ LATENCY MONITOR (Medium) ═══════════════ -->
+        <Border Classes="card card-medium loaded">
+          <StackPanel>
+            <TextBlock Classes="card-title" Text="Latency"/>
+
+            <!-- Current value -->
+            <TextBlock Classes="stat-value"
+                       Text="{Binding Connection.LatencyText}"/>
+
+            <!-- Avg / Max row -->
+            <StackPanel Orientation="Horizontal" Spacing="24" Margin="0 8 0 0">
+              <StackPanel>
+                <TextBlock Classes="stat-label" Text="AVG"/>
+                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold"
+                           Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Classes="stat-label" Text="MAX"/>
+                <TextBlock Foreground="#FF6B6B" FontSize="14" FontWeight="SemiBold"
+                           Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Classes="stat-label" Text="SAMPLES"/>
+                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold"
+                           Text="{Binding Connection.LatencyHistory.Count}"/>
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Mini bar chart -->
+            <Border Background="#0A0A16" CornerRadius="8"
+                    Margin="0 12 0 0" Padding="8" Height="80">
+              <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Bottom"
+                                HorizontalAlignment="Left"
+                                Spacing="2"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="latency-bar"
+                            Width="12"
+                            Height="{Binding .,
+                              Converter={x:Static conv:LatencyToHeightConverter.Instance}}"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- ═══════════════ SYSTEM INFO (Large, placeholder) ═══════════════ -->
+        <Border Classes="card card-large loaded">
+          <StackPanel>
+            <TextBlock Classes="card-title" Text="System Telemetry"/>
+
+            <TextBlock Foreground="#6666AA" FontSize="13"
+                       TextWrapping="Wrap" Margin="0 4 0 16"
+                       Text="Live hardware metrics will appear here in Phase 3 (HWiNFO / lmsensors integration)."/>
+
+            <!-- Placeholder stat grid -->
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="0 8">
+              <StackPanel Grid.Row="0" Grid.Column="0" Margin="0 0 0 16">
+                <TextBlock Classes="stat-label" Text="CPU"/>
+                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="0" Grid.Column="1" Margin="0 0 0 16">
+                <TextBlock Classes="stat-label" Text="GPU"/>
+                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0 0 0 16">
+                <TextBlock Classes="stat-label" Text="RAM"/>
+                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0 0 0 16">
+                <TextBlock Classes="stat-label" Text="DISK"/>
+                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="2" Grid.Column="0">
+                <TextBlock Classes="stat-label" Text="NETWORK"/>
+                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="2" Grid.Column="1">
+                <TextBlock Classes="stat-label" Text="UPTIME"/>
+                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+      </WrapPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

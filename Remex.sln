@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Client.Desktop", "Rem
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Client.Android", "Remex.Client.Android\Remex.Client.Android.csproj", "{7935821F-7EA0-45BA-977B-41B5303675EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Core.Tests", "Remex.Core.Tests\Remex.Core.Tests.csproj", "{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Host.Tests", "Remex.Host.Tests\Remex.Host.Tests.csproj", "{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +87,30 @@ Global
 		{7935821F-7EA0-45BA-977B-41B5303675EE}.Release|x64.Build.0 = Release|Any CPU
 		{7935821F-7EA0-45BA-977B-41B5303675EE}.Release|x86.ActiveCfg = Release|Any CPU
 		{7935821F-7EA0-45BA-977B-41B5303675EE}.Release|x86.Build.0 = Release|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Debug|x64.Build.0 = Debug|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Debug|x86.Build.0 = Debug|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Release|x64.ActiveCfg = Release|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Release|x64.Build.0 = Release|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Release|x86.ActiveCfg = Release|Any CPU
+		{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}.Release|x86.Build.0 = Release|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x64.Build.0 = Release|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,10 @@
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[user]
+	name = Connor
+	email = 115328188+clindsay94@users.noreply.github.com
+[safe]
+	directory = P:/Repo/ReMex
