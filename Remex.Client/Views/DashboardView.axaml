@@ -2,7 +2,8 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:Remex.Client.ViewModels"
   xmlns:sys="clr-namespace:System;assembly=System.Runtime"
-  xmlns:conv="using:Remex.Client.Converters" x:Class="Remex.Client.Views.DashboardView" x:DataType="vm:DashboardViewModel">
+  xmlns:conv="using:Remex.Client.Converters"
+  xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.DashboardView" x:DataType="vm:DashboardViewModel">
 
   <UserControl.Styles>
     <!-- ===== Base card style ===== -->
@@ -122,6 +123,20 @@
         </Transitions>
       </Setter>
     </Style>
+
+    <!-- ===== Sensor sub-card hover ===== -->
+    <Style Selector="Border.sensor-card">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.sensor-card:pointerover">
+      <Setter Property="RenderTransform" Value="scale(1.04)"/>
+      <Setter Property="BoxShadow" Value="0 2 12 0 #30000000"/>
+    </Style>
   </UserControl.Styles>
 
   <!-- ===== Root layout ===== -->
@@ -233,30 +248,53 @@
 
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                          <!-- Sensor Sparkline Sub-Card -->
-                          <Border Background="#0A0A16" CornerRadius="6" Padding="12" Margin="0,0,12,12" Width="130" Height="68" ClipToBounds="True">
-                            <Grid>
-                              <!-- Sparkline Background -->
-                              <ItemsControl ItemsSource="{Binding History}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,-12" Opacity="0.15">
-                                <ItemsControl.ItemsPanel>
-                                  <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="1" VerticalAlignment="Bottom" />
-                                  </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                  <DataTemplate x:DataType="sys:Double">
-                                    <Border Background="#C0C0FF" Width="3" Height="{Binding .}" CornerRadius="1,1,0,0"/>
-                                  </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                              </ItemsControl>
+                          <!-- ═══ Sensor Sparkline Sub-Card (dynamic size + theme + context menu) ═══ -->
+                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,12,12" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True">
 
-                              <!-- Condensed Sensor Typography -->
+                            <!-- ═══ Right-Click Context Menu ═══ -->
+                            <Border.ContextMenu>
+                              <ContextMenu>
+                                <!-- Size submenu -->
+                                <MenuItem Header="📐 Size">
+                                  <MenuItem Header="Small (130×68)" Command="{Binding SetSizeCommand}" CommandParameter="Small"/>
+                                  <MenuItem Header="Medium (200×100)" Command="{Binding SetSizeCommand}" CommandParameter="Medium"/>
+                                  <MenuItem Header="Large (280×140)" Command="{Binding SetSizeCommand}" CommandParameter="Large"/>
+                                </MenuItem>
+
+                                <!-- Theme Presets submenu -->
+                                <MenuItem Header="🎨 Theme">
+                                  <MenuItem Header="Default" Command="{Binding ApplyThemeCommand}" CommandParameter="Default"/>
+                                  <MenuItem Header="Magenta &amp; Cyan" Command="{Binding ApplyThemeCommand}" CommandParameter="Magenta &amp; Cyan"/>
+                                  <MenuItem Header="Smoke &amp; Gold" Command="{Binding ApplyThemeCommand}" CommandParameter="Smoke &amp; Gold"/>
+                                  <MenuItem Header="Emerald Night" Command="{Binding ApplyThemeCommand}" CommandParameter="Emerald Night"/>
+                                  <MenuItem Header="Sunset" Command="{Binding ApplyThemeCommand}" CommandParameter="Sunset"/>
+                                  <MenuItem Header="Arctic" Command="{Binding ApplyThemeCommand}" CommandParameter="Arctic"/>
+                                  <MenuItem Header="Neon Purple" Command="{Binding ApplyThemeCommand}" CommandParameter="Neon Purple"/>
+                                  <MenuItem Header="Monochrome" Command="{Binding ApplyThemeCommand}" CommandParameter="Monochrome"/>
+                                </MenuItem>
+
+                                <!-- Graph Type submenu -->
+                                <MenuItem Header="📊 Graph">
+                                  <MenuItem Header="Auto (smart)" Command="{Binding SetGraphTypeCommand}" CommandParameter="Auto"/>
+                                  <MenuItem Header="Bar ▮▮▮" Command="{Binding SetGraphTypeCommand}" CommandParameter="Bar"/>
+                                  <MenuItem Header="Line ╱╲╱" Command="{Binding SetGraphTypeCommand}" CommandParameter="Line"/>
+                                  <MenuItem Header="Area ▓▓▓" Command="{Binding SetGraphTypeCommand}" CommandParameter="Area"/>
+                                  <MenuItem Header="Gauge ━━━" Command="{Binding SetGraphTypeCommand}" CommandParameter="Gauge"/>
+                                </MenuItem>
+                              </ContextMenu>
+                            </Border.ContextMenu>
+
+                            <Grid>
+                              <!-- Sparkline Background (custom rendered control) -->
+                              <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.20" Margin="0,0,0,-12"/>
+
+                              <!-- Condensed Sensor Typography (themed) -->
                               <StackPanel>
-                                <TextBlock Text="{Binding Name, FallbackValue=Unknown}" FontSize="10" FontWeight="Bold" Foreground="#6666AA" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding Name, FallbackValue=Unknown}" FontSize="10" FontWeight="Bold" Foreground="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
 
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                  <TextBlock Text="{Binding Value, FallbackValue=—, StringFormat={}{0:F2}}" FontSize="16" FontWeight="Black" Foreground="{Binding RawReading, Converter={x:Static conv:SensorColorConverter.Instance}}"/>
-                                  <TextBlock Text="{Binding Unit}" FontSize="10" Foreground="#8888AA" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                  <TextBlock Text="{Binding Value, FallbackValue=—, StringFormat={}{0:F2}}" FontSize="16" FontWeight="Black" Foreground="{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                                  <TextBlock Text="{Binding Unit}" FontSize="10" Foreground="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                 </StackPanel>
                               </StackPanel>
                             </Grid>
