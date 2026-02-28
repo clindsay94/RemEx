@@ -26,7 +26,7 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         await MessageSerializer.SendAsync(ws, ping);
 
         // Receive pong
-        var pong = await MessageSerializer.ReceiveAsync(ws);
+        var pong = await ReceivePongAsync(ws);
 
         Assert.NotNull(pong);
         Assert.Equal(MessageTypes.Pong, pong!.Type);
@@ -43,7 +43,7 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         var ping = new RemexMessage { Type = MessageTypes.Ping, Timestamp = sentTimestamp };
         await MessageSerializer.SendAsync(ws, ping);
 
-        var pong = await MessageSerializer.ReceiveAsync(ws);
+        var pong = await ReceivePongAsync(ws);
 
         Assert.NotNull(pong);
         Assert.Equal(sentTimestamp, pong!.Timestamp);
@@ -61,7 +61,7 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
             var ping = new RemexMessage { Type = MessageTypes.Ping, Timestamp = i };
             await MessageSerializer.SendAsync(ws, ping);
 
-            var pong = await MessageSerializer.ReceiveAsync(ws);
+            var pong = await ReceivePongAsync(ws);
 
             Assert.NotNull(pong);
             Assert.Equal(MessageTypes.Pong, pong!.Type);
@@ -71,5 +71,18 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         // Note: Don't call CloseAsync — TestServer's TestWebSocket disposes
         // the connection when the test fixture tears down. Calling CloseAsync
         // on an already-disposed TestWebSocket throws ObjectDisposedException.
+    }
+
+    private async Task<RemexMessage?> ReceivePongAsync(WebSocket ws)
+    {
+        while (true)
+        {
+            var message = await MessageSerializer.ReceiveAsync(ws);
+            if (message == null || message.Type == MessageTypes.Pong)
+            {
+                return message;
+            }
+            // Ignore telemetry spam in these specific tests
+        }
     }
 }

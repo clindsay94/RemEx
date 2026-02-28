@@ -1,9 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Remex.Client.ViewModels"
-             xmlns:conv="using:Remex.Client.Converters"
-             x:Class="Remex.Client.Views.DashboardView"
-             x:DataType="vm:DashboardViewModel">
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Remex.Client.ViewModels"
+  xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+  xmlns:conv="using:Remex.Client.Converters" x:Class="Remex.Client.Views.DashboardView" x:DataType="vm:DashboardViewModel">
 
   <UserControl.Styles>
     <!-- ===== Base card style ===== -->
@@ -130,12 +129,8 @@
     <StackPanel Margin="24">
 
       <!-- Header -->
-      <TextBlock Text="REMEX"
-                 FontSize="24" FontWeight="Black" Foreground="#E0E0FF"
-                 Margin="8 0 0 4"/>
-      <TextBlock Text="Remote Execution Command Center"
-                 FontSize="13" Foreground="#6666AA"
-                 Margin="8 0 0 20"/>
+      <TextBlock Text="REMEX" FontSize="24" FontWeight="Black" Foreground="#E0E0FF" Margin="8 0 0 4"/>
+      <TextBlock Text="Remote Execution Command Center" FontSize="13" Foreground="#6666AA" Margin="8 0 0 20"/>
 
       <!-- Card grid -->
       <WrapPanel Orientation="Horizontal">
@@ -148,19 +143,13 @@
             <StackPanel Orientation="Horizontal" Margin="0 4 0 12">
               <Ellipse Classes="status-dot">
                 <Ellipse.Fill>
-                  <SolidColorBrush Color="{Binding Connection.IsConnected,
-                    Converter={x:Static conv:BoolToColorConverter.Instance},
-                    ConverterParameter=#4ADE80|#FF6B6B}"/>
+                  <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
                 </Ellipse.Fill>
               </Ellipse>
-              <TextBlock Classes="stat-value" FontSize="18"
-                         Text="{Binding Connection.StatusText}"/>
+              <TextBlock Classes="stat-value" FontSize="18" Text="{Binding Connection.StatusText}"/>
             </StackPanel>
 
-            <TextBox Classes="host-input"
-                     Text="{Binding Connection.HostAddress}"
-                     IsEnabled="{Binding !Connection.IsConnected}"
-                     Watermark="ws://host:port/ws"/>
+            <TextBox Classes="host-input" Text="{Binding Connection.HostAddress}" IsEnabled="{Binding !Connection.IsConnected}" Watermark="ws://host:port/ws"/>
           </StackPanel>
         </Border>
 
@@ -170,18 +159,9 @@
             <TextBlock Classes="card-title" Text="Actions"/>
 
             <StackPanel Spacing="8" Margin="0 8 0 0">
-              <Button Classes="dash-btn dash-btn-accent"
-                      Content="⚡ Connect"
-                      Command="{Binding Connection.ConnectCommand}"
-                      HorizontalAlignment="Stretch"/>
-              <Button Classes="dash-btn"
-                      Content="📡 Ping"
-                      Command="{Binding Connection.SendPingCommand}"
-                      HorizontalAlignment="Stretch"/>
-              <Button Classes="dash-btn dash-btn-danger"
-                      Content="✕ Disconnect"
-                      Command="{Binding Connection.DisconnectCommand}"
-                      HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn dash-btn-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}" HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn dash-btn-danger" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" HorizontalAlignment="Stretch"/>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -192,46 +172,35 @@
             <TextBlock Classes="card-title" Text="Latency"/>
 
             <!-- Current value -->
-            <TextBlock Classes="stat-value"
-                       Text="{Binding Connection.LatencyText}"/>
+            <TextBlock Classes="stat-value" Text="{Binding Connection.LatencyText}"/>
 
             <!-- Avg / Max row -->
             <StackPanel Orientation="Horizontal" Spacing="24" Margin="0 8 0 0">
               <StackPanel>
                 <TextBlock Classes="stat-label" Text="AVG"/>
-                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold"
-                           Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
               </StackPanel>
               <StackPanel>
                 <TextBlock Classes="stat-label" Text="MAX"/>
-                <TextBlock Foreground="#FF6B6B" FontSize="14" FontWeight="SemiBold"
-                           Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+                <TextBlock Foreground="#FF6B6B" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
               </StackPanel>
               <StackPanel>
                 <TextBlock Classes="stat-label" Text="SAMPLES"/>
-                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold"
-                           Text="{Binding Connection.LatencyHistory.Count}"/>
+                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.LatencyHistory.Count}"/>
               </StackPanel>
             </StackPanel>
 
             <!-- Mini bar chart -->
-            <Border Background="#0A0A16" CornerRadius="8"
-                    Margin="0 12 0 0" Padding="8" Height="80">
+            <Border Background="#0A0A16" CornerRadius="8" Margin="0 12 0 0" Padding="8" Height="80">
               <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"
-                                VerticalAlignment="Bottom"
-                                HorizontalAlignment="Left"
-                                Spacing="2"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Left" Spacing="2"/>
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Border Classes="latency-bar"
-                            Width="12"
-                            Height="{Binding .,
-                              Converter={x:Static conv:LatencyToHeightConverter.Instance}}"/>
+                    <Border Classes="latency-bar" Width="12" Height="{Binding ., Converter={x:Static conv:LatencyToHeightConverter.Instance}}"/>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -239,47 +208,71 @@
           </StackPanel>
         </Border>
 
-        <!-- ═══════════════ SYSTEM INFO (Large, placeholder) ═══════════════ -->
+        <!-- ═══════════════ SYSTEM INFO (Large) ═══════════════ -->
         <Border Classes="card card-large loaded">
           <StackPanel>
             <TextBlock Classes="card-title" Text="System Telemetry"/>
 
-            <TextBlock Foreground="#6666AA" FontSize="13"
-                       TextWrapping="Wrap" Margin="0 4 0 16"
-                       Text="Live hardware metrics will appear here in Phase 3 (HWiNFO / lmsensors integration)."/>
+            <!-- Dynamic TabControl mapped to CategorizedSensors -->
+            <TabControl ItemsSource="{Binding CategorizedSensors}" Background="Transparent" Padding="0,8,0,0" Margin="0,-4,0,0">
+              <TabControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SensorGroupViewModel">
+                  <TextBlock Text="{Binding CategoryName}" FontSize="13" FontWeight="SemiBold" />
+                </DataTemplate>
+              </TabControl.ItemTemplate>
 
-            <!-- Placeholder stat grid -->
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="0 8">
-              <StackPanel Grid.Row="0" Grid.Column="0" Margin="0 0 0 16">
-                <TextBlock Classes="stat-label" Text="CPU"/>
-                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
-              </StackPanel>
+              <TabControl.ContentTemplate>
+                <DataTemplate x:DataType="vm:SensorGroupViewModel">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="400" Margin="0,16,0,0">
+                    <ItemsControl ItemsSource="{Binding Sensors}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel Orientation="Horizontal" Margin="0"/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
 
-              <StackPanel Grid.Row="0" Grid.Column="1" Margin="0 0 0 16">
-                <TextBlock Classes="stat-label" Text="GPU"/>
-                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
-              </StackPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SensorViewModel">
+                          <!-- Sensor Sparkline Sub-Card -->
+                          <Border Background="#0A0A16" CornerRadius="6" Padding="12" Margin="0,0,12,12" Width="130" Height="68" ClipToBounds="True">
+                            <Grid>
+                              <!-- Sparkline Background -->
+                              <ItemsControl ItemsSource="{Binding History}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,-12" Opacity="0.15">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="1" VerticalAlignment="Bottom" />
+                                  </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="sys:Double">
+                                    <Border Background="#C0C0FF" Width="3" Height="{Binding .}" CornerRadius="1,1,0,0"/>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
 
-              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0 0 0 16">
-                <TextBlock Classes="stat-label" Text="RAM"/>
-                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
-              </StackPanel>
+                              <!-- Condensed Sensor Typography -->
+                              <StackPanel>
+                                <TextBlock Text="{Binding Name, FallbackValue=Unknown}" FontSize="10" FontWeight="Bold" Foreground="#6666AA" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
 
-              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0 0 0 16">
-                <TextBlock Classes="stat-label" Text="DISK"/>
-                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
-              </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                                  <TextBlock Text="{Binding Value, FallbackValue=—, StringFormat={}{0:F2}}" FontSize="16" FontWeight="Black" Foreground="{Binding RawReading, Converter={x:Static conv:SensorColorConverter.Instance}}"/>
+                                  <TextBlock Text="{Binding Unit}" FontSize="10" Foreground="#8888AA" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                </StackPanel>
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </DataTemplate>
+              </TabControl.ContentTemplate>
+            </TabControl>
 
-              <StackPanel Grid.Row="2" Grid.Column="0">
-                <TextBlock Classes="stat-label" Text="NETWORK"/>
-                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
-              </StackPanel>
-
-              <StackPanel Grid.Row="2" Grid.Column="1">
-                <TextBlock Classes="stat-label" Text="UPTIME"/>
-                <TextBlock Classes="stat-value" FontSize="22" Text="—"/>
-              </StackPanel>
-            </Grid>
+            <StackPanel Margin="0 4 0 0" Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="stat-label" Text="UPTIME" VerticalAlignment="Center"/>
+              <TextBlock Classes="stat-value" FontSize="14" Foreground="#8888AA" Text="{Binding Connection.Telemetry.UptimeText, FallbackValue=—}" VerticalAlignment="Center"/>
+            </StackPanel>
           </StackPanel>
         </Border>
 

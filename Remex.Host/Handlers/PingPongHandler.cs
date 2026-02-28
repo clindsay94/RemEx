@@ -1,17 +1,23 @@
 using System.Net.WebSockets;
 using Remex.Core.Messages;
+using Remex.Core.Services;
 
 namespace Remex.Host.Handlers;
 
 /// <summary>
 /// Handles a single WebSocket client session.
 /// Responds to "ping" with "pong", echoing the client's timestamp for latency measurement.
+/// Background streams telemetry data while the connection is established.
 /// </summary>
-public sealed class PingPongHandler(ILogger<PingPongHandler> logger)
+public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryService telemetryService)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
         logger.LogInformation("Client connected.");
+
+        // Start background telemetry stream
+        using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var streamTask = StreamTelemetryAsync(webSocket, streamCts.Token);
 
         try
         {
@@ -54,6 +60,10 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger)
             logger.LogWarning(ex, "WebSocket error.");
         }
 
+        // Cancel background stream
+        streamCts.Cancel();
+        try { await streamTask; } catch { /* Ignore stream cancellation errors */ }
+
         if (webSocket.State == WebSocketState.Open)
         {
             await webSocket.CloseAsync(
@@ -63,5 +73,32 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger)
         }
 
         logger.LogInformation("Client disconnected.");
+    }
+
+    private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        try
+        {
+            while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+            {
+                var payload = await telemetryService.GetTelemetryAsync(ct);
+                var message = new RemexMessage
+                {
+                    Type = MessageTypes.Telemetry,
+                    Telemetry = payload,
+                    Timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
+                };
+
+                await MessageSerializer.SendAsync(webSocket, message, ct);
+
+                // Assuming 1-second ticks as defined in instructions/impl generally
+                await Task.Delay(1000, ct); 
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogTrace(ex, "Telemetry stream halted.");
+        }
     }
 }

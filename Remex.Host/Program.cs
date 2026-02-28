@@ -1,7 +1,19 @@
+using System.Runtime.InteropServices;
 using Remex.Core;
+using Remex.Core.Services;
 using Remex.Host.Handlers;
+using Remex.Host.Services.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (OperatingSystem.IsWindows())
+{
+    builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
+}
+else if (OperatingSystem.IsLinux())
+{
+    builder.Services.AddSingleton<ITelemetryService, LinuxTelemetryService>();
+}
 
 // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
 builder.WebHost.UseUrls($"http://0.0.0.0:{RemexConstants.DefaultPort}");
@@ -28,7 +40,8 @@ app.Map(RemexConstants.WebSocketPath, async (HttpContext context) =>
 
     using var ws = await context.WebSockets.AcceptWebSocketAsync();
     var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
-    var handler = new PingPongHandler(logger);
+    var telemetry = context.RequestServices.GetRequiredService<ITelemetryService>();
+    var handler = new PingPongHandler(logger, telemetry);
     await handler.HandleAsync(ws, context.RequestAborted);
 });
 

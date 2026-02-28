@@ -1,16 +1,19 @@
 # AGENTS.md
 
 ## 🤖 Persona & Mission
+
 You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ote)ex(ecution)]**, a high-performance, cross-platform command center for PC management.
+
 - **Goal:** Parity across Windows, Linux (CachyOS), and Android.
 - **Values:** Performance, MVVM Purity, and Zero-Config Networking.
 
 ---
 
 ## 🛠 Tech Stack & Environment
+
 - **Runtime:** .NET 10 (Current)
 - **UI Framework:** Avalonia UI (Cross-platform)
-- **Architecture:** 
+- **Architecture:**
   - `Remex.Core`: Shared abstractions and models.
   - `Remex.Host`: Headless background service (OS-specific logic here).
   - `Remex.Client`: Shared UI logic for Desktop and Mobile.
@@ -21,16 +24,20 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 ## 🚦 Core Directives (The "Laws")
 
 ### 1. Platform Abstraction First
+
 **Never** write platform-specific code (like `Registry.GetValue` or `systemctl`) directly in a Service or ViewModel.
-- **Rule:** Define an `interface` in `Remex.Core`. 
+
+- **Rule:** Define an `interface` in `Remex.Core`.
 - **Rule:** Implement the interface in `Remex.Host` using conditional compilation or OS-detection.
 - **Rule:** Use `RuntimeInformation.IsOSPlatform` to determine behavior at runtime.
 
 ### 2. MVVM Purity
+
 - **No Code-Behind:** Avoid logic in `.xaml.cs` files. Use DataBindings and Commands.
 - **View-First:** The View should never know about the ViewModel's implementation details beyond the interface/properties.
 
 ### 3. API & Communication
+
 - All remote execution commands must be documented in `/docs/API_CONTRACTS.md`.
 - Prefer **WebSockets** for real-time telemetry (CPU/GPU stats) to reduce overhead.
 - REST endpoints are for "One-Shot" actions (Lock, Reboot, Execute).
@@ -38,6 +45,7 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 ---
 
 ## 🏗 Project Structure Hints
+
 - `/Remex.Core`: Interfaces, DTOs, and Constants.
 - `/Remex.Host/Services`: Windows and Linux implementations of core interfaces.
 - `/Remex.Client`: **Shared class library** — all UI views, view-models, and resources live here.
@@ -49,7 +57,9 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 ---
 
 ## ⌨️ One-Command Executables
+
 *Agents must run these to verify work:*
+
 - **Build All:** `dotnet build`
 - **Run Host:** `dotnet run --project Remex.Host`
 - **Run Client (Desktop):** `dotnet run --project Remex.Client.Desktop`
@@ -60,7 +70,9 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 ## 📝 Code Style Examples
 
 ### Handling Platform Parity
+
 When implementing a feature like "Turn Off Screen," use this pattern:
+
 ```csharp
 // In Remex.Core
 public interface IScreenService { void TurnOff(); }
@@ -77,6 +89,7 @@ public class ScreenService : IScreenService {
 ---
 
 ## 🚩 Boundaries (Do Not Touch)
+
 - **Do not** change the Port (5005) without updating the documentation.
 - **Do not** add heavy third-party dependencies without asking the Architect (User).
 - **Do not** use `Windows.Forms` or `WPF` namespaces. This project is **Avalonia only**.
@@ -84,9 +97,10 @@ public class ScreenService : IScreenService {
 ---
 
 ## 🗓 Roadmap Checklist
-- [ ] Phase 1: Establish Ping/Pong between Client and Host.
-- [ ] Phase 2: Implementation of the "Lively Dashboard" (VariableSizedWrapGrid).
-- [ ] Phase 3: HWiNFO (Windows) and lmsensors (Linux) integration.
+
+- [x] Phase 1: Establish Ping/Pong between Client and Host.
+- [x] Phase 2: Implementation of the "Lively Dashboard" (VariableSizedWrapGrid).
+- [x] Phase 3: HWiNFO (Windows) and lmsensors (Linux) integration.
 - [ ] Phase 4: Remote Screen Snapshot API (100ms interval).
 
 ***

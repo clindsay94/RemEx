@@ -18,6 +18,12 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("timestamp")]
     public long? Timestamp { get; init; }
+
+    /// <summary>
+    /// Optional payload attached for telemetry streaming.
+    /// </summary>
+    [JsonPropertyName("telemetry")]
+    public TelemetryPayload? Telemetry { get; init; }
 }
 
 /// <summary>
@@ -27,4 +33,5 @@ public static class MessageTypes
 {
     public const string Ping = "ping";
     public const string Pong = "pong";
+    public const string Telemetry = "telemetry";
 }

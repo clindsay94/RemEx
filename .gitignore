@@ -108,3 +108,21 @@ captures/
 
 # Avalonia
 *.Avalonia/
+
+# Agent Logs
+PHASE3_AGENT_LOG.md
+
+# Error Logs
+build_errors.txt
+build_success.txt
+build_output.txt
+test_output.txt
+test_errors.txt 
+test_success.txt
+hwinfo_reg.txt
+PHASE4_AGENT_LOG.md
+run_output.txt
+test_output.txt
+test_output.txt
+test_output.txt
+test_output.txt

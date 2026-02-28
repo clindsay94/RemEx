@@ -60,13 +60,21 @@ public static class MessageSerializer
         WebSocket webSocket,
         CancellationToken ct = default)
     {
+        using var ms = new System.IO.MemoryStream();
         var buffer = new byte[4096];
-        var result = await webSocket.ReceiveAsync(
-            new ArraySegment<byte>(buffer), ct);
+        System.Net.WebSockets.WebSocketReceiveResult result;
 
-        if (result.MessageType == WebSocketMessageType.Close)
-            return null;
+        do
+        {
+            result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+            
+            if (result.MessageType == WebSocketMessageType.Close)
+                return null;
 
-        return Deserialize(buffer.AsSpan(0, result.Count));
+            ms.Write(buffer, 0, result.Count);
+        } 
+        while (!result.EndOfMessage);
+
+        return Deserialize(ms.ToArray());
     }
 }

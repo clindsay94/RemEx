@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core;
@@ -41,6 +42,9 @@ public partial class ConnectionViewModel : ObservableObject
 
     [ObservableProperty]
     private double _maxLatency;
+
+    [ObservableProperty]
+    private TelemetryPayload? _telemetry;
 
     private bool CanConnect() => !IsConnected;
     private bool CanDisconnect() => IsConnected;
@@ -131,14 +135,27 @@ public partial class ConnectionViewModel : ObservableObject
                     case MessageTypes.Pong when message.Timestamp.HasValue:
                         var elapsed = Stopwatch.GetElapsedTime(message.Timestamp.Value);
                         var ms = elapsed.TotalMilliseconds;
-                        LatencyText = $"{ms:F1} ms";
-                        StatusText = $"Pong! {ms:F1} ms";
-                        PushLatency(ms);
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            LatencyText = $"{ms:F1} ms";
+                            StatusText = $"Pong! {ms:F1} ms";
+                            PushLatency(ms);
+                        });
                         break;
 
                     case MessageTypes.Pong:
-                        LatencyText = "Pong (no timestamp)";
-                        StatusText = "Pong!";
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            LatencyText = "Pong (no timestamp)";
+                            StatusText = "Pong!";
+                        });
+                        break;
+                        
+                    case MessageTypes.Telemetry when message.Telemetry is not null:
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            Telemetry = message.Telemetry;
+                        });
                         break;
                 }
             }
@@ -155,9 +172,12 @@ public partial class ConnectionViewModel : ObservableObject
         // If we exited the loop because the server closed, update UI state.
         if (IsConnected)
         {
-            Cleanup();
-            StatusText = "Disconnected (server closed)";
-            LatencyText = "—";
+            Dispatcher.UIThread.Post(() =>
+            {
+                Cleanup();
+                StatusText = "Disconnected (server closed)";
+                LatencyText = "—";
+            });
         }
     }
 
