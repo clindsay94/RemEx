@@ -1,0 +1,302 @@
+# Canvas Dashboard Overhaul — Command Center Edition
+
+Replace the current WrapPanel dashboard with a **Command Center** UI: a high-level **Home overview** as the landing page, a full **Canvas workspace** for deep sensor monitoring, and an "on-glass" navigation model that swaps views within a `TransitioningContentControl` (smooth crossfade transitions) — no tabs.
+
+## User Review Required
+
+> [!NOTE]
+> **Home View pinned cards:** Users pin sensors to the Home overview via **right-click → "📌 Pin to Home"** on any sensor card in the Canvas workspace (long-press on mobile). Pinned sensor IDs are persisted in the profile's `PinnedSensorIds` list.
+
+> [!WARNING]
+> **Breaking Change:** The existing `DashboardView.axaml` (WrapPanel layout) will be superseded by `HomeView.axaml` + `CanvasView.axaml`. The old file is preserved for reference but no longer wired.
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph LR
+    A["MainWindow"] --> B["ShellView (ContentControl)"]
+    B --> C["HomeView (Landing)"]
+    B --> D["CanvasView (Workspace)"]
+    B --> E["SettingsView"]
+    C -- "Navigate →" --> D
+    C -- "⚙ Settings" --> E
+    D -- "← Back" --> C
+    E -- "← Back" --> C
+```
+
+**Navigation Model:** A `ShellViewModel` owns a `CurrentView` property. Buttons within each view swap the content — no external tab strips, keeping everything "on-glass" inside the content area. This scales identically across Desktop and Android.
+
+---
+
+## Proposed Changes
+
+### Data Models (`Remex.Core/Models/`)
+
+#### [NEW] [DashboardProfile.cs](file:///P:/Repo/ReMex/Remex.Core/Models/DashboardProfile.cs)
+
+```csharp
+public record CardState
+{
+    public string CardId { get; init; }       // GUID
+    public string CardType { get; init; }     // "Connection" | "Actions" | "Latency" | "Sensor"
+    public string? SensorId { get; init; }    // HWiNFO sensor name (null for non-sensor cards)
+    public double PositionX { get; init; }
+    public double PositionY { get; init; }
+    public double Width { get; init; }
+    public double Height { get; init; }
+    public int ZIndex { get; init; }
+}
+
+public record DashboardProfile
+{
+    public string ProfileName { get; init; } = "Default";
+    public bool IsSnapToGridEnabled { get; init; }
+    public int GridSize { get; init; } = 50;
+    public string HostAddress { get; init; } = "ws://localhost:5005/ws"; // Persisted connection IP
+    public List<CardState> Cards { get; init; } = new();
+    public List<string> PinnedSensorIds { get; init; } = new(); // Home view pins
+}
+```
+
+---
+
+### Persistence Service
+
+#### [NEW] [IDashboardLayoutService.cs](file:///P:/Repo/ReMex/Remex.Core/Services/IDashboardLayoutService.cs)
+
+Interface: `Task<DashboardProfile> LoadAsync()`, `Task SaveAsync(DashboardProfile)`.
+
+#### [NEW] [DashboardLayoutService.cs](file:///P:/Repo/ReMex/Remex.Client/Services/DashboardLayoutService.cs)
+
+- JSON file: `dashboard_layout.json` in app data directory
+- **Debounced save**: 2-second `System.Threading.Timer` — resets on each `RequestSave()`, writes only when user pauses
+- `System.Text.Json`, `WriteIndented = true`
+- Thread-safe via `SemaphoreSlim`
+
+---
+
+### ViewModels (`Remex.Client/ViewModels/`)
+
+#### [NEW] [ShellViewModel.cs](file:///P:/Repo/ReMex/Remex.Client/ViewModels/ShellViewModel.cs)
+
+Top-level VM for the entire app. Owns navigation:
+
+- `ObservableObject CurrentView` — swapped between HomeViewModel, CanvasDashboardViewModel, SettingsViewModel
+- `NavigateToHome()`, `NavigateToCanvas()`, `NavigateToSettings()` commands
+- Owns shared `ConnectionViewModel` and `DashboardLayoutService` instances, passed down to child VMs
+
+#### [NEW] [HomeViewModel.cs](file:///P:/Repo/ReMex/Remex.Client/ViewModels/HomeViewModel.cs)
+
+The NOC-style landing page VM:
+
+- `ObservableCollection<SensorViewModel> PinnedSensors` — subset of sensors marked as "pinned" in the profile
+- `ConnectionViewModel Connection` — for the connection status hero card
+- `IRelayCommand NavigateToCanvasCommand` / `NavigateToSettingsCommand`
+- Receives telemetry updates and filters to only pinned sensor IDs
+
+#### [NEW] [CanvasCardViewModel.cs](file:///P:/Repo/ReMex/Remex.Client/ViewModels/CanvasCardViewModel.cs)
+
+Base for every card on the Canvas workspace:
+
+| Property | Type | Purpose |
+|---|---|---|
+| `CardId` | `string` | GUID |
+| `CardType` | `string` | "Connection" / "Actions" / "Latency" / "Sensor" |
+| `PositionX` | `double` | `Canvas.Left` |
+| `PositionY` | `double` | `Canvas.Top` |
+| `Width` | `double` | Card width |
+| `Height` | `double` | Card height |
+| `ZIndex` | `int` | Stacking order |
+| `IsDragging` | `bool` | True during drag |
+| `CardTitle` | `string` | Header text |
+| `Sensor` | `SensorViewModel?` | Non-null for sensor cards |
+| `Connection` | `ConnectionViewModel?` | Non-null for connection/actions/latency |
+
+Methods: `ToCardState()` → `CardState`, static `FromCardState(...)` factory.
+
+**Context menu (sensor cards only):**
+
+- "📌 Pin to Home" / "📌 Unpin from Home" — toggles the sensor in `PinnedSensorIds`
+- Existing size/theme/graph menus carry over from the current `SensorViewModel`
+
+#### [NEW] [CanvasDashboardViewModel.cs](file:///P:/Repo/ReMex/Remex.Client/ViewModels/CanvasDashboardViewModel.cs)
+
+The Canvas workspace VM:
+
+- `ObservableCollection<CanvasCardViewModel> Cards` — all placed cards
+- `ObservableCollection<CanvasCardViewModel> StagedCards` — **staging drawer** for newly discovered sensors not yet placed
+- `bool IsSnapToGridEnabled` / `int GridSize`
+- `BringToFront(card)` — bumps ZIndex
+- `OnCardDropped(card)` — snap-to-grid if enabled, then `RequestSave()`
+- `PlaceFromStaging(card)` — moves card from `StagedCards` → `Cards` at a default position
+- `IRelayCommand NavigateBackCommand`
+- Telemetry: creates sensors, checks if CardState exists in profile → placed on canvas; if new → added to staging drawer
+
+#### [NEW] [SettingsViewModel.cs](file:///P:/Repo/ReMex/Remex.Client/ViewModels/SettingsViewModel.cs)
+
+- `bool IsSnapToGridEnabled`, `int GridSize` (slider 10–100, step 10)
+- `string HostAddress` — the WebSocket connection URI (persisted in profile, shared with `ConnectionViewModel`)
+- `IRelayCommand NavigateBackCommand`
+- Changes trigger debounced profile save
+
+> [!NOTE]
+> The `HostAddress` moves from being a volatile property on `ConnectionViewModel` to a persisted setting. `ConnectionViewModel` still reads/writes it, but the source of truth is the profile. This fixes the Android issue where the IP was forgotten between launches.
+
+#### [MODIFY] [App.axaml.cs](file:///P:/Repo/ReMex/Remex.Client/App.axaml.cs)
+
+- Replace `new DashboardViewModel()` with `new ShellViewModel(layoutService)`
+- Set `DataContext = shellViewModel` on MainWindow/MainView
+
+---
+
+### Controls & Views (`Remex.Client/`)
+
+#### [NEW] [DraggableCard.cs](file:///P:/Repo/ReMex/Remex.Client/Controls/DraggableCard.cs)
+
+`ContentControl` subclass handling all interactive behavior:
+
+**Drag** (pointer events):
+
+1. `PointerPressed` on header/body → record offset, `e.Pointer.Capture(this)`
+2. `PointerMoved` → delta → update `Canvas.Left`/`Canvas.Top` via ViewModel binding
+3. `PointerReleased` → release capture, fire `CardDropped`
+
+**Visual feedback** (Transitions):
+
+- Dragging: `Opacity = 0.75`, `RenderTransform = scale(0.95)` — 150ms CubicEaseOut
+- Released: `Opacity = 1.0`, `RenderTransform = scale(1.0)` — 150ms CubicEaseOut
+
+**Resize** (Thumb):
+
+- `Thumb` at bottom-right corner, styled as grip dots
+- `DragDelta` → `Width += e.Vector.X`, `Height += e.Vector.Y` (clamped to min 120×80)
+- `DragCompleted` → fire `CardResized`
+
+#### [NEW] [HomeView.axaml](file:///P:/Repo/ReMex/Remex.Client/Views/HomeView.axaml) (+.cs)
+
+NOC-style landing page:
+
+- Header: "REMEX COMMAND CENTER" with connection status indicator
+- `UniformGrid` of pinned sensor summary cards (non-draggable, fixed layout)
+- Navigation buttons: "🔍 Open Sensor Workspace" → Canvas, "⚙ Settings" → Settings
+- Connection/Latency summary section at top
+
+#### [NEW] [CanvasView.axaml](file:///P:/Repo/ReMex/Remex.Client/Views/CanvasView.axaml) (+.cs)
+
+The workspace:
+
+- Back button: "← Command Center"
+- Main area: `ScrollViewer` > `ItemsControl` with `Canvas` panel, DataTemplates per CardType, each wrapped in `DraggableCard`
+- **Staging drawer**: A collapsible panel at the bottom/right edge showing `StagedCards` with "Place" buttons or drag-to-canvas
+
+#### [NEW] [SettingsView.axaml](file:///P:/Repo/ReMex/Remex.Client/Views/SettingsView.axaml) (+.cs)
+
+- Back button: "← Command Center"
+- **Connection** section: `TextBox` for Host Address (ws://host:port/ws), persisted in profile
+- **Layout** section: Snap-to-grid `ToggleSwitch` + Grid size `Slider` (10–100, step 10)
+- Dark theme, consistent with dashboard aesthetic
+
+#### [NEW] [ShellView.axaml](file:///P:/Repo/ReMex/Remex.Client/Views/ShellView.axaml) (+.cs)
+
+Thin wrapper using Avalonia's `TransitioningContentControl` bound to `ShellViewModel.CurrentView`:
+
+```xml
+<TransitioningContentControl Content="{Binding CurrentView}">
+  <TransitioningContentControl.PageTransition>
+    <CrossFade Duration="0:0:0.25" />
+  </TransitioningContentControl.PageTransition>
+</TransitioningContentControl>
+```
+
+DataTemplates map each ViewModel type to its View. The `CrossFade` gives a premium, smooth transition between Home ↔ Canvas ↔ Settings.
+
+#### [MODIFY] [MainWindow.axaml](file:///P:/Repo/ReMex/Remex.Client/MainWindow.axaml)
+
+Replace `<views:DashboardView />` with `<views:ShellView />`.
+
+---
+
+### Snap-to-Grid Logic
+
+In `CanvasDashboardViewModel.OnCardDropped()`:
+
+```csharp
+if (!IsSnapToGridEnabled) return;
+card.PositionX = Math.Round(card.PositionX / GridSize) * GridSize;
+card.PositionY = Math.Round(card.PositionY / GridSize) * GridSize;
+// Property change → Canvas.Left/Top transition animates the snap (150ms)
+```
+
+---
+
+## File Summary
+
+| Action | File | Component |
+|---|---|---|
+| NEW | `Remex.Core/Models/DashboardProfile.cs` | Data models |
+| NEW | `Remex.Core/Services/IDashboardLayoutService.cs` | Interface |
+| NEW | `Remex.Client/Services/DashboardLayoutService.cs` | JSON persistence |
+| NEW | `Remex.Client/ViewModels/ShellViewModel.cs` | Navigation host |
+| NEW | `Remex.Client/ViewModels/HomeViewModel.cs` | Home overview |
+| NEW | `Remex.Client/ViewModels/CanvasCardViewModel.cs` | Canvas card base |
+| NEW | `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | Canvas workspace |
+| NEW | `Remex.Client/ViewModels/SettingsViewModel.cs` | Settings |
+| NEW | `Remex.Client/Controls/DraggableCard.cs` | Drag/resize control |
+| NEW | `Remex.Client/Views/ShellView.axaml` (+.cs) | Content host |
+| NEW | `Remex.Client/Views/HomeView.axaml` (+.cs) | NOC landing |
+| NEW | `Remex.Client/Views/CanvasView.axaml` (+.cs) | Canvas workspace |
+| NEW | `Remex.Client/Views/SettingsView.axaml` (+.cs) | Settings page |
+| MODIFY | `Remex.Client/MainWindow.axaml` | Wire ShellView |
+| MODIFY | `Remex.Client/App.axaml.cs` | Wire ShellViewModel |
+
+---
+
+## Verification Plan
+
+### Build
+
+```
+dotnet build P:\Repo\ReMex\Remex.sln --configuration Release
+```
+
+### Unit Tests
+
+Add to `Remex.Core.Tests`:
+
+| Test | Verifies |
+|---|---|
+| `DashboardProfile_Serialization_RoundTrip` | JSON serialize → deserialize → fields match |
+| `DashboardProfile_DefaultValues` | `GridSize = 50`, `IsSnapToGridEnabled = false`, empty collections |
+| `SnapToGrid_SnapsCorrectly` | `Snap(115, 50)` → `100`; `Snap(125, 50)` → `150` |
+| `SnapToGrid_ExactMultiple` | `Snap(100, 50)` → `100` |
+
+### Manual Verification
+
+1. **Launch** → Home view is the landing page with connection status
+2. **Navigate** → "Open Sensor Workspace" → Canvas view; "← Back" → Home
+3. **Drag** → Card shrinks/fades during drag, snaps back on release
+4. **Resize** → Bottom-right handle changes width/height; card stays pinned at top-left
+5. **Staging drawer** → New sensors appear in drawer; "Place" moves them to canvas
+6. **Snap-to-grid** → Enable in Settings, drop card, verify smooth slide to grid point
+7. **Persistence** → Rearrange cards, restart app, verify positions restored
+8. **Z-ordering** → Click overlapping card, verify it comes to front
+9. **Settings IP** → Change host address in Settings, reconnect, verify it persisted across restart
+
+---
+
+## Agent Deployment Protocol
+
+Per `AGENTS.md` and `AGENT_COMMS.md`, the following agents are activated during this work:
+
+| Agent | Role in This Task |
+|---|---|
+| 🏛 System Architect | Design decisions, plan approval, navigation architecture |
+| 🧪 Testing Agent | Write unit tests for `DashboardProfile`, snap-to-grid math |
+| 🔒 QA Agent | Post-implementation code quality & security audit |
+| 🪟 Windows Platform Agent | Advisory review on desktop drag/resize UX |
+| 🤖 Android Platform Agent | Advisory review on touch UX, persistence on Android |
+| 🚀 Build & Deploy Agent | Verify cross-platform build after implementation |
+
+All agent activity will be logged in `AGENT_COMMS.md` per the format rules.
