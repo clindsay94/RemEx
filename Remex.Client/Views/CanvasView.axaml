@@ -1,0 +1,263 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:conv="using:Remex.Client.Converters"
+    xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
+
+    <UserControl.Styles>
+        <!-- ═══ DraggableCard chrome ═══ -->
+        <Style Selector="ctrl|DraggableCard">
+            <Setter Property="Background" Value="#1E1E2E"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="BorderBrush" Value="#2A2A3E"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BoxShadow" Value="0 4 16 0 #40000000"/>
+            <Setter Property="ClipToBounds" Value="False"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{TemplateBinding BoxShadow}" Padding="0">
+                        <Grid>
+                            <ContentPresenter Content="{TemplateBinding Content}" Margin="16"/>
+                            <!-- Resize grip -->
+                            <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="SizeNWSE">
+                                <Thumb.Template>
+                                    <ControlTemplate>
+                                        <Canvas Width="12" Height="12" Margin="2">
+                                            <Line StartPoint="8,12" EndPoint="12,8" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                            <Line StartPoint="4,12" EndPoint="12,4" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                            <Line StartPoint="0,12" EndPoint="12,0" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                        </Canvas>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- ═══ Toolbar buttons ═══ -->
+        <Style Selector="Button.back-btn">
+            <Setter Property="Background" Value="#1E1E2E"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12 8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.back-btn:pointerover">
+            <Setter Property="Background" Value="#2A2A4A"/>
+        </Style>
+
+        <!-- ═══ Staging drawer buttons ═══ -->
+        <Style Selector="Button.stage-btn">
+            <Setter Property="Background" Value="#4A3AFF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10 6"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.stage-btn:pointerover">
+            <Setter Property="Background" Value="#5A4AFF"/>
+        </Style>
+
+        <!-- ═══ Action buttons inside cards ═══ -->
+        <Style Selector="Button.card-action">
+            <Setter Property="Background" Value="#2A2A4A"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14 8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.card-action:pointerover">
+            <Setter Property="Background" Value="#3A3A5A"/>
+        </Style>
+        <Style Selector="Button.card-action-accent">
+            <Setter Property="Background" Value="#4A3AFF"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.card-action-accent:pointerover">
+            <Setter Property="Background" Value="#5A4AFF"/>
+        </Style>
+        <Style Selector="Button.card-action-danger">
+            <Setter Property="Background" Value="#3A1A1A"/>
+            <Setter Property="Foreground" Value="#FF6B6B"/>
+        </Style>
+        <Style Selector="Button.card-action-danger:pointerover">
+            <Setter Property="Background" Value="#4A2A2A"/>
+        </Style>
+
+        <!-- ═══ Latency bar ═══ -->
+        <Style Selector="Border.lat-bar">
+            <Setter Property="Background" Value="#4A3AFF"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Margin" Value="1 0"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="MinHeight" Value="2"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Height" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="#12121E" RowDefinitions="Auto,*">
+
+        <!-- ═══ Toolbar ═══ -->
+        <Border Grid.Row="0" Background="#16162A" Padding="12 8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Classes="back-btn" Content="← Command Center" Command="{Binding NavigateBackCommand}"/>
+                <TextBlock Grid.Column="1" Text="SENSOR WORKSPACE" FontSize="12" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="📥" FontSize="14"/>
+                        <TextBlock Text="{Binding StagedCards.Count, StringFormat=New ({0})}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Main content ═══ -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+
+            <!-- ═══ CANVAS ═══ -->
+            <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Cards}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas Width="4000" Height="4000" Background="#12121E"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.Styles>
+                        <Style Selector="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding PositionX}"/>
+                            <Setter Property="Canvas.Top" Value="{Binding PositionY}"/>
+                            <Setter Property="ZIndex" Value="{Binding ZIndex}"/>
+                        </Style>
+                    </ItemsControl.Styles>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CanvasCardViewModel">
+                            <ctrl:DraggableCard Width="{Binding Width}" Height="{Binding Height}">
+                                <ctrl:DraggableCard.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="📌 Toggle Pin to Home" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).TogglePinToHomeCommand}" CommandParameter="{Binding}" IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}"/>
+                                    </ContextMenu>
+                                </ctrl:DraggableCard.ContextMenu>
+
+                                <Grid>
+                                    <!-- ═══ CONNECTION ═══ -->
+                                    <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
+                                        <TextBlock Text="Connection" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,8"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Ellipse Width="10" Height="10">
+                                                <Ellipse.Fill>
+                                                    <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Bold" Foreground="#E0E0FF"/>
+                                        </StackPanel>
+                                        <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="12" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                    </StackPanel>
+
+                                    <!-- ═══ ACTIONS ═══ -->
+                                    <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
+                                        <TextBlock Text="Actions" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,4"/>
+                                        <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}"/>
+                                        <Button Classes="card-action" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}"/>
+                                        <Button Classes="card-action card-action-danger" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}"/>
+                                    </StackPanel>
+
+                                    <!-- ═══ LATENCY ═══ -->
+                                    <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsLatency}}">
+                                        <TextBlock Text="Latency" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="26" FontWeight="Bold" Foreground="#E0E0FF"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,8,0,0">
+                                            <StackPanel>
+                                                <TextBlock Text="AVG" FontSize="10" Foreground="#6666AA"/>
+                                                <TextBlock Foreground="#C0C0FF" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="MAX" FontSize="10" Foreground="#6666AA"/>
+                                                <TextBlock Foreground="#FF6B6B" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Border Background="#0A0A16" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
+                                            <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Spacing="2"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Classes="lat-bar" Width="10" Height="{Binding ., Converter={x:Static conv:LatencyToHeightConverter.Instance}}"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- ═══ SENSOR ═══ -->
+                                    <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
+                                        <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.20" Margin="0,0,0,-12"/>
+
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Sensor.Name, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                                                <TextBlock Text="{Binding Sensor.Value, FallbackValue=—, StringFormat={}{0:F2}}" FontSize="18" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </ctrl:DraggableCard>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- ═══ STAGING DRAWER ═══ -->
+            <Border Grid.Column="1" Background="#16162A" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="#2A2A3E" BorderThickness="1,0,0,0" Padding="12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2" Margin="0,0,0,12"/>
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding StagedCards}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CanvasCardViewModel">
+                                    <Border Background="#1E1E2E" CornerRadius="8" Padding="12" Margin="0,0,0,8" BorderBrush="#2A2A3E" BorderThickness="1">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0FF" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <TextBlock Text="{Binding Sensor.Value, StringFormat={}{0:F1}}" FontSize="14" FontWeight="Bold" Foreground="#C0C0FF"/>
+                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="#8888AA" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            </StackPanel>
+                                            <Button Classes="stage-btn" Content="+ Place on Canvas" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+        </Grid>
+    </Grid>
+</UserControl>

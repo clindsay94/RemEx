@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:conv="using:Remex.Client.Converters"
+    xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.HomeView" x:DataType="vm:HomeViewModel">
+
+    <UserControl.Styles>
+        <!-- ═══ Card base ═══ -->
+        <Style Selector="Border.home-card">
+            <Setter Property="Background" Value="#1E1E2E"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="BorderBrush" Value="#2A2A3E"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BoxShadow" Value="0 4 24 0 #40000000"/>
+        </Style>
+
+        <!-- ═══ Navigation button ═══ -->
+        <Style Selector="Button.nav-btn">
+            <Setter Property="Background" Value="#2A2A4A"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="24 16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.nav-btn:pointerover">
+            <Setter Property="Background" Value="#3A3A5A"/>
+        </Style>
+        <Style Selector="Button.nav-btn-primary">
+            <Setter Property="Background" Value="#4A3AFF"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.nav-btn-primary:pointerover">
+            <Setter Property="Background" Value="#5A4AFF"/>
+        </Style>
+
+        <!-- ═══ Sensor card hover ═══ -->
+        <Style Selector="Border.pinned-sensor">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.pinned-sensor:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.03)"/>
+            <Setter Property="BoxShadow" Value="0 2 12 0 #30000000"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer Background="#12121E" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32" Spacing="24">
+
+            <!-- ═══ Header ═══ -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="REMEX" FontSize="28" FontWeight="Black" Foreground="#E0E0FF"/>
+                <TextBlock Text="COMMAND CENTER" FontSize="13" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="4"/>
+            </StackPanel>
+
+            <!-- ═══ Connection Status Hero ═══ -->
+            <Border Classes="home-card">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Connection Status" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Ellipse Width="10" Height="10">
+                                <Ellipse.Fill>
+                                    <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="18" FontWeight="Bold" Foreground="#E0E0FF"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="14" Foreground="#8888AA"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="nav-btn nav-btn-primary" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- ═══ Pinned Sensors ═══ -->
+            <StackPanel Spacing="8" IsVisible="{Binding PinnedSensors.Count}">
+                <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+
+                <ItemsControl ItemsSource="{Binding PinnedSensors}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SensorViewModel">
+                            <Border Classes="pinned-sensor" Background="#1A1A2E" CornerRadius="12" Padding="16" Margin="4" BorderBrush="#2A2A3E" BorderThickness="1">
+                                <Grid>
+                                    <!-- Sparkline behind text -->
+                                    <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.15" Margin="0,0,0,-8"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold" Foreground="#8888AA" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="20" FontWeight="Black" Foreground="#E0E0FF"/>
+                                            <TextBlock Text="{Binding Unit}" FontSize="10" Foreground="#8888AA" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- ═══ Navigation ═══ -->
+            <TextBlock Text="NAVIGATE" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+
+            <StackPanel Spacing="8">
+                <Button Classes="nav-btn nav-btn-primary" Content="🔍  Open Sensor Workspace" Command="{Binding NavigateToCanvasCommand}"/>
+                <Button Classes="nav-btn" Content="⚙  Settings" Command="{Binding NavigateToSettingsCommand}"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

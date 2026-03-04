@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.ShellView" x:DataType="vm:ShellViewModel">
+
+    <TransitioningContentControl Content="{Binding CurrentView}">
+        <TransitioningContentControl.PageTransition>
+            <CrossFade Duration="0:0:0.25" />
+        </TransitioningContentControl.PageTransition>
+    </TransitioningContentControl>
+
+</UserControl>

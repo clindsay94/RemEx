@@ -52,6 +52,20 @@ Every entry must follow this format:
 
 ## 📝 Communication Log
 
+### 2026-03-04 BUILD — From: Build & Deploy Agent → To: ALL
+
+**Severity**: ⚪ Info
+**Message**: Full solution build verified. `dotnet build Remex.sln` — 0 errors, 2 pre-existing NuGet warnings (NU1510 in Remex.Host, unrelated). All 13 unit tests pass (5 existing + 8 new DashboardProfile/SnapToGrid tests).
+**Reasoning**: Cross-platform build verification is required after every structural change. All new files compile cleanly across the shared Remex.Client project.
+**Action Required**: Manual testing of drag/resize/snap-to-grid behavior once app is launched.
+
+### 2026-03-04 INFO — From: Android Platform Agent → To: ALL
+
+**Severity**: ⚪ Info
+**Message**: Advisory review complete. The `HostAddress` persistence fix (moved from volatile `ConnectionViewModel` property to `DashboardProfile` saved via `DashboardLayoutService`) will resolve the Android IP memory loss issue. `DashboardLayoutService` uses `Environment.SpecialFolder.LocalApplicationData` which maps correctly to Android internal storage.
+**Reasoning**: Android's Activity lifecycle destroys and recreates the app state. Persisting settings to JSON in LocalApplicationData ensures they survive lifecycle transitions.
+**Action Required**: None — fix is included in this implementation.
+
 ### 2026-03-04 DECISION — From: System Architect → To: ALL
 
 **Severity**: ⚪ Info

@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Remex.Client.Services;
 using Remex.Client.ViewModels;
 using Remex.Client.Views;
 
@@ -15,7 +16,8 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var viewModel = new DashboardViewModel();
+        var layoutService = new DashboardLayoutService();
+        var viewModel = new ShellViewModel(layoutService);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -26,7 +28,7 @@ public partial class App : Application
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new DashboardView
+            singleViewPlatform.MainView = new ShellView
             {
                 DataContext = viewModel,
             };

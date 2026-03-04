@@ -48,9 +48,11 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 
 - `/Remex.Core`: Interfaces, DTOs, and Constants.
 - `/Remex.Host/Services`: Windows and Linux implementations of core interfaces.
-- `/Remex.Client`: **Shared class library** — all UI views, view-models, and resources live here.
+- `/Remex.Client`: **Shared class library** — all UI views, view-models, controls, services, and resources live here.
 - `/Remex.Client.Desktop`: Thin desktop head (entry point + manifest only).
 - `/Remex.Client.Android`: Thin Android head (Activity + manifest only).
+- `/Remex.Core.Tests`: xUnit tests for Core models and serialization.
+- `/Remex.Host.Tests`: xUnit tests for Host endpoints.
 
 > **⚠️ Shared-UI Rule:** When adding new UI features, always implement them in the shared `Remex.Client` project to ensure parity between Android and Desktop. The head projects (`Remex.Client.Desktop`, `Remex.Client.Android`) should contain **only** platform-specific initialization code.
 
@@ -60,10 +62,10 @@ You are the **Remex System Architect**. Your mission is to build **Remex [Rem(ot
 
 *Agents must run these to verify work:*
 
-- **Build All:** `dotnet build`
+- **Build All:** `dotnet build Remex.sln`
 - **Run Host:** `dotnet run --project Remex.Host`
 - **Run Client (Desktop):** `dotnet run --project Remex.Client.Desktop`
-- **Test:** `dotnet test`
+- **Test:** `dotnet test Remex.sln`
 
 ---
 
@@ -101,6 +103,7 @@ public class ScreenService : IScreenService {
 - [x] Phase 1: Establish Ping/Pong between Client and Host.
 - [x] Phase 2: Implementation of the "Lively Dashboard" (VariableSizedWrapGrid).
 - [x] Phase 3: HWiNFO (Windows) and lmsensors (Linux) integration.
-- [ ] Phase 4: Remote Screen Snapshot API (100ms interval).
+- [x] Phase 4: Command Center Dashboard — Canvas workspace, "on-glass" navigation, sensor staging, snap-to-grid, IP persistence.
+- [ ] Phase 5: Remote Screen Snapshot API (100ms interval).
 
 ***

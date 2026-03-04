@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.SettingsView" x:DataType="vm:SettingsViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.settings-back">
+            <Setter Property="Background" Value="#1E1E2E"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12 8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.settings-back:pointerover">
+            <Setter Property="Background" Value="#2A2A4A"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer Background="#12121E" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32" Spacing="24" MaxWidth="500">
+
+            <!-- ═══ Header ═══ -->
+            <Button Classes="settings-back" Content="← Command Center" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
+
+            <TextBlock Text="SETTINGS" FontSize="24" FontWeight="Black" Foreground="#E0E0FF"/>
+
+            <!-- ═══ Connection Section ═══ -->
+            <Border Background="#1E1E2E" CornerRadius="16" Padding="20" BorderBrush="#2A2A3E" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="CONNECTION" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+                    <TextBlock Text="Host Address" FontSize="13" Foreground="#8888AA"/>
+                    <TextBox Text="{Binding HostAddress}" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
+                    <TextBlock Text="Changes are saved automatically and persist across restarts." FontSize="11" Foreground="#4444AA" FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ Layout Section ═══ -->
+            <Border Background="#1E1E2E" CornerRadius="16" Padding="20" BorderBrush="#2A2A3E" BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="LAYOUT" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+
+                    <!-- Snap toggle -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                            <TextBlock Text="Snap to Grid" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0FF"/>
+                            <TextBlock Text="Cards snap to the nearest grid line when dropped" FontSize="12" Foreground="#8888AA"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Grid size slider -->
+                    <StackPanel Spacing="4" IsEnabled="{Binding IsSnapToGridEnabled}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Grid Size" FontSize="13" Foreground="#C0C0FF"/>
+                            <TextBlock Grid.Column="1" FontSize="13" FontWeight="Bold" Foreground="#4A3AFF">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} px">
+                                        <Binding Path="GridSize"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Grid>
+                        <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding GridSize}" Foreground="#4A3AFF"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
