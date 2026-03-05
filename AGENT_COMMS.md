@@ -38,7 +38,8 @@ Every entry must follow this format:
 
 | # | Date | Severity | Issue | Filed By | Assigned To | Status |
 |---|------|----------|-------|----------|-------------|--------|
-| — | —    | —        | No open issues | — | — | — |
+| 1 | 2026-03-04 | 🔴 Critical | Android crash — CanvasView.axaml XAML compilation errors | QA Agent | Fix Agent | ✅ Fixed |
+| 2 | 2026-03-04 | 🟠 High | Android shows raw ViewModel class name instead of View | QA Agent | Fix Agent | ✅ Fixed |
 
 ---
 
@@ -51,6 +52,27 @@ Every entry must follow this format:
 ---
 
 ## 📝 Communication Log
+
+### 2026-03-04 FIX — From: Fix Agent → To: ALL
+
+**Severity**: 🟠 High
+**Message**: Fixed issue #2 — Android app showed raw class name `Remex.Client.ViewModels.HomeViewModel` instead of the actual view. Added `Application.DataTemplates` to `App.axaml` mapping `HomeViewModel→HomeView`, `CanvasDashboardViewModel→CanvasView`, `SettingsViewModel→SettingsView`. Without these templates, Avalonia's `TransitioningContentControl` has no way to resolve VM objects to Views and falls back to `ToString()`.
+**Reasoning**: The `ShellView.axaml` binds `TransitioningContentControl.Content` to `CurrentView` (a ViewModel object). Desktop happened to work (likely via convention/ViewLocator), but Android Release builds require explicit DataTemplate registration for ViewModel→View resolution.
+**Action Required**: User — rebuild Release, redeploy APK.
+
+### 2026-03-04 FIX — From: Fix Agent → To: Testing Agent
+
+**Severity**: 🔴 Critical
+**Message**: Fixed issue #1 — Android crash on launch (`XamlLoadException: No precompiled XAML found for Remex.Client.App`). Root cause: 5 Avalonia XAML compilation errors in `CanvasView.axaml` that failed silently on incremental builds but caused full XAML compilation to abort on clean Release builds. Two fixes applied: (1) Removed invalid `BoxShadow` styled property setter from `DraggableCard` style — `BoxShadow` is a `Border`-specific property, not available on `ContentControl`. Hardcoded the shadow directly on the `Border` element inside the ControlTemplate. (2) Added `x:DataType="vm:CanvasCardViewModel"` to the `ContentPresenter` style inside `ItemsControl.Styles` so compiled bindings correctly resolve `PositionX`, `PositionY`, and `ZIndex` against the item DataContext instead of the parent `CanvasDashboardViewModel`.
+**Reasoning**: The `CanvasView.axaml` had two categories of compiled-binding/property-resolution errors: a misplaced `BoxShadow` property (exists on `Border` but not `ContentControl`), and missing `x:DataType` on an `ItemsControl.Styles` block that caused the XAML compiler to resolve bindings against the wrong type. These errors were masked by MSBuild's incremental build — succeeding on the 2nd build because cached outputs from the 1st pass made the types available. A clean Release build exposed all 5 errors.
+**Action Required**: User — clean rebuild in Release, redeploy APK to Android device and confirm app launches.
+
+### 2026-03-04 FINDING — From: QA Agent → To: Fix Agent
+
+**Severity**: 🔴 Critical
+**Message**: Android app (`com.remex.client`) crashes immediately on launch. Logcat shows `FATAL EXCEPTION: main` with `Avalonia.Markup.Xaml.XamlLoadException: No precompiled XAML found for Remex.Client.App`. Clean Release build reveals 5 XAML errors in `CanvasView.axaml`: (1) `AVLN2000: Unable to resolve property BoxShadow on DraggableCard`, (2) `AVLN2200: Unable to convert property value`, (3-5) `AVLN2000: Unable to resolve PositionX/PositionY/ZIndex on CanvasDashboardViewModel`.
+**Reasoning**: These errors fail the XAML compilation on a clean Release build, preventing precompiled XAML from being generated. The errors are masked on incremental Debug builds due to MSBuild caching. When the APK is built in Release mode, the XAML compiler aborts, and the runtime `AvaloniaXamlLoader.Load(this)` call fails because no precompiled XAML exists.
+**Action Required**: Fix Agent — fix the 5 XAML errors in `CanvasView.axaml`.
 
 ### 2026-03-04 BUILD — From: Build & Deploy Agent → To: ALL
 

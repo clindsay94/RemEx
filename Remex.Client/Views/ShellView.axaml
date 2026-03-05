@@ -1,8 +1,20 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.ShellView" x:DataType="vm:ShellViewModel">
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:views="using:Remex.Client.Views" x:Class="Remex.Client.Views.ShellView" x:DataType="vm:ShellViewModel">
 
     <TransitioningContentControl Content="{Binding CurrentView}">
+        <TransitioningContentControl.DataTemplates>
+            <DataTemplate DataType="vm:HomeViewModel">
+                <views:HomeView />
+            </DataTemplate>
+            <DataTemplate DataType="vm:CanvasDashboardViewModel">
+                <views:CanvasView />
+            </DataTemplate>
+            <DataTemplate DataType="vm:SettingsViewModel">
+                <views:SettingsView />
+            </DataTemplate>
+        </TransitioningContentControl.DataTemplates>
         <TransitioningContentControl.PageTransition>
             <CrossFade Duration="0:0:0.25" />
         </TransitioningContentControl.PageTransition>

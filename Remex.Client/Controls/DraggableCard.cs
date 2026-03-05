@@ -74,11 +74,19 @@ public class DraggableCard : ContentControl
 
         _isDragging = true;
         _dragStartPoint = e.GetPosition(Parent as Visual);
-        _startLeft = Canvas.GetLeft(this);
-        _startTop = Canvas.GetTop(this);
 
-        if (double.IsNaN(_startLeft)) _startLeft = 0;
-        if (double.IsNaN(_startTop)) _startTop = 0;
+        // Read start position from the ViewModel (the source of truth),
+        // since Canvas.Left is bound on the parent ContentPresenter, not this control.
+        if (DataContext is CanvasCardViewModel startVm)
+        {
+            _startLeft = startVm.PositionX;
+            _startTop = startVm.PositionY;
+        }
+        else
+        {
+            _startLeft = 0;
+            _startTop = 0;
+        }
 
         e.Pointer.Capture(this);
 
@@ -115,10 +123,8 @@ public class DraggableCard : ContentControl
         var newLeft = Math.Max(0, _startLeft + deltaX);
         var newTop = Math.Max(0, _startTop + deltaY);
 
-        Canvas.SetLeft(this, newLeft);
-        Canvas.SetTop(this, newTop);
-
-        // Keep the VM in sync for persistence.
+        // Update the VM — the Canvas.Left/Top bindings in ItemsControl.Styles
+        // handle the visual position automatically.
         if (DataContext is CanvasCardViewModel vm)
         {
             vm.PositionX = newLeft;

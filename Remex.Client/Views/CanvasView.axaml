@@ -11,15 +11,14 @@
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="BorderBrush" Value="#2A2A3E"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BoxShadow" Value="0 4 16 0 #40000000"/>
             <Setter Property="ClipToBounds" Value="False"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="{TemplateBinding BoxShadow}" Padding="0">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="0 4 16 0 #40000000" Padding="0">
                         <Grid>
                             <ContentPresenter Content="{TemplateBinding Content}" Margin="16"/>
                             <!-- Resize grip -->
-                            <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="SizeNWSE">
+                            <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
                                 <Thumb.Template>
                                     <ControlTemplate>
                                         <Canvas Width="12" Height="12" Margin="2">
@@ -145,7 +144,7 @@
                     </ItemsControl.ItemsPanel>
 
                     <ItemsControl.Styles>
-                        <Style Selector="ContentPresenter">
+                        <Style Selector="ContentPresenter" x:DataType="vm:CanvasCardViewModel">
                             <Setter Property="Canvas.Left" Value="{Binding PositionX}"/>
                             <Setter Property="Canvas.Top" Value="{Binding PositionY}"/>
                             <Setter Property="ZIndex" Value="{Binding ZIndex}"/>

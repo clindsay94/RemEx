@@ -166,11 +166,13 @@ public class WindowsTelemetryService : ITelemetryService
                 }
             }
 
-            result = new TelemetryPayload
+            // Merge HWiNFO sensors into the fallback payload (don't replace it).
+            if (sensors.Count > 0)
             {
-                Sensors = sensors,
-                UptimeText = fallback.UptimeText
-            };
+                fallback.Sensors.AddRange(sensors);
+            }
+
+            result = fallback;
 
             return true;
         }
@@ -252,11 +254,20 @@ public class WindowsTelemetryService : ITelemetryService
     {
         var sensors = new System.Collections.Generic.List<SensorReading>();
 
+        // CPU — isolated so PerformanceCounter failures don't wipe all sensors
         try
         {
             var cpuValue = _cpuCounter?.NextValue() ?? 0;
             sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read CPU performance counter.");
+        }
 
+        // Memory — uses P/Invoke, very reliable
+        try
+        {
             var memStatus = new MEMORYSTATUSEX();
             memStatus.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
             if (GlobalMemoryStatusEx(ref memStatus))
@@ -266,14 +277,28 @@ public class WindowsTelemetryService : ITelemetryService
                 sensors.Add(new SensorReading { Name = "Physical Memory Available", Value = memStatus.ullAvailPhys / 1e6, Unit = "MB", Category = "Memory" });
                 sensors.Add(new SensorReading { Name = "Physical Memory Load", Value = memStatus.dwMemoryLoad, Unit = "%", Category = "Memory" });
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read memory status.");
+        }
 
-            // Disk Activity
+        // Disk Activity
+        try
+        {
             var diskRead = _diskReadCounter?.NextValue() ?? 0;
             var diskWrite = _diskWriteCounter?.NextValue() ?? 0;
             sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk" });
             sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read disk performance counters.");
+        }
 
-            // Network Activity
+        // Network Activity
+        try
+        {
             if (_activeNic != null)
             {
                 var stats = _activeNic.GetIPv4Statistics();
@@ -295,7 +320,7 @@ public class WindowsTelemetryService : ITelemetryService
         }
         catch (Exception ex)
         {
-            _logger.LogTrace(ex, "Error reading fallback telemetry.");
+            _logger.LogWarning(ex, "Failed to read network counters.");
         }
 
         return new TelemetryPayload

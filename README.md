@@ -53,6 +53,25 @@ dotnet run --project Remex.Host
 dotnet run --project Remex.Client.Desktop
 ```
 
+### Install as Windows Service
+
+The Host can run as a Windows Service that starts automatically at boot — no login required.
+
+```powershell
+# Open PowerShell as Administrator, then:
+
+# Install and start the service
+.\scripts\install-service.ps1 -Action Install
+
+# Check service status
+.\scripts\install-service.ps1 -Action Status
+
+# Remove the service
+.\scripts\install-service.ps1 -Action Uninstall
+```
+
+> **Note:** When the service is running, the Desktop client will detect the occupied port and connect to the existing host instead of starting its own.
+
 ### Test
 
 ```bash

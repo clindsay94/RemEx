@@ -17,5 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Remex.Client\Remex.Client.csproj" />
+    <ProjectReference Include="..\Remex.Host\Remex.Host.csproj" />
   </ItemGroup>
 </Project>
