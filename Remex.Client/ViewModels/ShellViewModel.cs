@@ -66,6 +66,9 @@ public partial class ShellViewModel : ObservableObject
             _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this);
             _ = _settingsViewModel.InitializeAsync();
         }
+
+        // Refresh the sensor pin list with current canvas data.
+        _settingsViewModel.RefreshSensors();
         CurrentView = _settingsViewModel;
     }
 

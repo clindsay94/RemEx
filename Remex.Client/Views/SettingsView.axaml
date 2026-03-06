@@ -67,6 +67,26 @@
                 </StackPanel>
             </Border>
 
+            <!-- ═══ Pinned Sensors Section ═══ -->
+            <Border Background="#1E1E2E" CornerRadius="16" Padding="20" BorderBrush="#2A2A3E" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+                    <TextBlock Text="Select sensors to display on the Home screen" FontSize="12" Foreground="#8888AA"/>
+
+                    <TextBlock Text="Open the Sensor Workspace first to discover sensors." FontSize="12" Foreground="#4444AA" FontStyle="Italic" IsVisible="{Binding !AvailableSensors.Count}"/>
+
+                    <ItemsControl ItemsSource="{Binding AvailableSensors}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SensorPinItem">
+                                <CheckBox IsChecked="{Binding IsPinned}" Margin="0,2" Foreground="#C0C0FF" FontSize="13">
+                                    <TextBlock Text="{Binding SensorName}" TextTrimming="CharacterEllipsis"/>
+                                </CheckBox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

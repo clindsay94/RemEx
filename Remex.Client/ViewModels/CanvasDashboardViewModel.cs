@@ -143,10 +143,19 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
     /// <summary>
     /// Called when a card is released after dragging.
-    /// Applies snap-to-grid if enabled, then triggers a debounced save.
+    /// If dropped over the staging drawer (right side), returns card to staging.
+    /// Otherwise applies snap-to-grid if enabled, then triggers a debounced save.
     /// </summary>
-    public void OnCardDropped(CanvasCardViewModel card)
+    public void OnCardDropped(CanvasCardViewModel card, double dropXInView)
     {
+        // If the drawer is open and the card was dropped in the rightmost region,
+        // return it to staging.
+        if (IsStagingDrawerOpen && CanvasViewWidth > 0 && dropXInView > CanvasViewWidth - 260)
+        {
+            ReturnToStaging(card);
+            return;
+        }
+
         if (IsSnapToGridEnabled && GridSize > 0)
         {
             card.PositionX = Math.Round(card.PositionX / GridSize) * GridSize;
@@ -155,6 +164,21 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
         TriggerSave();
     }
+
+    /// <summary>
+    /// Returns a card from the canvas back to the staging drawer.
+    /// </summary>
+    public void ReturnToStaging(CanvasCardViewModel card)
+    {
+        Cards.Remove(card);
+        card.PositionX = 0;
+        card.PositionY = 0;
+        StagedCards.Add(card);
+        TriggerSave();
+    }
+
+    /// <summary>Width of the canvas view area in pixels, set by the view.</summary>
+    public double CanvasViewWidth { get; set; }
 
     /// <summary>Called when a card finishes resizing.</summary>
     public void OnCardResized(CanvasCardViewModel card)

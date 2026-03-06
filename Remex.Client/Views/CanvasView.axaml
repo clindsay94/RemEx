@@ -135,7 +135,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
 
             <!-- ═══ CANVAS ═══ -->
-            <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <ctrl:ZoomableCanvas Grid.Column="0" Background="#12121E">
                 <ItemsControl ItemsSource="{Binding Cards}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -155,8 +155,14 @@
                         <DataTemplate x:DataType="vm:CanvasCardViewModel">
                             <ctrl:DraggableCard Width="{Binding Width}" Height="{Binding Height}">
                                 <ctrl:DraggableCard.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="📌 Toggle Pin to Home" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).TogglePinToHomeCommand}" CommandParameter="{Binding}" IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}"/>
+                                    <ContextMenu IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
+                                        <MenuItem Header="📊 Graph Type">
+                                            <MenuItem Header="Auto (smart)" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto"/>
+                                            <MenuItem Header="Bar ▮▮▮" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar"/>
+                                            <MenuItem Header="Line ╱╲╱" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
+                                            <MenuItem Header="Area ▓▓▓" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
+                                            <MenuItem Header="Gauge ━━━" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
+                                        </MenuItem>
                                     </ContextMenu>
                                 </ctrl:DraggableCard.ContextMenu>
 
@@ -215,22 +221,31 @@
 
                                     <!-- ═══ SENSOR ═══ -->
                                     <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
-                                        <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.20" Margin="0,0,0,-12"/>
+                                        <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.20"/>
 
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Sensor.Name, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                                <TextBlock Text="{Binding Sensor.Value, FallbackValue=—, StringFormat={}{0:F2}}" FontSize="18" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
-                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                        <Viewbox Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Sensor.Name, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                                                    <TextBlock FontSize="18" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                                                <Binding Path="Sensor.Value"/>
+                                                                <Binding Path="Sensor.Unit"/>
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                        </StackPanel>
+                                        </Viewbox>
                                     </Grid>
                                 </Grid>
                             </ctrl:DraggableCard>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </ScrollViewer>
+            </ctrl:ZoomableCanvas>
 
             <!-- ═══ STAGING DRAWER ═══ -->
             <Border Grid.Column="1" Background="#16162A" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="#2A2A3E" BorderThickness="1,0,0,0" Padding="12">
@@ -244,7 +259,14 @@
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0FF" TextTrimming="CharacterEllipsis"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                                <TextBlock Text="{Binding Sensor.Value, StringFormat={}{0:F1}}" FontSize="14" FontWeight="Bold" Foreground="#C0C0FF"/>
+                                                <TextBlock FontSize="14" FontWeight="Bold" Foreground="#C0C0FF">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                                            <Binding Path="Sensor.Value"/>
+                                                            <Binding Path="Sensor.Unit"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
                                                 <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="#8888AA" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
                                             <Button Classes="stage-btn" Content="+ Place on Canvas" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}"/>

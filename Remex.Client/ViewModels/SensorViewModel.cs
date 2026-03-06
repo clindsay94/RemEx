@@ -27,7 +27,8 @@ public partial class SensorViewModel : ObservableObject
     private string _category = "Other";
 
     /// <summary>
-    /// Rolling window of normalized values (0–24px) for the sparkline.
+    /// Rolling window of normalized values (0.0–1.0 fraction) for the sparkline.
+    /// The SparklineControl scales these to the actual bounds height at render time.
     /// </summary>
     public ObservableCollection<double> History { get; } = new();
 
@@ -153,13 +154,13 @@ public partial class SensorViewModel : ObservableObject
         if (History.Count >= MaxHistory)
             History.RemoveAt(0);
 
-        // Normalize to 0–24 pixel height
+        // Normalize to 0.0–1.0 fraction
         double range = _maxSeen - _minSeen;
-        double normalized = 2.0; // Minimal baseline pixel height
+        double normalized = 0.05; // Minimal baseline so it's visible
         if (range > 0)
         {
-            normalized = ((reading.Value - _minSeen) / range) * 24.0;
-            if (normalized < 2) normalized = 2; // Floor to 2px so it's visible
+            normalized = (reading.Value - _minSeen) / range;
+            if (normalized < 0.05) normalized = 0.05; // Floor so it's visible
         }
 
         History.Add(normalized);

@@ -143,7 +143,7 @@ public class SparklineControl : Control
 
         for (int i = 0; i < count; i++)
         {
-            double h = Math.Clamp(data[i], 0, maxHeight);
+        double h = Math.Clamp(data[i] * maxHeight, 0, maxHeight);
             double x = i * (barWidth + 1);
             double y = bounds.Height - h;
 
@@ -167,7 +167,7 @@ public class SparklineControl : Control
         var points = new List<Point>(count);
         for (int i = 0; i < count; i++)
         {
-            double h = Math.Clamp(data[i], 0, maxHeight);
+            double h = Math.Clamp(data[i] * maxHeight, 0, maxHeight);
             double x = i * stepX;
             double y = bounds.Height - h;
             points.Add(new Point(x, y));

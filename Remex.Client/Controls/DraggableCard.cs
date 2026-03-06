@@ -1,9 +1,11 @@
 using System;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Remex.Client.ViewModels;
 
@@ -12,6 +14,8 @@ namespace Remex.Client.Controls;
 /// <summary>
 /// A <see cref="ContentControl"/> that handles pointer-based dragging,
 /// corner Thumb resizing, and animated visual feedback (opacity + scale).
+/// On touch: long-press (400ms) to initiate drag.
+/// On mouse: instant drag on left-click.
 /// Designed to be used inside a Canvas with ItemsControl DataTemplates.
 /// </summary>
 public class DraggableCard : ContentControl
@@ -19,9 +23,16 @@ public class DraggableCard : ContentControl
     // ═══════════════ Drag state ═══════════════
 
     private bool _isDragging;
-    private Point _dragStartPoint;
-    private double _startLeft;
-    private double _startTop;
+    private Point _pointerOffsetInCard; // Where on the card the user grabbed
+    private Visual? _stableParent;      // The Canvas panel (doesn't move)
+
+    // ═══════════════ Long-press state (touch) ═══════════════
+
+    private CancellationTokenSource? _longPressCts;
+    private bool _isWaitingForLongPress;
+    private Point _touchStartPoint;
+    private const int LongPressDelayMs = 400;
+    private const double LongPressMoveThreshold = 12; // px of movement to cancel long-press
 
     // ═══════════════ Resize Thumb ═══════════════
 
@@ -72,23 +83,57 @@ public class DraggableCard : ContentControl
         var props = e.GetCurrentPoint(this).Properties;
         if (!props.IsLeftButtonPressed) return;
 
-        _isDragging = true;
-        _dragStartPoint = e.GetPosition(Parent as Visual);
-
-        // Read start position from the ViewModel (the source of truth),
-        // since Canvas.Left is bound on the parent ContentPresenter, not this control.
-        if (DataContext is CanvasCardViewModel startVm)
+        if (e.Pointer.Type == PointerType.Touch)
         {
-            _startLeft = startVm.PositionX;
-            _startTop = startVm.PositionY;
+            // Touch: start long-press timer
+            _touchStartPoint = e.GetPosition(this);
+            _isWaitingForLongPress = true;
+            _longPressCts?.Cancel();
+            _longPressCts = new CancellationTokenSource();
+
+            var cts = _longPressCts;
+            var pointer = e.Pointer;
+
+            Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                try
+                {
+                    await System.Threading.Tasks.Task.Delay(LongPressDelayMs, cts.Token);
+
+                    if (_isWaitingForLongPress && !cts.IsCancellationRequested)
+                    {
+                        // Long-press fired — enter drag mode
+                        _isWaitingForLongPress = false;
+                        EnterDragMode(pointer, _touchStartPoint);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Long-press was cancelled (finger moved too much or released)
+                }
+            });
+
+            // DO NOT set e.Handled — let the event bubble to ZoomableCanvas
+            // so single-finger pan still works until long-press fires
         }
         else
         {
-            _startLeft = 0;
-            _startTop = 0;
+            // Mouse: instant drag
+            EnterDragMode(e.Pointer, e.GetPosition(this));
+            e.Handled = true;
         }
+    }
 
-        e.Pointer.Capture(this);
+    private void EnterDragMode(IPointer pointer, Point pointerInCard)
+    {
+        _isDragging = true;
+        _pointerOffsetInCard = pointerInCard;
+
+        // Find the Canvas panel — Parent is ContentPresenter (moves!),
+        // Grandparent is the Canvas (stable reference frame).
+        _stableParent = (Parent as Visual)?.GetVisualParent() as Visual;
+
+        pointer.Capture(this);
 
         // Visual feedback: shrink + fade.
         IsDragging = true;
@@ -103,38 +148,50 @@ public class DraggableCard : ContentControl
         if (DataContext is CanvasCardViewModel vm)
         {
             vm.IsDragging = true;
-            // Walk up to find the canvas dashboard VM for Z-order.
             FindCanvasDashboard()?.BringToFront(vm);
         }
-
-        e.Handled = true;
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
 
-        if (!_isDragging) return;
+        // If waiting for long-press, check if finger moved too much
+        if (_isWaitingForLongPress && e.Pointer.Type == PointerType.Touch)
+        {
+            var current = e.GetPosition(this);
+            var dx = current.X - _touchStartPoint.X;
+            var dy = current.Y - _touchStartPoint.Y;
+            if (Math.Sqrt(dx * dx + dy * dy) > LongPressMoveThreshold)
+            {
+                // Finger moved too much — cancel long-press, let canvas pan
+                CancelLongPress();
+            }
+            return;
+        }
 
-        var currentPos = e.GetPosition(Parent as Visual);
-        var deltaX = currentPos.X - _dragStartPoint.X;
-        var deltaY = currentPos.Y - _dragStartPoint.Y;
+        if (!_isDragging || _stableParent is null) return;
 
-        var newLeft = Math.Max(0, _startLeft + deltaX);
-        var newTop = Math.Max(0, _startTop + deltaY);
+        // Get pointer position in Canvas space (stable) and subtract the grab offset.
+        var pointerInCanvas = e.GetPosition(_stableParent);
+        var newLeft = Math.Max(0, pointerInCanvas.X - _pointerOffsetInCard.X);
+        var newTop = Math.Max(0, pointerInCanvas.Y - _pointerOffsetInCard.Y);
 
-        // Update the VM — the Canvas.Left/Top bindings in ItemsControl.Styles
-        // handle the visual position automatically.
         if (DataContext is CanvasCardViewModel vm)
         {
             vm.PositionX = newLeft;
             vm.PositionY = newTop;
         }
+
+        e.Handled = true;
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+
+        // Cancel any pending long-press
+        CancelLongPress();
 
         if (!_isDragging) return;
 
@@ -153,10 +210,28 @@ public class DraggableCard : ContentControl
         if (DataContext is CanvasCardViewModel vm)
         {
             vm.IsDragging = false;
-            FindCanvasDashboard()?.OnCardDropped(vm);
+
+            // Get drop position relative to the ZoomableCanvas (the viewport)
+            // to detect if the card was dropped over the staging drawer.
+            var dashboard = FindCanvasDashboard();
+            if (dashboard != null)
+            {
+                var zoomable = FindZoomableCanvas();
+                double dropX = zoomable != null
+                    ? e.GetPosition(zoomable).X
+                    : 0;
+                dashboard.OnCardDropped(vm, dropX);
+            }
         }
 
         e.Handled = true;
+    }
+
+    private void CancelLongPress()
+    {
+        _isWaitingForLongPress = false;
+        _longPressCts?.Cancel();
+        _longPressCts = null;
     }
 
     // ═══════════════ Resize Thumb ═══════════════
@@ -194,6 +269,18 @@ public class DraggableCard : ContentControl
         {
             if (current.DataContext is CanvasDashboardViewModel cdvm)
                 return cdvm;
+            current = current.GetVisualParent();
+        }
+        return null;
+    }
+
+    private ZoomableCanvas? FindZoomableCanvas()
+    {
+        Visual? current = this;
+        while (current != null)
+        {
+            if (current is ZoomableCanvas zc)
+                return zc;
             current = current.GetVisualParent();
         }
         return null;
