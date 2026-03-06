@@ -18,7 +18,7 @@
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer Background="#12121E" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24" MaxWidth="500">
 
             <!-- ═══ Header ═══ -->
@@ -27,19 +27,19 @@
             <TextBlock Text="SETTINGS" FontSize="24" FontWeight="Black" Foreground="#E0E0FF"/>
 
             <!-- ═══ Connection Section ═══ -->
-            <Border Background="#1E1E2E" CornerRadius="16" Padding="20" BorderBrush="#2A2A3E" BorderThickness="1">
+            <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="CONNECTION" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
-                    <TextBlock Text="Host Address" FontSize="13" Foreground="#8888AA"/>
-                    <TextBox Text="{Binding HostAddress}" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
+                    <TextBlock Text="CONNECTION" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="Host Address" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
+                    <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
                     <TextBlock Text="Changes are saved automatically and persist across restarts." FontSize="11" Foreground="#4444AA" FontStyle="Italic"/>
                 </StackPanel>
             </Border>
 
             <!-- ═══ Layout Section ═══ -->
-            <Border Background="#1E1E2E" CornerRadius="16" Padding="20" BorderBrush="#2A2A3E" BorderThickness="1">
+            <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="LAYOUT" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+                    <TextBlock Text="LAYOUT" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
 
                     <!-- Snap toggle -->
                     <Grid ColumnDefinitions="*,Auto">
@@ -68,10 +68,10 @@
             </Border>
 
             <!-- ═══ Pinned Sensors Section ═══ -->
-            <Border Background="#1E1E2E" CornerRadius="16" Padding="20" BorderBrush="#2A2A3E" BorderThickness="1">
+            <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
-                    <TextBlock Text="Select sensors to display on the Home screen" FontSize="12" Foreground="#8888AA"/>
+                    <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="Select sensors to display on the Home screen" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
 
                     <TextBlock Text="Open the Sensor Workspace first to discover sensors." FontSize="12" Foreground="#4444AA" FontStyle="Italic" IsVisible="{Binding !AvailableSensors.Count}"/>
 

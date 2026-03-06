@@ -49,4 +49,16 @@ public partial class HomeViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateToSettings() => _shell.NavigateToSettings();
+
+    [RelayCommand]
+    private void NavigateToRemote() => _shell.NavigateToRemote();
+
+    [RelayCommand]
+    private void NavigateToAppLauncher() => _shell.NavigateToAppLauncher();
+
+    [RelayCommand]
+    private void NavigateToCustomization() => _shell.NavigateToCustomization();
+
+    [RelayCommand]
+    private void NavigateToRemoteDesktop() => _shell.NavigateToRemoteDesktop();
 }

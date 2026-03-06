@@ -16,7 +16,11 @@ public static class HostBootstrapper
     /// without starting it. Call <c>Run()</c> or <c>StartAsync()</c> on
     /// the returned application to begin listening.
     /// </summary>
-    public static WebApplication CreateApplication(string[] args)
+    /// <param name="args">Command-line arguments forwarded to the builder.</param>
+    /// <param name="port">
+    /// Override the listening port. Defaults to <see cref="RemexConstants.DefaultPort"/>.
+    /// </param>
+    public static WebApplication CreateApplication(string[] args, int port = RemexConstants.DefaultPort)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -37,7 +41,7 @@ public static class HostBootstrapper
         }
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
-        builder.WebHost.UseUrls($"http://0.0.0.0:{RemexConstants.DefaultPort}");
+        builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
         var app = builder.Build();
 

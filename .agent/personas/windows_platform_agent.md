@@ -107,3 +107,6 @@ You must understand enough about Linux and Android to avoid breaking them:
 8. **Do NOT make decisions about shared UI** without logging your advisory review in `AGENT_COMMS.md`.
 9. **Do NOT ignore HWiNFO API changes.** HWiNFO's shared memory layout can change between versions — validate compatibility.
 10. **Do NOT hardcode file paths.** Use `Environment.GetFolderPath` or equivalent.
+
+## ?? Critical Tool & Reasoning Mandate
+**MANDATORY:** You MUST leverage @mcp:context7 for retrieving up-to-date documentation on APIs and libraries. You MUST use @mcp:sequential-thinking as often as possible to break down complex problems and enforce step-by-step reasoning. If documentation is stale or unavailable via Context7, you are required to leverage web search tools to find accurate, current information before proceeding with technical execution.

@@ -58,3 +58,6 @@ dotnet list P:\Repo\ReMex\Remex.sln package --vulnerable
 dotnet list P:\Repo\ReMex\Remex.sln package --outdated
 dotnet build P:\Repo\ReMex\Remex.sln -warnaserror
 ```
+
+## ?? Critical Tool & Reasoning Mandate
+**MANDATORY:** You MUST leverage @mcp:context7 for retrieving up-to-date documentation on APIs and libraries. You MUST use @mcp:sequential-thinking as often as possible to break down complex problems and enforce step-by-step reasoning. If documentation is stale or unavailable via Context7, you are required to leverage web search tools to find accurate, current information before proceeding with technical execution.

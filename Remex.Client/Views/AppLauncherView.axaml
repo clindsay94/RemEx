@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel">
+
+    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32" Spacing="24">
+
+            <!-- ═══ Header ═══ -->
+            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
+            <StackPanel Spacing="4">
+                <TextBlock Text="🚀  APP LAUNCHER" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
+                <TextBlock Text="REMOTE APPLICATION CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
+            </StackPanel>
+
+            <!-- ═══ Placeholder ═══ -->
+            <Border Classes="glass-card" Padding="40" HorizontalAlignment="Center">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <TextBlock Text="🚧" FontSize="48" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Coming Soon" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Launch and manage applications on your remote PC." FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

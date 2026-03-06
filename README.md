@@ -6,20 +6,22 @@ A high-performance, cross-platform **command center** for remote PC management. 
 
 ## ✨ Features
 
-- **Command Center Dashboard** — Three-view "on-glass" navigation with smooth crossfade transitions:
+- **Sleek Glassmorphic UI** — Edge-to-edge transparent layout using OS-level Mica/Acrylic blur, dropping native chrome for a custom interactive titlebar.
+- **Dark Glass Design System** — Layered translucent cards (`.glass-card`), vibrant fluid hover states, and dynamic gradient variables across all views.
+- **Command Center Dashboard** — Three-view "on-glass" navigation with smooth horizontal `PageSlide` transitions:
   - **Home** — NOC-style overview with pinned sensor cards and connection status
-  - **Sensor Workspace** — Free-form Canvas with draggable, resizable sensor cards and a staging drawer for new sensors
-  - **Settings** — Snap-to-grid, grid size, and persisted remote connection address
+  - **Sensor Workspace** — Free-form Canvas with draggable, resizable sensor cards and a collapsible staging drawer
+  - **Settings** — Snap-to-grid tuning, grid size configuration, and persisted remote connection address
 - **Real-time Telemetry** — HWiNFO (Windows) / lmsensors (Linux) streamed over WebSocket
 - **Customizable Sensor Cards** — Resizable, themed, with sparkline graphs (Bar, Line, Area, Gauge)
-- **Remote Execution** — Lock, Reboot, and custom commands via REST endpoints
-- **Cross-Platform** — Shared Avalonia UI across Desktop and Android with platform parity
+- **Remote Execution** — Lock, Reboot, Shutdown, and custom commands via REST endpoints
+- **Cross-Platform Parity** — Shared Avalonia UI across Desktop and Android environments
 
 ---
 
 ## 🏗 Project Structure
 
-```
+```text
 Remex.Core/              Shared abstractions, models, message contracts
 Remex.Host/              Headless ASP.NET background service (Minimal APIs, WebSocket hub)
 Remex.Client/            Shared Avalonia UI (Views, ViewModels, Controls, Services)
@@ -83,7 +85,7 @@ dotnet test Remex.sln
 ## 📡 API
 
 | Protocol | Purpose | Port |
-|---|---|---|
+| --- | --- | --- |
 | WebSocket (`/ws`) | Real-time sensor telemetry stream | 5005 |
 | REST | One-shot actions (Lock, Reboot, Execute) | 5005 |
 
@@ -93,7 +95,7 @@ Full API documentation: [`/docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md)
 
 ## 🎛 Dashboard Architecture
 
-```
+```text
 MainWindow
   └─ ShellView (TransitioningContentControl + CrossFade 250ms)
        ├─ HomeView        — Pinned sensors in UniformGrid, connection status

@@ -122,3 +122,6 @@ CachyOS is the primary target. It is Arch-based, so:
 8. **Do NOT ignore file permissions.** Service files, config files, and sockets need correct permissions.
 9. **Do NOT make decisions about shared UI** without logging your advisory review in `AGENT_COMMS.md`.
 10. **Do NOT use `sudo` or `root` assumptions in application code.** The service should run as a non-root user unless explicitly required and documented.
+
+## ?? Critical Tool & Reasoning Mandate
+**MANDATORY:** You MUST leverage @mcp:context7 for retrieving up-to-date documentation on APIs and libraries. You MUST use @mcp:sequential-thinking as often as possible to break down complex problems and enforce step-by-step reasoning. If documentation is stale or unavailable via Context7, you are required to leverage web search tools to find accurate, current information before proceeding with technical execution.

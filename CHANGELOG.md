@@ -6,10 +6,16 @@ Format: `[Agent:<name>] <type>: <description>` per the commit protocol in `AGENT
 
 ---
 
-## [Unreleased]
+## [0.2.0] - 2026-03-06
 
 ### Added
 
+- **Dark Glass UI Overhaul** — Application uses modern glassmorphic aesthetics with layered translucent cards (`.glass-card`).
+- **Mica / Acrylic Blur** — `MainWindow` drops native OS chrome for edge-to-edge transparent content.
+- **Custom TitleBar** — Implemented an integrated drag-area header for window movement.
+- **Sensor Staging Drawer Interaction** — Sensors can now be removed from the active canvas by dragging them back into the Staging Drawer.
+- **Fluid Animations** — Switched to `PageSlide` for sleek horizontal navigation transitions.
+- **Global `Directory.Build.props`** — Centralized versioning (`0.2.0`).
 - **Command Center Dashboard** — replaced the WrapPanel dashboard with a three-view "on-glass" navigation system:
   - `HomeView` — NOC-style landing page with connection status hero card and pinned sensor UniformGrid
   - `CanvasView` — free-form 4000×4000 Canvas workspace with draggable, resizable sensor cards
@@ -28,6 +34,8 @@ Format: `[Agent:<name>] <type>: <description>` per the commit protocol in `AGENT
 
 ### Changed
 
+- **Removed Solid Backgrounds** — Refactored `HomeView`, `CanvasView`, `SettingsView`, and others, dropping hardcoded `#12121E` colors for `Transparent` backgrounds to expose OS window blur.
+- Button styles updated for interactive saturated pointer-over states.
 - `MainWindow.axaml` — now hosts `ShellView` instead of `DashboardView`
 - `App.axaml.cs` — wires `ShellViewModel` + `DashboardLayoutService` as root DataContext
 - `AGENTS.md` — updated roadmap (Phase 4 complete), added test projects to structure

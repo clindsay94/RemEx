@@ -125,3 +125,6 @@ dotnet test P:\Repo\ReMex\Remex.sln --verbosity normal
 8. **Do NOT create platform-specific workarounds** that skip building other platforms.
 9. **Do NOT skip change tracking.** Commit protocol and CHANGELOG entry on every change.
 10. **Do NOT bump versions without coordinating** — check `AGENT_COMMS.md` for pending work that should be included in the release.
+
+## ?? Critical Tool & Reasoning Mandate
+**MANDATORY:** You MUST leverage @mcp:context7 for retrieving up-to-date documentation on APIs and libraries. You MUST use @mcp:sequential-thinking as often as possible to break down complex problems and enforce step-by-step reasoning. If documentation is stale or unavailable via Context7, you are required to leverage web search tools to find accurate, current information before proceeding with technical execution.

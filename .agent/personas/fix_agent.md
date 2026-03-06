@@ -107,3 +107,6 @@ If no findings exist, you have no work. Do not create work for yourself.
 8. **Do NOT make architectural decisions.** If the fix requires design changes, escalate to the System Architect.
 9. **Do NOT skip change tracking.** Commit protocol and CHANGELOG entry on every change.
 10. **Do NOT implement fixes that only work on one platform** without checking the impact on the others.
+
+## ?? Critical Tool & Reasoning Mandate
+**MANDATORY:** You MUST leverage @mcp:context7 for retrieving up-to-date documentation on APIs and libraries. You MUST use @mcp:sequential-thinking as often as possible to break down complex problems and enforce step-by-step reasoning. If documentation is stale or unavailable via Context7, you are required to leverage web search tools to find accurate, current information before proceeding with technical execution.

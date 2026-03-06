@@ -3,21 +3,51 @@
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:views="using:Remex.Client.Views" x:Class="Remex.Client.Views.ShellView" x:DataType="vm:ShellViewModel">
 
-    <TransitioningContentControl Content="{Binding CurrentView}">
-        <TransitioningContentControl.DataTemplates>
-            <DataTemplate DataType="vm:HomeViewModel">
-                <views:HomeView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:CanvasDashboardViewModel">
-                <views:CanvasView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:SettingsViewModel">
-                <views:SettingsView />
-            </DataTemplate>
-        </TransitioningContentControl.DataTemplates>
-        <TransitioningContentControl.PageTransition>
-            <CrossFade Duration="0:0:0.25" />
-        </TransitioningContentControl.PageTransition>
-    </TransitioningContentControl>
+    <Grid RowDefinitions="Auto,*">
+    
+        <!-- ═══ CUSTOM TITLE BAR ═══ -->
+        <Grid Grid.Row="0" Height="40" Background="Transparent">
+            <!-- Invisible draggable area that tells the OS to drag the window -->
+            <!-- We don't have direct access to Window.BeginMoveDrag in MVVM XAML without code-behind,
+                 but Avalonia automatically handles top-edge dragging when ExtendClientAreaToDecorationsHint="True".
+                 However, to reserve space for the system caption buttons, we keep this area clear. -->
+            
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
+                <!-- A subtle tiny logo or text for the title bar -->
+                <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══ PAGE CONTENT ═══ -->
+        <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentView}">
+            <TransitioningContentControl.DataTemplates>
+                <DataTemplate DataType="vm:HomeViewModel">
+                    <views:HomeView />
+                </DataTemplate>
+                <DataTemplate DataType="vm:CanvasDashboardViewModel">
+                    <views:CanvasView />
+                </DataTemplate>
+                <DataTemplate DataType="vm:SettingsViewModel">
+                    <views:SettingsView />
+                </DataTemplate>
+                <DataTemplate DataType="vm:RemoteViewModel">
+                    <views:RemoteView />
+                </DataTemplate>
+                <DataTemplate DataType="vm:AppLauncherViewModel">
+                    <views:AppLauncherView />
+                </DataTemplate>
+                <DataTemplate DataType="vm:CustomizationViewModel">
+                    <views:CustomizationView />
+                </DataTemplate>
+                <DataTemplate DataType="vm:RemoteDesktopViewModel">
+                    <views:RemoteDesktopView />
+                </DataTemplate>
+            </TransitioningContentControl.DataTemplates>
+            <TransitioningContentControl.PageTransition>
+                <!-- Sleek sliding entrance transition -->
+                <PageSlide Duration="0:0:0.25" Orientation="Horizontal" />
+            </TransitioningContentControl.PageTransition>
+        </TransitioningContentControl>
+    </Grid>
 
 </UserControl>

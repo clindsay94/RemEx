@@ -2,7 +2,78 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Remex.Client.App" RequestedThemeVariant="Default">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
+    <Application.Resources>
+        <!-- ═══ DARK GLASS DESIGN SYSTEM ═══ -->
+        
+        <!-- Base Tints (Extreme darks, some with transparency to let Mica show through) -->
+        <Color x:Key="GlassBaseDark">#D90A0A10</Color>
+        <Color x:Key="GlassBaseMedium">#F212121E</Color>
+        
+        <!-- Accents (Vibrant Electric Violet/Blue) -->
+        <Color x:Key="AccentPrimary">#6C4CFF</Color>
+        <Color x:Key="AccentHover">#826AFF</Color>
+        <Color x:Key="AccentPressed">#543BD9</Color>
+        
+        <!-- Functional Colors (Success, Error, Warning) -->
+        <Color x:Key="SystemSuccess">#22C55E</Color>
+        <Color x:Key="SystemError">#F43F5E</Color>
+        <Color x:Key="SystemWarning">#F59E0B</Color>
+        
+        <!-- Surfaces (Frosted Cards) -->
+        <Color x:Key="CardBackground">#1AFFFFFF</Color> <!-- 10% white -->
+        <Color x:Key="CardBackgroundHover">#26FFFFFF</Color> <!-- 15% white -->
+        <Color x:Key="CardBorder">#2AFFFFFF</Color> <!-- 16% white -->
+        
+        <!-- Text Colors -->
+        <Color x:Key="TextPrimary">#F8FAFC</Color>
+        <Color x:Key="TextSecondary">#94A3B8</Color>
+        <Color x:Key="TextMuted">#64748B</Color>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
+        <!-- Global Control Styles -->
+        
+        <!-- Base Text Styling -->
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        </Style>
+        
+        <!-- Reusable Glassmorphic Card -->
+        <Style Selector="Border.glass-card">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="{DynamicResource CardBackground}"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderBrush">
+                <Setter.Value>
+                    <SolidColorBrush Color="{DynamicResource CardBorder}"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <!-- Subtle inset shadow (using BoxShadow syntax: offsetX offsetY blur spread color) -->
+            <Setter Property="BoxShadow" Value="0 8 32 0 #40000000"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        
+        <!-- Glass Card Hover Effect -->
+        <Style Selector="Border.glass-card.interactive:pointerover">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="{DynamicResource CardBackgroundHover}"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RenderTransform" Value="scale(1.02)"/>
+            <Setter Property="BoxShadow" Value="0 12 48 0 #60000000"/>
+        </Style>
+        
     </Application.Styles>
 </Application>

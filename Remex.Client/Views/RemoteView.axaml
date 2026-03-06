@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.RemoteView" x:DataType="vm:RemoteViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.remote-btn">
+            <Setter Property="Background" Value="#2A2A4A"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="24 20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.remote-btn:pointerover">
+            <Setter Property="Background" Value="#3A3A5A"/>
+        </Style>
+        <Style Selector="Button.remote-btn-danger">
+            <Setter Property="Background" Value="#3A1A1A"/>
+            <Setter Property="Foreground" Value="#FF6B6B"/>
+        </Style>
+        <Style Selector="Button.remote-btn-danger:pointerover">
+            <Setter Property="Background" Value="#4A2A2A"/>
+        </Style>
+        <Style Selector="Button.remote-btn-warn">
+            <Setter Property="Background" Value="#3A3A1A"/>
+            <Setter Property="Foreground" Value="#FFD93D"/>
+        </Style>
+        <Style Selector="Button.remote-btn-warn:pointerover">
+            <Setter Property="Background" Value="#4A4A2A"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32" Spacing="24">
+
+            <!-- ═══ Header ═══ -->
+            <Grid ColumnDefinitions="Auto,*">
+                <Button Grid.Column="0" Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center"/>
+            </Grid>
+            <StackPanel Spacing="4">
+                <TextBlock Text="⏻  PC REMOTE" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
+                <TextBlock Text="POWER &amp; SYSTEM CONTROLS" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
+            </StackPanel>
+
+            <!-- ═══ Wake on LAN ═══ -->
+            <Border Classes="glass-card" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="WAKE ON LAN" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="Send a magic packet to wake the target PC when it's powered off." FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+                    <Button Classes="remote-btn" Content="🔌  Send Wake-on-LAN Packet" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ Graceful Controls ═══ -->
+            <TextBlock Text="GRACEFUL" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+            <UniformGrid Columns="2" Rows="2">
+                <Button Classes="remote-btn" Content="🔒  Lock PC" Margin="0,0,4,4"/>
+                <Button Classes="remote-btn" Content="🖥  Turn Off Screen" Margin="4,0,0,4"/>
+                <Button Classes="remote-btn remote-btn-warn" Content="⏻  Shutdown" Margin="0,4,4,0"/>
+                <Button Classes="remote-btn remote-btn-warn" Content="🔄  Restart" Margin="4,4,0,0"/>
+            </UniformGrid>
+
+            <!-- ═══ Forced Controls ═══ -->
+            <TextBlock Text="FORCED (IMMEDIATE)" FontSize="11" FontWeight="SemiBold" Foreground="#FF6B6B" LetterSpacing="2"/>
+            <UniformGrid Columns="2" Rows="2">
+                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Shutdown" Margin="0,0,4,4"/>
+                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Restart" Margin="4,0,0,4"/>
+                <Button Classes="remote-btn remote-btn-danger" Content="🔧  Reboot to UEFI" Margin="0,4,4,0"/>
+                <Button Classes="remote-btn" Content="💤  Sleep" Margin="4,4,0,0"/>
+            </UniformGrid>
+
+            <!-- ═══ Extra ═══ -->
+            <TextBlock Text="ADDITIONAL" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+            <Button Classes="remote-btn" Content="❄  Hibernate" HorizontalAlignment="Stretch"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

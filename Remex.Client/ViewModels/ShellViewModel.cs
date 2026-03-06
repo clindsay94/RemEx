@@ -28,6 +28,10 @@ public partial class ShellViewModel : ObservableObject
     private HomeViewModel? _homeViewModel;
     private CanvasDashboardViewModel? _canvasViewModel;
     private SettingsViewModel? _settingsViewModel;
+    private RemoteViewModel? _remoteViewModel;
+    private AppLauncherViewModel? _appLauncherViewModel;
+    private CustomizationViewModel? _customizationViewModel;
+    private RemoteDesktopViewModel? _remoteDesktopViewModel;
 
     public ShellViewModel(DashboardLayoutService layoutService)
     {
@@ -70,6 +74,34 @@ public partial class ShellViewModel : ObservableObject
         // Refresh the sensor pin list with current canvas data.
         _settingsViewModel.RefreshSensors();
         CurrentView = _settingsViewModel;
+    }
+
+    [RelayCommand]
+    public void NavigateToRemote()
+    {
+        _remoteViewModel ??= new RemoteViewModel(Connection, this);
+        CurrentView = _remoteViewModel;
+    }
+
+    [RelayCommand]
+    public void NavigateToAppLauncher()
+    {
+        _appLauncherViewModel ??= new AppLauncherViewModel(Connection, this);
+        CurrentView = _appLauncherViewModel;
+    }
+
+    [RelayCommand]
+    public void NavigateToCustomization()
+    {
+        _customizationViewModel ??= new CustomizationViewModel(this);
+        CurrentView = _customizationViewModel;
+    }
+
+    [RelayCommand]
+    public void NavigateToRemoteDesktop()
+    {
+        _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this);
+        CurrentView = _remoteDesktopViewModel;
     }
 
     /// <summary>

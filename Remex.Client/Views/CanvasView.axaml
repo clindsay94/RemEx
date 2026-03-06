@@ -7,14 +7,14 @@
     <UserControl.Styles>
         <!-- ═══ DraggableCard chrome ═══ -->
         <Style Selector="ctrl|DraggableCard">
-            <Setter Property="Background" Value="#1E1E2E"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="BorderBrush" Value="#2A2A3E"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="ClipToBounds" Value="False"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="0 4 16 0 #40000000" Padding="0">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="0 8 32 0 #40000000" Padding="0">
                         <Grid>
                             <ContentPresenter Content="{TemplateBinding Content}" Margin="16"/>
                             <!-- Resize grip -->
@@ -115,13 +115,13 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid Background="#12121E" RowDefinitions="Auto,*">
+    <Grid Background="Transparent" RowDefinitions="Auto,*">
 
         <!-- ═══ Toolbar ═══ -->
-        <Border Grid.Row="0" Background="#16162A" Padding="12 8">
+        <Border Grid.Row="0" Background="{DynamicResource GlassBaseDark}" Padding="12 8">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Classes="back-btn" Content="← Command Center" Command="{Binding NavigateBackCommand}"/>
-                <TextBlock Grid.Column="1" Text="SENSOR WORKSPACE" FontSize="12" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="SENSOR WORKSPACE" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="📥" FontSize="14"/>
@@ -135,11 +135,11 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
 
             <!-- ═══ CANVAS ═══ -->
-            <ctrl:ZoomableCanvas Grid.Column="0" Background="#12121E">
+            <ctrl:ZoomableCanvas Grid.Column="0" Background="Transparent">
                 <ItemsControl ItemsSource="{Binding Cards}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <Canvas Width="4000" Height="4000" Background="#12121E"/>
+                            <Canvas Width="4000" Height="4000" Background="Transparent"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
 
@@ -248,16 +248,16 @@
             </ctrl:ZoomableCanvas>
 
             <!-- ═══ STAGING DRAWER ═══ -->
-            <Border Grid.Column="1" Background="#16162A" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="#2A2A3E" BorderThickness="1,0,0,0" Padding="12">
+            <Border Grid.Column="1" Background="{DynamicResource GlassBaseMedium}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1,0,0,0" Padding="12">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2" Margin="0,0,0,12"/>
                     <ScrollViewer>
                         <ItemsControl ItemsSource="{Binding StagedCards}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CanvasCardViewModel">
-                                    <Border Background="#1E1E2E" CornerRadius="8" Padding="12" Margin="0,0,0,8" BorderBrush="#2A2A3E" BorderThickness="1">
+                                    <Border Classes="glass-card interactive" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="#E0E0FF" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">
                                                 <TextBlock FontSize="14" FontWeight="Bold" Foreground="#C0C0FF">
                                                     <TextBlock.Text>
