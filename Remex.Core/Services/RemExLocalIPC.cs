@@ -25,11 +25,13 @@ public static class RemExLocalIPC
             await client.ConnectAsync(2000, cancellationToken);
 
             var json = JsonSerializer.Serialize(request);
-            var writer = new System.IO.StreamWriter(client) { AutoFlush = true };
+            await using var writer = new System.IO.StreamWriter(client, leaveOpen: true) { AutoFlush = true };
             await writer.WriteLineAsync(json);
 
-            var reader = new System.IO.StreamReader(client);
-            var responseJson = await reader.ReadLineAsync();
+            using var reader = new System.IO.StreamReader(client, leaveOpen: true);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            var responseJson = await reader.ReadLineAsync(cts.Token);
 
             if (responseJson == null)
             {
