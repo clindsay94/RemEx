@@ -32,13 +32,20 @@ public static class HostBootstrapper
         // Enable Windows Service lifetime (no-op when not running under SCM).
         builder.Host.UseWindowsService();
 
+        builder.Services.AddSingleton<Remex.Core.Services.Network.IWakeOnLanService, Remex.Core.Services.Network.WakeOnLanService>();
+        builder.Services.AddSingleton<Remex.Core.Services.Network.INetworkListener, Remex.Core.Services.Network.RemexNetworkListener>();
+        builder.Services.AddHostedService<Remex.Host.Services.IPC.LocalIpcServerService>();
+        builder.Services.AddHostedService<Remex.Host.Services.Network.ExternalNetworkListenerService>();
+
         if (OperatingSystem.IsWindows())
         {
             builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
+            builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.WindowsSystemCommandService>();
         }
         else if (OperatingSystem.IsLinux())
         {
             builder.Services.AddSingleton<ITelemetryService, LinuxTelemetryService>();
+            builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
         }
 
         builder.Services.AddSingleton<ISystemCommandService, SystemCommandService>();

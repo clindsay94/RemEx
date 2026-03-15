@@ -25,6 +25,8 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
+    public static System.IServiceProvider? Services { get; private set; }
+
     public override void OnFrameworkInitializationCompleted()
     {
         var collection = new ServiceCollection();
@@ -43,6 +45,11 @@ public partial class App : Application
         Services = collection.BuildServiceProvider();
 
         var viewModel = Services.GetRequiredService<ShellViewModel>();
+        var configBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
+        Services = CommandModeContext.InitializeAndGetServiceProvider(configBuilder.Build());
+
+        var layoutService = new DashboardLayoutService();
+        var viewModel = new ShellViewModel(layoutService);
 
         // If the desktop entry point started an embedded host on a specific port,
         // override the connection address so the client connects to it.

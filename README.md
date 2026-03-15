@@ -88,8 +88,12 @@ dotnet test Remex.sln
 | --- | --- | --- |
 | WebSocket (`/ws`) | Real-time sensor telemetry stream | 5005 |
 | REST | One-shot actions (Lock, Reboot, Execute) | 5005 |
+| TCP | Remote Command Ingress (Shutdown, Restart, WoL, Lock) | 8338 (configurable) |
+| Named Pipe | Local IPC (UI to Background Service) | `RemExLocalIPC` |
 
 Full API documentation: [`/docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md)
+
+⚠️ **Security Warning:** The TCP Command Ingress endpoint (default port 8338) allows remote execution of power commands (Shutdown, Restart, Force Restart, Restart to UEFI, Lock, and Wake-on-LAN). Ensure this port is protected by a firewall and only accessible from trusted networks.
 
 ---
 
