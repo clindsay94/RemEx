@@ -1,6 +1,7 @@
 using Remex.Core;
 using Remex.Core.Services;
 using Remex.Host.Handlers;
+using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
 
 namespace Remex.Host;
@@ -39,6 +40,9 @@ public static class HostBootstrapper
         {
             builder.Services.AddSingleton<ITelemetryService, LinuxTelemetryService>();
         }
+
+        builder.Services.AddSingleton<ISystemCommandService, SystemCommandService>();
+        builder.Services.AddHostedService<IpcHostServer>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
         builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
