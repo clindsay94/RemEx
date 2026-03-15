@@ -6,15 +6,16 @@
     <Grid RowDefinitions="Auto,*">
     
         <!-- ═══ CUSTOM TITLE BAR ═══ -->
-        <Grid Grid.Row="0" Height="40" Background="Transparent">
-            <!-- Invisible draggable area that tells the OS to drag the window -->
-            <!-- We don't have direct access to Window.BeginMoveDrag in MVVM XAML without code-behind,
-                 but Avalonia automatically handles top-edge dragging when ExtendClientAreaToDecorationsHint="True".
-                 However, to reserve space for the system caption buttons, we keep this area clear. -->
-            
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
-                <!-- A subtle tiny logo or text for the title bar -->
+        <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
                 <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+                <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
             </StackPanel>
         </Grid>
 

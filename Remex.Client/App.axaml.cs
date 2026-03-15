@@ -1,14 +1,18 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using System;
+using Microsoft.Extensions.DependencyInjection;
 using Remex.Client.Services;
 using Remex.Client.ViewModels;
 using Remex.Client.Views;
+using Remex.Core.Services;
 
 namespace Remex.Client;
 
 public partial class App : Application
 {
+    public static IServiceProvider Services { get; private set; } = null!;
     /// <summary>
     /// When set by the platform-specific entry point (e.g. Desktop Program.cs),
     /// overrides the client's default host address to the embedded host's actual port.
@@ -25,6 +29,22 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var collection = new ServiceCollection();
+
+        // Register Core Services
+        collection.AddSingleton<ILauncherStorageService, LauncherStorageService>();
+        collection.AddSingleton<IIconExtractionService, IconExtractionService>();
+        collection.AddSingleton<DashboardLayoutService>();
+
+        // Register ViewModels
+        collection.AddSingleton<ConnectionViewModel>();
+        collection.AddTransient<AppLauncherViewModel>();
+        collection.AddTransient<AddProgramViewModel>();
+        collection.AddSingleton<ShellViewModel>();
+
+        Services = collection.BuildServiceProvider();
+
+        var viewModel = Services.GetRequiredService<ShellViewModel>();
         var configBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
         Services = CommandModeContext.InitializeAndGetServiceProvider(configBuilder.Build());
 

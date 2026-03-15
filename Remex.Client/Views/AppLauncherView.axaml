@@ -1,25 +1,69 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel">
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:converters="using:Remex.Client.Converters"
+    x:Class="Remex.Client.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel">
+
+    <UserControl.Resources>
+        <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />
+    </UserControl.Resources>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24">
 
             <!-- ═══ Header ═══ -->
-            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
-            <StackPanel Spacing="4">
-                <TextBlock Text="🚀  APP LAUNCHER" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
-                <TextBlock Text="REMOTE APPLICATION CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
-            </StackPanel>
-
-            <!-- ═══ Placeholder ═══ -->
-            <Border Classes="glass-card" Padding="40" HorizontalAlignment="Center">
-                <StackPanel Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="🚧" FontSize="48" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Coming Soon" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Launch and manage applications on your remote PC." FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Spacing="4" Grid.Column="0">
+                    <TextBlock Text="🚀  APP LAUNCHER" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
+                    <TextBlock Text="REMOTE APPLICATION CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
                 </StackPanel>
-            </Border>
+
+                <Button Content="+ Add Program" Grid.Column="1" VerticalAlignment="Center"
+                        Classes="glass-button" Background="#224A3AFF" Foreground="#A0A0FF" Padding="12,8"
+                        Command="{Binding OpenAddProgramDialogCommand}" />
+            </Grid>
+
+            <!-- ═══ Apps Grid ═══ -->
+            <ItemsControl ItemsSource="{Binding Launchers}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" ItemWidth="160" ItemHeight="160" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="glass-card" Margin="8" Padding="16" Cursor="Hand">
+                            <Border.Background>
+                                <SolidColorBrush Color="{Binding HexColor}" Opacity="0.1" />
+                            </Border.Background>
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{Binding HexColor}" Opacity="0.3" />
+                            </Border.BorderBrush>
+
+
+                            <Button Background="Transparent" Padding="0"
+                                    Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}"
+                                    CommandParameter="{Binding}">
+                                <Grid RowDefinitions="*, Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <!-- Remove Button -->
+                                    <Button Content="✕" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                            Background="Transparent" Foreground="#666" Padding="4" ZIndex="1"
+                                            Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
+
+                                    <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}"
+                                           Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center"
+                                               FontWeight="SemiBold" Foreground="#E0E0FF" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
+                                </Grid>
+                            </Button>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="No applications configured." IsVisible="{Binding !Launchers.Count}"
+                       Foreground="#666" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
 
         </StackPanel>
     </ScrollViewer>

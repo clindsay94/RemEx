@@ -33,10 +33,10 @@ public partial class ShellViewModel : ObservableObject
     private CustomizationViewModel? _customizationViewModel;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
 
-    public ShellViewModel(DashboardLayoutService layoutService)
+    public ShellViewModel(DashboardLayoutService layoutService, ConnectionViewModel connectionViewModel)
     {
         _layoutService = layoutService;
-        Connection = new ConnectionViewModel();
+        Connection = connectionViewModel;
 
         // Default to Home on startup.
         NavigateToHome();
@@ -86,7 +86,10 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToAppLauncher()
     {
-        _appLauncherViewModel ??= new AppLauncherViewModel(Connection, this);
+        if (_appLauncherViewModel is null)
+        {
+            _appLauncherViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppLauncherViewModel>(App.Services);
+        }
         CurrentView = _appLauncherViewModel;
     }
 
