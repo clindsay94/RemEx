@@ -18,18 +18,21 @@ public interface ILauncherStorageService
 /// </summary>
 public class LauncherStorageService : ILauncherStorageService
 {
-    private static readonly string AppDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
-    private static readonly string ConfigFilePath = Path.Combine(AppDataFolder, "launchers.json");
+    private static readonly string DefaultAppDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
+
+    private readonly string _configFilePath;
 
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
-    public LauncherStorageService()
+    public LauncherStorageService() : this(null) { }
+
+    public LauncherStorageService(string? storageFolderPath)
     {
+        var folder = storageFolderPath ?? DefaultAppDataFolder;
+        _configFilePath = Path.Combine(folder, "launchers.json");
+
         // Ensure the directory exists
-        if (!Directory.Exists(AppDataFolder))
-        {
-            Directory.CreateDirectory(AppDataFolder);
-        }
+        Directory.CreateDirectory(folder);
     }
 
     /// <summary>
@@ -37,14 +40,14 @@ public class LauncherStorageService : ILauncherStorageService
     /// </summary>
     public async Task<List<AppEntry>> LoadEntriesAsync()
     {
-        if (!File.Exists(ConfigFilePath))
+        if (!File.Exists(_configFilePath))
         {
             return new List<AppEntry>();
         }
 
         try
         {
-            using var stream = File.OpenRead(ConfigFilePath);
+            using var stream = File.OpenRead(_configFilePath);
             var entries = await JsonSerializer.DeserializeAsync<List<AppEntry>>(stream, _jsonOptions);
             return entries ?? new List<AppEntry>();
         }
@@ -63,7 +66,7 @@ public class LauncherStorageService : ILauncherStorageService
     {
         try
         {
-            using var stream = File.Create(ConfigFilePath);
+            using var stream = File.Create(_configFilePath);
             await JsonSerializer.SerializeAsync(stream, entries, _jsonOptions);
         }
         catch (Exception)

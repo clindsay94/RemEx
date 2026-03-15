@@ -9,7 +9,6 @@ public partial class AppLauncherView : UserControl
     public AppLauncherView()
     {
         InitializeComponent();
-        DataContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppLauncherViewModel>(App.Services);
     }
 
     private void InitializeComponent()

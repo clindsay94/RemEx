@@ -30,30 +30,32 @@ public class IpcHostServer : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var server = new NamedPipeServerStream(
+                RemExLocalIPC.PipeName,
+                PipeDirection.InOut,
+                NamedPipeServerStream.MaxAllowedServerInstances,
+                PipeTransmissionMode.Byte,
+                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+
             try
             {
-                var server = new NamedPipeServerStream(
-                    RemExLocalIPC.PipeName,
-                    PipeDirection.InOut,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-
                 await server.WaitForConnectionAsync(stoppingToken);
-
-                // Handle in background so we can listen for the next client immediately
-                // Pass ownership of the server stream to HandleClientAsync
-                _ = HandleClientAsync(server, stoppingToken);
             }
             catch (OperationCanceledException)
             {
+                await server.DisposeAsync();
                 break;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error starting IPC Server.");
+                await server.DisposeAsync();
+                _logger.LogError(ex, "Error waiting for IPC connection.");
                 await Task.Delay(1000, stoppingToken);
             }
+
+            // Handle in background so we can listen for the next client immediately.
+            // Ownership of the server stream is transferred to HandleClientAsync.
+            _ = HandleClientAsync(server, stoppingToken);
         }
     }
 
@@ -64,7 +66,7 @@ public class IpcHostServer : BackgroundService
             using var reader = new System.IO.StreamReader(server, leaveOpen: true);
             using var writer = new System.IO.StreamWriter(server, leaveOpen: true) { AutoFlush = true };
 
-            var requestJson = await reader.ReadLineAsync();
+            var requestJson = await reader.ReadLineAsync(cancellationToken);
             if (requestJson == null) return;
 
             var request = JsonSerializer.Deserialize<CommandRequest>(requestJson);
