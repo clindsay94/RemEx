@@ -29,6 +29,26 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
     /// <summary>Newly discovered sensors waiting to be placed by the user.</summary>
     public ObservableCollection<CanvasCardViewModel> StagedCards { get; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<CanvasCardViewModel> SelectedCards { get; } = new();
+
+    [RelayCommand]
+    public void ToggleCardSelection(CanvasCardViewModel card)
+    {
+        card.IsSelected = !card.IsSelected;
+        if (card.IsSelected)
+            SelectedCards.Add(card);
+        else
+            SelectedCards.Remove(card);
+    }
+
+    [RelayCommand]
+    public void ClearSelection()
+    {
+        foreach (var c in SelectedCards)
+            c.IsSelected = false;
+        SelectedCards.Clear();
+    }
+
 
     [ObservableProperty]
     private bool _isSnapToGridEnabled;

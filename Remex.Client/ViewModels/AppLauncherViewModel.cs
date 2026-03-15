@@ -5,13 +5,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Messages;
 
 namespace Remex.Client.ViewModels;
 
-/// <summary>
-/// ViewModel for the App Launcher page.
-/// Will provide remote application launching capabilities.
-/// </summary>
 public partial class AppLauncherViewModel : ObservableObject
 {
     private readonly ShellViewModel _shell;
@@ -28,11 +25,22 @@ public partial class AppLauncherViewModel : ObservableObject
         _shell = shell;
         _storageService = storageService;
 
+        Connection.LauncherEntriesReceived += entries =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                Launchers = new ObservableCollection<AppEntry>(entries);
+            });
+        };
+
         _ = LoadLaunchersAsync();
     }
 
+    private ConnectionViewModel _connection => Connection;
+
     private async Task LoadLaunchersAsync()
     {
+        // If connected, host will sync. Fallback to local storage
         var entries = await _storageService.LoadEntriesAsync();
         Launchers = new ObservableCollection<AppEntry>(entries);
     }
@@ -48,12 +56,16 @@ public partial class AppLauncherViewModel : ObservableObject
         if (entry == null || string.IsNullOrWhiteSpace(entry.TargetPath))
             return;
 
-        // If not connected to a remote host, we might just run it locally (Server Mode equivalent)
-        // But assuming we are using IPC to trigger it on the background service.
-        var request = new CommandRequest("LaunchApp", entry.TargetPath);
-        var response = await RemExLocalIPC.SendCommandAsync(request);
-
-        // You could show a notification here based on response.Success
+        if (Connection.IsConnected)
+        {
+            var p = new System.Collections.Generic.Dictionary<string, string> { { "TargetPath", entry.TargetPath } };
+            await Connection.SendCommandAsync("LaunchApp", p);
+        }
+        else
+        {
+            var request = new CommandRequest("LaunchApp", entry.TargetPath);
+            await RemExLocalIPC.SendCommandAsync(request);
+        }
     }
 
     [RelayCommand]
@@ -62,18 +74,18 @@ public partial class AppLauncherViewModel : ObservableObject
         if (entry != null && Launchers.Contains(entry))
         {
             Launchers.Remove(entry);
-            try
+
+            if (Connection.IsConnected)
+            {
+                var msg = new RemexMessage { Type = MessageTypes.LauncherRemove, LauncherEntry = entry };
+                if (Connection.GetWebSocket() != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(Connection.GetWebSocket(), msg); }
+            }
+            else
             {
                 await SaveLaunchersAsync();
             }
-            catch (Exception)
-            {
-                // TODO: Log error and notify user that saving failed.
-            }
         }
     }
-
-    // ═══════════════ Navigation ═══════════════
 
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
@@ -81,8 +93,53 @@ public partial class AppLauncherViewModel : ObservableObject
     [RelayCommand]
     private void OpenAddProgramDialog()
     {
-        // Handled in the view code-behind, or we can use an Action to open the dialog
-        OnOpenAddProgramDialogRequested?.Invoke();
+        if (OperatingSystem.IsAndroid())
+        {
+            IsAndroidAddPanelOpen = !IsAndroidAddPanelOpen;
+        }
+        else
+        {
+            OnOpenAddProgramDialogRequested?.Invoke();
+        }
+    }
+
+    [ObservableProperty]
+    private bool _isAndroidAddPanelOpen;
+
+    [ObservableProperty]
+    private string _androidNewAppName = string.Empty;
+
+    [ObservableProperty]
+    private string _androidNewAppPath = string.Empty;
+
+    [RelayCommand]
+    private async Task SubmitAndroidNewAppAsync()
+    {
+        if (string.IsNullOrWhiteSpace(AndroidNewAppName) || string.IsNullOrWhiteSpace(AndroidNewAppPath))
+            return;
+
+        var entry = new AppEntry(
+            Guid.NewGuid(),
+            AndroidNewAppName,
+            AndroidNewAppPath,
+            "#4A3AFF",
+            null
+        );
+
+        if (Connection.IsConnected)
+        {
+            var msg = new RemexMessage { Type = MessageTypes.LauncherAdd, LauncherEntry = entry };
+            if (Connection.GetWebSocket() != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(Connection.GetWebSocket(), msg); }
+        }
+        else
+        {
+            Launchers.Add(entry);
+            await SaveLaunchersAsync();
+        }
+
+        AndroidNewAppName = string.Empty;
+        AndroidNewAppPath = string.Empty;
+        IsAndroidAddPanelOpen = false;
     }
 
     public Action? OnOpenAddProgramDialogRequested { get; set; }

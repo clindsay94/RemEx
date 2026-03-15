@@ -54,4 +54,13 @@ public record DashboardProfile
 
     /// <summary>Sensor names pinned to the Home overview.</summary>
     public List<string> PinnedSensorIds { get; init; } = new();
+
+    /// <summary>Persisted Wake-on-LAN target MAC address (e.g. "AA:BB:CC:DD:EE:FF").</summary>
+    public string WolMacAddress { get; init; } = string.Empty;
+
+    /// <summary>Persisted Wake-on-LAN broadcast IP (default "255.255.255.255").</summary>
+    public string WolBroadcastIp { get; init; } = "255.255.255.255";
+
+    /// <summary>Persisted Wake-on-LAN UDP port (default 9).</summary>
+    public int WolPort { get; init; } = 9;
 }

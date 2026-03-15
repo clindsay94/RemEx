@@ -6,6 +6,15 @@ namespace Remex.Core.Tests;
 
 public class DashboardProfileTests
 {
+    [Fact]
+    public void DashboardProfile_WolDefaultValues_AreCorrect()
+    {
+        var profile = new DashboardProfile();
+        Assert.Equal(string.Empty, profile.WolMacAddress);
+        Assert.Equal("255.255.255.255", profile.WolBroadcastIp);
+        Assert.Equal(9, profile.WolPort);
+    }
+
     // ═══════════════ Default Values ═══════════════
 
     [Fact]

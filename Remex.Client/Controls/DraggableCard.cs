@@ -31,7 +31,7 @@ public class DraggableCard : ContentControl
     private CancellationTokenSource? _longPressCts;
     private bool _isWaitingForLongPress;
     private Point _touchStartPoint;
-    private const int LongPressDelayMs = 400;
+    private const int LongPressDelayMs = 250;
     private const double LongPressMoveThreshold = 12; // px of movement to cancel long-press
 
     // ═══════════════ Resize Thumb ═══════════════

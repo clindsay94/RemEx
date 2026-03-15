@@ -1,5 +1,8 @@
+using Android;
 using Android.App;
 using Android.Content.PM;
+using AndroidX.Core.App;
+using AndroidX.Core.Content;
 using Avalonia;
 using Avalonia.Android;
 using Remex.Client;
@@ -18,5 +21,21 @@ public class MainActivity : AvaloniaMainActivity<App>
         return base.CustomizeAppBuilder(builder)
             .WithInterFont()
             .LogToTrace();
+    }
+
+    protected override void OnCreate(Android.OS.Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+
+        if (Android.OS.Build.VERSION.SdkInt < Android.OS.BuildVersionCodes.Q)
+        {
+            if (ContextCompat.CheckSelfPermission(this, Manifest.Permission.WriteExternalStorage)
+                != Permission.Granted)
+            {
+                ActivityCompat.RequestPermissions(this,
+                    new[] { Manifest.Permission.WriteExternalStorage,
+                            Manifest.Permission.ReadExternalStorage }, 1);
+            }
+        }
     }
 }

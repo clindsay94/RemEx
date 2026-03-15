@@ -43,7 +43,7 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     /// <summary>Loads current values from the persisted profile.</summary>
-    public async Task InitializeAsync()
+        public async Task InitializeAsync()
     {
         _profile = await _layoutService.LoadAsync().ConfigureAwait(false);
 
@@ -54,6 +54,8 @@ public partial class SettingsViewModel : ObservableObject
             HostAddress = _profile.HostAddress;
             RefreshSensors();
         });
+
+        _ = RefreshServiceStatusAsync();
     }
 
     /// <summary>
@@ -117,6 +119,178 @@ public partial class SettingsViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
+
+    // ═══════════════ Windows Service Management ═══════════════
+
+    [ObservableProperty]
+    private string _serviceStatusText = "Checking...";
+
+    [ObservableProperty]
+    private bool _isWindowsServiceSectionVisible;
+
+    [ObservableProperty]
+    private bool _isServiceInstalled;
+
+    [ObservableProperty]
+    private bool _isServiceRunning;
+    [ObservableProperty]
+    private bool _canStartService;
+
+    [ObservableProperty]
+    private bool _canStopService;
+
+    [ObservableProperty]
+    private bool _canInstallService;
+
+    [ObservableProperty]
+    private bool _canUninstallService;
+
+    [RelayCommand]
+    private async Task InstallServiceAsync()
+    {
+        if (!System.OperatingSystem.IsWindows()) return;
+
+        ServiceStatusText = "Installing...";
+        await RunServiceScriptAsync("-Action Install");
+        await RefreshServiceStatusAsync();
+    }
+
+    [RelayCommand]
+    private async Task UninstallServiceAsync()
+    {
+        if (!System.OperatingSystem.IsWindows()) return;
+
+        ServiceStatusText = "Uninstalling...";
+        await RunServiceScriptAsync("-Action Uninstall");
+        await RefreshServiceStatusAsync();
+    }
+
+    [RelayCommand]
+    private async Task StartServiceAsync()
+    {
+        if (!System.OperatingSystem.IsWindows()) return;
+
+        ServiceStatusText = "Starting...";
+        await RunServiceScriptAsync("-Action Start");
+        await RefreshServiceStatusAsync();
+    }
+
+    [RelayCommand]
+    private async Task StopServiceAsync()
+    {
+        if (!System.OperatingSystem.IsWindows()) return;
+
+        ServiceStatusText = "Stopping...";
+        await RunServiceScriptAsync("-Action Stop");
+        await RefreshServiceStatusAsync();
+    }
+
+    private async Task RefreshServiceStatusAsync()
+    {
+        if (!System.OperatingSystem.IsWindows())
+        {
+            IsWindowsServiceSectionVisible = false;
+            return;
+        }
+
+        IsWindowsServiceSectionVisible = true;
+
+        try
+        {
+            // Use sc.exe to check service status
+            var proc = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "sc.exe",
+                    Arguments = "query RemexHostService",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            proc.Start();
+            var output = await proc.StandardOutput.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+
+                        if (output.Contains("does not exist") || proc.ExitCode != 0)
+            {
+                IsServiceInstalled = false;
+                IsServiceRunning = false;
+                ServiceStatusText = "Not Installed";
+                CanInstallService = true;
+                CanUninstallService = false;
+                CanStartService = false;
+                CanStopService = false;
+            }
+            else
+            {
+                IsServiceInstalled = true;
+                CanInstallService = false;
+                CanUninstallService = true;
+
+                if (output.Contains("RUNNING"))
+                {
+                    IsServiceRunning = true;
+                    ServiceStatusText = "Running";
+                    CanStartService = false;
+                    CanStopService = true;
+                }
+                else
+                {
+                    IsServiceRunning = false;
+                    ServiceStatusText = "Stopped";
+                    CanStartService = true;
+                    CanStopService = false;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            ServiceStatusText = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task RunServiceScriptAsync(string args)
+    {
+        try
+        {
+            var basePath = System.AppDomain.CurrentDomain.BaseDirectory;
+            // Go up until we find the scripts folder, or assume it's next to the exe
+            var scriptPath = System.IO.Path.Combine(basePath, "scripts", "install-service.ps1");
+
+            // Fallback for dev environment
+            if (!System.IO.File.Exists(scriptPath))
+            {
+                var repoRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(basePath, "..", "..", "..", "..", ".."));
+                scriptPath = System.IO.Path.Combine(repoRoot, "scripts", "install-service.ps1");
+            }
+
+            if (!System.IO.File.Exists(scriptPath))
+            {
+                ServiceStatusText = "Error: install-service.ps1 not found.";
+                return;
+            }
+
+            var proc = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-ExecutionPolicy Bypass -NoProfile -File \"{scriptPath}\" {args}",
+                    UseShellExecute = true, // Need true for UAC prompt
+                    Verb = "runas",
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                }
+            };
+            proc.Start();
+            await proc.WaitForExitAsync();
+        }
+        catch (System.Exception ex)
+        {
+            ServiceStatusText = $"Error: {ex.Message}";
+        }
+    }
 
     // ═══════════════ Persistence ═══════════════
 
