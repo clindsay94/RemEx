@@ -21,8 +21,13 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
+    public static System.IServiceProvider? Services { get; private set; }
+
     public override void OnFrameworkInitializationCompleted()
     {
+        var configBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
+        Services = CommandModeContext.InitializeAndGetServiceProvider(configBuilder.Build());
+
         var layoutService = new DashboardLayoutService();
         var viewModel = new ShellViewModel(layoutService);
 
