@@ -1,4 +1,5 @@
 using Avalonia;
+using Microsoft.Extensions.DependencyInjection;
 using Remex.Client;
 using Remex.Core;
 using Remex.Host;
@@ -24,6 +25,12 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Register desktop-specific services
+        App.RegisterPlatformServices = services =>
+        {
+            services.AddSingleton<Remex.Core.Services.IIconExtractionService, Remex.Client.Desktop.Services.DesktopIconExtractionService>();
+        };
+
         // Start the Remex Host WebSocket server in-process.
         // If the default port is taken (e.g. by the Remex Windows Service),
         // fall back to an alternative port so the desktop always has its own host

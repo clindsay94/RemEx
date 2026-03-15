@@ -22,6 +22,11 @@ public partial class App : Application
     /// </summary>
     public static int? OverrideHostPort { get; set; }
 
+    /// <summary>
+    /// Extension point for platform-specific services (e.g. desktop-only icon extractors)
+    /// </summary>
+    public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -41,6 +46,8 @@ public partial class App : Application
         collection.AddTransient<AppLauncherViewModel>();
         collection.AddTransient<AddProgramViewModel>();
         collection.AddSingleton<ShellViewModel>();
+
+        RegisterPlatformServices?.Invoke(collection);
 
         var configBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
         CommandModeContext.ConfigureServices(collection, configBuilder.Build());
