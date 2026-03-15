@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Remex.Core.Models;
 
 namespace Remex.Client.Controls;
@@ -34,10 +35,14 @@ public class SparklineControl : Control
     public static readonly StyledProperty<double> MaxSeenProperty =
         AvaloniaProperty.Register<SparklineControl, double>(nameof(MaxSeen));
 
-    private SolidColorBrush? _accentBrush;
-    private SolidColorBrush? _areaFillBrush;
-    private SolidColorBrush? _glowBrush;
-    private SolidColorBrush? _trackBrush;
+    private const byte AreaFillAlpha = 40;
+    private const byte GlowAlpha = 80;
+    private const byte TrackAlpha = 30;
+
+    private ISolidColorBrush? _accentBrush;
+    private ISolidColorBrush? _areaFillBrush;
+    private ISolidColorBrush? _glowBrush;
+    private ISolidColorBrush? _trackBrush;
     private Pen? _linePen;
 
     public IList<double>? History
@@ -111,10 +116,10 @@ public class SparklineControl : Control
     private void UpdateBrushes()
     {
         var accent = AccentColor;
-        _accentBrush = new SolidColorBrush(accent);
-        _areaFillBrush = new SolidColorBrush(new Color(40, accent.R, accent.G, accent.B));
-        _glowBrush = new SolidColorBrush(new Color(80, accent.R, accent.G, accent.B));
-        _trackBrush ??= new SolidColorBrush(new Color(30, 255, 255, 255));
+        _accentBrush = new ImmutableSolidColorBrush(accent);
+        _areaFillBrush = new ImmutableSolidColorBrush(new Color(AreaFillAlpha, accent.R, accent.G, accent.B));
+        _glowBrush = new ImmutableSolidColorBrush(new Color(GlowAlpha, accent.R, accent.G, accent.B));
+        _trackBrush ??= new ImmutableSolidColorBrush(new Color(TrackAlpha, 255, 255, 255));
         _linePen = new Pen(_accentBrush, 1.5);
     }
 
