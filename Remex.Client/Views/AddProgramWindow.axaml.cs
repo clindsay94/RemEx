@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Client.ViewModels;
 
@@ -22,7 +23,7 @@ public partial class AddProgramWindow : Window
                 {
                     return await topLevel.StorageProvider.OpenFilePickerAsync(options);
                 }
-                return null!;
+                return System.Array.Empty<IStorageFile>();
             };
         }
     }

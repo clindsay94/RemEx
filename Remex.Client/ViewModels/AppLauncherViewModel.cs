@@ -57,12 +57,19 @@ public partial class AppLauncherViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RemoveApp(AppEntry entry)
+    private async Task RemoveAppAsync(AppEntry entry)
     {
         if (entry != null && Launchers.Contains(entry))
         {
             Launchers.Remove(entry);
-            _ = SaveLaunchersAsync();
+            try
+            {
+                await SaveLaunchersAsync();
+            }
+            catch (Exception)
+            {
+                // TODO: Log error and notify user that saving failed.
+            }
         }
     }
 

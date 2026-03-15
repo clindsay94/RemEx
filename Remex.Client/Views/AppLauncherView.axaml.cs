@@ -29,10 +29,17 @@ public partial class AppLauncherView : UserControl
 
                 if (dialog.DataContext is AddProgramViewModel addProgramVm)
                 {
-                    addProgramVm.OnSaveRequested = (entry) =>
+                    addProgramVm.OnSaveRequested = async (entry) =>
                     {
                         viewModel.Launchers.Add(entry);
-                        _ = viewModel.SaveLaunchersAsync();
+                        try
+                        {
+                            await viewModel.SaveLaunchersAsync();
+                        }
+                        catch (System.Exception)
+                        {
+                            // TODO: Log error
+                        }
                     };
                 }
 

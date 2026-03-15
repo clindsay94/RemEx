@@ -18,6 +18,8 @@ public partial class AddProgramViewModel : ObservableObject
 {
     private readonly IIconExtractionService _iconService;
 
+    private const string DefaultHexColor = "#4A3AFF";
+
     [ObservableProperty]
     private string _targetPath = string.Empty;
 
@@ -25,7 +27,7 @@ public partial class AddProgramViewModel : ObservableObject
     private string _displayName = string.Empty;
 
     [ObservableProperty]
-    private string _hexColor = "#4A3AFF";
+    private string _hexColor = DefaultHexColor;
 
     [ObservableProperty]
     private Avalonia.Media.Color _validatedColor;
@@ -34,7 +36,7 @@ public partial class AddProgramViewModel : ObservableObject
     private string? _iconBase64;
 
     public Action? OnCloseRequested { get; set; }
-    public Action<AppEntry>? OnSaveRequested { get; set; }
+    public Func<AppEntry, Task>? OnSaveRequested { get; set; }
     public Func<FilePickerOpenOptions, Task<System.Collections.Generic.IReadOnlyList<IStorageFile>>>? PickFileAsync { get; set; }
 
     public AddProgramViewModel(IIconExtractionService iconService)
@@ -56,7 +58,7 @@ public partial class AddProgramViewModel : ObservableObject
         }
         else
         {
-            ValidatedColor = Avalonia.Media.Color.Parse("#4A3AFF"); // Default fallback
+            ValidatedColor = Avalonia.Media.Color.Parse(DefaultHexColor); // Default fallback
         }
     }
 
@@ -98,7 +100,7 @@ public partial class AddProgramViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(TargetPath) || string.IsNullOrWhiteSpace(DisplayName))
             return;
@@ -111,7 +113,10 @@ public partial class AddProgramViewModel : ObservableObject
             IconBase64 ?? string.Empty
         );
 
-        OnSaveRequested?.Invoke(newEntry);
+        if (OnSaveRequested != null)
+        {
+            await OnSaveRequested(newEntry);
+        }
         OnCloseRequested?.Invoke();
     }
 

@@ -31,6 +31,7 @@ public class IconExtractionService : IIconExtractionService
             }
             catch (Exception)
             {
+                // TODO: Log the exception (e.g., using ILogger) to aid in debugging.
                 // Fallback to default if anything goes wrong during extraction
                 return FallbackBase64Icon;
             }
