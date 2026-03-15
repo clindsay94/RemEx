@@ -11,7 +11,7 @@ namespace Remex.Host.Tests;
 
 public class IpcHostServerTests : IAsyncLifetime
 {
-    private readonly FakeSystemCommandService _commandService = new();
+    private readonly FakeAppLauncherService _commandService = new();
     private readonly IpcHostServer _server;
     private readonly CancellationTokenSource _cts = new();
 
@@ -81,9 +81,9 @@ public class IpcHostServerTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// A simple test double for ISystemCommandService that records launched paths.
+    /// A simple test double for IAppLauncherService that records launched paths.
     /// </summary>
-    private sealed class FakeSystemCommandService : ISystemCommandService
+    private sealed class FakeAppLauncherService : IAppLauncherService
     {
         public List<string> LaunchedPaths { get; } = new();
 

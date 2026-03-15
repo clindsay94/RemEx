@@ -6,11 +6,11 @@ using Remex.Core.Services;
 
 namespace Remex.Host.Services;
 
-public class SystemCommandService : ISystemCommandService
+public class AppLauncherService : IAppLauncherService
 {
-    private readonly ILogger<SystemCommandService> _logger;
+    private readonly ILogger<AppLauncherService> _logger;
 
-    public SystemCommandService(ILogger<SystemCommandService> logger)
+    public AppLauncherService(ILogger<AppLauncherService> logger)
     {
         _logger = logger;
     }

@@ -48,7 +48,7 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
         }
 
-        builder.Services.AddSingleton<ISystemCommandService, SystemCommandService>();
+        builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Host.Services.AppLauncherService>();
         builder.Services.AddHostedService<IpcHostServer>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.

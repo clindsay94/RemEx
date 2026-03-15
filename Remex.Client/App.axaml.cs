@@ -13,6 +13,7 @@ namespace Remex.Client;
 public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
+    
     /// <summary>
     /// When set by the platform-specific entry point (e.g. Desktop Program.cs),
     /// overrides the client's default host address to the embedded host's actual port.
@@ -20,12 +21,11 @@ public partial class App : Application
     /// is running on the default port.
     /// </summary>
     public static int? OverrideHostPort { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
     }
-
-    public static System.IServiceProvider? Services { get; private set; }
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -42,14 +42,14 @@ public partial class App : Application
         collection.AddTransient<AddProgramViewModel>();
         collection.AddSingleton<ShellViewModel>();
 
+        var configBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
+        CommandModeContext.ConfigureServices(collection, configBuilder.Build());
+
         Services = collection.BuildServiceProvider();
 
-        var viewModel = Services.GetRequiredService<ShellViewModel>();
-        var configBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
-        Services = CommandModeContext.InitializeAndGetServiceProvider(configBuilder.Build());
+        CommandModeContext.StartListener(Services);
 
-        var layoutService = new DashboardLayoutService();
-        var viewModel = new ShellViewModel(layoutService);
+        var viewModel = Services.GetRequiredService<ShellViewModel>();
 
         // If the desktop entry point started an embedded host on a specific port,
         // override the connection address so the client connects to it.

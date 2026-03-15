@@ -16,12 +16,12 @@ namespace Remex.Host.Services;
 public class IpcHostServer : BackgroundService
 {
     private readonly ILogger<IpcHostServer> _logger;
-    private readonly ISystemCommandService _systemCommandService;
+    private readonly IAppLauncherService _appLauncherService;
 
-    public IpcHostServer(ILogger<IpcHostServer> logger, ISystemCommandService systemCommandService)
+    public IpcHostServer(ILogger<IpcHostServer> logger, IAppLauncherService appLauncherService)
     {
         _logger = logger;
-        _systemCommandService = systemCommandService;
+        _appLauncherService = appLauncherService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -85,7 +85,7 @@ public class IpcHostServer : BackgroundService
 
                     try
                     {
-                        await _systemCommandService.LaunchAppAsync(request.TargetPath);
+                        await _appLauncherService.LaunchAppAsync(request.TargetPath);
                         response = new CommandResponse(true, "App launched successfully.");
                     }
                     catch (Exception ex)

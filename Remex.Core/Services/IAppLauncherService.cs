@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 namespace Remex.Core.Services;
 
 /// <summary>
-/// Interface for system-level execution commands (like launching applications).
+/// Interface for application launching execution commands.
 /// </summary>
-public interface ISystemCommandService
+public interface IAppLauncherService
 {
     Task LaunchAppAsync(string targetPath);
 }

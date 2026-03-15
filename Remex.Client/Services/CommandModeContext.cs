@@ -16,10 +16,8 @@ public static class CommandModeContext
     private static Mutex? _mutex;
     public static bool IsServerMode { get; private set; }
 
-    public static IServiceProvider InitializeAndGetServiceProvider(IConfiguration configuration)
+    public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        var services = new ServiceCollection();
-
         // Add Logging
         services.AddLogging(configure => configure.AddConsole());
         services.AddSingleton(configuration);
@@ -75,7 +73,7 @@ public static class CommandModeContext
             services.AddSingleton<ISystemCommandService, IpcClientCommandService>();
             services.AddSingleton<IWakeOnLanService, IpcWakeOnLanService>();
 
-            // Release the mutex if we acquired it but decide we are in client mode somehow (fallback)
+            // Release the mutex if we acquired it but decide we are in client mode somehow (fallback)    
             if (createdNew)
             {
                 _mutex?.ReleaseMutex();
@@ -83,17 +81,16 @@ public static class CommandModeContext
                 _mutex = null;
             }
         }
+    }
 
-        var provider = services.BuildServiceProvider();
-
+    public static void StartListener(IServiceProvider provider)
+    {
         if (IsServerMode)
         {
             // Start the network listener in the background if we are the server
             var listener = provider.GetRequiredService<INetworkListener>();
             _ = listener.StartListeningAsync(CancellationToken.None);
         }
-
-        return provider;
     }
 
     public static void Cleanup()
