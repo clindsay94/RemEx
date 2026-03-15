@@ -62,6 +62,12 @@ public static class CommandModeContext
             {
                 services.AddSingleton<ISystemCommandService, LinuxSystemCommandService>();
             }
+            else
+            {
+                // Fallback for Android/iOS where direct commands might not be implemented yet.
+                // We map it to IpcClientCommandService or a NoOp just to satisfy DI
+                services.AddSingleton<ISystemCommandService, IpcClientCommandService>();
+            }
 
             services.AddSingleton<IWakeOnLanService, WakeOnLanService>();
             services.AddSingleton<INetworkListener, RemexNetworkListener>();
