@@ -45,30 +45,54 @@
                 <TextBlock Text="POWER &amp; SYSTEM CONTROLS" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
             </StackPanel>
 
-            <!-- ═══ Wake on LAN ═══ -->
+                        <!-- ═══ Wake on LAN ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="WAKE ON LAN" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
-                    <TextBlock Text="Send a magic packet to wake the target PC when it's powered off." FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
-                    <Button Classes="remote-btn" Content="🔌  Send Wake-on-LAN Packet" HorizontalAlignment="Stretch"/>
+                    <TextBlock Text="WAKE ON LAN" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="Send a magic packet to wake the target PC."
+                               FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+
+                    <TextBox Text="{Binding WolMacAddress}" Watermark="MAC Address (AA:BB:CC:DD:EE:FF)"
+                             Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E"
+                             CornerRadius="8" Padding="8 6" FontSize="12"
+                             FontFamily="Consolas, monospace"/>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0">
+                        <TextBox Grid.Column="0" Text="{Binding WolBroadcastIp}"
+                                 Watermark="Broadcast IP (255.255.255.255)"
+                                 Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E"
+                                 CornerRadius="8" Padding="8 6" FontSize="12"
+                                 FontFamily="Consolas, monospace" Margin="0,0,8,0"/>
+                        <TextBox Grid.Column="1" Text="{Binding WolPort}" Width="80"
+                                 Watermark="Port" Background="#12121E" Foreground="#C0C0FF"
+                                 BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="12"
+                                 FontFamily="Consolas, monospace"/>
+                    </Grid>
+
+                    <Button Classes="remote-btn" Content="🔌  Send Wake-on-LAN Packet"
+                            Command="{Binding SendWolCommand}" HorizontalAlignment="Stretch"/>
+                    <TextBlock Text="{Binding WolStatusText}" FontSize="11"
+                               Foreground="#8888AA" TextWrapping="Wrap"
+                               IsVisible="{Binding WolStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
             </Border>
 
             <!-- ═══ Graceful Controls ═══ -->
             <TextBlock Text="GRACEFUL" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
             <UniformGrid Columns="2" Rows="2">
-                <Button Classes="remote-btn" Content="🔒  Lock PC" Margin="0,0,4,4"/>
+                <Button Classes="remote-btn" Content="🔒  Lock PC" Command="{Binding LockPcCommand}" Margin="0,0,4,4"/>
                 <Button Classes="remote-btn" Content="🖥  Turn Off Screen" Margin="4,0,0,4"/>
-                <Button Classes="remote-btn remote-btn-warn" Content="⏻  Shutdown" Margin="0,4,4,0"/>
-                <Button Classes="remote-btn remote-btn-warn" Content="🔄  Restart" Margin="4,4,0,0"/>
+                <Button Classes="remote-btn remote-btn-warn" Content="⏻  Shutdown" Command="{Binding ShutdownPcCommand}" Margin="0,4,4,0"/>
+                <Button Classes="remote-btn remote-btn-warn" Content="🔄  Restart" Command="{Binding RestartPcCommand}" Margin="4,4,0,0"/>
             </UniformGrid>
 
             <!-- ═══ Forced Controls ═══ -->
             <TextBlock Text="FORCED (IMMEDIATE)" FontSize="11" FontWeight="SemiBold" Foreground="#FF6B6B" LetterSpacing="2"/>
             <UniformGrid Columns="2" Rows="2">
-                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Shutdown" Margin="0,0,4,4"/>
-                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Restart" Margin="4,0,0,4"/>
-                <Button Classes="remote-btn remote-btn-danger" Content="🔧  Reboot to UEFI" Margin="0,4,4,0"/>
+                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Shutdown" Command="{Binding ShutdownPcCommand}" Margin="0,0,4,4"/>
+                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Restart" Command="{Binding ForceRestartCommand}" Margin="4,0,0,4"/>
+                <Button Classes="remote-btn remote-btn-danger" Content="🔧  Reboot to UEFI" Command="{Binding RestartToUefiCommand}" Margin="0,4,4,0"/>
                 <Button Classes="remote-btn" Content="💤  Sleep" Margin="4,4,0,0"/>
             </UniformGrid>
 

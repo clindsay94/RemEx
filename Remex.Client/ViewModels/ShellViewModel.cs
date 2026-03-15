@@ -48,6 +48,7 @@ public partial class ShellViewModel : ObservableObject
     public void NavigateToHome()
     {
         _homeViewModel ??= new HomeViewModel(Connection, this);
+        _homeViewModel.RefreshPinnedSensors();
         CurrentView = _homeViewModel;
     }
 
@@ -79,7 +80,11 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToRemote()
     {
-        _remoteViewModel ??= new RemoteViewModel(Connection, this);
+        _remoteViewModel ??= new RemoteViewModel(
+            Connection, this,
+            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(App.Services),
+            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(App.Services),
+            _layoutService);
         CurrentView = _remoteViewModel;
     }
 

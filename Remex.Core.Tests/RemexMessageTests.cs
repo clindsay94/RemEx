@@ -5,6 +5,21 @@ namespace Remex.Core.Tests;
 public class RemexMessageTests
 {
     [Fact]
+    public void RemexMessage_CommandType_SerializesCorrectly()
+    {
+        var msg = new RemexMessage
+        {
+            Type = MessageTypes.Command,
+            CommandAction = "Shutdown",
+        };
+        var bytes = MessageSerializer.Serialize(msg);
+        var deserialized = MessageSerializer.Deserialize(bytes);
+        Assert.NotNull(deserialized);
+        Assert.Equal(MessageTypes.Command, deserialized!.Type);
+        Assert.Equal("Shutdown", deserialized.CommandAction);
+    }
+
+    [Fact]
     public void PingMessage_HasCorrectType()
     {
         var msg = new RemexMessage { Type = MessageTypes.Ping };

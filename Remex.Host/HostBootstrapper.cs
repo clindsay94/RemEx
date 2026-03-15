@@ -77,7 +77,7 @@ public static class HostBootstrapper
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<ITelemetryService>();
-            var handler = new PingPongHandler(logger, telemetry);
+            var handler = new PingPongHandler(logger, telemetry, context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(), context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 

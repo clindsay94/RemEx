@@ -26,6 +26,34 @@
 
             <TextBlock Text="SETTINGS" FontSize="24" FontWeight="Black" Foreground="#E0E0FF"/>
 
+                        <!-- ═══ Service Section ═══ -->
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsWindowsServiceSectionVisible}">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="WINDOWS SERVICE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Host Service Status" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0FF"/>
+                            <TextBlock Text="{Binding ServiceStatusText}" FontSize="12" Foreground="#8888AA"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                                        <!-- Show Install when not installed -->
+                            <Button Content="Install" Command="{Binding InstallServiceCommand}" IsVisible="{Binding CanInstallService}" Background="#4A3AFF" Foreground="White" Padding="12,6" CornerRadius="4"/>
+
+                            <!-- Show Start when installed but not running -->
+                            <Button Content="Start" Command="{Binding StartServiceCommand}" IsVisible="{Binding CanStartService}" Background="#4ADE80" Foreground="#1A1A1A" Padding="12,6" CornerRadius="4" />
+
+                            <!-- Show Stop when running -->
+                            <Button Content="Stop" Command="{Binding StopServiceCommand}" IsVisible="{Binding CanStopService}" Background="#FFD93D" Foreground="#1A1A1A" Padding="12,6" CornerRadius="4"/>
+
+                            <!-- Show Uninstall when installed -->
+                            <Button Content="Uninstall" Command="{Binding UninstallServiceCommand}" IsVisible="{Binding CanUninstallService}" Background="#FF6B6B" Foreground="White" Padding="12,6" CornerRadius="4"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="Running as a service allows Remex to manage the PC without a logged-in user." FontSize="11" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
             <!-- ═══ Connection Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">

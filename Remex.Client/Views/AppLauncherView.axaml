@@ -23,6 +23,19 @@
                         Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
+            <!-- ═══ Android Add Panel ═══ -->
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsAndroidAddPanelOpen}" Background="#12122A" BorderBrush="#4A3AFF" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="ADD NEW APPLICATION" FontSize="11" FontWeight="SemiBold" Foreground="#8888AA" LetterSpacing="2"/>
+                    <TextBox Text="{Binding AndroidNewAppName}" Watermark="Display Name (e.g. Chrome)" Background="#0A0A16" Foreground="#E0E0FF" BorderBrush="#2A2A3E"/>
+                    <TextBox Text="{Binding AndroidNewAppPath}" Watermark="Target Path (e.g. C:\Program Files\...)" Background="#0A0A16" Foreground="#E0E0FF" BorderBrush="#2A2A3E"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Command="{Binding OpenAddProgramDialogCommand}" Background="Transparent" Foreground="#8888AA"/>
+                        <Button Content="Submit" Command="{Binding SubmitAndroidNewAppCommand}" Background="#4A3AFF" Foreground="#FFFFFF" FontWeight="Bold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- ═══ Apps Grid ═══ -->
             <ItemsControl ItemsSource="{Binding Launchers}">
                 <ItemsControl.ItemsPanel>

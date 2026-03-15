@@ -9,11 +9,23 @@ namespace Remex.Host.Handlers;
 /// Responds to "ping" with "pong", echoing the client's timestamp for latency measurement.
 /// Background streams telemetry data while the connection is established.
 /// </summary>
-public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryService telemetryService)
+public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryService telemetryService, Remex.Core.Services.Command.ISystemCommandService commandService, Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, Remex.Core.Services.ILauncherStorageService launcherStorage)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
         logger.LogInformation("Client connected.");
+
+        // Sync launchers on connect
+        try
+        {
+            var entries = await launcherStorage.LoadEntriesAsync();
+            var syncMsg = new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = entries };
+            await MessageSerializer.SendAsync(webSocket, syncMsg, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to sync launchers on connect.");
+        }
 
         // Start background telemetry stream
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -45,6 +57,26 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryS
                         logger.LogDebug("Sent pong.");
                         break;
 
+                    case MessageTypes.Command when message.CommandAction is not null:
+                        var cmdResponse = await ExecuteCommandAsync(message);
+                        await MessageSerializer.SendAsync(webSocket, cmdResponse, ct);
+                        logger.LogDebug("Sent command response for {Action}.", message.CommandAction);
+                        break;
+
+                    case MessageTypes.LauncherAdd when message.LauncherEntry is not null:
+                        var curAdd = await launcherStorage.LoadEntriesAsync();
+                        curAdd.Add(message.LauncherEntry);
+                        await launcherStorage.SaveEntriesAsync(curAdd);
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = curAdd }, ct);
+                        break;
+
+                    case MessageTypes.LauncherRemove when message.LauncherEntry is not null:
+                        var curRem = await launcherStorage.LoadEntriesAsync();
+                        curRem.RemoveAll(x => x.Id == message.LauncherEntry.Id);
+                        await launcherStorage.SaveEntriesAsync(curRem);
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = curRem }, ct);
+                        break;
+
                     default:
                         logger.LogWarning("Unknown message type: {Type}", message.Type);
                         break;
@@ -74,6 +106,54 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryS
 
         logger.LogInformation("Client disconnected.");
     }
+
+
+    private async Task<RemexMessage> ExecuteCommandAsync(RemexMessage message)
+    {
+        try
+        {
+            switch (message.CommandAction!.ToUpperInvariant())
+            {
+                case "SHUTDOWN":
+                    commandService.Shutdown();
+                    return MakeCommandResponse(true, "Shutdown executed.");
+                case "RESTART":
+                    commandService.Restart();
+                    return MakeCommandResponse(true, "Restart executed.");
+                case "FORCERESTART":
+                    commandService.ForceRestart();
+                    return MakeCommandResponse(true, "Force restart executed.");
+                case "RESTARTTOUEFI":
+                    commandService.RestartToUefi();
+                    return MakeCommandResponse(true, "Restart to UEFI executed.");
+                case "LOCK":
+                    commandService.Lock();
+                    return MakeCommandResponse(true, "Lock executed.");
+                case "WAKEONLAN":
+                    if (message.CommandParameters?.TryGetValue("MacAddress", out var mac) == true)
+                    {
+                        var bip = message.CommandParameters.TryGetValue("BroadcastIp", out var b) ? b : "255.255.255.255";
+                        var port = message.CommandParameters.TryGetValue("Port", out var ps) && int.TryParse(ps, out var p) ? p : 9;
+                        await wakeOnLanService.WakeAsync(mac, bip, port);
+                        return MakeCommandResponse(true, $"WoL sent to {mac}.");
+                    }
+                    return MakeCommandResponse(false, "Missing MacAddress parameter.");
+                default:
+                    return MakeCommandResponse(false, $"Unknown command: {message.CommandAction}");
+            }
+        }
+        catch (Exception ex)
+        {
+            return MakeCommandResponse(false, $"Error: {ex.Message}");
+        }
+    }
+
+    private static RemexMessage MakeCommandResponse(bool success, string msg) => new()
+    {
+        Type = MessageTypes.CommandResponse,
+        CommandSuccess = success,
+        CommandMessage = msg,
+    };
 
     private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)
     {

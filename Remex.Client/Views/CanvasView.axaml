@@ -5,6 +5,15 @@
     xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
 
     <UserControl.Styles>
+        <Style Selector="ctrl|DraggableCard.selected">
+            <Setter Property="BorderBrush" Value="#4A3AFF"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#4A3AFF" BlurRadius="16" Opacity="0.6"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- ═══ DraggableCard chrome ═══ -->
         <Style Selector="ctrl|DraggableCard">
             <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
@@ -162,6 +171,8 @@
                                             <MenuItem Header="Line ╱╲╱" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
                                             <MenuItem Header="Area ▓▓▓" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
                                             <MenuItem Header="Gauge ━━━" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
+                                            <Separator/>
+                                            <MenuItem Header="📌 Toggle Pin to Home" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).TogglePinToHomeCommand}" CommandParameter="{Binding}"/>
                                         </MenuItem>
                                     </ContextMenu>
                                 </ctrl:DraggableCard.ContextMenu>

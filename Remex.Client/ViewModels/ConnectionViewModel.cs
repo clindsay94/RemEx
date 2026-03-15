@@ -37,6 +37,10 @@ public partial class ConnectionViewModel : ObservableObject
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
+    public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
+    public event Action<TelemetryPayload>? TelemetryReceived;
+
+
     [ObservableProperty]
     private double _averageLatency;
 
@@ -48,6 +52,49 @@ public partial class ConnectionViewModel : ObservableObject
 
     private bool CanConnect() => !IsConnected;
     private bool CanDisconnect() => IsConnected;
+
+    private System.Threading.Tasks.TaskCompletionSource<RemexMessage>? _pendingCommandResponse;
+
+    public System.Net.WebSockets.WebSocket? GetWebSocket() => _webSocket;
+    public async Task<(bool Success, string Message)> SendCommandAsync(string action, System.Collections.Generic.Dictionary<string, string>? parameters = null)
+    {
+        if (_webSocket?.State != WebSocketState.Open)
+            return (false, "Not connected.");
+
+        var tcs = new System.Threading.Tasks.TaskCompletionSource<RemexMessage>();
+        _pendingCommandResponse = tcs;
+
+        try
+        {
+            var msg = new RemexMessage
+            {
+                Type = MessageTypes.Command,
+                CommandAction = action,
+                CommandParameters = parameters,
+                Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
+            };
+            await MessageSerializer.SendAsync(_webSocket, msg, System.Threading.CancellationToken.None);
+
+            using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+
+            var response = await tcs.Task;
+            return (response.CommandSuccess ?? false, response.CommandMessage ?? "No message");
+        }
+        catch (OperationCanceledException)
+        {
+            return (false, "Command timed out.");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+        finally
+        {
+            _pendingCommandResponse = null;
+        }
+    }
+
     private bool CanSendPing() => IsConnected;
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
@@ -59,6 +106,7 @@ public partial class ConnectionViewModel : ObservableObject
             _webSocket = new ClientWebSocket();
             _receiveCts = new CancellationTokenSource();
 
+            _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
             await _webSocket.ConnectAsync(new Uri(HostAddress), _receiveCts.Token);
 
             IsConnected = true;
@@ -151,11 +199,20 @@ public partial class ConnectionViewModel : ObservableObject
                         });
                         break;
                         
-                    case MessageTypes.Telemetry when message.Telemetry is not null:
+                                        case MessageTypes.Telemetry when message.Telemetry is not null:
                         Dispatcher.UIThread.Post(() =>
                         {
                             Telemetry = message.Telemetry;
+                            TelemetryReceived?.Invoke(message.Telemetry);
                         });
+                        break;
+
+                    case MessageTypes.CommandResponse:
+                        _pendingCommandResponse?.TrySetResult(message);
+                        break;
+
+                    case MessageTypes.LauncherSync when message.LauncherEntries is not null:
+                        Dispatcher.UIThread.Post(() => LauncherEntriesReceived?.Invoke(message.LauncherEntries));
                         break;
                 }
             }

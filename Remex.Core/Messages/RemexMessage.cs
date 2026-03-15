@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Remex.Core.Messages;
@@ -24,6 +25,30 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("telemetry")]
     public TelemetryPayload? Telemetry { get; init; }
+
+    /// <summary>Command action name (e.g. "Shutdown", "Lock").</summary>
+    [JsonPropertyName("commandAction")]
+    public string? CommandAction { get; init; }
+
+    /// <summary>Command parameters (e.g. for WoL MAC address).</summary>
+    [JsonPropertyName("commandParameters")]
+    public Dictionary<string, string>? CommandParameters { get; init; }
+
+    /// <summary>Whether the command succeeded (for response messages).</summary>
+    [JsonPropertyName("commandSuccess")]
+    public bool? CommandSuccess { get; init; }
+
+    /// <summary>Response message from command execution.</summary>
+    [JsonPropertyName("commandMessage")]
+    public string? CommandMessage { get; init; }
+
+    /// <summary>Launcher sync list.</summary>
+    [JsonPropertyName("launcherEntries")]
+    public List<Remex.Core.Models.AppEntry>? LauncherEntries { get; init; }
+
+    /// <summary>Single launcher entry for add/remove.</summary>
+    [JsonPropertyName("launcherEntry")]
+    public Remex.Core.Models.AppEntry? LauncherEntry { get; init; }
 }
 
 /// <summary>
@@ -34,4 +59,9 @@ public static class MessageTypes
     public const string Ping = "ping";
     public const string Pong = "pong";
     public const string Telemetry = "telemetry";
+    public const string Command = "command";
+        public const string CommandResponse = "command_response";
+    public const string LauncherSync = "launcher_sync";
+    public const string LauncherAdd = "launcher_add";
+    public const string LauncherRemove = "launcher_remove";
 }

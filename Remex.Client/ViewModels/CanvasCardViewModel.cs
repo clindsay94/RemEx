@@ -23,6 +23,9 @@ public partial class CanvasCardViewModel : ObservableObject
 
     /// <summary>Display title shown in the card header.</summary>
     [ObservableProperty]
+    private bool _isSelected;
+
+    [ObservableProperty]
     private string _cardTitle = string.Empty;
 
     // ═══════════════ Spatial ═══════════════
