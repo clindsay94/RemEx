@@ -1,10 +1,8 @@
-# Visual Studio
-.vs/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-*.userprefs
+# .NET Core & MSBuild
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -14,10 +12,17 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
 
 # Visual Studio Code
 .vscode/
@@ -31,54 +36,23 @@ bld/
 .idea/
 *.sln.iml
 
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
-
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
-
 # NuGet Packages
 *.nupkg
-# The packages folder can generally be ignored because of Package Restore
-**/[Pp]ackages/*
-# except build/, which is used as an MSBuild target.
-!**/[Pp]ackages/build/
-# Uncomment if necessary however generally it will be regenerated when needed
-#!**/[Pp]ackages/repositories.config
-# NuGet Symbol Packages
 *.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
 
-# BenchmarkDotNet
-BenchmarkDotNet.Artifacts/
-
-# NUnit
+# Testing & Coverage
 TestResult.xml
-
-# Build results
-[Bb]in/
-[Oo]bj/
-
-# MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
-
-# NUnit
 *.VisualState.xml
-TestResult.xml
 nunit-*.xml
-
-# xUnit
 xunit-results.xml
-
-# Coverlet
 coverage.json
 coverage.xml
 coverage.cobertura.xml
 coverage.opencover.xml
-
-# Code coverage (Visual Studio)
 *.coverage
 *.coveragexml
 
@@ -97,7 +71,6 @@ proguard/
 *.iml
 .idea/modules.xml
 .idea/workspace.xml
-.DS_Store
 captures/
 .externalNativeBuild
 .cxx
@@ -109,27 +82,17 @@ captures/
 # Avalonia
 *.Avalonia/
 
-# Agent Logs
-PHASE3_AGENT_LOG.md
-
-# Error Logs
-build_errors.txt
-build_success.txt
-build_output.txt
-test_output.txt
-test_errors.txt 
-test_success.txt
+# Project-Specific Artifacts & Logs
+build_*.txt
+test_*.txt
+run_*.txt
 hwinfo_reg.txt
-PHASE4_AGENT_LOG.md
-run_output.txt
-test_output.txt
-test_output.txt
-test_output.txt
-test_output.txt
-AGENT_COMMS.md
-AGENT_COMMS.md
-AGENT_COMMS.md
-AGENT_COMMS.md
-/.agent
-/.agent/personas
+publish/
+
+# AI Agent Files (Excluded from tracking)
 AGENTS.md
+AGENT_COMMS.md
+.agent/
+*AGENT_LOG.md
+Implementation Plan
+Implementation Plan.md

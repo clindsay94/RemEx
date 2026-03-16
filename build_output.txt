@@ -1,10 +1,14 @@
   Determining projects to restore...
-  All projects are up-to-date for restore.
-  Remex.Core -> P:\Repo\ReMex\Remex.Core\bin\Debug\net10.0\Remex.Core.dll
-  Remex.Client -> P:\Repo\ReMex\Remex.Client\bin\Debug\net10.0\Remex.Client.dll
+/app/Remex.Core/Remex.Core.csproj : warning NU1510: PackageReference System.Threading.AccessControl will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+  Restored /app/Remex.Core/Remex.Core.csproj (in 1.86 sec).
+/app/Remex.Core/Remex.Core.csproj : warning NU1510: PackageReference System.Threading.AccessControl will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+  Remex.Core -> /app/Remex.Core/bin/Debug/net10.0/Remex.Core.dll
 
 Build succeeded.
-    0 Warning(s)
+
+/app/Remex.Core/Remex.Core.csproj : warning NU1510: PackageReference System.Threading.AccessControl will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+/app/Remex.Core/Remex.Core.csproj : warning NU1510: PackageReference System.Threading.AccessControl will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+    2 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:01.22
+Time Elapsed 00:00:11.99
