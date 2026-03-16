@@ -1,10 +1,10 @@
-# Remex ⚡ Command Center
+# RemEx ⚡ Command Center
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-UI-purple)](https://avaloniaui.net/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-green)](#)
 
-A high-performance, cross-platform **command center** for remote PC management. Built from the ground up with **.NET 10** and **Avalonia UI**, Remex delivers real-time hardware telemetry and remote execution in a sleek, NOC-style dashboard — identical on Windows, Linux, and Android.
+Rem(ote)Ex(ecution) is not just a play on words,or a mundane confession of its function. It is a high-performance, cross-platform **command center** for remote PC management. Built from the ground up with **.NET 10** and **Avalonia UI**, RemEx delivers real-time hardware telemetry and remote execution in a sleek, NOC-style dashboard — identical on Windows, Linux, and Android.
 
 ---
 
