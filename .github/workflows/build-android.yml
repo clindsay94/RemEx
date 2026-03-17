@@ -41,4 +41,3 @@ jobs:
         name: Remex-Android-APK
         path: |
           **/*-Signed.apk
-          **/*.apk
