@@ -9,7 +9,7 @@ namespace Remex.Host.Handlers;
 /// Responds to "ping" with "pong", echoing the client's timestamp for latency measurement.
 /// Background streams telemetry data while the connection is established.
 /// </summary>
-public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryService telemetryService, Remex.Core.Services.Command.ISystemCommandService commandService, Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, Remex.Core.Services.ILauncherStorageService launcherStorage)
+public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryService telemetryService, Remex.Core.Services.Command.ISystemCommandService commandService, Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, Remex.Core.Services.ILauncherStorageService launcherStorage, Remex.Core.Services.IAppLauncherService appLauncherService)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
@@ -129,6 +129,14 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryS
                 case "LOCK":
                     commandService.Lock();
                     return MakeCommandResponse(true, "Lock executed.");
+                case "LAUNCHAPP":
+                    if (message.CommandParameters?.TryGetValue("TargetPath", out var targetPath) == true
+                        && !string.IsNullOrWhiteSpace(targetPath))
+                    {
+                        await appLauncherService.LaunchAppAsync(targetPath);
+                        return MakeCommandResponse(true, "App launched.");
+                    }
+                    return MakeCommandResponse(false, "Missing TargetPath parameter.");
                 case "WAKEONLAN":
                     if (message.CommandParameters?.TryGetValue("MacAddress", out var mac) == true)
                     {

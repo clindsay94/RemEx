@@ -6,15 +6,26 @@
 .PARAMETER Action
     The action to perform: Install, Uninstall, or Status.
 
+.PARAMETER Username
+    (Install only) The Windows user account the service should run as.
+    Format: DOMAIN\User or .\User for local accounts.
+    When omitted the service runs as the current user (.\<current-username>).
+    Running as a real user account is REQUIRED so the service can interact
+    with the desktop session (lock workstation, launch apps, read HWiNFO).
+
 .EXAMPLE
     .\install-service.ps1 -Action Install
+    .\install-service.ps1 -Action Install -Username ".\Connor"
     .\install-service.ps1 -Action Status
     .\install-service.ps1 -Action Uninstall
 #>
 param(
     [Parameter(Mandatory)]
     [ValidateSet("Install", "Uninstall", "Status", "Start", "Stop")]
-    [string]$Action
+    [string]$Action,
+
+    [Parameter()]
+    [string]$Username
 )
 
 $ServiceName   = "RemexHost"
@@ -50,19 +61,33 @@ switch ($Action) {
             exit 1
         }
 
-        Write-Host "Registering Windows Service '$ServiceName'..." -ForegroundColor Cyan
+        # Determine the user account for the service.
+        # Running as a real user (not LocalSystem) is required so the service
+        # can lock the workstation, launch apps, and read the user's HWiNFO registry hive.
+        if (-not $Username) {
+            $Username = ".\$env:USERNAME"
+        }
+
+        Write-Host "Registering Windows Service '$ServiceName' as '$Username'..." -ForegroundColor Cyan
+        Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
+        $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
+
         New-Service `
             -Name $ServiceName `
             -BinaryPathName "`"$exePath`"" `
             -DisplayName $DisplayName `
             -Description $Description `
-            -StartupType Automatic
+            -StartupType Automatic `
+            -Credential $cred
+
+        # Allow the service to interact with the user's desktop session.
+        # This grants the "Log on as a service" right implicitly via New-Service -Credential.
 
         Write-Host "Starting service..." -ForegroundColor Cyan
         Start-Service -Name $ServiceName
 
         Write-Host ""
-        Write-Host "Service '$DisplayName' installed and started successfully." -ForegroundColor Green
+        Write-Host "Service '$DisplayName' installed and started as '$Username'." -ForegroundColor Green
         Write-Host "It will auto-start on boot. View in services.msc or use: .\install-service.ps1 -Action Status"
     }
 

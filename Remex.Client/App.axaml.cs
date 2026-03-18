@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Client.Services;
 using Remex.Client.ViewModels;
@@ -58,14 +59,29 @@ public partial class App : Application
 
         var viewModel = Services.GetRequiredService<ShellViewModel>();
 
-        // If the desktop entry point started an embedded host on a specific port,
-        // override the connection address so the client connects to it.
-        if (OverrideHostPort.HasValue)
+        // Load persisted host address so the client remembers what the user configured.
+        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
+        _ = Task.Run(async () =>
         {
-            var port = OverrideHostPort.Value;
-            viewModel.Connection.HostAddress =
-                $"ws://localhost:{port}{Remex.Core.RemexConstants.WebSocketPath}";
-        }
+            var profile = await layoutService.LoadAsync().ConfigureAwait(false);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                // Desktop override takes priority over persisted address.
+                if (OverrideHostPort.HasValue)
+                {
+                    var port = OverrideHostPort.Value;
+                    viewModel.Connection.HostAddress =
+                        $"ws://localhost:{port}{Remex.Core.RemexConstants.WebSocketPath}";
+                }
+                else if (!string.IsNullOrWhiteSpace(profile.HostAddress))
+                {
+                    viewModel.Connection.HostAddress = profile.HostAddress;
+                }
+
+                // Auto-connect to the host.
+                _ = viewModel.Connection.AutoConnectAsync();
+            });
+        });
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

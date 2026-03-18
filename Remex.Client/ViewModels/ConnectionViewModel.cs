@@ -16,8 +16,11 @@ namespace Remex.Client.ViewModels;
 public partial class ConnectionViewModel : ObservableObject
 {
     private const int MaxLatencyPoints = 30;
+    private const int MaxReconnectDelaySeconds = 30;
     private ClientWebSocket? _webSocket;
     private CancellationTokenSource? _receiveCts;
+    private CancellationTokenSource? _reconnectCts;
+    private bool _userDisconnected;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
@@ -33,6 +36,9 @@ public partial class ConnectionViewModel : ObservableObject
 
     [ObservableProperty]
     private string _latencyText = "—";
+
+    [ObservableProperty]
+    private bool _isAutoReconnecting;
 
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
@@ -108,6 +114,9 @@ public partial class ConnectionViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
     {
+        _userDisconnected = false;
+        StopReconnecting();
+
         try
         {
             StatusText = "Connecting…";
@@ -134,6 +143,9 @@ public partial class ConnectionViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanDisconnect))]
     private async Task DisconnectAsync()
     {
+        _userDisconnected = true;
+        StopReconnecting();
+
         try
         {
             if (_webSocket?.State == WebSocketState.Open)
@@ -250,7 +262,92 @@ public partial class ConnectionViewModel : ObservableObject
                 StatusText = "Disconnected (server closed)";
                 LatencyText = "—";
             });
+
+            // Auto-reconnect unless the user explicitly disconnected.
+            if (!_userDisconnected)
+            {
+                _ = ReconnectLoopAsync();
+            }
         }
+    }
+
+    /// <summary>
+    /// Attempts to connect automatically on app startup.
+    /// Retries with exponential backoff until connected or cancelled.
+    /// </summary>
+    public async Task AutoConnectAsync()
+    {
+        _userDisconnected = false;
+        await ReconnectLoopAsync();
+    }
+
+    private async Task ReconnectLoopAsync()
+    {
+        StopReconnecting();
+        _reconnectCts = new CancellationTokenSource();
+        var ct = _reconnectCts.Token;
+        int delay = 2;
+
+        Dispatcher.UIThread.Post(() => IsAutoReconnecting = true);
+
+        try
+        {
+            while (!ct.IsCancellationRequested && !IsConnected)
+            {
+                Dispatcher.UIThread.Post(() => StatusText = $"Reconnecting in {delay}s…");
+                await Task.Delay(TimeSpan.FromSeconds(delay), ct);
+                if (ct.IsCancellationRequested) break;
+
+                try
+                {
+                    Dispatcher.UIThread.Post(() => StatusText = "Connecting…");
+                    var ws = new ClientWebSocket();
+                    ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+                    using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    connectCts.CancelAfter(TimeSpan.FromSeconds(10));
+                    await ws.ConnectAsync(new Uri(HostAddress), connectCts.Token);
+
+                    // Success — adopt the new socket.
+                    _webSocket = ws;
+                    _receiveCts = new CancellationTokenSource();
+
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        IsConnected = true;
+                        IsAutoReconnecting = false;
+                        StatusText = "Connected";
+                        LatencyText = "—";
+                    });
+
+                    _ = ReceiveLoopAsync(_receiveCts.Token);
+                    return;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch
+                {
+                    // Exponential backoff: 2, 4, 8, 16, 30, 30, ...
+                    delay = Math.Min(delay * 2, MaxReconnectDelaySeconds);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled.
+        }
+
+        Dispatcher.UIThread.Post(() => IsAutoReconnecting = false);
+    }
+
+    private void StopReconnecting()
+    {
+        _reconnectCts?.Cancel();
+        _reconnectCts?.Dispose();
+        _reconnectCts = null;
+        IsAutoReconnecting = false;
     }
 
     private void PushLatency(double ms)

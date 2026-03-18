@@ -1,11 +1,15 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Remex.Core.Services.Command;
 
 public class WindowsSystemCommandService : ISystemCommandService
 {
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool LockWorkStation();
+
     public void Shutdown()
     {
         ExecuteProcess("shutdown.exe", "/s /t 0");
@@ -28,7 +32,11 @@ public class WindowsSystemCommandService : ISystemCommandService
 
     public void Lock()
     {
-        ExecuteProcess("rundll32.exe", "user32.dll,LockWorkStation");
+        if (!LockWorkStation())
+        {
+            var error = Marshal.GetLastWin32Error();
+            throw new Exception($"LockWorkStation failed with error code {error}.");
+        }
     }
 
     private void ExecuteProcess(string fileName, string arguments)
