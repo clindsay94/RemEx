@@ -78,7 +78,8 @@ public partial class AppLauncherViewModel : ObservableObject
             if (Connection.IsConnected)
             {
                 var msg = new RemexMessage { Type = MessageTypes.LauncherRemove, LauncherEntry = entry };
-                if (Connection.GetWebSocket() != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(Connection.GetWebSocket(), msg); }
+                var ws = Connection.GetWebSocket();
+                if (ws != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(ws, msg); }
             }
             else
             {
@@ -129,7 +130,8 @@ public partial class AppLauncherViewModel : ObservableObject
         if (Connection.IsConnected)
         {
             var msg = new RemexMessage { Type = MessageTypes.LauncherAdd, LauncherEntry = entry };
-            if (Connection.GetWebSocket() != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(Connection.GetWebSocket(), msg); }
+            var ws = Connection.GetWebSocket();
+            if (ws != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(ws, msg); }
         }
         else
         {
