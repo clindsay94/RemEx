@@ -21,6 +21,9 @@ public partial class CanvasDashboardViewModel : ObservableObject
     private readonly ShellViewModel _shell;
     private DashboardProfile _profile = new();
     private int _nextZIndex = 1;
+    private bool _isInitialized;
+    private bool _hasSyncedWithHost;
+    private DashboardProfile? _pendingSyncProfile;
 
     public ConnectionViewModel Connection { get; }
 
@@ -84,6 +87,12 @@ public partial class CanvasDashboardViewModel : ObservableObject
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
+                if (!_isInitialized)
+                {
+                    _pendingSyncProfile = profile;
+                    return;
+                }
+                _hasSyncedWithHost = true;
                 ApplyProfile(profile);
             });
         };
@@ -97,10 +106,25 @@ public partial class CanvasDashboardViewModel : ObservableObject
     /// </summary>
     public async Task InitializeAsync()
     {
-        _profile = await _layoutService.LoadAsync().ConfigureAwait(false);
+        if (_isInitialized) return;
+
+        var localProfile = await _layoutService.LoadAsync().ConfigureAwait(false);
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
+            _isInitialized = true;
+
+            // If a host sync arrived before we finished local load, prioritize the host.
+            if (_pendingSyncProfile != null)
+            {
+                _hasSyncedWithHost = true;
+                ApplyProfile(_pendingSyncProfile);
+                _pendingSyncProfile = null;
+                return;
+            }
+
+            // Otherwise, use the local profile.
+            _profile = localProfile;
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
 
@@ -116,6 +140,10 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
             // Create default cards if this is a fresh profile.
             EnsureDefaultCards();
+
+            // If we're already connected, maybe the host is empty? 
+            // We should probably push our local layout if the host didn't send anything.
+            // But for now, let's just ensure we stay in sync.
         });
     }
 

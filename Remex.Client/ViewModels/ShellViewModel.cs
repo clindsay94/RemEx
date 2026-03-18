@@ -38,6 +38,10 @@ public partial class ShellViewModel : ObservableObject
         _layoutService = layoutService;
         Connection = connectionViewModel;
 
+        // Initialize background/shared VMs
+        _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
+        _ = _canvasViewModel.InitializeAsync();
+
         // Default to Home on startup.
         NavigateToHome();
     }
@@ -55,11 +59,6 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToCanvas()
     {
-        if (_canvasViewModel is null)
-        {
-            _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
-            _ = _canvasViewModel.InitializeAsync();
-        }
         CurrentView = _canvasViewModel;
     }
 
