@@ -203,7 +203,7 @@ public partial class SettingsViewModel : ObservableObject
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "sc.exe",
-                    Arguments = "query RemexHostService",
+                    Arguments = "query RemexHost",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -285,6 +285,11 @@ public partial class SettingsViewModel : ObservableObject
             };
             proc.Start();
             await proc.WaitForExitAsync();
+
+            if (proc.ExitCode != 0)
+            {
+                ServiceStatusText = $"Error: Script exited with code {proc.ExitCode}.";
+            }
         }
         catch (System.Exception ex)
         {

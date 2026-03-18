@@ -13,7 +13,7 @@
 #>
 param(
     [Parameter(Mandatory)]
-    [ValidateSet("Install", "Uninstall", "Status")]
+    [ValidateSet("Install", "Uninstall", "Status", "Start", "Stop")]
     [string]$Action
 )
 
@@ -96,5 +96,25 @@ switch ($Action) {
             Write-Host "  Startup : $($existing.StartType)"
             Write-Host ""
         }
+    }
+
+    "Start" {
+        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if (-not $existing) {
+            Write-Error "Service '$ServiceName' is not installed."
+            exit 1
+        }
+        Write-Host "Starting service '$ServiceName'..." -ForegroundColor Cyan
+        Start-Service -Name $ServiceName
+    }
+
+    "Stop" {
+        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if (-not $existing) {
+            Write-Error "Service '$ServiceName' is not installed."
+            exit 1
+        }
+        Write-Host "Stopping service '$ServiceName'..." -ForegroundColor Yellow
+        Stop-Service -Name $ServiceName -Force
     }
 }

@@ -47,8 +47,16 @@ public partial class ConnectionViewModel : ObservableObject
     [ObservableProperty]
     private double _maxLatency;
 
-    [ObservableProperty]
     private TelemetryPayload? _telemetry;
+    public TelemetryPayload? Telemetry
+    {
+        get => _telemetry;
+        set
+        {
+            _telemetry = value;
+            OnPropertyChanged(nameof(Telemetry));
+        }
+    }
 
     private bool CanConnect() => !IsConnected;
     private bool CanDisconnect() => IsConnected;
@@ -224,6 +232,13 @@ public partial class ConnectionViewModel : ObservableObject
         catch (WebSocketException)
         {
             // Connection lost.
+        }
+        catch (Exception ex)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                StatusText = $"Receive error: {ex.Message}";
+            });
         }
 
         // If we exited the loop because the server closed, update UI state.

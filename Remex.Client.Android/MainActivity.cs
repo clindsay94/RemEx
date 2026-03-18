@@ -23,18 +23,18 @@ public class MainActivity : AvaloniaMainActivity<App>
             .LogToTrace();
     }
 
-    protected override void OnCreate(Android.OS.Bundle? savedInstanceState)
+    protected override void OnCreate(global::Android.OS.Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
 
-        if (Android.OS.Build.VERSION.SdkInt < Android.OS.BuildVersionCodes.Q)
+        if (global::Android.OS.Build.VERSION.SdkInt < global::Android.OS.BuildVersionCodes.Q)
         {
-            if (ContextCompat.CheckSelfPermission(this, Manifest.Permission.WriteExternalStorage)
+            if (ContextCompat.CheckSelfPermission(this, global::Android.Manifest.Permission.WriteExternalStorage)
                 != Permission.Granted)
             {
                 ActivityCompat.RequestPermissions(this,
-                    new[] { Manifest.Permission.WriteExternalStorage,
-                            Manifest.Permission.ReadExternalStorage }, 1);
+                    new[] { global::Android.Manifest.Permission.WriteExternalStorage,
+                            global::Android.Manifest.Permission.ReadExternalStorage }, 1);
             }
         }
     }
