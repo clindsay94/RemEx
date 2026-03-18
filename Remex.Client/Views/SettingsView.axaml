@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.SettingsView" x:DataType="vm:SettingsViewModel">
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:conv="using:Remex.Client.Converters"
+    x:Class="Remex.Client.Views.SettingsView" x:DataType="vm:SettingsViewModel">
 
     <UserControl.Styles>
         <Style Selector="Button.settings-back">
@@ -33,45 +35,68 @@
                 </StackPanel>
             </Grid>
 
-                        <!-- ═══ Service Section ═══ -->
+            <!-- ═══ Service Section ═══ -->
             <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsWindowsServiceSectionVisible}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="WINDOWS SERVICE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
 
+                    <!-- Status row -->
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Host Service Status" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0FF"/>
-                            <TextBlock Text="{Binding ServiceStatusText}" FontSize="12" Foreground="#8888AA" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                                    <Ellipse.Fill>
+                                        <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="16" FontWeight="Bold" Foreground="#E0E0FF"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ServiceUsername, StringFormat=Account: {0}}" FontSize="11" Foreground="#6666AA" IsVisible="{Binding IsServiceInstalled}"/>
                         </StackPanel>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <!-- Show Install prompt button when not installed and password input not visible -->
-                            <Button Content="Install" Command="{Binding ShowInstallPromptCommand}" IsVisible="{Binding CanInstallService}" Background="#4A3AFF" Foreground="White" Padding="12,6" CornerRadius="4"/>
-
-                            <!-- Show Start when installed but not running -->
-                            <Button Content="Start" Command="{Binding StartServiceCommand}" IsVisible="{Binding CanStartService}" Background="#4ADE80" Foreground="#1A1A1A" Padding="12,6" CornerRadius="4" />
-
-                            <!-- Show Stop when running -->
-                            <Button Content="Stop" Command="{Binding StopServiceCommand}" IsVisible="{Binding CanStopService}" Background="#FFD93D" Foreground="#1A1A1A" Padding="12,6" CornerRadius="4"/>
-
-                            <!-- Show Uninstall when installed -->
-                            <Button Content="Uninstall" Command="{Binding UninstallServiceCommand}" IsVisible="{Binding CanUninstallService}" Background="#FF6B6B" Foreground="White" Padding="12,6" CornerRadius="4"/>
-                        </StackPanel>
+                        <Button Grid.Column="1" Content="⟳ Refresh" Command="{Binding RefreshServiceCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </Grid>
 
-                    <!-- Password input for service installation -->
-                    <Border IsVisible="{Binding IsPasswordInputVisible}" Background="#0A0A1A" CornerRadius="8" Padding="16" BorderBrush="#2A2A3E" BorderThickness="1">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="Windows Password" FontSize="12" Foreground="#8888CC"/>
-                            <TextBox PasswordChar="●" Text="{Binding ServicePassword}" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="13" Watermark="Enter your Windows password"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                                <Button Content="Cancel" Command="{Binding CancelInstallCommand}" Background="#2A2A3E" Foreground="#8888AA" Padding="12,6" CornerRadius="4"/>
-                                <Button Content="Install Service" Command="{Binding InstallServiceCommand}" Background="#4A3AFF" Foreground="White" Padding="12,6" CornerRadius="4"/>
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding !IsServiceBusy}">
+                        <!-- Not installed → Install + Configure Login -->
+                        <Button Content="⚙ Configure Login" Command="{Binding ConfigureLoginCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding !IsServiceInstalled}"/>
+                        <Button Content="📦 Install" Command="{Binding InstallServiceCommand}" Background="#4A3AFF" Foreground="White" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding !IsServiceInstalled}"/>
+
+                        <!-- Installed → Start / Stop / Configure / Uninstall -->
+                        <Button Content="▶ Start" Command="{Binding StartServiceCommand}" Background="#4ADE80" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}" IsEnabled="{Binding !IsServiceRunning}"/>
+                        <Button Content="⏹ Stop" Command="{Binding StopServiceCommand}" Background="#FFD93D" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}" IsEnabled="{Binding IsServiceRunning}"/>
+                        <Button Content="⚙ Configure Login" Command="{Binding ConfigureLoginCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}"/>
+                        <Button Content="🗑 Uninstall" Command="{Binding UninstallServiceCommand}" Background="#3A1A1A" Foreground="#FF6B6B" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}"/>
+                    </StackPanel>
+
+                    <!-- Credential configuration panel -->
+                    <Border IsVisible="{Binding IsCredentialPanelOpen}" Background="#0A0A1A" CornerRadius="8" Padding="16" BorderBrush="#2A2A3E" BorderThickness="1">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="SERVICE LOGIN" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Username" FontSize="12" Foreground="#8888CC"/>
+                                <TextBox Text="{Binding ServiceUsername}" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="13" FontFamily="Consolas, monospace" Watermark=".\Username or MACHINE\Username"/>
+                                <TextBlock Text="Use .\Username for local accounts. GLADOS-V3\Connor will become .\Connor automatically." FontSize="10" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
                             </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Password" FontSize="12" Foreground="#8888CC"/>
+                                <TextBox PasswordChar="●" Text="{Binding ServicePassword}" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="13" Watermark="Windows password for this account"/>
+                            </StackPanel>
+
+                            <Button Content="Apply" Command="{Binding ApplyLoginCommand}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left" IsVisible="{Binding IsServiceInstalled}"/>
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="Installs a background service so Remex can accept remote commands even without the app open. Runs under your Windows account." FontSize="11" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
+                    <!-- Service log -->
+                    <Border IsVisible="{Binding ServiceLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Background="#0A0A0F" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1" MaxHeight="200">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding ServiceLog}" FontSize="11" FontFamily="Consolas, monospace" Foreground="#6666AA" TextWrapping="NoWrap"/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <TextBlock Text="The service runs in the background so RemEx can accept remote commands without the app open. It runs under your Windows account to access the desktop session." FontSize="11" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
             <!-- ═══ Connection Section ═══ -->

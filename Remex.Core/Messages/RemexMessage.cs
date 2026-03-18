@@ -70,4 +70,5 @@ public static class MessageTypes
     public const string LauncherRemove = "launcher_remove";
     public const string LayoutSync = "layout_sync";
     public const string LayoutUpdate = "layout_update";
+    public const string LayoutRequest = "layout_request";
 }

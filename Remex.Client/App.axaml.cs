@@ -28,6 +28,12 @@ public partial class App : Application
     /// </summary>
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
 
+    /// <summary>
+    /// When set by the platform host, allows the client to stop the embedded host
+    /// (e.g. to free the port before installing the Windows Service).
+    /// </summary>
+    public static Func<Task>? StopEmbeddedHostAsync { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

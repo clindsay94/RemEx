@@ -6,6 +6,7 @@ using Remex.Host;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Remex.Client.Desktop;
 
@@ -18,6 +19,21 @@ class Program
     /// Passed to the Avalonia app so the client connects to the right endpoint.
     /// </summary>
     internal static int? EmbeddedHostPort { get; private set; }
+
+    /// <summary>
+    /// Stops the embedded host so the Windows Service can bind to the default port.
+    /// Safe to call when no host is running (no-op).
+    /// </summary>
+    internal static async Task StopEmbeddedHostAsync()
+    {
+        if (_hostApp is not null)
+        {
+            await _hostApp.StopAsync();
+            (_hostApp as IDisposable)?.Dispose();
+            _hostApp = null;
+            EmbeddedHostPort = null;
+        }
+    }
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
@@ -42,6 +58,8 @@ class Program
         {
             App.OverrideHostPort = EmbeddedHostPort.Value;
         }
+
+        App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;
 
         try
         {

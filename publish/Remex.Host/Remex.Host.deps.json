@@ -6,10 +6,10 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "Remex.Host/1.0.0": {
+      "Remex.Host/0.2.0": {
         "dependencies": {
           "Microsoft.Extensions.Hosting.WindowsServices": "10.0.3",
-          "Remex.Core": "1.0.0",
+          "Remex.Core": "0.2.0",
           "System.Diagnostics.PerformanceCounter": "10.0.3",
           "System.Management": "10.0.3"
         },
@@ -109,18 +109,18 @@
           }
         }
       },
-      "Remex.Core/1.0.0": {
+      "Remex.Core/0.2.0": {
         "runtime": {
           "Remex.Core.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
+            "assemblyVersion": "0.2.0.0",
+            "fileVersion": "0.2.0.0"
           }
         }
       }
     }
   },
   "libraries": {
-    "Remex.Host/1.0.0": {
+    "Remex.Host/0.2.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -174,7 +174,7 @@
       "path": "system.serviceprocess.servicecontroller/10.0.3",
       "hashPath": "system.serviceprocess.servicecontroller.10.0.3.nupkg.sha512"
     },
-    "Remex.Core/1.0.0": {
+    "Remex.Core/0.2.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

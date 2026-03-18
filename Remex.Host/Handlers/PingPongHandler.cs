@@ -101,6 +101,12 @@ public sealed class PingPongHandler(
                         logger.LogInformation("Dashboard layout updated from client.");
                         break;
 
+                    case MessageTypes.LayoutRequest:
+                        var reqProfile = await profileStorage.LoadProfileAsync();
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = reqProfile }, ct);
+                        logger.LogInformation("Dashboard layout sent to client on request.");
+                        break;
+
                     default:
                         logger.LogWarning("Unknown message type: {Type}", message.Type);
                         break;

@@ -25,6 +25,8 @@ public class DraggableCard : ContentControl
     private bool _isDragging;
     private Point _pointerOffsetInCard; // Where on the card the user grabbed
     private Visual? _stableParent;      // The Canvas panel (doesn't move)
+    private double _lastCanvasX;        // Previous frame X for delta-based group drag
+    private double _lastCanvasY;        // Previous frame Y for delta-based group drag
 
     // ═══════════════ Long-press state (touch) ═══════════════
 
@@ -56,6 +58,28 @@ public class DraggableCard : ContentControl
         // Set up the scale/opacity transitions for visual drag feedback.
         RenderTransformOrigin = RelativePoint.Center;
         RenderTransform = new ScaleTransform(1, 1);
+
+        // Sync the .selected pseudo-class with the ViewModel's IsSelected property.
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is CanvasCardViewModel cardVm)
+            {
+                cardVm.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected))
+                        UpdateSelectedClass(cardVm.IsSelected);
+                };
+                UpdateSelectedClass(cardVm.IsSelected);
+            }
+        };
+    }
+
+    private void UpdateSelectedClass(bool isSelected)
+    {
+        if (isSelected)
+            Classes.Add("selected");
+        else
+            Classes.Remove("selected");
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -82,6 +106,18 @@ public class DraggableCard : ContentControl
 
         var props = e.GetCurrentPoint(this).Properties;
         if (!props.IsLeftButtonPressed) return;
+
+        // Ctrl+Click: toggle card selection without starting a drag.
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Pointer.Type != PointerType.Touch)
+        {
+            var dashboard = FindCanvasDashboard();
+            if (dashboard != null && DataContext is CanvasCardViewModel cardVm)
+            {
+                dashboard.ToggleCardSelection(cardVm);
+            }
+            e.Handled = true;
+            return;
+        }
 
         if (e.Pointer.Type == PointerType.Touch)
         {
@@ -133,6 +169,13 @@ public class DraggableCard : ContentControl
         // Grandparent is the Canvas (stable reference frame).
         _stableParent = (Parent as Visual)?.GetVisualParent() as Visual;
 
+        // Record starting canvas position for delta-based group drag.
+        if (_stableParent != null && DataContext is CanvasCardViewModel vm0)
+        {
+            _lastCanvasX = vm0.PositionX;
+            _lastCanvasY = vm0.PositionY;
+        }
+
         pointer.Capture(this);
 
         // Visual feedback: shrink + fade.
@@ -179,8 +222,29 @@ public class DraggableCard : ContentControl
 
         if (DataContext is CanvasCardViewModel vm)
         {
+            var deltaX = newLeft - _lastCanvasX;
+            var deltaY = newTop - _lastCanvasY;
+
             vm.PositionX = newLeft;
             vm.PositionY = newTop;
+
+            // Move all other selected cards by the same delta.
+            if (vm.IsSelected)
+            {
+                var dashboard = FindCanvasDashboard();
+                if (dashboard != null)
+                {
+                    foreach (var other in dashboard.SelectedCards)
+                    {
+                        if (other == vm) continue;
+                        other.PositionX = Math.Max(0, other.PositionX + deltaX);
+                        other.PositionY = Math.Max(0, other.PositionY + deltaY);
+                    }
+                }
+            }
+
+            _lastCanvasX = newLeft;
+            _lastCanvasY = newTop;
         }
 
         e.Handled = true;

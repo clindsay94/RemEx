@@ -194,7 +194,7 @@ switch ($Action) {
         }
 
         Write-Host "Removing service '$ServiceName'..." -ForegroundColor Cyan
-        Remove-Service -Name $ServiceName
+        sc.exe delete $ServiceName | Out-Null
 
         Write-Host "Service '$DisplayName' removed successfully." -ForegroundColor Green
     }

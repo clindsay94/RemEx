@@ -1,4 +1,7 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -105,8 +108,19 @@ public partial class SettingsViewModel : ObservableObject
 
     // ═══════════════ Change handlers ═══════════════
 
-    partial void OnIsSnapToGridEnabledChanged(bool value) => Save();
-    partial void OnGridSizeChanged(int value) => Save();
+    partial void OnIsSnapToGridEnabledChanged(bool value)
+    {
+        if (_shell.CanvasViewModel is { } canvas)
+            canvas.IsSnapToGridEnabled = value;
+        Save();
+    }
+
+    partial void OnGridSizeChanged(int value)
+    {
+        if (_shell.CanvasViewModel is { } canvas)
+            canvas.GridSize = value;
+        Save();
+    }
 
     partial void OnHostAddressChanged(string value)
     {
@@ -136,8 +150,10 @@ public partial class SettingsViewModel : ObservableObject
 
     // ═══════════════ Windows Service Management ═══════════════
 
+    private const string ServiceName = "RemexHost";
+
     [ObservableProperty]
-    private string _serviceStatusText = "Checking...";
+    private string _serviceStatusText = "Checking…";
 
     [ObservableProperty]
     private bool _isWindowsServiceSectionVisible;
@@ -147,94 +163,281 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isServiceRunning;
-    [ObservableProperty]
-    private bool _canStartService;
 
     [ObservableProperty]
-    private bool _canStopService;
+    private bool _isServiceBusy;
 
     [ObservableProperty]
-    private bool _canInstallService;
-
-    [ObservableProperty]
-    private bool _canUninstallService;
-
-    [ObservableProperty]
-    private bool _isPasswordInputVisible;
+    private string _serviceUsername = $".\\{Environment.UserName}";
 
     [ObservableProperty]
     private string _servicePassword = string.Empty;
 
+    [ObservableProperty]
+    private bool _isCredentialPanelOpen;
+
+    [ObservableProperty]
+    private string _serviceLog = string.Empty;
+
     [RelayCommand]
-    private void ShowInstallPrompt()
+    private void ConfigureLogin()
     {
-        if (!System.OperatingSystem.IsWindows()) return;
-        CanInstallService = false;
-        IsPasswordInputVisible = true;
-        ServiceStatusText = $"Enter your Windows password for '{System.Environment.UserName}' to install the service.";
+        IsCredentialPanelOpen = !IsCredentialPanelOpen;
     }
 
     [RelayCommand]
-    private void CancelInstall()
+    private async Task RefreshServiceAsync()
     {
-        IsPasswordInputVisible = false;
-        ServicePassword = string.Empty;
-        _ = RefreshServiceStatusAsync();
+        await RefreshServiceStatusAsync();
     }
+
+    // ─────────── Install ───────────
 
     [RelayCommand]
     private async Task InstallServiceAsync()
     {
-        if (!System.OperatingSystem.IsWindows()) return;
-        if (string.IsNullOrEmpty(ServicePassword))
+        if (!OperatingSystem.IsWindows()) return;
+        if (string.IsNullOrWhiteSpace(ServicePassword))
         {
             ServiceStatusText = "Password is required.";
             return;
         }
 
-        var username = $".\\{System.Environment.UserName}";
-        IsPasswordInputVisible = false;
-        ServiceStatusText = "Publishing & installing…";
+        IsServiceBusy = true;
+        IsCredentialPanelOpen = false;
+        var user = NormalizeUsername(ServiceUsername);
 
-        // Pass credentials via environment variable to avoid command-line exposure.
-        await RunServiceScriptAsync($"-Action Install -Username \"{username}\"", ServicePassword);
-        ServicePassword = string.Empty;
-        await RefreshServiceStatusAsync();
+        try
+        {
+            // Step 1: Publish
+            ServiceStatusText = "Publishing Remex.Host…";
+            AppendLog("Publishing Remex.Host…");
+            var (pubOk, pubOut) = await PublishHostAsync();
+            AppendLog(pubOut);
+            if (!pubOk)
+            {
+                ServiceStatusText = "Publish failed — see log.";
+                return;
+            }
+
+            var publishDir = GetPublishDir();
+            var exePath = Path.Combine(publishDir, "Remex.Host.exe");
+            if (!File.Exists(exePath))
+            {
+                ServiceStatusText = $"Remex.Host.exe not found in {publishDir}";
+                AppendLog($"ERROR: {exePath} not found after publish.");
+                return;
+            }
+
+            // Step 2: Create the service
+            ServiceStatusText = "Creating service…";
+            AppendLog($"sc.exe create {ServiceName} as {user}");
+            var binPath = $"\"{exePath}\"";
+            var (createOk, createOut) = await RunElevatedAsync(
+                "sc.exe", $"create {ServiceName} binPath= {binPath} start= auto DisplayName= \"Remex Host\"");
+            AppendLog(createOut);
+            if (!createOk && !createOut.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            {
+                ServiceStatusText = "Failed to create service — see log.";
+                return;
+            }
+
+            // Step 3: Configure login credentials
+            ServiceStatusText = "Configuring login…";
+            var (cfgOk, cfgOut) = await RunElevatedAsync(
+                "sc.exe", $"config {ServiceName} obj= \"{user}\" password= \"{ServicePassword}\"");
+            AppendLog(cfgOut);
+            if (!cfgOk)
+            {
+                ServiceStatusText = "Failed to configure credentials — see log.";
+                return;
+            }
+
+            // Step 4: Grant LogonAsService right via the install script helper
+            ServiceStatusText = "Granting logon rights…";
+            var scriptPath = FindInstallScript();
+            if (scriptPath != null)
+            {
+                var (_, grantOut) = await RunElevatedAsync(
+                    "powershell.exe",
+                    $"-ExecutionPolicy Bypass -NoProfile -Command \"& {{ . '{scriptPath}'; Grant-LogOnAsService '{user}' }}\"");
+                AppendLog(grantOut);
+            }
+            else
+            {
+                AppendLog("WARN: install-service.ps1 not found — grant SeServiceLogonRight manually via secpol.msc.");
+            }
+
+            // Step 5: Description
+            await RunElevatedAsync("sc.exe",
+                $"description {ServiceName} \"Remex remote-execution and telemetry host service.\"");
+
+            // Step 6: Stop embedded host so the service can bind to the port
+            if (App.StopEmbeddedHostAsync != null)
+            {
+                ServiceStatusText = "Stopping embedded host…";
+                AppendLog("Stopping embedded host to free port for service.");
+                await App.StopEmbeddedHostAsync();
+            }
+
+            // Step 7: Start
+            ServiceStatusText = "Starting service…";
+            var (startOk, startOut) = await RunElevatedAsync("sc.exe", $"start {ServiceName}");
+            AppendLog(startOut);
+
+            if (startOk)
+            {
+                ServiceStatusText = "Installed & started.";
+                // Point the client at the service and reconnect.
+                var serviceAddr = $"ws://localhost:{Remex.Core.RemexConstants.DefaultPort}{Remex.Core.RemexConstants.WebSocketPath}";
+                _connection.HostAddress = serviceAddr;
+                AppendLog($"Reconnecting client to {serviceAddr}…");
+                _ = _connection.AutoConnectAsync();
+            }
+            else
+            {
+                ServiceStatusText = "Installed — start may have failed, see log.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ServiceStatusText = $"Error: {ex.Message}";
+            AppendLog($"EXCEPTION: {ex.Message}");
+        }
+        finally
+        {
+            ServicePassword = string.Empty;
+            await RefreshServiceStatusAsync();
+            IsServiceBusy = false;
+        }
     }
+
+    // ─────────── Uninstall ───────────
 
     [RelayCommand]
     private async Task UninstallServiceAsync()
     {
-        if (!System.OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows()) return;
+        IsServiceBusy = true;
 
-        ServiceStatusText = "Uninstalling...";
-        await RunServiceScriptAsync("-Action Uninstall");
-        await RefreshServiceStatusAsync();
+        try
+        {
+            if (IsServiceRunning)
+            {
+                ServiceStatusText = "Stopping service…";
+                var (_, stopOut) = await RunElevatedAsync("sc.exe", $"stop {ServiceName}");
+                AppendLog(stopOut);
+                await Task.Delay(2000);
+            }
+
+            ServiceStatusText = "Deleting service…";
+            AppendLog($"sc.exe delete {ServiceName}");
+            var (ok, output) = await RunElevatedAsync("sc.exe", $"delete {ServiceName}");
+            AppendLog(output);
+            ServiceStatusText = ok ? "Service uninstalled." : "Uninstall may have failed — see log.";
+        }
+        catch (Exception ex)
+        {
+            ServiceStatusText = $"Error: {ex.Message}";
+            AppendLog($"EXCEPTION: {ex.Message}");
+        }
+        finally
+        {
+            await RefreshServiceStatusAsync();
+            IsServiceBusy = false;
+        }
     }
+
+    // ─────────── Start / Stop ───────────
 
     [RelayCommand]
     private async Task StartServiceAsync()
     {
-        if (!System.OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows()) return;
+        IsServiceBusy = true;
+        ServiceStatusText = "Starting…";
 
-        ServiceStatusText = "Starting...";
-        await RunServiceScriptAsync("-Action Start");
+        var (ok, output) = await RunElevatedAsync("sc.exe", $"start {ServiceName}");
+        AppendLog(output);
+        ServiceStatusText = ok ? "Started." : "Start failed — see log.";
+
         await RefreshServiceStatusAsync();
+        IsServiceBusy = false;
     }
 
     [RelayCommand]
     private async Task StopServiceAsync()
     {
-        if (!System.OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows()) return;
+        IsServiceBusy = true;
+        ServiceStatusText = "Stopping…";
 
-        ServiceStatusText = "Stopping...";
-        await RunServiceScriptAsync("-Action Stop");
+        var (ok, output) = await RunElevatedAsync("sc.exe", $"stop {ServiceName}");
+        AppendLog(output);
+        ServiceStatusText = ok ? "Stopped." : "Stop failed — see log.";
+
         await RefreshServiceStatusAsync();
+        IsServiceBusy = false;
+    }
+
+    // ─────────── Configure Login (post-install) ───────────
+
+    [RelayCommand]
+    private async Task ApplyLoginAsync()
+    {
+        if (!OperatingSystem.IsWindows() || !IsServiceInstalled) return;
+        if (string.IsNullOrWhiteSpace(ServicePassword))
+        {
+            ServiceStatusText = "Password is required.";
+            return;
+        }
+
+        IsServiceBusy = true;
+        var user = NormalizeUsername(ServiceUsername);
+        ServiceStatusText = "Applying credentials…";
+
+        var (ok, output) = await RunElevatedAsync(
+            "sc.exe", $"config {ServiceName} obj= \"{user}\" password= \"{ServicePassword}\"");
+        AppendLog(output);
+
+        var scriptPath = FindInstallScript();
+        if (scriptPath != null)
+        {
+            var (_, grantOut) = await RunElevatedAsync(
+                "powershell.exe",
+                $"-ExecutionPolicy Bypass -NoProfile -Command \"& {{ . '{scriptPath}'; Grant-LogOnAsService '{user}' }}\"");
+            AppendLog(grantOut);
+        }
+
+        ServicePassword = string.Empty;
+        IsCredentialPanelOpen = false;
+        ServiceStatusText = ok ? "Credentials updated — restart the service for changes to take effect." : "Failed — see log.";
+        await RefreshServiceStatusAsync();
+        IsServiceBusy = false;
+    }
+
+    // ═══════════════ Service Helpers ═══════════════
+
+    private static string NormalizeUsername(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return $".\\{Environment.UserName}";
+
+        var trimmed = input.Trim();
+
+        if (trimmed.StartsWith(".\\"))
+            return trimmed;
+
+        var backslash = trimmed.IndexOf('\\');
+        if (backslash >= 0 && backslash < trimmed.Length - 1)
+            return $".\\{trimmed[(backslash + 1)..]}";
+
+        return $".\\{trimmed}";
     }
 
     private async Task RefreshServiceStatusAsync()
     {
-        if (!System.OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindows())
         {
             IsWindowsServiceSectionVisible = false;
             return;
@@ -244,110 +447,195 @@ public partial class SettingsViewModel : ObservableObject
 
         try
         {
-            // Use sc.exe to check service status
-            var proc = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "sc.exe",
-                    Arguments = "query RemexHost",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            proc.Start();
-            var output = await proc.StandardOutput.ReadToEndAsync();
-            await proc.WaitForExitAsync();
+            var output = await RunLocalAsync("sc.exe", $"query {ServiceName}");
 
-                        if (output.Contains("does not exist") || proc.ExitCode != 0)
+            if (output.Contains("does not exist") || output.Contains("FAILED 1060"))
             {
                 IsServiceInstalled = false;
                 IsServiceRunning = false;
                 ServiceStatusText = "Not Installed";
-                CanInstallService = true;
-                CanUninstallService = false;
-                CanStartService = false;
-                CanStopService = false;
             }
             else
             {
                 IsServiceInstalled = true;
-                CanInstallService = false;
-                CanUninstallService = true;
 
                 if (output.Contains("RUNNING"))
                 {
                     IsServiceRunning = true;
                     ServiceStatusText = "Running";
-                    CanStartService = false;
-                    CanStopService = true;
+                }
+                else if (output.Contains("STOPPED"))
+                {
+                    IsServiceRunning = false;
+                    ServiceStatusText = "Stopped";
+                }
+                else if (output.Contains("PENDING"))
+                {
+                    ServiceStatusText = "Pending…";
                 }
                 else
                 {
                     IsServiceRunning = false;
-                    ServiceStatusText = "Stopped";
-                    CanStartService = true;
-                    CanStopService = false;
+                    ServiceStatusText = "Installed";
+                }
+
+                var qcOut = await RunLocalAsync("sc.exe", $"qc {ServiceName}");
+                foreach (var line in qcOut.Split('\n'))
+                {
+                    if (line.Contains("SERVICE_START_NAME"))
+                    {
+                        var colon = line.IndexOf(':');
+                        if (colon >= 0 && colon < line.Length - 1)
+                            ServiceUsername = line[(colon + 1)..].Trim();
+                        break;
+                    }
                 }
             }
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             ServiceStatusText = $"Error: {ex.Message}";
         }
     }
 
-    private async Task RunServiceScriptAsync(string args, string? password = null)
+    private static async Task<string> RunLocalAsync(string fileName, string arguments)
     {
+        var proc = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        proc.Start();
+        var stdout = await proc.StandardOutput.ReadToEndAsync();
+        var stderr = await proc.StandardError.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+        return string.IsNullOrWhiteSpace(stderr) ? stdout : $"{stdout}\n{stderr}";
+    }
+
+    private static async Task<(bool Success, string Output)> RunElevatedAsync(string fileName, string arguments)
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"remex_svc_{Guid.NewGuid():N}.log");
         try
         {
-            var basePath = System.AppDomain.CurrentDomain.BaseDirectory;
-            var scriptPath = System.IO.Path.Combine(basePath, "scripts", "install-service.ps1");
-
-            // Fallback for dev environment
-            if (!System.IO.File.Exists(scriptPath))
+            var cmdArgs = $"/c \"\"{fileName}\" {arguments} > \"{tempFile}\" 2>&1\"";
+            var proc = Process.Start(new ProcessStartInfo
             {
-                var repoRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(basePath, "..", "..", "..", "..", ".."));
-                scriptPath = System.IO.Path.Combine(repoRoot, "scripts", "install-service.ps1");
-            }
-
-            if (!System.IO.File.Exists(scriptPath))
-            {
-                ServiceStatusText = "Error: install-service.ps1 not found.";
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(password))
-            {
-                args += $" -Password \"{password}\"";
-            }
-
-            var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-ExecutionPolicy Bypass -NoProfile -File \"{scriptPath}\" {args}",
+                FileName = "cmd.exe",
+                Arguments = cmdArgs,
                 UseShellExecute = true,
                 Verb = "runas",
-                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                WindowStyle = ProcessWindowStyle.Hidden
             });
 
             if (proc != null)
                 await proc.WaitForExitAsync();
 
-            if (proc?.ExitCode != 0)
-            {
-                ServiceStatusText = $"Error: Script exited with code {proc?.ExitCode}.";
-            }
+            var output = File.Exists(tempFile) ? (await File.ReadAllTextAsync(tempFile)).Trim() : "";
+            var success = proc?.ExitCode == 0;
+
+            if (!success && output.Contains("[SC] ChangeServiceConfig SUCCESS", StringComparison.OrdinalIgnoreCase))
+                success = true;
+
+            return (success, string.IsNullOrWhiteSpace(output) ? "(no output)" : output);
         }
         catch (System.ComponentModel.Win32Exception)
         {
-            ServiceStatusText = "Installation cancelled (UAC denied).";
+            return (false, "Operation cancelled (UAC denied).");
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
-            ServiceStatusText = $"Error: {ex.Message}";
+            return (false, $"Error: {ex.Message}");
         }
+        finally
+        {
+            try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
+        }
+    }
+
+    private async Task<(bool Success, string Output)> PublishHostAsync()
+    {
+        try
+        {
+            var projectDir = FindProjectDir();
+            if (projectDir == null)
+                return (false, "Could not locate Remex.Host project directory.");
+
+            var publishDir = GetPublishDir();
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "dotnet",
+                    Arguments = $"publish \"{projectDir}\" -c Release -o \"{publishDir}\" --self-contained false",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            proc.Start();
+            var stdout = await proc.StandardOutput.ReadToEndAsync();
+            var stderr = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+
+            var output = $"{stdout}\n{stderr}".Trim();
+            return (proc.ExitCode == 0, output);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Publish exception: {ex.Message}");
+        }
+    }
+
+    private static string GetPublishDir()
+    {
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        var repoRoot = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", ".."));
+        var candidate = Path.Combine(repoRoot, "publish", "Remex.Host");
+        if (Directory.Exists(Path.GetDirectoryName(candidate)!) || Directory.Exists(repoRoot))
+            return candidate;
+        return Path.Combine(basePath, "publish", "Remex.Host");
+    }
+
+    private static string? FindProjectDir()
+    {
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        var repoRoot = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", ".."));
+        var candidate = Path.Combine(repoRoot, "Remex.Host");
+        if (File.Exists(Path.Combine(candidate, "Remex.Host.csproj")))
+            return candidate;
+        candidate = Path.Combine(basePath, "..", "Remex.Host");
+        if (File.Exists(Path.Combine(candidate, "Remex.Host.csproj")))
+            return candidate;
+        return null;
+    }
+
+    private static string? FindInstallScript()
+    {
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        var candidate = Path.Combine(basePath, "scripts", "install-service.ps1");
+        if (File.Exists(candidate)) return candidate;
+
+        var repoRoot = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", ".."));
+        candidate = Path.Combine(repoRoot, "scripts", "install-service.ps1");
+        if (File.Exists(candidate)) return candidate;
+
+        return null;
+    }
+
+    private void AppendLog(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message)) return;
+        var timestamp = DateTime.Now.ToString("HH:mm:ss");
+        var entry = $"[{timestamp}] {message.Trim()}";
+        ServiceLog = string.IsNullOrEmpty(ServiceLog) ? entry : $"{ServiceLog}\n{entry}";
     }
 
     // ═══════════════ Persistence ═══════════════

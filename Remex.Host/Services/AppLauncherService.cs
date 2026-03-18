@@ -50,10 +50,12 @@ public class AppLauncherService : IAppLauncherService
     private void LaunchStandard(string targetPath)
     {
         _logger.LogInformation("Launching app normally: {targetPath}", targetPath);
+        var appDir = System.IO.Path.GetDirectoryName(targetPath);
         var psi = new ProcessStartInfo
         {
             FileName = targetPath,
-            UseShellExecute = true
+            UseShellExecute = true,
+            WorkingDirectory = appDir ?? string.Empty
         };
         Process.Start(psi);
     }
@@ -75,11 +77,14 @@ public class AppLauncherService : IAppLauncherService
 
             // We use 'explorer.exe' or 'cmd.exe /c start' to let the OS handle file associations/shortcuts
             // because CreateProcessAsUser doesn't support UseShellExecute natively.
-            string commandLine = $"cmd.exe /c start \"\" \"{targetPath}\"";
+            string commandLine = $"cmd.exe /c start \"\" /D \"{System.IO.Path.GetDirectoryName(targetPath)}\" \"{targetPath}\"";
+            string? appDir = System.IO.Path.GetDirectoryName(targetPath);
 
             STARTUPINFO si = new STARTUPINFO();
             si.cb = Marshal.SizeOf(si);
             si.lpDesktop = "winsta0\\default"; // Required for interactive apps
+            si.dwFlags = STARTF_USESHOWWINDOW;
+            si.wShowWindow = SW_SHOW;
 
             PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
 
@@ -90,9 +95,9 @@ public class AppLauncherService : IAppLauncherService
                 IntPtr.Zero,
                 IntPtr.Zero,
                 false,
-                0,
+                CREATE_NEW_CONSOLE,
                 IntPtr.Zero,
-                null,
+                appDir,
                 ref si,
                 out pi);
 
@@ -114,6 +119,10 @@ public class AppLauncherService : IAppLauncherService
 
     #region P/Invoke
 
+    private const uint STARTF_USESHOWWINDOW = 0x00000001;
+    private const ushort SW_SHOW = 5;
+    private const uint CREATE_NEW_CONSOLE = 0x00000010;
+
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern uint WTSGetActiveConsoleSessionId();
 
@@ -126,14 +135,14 @@ public class AppLauncherService : IAppLauncherService
     [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern bool CreateProcessAsUser(
         IntPtr hToken,
-        string lpApplicationName,
+        string? lpApplicationName,
         string lpCommandLine,
         IntPtr lpProcessAttributes,
         IntPtr lpThreadAttributes,
         bool bInheritHandles,
         uint dwCreationFlags,
         IntPtr lpEnvironment,
-        string lpCurrentDirectory,
+        string? lpCurrentDirectory,
         ref STARTUPINFO lpStartupInfo,
         out PROCESS_INFORMATION lpProcessInformation);
 

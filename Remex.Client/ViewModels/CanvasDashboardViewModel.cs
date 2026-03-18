@@ -216,6 +216,17 @@ public partial class CanvasDashboardViewModel : ObservableObject
         {
             card.PositionX = Math.Round(card.PositionX / GridSize) * GridSize;
             card.PositionY = Math.Round(card.PositionY / GridSize) * GridSize;
+
+            // Also snap all other selected cards.
+            if (card.IsSelected)
+            {
+                foreach (var other in SelectedCards)
+                {
+                    if (other == card) continue;
+                    other.PositionX = Math.Round(other.PositionX / GridSize) * GridSize;
+                    other.PositionY = Math.Round(other.PositionY / GridSize) * GridSize;
+                }
+            }
         }
 
         TriggerSave();
@@ -289,6 +300,56 @@ public partial class CanvasDashboardViewModel : ObservableObject
     private void ToggleStagingDrawer()
     {
         IsStagingDrawerOpen = !IsStagingDrawerOpen;
+    }
+
+    // ═══════════════ Layout Save / Sync ═══════════════
+
+    [ObservableProperty]
+    private string _layoutStatus = string.Empty;
+
+    /// <summary>
+    /// Explicitly saves the current layout to disk and pushes it to the host (if connected).
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveLayoutAsync()
+    {
+        TriggerSave();
+        await _layoutService.FlushAsync();
+        LayoutStatus = "Layout Saved!";
+        _ = Task.Delay(3000).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() => LayoutStatus = string.Empty));
+    }
+
+    /// <summary>
+    /// Requests the layout from the connected host. Falls back to local storage if offline.
+    /// </summary>
+    [RelayCommand]
+    private async Task SyncLayoutAsync()
+    {
+        if (Connection.IsConnected)
+        {
+            // Request the host to re-send its stored layout.
+            var ws = Connection.GetWebSocket();
+            if (ws != null)
+            {
+                var msg = new RemexMessage
+                {
+                    Type = MessageTypes.LayoutRequest,
+                };
+                await MessageSerializer.SendAsync(ws, msg);
+                LayoutStatus = "Sync requested…";
+            }
+        }
+        else
+        {
+            // Offline — reload from local storage.
+            var profile = await _layoutService.LoadAsync().ConfigureAwait(false);
+            await Dispatcher.UIThread.InvokeAsync(() => ApplyProfile(profile));
+            LayoutStatus = "Loaded from local storage";
+        }
+
+        _ = Task.Delay(3000).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() => LayoutStatus = string.Empty));
     }
 
     // ═══════════════ Telemetry Processing ═══════════════
