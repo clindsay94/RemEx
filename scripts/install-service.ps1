@@ -33,7 +33,7 @@ param(
     [string]$Username,
 
     [Parameter()]
-    [string]$Password
+    [SecureString]$Password
 )
 
 $ServiceName   = "RemexHost"
