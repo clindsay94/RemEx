@@ -115,6 +115,20 @@ public partial class SettingsViewModel : ObservableObject
         Save();
     }
 
+    [ObservableProperty]
+    private string _savedStatus = string.Empty;
+
+    [RelayCommand]
+    private async Task SaveAsync()
+    {
+        Save();
+        await _layoutService.FlushAsync();
+        SavedStatus = "Settings Saved!";
+        
+        // Clear status after 3 seconds
+        _ = Task.Delay(3000).ContinueWith(_ => SavedStatus = string.Empty);
+    }
+
     // ═══════════════ Navigation ═══════════════
 
     [RelayCommand]

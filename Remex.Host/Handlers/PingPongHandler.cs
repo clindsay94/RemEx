@@ -9,7 +9,14 @@ namespace Remex.Host.Handlers;
 /// Responds to "ping" with "pong", echoing the client's timestamp for latency measurement.
 /// Background streams telemetry data while the connection is established.
 /// </summary>
-public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryService telemetryService, Remex.Core.Services.Command.ISystemCommandService commandService, Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, Remex.Core.Services.ILauncherStorageService launcherStorage, Remex.Core.Services.IAppLauncherService appLauncherService)
+public sealed class PingPongHandler(
+    ILogger<PingPongHandler> logger, 
+    ITelemetryService telemetryService, 
+    Remex.Core.Services.Command.ISystemCommandService commandService, 
+    Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, 
+    Remex.Core.Services.ILauncherStorageService launcherStorage, 
+    Remex.Core.Services.IAppLauncherService appLauncherService,
+    Remex.Core.Services.IDashboardProfileStorageService profileStorage)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
@@ -25,6 +32,18 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryS
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to sync launchers on connect.");
+        }
+
+        // Sync layout on connect
+        try
+        {
+            var profile = await profileStorage.LoadProfileAsync();
+            var syncMsg = new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = profile };
+            await MessageSerializer.SendAsync(webSocket, syncMsg, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to sync layout on connect.");
         }
 
         // Start background telemetry stream
@@ -75,6 +94,11 @@ public sealed class PingPongHandler(ILogger<PingPongHandler> logger, ITelemetryS
                         curRem.RemoveAll(x => x.Id == message.LauncherEntry.Id);
                         await launcherStorage.SaveEntriesAsync(curRem);
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = curRem }, ct);
+                        break;
+
+                    case MessageTypes.LayoutUpdate when message.DashboardProfile is not null:
+                        await profileStorage.SaveProfileAsync(message.DashboardProfile);
+                        logger.LogInformation("Dashboard layout updated from client.");
                         break;
 
                     default:

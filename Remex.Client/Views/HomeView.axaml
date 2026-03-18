@@ -77,7 +77,11 @@
                         </StackPanel>
                         <TextBlock Text="{Binding Connection.LatencyText}" FontSize="14" Foreground="{DynamicResource TextSecondary}"/>
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="nav-btn nav-btn-primary" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" VerticalAlignment="Center"/>
+                    
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Button Classes="nav-btn nav-btn-primary" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}"/>
+                        <Button Classes="nav-btn nav-btn-danger" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="#3A1A1A" Foreground="#FF6B6B" BorderBrush="#FF6B6B"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 

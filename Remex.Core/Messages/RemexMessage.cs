@@ -49,6 +49,10 @@ public sealed record RemexMessage
     /// <summary>Single launcher entry for add/remove.</summary>
     [JsonPropertyName("launcherEntry")]
     public Remex.Core.Models.AppEntry? LauncherEntry { get; init; }
+
+    /// <summary>Dashboard layout profile for synchronization.</summary>
+    [JsonPropertyName("dashboardProfile")]
+    public Remex.Core.Models.DashboardProfile? DashboardProfile { get; init; }
 }
 
 /// <summary>
@@ -60,8 +64,10 @@ public static class MessageTypes
     public const string Pong = "pong";
     public const string Telemetry = "telemetry";
     public const string Command = "command";
-        public const string CommandResponse = "command_response";
+    public const string CommandResponse = "command_response";
     public const string LauncherSync = "launcher_sync";
     public const string LauncherAdd = "launcher_add";
     public const string LauncherRemove = "launcher_remove";
+    public const string LayoutSync = "layout_sync";
+    public const string LayoutUpdate = "layout_update";
 }

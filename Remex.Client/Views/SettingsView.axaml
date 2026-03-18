@@ -24,7 +24,14 @@
             <!-- ═══ Header ═══ -->
             <Button Classes="settings-back" Content="← Command Center" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
 
-            <TextBlock Text="SETTINGS" FontSize="24" FontWeight="Black" Foreground="#E0E0FF"/>
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="SETTINGS" FontSize="24" FontWeight="Black" Foreground="#E0E0FF" VerticalAlignment="Center"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SavedStatus}" FontSize="12" Foreground="#4ADE80" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <Button Content="Save Changes" Command="{Binding SaveCommand}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold"/>
+                </StackPanel>
+            </Grid>
 
                         <!-- ═══ Service Section ═══ -->
             <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsWindowsServiceSectionVisible}">

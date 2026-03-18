@@ -14,6 +14,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
                 <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
                 <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                <Button Content="Remote" Command="{Binding NavigateToRemoteCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
                 <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
                 <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
             </StackPanel>

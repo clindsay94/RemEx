@@ -80,6 +80,14 @@ public partial class CanvasDashboardViewModel : ObservableObject
             }
         };
 
+        Connection.LayoutProfileReceived += async profile =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ApplyProfile(profile);
+            });
+        };
+
         StagedCards.CollectionChanged += (_, _) =>
             HasStagedCards = StagedCards.Count > 0;
     }
@@ -342,11 +350,76 @@ public partial class CanvasDashboardViewModel : ObservableObject
         };
 
         _layoutService.RequestSave(profile);
+
+        if (Connection.IsConnected)
+        {
+            _ = Connection.SendLayoutUpdateAsync(profile);
+        }
     }
 
     private void TrackZIndex(int z)
     {
         if (z >= _nextZIndex)
             _nextZIndex = z + 1;
+    }
+
+    private void ApplyProfile(DashboardProfile profile)
+    {
+        _profile = profile;
+        IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
+        GridSize = profile.GridSize;
+
+        // Sync cards
+        var toRemove = Cards.ToList();
+        foreach (var state in profile.Cards)
+        {
+            var existing = Cards.FirstOrDefault(c => 
+                (c.CardType == state.CardType && state.CardType != "Sensor") ||
+                (c.CardType == "Sensor" && c.Sensor?.Name == state.SensorId));
+
+            if (existing != null)
+            {
+                existing.PositionX = state.PositionX;
+                existing.PositionY = state.PositionY;
+                existing.Width = state.Width;
+                existing.Height = state.Height;
+                existing.ZIndex = state.ZIndex;
+                existing.IsPinnedToHome = profile.PinnedSensorIds.Contains(state.SensorId ?? "");
+                toRemove.Remove(existing);
+            }
+            else if (state.CardType != "Sensor")
+            {
+                var card = CanvasCardViewModel.FromCardState(state);
+                card.CardTitle = state.CardType;
+                card.Connection = Connection;
+                Cards.Add(card);
+            }
+            // Sensors will be handled by ProcessTelemetry if they aren't on canvas yet
+        }
+
+        foreach (var r in toRemove)
+        {
+            // If it's a sensor, move it to staging instead of just removing?
+            // Actually, if it's not in the profile, it should be in staging.
+            if (r.CardType == "Sensor")
+            {
+                Cards.Remove(r);
+                r.PositionX = 0;
+                r.PositionY = 0;
+                StagedCards.Add(r);
+            }
+            else
+            {
+                Cards.Remove(r);
+            }
+        }
+
+        foreach (var c in Cards) TrackZIndex(c.ZIndex);
+        
+        // Also update local storage so they stay in sync even when offline next time
+        _layoutService.RequestSave(profile);
+
+        // Refresh home pinned sensors if it's currently showing or cached
+        _shell.NavigateToHomeCommand.Execute(null);
     }
 }

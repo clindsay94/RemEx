@@ -40,12 +40,15 @@ public partial class ConnectionViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAutoReconnecting;
 
+    [ObservableProperty]
+    private bool _isConnecting;
+
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
     public event Action<TelemetryPayload>? TelemetryReceived;
-
+    public event Action<Remex.Core.Models.DashboardProfile>? LayoutProfileReceived;
 
     [ObservableProperty]
     private double _averageLatency;
@@ -64,8 +67,8 @@ public partial class ConnectionViewModel : ObservableObject
         }
     }
 
-    private bool CanConnect() => !IsConnected;
-    private bool CanDisconnect() => IsConnected;
+    private bool CanConnect() => !IsConnected && !IsConnecting;
+    private bool CanDisconnect() => IsConnected || IsConnecting;
 
     private System.Threading.Tasks.TaskCompletionSource<RemexMessage>? _pendingCommandResponse;
 
@@ -115,6 +118,7 @@ public partial class ConnectionViewModel : ObservableObject
     private async Task ConnectAsync()
     {
         _userDisconnected = false;
+        IsConnecting = true;
         StopReconnecting();
 
         try
@@ -124,19 +128,36 @@ public partial class ConnectionViewModel : ObservableObject
             _receiveCts = new CancellationTokenSource();
 
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-            await _webSocket.ConnectAsync(new Uri(HostAddress), _receiveCts.Token);
+            
+            // Allow 20s for initial handshake.
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_receiveCts.Token, timeoutCts.Token);
+            
+            await _webSocket.ConnectAsync(new Uri(HostAddress), linkedCts.Token);
 
             IsConnected = true;
+            IsConnecting = false;
             StatusText = "Connected";
             LatencyText = "—";
 
             // Start background receive loop.
             _ = ReceiveLoopAsync(_receiveCts.Token);
         }
+        catch (OperationCanceledException)
+        {
+            StatusText = linkedCts.Token.IsCancellationRequested && !timeoutCts.Token.IsCancellationRequested 
+                ? "Connection cancelled" 
+                : "Connection timed out";
+            Cleanup();
+        }
         catch (Exception ex)
         {
             StatusText = $"Error: {ex.Message}";
             Cleanup();
+        }
+        finally
+        {
+            IsConnecting = false;
         }
     }
 
@@ -162,7 +183,7 @@ public partial class ConnectionViewModel : ObservableObject
         }
 
         Cleanup();
-        StatusText = "Disconnected";
+        StatusText = IsConnecting ? "Connection cancelled" : "Disconnected";
         LatencyText = "—";
     }
 
@@ -184,6 +205,25 @@ public partial class ConnectionViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusText = $"Send error: {ex.Message}";
+        }
+    }
+
+    public async Task SendLayoutUpdateAsync(Remex.Core.Models.DashboardProfile profile)
+    {
+        if (_webSocket?.State != WebSocketState.Open) return;
+
+        try
+        {
+            var msg = new RemexMessage
+            {
+                Type = MessageTypes.LayoutUpdate,
+                DashboardProfile = profile,
+            };
+            await MessageSerializer.SendAsync(_webSocket, msg);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to send layout update: {ex.Message}");
         }
     }
 
@@ -233,6 +273,10 @@ public partial class ConnectionViewModel : ObservableObject
 
                     case MessageTypes.LauncherSync when message.LauncherEntries is not null:
                         Dispatcher.UIThread.Post(() => LauncherEntriesReceived?.Invoke(message.LauncherEntries));
+                        break;
+
+                    case MessageTypes.LayoutSync when message.DashboardProfile is not null:
+                        Dispatcher.UIThread.Post(() => LayoutProfileReceived?.Invoke(message.DashboardProfile));
                         break;
                 }
             }

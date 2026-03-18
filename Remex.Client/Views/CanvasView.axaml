@@ -195,9 +195,10 @@
                                     <!-- ═══ ACTIONS ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
                                         <TextBlock Text="Actions" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,4"/>
-                                        <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}"/>
+                                        <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}"/>
+                                        <Button Classes="card-action card-action-danger" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}"/>
                                         <Button Classes="card-action" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}"/>
-                                        <Button Classes="card-action card-action-danger" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}"/>
+                                        <Button Classes="card-action card-action-danger" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}"/>
                                     </StackPanel>
 
                                     <!-- ═══ LATENCY ═══ -->

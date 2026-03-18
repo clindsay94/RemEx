@@ -49,6 +49,7 @@ public static class HostBootstrapper
         }
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
+        builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Host.Services.AppLauncherService>();
         builder.Services.AddHostedService<IpcHostServer>();
 
@@ -78,7 +79,14 @@ public static class HostBootstrapper
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<ITelemetryService>();
-            var handler = new PingPongHandler(logger, telemetry, context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(), context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(), context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>());
+            var handler = new PingPongHandler(
+                logger, 
+                telemetry, 
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(), 
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), 
+                context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(), 
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 
