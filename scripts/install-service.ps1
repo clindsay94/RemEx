@@ -13,9 +13,14 @@
     Running as a real user account is REQUIRED so the service can interact
     with the desktop session (lock workstation, launch apps, read HWiNFO).
 
+.PARAMETER Password
+    (Install only) The password for the user account. If omitted, you will
+    be prompted interactively via Get-Credential.
+
 .EXAMPLE
     .\install-service.ps1 -Action Install
     .\install-service.ps1 -Action Install -Username ".\Connor"
+    .\install-service.ps1 -Action Install -Username ".\Connor" -Password "secret"
     .\install-service.ps1 -Action Status
     .\install-service.ps1 -Action Uninstall
 #>
@@ -25,7 +30,10 @@ param(
     [string]$Action,
 
     [Parameter()]
-    [string]$Username
+    [string]$Username,
+
+    [Parameter()]
+    [string]$Password
 )
 
 $ServiceName   = "RemexHost"
@@ -69,8 +77,16 @@ switch ($Action) {
         }
 
         Write-Host "Registering Windows Service '$ServiceName' as '$Username'..." -ForegroundColor Cyan
-        Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
-        $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
+
+        if ($Password) {
+            # Build credential from supplied password (used by the client UI).
+            $securePass = ConvertTo-SecureString $Password -AsPlainText -Force
+            $cred = New-Object System.Management.Automation.PSCredential($Username, $securePass)
+        } else {
+            # Interactive prompt when running from the command line.
+            Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
+            $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
+        }
 
         New-Service `
             -Name $ServiceName `

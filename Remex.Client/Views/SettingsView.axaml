@@ -34,12 +34,12 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="4">
                             <TextBlock Text="Host Service Status" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0FF"/>
-                            <TextBlock Text="{Binding ServiceStatusText}" FontSize="12" Foreground="#8888AA"/>
+                            <TextBlock Text="{Binding ServiceStatusText}" FontSize="12" Foreground="#8888AA" TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                                        <!-- Show Install when not installed -->
-                            <Button Content="Install" Command="{Binding InstallServiceCommand}" IsVisible="{Binding CanInstallService}" Background="#4A3AFF" Foreground="White" Padding="12,6" CornerRadius="4"/>
+                            <!-- Show Install prompt button when not installed and password input not visible -->
+                            <Button Content="Install" Command="{Binding ShowInstallPromptCommand}" IsVisible="{Binding CanInstallService}" Background="#4A3AFF" Foreground="White" Padding="12,6" CornerRadius="4"/>
 
                             <!-- Show Start when installed but not running -->
                             <Button Content="Start" Command="{Binding StartServiceCommand}" IsVisible="{Binding CanStartService}" Background="#4ADE80" Foreground="#1A1A1A" Padding="12,6" CornerRadius="4" />
@@ -51,7 +51,20 @@
                             <Button Content="Uninstall" Command="{Binding UninstallServiceCommand}" IsVisible="{Binding CanUninstallService}" Background="#FF6B6B" Foreground="White" Padding="12,6" CornerRadius="4"/>
                         </StackPanel>
                     </Grid>
-                    <TextBlock Text="Running as a service allows Remex to manage the PC without a logged-in user." FontSize="11" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
+
+                    <!-- Password input for service installation -->
+                    <Border IsVisible="{Binding IsPasswordInputVisible}" Background="#0A0A1A" CornerRadius="8" Padding="16" BorderBrush="#2A2A3E" BorderThickness="1">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Windows Password" FontSize="12" Foreground="#8888CC"/>
+                            <TextBox PasswordChar="●" Text="{Binding ServicePassword}" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="13" Watermark="Enter your Windows password"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <Button Content="Cancel" Command="{Binding CancelInstallCommand}" Background="#2A2A3E" Foreground="#8888AA" Padding="12,6" CornerRadius="4"/>
+                                <Button Content="Install Service" Command="{Binding InstallServiceCommand}" Background="#4A3AFF" Foreground="White" Padding="12,6" CornerRadius="4"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="Installs a background service so Remex can accept remote commands even without the app open. Runs under your Windows account." FontSize="11" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
             <!-- ═══ Connection Section ═══ -->

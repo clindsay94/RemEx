@@ -145,13 +145,46 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _canUninstallService;
 
+    [ObservableProperty]
+    private bool _isPasswordInputVisible;
+
+    [ObservableProperty]
+    private string _servicePassword = string.Empty;
+
+    [RelayCommand]
+    private void ShowInstallPrompt()
+    {
+        if (!System.OperatingSystem.IsWindows()) return;
+        CanInstallService = false;
+        IsPasswordInputVisible = true;
+        ServiceStatusText = $"Enter your Windows password for '{System.Environment.UserName}' to install the service.";
+    }
+
+    [RelayCommand]
+    private void CancelInstall()
+    {
+        IsPasswordInputVisible = false;
+        ServicePassword = string.Empty;
+        _ = RefreshServiceStatusAsync();
+    }
+
     [RelayCommand]
     private async Task InstallServiceAsync()
     {
         if (!System.OperatingSystem.IsWindows()) return;
+        if (string.IsNullOrEmpty(ServicePassword))
+        {
+            ServiceStatusText = "Password is required.";
+            return;
+        }
 
-        ServiceStatusText = "Installing...";
-        await RunServiceScriptAsync("-Action Install");
+        var username = $".\\{System.Environment.UserName}";
+        IsPasswordInputVisible = false;
+        ServiceStatusText = "Publishing & installing…";
+
+        // Pass credentials via environment variable to avoid command-line exposure.
+        await RunServiceScriptAsync($"-Action Install -Username \"{username}\"", ServicePassword);
+        ServicePassword = string.Empty;
         await RefreshServiceStatusAsync();
     }
 
@@ -251,12 +284,11 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private async Task RunServiceScriptAsync(string args)
+    private async Task RunServiceScriptAsync(string args, string? password = null)
     {
         try
         {
             var basePath = System.AppDomain.CurrentDomain.BaseDirectory;
-            // Go up until we find the scripts folder, or assume it's next to the exe
             var scriptPath = System.IO.Path.Combine(basePath, "scripts", "install-service.ps1");
 
             // Fallback for dev environment
@@ -272,24 +304,31 @@ public partial class SettingsViewModel : ObservableObject
                 return;
             }
 
-            var proc = new System.Diagnostics.Process
+            if (!string.IsNullOrEmpty(password))
             {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-ExecutionPolicy Bypass -NoProfile -File \"{scriptPath}\" {args}",
-                    UseShellExecute = true, // Need true for UAC prompt
-                    Verb = "runas",
-                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
-                }
-            };
-            proc.Start();
-            await proc.WaitForExitAsync();
-
-            if (proc.ExitCode != 0)
-            {
-                ServiceStatusText = $"Error: Script exited with code {proc.ExitCode}.";
+                args += $" -Password \"{password}\"";
             }
+
+            var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-ExecutionPolicy Bypass -NoProfile -File \"{scriptPath}\" {args}",
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            });
+
+            if (proc != null)
+                await proc.WaitForExitAsync();
+
+            if (proc?.ExitCode != 0)
+            {
+                ServiceStatusText = $"Error: Script exited with code {proc?.ExitCode}.";
+            }
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            ServiceStatusText = "Installation cancelled (UAC denied).";
         }
         catch (System.Exception ex)
         {
