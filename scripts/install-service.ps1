@@ -52,6 +52,83 @@ function Publish-Host {
     Write-Host "Published to: $PublishDir" -ForegroundColor Green
 }
 
+function Grant-LogOnAsService($accountName) {
+    Write-Host "Granting 'Log on as a service' right to $accountName..." -ForegroundColor Cyan
+    
+    $source = @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public class LsaWrapper {
+    [StructLayout(LayoutKind.Sequential)]
+    struct LSA_UNICODE_STRING {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr Buffer;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct LSA_OBJECT_ATTRIBUTES {
+        public int Length;
+        public IntPtr RootDirectory;
+        public LSA_UNICODE_STRING ObjectName;
+        public uint Attributes;
+        public IntPtr SecurityDescriptor;
+        public IntPtr SecurityQualityOfService;
+    }
+
+    [DllImport("advapi32.dll", PreserveSig = true)]
+    static extern uint LsaOpenPolicy(ref LSA_UNICODE_STRING SystemName, ref LSA_OBJECT_ATTRIBUTES ObjectAttributes, uint DesiredAccess, out IntPtr PolicyHandle);
+
+    [DllImport("advapi32.dll", PreserveSig = true)]
+    static extern uint LsaAddAccountRights(IntPtr PolicyHandle, IntPtr AccountSid, LSA_UNICODE_STRING[] UserRights, uint CountOfRights);
+
+    [DllImport("advapi32.dll", PreserveSig = true)]
+    static extern uint LsaClose(IntPtr ObjectHandle);
+
+    [DllImport("advapi32.dll", PreserveSig = true)]
+    static extern uint LsaNtStatusToWinError(uint Status);
+
+    public static void GrantRight(string accountName, string privilege) {
+        var sid = new System.Security.Principal.NTAccount(accountName).Translate(typeof(System.Security.Principal.SecurityIdentifier)) as System.Security.Principal.SecurityIdentifier;
+        byte[] sidBytes = new byte[sid.BinaryLength];
+        sid.GetBinaryForm(sidBytes, 0);
+        IntPtr sidPtr = Marshal.AllocHGlobal(sidBytes.Length);
+        Marshal.Copy(sidBytes, 0, sidPtr, sidBytes.Length);
+
+        LSA_OBJECT_ATTRIBUTES objAttr = new LSA_OBJECT_ATTRIBUTES();
+        objAttr.Length = Marshal.SizeOf(typeof(LSA_OBJECT_ATTRIBUTES));
+
+        LSA_UNICODE_STRING systemName = new LSA_UNICODE_STRING();
+        IntPtr policyHandle;
+        uint status = LsaOpenPolicy(ref systemName, ref objAttr, 0x0010 | 0x0800, out policyHandle);
+        if (status != 0) throw new Exception("LsaOpenPolicy failed with status " + status);
+
+        LSA_UNICODE_STRING right = new LSA_UNICODE_STRING();
+        right.Buffer = Marshal.StringToHGlobalUni(privilege);
+        right.Length = (ushort)(privilege.Length * 2);
+        right.MaximumLength = (ushort)((privilege.Length + 1) * 2);
+
+        status = LsaAddAccountRights(policyHandle, sidPtr, new LSA_UNICODE_STRING[] { right }, 1);
+        LsaClose(policyHandle);
+        Marshal.FreeHGlobal(sidPtr);
+        Marshal.FreeHGlobal(right.Buffer);
+
+        if (status != 0) throw new Exception("LsaAddAccountRights failed with status " + status);
+    }
+}
+"@
+    Add-Type -TypeDefinition $source -ErrorAction SilentlyContinue
+    try {
+        [LsaWrapper]::GrantRight($accountName, "SeServiceLogonRight")
+        Write-Host "Successfully granted 'Log on as a service' right." -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to grant 'Log on as a service' right automatically: $($_.Exception.Message)"
+        Write-Warning "You may need to grant this manually in Local Security Policy (secpol.msc)."
+    }
+}
+
 switch ($Action) {
     "Install" {
         # Check if already installed
@@ -70,8 +147,6 @@ switch ($Action) {
         }
 
         # Determine the user account for the service.
-        # Running as a real user (not LocalSystem) is required so the service
-        # can lock the workstation, launch apps, and read the user's HWiNFO registry hive.
         if (-not $Username) {
             $Username = ".\$env:USERNAME"
         }
@@ -79,14 +154,15 @@ switch ($Action) {
         Write-Host "Registering Windows Service '$ServiceName' as '$Username'..." -ForegroundColor Cyan
 
         if ($Password) {
-            # Build credential from supplied password (used by the client UI).
             $securePass = ConvertTo-SecureString $Password -AsPlainText -Force
             $cred = New-Object System.Management.Automation.PSCredential($Username, $securePass)
         } else {
-            # Interactive prompt when running from the command line.
             Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
             $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
         }
+
+        # Grant SeServiceLogonRight BEFORE creating service so it starts reliably
+        Grant-LogOnAsService $Username
 
         New-Service `
             -Name $ServiceName `
@@ -95,9 +171,6 @@ switch ($Action) {
             -Description $Description `
             -StartupType Automatic `
             -Credential $cred
-
-        # Allow the service to interact with the user's desktop session.
-        # This grants the "Log on as a service" right implicitly via New-Service -Credential.
 
         Write-Host "Starting service..." -ForegroundColor Cyan
         Start-Service -Name $ServiceName

@@ -20,4 +20,10 @@
     <ProjectReference Include="..\Remex.Client\Remex.Client.csproj" />
     <ProjectReference Include="..\Remex.Host\Remex.Host.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\scripts\**" Link="scripts\%(RecursiveDir)%(FileName)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
