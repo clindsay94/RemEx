@@ -121,17 +121,16 @@ public partial class ConnectionViewModel : ObservableObject
         IsConnecting = true;
         StopReconnecting();
 
+        // Define CTS outside try to be accessible in catch
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        _webSocket = new ClientWebSocket();
+        _receiveCts = new CancellationTokenSource();
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_receiveCts.Token, timeoutCts.Token);
+
         try
         {
             StatusText = "Connecting…";
-            _webSocket = new ClientWebSocket();
-            _receiveCts = new CancellationTokenSource();
-
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-            
-            // Allow 20s for initial handshake.
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_receiveCts.Token, timeoutCts.Token);
             
             await _webSocket.ConnectAsync(new Uri(HostAddress), linkedCts.Token);
 
