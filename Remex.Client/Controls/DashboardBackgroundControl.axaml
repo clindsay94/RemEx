@@ -40,10 +40,10 @@
 
         <!-- ═══ Wallpaper Mode ═══ -->
         <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
-            <Rectangle Fill="Black" />
+            <Rectangle Fill="#0A0A10" />
             <!-- Ensure an Assets folder exists or use a default fallback -->
-            <Image Source="avares://Remex.Client/Assets/default_wallpaper.jpg" 
-                   Stretch="UniformToFill" />
+            <!-- <Image Source="avares://Remex.Client/Assets/default_wallpaper.jpg" 
+                   Stretch="UniformToFill" /> -->
             <Panel Background="#CC000000">
                 <Panel.Effect>
                     <BlurEffect Radius="40" />
