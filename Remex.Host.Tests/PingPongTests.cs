@@ -45,7 +45,7 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Command_Lock_ReturnsSuccess()
     {
-        var factory = GetFactory();
+        using var factory = GetFactory();
 
         var wsClient = factory.Server.CreateWebSocketClient();
         var ws = await wsClient.ConnectAsync(
@@ -95,7 +95,8 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task PingPong_SendPing_ReceivesPong()
     {
-        var wsClient = GetFactory().Server.CreateWebSocketClient();
+        using var factory = GetFactory();
+        var wsClient = factory.Server.CreateWebSocketClient();
         var ws = await wsClient.ConnectAsync(
             new Uri($"ws://localhost{RemexConstants.WebSocketPath}"), CancellationToken.None);
 
