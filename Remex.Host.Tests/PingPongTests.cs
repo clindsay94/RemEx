@@ -170,9 +170,17 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
         while (true)
         {
-            var msg = await MessageSerializer.ReceiveAsync(ws, cts.Token);
-            if (msg == null) return null;
-            if (msg.Type == targetType) return msg;
+            try
+            {
+                var msg = await MessageSerializer.ReceiveAsync(ws, cts.Token);
+                if (msg == null) return null;
+                if (msg.Type == targetType) return msg;
+            }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested)
+            {
+                // Timeout elapsed before a matching message was received.
+                return null;
+            }
         }
     }
 
