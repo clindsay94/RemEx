@@ -13,6 +13,7 @@ namespace Remex.Client.ViewModels;
 public partial class ShellViewModel : ObservableObject
 {
     private readonly DashboardLayoutService _layoutService;
+    private readonly IImmersiveModeService? _immersiveMode;
 
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>
     public ConnectionViewModel Connection { get; }
@@ -22,6 +23,12 @@ public partial class ShellViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private ObservableObject? _currentView;
+
+    /// <summary>
+    /// When true, the shell title bar / navigation chrome is hidden for immersive fullscreen.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isShellChromeHidden;
 
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
@@ -34,9 +41,10 @@ public partial class ShellViewModel : ObservableObject
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
 
-    public ShellViewModel(DashboardLayoutService layoutService, ConnectionViewModel connectionViewModel)
+    public ShellViewModel(DashboardLayoutService layoutService, ConnectionViewModel connectionViewModel, IImmersiveModeService? immersiveMode = null)
     {
         _layoutService = layoutService;
+        _immersiveMode = immersiveMode;
         Connection = connectionViewModel;
 
         // Initialize background/shared VMs
@@ -114,7 +122,7 @@ public partial class ShellViewModel : ObservableObject
 
     public void NavigateToRemoteDesktop()
     {
-        _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this);
+        _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this, _immersiveMode);
         CurrentView = _remoteDesktopViewModel;
     }
 

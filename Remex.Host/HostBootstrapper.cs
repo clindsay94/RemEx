@@ -4,6 +4,8 @@ using Remex.Host.Handlers;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
 using Remex.Host.Services.ProcessMonitor;
+using Microsoft.Extensions.Configuration;
+using System.Net;
 
 namespace Remex.Host;
 
@@ -13,6 +15,11 @@ namespace Remex.Host;
 /// </summary>
 public static class HostBootstrapper
 {
+    /// <summary>
+    /// Unique instance identifier for this host process.
+    /// Used by remote desktop to detect self-connections (infinite mirror prevention).
+    /// </summary>
+    public static string InstanceId { get; } = Guid.NewGuid().ToString("N");
     /// <summary>
     /// Builds and configures the Remex Host <see cref="WebApplication"/>
     /// without starting it. Call <c>Run()</c> or <c>StartAsync()</c> on
@@ -43,12 +50,16 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.WindowsSystemCommandService>();
             builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
+            builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService>();
+            builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.WindowsInputSimulationService>();
         }
         else if (OperatingSystem.IsLinux())
         {
             builder.Services.AddSingleton<ITelemetryService, LinuxTelemetryService>();
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
             builder.Services.AddSingleton<IProcessMonitorService, LinuxProcessMonitorService>();
+            builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.LinuxScreenCaptureService>();
+            builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.LinuxInputSimulationService>();
         }
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
@@ -78,7 +89,7 @@ public static class HostBootstrapper
                 await context.Response.WriteAsync("WebSocket connections only.");
                 return;
             }
-
+ 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<ITelemetryService>();
@@ -91,6 +102,38 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>());
+            await handler.HandleAsync(ws, context.RequestAborted);
+        });
+
+        // Remote Desktop WebSocket endpoint (dedicated binary stream)
+        app.Map("/ws/desktop", async (HttpContext context) =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("WebSocket connections only.");
+                return;
+            }
+
+            // Restrict remote desktop access: allow localhost by default, and require
+            // explicit configuration to permit remote connections.
+            var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+            var allowRemoteConnections = configuration.GetValue<bool>("RemoteDesktop:AllowRemoteConnections");
+            var remoteIp = context.Connection.RemoteIpAddress;
+            var isLocalRequest = remoteIp == null || IPAddress.IsLoopback(remoteIp);
+
+            if (!allowRemoteConnections && !isLocalRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsync("Remote desktop is only available from localhost unless explicitly enabled in configuration.");
+                return;
+            }
+
+            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            var handler = new RemoteDesktopHandler(
+                context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
+                context.RequestServices.GetRequiredService<IScreenCaptureService>(),
+                context.RequestServices.GetRequiredService<IInputSimulationService>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 

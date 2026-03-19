@@ -6,7 +6,8 @@
     <Grid RowDefinitions="Auto,*">
     
         <!-- ═══ CUSTOM TITLE BAR ═══ -->
-        <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto"
+              IsVisible="{Binding !IsShellChromeHidden}">
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
                 <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
             </StackPanel>

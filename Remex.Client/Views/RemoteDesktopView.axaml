@@ -1,26 +1,208 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel">
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:controls="using:Remex.Client.Controls"
+    x:Class="Remex.Client.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel"
+    Focusable="True">
 
-    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24">
+    <UserControl.Styles>
+        <Style Selector="Button.rd-btn">
+            <Setter Property="Background" Value="#2A2A4A"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16 8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.rd-btn:pointerover">
+            <Setter Property="Background" Value="#3A3A5A"/>
+        </Style>
+        <Style Selector="Button.rd-btn-start">
+            <Setter Property="Background" Value="#1A3A1A"/>
+            <Setter Property="Foreground" Value="#6BFF6B"/>
+        </Style>
+        <Style Selector="Button.rd-btn-start:pointerover">
+            <Setter Property="Background" Value="#2A4A2A"/>
+        </Style>
+        <Style Selector="Button.rd-btn-stop">
+            <Setter Property="Background" Value="#3A1A1A"/>
+            <Setter Property="Foreground" Value="#FF6B6B"/>
+        </Style>
+        <Style Selector="Button.rd-btn-stop:pointerover">
+            <Setter Property="Background" Value="#4A2A2A"/>
+        </Style>
+    </UserControl.Styles>
 
-            <!-- ═══ Header ═══ -->
-            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
-            <StackPanel Spacing="4">
-                <TextBlock Text="🖥  REMOTE DESKTOP" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
-                <TextBlock Text="SCREEN SHARING &amp; CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
-            </StackPanel>
+    <Grid RowDefinitions="Auto,*,Auto">
 
-            <!-- ═══ Placeholder ═══ -->
-            <Border Classes="glass-card" Padding="40" HorizontalAlignment="Center">
-                <StackPanel Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="🖥" FontSize="48" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Coming Soon" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="View and interact with your remote desktop from this device." FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+        <!-- ═══ TOOLBAR ═══ -->
+        <Border Grid.Row="0" Background="#1A1A2E" Padding="16 8" IsVisible="{Binding !IsFullScreen}">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Nav + stream controls -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="12" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
+                    <Border Width="1" Height="20" Background="#333355"/>
+                    <Button Content="▶ Start" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}"/>
+                    <Button Content="■ Stop" Command="{Binding StopStreamCommand}" Classes="rd-btn rd-btn-stop" IsVisible="{Binding IsStreaming}"/>
                 </StackPanel>
-            </Border>
 
-        </StackPanel>
-    </ScrollViewer>
+                <!-- Center: Title -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="🖥  REMOTE DESKTOP" FontSize="14" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Right: Settings -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="Quality:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Quality, StringFormat={}{0}%}" Foreground="#C0C0FF" FontSize="11" Width="32" VerticalAlignment="Center"/>
+
+                    <Border Width="1" Height="20" Background="#333355"/>
+
+                    <TextBlock Text="Scale:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <ComboBox SelectedIndex="1" x:Name="ScaleComboBox" MinWidth="60" FontSize="11" VerticalAlignment="Center">
+                        <ComboBoxItem Content="25%" Tag="0.25"/>
+                        <ComboBoxItem Content="50%" Tag="0.5"/>
+                        <ComboBoxItem Content="75%" Tag="0.75"/>
+                        <ComboBoxItem Content="100%" Tag="1.0"/>
+                    </ComboBox>
+
+                    <Border Width="1" Height="20" Background="#333355"/>
+
+                    <TextBlock Text="FPS:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <ComboBox SelectedIndex="1" x:Name="FpsComboBox" MinWidth="55" FontSize="11" VerticalAlignment="Center">
+                        <ComboBoxItem Content="5" Tag="5"/>
+                        <ComboBoxItem Content="10" Tag="10"/>
+                        <ComboBoxItem Content="15" Tag="15"/>
+                        <ComboBoxItem Content="20" Tag="20"/>
+                        <ComboBoxItem Content="30" Tag="30"/>
+                        <ComboBoxItem Content="60" Tag="60"/>
+                        <ComboBoxItem Content="120" Tag="120"/>
+                        <ComboBoxItem Content="240" Tag="240"/>
+                        <ComboBoxItem Content="360" Tag="360"/>
+                    </ComboBox>
+
+                    <Button Content="Apply" Command="{Binding ApplySettingsCommand}" Classes="rd-btn" Margin="4,0,0,0"/>
+
+                    <Border Width="1" Height="20" Background="#333355"/>
+
+                    <Button Content="D-Pad" Command="{Binding ToggleCursorPadCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Toggle Cursor Pad" FontSize="11" Padding="10 6"/>
+
+                    <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Stylus Mode (treat touch as pen)" FontSize="11" Padding="10 6"/>
+
+                    <Button Content="{Binding MonitorLabel}" Command="{Binding NextMonitorCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Switch Monitor" FontSize="11" Padding="10 6"
+                            IsVisible="{Binding IsMultiMonitor}"/>
+
+                    <Button Content="Full" Command="{Binding ToggleFullScreenCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Toggle Fullscreen" FontSize="11" Padding="10 6"/>
+                </StackPanel>
+            </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ═══ VIEWPORT ═══ -->
+        <Border x:Name="ViewportBorder" Grid.Row="1" Background="#0A0A14" ClipToBounds="True">
+            <Panel>
+                <!-- Placeholder shown when not streaming -->
+                <StackPanel IsVisible="{Binding !IsStreaming}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <TextBlock Text="🖥" FontSize="64" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Remote Desktop" FontSize="20" FontWeight="Bold" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Connect and press Start to begin streaming." FontSize="13" Foreground="#8888AA" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Touch: tap = place cursor, double-tap = click, drag = move cursor, long-press = right-click, pinch = zoom" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    <TextBlock Text="S-Pen / Stylus: works like a mouse — press = click, barrel button = right-click" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    <TextBlock Text="Pen Mode: enables pen-like input for touch — tap = instant click, drag = click-and-drag" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Screen image (visible when streaming) -->
+                <Image x:Name="ScreenImage"
+                       Source="{Binding CurrentFrame}"
+                       Stretch="Uniform"
+                       IsVisible="{Binding IsStreaming}"
+                       RenderTransformOrigin="0%,0%"
+                       Cursor="Cross"/>
+
+                <!-- Cursor indicator crosshair (shows where remote cursor is) -->
+                <Canvas IsVisible="{Binding IsCursorVisible}" IsHitTestVisible="False">
+                    <!-- Outer ring -->
+                    <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="#80FF00"
+                             Canvas.Left="{Binding CursorIndicatorX}" Canvas.Top="{Binding CursorIndicatorY}">
+                        <Ellipse.RenderTransform>
+                            <TranslateTransform X="-12" Y="-12"/>
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <!-- Inner dot -->
+                    <Ellipse Width="4" Height="4" Fill="#80FF00"
+                             Canvas.Left="{Binding CursorIndicatorX}" Canvas.Top="{Binding CursorIndicatorY}">
+                        <Ellipse.RenderTransform>
+                            <TranslateTransform X="-2" Y="-2"/>
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                </Canvas>
+
+                <!-- Fullscreen floating buttons -->
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            IsVisible="{Binding IsFullScreen}"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,8,8,0">
+                    <!-- Monitor switch (fullscreen) -->
+                    <Button Content="{Binding MonitorLabel}" Command="{Binding NextMonitorCommand}"
+                            Opacity="0.7" CornerRadius="8" Padding="10 6"
+                            FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                            IsVisible="{Binding IsMultiMonitor}"
+                            Background="#CC1A1A2E" Foreground="#C0C0FF"/>
+                    <!-- Stylus mode toggle (fullscreen) -->
+                    <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}"
+                            Opacity="0.7" CornerRadius="8" Padding="10 6"
+                            FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Toggle Stylus Mode (treat touch as pen)"
+                            Background="#CC1A1A2E" Foreground="#C0C0FF"/>
+                    <!-- Exit fullscreen -->
+                    <Button Content="Exit" Command="{Binding ToggleFullScreenCommand}"
+                            Opacity="0.7"
+                            Background="#CC1A1A2E" Foreground="#C0C0FF" CornerRadius="8"
+                            Padding="10 6" FontSize="14" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Exit Fullscreen"/>
+                </StackPanel>
+
+                <!-- Virtual cursor pad (floating, togglable) -->
+                <controls:VirtualCursorPad x:Name="CursorPad"
+                    IsVisible="{Binding ShowCursorPad}"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,24,24" Opacity="0.85"/>
+
+                <!-- Reset zoom hint (shown when zoomed in) -->
+                <Button Content="🔍 Reset Zoom" Command="{Binding ResetZoomCommand}"
+                        IsVisible="{Binding IsViewportZoomed}"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Margin="8,8,0,0" Opacity="0.7"
+                        Background="#CC1A1A2E" Foreground="#C0C0FF" CornerRadius="8"
+                        Padding="12 6" FontSize="11" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+            </Panel>
+        </Border>
+
+        <!-- ═══ STATUS BAR ═══ -->
+        <Border Grid.Row="2" Background="#1A1A2E" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="#6BFF6B" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"
+                           IsVisible="{Binding IsViewportZoomed}"/>
+                <TextBlock Grid.Column="5" Text="{Binding MonitorLabel}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"
+                           IsVisible="{Binding IsMultiMonitor}"/>
+                <Border Grid.Column="6" Width="8" Height="8" CornerRadius="4"
+                        IsVisible="{Binding IsStreaming}"
+                        Background="#6BFF6B"
+                        VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+
 </UserControl>

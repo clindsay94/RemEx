@@ -57,6 +57,7 @@ class Program
         if (EmbeddedHostPort.HasValue)
         {
             App.OverrideHostPort = EmbeddedHostPort.Value;
+            App.EmbeddedHostInstanceId = HostBootstrapper.InstanceId;
         }
 
         App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;

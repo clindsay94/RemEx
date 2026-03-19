@@ -57,6 +57,17 @@ public sealed record RemexMessage
     /// <summary>List of running processes.</summary>
     [JsonPropertyName("processList")]
     public List<Remex.Core.Models.ProcessInfo>? ProcessList { get; init; }
+    /// <summary>Remote desktop input event.</summary>
+    [JsonPropertyName("inputEvent")]
+    public Remex.Core.Models.InputEvent? InputEvent { get; init; }
+
+    /// <summary>Remote desktop streaming configuration.</summary>
+    [JsonPropertyName("desktopConfig")]
+    public Remex.Core.Models.DesktopConfig? DesktopConfig { get; init; }
+
+    /// <summary>Remote desktop screen metadata.</summary>
+    [JsonPropertyName("desktopMeta")]
+    public Remex.Core.Models.DesktopMeta? DesktopMeta { get; init; }
 }
 
 /// <summary>
@@ -77,4 +88,10 @@ public static class MessageTypes
     public const string LayoutRequest = "layout_request";
     public const string ProcessListRequest = "process_list_request";
     public const string ProcessListSync = "process_list_sync";
+    public const string DesktopStart = "desktop_start";
+    public const string DesktopStop = "desktop_stop";
+    public const string DesktopFrame = "desktop_frame";
+    public const string DesktopInput = "desktop_input";
+    public const string DesktopConfig = "desktop_config";
+    public const string DesktopMeta = "desktop_meta";
 }

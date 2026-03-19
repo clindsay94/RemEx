@@ -15,6 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.3" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" NoWarn="NU1510" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.5" />
     <PackageReference Include="System.Management" Version="10.0.3" />
     <PackageReference Include="System.Threading.AccessControl" Version="10.0.5" NoWarn="NU1510" />
   </ItemGroup>

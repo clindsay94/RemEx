@@ -1,0 +1,410 @@
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Microsoft.Extensions.Logging;
+using Remex.Core.Services;
+using Avalonia.Input;
+
+namespace Remex.Host.Services.Input;
+
+[SupportedOSPlatform("windows")]
+public class WindowsInputSimulationService : IInputSimulationService
+{
+    private readonly ILogger<WindowsInputSimulationService> _logger;
+
+    public WindowsInputSimulationService(ILogger<WindowsInputSimulationService> logger)
+    {
+        _logger = logger;
+    }
+
+    public void MoveMouse(int x, int y)
+    {
+        // Use virtual screen metrics for multi-monitor support
+        int vLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        int vTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        int vWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        int vHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+        x = Math.Clamp(x, vLeft, vLeft + vWidth - 1);
+        y = Math.Clamp(y, vTop, vTop + vHeight - 1);
+
+        // Convert to absolute coordinates (0-65535 range) within virtual screen
+        int absX = (int)(((x - vLeft) * 65535.0) / (vWidth - 1));
+        int absY = (int)(((y - vTop) * 65535.0) / (vHeight - 1));
+
+        var input = new INPUT
+        {
+            type = INPUT_MOUSE,
+            u = new InputUnion
+            {
+                mi = new MOUSEINPUT
+                {
+                    dx = absX,
+                    dy = absY,
+                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
+                }
+            }
+        };
+        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+    }
+
+    public void MouseMoveRelative(int dx, int dy)
+    {
+        GetCursorPos(out var pt);
+        MoveMouse(pt.X + dx, pt.Y + dy);
+    }
+
+    public void MouseDown(int button)
+    {
+        uint flag = button switch
+        {
+            0 => MOUSEEVENTF_LEFTDOWN,
+            1 => MOUSEEVENTF_MIDDLEDOWN,
+            2 => MOUSEEVENTF_RIGHTDOWN,
+            _ => MOUSEEVENTF_LEFTDOWN
+        };
+
+        var input = new INPUT
+        {
+            type = INPUT_MOUSE,
+            u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flag } }
+        };
+        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+    }
+
+    public void MouseUp(int button)
+    {
+        uint flag = button switch
+        {
+            0 => MOUSEEVENTF_LEFTUP,
+            1 => MOUSEEVENTF_MIDDLEUP,
+            2 => MOUSEEVENTF_RIGHTUP,
+            _ => MOUSEEVENTF_LEFTUP
+        };
+
+        var input = new INPUT
+        {
+            type = INPUT_MOUSE,
+            u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flag } }
+        };
+        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+    }
+
+    public void MouseClick(int button)
+    {
+        MouseDown(button);
+        MouseUp(button);
+    }
+
+    public void MouseScroll(int deltaX, int deltaY)
+    {
+        if (deltaY != 0)
+        {
+            var input = new INPUT
+            {
+                type = INPUT_MOUSE,
+                u = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_WHEEL, mouseData = deltaY } }
+            };
+            SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        }
+
+        if (deltaX != 0)
+        {
+            var input = new INPUT
+            {
+                type = INPUT_MOUSE,
+                u = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_HWHEEL, mouseData = deltaX } }
+            };
+            SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        }
+    }
+
+    public void KeyDown(int keyCode)
+    {
+        var virtualKey = MapKeyCodeToVirtualKey(keyCode);
+        if (virtualKey == null)
+        {
+            _logger.LogDebug("KeyDown: Unmapped key code {KeyCode}", keyCode);
+            return;
+        }
+
+        var input = new INPUT
+        {
+            type = INPUT_KEYBOARD,
+            u = new InputUnion
+            {
+                ki = new KEYBDINPUT
+                {
+                    wVk = virtualKey.Value,
+                    dwFlags = 0,
+                }
+            }
+        };
+        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+    }
+
+    public void KeyUp(int keyCode)
+    {
+        var virtualKey = MapKeyCodeToVirtualKey(keyCode);
+        if (virtualKey == null)
+        {
+            _logger.LogDebug("KeyUp: Unmapped key code {KeyCode}", keyCode);
+            return;
+        }
+
+        var input = new INPUT
+        {
+            type = INPUT_KEYBOARD,
+            u = new InputUnion
+            {
+                ki = new KEYBDINPUT
+                {
+                    wVk = virtualKey.Value,
+                    dwFlags = KEYEVENTF_KEYUP,
+                }
+            }
+        };
+        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+    }
+
+    public void TypeText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+
+        foreach (char c in text)
+        {
+            var downInput = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wScan = c,
+                        dwFlags = KEYEVENTF_UNICODE,
+                    }
+                }
+            };
+            var upInput = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wScan = c,
+                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+                    }
+                }
+            };
+            SendInput(2, [downInput, upInput], Marshal.SizeOf<INPUT>());
+        }
+    }
+
+    #region P/Invoke constants and structs
+
+    private const int SM_CXSCREEN = 0;
+    private const int SM_CYSCREEN = 1;
+    private const int SM_XVIRTUALSCREEN = 76;
+    private const int SM_YVIRTUALSCREEN = 77;
+    private const int SM_CXVIRTUALSCREEN = 78;
+    private const int SM_CYVIRTUALSCREEN = 79;
+
+    private const uint INPUT_MOUSE = 0;
+    private const uint INPUT_KEYBOARD = 1;
+
+    private const uint MOUSEEVENTF_MOVE = 0x0001;
+    private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+    private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+    private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+    private const uint MOUSEEVENTF_RIGHTUP = 0x0010;
+    private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
+    private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
+    private const uint MOUSEEVENTF_WHEEL = 0x0800;
+    private const uint MOUSEEVENTF_HWHEEL = 0x1000;
+    private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
+    private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
+
+    private const uint KEYEVENTF_KEYUP = 0x0002;
+    private const uint KEYEVENTF_UNICODE = 0x0004;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct INPUT
+    {
+        public uint type;
+        public InputUnion u;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct InputUnion
+    {
+        [FieldOffset(0)] public MOUSEINPUT mi;
+        [FieldOffset(0)] public KEYBDINPUT ki;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public int mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KEYBDINPUT
+    {
+        public ushort wVk;
+        public ushort wScan;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    #endregion
+    /// <summary>
+    /// Maps an incoming protocol-level key code (typically Avalonia.Input.Key)
+    /// to a Win32 virtual-key code suitable for KEYBDINPUT.wVk.
+    /// Falls back to treating values in the 0–255 range as raw VK codes.
+    /// </summary>
+    private static ushort? MapKeyCodeToVirtualKey(int keyCode)
+    {
+        // First try to interpret the code as an Avalonia.Input.Key value.
+        if (keyCode >= 0)
+        {
+            var key = (Key)keyCode;
+            switch (key)
+            {
+                // Digits
+                case Key.D0: return 0x30; // '0'
+                case Key.D1: return 0x31; // '1'
+                case Key.D2: return 0x32; // '2'
+                case Key.D3: return 0x33; // '3'
+                case Key.D4: return 0x34; // '4'
+                case Key.D5: return 0x35; // '5'
+                case Key.D6: return 0x36; // '6'
+                case Key.D7: return 0x37; // '7'
+                case Key.D8: return 0x38; // '8'
+                case Key.D9: return 0x39; // '9'
+
+                // Letters
+                case Key.A: return 0x41;
+                case Key.B: return 0x42;
+                case Key.C: return 0x43;
+                case Key.D: return 0x44;
+                case Key.E: return 0x45;
+                case Key.F: return 0x46;
+                case Key.G: return 0x47;
+                case Key.H: return 0x48;
+                case Key.I: return 0x49;
+                case Key.J: return 0x4A;
+                case Key.K: return 0x4B;
+                case Key.L: return 0x4C;
+                case Key.M: return 0x4D;
+                case Key.N: return 0x4E;
+                case Key.O: return 0x4F;
+                case Key.P: return 0x50;
+                case Key.Q: return 0x51;
+                case Key.R: return 0x52;
+                case Key.S: return 0x53;
+                case Key.T: return 0x54;
+                case Key.U: return 0x55;
+                case Key.V: return 0x56;
+                case Key.W: return 0x57;
+                case Key.X: return 0x58;
+                case Key.Y: return 0x59;
+                case Key.Z: return 0x5A;
+
+                // Function keys
+                case Key.F1:  return 0x70;
+                case Key.F2:  return 0x71;
+                case Key.F3:  return 0x72;
+                case Key.F4:  return 0x73;
+                case Key.F5:  return 0x74;
+                case Key.F6:  return 0x75;
+                case Key.F7:  return 0x76;
+                case Key.F8:  return 0x77;
+                case Key.F9:  return 0x78;
+                case Key.F10: return 0x79;
+                case Key.F11: return 0x7A;
+                case Key.F12: return 0x7B;
+
+                // Navigation keys
+                case Key.Left:      return 0x25;
+                case Key.Up:        return 0x26;
+                case Key.Right:     return 0x27;
+                case Key.Down:      return 0x28;
+                case Key.Home:      return 0x24;
+                case Key.End:       return 0x23;
+                case Key.PageUp:    return 0x21;
+                case Key.PageDown:  return 0x22;
+                case Key.Insert:    return 0x2D;
+                case Key.Delete:    return 0x2E;
+
+                // System keys
+                case Key.Escape:    return 0x1B;
+                case Key.Tab:       return 0x09;
+                case Key.Enter:     return 0x0D;
+                case Key.Space:     return 0x20;
+                case Key.Back:      return 0x08;
+
+                // Modifiers
+                case Key.LeftShift:   return 0xA0; // VK_LSHIFT
+                case Key.RightShift:  return 0xA1; // VK_RSHIFT
+                case Key.LeftCtrl:    return 0xA2; // VK_LCONTROL
+                case Key.RightCtrl:   return 0xA3; // VK_RCONTROL
+                case Key.LeftAlt:     return 0xA4; // VK_LMENU
+                case Key.RightAlt:    return 0xA5; // VK_RMENU
+                case Key.LWin:        return 0x5B; // VK_LWIN
+                case Key.RWin:        return 0x5C; // VK_RWIN
+
+                // Numpad
+                case Key.NumPad0:    return 0x60;
+                case Key.NumPad1:    return 0x61;
+                case Key.NumPad2:    return 0x62;
+                case Key.NumPad3:    return 0x63;
+                case Key.NumPad4:    return 0x64;
+                case Key.NumPad5:    return 0x65;
+                case Key.NumPad6:    return 0x66;
+                case Key.NumPad7:    return 0x67;
+                case Key.NumPad8:    return 0x68;
+                case Key.NumPad9:    return 0x69;
+                case Key.Multiply:   return 0x6A;
+                case Key.Add:        return 0x6B;
+                case Key.Separator:  return 0x6C;
+                case Key.Subtract:   return 0x6D;
+                case Key.Decimal:    return 0x6E;
+                case Key.Divide:     return 0x6F;
+            }
+        }
+
+        // Fallback: if the incoming value is already in the Win32 VK range,
+        // treat it as a raw virtual-key code.
+        if (keyCode >= 0 && keyCode <= 255)
+        {
+            return (ushort)keyCode;
+        }
+
+        // Cannot map this key code.
+        return null;
+    }
+}

@@ -34,6 +34,13 @@ public partial class App : Application
     /// </summary>
     public static Func<Task>? StopEmbeddedHostAsync { get; set; }
 
+    /// <summary>
+    /// Unique instance ID for the embedded host in this process (if any).
+    /// Set by the Desktop entry point so the remote desktop client can
+    /// detect self-connections and prevent infinite mirror.
+    /// </summary>
+    public static string? EmbeddedHostInstanceId { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
