@@ -32,6 +32,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _hostAddress = "ws://localhost:5005/ws";
 
+    [ObservableProperty]
+    private string _accessKey = string.Empty;
+
     /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
     public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();
 
@@ -55,6 +58,7 @@ public partial class SettingsViewModel : ObservableObject
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
+            AccessKey = _profile.AccessKey;
             RefreshSensors();
         });
 
@@ -126,6 +130,12 @@ public partial class SettingsViewModel : ObservableObject
     {
         // Push the value to the live ConnectionViewModel.
         _connection.HostAddress = value;
+        Save();
+    }
+
+    partial void OnAccessKeyChanged(string value)
+    {
+        _connection.AccessKey = value;
         Save();
     }
 
@@ -647,6 +657,7 @@ public partial class SettingsViewModel : ObservableObject
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
             HostAddress = HostAddress,
+            AccessKey = AccessKey
         };
 
         _profile = updated;
