@@ -17,6 +17,7 @@ public class RemexWidgetProvider : AppWidgetProvider
 {
     public override void OnUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds)
     {
+        if (Remex.Client.App.Services == null) return;
         var connVm = Remex.Client.App.Services.GetRequiredService<ConnectionViewModel>();
         var telemetry = connVm.Telemetry;
 

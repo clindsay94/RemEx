@@ -26,18 +26,9 @@ public static class CommandModeContext
         bool createdNew = false;
         try
         {
-            if (OperatingSystem.IsWindows())
-            {
-                // In client mode we just try to open or create without specific ACLs here to test presence
-                // WaitOne(0) checks if we can acquire it without blocking
-                _mutex = new Mutex(false, MutexName, out createdNew);
-                IsServerMode = createdNew;
-            }
-            else
-            {
-                _mutex = new Mutex(false, MutexName, out createdNew);
-                IsServerMode = createdNew;
-            }
+            string finalMutexName = OperatingSystem.IsWindows() ? MutexName : "RemExServiceMutex";
+            _mutex = new Mutex(false, finalMutexName, out createdNew);
+            IsServerMode = createdNew;
         }
         catch (UnauthorizedAccessException)
         {

@@ -16,6 +16,7 @@ public class RemexTileService : TileService
     public override void OnClick()
     {
         base.OnClick();
+        if (Remex.Client.App.Services == null) return;
         var connVm = Remex.Client.App.Services.GetRequiredService<ConnectionViewModel>();
         if (connVm.IsConnected)
         {

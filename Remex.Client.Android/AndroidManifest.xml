@@ -9,7 +9,7 @@
                android:fullBackupContent="@xml/backup_rules"
                android:dataExtractionRules="@xml/data_extraction_rules">
 
-    <service android:name=".Services.RemexTileService"
+    <service android:name="com.remex.client.RemexTileService"
              android:label="Remex Lock"
              android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
              android:exported="true">
@@ -18,7 +18,7 @@
         </intent-filter>
     </service>
 
-    <receiver android:name=".Services.RemexWidgetProvider"
+    <receiver android:name="com.remex.client.RemexWidgetProvider"
               android:label="Remex Telemetry"
               android:exported="true">
         <intent-filter>
