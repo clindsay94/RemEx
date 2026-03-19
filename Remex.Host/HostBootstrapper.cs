@@ -3,6 +3,8 @@ using Remex.Core.Services;
 using Remex.Host.Handlers;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
+using Microsoft.Extensions.Configuration;
+using System.Net;
 
 namespace Remex.Host;
 
@@ -106,6 +108,20 @@ public static class HostBootstrapper
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("WebSocket connections only.");
+                return;
+            }
+
+            // Restrict remote desktop access: allow localhost by default, and require
+            // explicit configuration to permit remote connections.
+            var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+            var allowRemoteConnections = configuration.GetValue<bool>("RemoteDesktop:AllowRemoteConnections");
+            var remoteIp = context.Connection.RemoteIpAddress;
+            var isLocalRequest = remoteIp == null || IPAddress.IsLoopback(remoteIp);
+
+            if (!allowRemoteConnections && !isLocalRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsync("Remote desktop is only available from localhost unless explicitly enabled in configuration.");
                 return;
             }
 
