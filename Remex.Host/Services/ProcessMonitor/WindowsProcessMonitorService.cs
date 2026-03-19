@@ -16,6 +16,7 @@ public class WindowsProcessMonitorService : IProcessMonitorService
     private readonly ILogger<WindowsProcessMonitorService> _logger;
     private readonly Dictionary<int, ProcessCpuTracker> _cpuTrackers = new();
     private DateTime _lastScanTime = DateTime.UtcNow;
+    private readonly object _syncRoot = new();
 
     public WindowsProcessMonitorService(ILogger<WindowsProcessMonitorService> logger)
     {
@@ -26,83 +27,86 @@ public class WindowsProcessMonitorService : IProcessMonitorService
     {
         return Task.Run(() =>
         {
-            var results = new List<ProcessInfo>();
-            var activePids = new HashSet<int>();
-            var now = DateTime.UtcNow;
-            var timeDiff = (now - _lastScanTime).TotalMilliseconds;
-            _lastScanTime = now;
-            var processes = Process.GetProcesses();
-
-            foreach (var p in processes)
+            lock (_syncRoot)
             {
-                activePids.Add(p.Id);
-                var info = new ProcessInfo
-                {
-                    Id = p.Id,
-                    Name = p.ProcessName
-                };
+                var results = new List<ProcessInfo>();
+                var activePids = new HashSet<int>();
+                var now = DateTime.UtcNow;
+                var timeDiff = (now - _lastScanTime).TotalMilliseconds;
+                _lastScanTime = now;
+                var processes = Process.GetProcesses();
 
-                try
+                foreach (var p in processes)
                 {
-                    info = info with { MemoryUsage = p.WorkingSet64 };
-                }
-                catch { }
-
-                try
-                {
-                    var cpuTime = p.TotalProcessorTime.TotalMilliseconds;
-                    if (!_cpuTrackers.TryGetValue(p.Id, out var tracker))
+                    activePids.Add(p.Id);
+                    var info = new ProcessInfo
                     {
-                        tracker = new ProcessCpuTracker { LastCpuTime = cpuTime };
-                        _cpuTrackers[p.Id] = tracker;
-                        info = info with { CpuUsage = 0 };
+                        Id = p.Id,
+                        Name = p.ProcessName
+                    };
+
+                    try
+                    {
+                        info = info with { MemoryUsage = p.WorkingSet64 };
                     }
-                    else
+                    catch { }
+
+                    try
                     {
-                        var cpuDiff = cpuTime - tracker.LastCpuTime;
-                        tracker.LastCpuTime = cpuTime;
-                        double usage = 0;
-                        if (timeDiff > 0)
+                        var cpuTime = p.TotalProcessorTime.TotalMilliseconds;
+                        if (!_cpuTrackers.TryGetValue(p.Id, out var tracker))
                         {
-                            usage = (cpuDiff / timeDiff) * 100.0 / Environment.ProcessorCount;
+                            tracker = new ProcessCpuTracker { LastCpuTime = cpuTime };
+                            _cpuTrackers[p.Id] = tracker;
+                            info = info with { CpuUsage = 0 };
                         }
-                        info = info with { CpuUsage = usage };
-                    }
-                }
-                catch { }
-
-                // Attempt to get file path and publisher/version
-                try
-                {
-                    string path = p.MainModule?.FileName ?? "";
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        info = info with { FilePath = path };
-                        var fvi = FileVersionInfo.GetVersionInfo(path);
-                        info = info with
+                        else
                         {
-                            Version = fvi.FileVersion ?? "",
-                            Publisher = fvi.CompanyName ?? ""
-                        };
-                        try
-                        {
-                            var fi = new FileInfo(path);
-                            info = info with { InstallDate = fi.CreationTime };
+                            var cpuDiff = cpuTime - tracker.LastCpuTime;
+                            tracker.LastCpuTime = cpuTime;
+                            double usage = 0;
+                            if (timeDiff > 0)
+                            {
+                                usage = (cpuDiff / timeDiff) * 100.0 / Environment.ProcessorCount;
+                            }
+                            info = info with { CpuUsage = usage };
                         }
-                        catch { }
                     }
-                }
-                catch { } // Access denied is common here for system procs
+                    catch { }
 
-                results.Add(info);
-                p.Dispose();
+                    // Attempt to get file path and publisher/version
+                    try
+                    {
+                        string path = p.MainModule?.FileName ?? "";
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            info = info with { FilePath = path };
+                            var fvi = FileVersionInfo.GetVersionInfo(path);
+                            info = info with
+                            {
+                                Version = fvi.FileVersion ?? "",
+                                Publisher = fvi.CompanyName ?? ""
+                            };
+                            try
+                            {
+                                var fi = new FileInfo(path);
+                                info = info with { InstallDate = fi.CreationTime };
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { } // Access denied is common here for system procs
+
+                    results.Add(info);
+                    p.Dispose();
+                }
+
+                // Cleanup old trackers
+                var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
+                foreach (var k in toRemove) _cpuTrackers.Remove(k);
+
+                return results;
             }
-
-            // Cleanup old trackers
-            var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
-            foreach (var k in toRemove) _cpuTrackers.Remove(k);
-
-            return results;
         });
     }
 
