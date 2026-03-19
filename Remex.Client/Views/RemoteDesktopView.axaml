@@ -1,26 +1,120 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel">
+    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel"
+    Focusable="True">
 
-    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24">
+    <UserControl.Styles>
+        <Style Selector="Button.rd-btn">
+            <Setter Property="Background" Value="#2A2A4A"/>
+            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16 8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.rd-btn:pointerover">
+            <Setter Property="Background" Value="#3A3A5A"/>
+        </Style>
+        <Style Selector="Button.rd-btn-start">
+            <Setter Property="Background" Value="#1A3A1A"/>
+            <Setter Property="Foreground" Value="#6BFF6B"/>
+        </Style>
+        <Style Selector="Button.rd-btn-start:pointerover">
+            <Setter Property="Background" Value="#2A4A2A"/>
+        </Style>
+        <Style Selector="Button.rd-btn-stop">
+            <Setter Property="Background" Value="#3A1A1A"/>
+            <Setter Property="Foreground" Value="#FF6B6B"/>
+        </Style>
+        <Style Selector="Button.rd-btn-stop:pointerover">
+            <Setter Property="Background" Value="#4A2A2A"/>
+        </Style>
+    </UserControl.Styles>
 
-            <!-- ═══ Header ═══ -->
-            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
-            <StackPanel Spacing="4">
-                <TextBlock Text="🖥  REMOTE DESKTOP" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
-                <TextBlock Text="SCREEN SHARING &amp; CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
-            </StackPanel>
+    <Grid RowDefinitions="Auto,*,Auto">
 
-            <!-- ═══ Placeholder ═══ -->
-            <Border Classes="glass-card" Padding="40" HorizontalAlignment="Center">
-                <StackPanel Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="🖥" FontSize="48" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Coming Soon" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="View and interact with your remote desktop from this device." FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+        <!-- ═══ TOOLBAR ═══ -->
+        <Border Grid.Row="0" Background="#1A1A2E" Padding="16 8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Left: Nav + stream controls -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="12" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
+                    <Border Width="1" Height="20" Background="#333355"/>
+                    <Button Content="▶ Start" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}"/>
+                    <Button Content="■ Stop" Command="{Binding StopStreamCommand}" Classes="rd-btn rd-btn-stop" IsVisible="{Binding IsStreaming}"/>
                 </StackPanel>
-            </Border>
 
-        </StackPanel>
-    </ScrollViewer>
+                <!-- Center: Title -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="🖥  REMOTE DESKTOP" FontSize="14" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Right: Settings -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="Quality:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Quality, StringFormat={}{0}%}" Foreground="#C0C0FF" FontSize="11" Width="32" VerticalAlignment="Center"/>
+
+                    <Border Width="1" Height="20" Background="#333355"/>
+
+                    <TextBlock Text="Scale:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <ComboBox SelectedIndex="1" x:Name="ScaleComboBox" MinWidth="60" FontSize="11" VerticalAlignment="Center">
+                        <ComboBoxItem Content="25%" Tag="0.25"/>
+                        <ComboBoxItem Content="50%" Tag="0.5"/>
+                        <ComboBoxItem Content="75%" Tag="0.75"/>
+                        <ComboBoxItem Content="100%" Tag="1.0"/>
+                    </ComboBox>
+
+                    <Border Width="1" Height="20" Background="#333355"/>
+
+                    <TextBlock Text="FPS:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <ComboBox SelectedIndex="1" x:Name="FpsComboBox" MinWidth="55" FontSize="11" VerticalAlignment="Center">
+                        <ComboBoxItem Content="5" Tag="5"/>
+                        <ComboBoxItem Content="10" Tag="10"/>
+                        <ComboBoxItem Content="15" Tag="15"/>
+                        <ComboBoxItem Content="20" Tag="20"/>
+                        <ComboBoxItem Content="30" Tag="30"/>
+                    </ComboBox>
+
+                    <Button Content="Apply" Command="{Binding ApplySettingsCommand}" Classes="rd-btn" Margin="4,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ VIEWPORT ═══ -->
+        <Border Grid.Row="1" Background="#0A0A14" ClipToBounds="True">
+            <Panel>
+                <!-- Placeholder shown when not streaming -->
+                <StackPanel IsVisible="{Binding !IsStreaming}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <TextBlock Text="🖥" FontSize="64" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Remote Desktop" FontSize="20" FontWeight="Bold" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Connect and press Start to begin streaming." FontSize="13" Foreground="#8888AA" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Screen image (visible when streaming) -->
+                <Image x:Name="ScreenImage"
+                       Source="{Binding CurrentFrame}"
+                       Stretch="Uniform"
+                       IsVisible="{Binding IsStreaming}"
+                       Cursor="Cross"/>
+            </Panel>
+        </Border>
+
+        <!-- ═══ STATUS BAR ═══ -->
+        <Border Grid.Row="2" Background="#1A1A2E" Padding="16 6">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="#6BFF6B" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <Border Grid.Column="4" Width="8" Height="8" CornerRadius="4"
+                        IsVisible="{Binding IsStreaming}"
+                        Background="#6BFF6B"
+                        VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+
 </UserControl>

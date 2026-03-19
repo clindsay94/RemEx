@@ -53,6 +53,18 @@ public sealed record RemexMessage
     /// <summary>Dashboard layout profile for synchronization.</summary>
     [JsonPropertyName("dashboardProfile")]
     public Remex.Core.Models.DashboardProfile? DashboardProfile { get; init; }
+
+    /// <summary>Remote desktop input event.</summary>
+    [JsonPropertyName("inputEvent")]
+    public Remex.Core.Models.InputEvent? InputEvent { get; init; }
+
+    /// <summary>Remote desktop streaming configuration.</summary>
+    [JsonPropertyName("desktopConfig")]
+    public Remex.Core.Models.DesktopConfig? DesktopConfig { get; init; }
+
+    /// <summary>Remote desktop screen metadata.</summary>
+    [JsonPropertyName("desktopMeta")]
+    public Remex.Core.Models.DesktopMeta? DesktopMeta { get; init; }
 }
 
 /// <summary>
@@ -71,4 +83,10 @@ public static class MessageTypes
     public const string LayoutSync = "layout_sync";
     public const string LayoutUpdate = "layout_update";
     public const string LayoutRequest = "layout_request";
+    public const string DesktopStart = "desktop_start";
+    public const string DesktopStop = "desktop_stop";
+    public const string DesktopFrame = "desktop_frame";
+    public const string DesktopInput = "desktop_input";
+    public const string DesktopConfig = "desktop_config";
+    public const string DesktopMeta = "desktop_meta";
 }
