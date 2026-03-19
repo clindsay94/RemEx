@@ -158,6 +158,7 @@ public class RemoteDesktopService : IDisposable
         }
         catch (OperationCanceledException) { /* normal */ }
         catch (WebSocketException) { /* connection lost */ }
+        catch (ObjectDisposedException) { /* socket disposed during shutdown */ }
         finally
         {
             Disconnected?.Invoke();
