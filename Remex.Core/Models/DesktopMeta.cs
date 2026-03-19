@@ -12,4 +12,11 @@ public record DesktopMeta
 
     [JsonPropertyName("monitorCount")]
     public int MonitorCount { get; init; } = 1;
+
+    /// <summary>
+    /// Unique identifier for the host process instance.
+    /// Used to detect self-connections (infinite mirror prevention).
+    /// </summary>
+    [JsonPropertyName("hostInstanceId")]
+    public string? HostInstanceId { get; init; }
 }

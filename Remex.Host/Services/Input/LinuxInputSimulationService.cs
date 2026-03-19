@@ -21,6 +21,11 @@ public class LinuxInputSimulationService : IInputSimulationService
         RunXdotool($"mousemove {x} {y}");
     }
 
+    public void MouseMoveRelative(int dx, int dy)
+    {
+        RunXdotool($"mousemove_relative -- {dx} {dy}");
+    }
+
     public void MouseDown(int button)
     {
         RunXdotool($"mousedown {MapButton(button)}");

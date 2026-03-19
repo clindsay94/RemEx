@@ -48,6 +48,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         public List<string> ReceivedEvents { get; } = new();
 
         public void MoveMouse(int x, int y) => ReceivedEvents.Add($"move:{x},{y}");
+        public void MouseMoveRelative(int dx, int dy) => ReceivedEvents.Add($"moverel:{dx},{dy}");
         public void MouseDown(int button) => ReceivedEvents.Add($"down:{button}");
         public void MouseUp(int button) => ReceivedEvents.Add($"up:{button}");
         public void MouseClick(int button) => ReceivedEvents.Add($"click:{button}");

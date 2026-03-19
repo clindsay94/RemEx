@@ -13,6 +13,11 @@ namespace Remex.Host;
 public static class HostBootstrapper
 {
     /// <summary>
+    /// Unique instance identifier for this host process.
+    /// Used by remote desktop to detect self-connections (infinite mirror prevention).
+    /// </summary>
+    public static string InstanceId { get; } = Guid.NewGuid().ToString("N");
+    /// <summary>
     /// Builds and configures the Remex Host <see cref="WebApplication"/>
     /// without starting it. Call <c>Run()</c> or <c>StartAsync()</c> on
     /// the returned application to begin listening.

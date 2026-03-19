@@ -6,6 +6,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Remex.Client.Services;
 using Remex.Client.Services.Network;
 using Remex.Core.Models;
 
@@ -19,6 +20,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly RemoteDesktopService _desktopService;
+    private readonly IImmersiveModeService? _immersiveMode;
     private DateTime _lastFrameTime = DateTime.MinValue;
     private int _frameCount;
     private DateTime _fpsWindowStart = DateTime.UtcNow;
@@ -53,16 +55,54 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = "Not streaming";
 
+    [ObservableProperty]
+    private bool _isFullScreen;
+
+    [ObservableProperty]
+    private bool _isViewportZoomed;
+
+    [ObservableProperty]
+    private string _viewportZoomText = "Zoom: 1.0×";
+
+    [ObservableProperty]
+    private bool _showCursorPad;
+
+    /// <summary>
+    /// When true, all touch input is treated as pen/stylus (tap = click, drag = click-drag).
+    /// Useful when S-Pen is not auto-detected by the platform.
+    /// </summary>
+    [ObservableProperty]
+    private bool _stylusMode;
+
+    /// <summary>
+    /// Last known cursor X position within the viewport (local coords, for crosshair overlay).
+    /// </summary>
+    [ObservableProperty]
+    private double _cursorIndicatorX;
+
+    /// <summary>
+    /// Last known cursor Y position within the viewport (local coords, for crosshair overlay).
+    /// </summary>
+    [ObservableProperty]
+    private double _cursorIndicatorY;
+
+    /// <summary>
+    /// Whether the cursor indicator should be visible (hidden after timeout or when not streaming).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isCursorVisible;
+
     /// <summary>Remote screen width in pixels (native).</summary>
     public int ScreenWidth { get; private set; }
 
     /// <summary>Remote screen height in pixels (native).</summary>
     public int ScreenHeight { get; private set; }
 
-    public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell)
+    public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell, IImmersiveModeService? immersiveMode = null)
     {
         Connection = connection;
         _shell = shell;
+        _immersiveMode = immersiveMode;
         _desktopService = new RemoteDesktopService();
         _desktopService.FrameReceived += OnFrameReceived;
         _desktopService.MetaReceived += OnMetaReceived;
@@ -134,7 +174,53 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void NavigateBack() => _shell.NavigateToHome();
+    private void NavigateBack()
+    {
+        _shell.IsShellChromeHidden = false;
+        IsFullScreen = false;
+        _immersiveMode?.ExitImmersiveMode();
+        _shell.NavigateToHome();
+    }
+
+    [RelayCommand]
+    private void ToggleFullScreen()
+    {
+        IsFullScreen = !IsFullScreen;
+        _shell.IsShellChromeHidden = IsFullScreen;
+
+        if (IsFullScreen)
+            _immersiveMode?.EnterImmersiveMode();
+        else
+            _immersiveMode?.ExitImmersiveMode();
+    }
+
+    [RelayCommand]
+    private void ToggleCursorPad() => ShowCursorPad = !ShowCursorPad;
+
+    [RelayCommand]
+    private void ToggleStylusMode() => StylusMode = !StylusMode;
+
+    [RelayCommand]
+    private void ResetZoom()
+    {
+        IsViewportZoomed = false;
+        ViewportZoomText = "Zoom: 1.0×";
+        ViewportZoomResetRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Raised when the ViewModel requests the View to reset its viewport transform.
+    /// </summary>
+    public event Action? ViewportZoomResetRequested;
+
+    /// <summary>
+    /// Called from the View when the local viewport zoom changes.
+    /// </summary>
+    public void UpdateViewportZoom(double zoom)
+    {
+        IsViewportZoomed = zoom > 1.01;
+        ViewportZoomText = $"Zoom: {zoom:F1}×";
+    }
 
     // ═══════════════ Input Forwarding ═══════════════
 
@@ -179,6 +265,18 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     private void OnMetaReceived(DesktopMeta meta)
     {
+        // Detect self-connection (infinite mirror prevention)
+        if (!string.IsNullOrEmpty(meta.HostInstanceId) &&
+            meta.HostInstanceId == App.EmbeddedHostInstanceId)
+        {
+            Dispatcher.UIThread.Post(async () =>
+            {
+                StatusText = "Self-connection detected — cannot mirror own screen";
+                await StopStreamAsync();
+            });
+            return;
+        }
+
         ScreenWidth = meta.ScreenWidth;
         ScreenHeight = meta.ScreenHeight;
 

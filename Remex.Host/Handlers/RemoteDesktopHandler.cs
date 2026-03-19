@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Host;
 
 namespace Remex.Host.Handlers;
 
@@ -62,7 +63,12 @@ public sealed class RemoteDesktopHandler
                         var metaMsg = new RemexMessage
                         {
                             Type = MessageTypes.DesktopMeta,
-                            DesktopMeta = new DesktopMeta { ScreenWidth = sw, ScreenHeight = sh }
+                            DesktopMeta = new DesktopMeta
+                            {
+                                ScreenWidth = sw,
+                                ScreenHeight = sh,
+                                HostInstanceId = HostBootstrapper.InstanceId,
+                            }
                         };
                         await MessageSerializer.SendAsync(webSocket, metaMsg, ct);
 
@@ -195,6 +201,9 @@ public sealed class RemoteDesktopHandler
                 case InputEventTypes.MouseMove when input.X.HasValue && input.Y.HasValue:
                     _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
                     break;
+                case InputEventTypes.MouseMove when input.DeltaX.HasValue || input.DeltaY.HasValue:
+                    _inputSimulation.MouseMoveRelative(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    break;
                 case InputEventTypes.MouseDown when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
                         _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
@@ -232,7 +241,7 @@ public sealed class RemoteDesktopHandler
     {
         _quality = Math.Clamp(config.Quality, 1, 100);
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
-        _targetFps = Math.Clamp(config.TargetFps, 1, 30);
+        _targetFps = Math.Clamp(config.TargetFps, 1, 360);
         _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}", _quality, _scale, _targetFps);
     }
 }

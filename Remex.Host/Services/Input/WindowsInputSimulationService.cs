@@ -45,6 +45,12 @@ public class WindowsInputSimulationService : IInputSimulationService
         SendInput(1, [input], Marshal.SizeOf<INPUT>());
     }
 
+    public void MouseMoveRelative(int dx, int dy)
+    {
+        GetCursorPos(out var pt);
+        MoveMouse(pt.X + dx, pt.Y + dy);
+    }
+
     public void MouseDown(int button)
     {
         uint flag = button switch
@@ -244,6 +250,17 @@ public class WindowsInputSimulationService : IInputSimulationService
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
 
     #endregion
 }
