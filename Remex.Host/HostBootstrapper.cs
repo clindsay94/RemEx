@@ -125,10 +125,13 @@ public static class HostBootstrapper
             // explicit configuration to permit remote connections.
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
 
-            // Auth check
+            // Auth check (Header or Query Param)
             var authHeader = context.Request.Headers["X-Remex-Auth"].ToString();
+            var authQuery = context.Request.Query["auth"].ToString();
+            var providedKey = !string.IsNullOrEmpty(authHeader) ? authHeader : authQuery;
+
             var expectedKey = configuration["Remex:AccessKey"];
-            if (!string.IsNullOrEmpty(expectedKey) && authHeader != expectedKey)
+            if (!string.IsNullOrEmpty(expectedKey) && providedKey != expectedKey)
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync("Invalid access key.");

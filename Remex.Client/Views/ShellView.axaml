@@ -44,6 +44,9 @@
                     <DataTemplate DataType="vm:CustomizationViewModel">
                         <views:CustomizationView />
                     </DataTemplate>
+                    <DataTemplate DataType="vm:TaskManagerViewModel">
+                        <views:TaskManagerView />
+                    </DataTemplate>
                     <DataTemplate DataType="vm:RemoteDesktopViewModel">
                         <views:RemoteDesktopView />
                     </DataTemplate>

@@ -39,8 +39,13 @@ public class RemoteDesktopService : IDisposable
         else
             desktopUrl += "/ws/desktop";
 
+        // Append auth key as query parameter for maximum platform compatibility
+        if (!string.IsNullOrEmpty(accessKey))
+        {
+            desktopUrl += $"?auth={Uri.EscapeDataString(accessKey)}";
+        }
+
         _webSocket = new ClientWebSocket();
-        _webSocket.Options.SetRequestHeader("X-Remex-Auth", accessKey);
         await _webSocket.ConnectAsync(new Uri(desktopUrl), ct);
 
         _receiveCts = new CancellationTokenSource();
