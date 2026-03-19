@@ -5,7 +5,10 @@ using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Avalonia;
 using Avalonia.Android;
+using Microsoft.Extensions.DependencyInjection;
 using Remex.Client;
+using Remex.Client.Android.Services;
+using Remex.Client.Services;
 
 namespace Remex.Client.Android;
 
@@ -25,6 +28,12 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnCreate(global::Android.OS.Bundle? savedInstanceState)
     {
+        // Register Android-specific services before base.OnCreate triggers Avalonia init
+        App.RegisterPlatformServices = services =>
+        {
+            services.AddSingleton<IImmersiveModeService>(new AndroidImmersiveModeService(this));
+        };
+
         base.OnCreate(savedInstanceState);
 
         if (global::Android.OS.Build.VERSION.SdkInt < global::Android.OS.BuildVersionCodes.Q)

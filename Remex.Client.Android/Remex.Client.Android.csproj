@@ -4,8 +4,8 @@
     <TargetFramework>net10.0-android</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationId>com.remex.client</ApplicationId>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>0.2.0</ApplicationDisplayVersion>
     <AndroidManifest>AndroidManifest.xml</AndroidManifest>
     <AndroidEnable16kbPageSize>true</AndroidEnable16kbPageSize>
   </PropertyGroup>
