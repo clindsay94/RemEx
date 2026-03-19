@@ -103,8 +103,28 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.ProcessListRequest:
-                        var procs = await processMonitorService.GetProcessesAsync();
-                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);
+                        try
+                        {
+                            var procs = await processMonitorService.GetProcessesAsync();
+                            await MessageSerializer.SendAsync(
+                                webSocket,
+                                new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs },
+                                ct);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // Preserve cancellation semantics for the outer loop.
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Failed to retrieve process list.");
+                            // Send a failure response without a process list to keep the session alive.
+                            await MessageSerializer.SendAsync(
+                                webSocket,
+                                new RemexMessage { Type = MessageTypes.ProcessListSync },
+                                ct);
+                        }
                         break;
                     case MessageTypes.LayoutRequest:
                         var reqProfile = await profileStorage.LoadProfileAsync();
