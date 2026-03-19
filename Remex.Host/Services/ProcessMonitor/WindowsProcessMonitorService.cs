@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
