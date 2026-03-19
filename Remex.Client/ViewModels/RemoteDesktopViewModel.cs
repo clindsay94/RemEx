@@ -156,6 +156,20 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            try
+            {
+                // Best-effort cleanup in case ConnectAsync succeeded but StartStreamAsync failed.
+                await _desktopService.StopStreamAsync();
+            }
+            catch
+            {
+                // Ignore cleanup errors.
+            }
+            finally
+            {
+                _desktopService.Disconnect();
+            }
+
             StatusText = $"Failed: {ex.Message}";
         }
     }
