@@ -2,6 +2,7 @@ using Android.App;
 using Android.Views;
 using Remex.Client.Services;
 using System.Runtime.Versioning;
+using Android.OS;
 
 namespace Remex.Client.Android.Services;
 
@@ -17,6 +18,13 @@ public class AndroidImmersiveModeService : IImmersiveModeService
 
     public void EnterImmersiveMode()
     {
+        // Only use InsetsController APIs on Android 11 (API 30) and above.
+        if (Build.VERSION.SdkInt < BuildVersionCodes.R)
+        {
+            // Pre-Android 11: immersive mode not handled here.
+            return;
+        }
+
         var controller = _activity.Window?.InsetsController;
         if (controller is not null)
         {
@@ -27,6 +35,13 @@ public class AndroidImmersiveModeService : IImmersiveModeService
 
     public void ExitImmersiveMode()
     {
+        // Only use InsetsController APIs on Android 11 (API 30) and above.
+        if (Build.VERSION.SdkInt < BuildVersionCodes.R)
+        {
+            // Pre-Android 11: immersive mode not handled here.
+            return;
+        }
+
         var controller = _activity.Window?.InsetsController;
         if (controller is not null)
         {
