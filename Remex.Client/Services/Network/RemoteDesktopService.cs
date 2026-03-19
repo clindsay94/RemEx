@@ -93,20 +93,42 @@ public class RemoteDesktopService : IDisposable
     public void Disconnect()
     {
         _receiveCts?.Cancel();
-        if (_webSocket is not null)
-        {
-            try
-            {
-                if (_webSocket.State == WebSocketState.Open)
-                    _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnect", CancellationToken.None)
-                        .GetAwaiter().GetResult();
-            }
-            catch { /* best effort */ }
-            _webSocket.Dispose();
-            _webSocket = null;
-        }
-        _receiveCts?.Dispose();
+
+        var socket = _webSocket;
+        _webSocket = null;
+
+        var receiveCts = _receiveCts;
         _receiveCts = null;
+
+        if (socket is not null)
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    if (socket.State == WebSocketState.Open)
+                    {
+                        try
+                        {
+                            await socket.CloseAsync(
+                                WebSocketCloseStatus.NormalClosure,
+                                "Client disconnect",
+                                CancellationToken.None);
+                        }
+                        catch
+                        {
+                            // best effort
+                        }
+                    }
+                }
+                finally
+                {
+                    socket.Dispose();
+                }
+            });
+        }
+
+        receiveCts?.Dispose();
     }
 
     private async Task SendJsonAsync(RemexMessage message, CancellationToken ct)
