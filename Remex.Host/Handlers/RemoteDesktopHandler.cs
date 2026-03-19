@@ -28,10 +28,6 @@ public sealed class RemoteDesktopHandler
     private volatile bool _metaDirty;
     private bool _streaming;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
 
     public RemoteDesktopHandler(
         ILogger<RemoteDesktopHandler> logger,
