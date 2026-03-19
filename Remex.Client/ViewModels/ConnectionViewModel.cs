@@ -64,7 +64,7 @@ public partial class ConnectionViewModel : ObservableObject
         var msg = new RemexMessage
         {
             Type = MessageTypes.Command,
-            CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
+            CommandAction = "KillProcess",
             CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
         };
         var tcs = new TaskCompletionSource<RemexMessage>();
