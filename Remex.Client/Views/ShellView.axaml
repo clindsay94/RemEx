@@ -11,18 +11,17 @@
             <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto"
                   IsVisible="{Binding !IsShellChromeHidden}">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
-                    <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
+                    <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-                    <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                    <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                    <Button Content="Remote" Command="{Binding NavigateToRemoteCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                    <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                    <Button Content="Tasks" Command="{Binding NavigateToTaskManagerCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                    <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                </StackPanel>
-            </Grid>
+                    <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
+                    <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
+                    <Button Content="Remote" Command="{Binding NavigateToRemoteCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
+                    <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
+                    <Button Content="Tasks" Command="{Binding NavigateToTaskManagerCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
+                    <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
+                </StackPanel>            </Grid>
 
             <!-- ═══ PAGE CONTENT ═══ -->
             <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentView}">

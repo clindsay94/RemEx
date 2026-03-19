@@ -15,8 +15,8 @@
     <Color x:Key="CardBackgroundHover">#F2FFFFFF</Color>
     <Color x:Key="CardBorder">#1A000000</Color>
     <Color x:Key="TextPrimary">#0F172A</Color>
-    <Color x:Key="TextSecondary">#475569</Color>
-    <Color x:Key="TextMuted">#94A3B8</Color>
+    <Color x:Key="TextSecondary">#334155</Color>
+    <Color x:Key="TextMuted">#64748B</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>

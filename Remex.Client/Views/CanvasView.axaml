@@ -193,42 +193,42 @@
                                 <Grid>
                                     <!-- ═══ CONNECTION ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
-                                        <TextBlock Text="Connection" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Connection" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <Ellipse Width="10" Height="10">
                                                 <Ellipse.Fill>
-                                                    <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                                    <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
                                                 </Ellipse.Fill>
                                             </Ellipse>
-                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Bold" Foreground="#E0E0FF"/>
+                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         </StackPanel>
-                                        <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="12" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                        <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8 6" FontSize="12" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
                                     </StackPanel>
 
                                     <!-- ═══ ACTIONS ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
-                                        <TextBlock Text="Actions" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,4"/>
-                                        <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}"/>
-                                        <Button Classes="card-action card-action-danger" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}"/>
-                                        <Button Classes="card-action" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}"/>
-                                        <Button Classes="card-action card-action-danger" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}"/>
+                                        <TextBlock Text="Actions" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
+                                        <Button Classes="card-action" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="White"/>
+                                        <Button Classes="card-action" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <Button Classes="card-action" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White"/>
                                     </StackPanel>
 
                                     <!-- ═══ LATENCY ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsLatency}}">
-                                        <TextBlock Text="Latency" FontSize="13" FontWeight="SemiBold" Foreground="#8888AA" Margin="0,0,0,4"/>
-                                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="26" FontWeight="Bold" Foreground="#E0E0FF"/>
+                                        <TextBlock Text="Latency" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,8,0,0">
                                             <StackPanel>
-                                                <TextBlock Text="AVG" FontSize="10" Foreground="#6666AA"/>
-                                                <TextBlock Foreground="#C0C0FF" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+                                                <TextBlock Text="AVG" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
                                             </StackPanel>
                                             <StackPanel>
-                                                <TextBlock Text="MAX" FontSize="10" Foreground="#6666AA"/>
-                                                <TextBlock Foreground="#FF6B6B" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+                                                <TextBlock Text="MAX" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <TextBlock Foreground="{DynamicResource SystemError}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
                                             </StackPanel>
                                         </StackPanel>
-                                        <Border Background="#0A0A16" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
+                                        <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
                                             <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
@@ -237,7 +237,7 @@
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Classes="lat-bar" Width="10" Height="{Binding ., Converter={x:Static conv:LatencyToHeightConverter.Instance}}"/>
+                                                        <Border Classes="lat-bar" Width="10" Height="{Binding ., Converter={x:Static conv:LatencyToHeightConverter.Instance}}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
@@ -246,7 +246,7 @@
 
                                     <!-- ═══ SENSOR ═══ -->
                                     <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
-                                        <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.20"/>
+                                        <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.35"/>
 
                                         <Viewbox Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6">
                                             <StackPanel>
@@ -273,18 +273,18 @@
             </ctrl:ZoomableCanvas>
 
             <!-- ═══ STAGING DRAWER ═══ -->
-            <Border Grid.Column="1" Background="{DynamicResource GlassBaseMedium}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1,0,0,0" Padding="12">
+            <Border Grid.Column="1" Background="{DynamicResource GlassBaseMediumBrush}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" Padding="12">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2" Margin="0,0,0,12"/>
+                    <TextBlock DockPanel.Dock="Top" Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,0,0,12"/>
                     <ScrollViewer>
                         <ItemsControl ItemsSource="{Binding StagedCards}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CanvasCardViewModel">
                                     <Border Classes="glass-card interactive" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                                <TextBlock FontSize="14" FontWeight="Bold" Foreground="#C0C0FF">
+                                                <TextBlock FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}">
                                                     <TextBlock.Text>
                                                         <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                             <Binding Path="Sensor.Value"/>
@@ -292,9 +292,9 @@
                                                         </MultiBinding>
                                                     </TextBlock.Text>
                                                 </TextBlock>
-                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="#8888AA" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
-                                            <Button Classes="stage-btn" Content="+ Place on Canvas" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}"/>
+                                            <Button Classes="stage-btn" Content="+ Place on Canvas" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>

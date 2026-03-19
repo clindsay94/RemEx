@@ -35,14 +35,16 @@ public class SparklineControl : Control
     public static readonly StyledProperty<double> MaxSeenProperty =
         AvaloniaProperty.Register<SparklineControl, double>(nameof(MaxSeen));
 
-    private const byte AreaFillAlpha = 40;
-    private const byte GlowAlpha = 80;
-    private const byte TrackAlpha = 30;
+    public static readonly StyledProperty<IBrush?> TrackBrushProperty =
+        AvaloniaProperty.Register<SparklineControl, IBrush?>(nameof(TrackBrush));
+
+    private const byte AreaFillAlpha = 60;
+    private const byte GlowAlpha = 100;
+    private const byte TrackAlpha = 40;
 
     private ISolidColorBrush? _accentBrush;
     private ISolidColorBrush? _areaFillBrush;
     private ISolidColorBrush? _glowBrush;
-    private ISolidColorBrush? _trackBrush;
     private Pen? _linePen;
 
     public IList<double>? History
@@ -81,10 +83,16 @@ public class SparklineControl : Control
         set => SetValue(MaxSeenProperty, value);
     }
 
+    public IBrush? TrackBrush
+    {
+        get => GetValue(TrackBrushProperty);
+        set => SetValue(TrackBrushProperty, value);
+    }
+
     static SparklineControl()
     {
         AffectsRender<SparklineControl>(HistoryProperty, GraphTypeProperty, AccentColorProperty,
-            CurrentValueProperty, MinSeenProperty, MaxSeenProperty);
+            CurrentValueProperty, MinSeenProperty, MaxSeenProperty, TrackBrushProperty);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -119,7 +127,6 @@ public class SparklineControl : Control
         _accentBrush = new ImmutableSolidColorBrush(accent);
         _areaFillBrush = new ImmutableSolidColorBrush(new Color(AreaFillAlpha, accent.R, accent.G, accent.B));
         _glowBrush = new ImmutableSolidColorBrush(new Color(GlowAlpha, accent.R, accent.G, accent.B));
-        _trackBrush ??= new ImmutableSolidColorBrush(new Color(TrackAlpha, 255, 255, 255));
         _linePen = new Pen(_accentBrush, 1.5);
     }
 
@@ -239,7 +246,8 @@ public class SparklineControl : Control
 
         // Background track
         var bgRect = new Rect(0, bounds.Height * 0.35, bounds.Width, bounds.Height * 0.3);
-        context.DrawRectangle(_trackBrush!, null, new RoundedRect(bgRect, 3));
+        var trackBrush = TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128));
+        context.DrawRectangle(trackBrush, null, new RoundedRect(bgRect, 3));
 
         // Fill bar
         var fillWidth = fraction * bounds.Width;

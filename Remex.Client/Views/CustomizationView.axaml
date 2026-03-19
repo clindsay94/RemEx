@@ -8,9 +8,9 @@
         <StackPanel Margin="32" Spacing="24">
 
             <!-- ═══ Header ═══ -->
-            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
             <StackPanel Spacing="4">
-                <TextBlock Text="🎨  CUSTOMIZATION" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
+                <TextBlock Text="🎨  CUSTOMIZATION" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 <TextBlock Text="THEMES &amp; ENGINE PRESETS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
@@ -21,28 +21,28 @@
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
-                        <TextBlock Text="Standard Glass" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Standard Glass" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
                 <!-- Cyber-NOC -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectCyberNOC">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
-                        <TextBlock Text="Cyber-NOC" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Cyber-NOC" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
                 <!-- Solar-Flare -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectSolarFlare">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
-                        <TextBlock Text="Solar-Flare" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#333"/>
+                        <TextBlock Text="Solar-Flare" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
                 <!-- Monolith -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectMonolith">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
-                        <TextBlock Text="Monolith" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Monolith" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
             </UniformGrid>

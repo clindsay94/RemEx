@@ -42,6 +42,28 @@
             <Setter Property="RenderTransform" Value="scale(1.02)"/>
             <Setter Property="BoxShadow" Value="0 12 48 0 #60000000, 0 0 15 2 #406C4CFF"/>
         </Style>
-        
-    </Application.Styles>
-</Application>
+
+        <!-- Glass Navigation Button -->
+        <Style Selector="Button.glass-button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12 8"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.glass-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Button.glass-button:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.98)"/>
+        </Style>
+
+        </Application.Styles></Application>
