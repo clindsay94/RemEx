@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Remex.Client.ViewModels"
+             xmlns:models="using:Remex.Core.Models"
+             x:Class="Remex.Client.Views.TaskManagerView"
+             x:DataType="vm:TaskManagerViewModel"
+             Margin="16">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header Controls -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,16">
+            <TextBox Text="{Binding SearchText}" Watermark="Search by name or PID..." Width="250" HorizontalAlignment="Left" />
+
+            <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name"
+                    Content="Sort Name" Classes="glass-button" />
+            <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu"
+                    Content="Sort CPU" Classes="glass-button" />
+            <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory"
+                    Content="Sort Mem" Classes="glass-button" />
+        </Grid>
+
+        <!-- Process List -->
+        <ListBox Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="models:ProcessInfo">
+                    <Border Classes="glass-card" Margin="0,4" Padding="12" CornerRadius="8">
+                        <Border.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Kill Process"
+                                          Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}"
+                                          CommandParameter="{Binding}" />
+                            </ContextMenu>
+                        </Border.ContextMenu>
+
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" FontSize="16" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Id, StringFormat='PID: {0}'}" Opacity="0.7" />
+
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="16" Margin="0,8">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="CPU:" Opacity="0.7" />
+                                    <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="MEM:" Opacity="0.7" />
+                                    <!-- Simple bytes to MB conversion for display -->
+                                    <TextBlock Text="{Binding MemoryUsage, StringFormat='{}{0:N0} bytes'}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Opacity="0.6">
+                                <TextBlock Text="{Binding FilePath, StringFormat='Path: {0}'}" IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="12" />
+                                <TextBlock Text="{Binding Publisher, StringFormat='Publisher: {0}'}" IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="12" />
+                                <TextBlock Text="{Binding Version, StringFormat='Version: {0}'}" IsVisible="{Binding Version, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

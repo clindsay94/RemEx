@@ -53,6 +53,10 @@ public sealed record RemexMessage
     /// <summary>Dashboard layout profile for synchronization.</summary>
     [JsonPropertyName("dashboardProfile")]
     public Remex.Core.Models.DashboardProfile? DashboardProfile { get; init; }
+
+    /// <summary>List of running processes.</summary>
+    [JsonPropertyName("processList")]
+    public List<Remex.Core.Models.ProcessInfo>? ProcessList { get; init; }
 }
 
 /// <summary>
@@ -71,4 +75,6 @@ public static class MessageTypes
     public const string LayoutSync = "layout_sync";
     public const string LayoutUpdate = "layout_update";
     public const string LayoutRequest = "layout_request";
+    public const string ProcessListRequest = "process_list_request";
+    public const string ProcessListSync = "process_list_sync";
 }

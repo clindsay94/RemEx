@@ -32,6 +32,7 @@ public partial class ShellViewModel : ObservableObject
     private AppLauncherViewModel? _appLauncherViewModel;
     private CustomizationViewModel? _customizationViewModel;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
+    private TaskManagerViewModel? _taskManagerViewModel;
 
     public ShellViewModel(DashboardLayoutService layoutService, ConnectionViewModel connectionViewModel)
     {
@@ -105,6 +106,12 @@ public partial class ShellViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void NavigateToTaskManager()
+    {
+        _taskManagerViewModel ??= new TaskManagerViewModel(Connection);
+        CurrentView = _taskManagerViewModel;
+    }
+
     public void NavigateToRemoteDesktop()
     {
         _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this);

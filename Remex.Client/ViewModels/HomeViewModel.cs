@@ -61,4 +61,7 @@ public partial class HomeViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateToRemoteDesktop() => _shell.NavigateToRemoteDesktop();
+
+    [RelayCommand]
+    private void NavigateToTaskManager() => _shell.NavigateToTaskManager();
 }

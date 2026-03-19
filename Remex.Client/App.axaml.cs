@@ -52,6 +52,7 @@ public partial class App : Application
         collection.AddSingleton<ConnectionViewModel>();
         collection.AddTransient<AppLauncherViewModel>();
         collection.AddTransient<AddProgramViewModel>();
+        collection.AddTransient<TaskManagerViewModel>();
         collection.AddSingleton<ShellViewModel>();
 
         RegisterPlatformServices?.Invoke(collection);

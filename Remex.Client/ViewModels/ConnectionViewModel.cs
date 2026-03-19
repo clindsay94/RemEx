@@ -49,6 +49,41 @@ public partial class ConnectionViewModel : ObservableObject
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
     public event Action<TelemetryPayload>? TelemetryReceived;
     public event Action<Remex.Core.Models.DashboardProfile>? LayoutProfileReceived;
+    public event Action<System.Collections.Generic.List<Remex.Core.Models.ProcessInfo>>? ProcessListReceived;
+
+    public async Task RequestProcessListAsync()
+    {
+        if (_webSocket?.State != WebSocketState.Open) return;
+        var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest };
+        await MessageSerializer.SendAsync(_webSocket, msg);
+    }
+
+    public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(int processId, bool elevated = false)
+    {
+        if (_webSocket?.State != WebSocketState.Open) return new Remex.Core.Models.IPC.CommandResponse(false, "Not connected", null);
+        var msg = new RemexMessage
+        {
+            Type = MessageTypes.Command,
+            CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
+            CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
+        };
+        var tcs = new TaskCompletionSource<RemexMessage>();
+        _pendingCommandResponse = tcs;
+        try
+        {
+            await MessageSerializer.SendAsync(_webSocket, msg);
+            var response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            return new Remex.Core.Models.IPC.CommandResponse(response.CommandSuccess ?? false, response.CommandMessage ?? "", null);
+        }
+        catch
+        {
+            return new Remex.Core.Models.IPC.CommandResponse(false, "Timeout waiting for server response", null);
+        }
+        finally
+        {
+            _pendingCommandResponse = null;
+        }
+    }
 
     [ObservableProperty]
     private double _averageLatency;
@@ -274,6 +309,9 @@ public partial class ConnectionViewModel : ObservableObject
                         Dispatcher.UIThread.Post(() => LauncherEntriesReceived?.Invoke(message.LauncherEntries));
                         break;
 
+                    case MessageTypes.ProcessListSync when message.ProcessList is not null:
+                        Dispatcher.UIThread.Post(() => ProcessListReceived?.Invoke(message.ProcessList));
+                        break;
                     case MessageTypes.LayoutSync when message.DashboardProfile is not null:
                         Dispatcher.UIThread.Post(() => LayoutProfileReceived?.Invoke(message.DashboardProfile));
                         break;

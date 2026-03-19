@@ -3,6 +3,7 @@ using Remex.Core.Services;
 using Remex.Host.Handlers;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
+using Remex.Host.Services.ProcessMonitor;
 
 namespace Remex.Host;
 
@@ -41,11 +42,13 @@ public static class HostBootstrapper
         {
             builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.WindowsSystemCommandService>();
+            builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
         }
         else if (OperatingSystem.IsLinux())
         {
             builder.Services.AddSingleton<ITelemetryService, LinuxTelemetryService>();
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
+            builder.Services.AddSingleton<IProcessMonitorService, LinuxProcessMonitorService>();
         }
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
@@ -86,7 +89,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>());
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 
