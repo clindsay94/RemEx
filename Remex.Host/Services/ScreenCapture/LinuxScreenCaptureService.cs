@@ -140,7 +140,12 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         {
             using var proc = Process.Start(psi);
             if (proc is null) return -1;
-            await proc.WaitForExitAsync(ct);
+
+            // Drain both stdout and stderr to prevent deadlocks with verbose processes.
+            var stdOutTask = proc.StandardOutput.ReadToEndAsync();
+            var stdErrTask = proc.StandardError.ReadToEndAsync();
+
+            await Task.WhenAll(proc.WaitForExitAsync(ct), stdOutTask, stdErrTask);
             return proc.ExitCode;
         }
         catch (Exception)
