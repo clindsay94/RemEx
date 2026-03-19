@@ -22,7 +22,6 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly RemoteDesktopService _desktopService;
     private readonly IImmersiveModeService? _immersiveMode;
-    private DateTime _lastFrameTime = DateTime.MinValue;
     private int _frameCount;
     private DateTime _fpsWindowStart = DateTime.UtcNow;
 
