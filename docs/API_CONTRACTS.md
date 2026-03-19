@@ -23,7 +23,24 @@ All messages exchanged over the WebSocket use the `RemexMessage` JSON envelope.
 | `commandMessage` | `string?` | Response message from command execution. |
 | `launcherEntries` | `List<AppEntry>?` | Launcher sync list. |
 | `launcherEntry` | `AppEntry?` | Single launcher entry for add/remove. |
+| `processList` | `List<ProcessInfo>?` | List of running processes. |
 
+
+### Command Actions
+
+- `Shutdown`: Initiates a system shutdown.
+- `Restart`: Initiates a system restart.
+- `ForceRestart`: Forces a system restart without waiting for applications.
+- `RestartToUefi`: Restarts the system directly into UEFI/BIOS settings.
+- `Lock`: Locks the current user session.
+- `LaunchApp`: Launches an application locally.
+  - **Required Parameter:** `"TargetPath"`
+- `WakeOnLan`: Sends a magic packet to wake a target machine.
+  - **Required Parameter:** `"MacAddress"`
+  - **Optional Parameter:** `"BroadcastIp"`
+  - **Optional Parameter:** `"Port"`
+- `KillProcess`: Terminates a running process.
+  - **Required Parameter:** `"ProcessId"` (integer represented as a string)
 ### Message Types
 
 - `ping` / `pong`: Used for keep-alive and latency calculation.
@@ -33,6 +50,8 @@ All messages exchanged over the WebSocket use the `RemexMessage` JSON envelope.
 - `launcher_sync`: Synchronization of app launcher entries.
 - `launcher_add`: Request to add a new launcher entry.
 - `launcher_remove`: Request to remove a launcher entry.
+- `process_list_request`: Request to retrieve the list of running processes.
+- `process_list_sync`: Response containing the list of running processes.
 
 ---
 

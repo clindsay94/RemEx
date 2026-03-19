@@ -3,6 +3,7 @@ using Remex.Core.Services;
 using Remex.Host.Handlers;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
+using Remex.Host.Services.ProcessMonitor;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 
@@ -48,6 +49,7 @@ public static class HostBootstrapper
         {
             builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.WindowsSystemCommandService>();
+            builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.WindowsInputSimulationService>();
         }
@@ -55,6 +57,7 @@ public static class HostBootstrapper
         {
             builder.Services.AddSingleton<ITelemetryService, LinuxTelemetryService>();
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
+            builder.Services.AddSingleton<IProcessMonitorService, LinuxProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.LinuxScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.LinuxInputSimulationService>();
         }
@@ -86,7 +89,7 @@ public static class HostBootstrapper
                 await context.Response.WriteAsync("WebSocket connections only.");
                 return;
             }
-
+ 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<ITelemetryService>();
@@ -97,7 +100,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>());
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 

@@ -16,7 +16,8 @@ public sealed class PingPongHandler(
     Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, 
     Remex.Core.Services.ILauncherStorageService launcherStorage, 
     Remex.Core.Services.IAppLauncherService appLauncherService,
-    Remex.Core.Services.IDashboardProfileStorageService profileStorage)
+    Remex.Core.Services.IDashboardProfileStorageService profileStorage,
+    Remex.Core.Services.IProcessMonitorService processMonitorService)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
@@ -96,6 +97,10 @@ public sealed class PingPongHandler(
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = curRem }, ct);
                         break;
 
+                    case MessageTypes.ProcessListRequest:
+                        var procs = await processMonitorService.GetProcessesAsync();
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);
+                        break;
                     case MessageTypes.LayoutUpdate when message.DashboardProfile is not null:
                         await profileStorage.SaveProfileAsync(message.DashboardProfile);
                         logger.LogInformation("Dashboard layout updated from client.");
@@ -156,6 +161,14 @@ public sealed class PingPongHandler(
                 case "RESTARTTOUEFI":
                     commandService.RestartToUefi();
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
+                case "KILLPROCESS":
+                    if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
+                        && int.TryParse(pidStr, out var pid))
+                    {
+                        var killed = processMonitorService.KillProcess(pid);
+                        return MakeCommandResponse(killed, killed ? "Process killed." : "Failed to kill process.");
+                    }
+                    return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "LOCK":
                     commandService.Lock();
                     return MakeCommandResponse(true, "Lock executed.");

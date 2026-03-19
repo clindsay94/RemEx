@@ -124,6 +124,7 @@
                 <Button Classes="nav-btn" Content="🚀  App Launcher" Command="{Binding NavigateToAppLauncherCommand}"/>
                 <Button Classes="nav-btn" Content="🎨  Customization" Command="{Binding NavigateToCustomizationCommand}"/>
                 <Button Classes="nav-btn" Content="🖥  Remote Desktop" Command="{Binding NavigateToRemoteDesktopCommand}"/>
+                <Button Classes="nav-btn" Content="📊  Task Manager" Command="{Binding NavigateToTaskManagerCommand}"/>
                 <Button Classes="nav-btn" Content="⚙  Settings" Command="{Binding NavigateToSettingsCommand}"/>
             </StackPanel>
 
