@@ -108,15 +108,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         var resp = await _connection.KillProcessWithResponseAsync(process.Id);
         if (!resp.Success)
         {
-            var elevate = "Yes";
-            if (elevate == "Yes")
-            {
-                var elevResp = await _connection.KillProcessWithResponseAsync(process.Id, true);
-                if (!elevResp.Success)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Elevated kill failed: {elevResp.Message}");
-                }
-            }
+            System.Diagnostics.Debug.WriteLine($"Kill process failed: {resp.Message}");
         }
         await RefreshProcessesAsync();
     }

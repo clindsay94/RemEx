@@ -15,6 +15,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
     private readonly ILogger<LinuxProcessMonitorService> _logger;
     private readonly Dictionary<int, ProcessCpuTracker> _cpuTrackers = new();
     private long _lastTotalCpuTime = 0;
+    private readonly object _lock = new();
 
     public LinuxProcessMonitorService(ILogger<LinuxProcessMonitorService> logger)
     {
@@ -29,8 +30,12 @@ public class LinuxProcessMonitorService : IProcessMonitorService
             var activePids = new HashSet<int>();
 
             long currentTotalCpuTime = GetTotalCpuTime();
-            long totalCpuDiff = currentTotalCpuTime - _lastTotalCpuTime;
-            _lastTotalCpuTime = currentTotalCpuTime;
+            long totalCpuDiff;
+            lock (_lock)
+            {
+                totalCpuDiff = currentTotalCpuTime - _lastTotalCpuTime;
+                _lastTotalCpuTime = currentTotalCpuTime;
+            }
 
             var processDirs = Directory.GetDirectories("/proc").Where(d => int.TryParse(Path.GetFileName(d), out _)).ToList();
 
@@ -47,10 +52,19 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 try
                 {
                     string stat = File.ReadAllText(Path.Combine(dir, "stat"));
-                    var parts = stat.Split(' ');
-                    name = parts[1].Trim('(', ')');
-                    long utime = long.Parse(parts[13]);
-                    long stime = long.Parse(parts[14]);
+                    // The comm field (process name) is enclosed in parentheses and may contain spaces.
+                    // Locate the last ')' to reliably find where the fixed fields begin.
+                    int lastParen = stat.LastIndexOf(')');
+                    int firstParen = stat.IndexOf('(');
+                    if (firstParen < 0 || lastParen < 0 || lastParen <= firstParen) continue;
+                    name = stat.Substring(firstParen + 1, lastParen - firstParen - 1);
+                    var remainder = stat.Substring(lastParen + 2); // skip ') '
+                    var parts = remainder.Split(' ');
+                    // After comm: state(0), ppid(1), pgrp(2), session(3), tty_nr(4), tpgid(5),
+                    // flags(6), minflt(7), cminflt(8), majflt(9), cmajflt(10), utime(11), stime(12)
+                    if (parts.Length < 13) continue;
+                    long utime = long.Parse(parts[11]);
+                    long stime = long.Parse(parts[12]);
                     processTotalCpuTime = utime + stime;
                 }
                 catch { continue; }
@@ -59,8 +73,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 {
                     var statmParts = File.ReadAllText(Path.Combine(dir, "statm")).Split(' ');
                     long rssPages = long.Parse(statmParts[1]);
-                    // Assuming 4KB pages
-                    memory = rssPages * 4096;
+                    memory = rssPages * Environment.SystemPageSize;
                 }
                 catch { }
 
@@ -71,18 +84,21 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 catch { }
 
                 double cpuUsage = 0;
-                if (!_cpuTrackers.TryGetValue(pid, out var tracker))
+                lock (_lock)
                 {
-                    tracker = new ProcessCpuTracker { LastCpuTime = processTotalCpuTime };
-                    _cpuTrackers[pid] = tracker;
-                }
-                else
-                {
-                    long diff = processTotalCpuTime - tracker.LastCpuTime;
-                    tracker.LastCpuTime = processTotalCpuTime;
-                    if (totalCpuDiff > 0)
+                    if (!_cpuTrackers.TryGetValue(pid, out var tracker))
                     {
-                        cpuUsage = (double)diff / totalCpuDiff * 100.0 * Environment.ProcessorCount;
+                        tracker = new ProcessCpuTracker { LastCpuTime = processTotalCpuTime };
+                        _cpuTrackers[pid] = tracker;
+                    }
+                    else
+                    {
+                        long diff = processTotalCpuTime - tracker.LastCpuTime;
+                        tracker.LastCpuTime = processTotalCpuTime;
+                        if (totalCpuDiff > 0)
+                        {
+                            cpuUsage = (double)diff / totalCpuDiff * 100.0;
+                        }
                     }
                 }
 
@@ -108,8 +124,11 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 });
             }
 
-            var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
-            foreach (var k in toRemove) _cpuTrackers.Remove(k);
+            lock (_lock)
+            {
+                var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
+                foreach (var k in toRemove) _cpuTrackers.Remove(k);
+            }
 
             return results;
         });
