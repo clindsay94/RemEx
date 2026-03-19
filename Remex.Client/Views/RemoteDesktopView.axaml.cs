@@ -364,11 +364,11 @@ public partial class RemoteDesktopView : UserControl
                 var downPos = _touchDownPos;
                 _ = Task.Delay(LongPressMs, cts.Token).ContinueWith(t =>
                 {
-                    if (!t.IsCanceled && !_touchMoved && _activePointers.Count == 1)
+                    Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
                     {
-                        _longPressFired = true;
-                        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+                        if (!t.IsCanceled && !_touchMoved && _activePointers.Count == 1)
                         {
+                            _longPressFired = true;
                             var coords = MapToRemoteCoords(downPos);
                             if (coords is not null)
                             {
@@ -381,8 +381,8 @@ public partial class RemoteDesktopView : UserControl
                                     Button = 2,
                                 });
                             }
-                        });
-                    }
+                        }
+                    });
                 }, TaskScheduler.Default);
             }
             return;
