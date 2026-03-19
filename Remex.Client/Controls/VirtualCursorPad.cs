@@ -15,21 +15,22 @@ namespace Remex.Client.Controls;
 /// </summary>
 public class VirtualCursorPad : Control
 {
-    private const double OuterRadius = 70;
-    private const double InnerRadius = 22;
+    private const double OuterRadius = 80;
+    private const double InnerRadius = 26;
     private const int NudgePixels = 6;
     private const int RepeatDelayMs = 400;
     private const int RepeatIntervalMs = 60;
     private const int LongPressMs = 500;
 
-    private static readonly IBrush BackgroundBrush = new SolidColorBrush(Color.FromArgb(140, 20, 20, 50));
+    private static readonly IBrush BackgroundBrush = new SolidColorBrush(Color.FromArgb(160, 20, 20, 50));
     private static readonly IBrush HoveredBrush = new SolidColorBrush(Color.FromArgb(180, 50, 50, 100));
-    private static readonly IBrush CenterBrush = new SolidColorBrush(Color.FromArgb(180, 40, 40, 80));
-    private static readonly IBrush CenterPressedBrush = new SolidColorBrush(Color.FromArgb(220, 80, 80, 160));
-    private static readonly IPen BorderPen = new Pen(new SolidColorBrush(Color.FromArgb(100, 128, 128, 255)), 1.5);
+    private static readonly IBrush CenterBrush = new SolidColorBrush(Color.FromArgb(200, 40, 40, 80));
+    private static readonly IBrush CenterPressedBrush = new SolidColorBrush(Color.FromArgb(230, 80, 80, 160));
+    private static readonly IPen BorderPen = new Pen(new SolidColorBrush(Color.FromArgb(120, 128, 128, 255)), 2);
+    private static readonly IPen OuterGlowPen = new Pen(new SolidColorBrush(Color.FromArgb(40, 128, 128, 255)), 4);
 
-    private static readonly IBrush ArrowBrush = new SolidColorBrush(Color.FromArgb(200, 192, 192, 255));
-    private static readonly IBrush ClickLabelBrush = new SolidColorBrush(Color.FromArgb(200, 107, 255, 107));
+    private static readonly IBrush ArrowBrush = new SolidColorBrush(Color.FromArgb(220, 192, 192, 255));
+    private static readonly IBrush ClickLabelBrush = new SolidColorBrush(Color.FromArgb(220, 107, 255, 107));
 
     private enum Region { None, Up, Down, Left, Right, Center }
 
@@ -58,6 +59,9 @@ public class VirtualCursorPad : Control
 
         var center = new Point(OuterRadius, OuterRadius);
 
+        // Outer glow ring
+        context.DrawEllipse(null, OuterGlowPen, center, OuterRadius + 1, OuterRadius + 1);
+
         // Outer circle
         context.DrawEllipse(BackgroundBrush, BorderPen, center, OuterRadius, OuterRadius);
 
@@ -81,7 +85,7 @@ public class VirtualCursorPad : Control
 
         // Center label
         var labelText = new FormattedText("●", System.Globalization.CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight, new Typeface("Segoe UI", FontStyle.Normal, FontWeight.Bold), 16, ClickLabelBrush);
+            FlowDirection.LeftToRight, Typeface.Default, 18, ClickLabelBrush);
         context.DrawText(labelText, new Point(center.X - labelText.Width / 2, center.Y - labelText.Height / 2));
     }
 
@@ -138,7 +142,7 @@ public class VirtualCursorPad : Control
         Point tip;
         Point left;
         Point right;
-        double arrowSize = 8;
+        double arrowSize = 10;
 
         switch (direction)
         {

@@ -39,6 +39,7 @@
 
         <!-- ═══ TOOLBAR ═══ -->
         <Border Grid.Row="0" Background="#1A1A2E" Padding="16 8" IsVisible="{Binding !IsFullScreen}">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- Left: Nav + stream controls -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -88,20 +89,21 @@
 
                     <Border Width="1" Height="20" Background="#333355"/>
 
-                    <Button Content="✥" Command="{Binding ToggleCursorPadCommand}" Classes="rd-btn"
-                            ToolTip.Tip="Toggle Cursor Pad" FontSize="16" Padding="10 6"/>
+                    <Button Content="D-Pad" Command="{Binding ToggleCursorPadCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Toggle Cursor Pad" FontSize="11" Padding="10 6"/>
 
-                    <Button Command="{Binding ToggleStylusModeCommand}" Classes="rd-btn"
-                            ToolTip.Tip="Stylus Mode (treat touch as pen)" FontSize="16" Padding="10 6">
-                        <Button.Content>
-                            <TextBlock Text="✎"/>
-                        </Button.Content>
-                    </Button>
+                    <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Stylus Mode (treat touch as pen)" FontSize="11" Padding="10 6"/>
 
-                    <Button Content="⛶" Command="{Binding ToggleFullScreenCommand}" Classes="rd-btn"
-                            ToolTip.Tip="Toggle Fullscreen" FontSize="16" Padding="10 6"/>
+                    <Button Content="{Binding MonitorLabel}" Command="{Binding NextMonitorCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Switch Monitor" FontSize="11" Padding="10 6"
+                            IsVisible="{Binding IsMultiMonitor}"/>
+
+                    <Button Content="Full" Command="{Binding ToggleFullScreenCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Toggle Fullscreen" FontSize="11" Padding="10 6"/>
                 </StackPanel>
             </Grid>
+            </ScrollViewer>
         </Border>
 
         <!-- ═══ VIEWPORT ═══ -->
@@ -114,7 +116,7 @@
                     <TextBlock Text="Connect and press Start to begin streaming." FontSize="13" Foreground="#8888AA" HorizontalAlignment="Center"/>
                     <TextBlock Text="Touch: tap = place cursor, double-tap = click, drag = move cursor, long-press = right-click, pinch = zoom" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                     <TextBlock Text="S-Pen / Stylus: works like a mouse — press = click, barrel button = right-click" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                    <TextBlock Text="✎ Stylus Mode: enables pen-like input for touch — tap = instant click, drag = click-and-drag" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    <TextBlock Text="Pen Mode: enables pen-like input for touch — tap = instant click, drag = click-and-drag" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
 
                 <!-- Screen image (visible when streaming) -->
@@ -148,18 +150,20 @@
                             IsVisible="{Binding IsFullScreen}"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Margin="0,8,8,0">
-                    <!-- Stylus mode toggle (fullscreen) -->
-                    <Button Command="{Binding ToggleStylusModeCommand}"
+                    <!-- Monitor switch (fullscreen) -->
+                    <Button Content="{Binding MonitorLabel}" Command="{Binding NextMonitorCommand}"
                             Opacity="0.7" CornerRadius="8" Padding="10 6"
-                            FontSize="14" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                            FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                            IsVisible="{Binding IsMultiMonitor}"
+                            Background="#CC1A1A2E" Foreground="#C0C0FF"/>
+                    <!-- Stylus mode toggle (fullscreen) -->
+                    <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}"
+                            Opacity="0.7" CornerRadius="8" Padding="10 6"
+                            FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
                             ToolTip.Tip="Toggle Stylus Mode (treat touch as pen)"
-                            Background="#CC1A1A2E" Foreground="#C0C0FF">
-                        <Button.Content>
-                            <TextBlock Text="✎"/>
-                        </Button.Content>
-                    </Button>
+                            Background="#CC1A1A2E" Foreground="#C0C0FF"/>
                     <!-- Exit fullscreen -->
-                    <Button Content="✕" Command="{Binding ToggleFullScreenCommand}"
+                    <Button Content="Exit" Command="{Binding ToggleFullScreenCommand}"
                             Opacity="0.7"
                             Background="#CC1A1A2E" Foreground="#C0C0FF" CornerRadius="8"
                             Padding="10 6" FontSize="14" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
@@ -184,14 +188,16 @@
 
         <!-- ═══ STATUS BAR ═══ -->
         <Border Grid.Row="2" Background="#1A1A2E" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
                 <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="#6BFF6B" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
                 <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
                 <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"
                            IsVisible="{Binding IsViewportZoomed}"/>
-                <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4"
+                <TextBlock Grid.Column="5" Text="{Binding MonitorLabel}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"
+                           IsVisible="{Binding IsMultiMonitor}"/>
+                <Border Grid.Column="6" Width="8" Height="8" CornerRadius="4"
                         IsVisible="{Binding IsStreaming}"
                         Background="#6BFF6B"
                         VerticalAlignment="Center" Margin="8,0,0,0"/>

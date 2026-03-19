@@ -10,24 +10,26 @@ namespace Remex.Host.Services.Input;
 public class WindowsInputSimulationService : IInputSimulationService
 {
     private readonly ILogger<WindowsInputSimulationService> _logger;
-    private readonly int _screenWidth;
-    private readonly int _screenHeight;
 
     public WindowsInputSimulationService(ILogger<WindowsInputSimulationService> logger)
     {
         _logger = logger;
-        _screenWidth = GetSystemMetrics(SM_CXSCREEN);
-        _screenHeight = GetSystemMetrics(SM_CYSCREEN);
     }
 
     public void MoveMouse(int x, int y)
     {
-        x = Math.Clamp(x, 0, _screenWidth - 1);
-        y = Math.Clamp(y, 0, _screenHeight - 1);
+        // Use virtual screen metrics for multi-monitor support
+        int vLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        int vTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        int vWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        int vHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
-        // Convert to absolute coordinates (0-65535 range)
-        int absX = (int)((x * 65535.0) / (_screenWidth - 1));
-        int absY = (int)((y * 65535.0) / (_screenHeight - 1));
+        x = Math.Clamp(x, vLeft, vLeft + vWidth - 1);
+        y = Math.Clamp(y, vTop, vTop + vHeight - 1);
+
+        // Convert to absolute coordinates (0-65535 range) within virtual screen
+        int absX = (int)(((x - vLeft) * 65535.0) / (vWidth - 1));
+        int absY = (int)(((y - vTop) * 65535.0) / (vHeight - 1));
 
         var input = new INPUT
         {
@@ -38,7 +40,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 {
                     dx = absX,
                     dy = absY,
-                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE,
+                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
                 }
             }
         };
@@ -192,6 +194,10 @@ public class WindowsInputSimulationService : IInputSimulationService
 
     private const int SM_CXSCREEN = 0;
     private const int SM_CYSCREEN = 1;
+    private const int SM_XVIRTUALSCREEN = 76;
+    private const int SM_YVIRTUALSCREEN = 77;
+    private const int SM_CXVIRTUALSCREEN = 78;
+    private const int SM_CYVIRTUALSCREEN = 79;
 
     private const uint INPUT_MOUSE = 0;
     private const uint INPUT_KEYBOARD = 1;
@@ -205,6 +211,7 @@ public class WindowsInputSimulationService : IInputSimulationService
     private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
     private const uint MOUSEEVENTF_WHEEL = 0x0800;
     private const uint MOUSEEVENTF_HWHEEL = 0x1000;
+    private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
     private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
 
     private const uint KEYEVENTF_KEYUP = 0x0002;

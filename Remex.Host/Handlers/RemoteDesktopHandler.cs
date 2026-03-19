@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -21,6 +22,10 @@ public sealed class RemoteDesktopHandler
     private int _quality = 50;
     private double _scale = 0.5;
     private int _targetFps = 10;
+    private int _monitorIndex;
+    private int _monitorOffsetX;
+    private int _monitorOffsetY;
+    private volatile bool _metaDirty;
     private bool _streaming;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -56,10 +61,11 @@ public sealed class RemoteDesktopHandler
                             ApplyConfig(message.DesktopConfig);
 
                         _streaming = true;
-                        _logger.LogInformation("Desktop streaming started (quality={Q}, scale={S}, fps={F}).", _quality, _scale, _targetFps);
+                        _logger.LogInformation("Desktop streaming started (quality={Q}, scale={S}, fps={F}, monitor={M}).", _quality, _scale, _targetFps, _monitorIndex);
 
                         // Send screen metadata
-                        var (sw, sh) = _screenCapture.GetScreenSize();
+                        var monitors = _screenCapture.GetMonitors();
+                        var (sw, sh) = _screenCapture.GetScreenSize(_monitorIndex);
                         var metaMsg = new RemexMessage
                         {
                             Type = MessageTypes.DesktopMeta,
@@ -67,6 +73,8 @@ public sealed class RemoteDesktopHandler
                             {
                                 ScreenWidth = sw,
                                 ScreenHeight = sh,
+                                MonitorCount = monitors.Count,
+                                Monitors = monitors,
                                 HostInstanceId = HostBootstrapper.InstanceId,
                             }
                         };
@@ -121,13 +129,43 @@ public sealed class RemoteDesktopHandler
 
     private async Task StreamFramesAsync(WebSocket webSocket, CancellationToken ct)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         while (_streaming && webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
-            var frameStart = DateTime.UtcNow;
+            stopwatch.Restart();
+
+            // Send updated meta if monitor changed
+            if (_metaDirty)
+            {
+                _metaDirty = false;
+                try
+                {
+                    var monitors = _screenCapture.GetMonitors();
+                    var (mw, mh) = _screenCapture.GetScreenSize(_monitorIndex);
+                    var metaUpdate = new RemexMessage
+                    {
+                        Type = MessageTypes.DesktopMeta,
+                        DesktopMeta = new DesktopMeta
+                        {
+                            ScreenWidth = mw,
+                            ScreenHeight = mh,
+                            MonitorCount = monitors.Count,
+                            Monitors = monitors,
+                            HostInstanceId = HostBootstrapper.InstanceId,
+                        }
+                    };
+                    await MessageSerializer.SendAsync(webSocket, metaUpdate, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send updated desktop meta.");
+                }
+            }
 
             try
             {
-                var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct);
+                var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _monitorIndex, ct);
                 if (jpegBytes.Length > 0)
                 {
                     await webSocket.SendAsync(
@@ -144,11 +182,11 @@ public sealed class RemoteDesktopHandler
                 _logger.LogWarning(ex, "Frame capture/send error.");
             }
 
-            // Throttle to target FPS
-            var elapsed = (DateTime.UtcNow - frameStart).TotalMilliseconds;
-            var targetDelay = 1000.0 / _targetFps;
-            var sleepMs = (int)(targetDelay - elapsed);
-            if (sleepMs > 0)
+            // Throttle to target FPS using high-resolution Stopwatch
+            var elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
+            var targetDelayMs = 1000.0 / _targetFps;
+            var sleepMs = (int)(targetDelayMs - elapsedMs);
+            if (sleepMs > 1)
             {
                 try { await Task.Delay(sleepMs, ct); }
                 catch (OperationCanceledException) { break; }
@@ -199,14 +237,14 @@ public sealed class RemoteDesktopHandler
             switch (input.EventType)
             {
                 case InputEventTypes.MouseMove when input.X.HasValue && input.Y.HasValue:
-                    _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    _inputSimulation.MoveMouse(input.X.Value + _monitorOffsetX, input.Y.Value + _monitorOffsetY);
                     break;
                 case InputEventTypes.MouseMove when input.DeltaX.HasValue || input.DeltaY.HasValue:
                     _inputSimulation.MouseMoveRelative(input.DeltaX ?? 0, input.DeltaY ?? 0);
                     break;
                 case InputEventTypes.MouseDown when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                        _inputSimulation.MoveMouse(input.X.Value + _monitorOffsetX, input.Y.Value + _monitorOffsetY);
                     _inputSimulation.MouseDown(input.Button.Value);
                     break;
                 case InputEventTypes.MouseUp when input.Button.HasValue:
@@ -214,7 +252,7 @@ public sealed class RemoteDesktopHandler
                     break;
                 case InputEventTypes.MouseClick when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                        _inputSimulation.MoveMouse(input.X.Value + _monitorOffsetX, input.Y.Value + _monitorOffsetY);
                     _inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
@@ -242,6 +280,23 @@ public sealed class RemoteDesktopHandler
         _quality = Math.Clamp(config.Quality, 1, 100);
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
         _targetFps = Math.Clamp(config.TargetFps, 1, 360);
-        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}", _quality, _scale, _targetFps);
+
+        var monitors = _screenCapture.GetMonitors();
+        int monitorIdx = Math.Clamp(config.MonitorIndex, 0, Math.Max(0, monitors.Count - 1));
+        if (monitorIdx != _monitorIndex && monitors.Count > 0)
+        {
+            _monitorIndex = monitorIdx;
+            _monitorOffsetX = monitors[monitorIdx].Left;
+            _monitorOffsetY = monitors[monitorIdx].Top;
+            _metaDirty = true;
+        }
+        else if (_monitorOffsetX == 0 && _monitorOffsetY == 0 && monitors.Count > 0 && monitorIdx < monitors.Count)
+        {
+            // Initialize offsets on first config
+            _monitorOffsetX = monitors[monitorIdx].Left;
+            _monitorOffsetY = monitors[monitorIdx].Top;
+        }
+
+        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, monitor={M}", _quality, _scale, _targetFps, _monitorIndex);
     }
 }

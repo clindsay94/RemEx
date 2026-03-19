@@ -127,6 +127,8 @@ public partial class RemoteDesktopView : UserControl
                 && DataContext is RemoteDesktopViewModel vm)
             {
                 vm.Scale = scale;
+                if (vm.IsStreaming)
+                    _ = vm.ApplySettingsCommand.ExecuteAsync(null);
             }
         }
     }
@@ -138,6 +140,8 @@ public partial class RemoteDesktopView : UserControl
             if (int.TryParse(tag, out int fps) && DataContext is RemoteDesktopViewModel vm)
             {
                 vm.TargetFps = fps;
+                if (vm.IsStreaming)
+                    _ = vm.ApplySettingsCommand.ExecuteAsync(null);
             }
         }
     }
@@ -170,7 +174,8 @@ public partial class RemoteDesktopView : UserControl
 
     /// <summary>
     /// Maps a point in the ViewportBorder coordinate space to remote screen coords.
-    /// Uses the Image control's actual layout position for accurate mapping.
+    /// Uses TransformToVisual to properly invert the RenderTransform (zoom/pan),
+    /// ensuring accurate coordinates at any zoom level.
     /// </summary>
     private (int x, int y)? MapToRemoteCoords(Point viewportPoint)
     {
@@ -180,14 +185,24 @@ public partial class RemoteDesktopView : UserControl
         var img = this.FindControl<Image>("ScreenImage");
         if (img is null || img.Bounds.Width <= 0 || img.Bounds.Height <= 0) return null;
 
-        // Invert viewport zoom/pan to get image-local coordinates
-        double imgLocalX = (viewportPoint.X - _viewportOffsetX) / _viewportZoom;
-        double imgLocalY = (viewportPoint.Y - _viewportOffsetY) / _viewportZoom;
+        var viewport = this.FindControl<Border>("ViewportBorder");
+        if (viewport is null) return null;
 
-        // Adjust for the Image control's position within the Panel
-        // (should be 0,0 in a Panel but accounts for any layout offset)
-        imgLocalX -= img.Bounds.Left;
-        imgLocalY -= img.Bounds.Top;
+        // Use TransformToVisual to convert viewport coords to Image-local coords.
+        // This correctly inverts the RenderTransform (zoom/pan) at any zoom level.
+        Point imgLocal;
+        var transform = viewport.TransformToVisual(img);
+        if (transform is not null)
+        {
+            imgLocal = transform.Value.Transform(viewportPoint);
+        }
+        else
+        {
+            // Fallback: manual inversion (should not happen if both are in the visual tree)
+            imgLocal = new Point(
+                (viewportPoint.X - _viewportOffsetX) / _viewportZoom - img.Bounds.Left,
+                (viewportPoint.Y - _viewportOffsetY) / _viewportZoom - img.Bounds.Top);
+        }
 
         // Compute the Uniform stretch area within the Image control
         double imgAspect = (double)vm.ScreenWidth / vm.ScreenHeight;
@@ -210,8 +225,8 @@ public partial class RemoteDesktopView : UserControl
             offsetY = (img.Bounds.Height - renderHeight) / 2;
         }
 
-        double relX = (imgLocalX - offsetX) / renderWidth;
-        double relY = (imgLocalY - offsetY) / renderHeight;
+        double relX = (imgLocal.X - offsetX) / renderWidth;
+        double relY = (imgLocal.Y - offsetY) / renderHeight;
 
         if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return null;
 

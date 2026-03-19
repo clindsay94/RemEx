@@ -12,4 +12,7 @@ public record DesktopConfig
 
     [JsonPropertyName("targetFps")]
     public int TargetFps { get; init; } = 10;
+
+    [JsonPropertyName("monitorIndex")]
+    public int MonitorIndex { get; init; } = 0;
 }

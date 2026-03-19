@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -98,6 +99,22 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     /// <summary>Remote screen height in pixels (native).</summary>
     public int ScreenHeight { get; private set; }
 
+    // ═══════════════ Multi-Monitor ═══════════════
+
+    [ObservableProperty]
+    private int _selectedMonitorIndex;
+
+    [ObservableProperty]
+    private int _monitorCount = 1;
+
+    [ObservableProperty]
+    private bool _isMultiMonitor;
+
+    [ObservableProperty]
+    private string _monitorLabel = "Monitor 1";
+
+    public List<MonitorInfo> Monitors { get; private set; } = new();
+
     public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell, IImmersiveModeService? immersiveMode = null)
     {
         Connection = connection;
@@ -128,6 +145,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 Quality = Quality,
                 Scale = Scale,
                 TargetFps = TargetFps,
+                MonitorIndex = SelectedMonitorIndex,
             };
             await _desktopService.StartStreamAsync(config);
 
@@ -169,8 +187,29 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             Quality = Quality,
             Scale = Scale,
             TargetFps = TargetFps,
+            MonitorIndex = SelectedMonitorIndex,
         };
         await _desktopService.SendConfigAsync(config);
+    }
+
+    [RelayCommand]
+    private async Task NextMonitorAsync()
+    {
+        if (MonitorCount <= 1) return;
+        SelectedMonitorIndex = (SelectedMonitorIndex + 1) % MonitorCount;
+        MonitorLabel = $"Monitor {SelectedMonitorIndex + 1}";
+
+        if (IsStreaming)
+        {
+            var config = new DesktopConfig
+            {
+                Quality = Quality,
+                Scale = Scale,
+                TargetFps = TargetFps,
+                MonitorIndex = SelectedMonitorIndex,
+            };
+            await _desktopService.SendConfigAsync(config);
+        }
     }
 
     [RelayCommand]
@@ -283,6 +322,21 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             Resolution = $"{meta.ScreenWidth}×{meta.ScreenHeight}";
+            MonitorCount = meta.MonitorCount;
+            IsMultiMonitor = meta.MonitorCount > 1;
+
+            if (meta.Monitors is not null)
+            {
+                Monitors = meta.Monitors;
+                OnPropertyChanged(nameof(Monitors));
+            }
+
+            // Update label with resolution info
+            if (meta.Monitors is not null && SelectedMonitorIndex < meta.Monitors.Count)
+            {
+                var m = meta.Monitors[SelectedMonitorIndex];
+                MonitorLabel = $"Monitor {SelectedMonitorIndex + 1} ({m.Width}×{m.Height})";
+            }
         });
     }
 
