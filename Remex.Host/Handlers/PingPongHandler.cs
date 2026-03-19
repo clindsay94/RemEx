@@ -97,35 +97,15 @@ public sealed class PingPongHandler(
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = curRem }, ct);
                         break;
 
+                    case MessageTypes.ProcessListRequest:
+                        var procs = await processMonitorService.GetProcessesAsync();
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);
+                        break;
                     case MessageTypes.LayoutUpdate when message.DashboardProfile is not null:
                         await profileStorage.SaveProfileAsync(message.DashboardProfile);
                         logger.LogInformation("Dashboard layout updated from client.");
                         break;
 
-                    case MessageTypes.ProcessListRequest:
-                        try
-                        {
-                            var procs = await processMonitorService.GetProcessesAsync();
-                            await MessageSerializer.SendAsync(
-                                webSocket,
-                                new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs },
-                                ct);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            // Preserve cancellation semantics for the outer loop.
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogError(ex, "Failed to retrieve process list.");
-                            // Send a failure response without a process list to keep the session alive.
-                            await MessageSerializer.SendAsync(
-                                webSocket,
-                                new RemexMessage { Type = MessageTypes.ProcessListSync },
-                                ct);
-                        }
-                        break;
                     case MessageTypes.LayoutRequest:
                         var reqProfile = await profileStorage.LoadProfileAsync();
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = reqProfile }, ct);
@@ -182,7 +162,6 @@ public sealed class PingPongHandler(
                     commandService.RestartToUefi();
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
                 case "KILLPROCESS":
-                case "KILLPROCESSELEVATED":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))
                     {

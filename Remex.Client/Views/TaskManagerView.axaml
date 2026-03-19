@@ -43,7 +43,7 @@
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <TextBlock Text="MEM:" Opacity="0.7" />
-                                    <!-- Display memory usage in raw bytes -->
+                                    <!-- Simple bytes to MB conversion for display -->
                                     <TextBlock Text="{Binding MemoryUsage, StringFormat='{}{0:N0} bytes'}" />
                                 </StackPanel>
                             </StackPanel>

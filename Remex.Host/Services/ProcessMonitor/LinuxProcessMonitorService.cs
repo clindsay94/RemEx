@@ -82,7 +82,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                     tracker.LastCpuTime = processTotalCpuTime;
                     if (totalCpuDiff > 0)
                     {
-                        cpuUsage = (double)diff / totalCpuDiff * 100.0;
+                        cpuUsage = (double)diff / totalCpuDiff * 100.0 * Environment.ProcessorCount;
                     }
                 }
 

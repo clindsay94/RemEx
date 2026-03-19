@@ -130,12 +130,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     public void StopPolling()
     {
-        if (_pollingCts != null)
-        {
-            _pollingCts.Cancel();
-            _pollingCts.Dispose();
-            _pollingCts = null;
-        }
+        _pollingCts?.Cancel();
     }
 
     private async Task PollAsync(CancellationToken ct)
@@ -148,12 +143,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
                 await Task.Delay(2000, ct); // Poll every 2 seconds
             }
             catch (OperationCanceledException) { }
-            catch
-            {
-                // Use a non-cancelable delay here to avoid TaskCanceledException
-                // escaping from within the catch block when stopping polling.
-                await Task.Delay(2000);
-            }
+            catch { await Task.Delay(2000, ct); }
         }
     }
 
