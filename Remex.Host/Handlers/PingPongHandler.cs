@@ -162,6 +162,7 @@ public sealed class PingPongHandler(
                     commandService.RestartToUefi();
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
                 case "KILLPROCESS":
+                case "KILLPROCESSELEVATED":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))
                     {
