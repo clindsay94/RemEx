@@ -100,16 +100,25 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
 
         // First response should be desktop_meta (text)
         var buffer = new byte[4096];
-        var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-        Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+        WebSocketReceiveResult result;
+        using (var ms = new System.IO.MemoryStream())
+        {
+            do
+            {
+                result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+                ms.Write(buffer, 0, result.Count);
+            }
+            while (!result.EndOfMessage);
 
-        var metaJson = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-        var metaMsg = System.Text.Json.JsonSerializer.Deserialize<RemexMessage>(metaJson,
-            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
-        Assert.NotNull(metaMsg);
-        Assert.Equal(MessageTypes.DesktopMeta, metaMsg!.Type);
-        Assert.Equal(1920, metaMsg.DesktopMeta!.ScreenWidth);
-        Assert.Equal(1080, metaMsg.DesktopMeta.ScreenHeight);
+            var metaJson = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+            var metaMsg = System.Text.Json.JsonSerializer.Deserialize<RemexMessage>(metaJson,
+                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+            Assert.NotNull(metaMsg);
+            Assert.Equal(MessageTypes.DesktopMeta, metaMsg!.Type);
+            Assert.Equal(1920, metaMsg.DesktopMeta!.ScreenWidth);
+            Assert.Equal(1080, metaMsg.DesktopMeta.ScreenHeight);
+        }
 
         // Second message should be a binary frame
         result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
