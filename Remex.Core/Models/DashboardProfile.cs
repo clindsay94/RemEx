@@ -49,6 +49,9 @@ public record DashboardProfile
     /// <summary>Persisted WebSocket host address for the remote connection.</summary>
     public string HostAddress { get; init; } = "ws://localhost:5005/ws";
 
+    /// <summary>Persisted access key for authentication.</summary>
+    public string AccessKey { get; init; } = string.Empty;
+
     /// <summary>All card positions and sizes.</summary>
     public List<CardState> Cards { get; init; } = new();
 
@@ -63,4 +66,31 @@ public record DashboardProfile
 
     /// <summary>Persisted Wake-on-LAN UDP port (default 9).</summary>
     public int WolPort { get; init; } = 9;
+
+    /// <summary>Visual aesthetic and theme overrides.</summary>
+    public CustomizationSettings Customization { get; init; } = new();
+}
+
+/// <summary>
+/// Persisted visual customization parameters.
+/// </summary>
+public record CustomizationSettings
+{
+    /// <summary>Base .axaml theme file to load (e.g. "BaseDarkGlass").</summary>
+    public string BaseTheme { get; init; } = "BaseDarkGlass";
+
+    /// <summary>Corner radius in pixels for cards and panels.</summary>
+    public double CornerRadius { get; init; } = 16;
+
+    /// <summary>Opacity (0.0 to 1.0) of the glass-effect backgrounds.</summary>
+    public double GlassOpacity { get; init; } = 0.1;
+
+    /// <summary>Relative strength of the neon/glow effects.</summary>
+    public double GlowStrength { get; init; } = 2;
+
+    /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
+    public string AccentColor { get; init; } = "#6C4CFF";
+
+    /// <summary>Canvas background material type ("Mica", "Acrylic", "Solid").</summary>
+    public string CanvasBackgroundType { get; init; } = "Mica";
 }

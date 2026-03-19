@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ═══ MONOLITH (INDUSTRIAL) ═══ -->
+    
+    <!-- Colors -->
+    <Color x:Key="GlassBaseDark">#1C1C1E</Color>
+    <Color x:Key="GlassBaseMedium">#2C2C2E</Color>
+    <Color x:Key="AccentPrimary">#0A84FF</Color>
+    <Color x:Key="AccentHover">#409CFF</Color>
+    <Color x:Key="AccentPressed">#0064CC</Color>
+    <Color x:Key="SystemSuccess">#30D158</Color>
+    <Color x:Key="SystemError">#FF453A</Color>
+    <Color x:Key="SystemWarning">#FFD60A</Color>
+    <Color x:Key="CardBackground">#402C2C2E</Color>
+    <Color x:Key="CardBackgroundHover">#602C2C2E</Color>
+    <Color x:Key="CardBorder">#803A3A3C</Color>
+    <Color x:Key="TextPrimary">#FFFFFF</Color>
+    <Color x:Key="TextSecondary">#8E8E93</Color>
+    <Color x:Key="TextMuted">#48484A</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
+    <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
+    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
+    <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
+
+    <!-- UI Geometry -->
+    <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
+    <Thickness x:Key="CardBorderThickness">3</Thickness>
+</ResourceDictionary>

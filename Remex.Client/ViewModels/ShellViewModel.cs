@@ -13,6 +13,7 @@ namespace Remex.Client.ViewModels;
 public partial class ShellViewModel : ObservableObject
 {
     private readonly DashboardLayoutService _layoutService;
+    private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
 
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>
@@ -41,11 +42,21 @@ public partial class ShellViewModel : ObservableObject
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
 
-    public ShellViewModel(DashboardLayoutService layoutService, ConnectionViewModel connectionViewModel, IImmersiveModeService? immersiveMode = null)
+    [ObservableProperty]
+    private Remex.Core.Models.CustomizationSettings _customization = new();
+
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IImmersiveModeService? immersiveMode = null)
     {
         _layoutService = layoutService;
+        _themeService = themeService;
         _immersiveMode = immersiveMode;
         Connection = connectionViewModel;
+
+        _themeService.CustomizationApplied += settings => Customization = settings;
+        if (_layoutService.CurrentProfile?.Customization != null)
+        {
+            Customization = _layoutService.CurrentProfile.Customization;
+        }
 
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
@@ -109,7 +120,7 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToCustomization()
     {
-        _customizationViewModel ??= new CustomizationViewModel(this);
+        _customizationViewModel ??= new CustomizationViewModel(this, _layoutService, _themeService);
         CurrentView = _customizationViewModel;
     }
 

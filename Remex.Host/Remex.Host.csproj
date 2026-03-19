@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Makaretu.Dns.Multicast" Version="0.27.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.3" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" NoWarn="NU1510" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.3" />

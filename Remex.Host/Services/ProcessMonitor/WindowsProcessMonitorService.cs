@@ -68,7 +68,12 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                         info = info with { CpuUsage = usage };
                     }
                 }
-                catch { }
+                catch (System.ComponentModel.Win32Exception) { }
+                catch (InvalidOperationException) { }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "Unexpected error getting CPU time for {Pid}", p.Id);
+                }
 
                 // Attempt to get file path and publisher/version
                 try
@@ -91,7 +96,12 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                         catch { }
                     }
                 }
-                catch { } // Access denied is common here for system procs
+                catch (System.ComponentModel.Win32Exception) { }
+                catch (InvalidOperationException) { }
+                catch (Exception ex)
+                {
+                    _logger.LogTrace(ex, "Unexpected error getting module info for {Pid}", p.Id);
+                } // Access denied is common here for system procs
 
                 results.Add(info);
                 p.Dispose();

@@ -137,7 +137,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             StatusText = "Connecting...";
 
-            await _desktopService.ConnectAsync(Connection.HostAddress);
+            await _desktopService.ConnectAsync(Connection.HostAddress, Connection.AccessKey);
 
             var config = new DesktopConfig
             {

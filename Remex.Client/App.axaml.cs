@@ -54,6 +54,8 @@ public partial class App : Application
         collection.AddSingleton<ILauncherStorageService, LauncherStorageService>();
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
+        collection.AddSingleton<ThemeService>();
+        collection.AddSingleton<Remex.Client.Services.Network.MdnsDiscoveryService>();
 
         // Register ViewModels
         collection.AddSingleton<ConnectionViewModel>();

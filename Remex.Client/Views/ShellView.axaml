@@ -1,57 +1,60 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:ctrl="using:Remex.Client.Controls"
     xmlns:views="using:Remex.Client.Views" x:Class="Remex.Client.Views.ShellView" x:DataType="vm:ShellViewModel">
 
-    <Grid RowDefinitions="Auto,*">
-    
-        <!-- ═══ CUSTOM TITLE BAR ═══ -->
-        <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto"
-              IsVisible="{Binding !IsShellChromeHidden}">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
-                <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
-            </StackPanel>
+    <ctrl:DashboardBackgroundControl>
+        <Grid RowDefinitions="Auto,*">
+        
+            <!-- ═══ CUSTOM TITLE BAR ═══ -->
+            <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto"
+                  IsVisible="{Binding !IsShellChromeHidden}">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
+                    <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
+                </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-                <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                <Button Content="Remote" Command="{Binding NavigateToRemoteCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                <Button Content="Tasks" Command="{Binding NavigateToTaskManagerCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-                <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
-            </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+                    <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                    <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                    <Button Content="Remote" Command="{Binding NavigateToRemoteCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                    <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                    <Button Content="Tasks" Command="{Binding NavigateToTaskManagerCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                    <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="#A0A0FF" Padding="8,4"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ═══ PAGE CONTENT ═══ -->
+            <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentView}">
+                <TransitioningContentControl.DataTemplates>
+                    <DataTemplate DataType="vm:HomeViewModel">
+                        <views:HomeView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:CanvasDashboardViewModel">
+                        <views:CanvasView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:SettingsViewModel">
+                        <views:SettingsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:RemoteViewModel">
+                        <views:RemoteView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:AppLauncherViewModel">
+                        <views:AppLauncherView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:CustomizationViewModel">
+                        <views:CustomizationView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:RemoteDesktopViewModel">
+                        <views:RemoteDesktopView />
+                    </DataTemplate>
+                </TransitioningContentControl.DataTemplates>
+                <TransitioningContentControl.PageTransition>
+                    <!-- Sleek sliding entrance transition -->
+                    <PageSlide Duration="0:0:0.25" Orientation="Horizontal" />
+                </TransitioningContentControl.PageTransition>
+            </TransitioningContentControl>
         </Grid>
-
-        <!-- ═══ PAGE CONTENT ═══ -->
-        <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentView}">
-            <TransitioningContentControl.DataTemplates>
-                <DataTemplate DataType="vm:HomeViewModel">
-                    <views:HomeView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:CanvasDashboardViewModel">
-                    <views:CanvasView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:SettingsViewModel">
-                    <views:SettingsView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:RemoteViewModel">
-                    <views:RemoteView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:AppLauncherViewModel">
-                    <views:AppLauncherView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:CustomizationViewModel">
-                    <views:CustomizationView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:RemoteDesktopViewModel">
-                    <views:RemoteDesktopView />
-                </DataTemplate>
-            </TransitioningContentControl.DataTemplates>
-            <TransitioningContentControl.PageTransition>
-                <!-- Sleek sliding entrance transition -->
-                <PageSlide Duration="0:0:0.25" Orientation="Horizontal" />
-            </TransitioningContentControl.PageTransition>
-        </TransitioningContentControl>
-    </Grid>
+    </ctrl:DashboardBackgroundControl>
 
 </UserControl>

@@ -1,0 +1,56 @@
+<ContentControl xmlns="https://github.com/avaloniaui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                xmlns:vm="using:Remex.Client.ViewModels"
+                xmlns:converters="using:Remex.Client.Converters"
+                x:DataType="vm:ShellViewModel"
+                x:Class="Remex.Client.Controls.DashboardBackgroundControl">
+
+    <Grid>
+        <!-- ═══ Custom Gradient Mode ═══ -->
+        <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}">
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0" Color="#1A0A2E" />
+                    <GradientStop Offset="1" Color="#000000" />
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+            <Rectangle.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:1" />
+                </Transitions>
+            </Rectangle.Transitions>
+            
+            <Rectangle.Styles>
+                <Style Selector="Rectangle">
+                    <Style.Animations>
+                        <Animation Duration="0:0:10" IterationCount="Infinite" PlaybackDirection="Alternate">
+                            <KeyFrame KeyTime="0:0:0">
+                                <Setter Property="Opacity" Value="0.7"/>
+                            </KeyFrame>
+                            <KeyFrame KeyTime="0:0:10">
+                                <Setter Property="Opacity" Value="0.9"/>
+                            </KeyFrame>
+                        </Animation>
+                    </Style.Animations>
+                </Style>
+            </Rectangle.Styles>
+        </Rectangle>
+
+        <!-- ═══ Wallpaper Mode ═══ -->
+        <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
+            <!-- Ensure an Assets folder exists or use a default fallback -->
+            <Image Source="avares://Remex.Client/Assets/default_wallpaper.jpg" 
+                   Stretch="UniformToFill" />
+            <Panel Background="#CC000000">
+                <Panel.Effect>
+                    <BlurEffect Radius="40" />
+                </Panel.Effect>
+            </Panel>
+        </Panel>
+
+        <!-- Main Content -->
+        <ContentPresenter Content="{Binding $parent[ContentControl].Content}" />
+    </Grid>
+</ContentControl>

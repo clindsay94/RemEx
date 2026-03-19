@@ -21,6 +21,12 @@ public sealed record RemexMessage
     public long? Timestamp { get; init; }
 
     /// <summary>
+    /// Authentication key for the session.
+    /// </summary>
+    [JsonPropertyName("authKey")]
+    public string? AuthKey { get; init; }
+
+    /// <summary>
     /// Optional payload attached for telemetry streaming.
     /// </summary>
     [JsonPropertyName("telemetry")]

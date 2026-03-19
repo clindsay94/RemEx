@@ -26,6 +26,14 @@ public static class StringMatchConverter
     public static readonly IValueConverter IsSensor =
         new StringEqualsConverter("Sensor");
 
+    /// <summary>Returns true when the bound string equals "Gradient".</summary>
+    public static readonly IValueConverter IsGradient =
+        new StringEqualsConverter("Gradient");
+
+    /// <summary>Returns true when the bound string equals "Wallpaper".</summary>
+    public static readonly IValueConverter IsWallpaper =
+        new StringEqualsConverter("Wallpaper");
+
     private sealed class StringEqualsConverter : IValueConverter
     {
         private readonly string _target;

@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Remex.Client.ViewModels" x:Class="Remex.Client.Views.CustomizationView" x:DataType="vm:CustomizationViewModel">
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:models="using:Remex.Client.Models"
+    x:Class="Remex.Client.Views.CustomizationView" x:DataType="vm:CustomizationViewModel">
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24">
@@ -9,18 +11,119 @@
             <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
             <StackPanel Spacing="4">
                 <TextBlock Text="🎨  CUSTOMIZATION" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
-                <TextBlock Text="THEMES &amp; LAYOUT" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
+                <TextBlock Text="THEMES &amp; ENGINE PRESETS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
-            <!-- ═══ Placeholder ═══ -->
-            <Border Classes="glass-card" Padding="40" HorizontalAlignment="Center">
-                <StackPanel Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="🚧" FontSize="48" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Coming Soon" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Customize Remex themes, colors, and dashboard layouts." FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+            <!-- ═══ Section 1: Presets ═══ -->
+            <TextBlock Text="BASE PRESETS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <UniformGrid Columns="4">
+                <!-- Base Dark Glass -->
+                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
+                    <StackPanel Spacing="8">
+                        <Border Height="40" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
+                        <TextBlock Text="Standard Glass" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <!-- Cyber-NOC -->
+                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectCyberNOC">
+                    <StackPanel Spacing="8">
+                        <Border Height="40" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
+                        <TextBlock Text="Cyber-NOC" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <!-- Solar-Flare -->
+                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectSolarFlare">
+                    <StackPanel Spacing="8">
+                        <Border Height="40" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
+                        <TextBlock Text="Solar-Flare" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#333"/>
+                    </StackPanel>
+                </Border>
+                <!-- Monolith -->
+                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectMonolith">
+                    <StackPanel Spacing="8">
+                        <Border Height="40" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
+                        <TextBlock Text="Monolith" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- ═══ Section 2: Advanced Overrides ═══ -->
+            <Border Classes="glass-card" Padding="24">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="ADVANCED FINE-TUNING" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Corner Radius" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Glass Opacity" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Glow Strength" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding GlowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
+
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Accent Color" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF"/>
+                            <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF"/>
+                            <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF"/>
+                            <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800"/>
+                            <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E"/>
+                            <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </Border>
 
+            <!-- ═══ Section 3: Atmosphere ═══ -->
+            <Border Classes="glass-card" Padding="24">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="CANVAS ATMOSPHERE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Background Mode" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" HorizontalAlignment="Left" Width="200">
+                            <ComboBoxItem Content="Mica"/>
+                            <ComboBoxItem Content="Acrylic"/>
+                            <ComboBoxItem Content="Custom Gradient"/>
+                            <ComboBoxItem Content="Wallpaper"/>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Reset to Theme Defaults" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
+
         </StackPanel>
     </ScrollViewer>
+
+    <UserControl.Styles>
+        <Style Selector="Button.accent-picker">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.accent-picker:pointerover">
+            <Setter Property="BorderBrush" Value="White"/>
+        </Style>
+    </UserControl.Styles>
 </UserControl>

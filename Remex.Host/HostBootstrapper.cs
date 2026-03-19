@@ -44,6 +44,7 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.Network.INetworkListener, Remex.Core.Services.Network.RemexNetworkListener>();
         builder.Services.AddHostedService<Remex.Host.Services.IPC.LocalIpcServerService>();
         builder.Services.AddHostedService<Remex.Host.Services.Network.ExternalNetworkListenerService>();
+        builder.Services.AddHostedService<Remex.Host.Services.Network.MdnsAdvertisingService>();
 
         if (OperatingSystem.IsWindows())
         {
@@ -61,6 +62,9 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.LinuxScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.LinuxInputSimulationService>();
         }
+
+        builder.Services.AddSingleton<TelemetryBackgroundService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<TelemetryBackgroundService>());
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
@@ -92,9 +96,11 @@ public static class HostBootstrapper
  
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
-            var telemetry = context.RequestServices.GetRequiredService<ITelemetryService>();
+            var telemetry = context.RequestServices.GetRequiredService<TelemetryBackgroundService>();
+            var config = context.RequestServices.GetRequiredService<IConfiguration>();
             var handler = new PingPongHandler(
                 logger, 
+                config,
                 telemetry, 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), 
@@ -118,6 +124,17 @@ public static class HostBootstrapper
             // Restrict remote desktop access: allow localhost by default, and require
             // explicit configuration to permit remote connections.
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+
+            // Auth check
+            var authHeader = context.Request.Headers["X-Remex-Auth"].ToString();
+            var expectedKey = configuration["Remex:AccessKey"];
+            if (!string.IsNullOrEmpty(expectedKey) && authHeader != expectedKey)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsync("Invalid access key.");
+                return;
+            }
+
             var allowRemoteConnections = configuration.GetValue<bool>("RemoteDesktop:AllowRemoteConnections");
             var remoteIp = context.Connection.RemoteIpAddress;
             var isLocalRequest = remoteIp == null || IPAddress.IsLoopback(remoteIp);

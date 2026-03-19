@@ -1,4 +1,6 @@
 using System;
+using System.Buffers.Binary;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,6 +16,7 @@ namespace Remex.Core.Services.Network;
 
 public class RemexNetworkListener : INetworkListener, IDisposable
 {
+    private const int MaxPayloadSize = 1 * 1024 * 1024; // 1MB Limit
     private readonly IConfiguration _configuration;
     private readonly ILogger<RemexNetworkListener> _logger;
     private readonly ISystemCommandService _commandService;
@@ -51,14 +54,17 @@ public class RemexNetworkListener : INetworkListener, IDisposable
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            _listenTask = Task.Run(() => AcceptClientsAsync(_cts.Token), _cts.Token);
-            await Task.CompletedTask;
+            _listenTask = AcceptClientsAsync(_cts.Token);
+            await _listenTask;
         }
         catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
         {
             _logger.LogWarning($"Port {port} is already in use. Failed to start network listener.");
-            // Do not throw, allow the application to continue running without the external network listener if the port is busy,
-            // especially during tests running concurrently.
+            // Do not throw, allow the application to continue running without the external network listener if the port is busy.
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown
         }
         catch (Exception ex)
         {
@@ -114,11 +120,23 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             using (client)
             using (var stream = client.GetStream())
             {
-                var buffer = new byte[8192];
-                var bytesRead = await stream.ReadAsync(buffer, token);
-                if (bytesRead == 0) return;
+                // 1. Read 4-byte length prefix
+                var lengthBuffer = new byte[4];
+                await stream.ReadExactlyAsync(lengthBuffer, 0, 4, token);
+                var length = BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
 
-                var json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                // 2. Validate length
+                if (length <= 0 || length > MaxPayloadSize)
+                {
+                    _logger.LogWarning($"Received invalid payload length: {length}. Closing connection.");
+                    return;
+                }
+
+                // 3. Read payload
+                var buffer = new byte[length];
+                await stream.ReadExactlyAsync(buffer, 0, length, token);
+
+                var json = Encoding.UTF8.GetString(buffer);
                 CommandRequest? request = null;
                 try
                 {
@@ -130,20 +148,41 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 }
 
                 CommandResponse response;
-
                 if (request == null)
                 {
                     response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
                 }
                 else
                 {
-                    response = await ExecuteCommandAsync(request);
+                    var expectedKey = _configuration["Remex:AccessKey"];
+                    if (!string.IsNullOrEmpty(expectedKey) && request.AuthKey != expectedKey)
+                    {
+                        _logger.LogWarning("Unauthorized TCP access attempt. Invalid AuthKey.");
+                        response = new CommandResponse(false, "Unauthorized", "Access denied: Invalid AuthKey.");
+                    }
+                    else
+                    {
+                        response = await ExecuteCommandAsync(request);
+                    }
                 }
 
+                // 4. Send length-prefixed response
                 var responseJson = JsonSerializer.Serialize(response);
                 var responseBytes = Encoding.UTF8.GetBytes(responseJson);
+                var responseLengthBuffer = new byte[4];
+                BinaryPrimitives.WriteInt32BigEndian(responseLengthBuffer, responseBytes.Length);
+
+                await stream.WriteAsync(responseLengthBuffer, token);
                 await stream.WriteAsync(responseBytes, token);
             }
+        }
+        catch (EndOfStreamException)
+        {
+            _logger.LogDebug("Client closed connection unexpectedly.");
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown
         }
         catch (Exception ex)
         {

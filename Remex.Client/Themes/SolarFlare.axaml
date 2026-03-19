@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- ═══ SOLAR FLARE (LIGHT MODE) ═══ -->
+    
+    <!-- Colors -->
+    <Color x:Key="GlassBaseDark">#F8FAFC</Color>
+    <Color x:Key="GlassBaseMedium">#F1F5F9</Color>
+    <Color x:Key="AccentPrimary">#FFB800</Color>
+    <Color x:Key="AccentHover">#FFC933</Color>
+    <Color x:Key="AccentPressed">#CC9300</Color>
+    <Color x:Key="SystemSuccess">#16A34A</Color>
+    <Color x:Key="SystemError">#DC2626</Color>
+    <Color x:Key="SystemWarning">#D97706</Color>
+    <Color x:Key="CardBackground">#CCFFFFFF</Color>
+    <Color x:Key="CardBackgroundHover">#F2FFFFFF</Color>
+    <Color x:Key="CardBorder">#1A000000</Color>
+    <Color x:Key="TextPrimary">#0F172A</Color>
+    <Color x:Key="TextSecondary">#475569</Color>
+    <Color x:Key="TextMuted">#94A3B8</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
+    <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
+    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
+    <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
+
+    <!-- UI Geometry -->
+    <CornerRadius x:Key="CardCornerRadius">24</CornerRadius>
+    <Thickness x:Key="CardBorderThickness">1</Thickness>
+</ResourceDictionary>

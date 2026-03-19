@@ -21,13 +21,22 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     };
 
     private readonly string _filePath;
+    private readonly ThemeService _themeService;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Timer? _debounceTimer;
     private DashboardProfile? _pendingProfile;
     private const int DebounceMs = 2000;
 
-    public DashboardLayoutService()
+    /// <summary>
+    /// The currently loaded dashboard profile. 
+    /// Updated after calling <see cref="LoadAsync"/>.
+    /// </summary>
+    public DashboardProfile CurrentProfile { get; private set; } = new();
+
+    public DashboardLayoutService(ThemeService themeService)
     {
+        _themeService = themeService;
+
         // Store alongside the application data — works on both Desktop and Android.
         var appData = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -43,17 +52,31 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         await _gate.WaitAsync().ConfigureAwait(false);
         try
         {
+            DashboardProfile profile;
             if (!File.Exists(_filePath))
-                return new DashboardProfile();
+            {
+                profile = new DashboardProfile();
+            }
+            else
+            {
+                var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
+                profile = JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions)
+                        ?? new DashboardProfile();
+            }
 
-            var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions)
-                   ?? new DashboardProfile();
+            // Apply persisted theme settings to the UI.
+            _themeService.ApplyCustomization(profile.Customization);
+
+            CurrentProfile = profile;
+            return profile;
         }
         catch
         {
             // If the file is corrupt, return defaults rather than crashing.
-            return new DashboardProfile();
+            var profile = new DashboardProfile();
+            _themeService.ApplyCustomization(profile.Customization);
+            CurrentProfile = profile;
+            return profile;
         }
         finally
         {

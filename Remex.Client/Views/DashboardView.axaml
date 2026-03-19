@@ -11,7 +11,7 @@
       <Setter Property="Background" Value="#1E1E2E"/>
       <Setter Property="CornerRadius" Value="16"/>
       <Setter Property="Padding" Value="20"/>
-      <Setter Property="Margin" Value="8"/>
+      <Setter Property="Margin" Value="4"/>
       <Setter Property="BorderBrush" Value="#2A2A3E"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="BoxShadow" Value="0 4 24 0 #40000000"/>
@@ -135,7 +135,7 @@
     </Style>
     <Style Selector="Border.sensor-card:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.04)"/>
-      <Setter Property="BoxShadow" Value="0 2 12 0 #30000000"/>
+      <Setter Property="BoxShadow" Value="0 4 16 0 #40000000, 0 0 12 2 #304A3AFF"/>
     </Style>
   </UserControl.Styles>
 
@@ -249,7 +249,7 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
                           <!-- ═══ Sensor Sparkline Sub-Card (dynamic size + theme + context menu) ═══ -->
-                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,12,12" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True">
+                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,6,6" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True">
 
                             <!-- ═══ Right-Click Context Menu ═══ -->
                             <Border.ContextMenu>

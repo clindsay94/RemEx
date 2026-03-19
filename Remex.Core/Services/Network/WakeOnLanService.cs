@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -35,11 +38,53 @@ public class WakeOnLanService : IWakeOnLanService
             Buffer.BlockCopy(macBytes, 0, magicPacket, i * 6, 6);
         }
 
-        using var udpClient = new UdpClient();
-        udpClient.EnableBroadcast = true;
-
         var broadcastEndpoint = new IPEndPoint(IPAddress.Parse(broadcastIp), port);
+        var interfaces = NetworkInterface.GetAllNetworkInterfaces()
+            .Where(ni => ni.OperationalStatus == OperationalStatus.Up &&
+                         ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                         !ni.Description.Contains("Virtual", StringComparison.OrdinalIgnoreCase) &&
+                         !ni.Description.Contains("Pseudo", StringComparison.OrdinalIgnoreCase) &&
+                         (ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet || 
+                          ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211));
 
-        await udpClient.SendAsync(magicPacket, magicPacket.Length, broadcastEndpoint);
+        var tasks = new List<Task>();
+
+        foreach (var ni in interfaces)
+        {
+            var ipProps = ni.GetIPProperties();
+            foreach (var ip in ipProps.UnicastAddresses)
+            {
+                if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    tasks.Add(SendToEndpointAsync(ip.Address, broadcastEndpoint, magicPacket));
+                }
+            }
+        }
+
+        if (tasks.Count == 0)
+        {
+            // Fallback to default if no suitable interfaces found
+            using var udpClient = new UdpClient();
+            udpClient.EnableBroadcast = true;
+            await udpClient.SendAsync(magicPacket, magicPacket.Length, broadcastEndpoint);
+        }
+        else
+        {
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    private static async Task SendToEndpointAsync(IPAddress localAddress, IPEndPoint broadcastEndpoint, byte[] magicPacket)
+    {
+        try
+        {
+            using var udpClient = new UdpClient(new IPEndPoint(localAddress, 0));
+            udpClient.EnableBroadcast = true;
+            await udpClient.SendAsync(magicPacket, magicPacket.Length, broadcastEndpoint);
+        }
+        catch (Exception)
+        {
+            // Ignore failures on individual interfaces
+        }
     }
 }

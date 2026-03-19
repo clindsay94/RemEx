@@ -7,7 +7,8 @@ namespace Remex.Core.Models;
 /// </summary>
 public record CommandRequest(
     string Action,
-    string? TargetPath = null
+    string? TargetPath = null,
+    string? AuthKey = null
 );
 
 /// <summary>

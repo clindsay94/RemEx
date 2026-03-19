@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using Remex.Core.Messages;
 using Remex.Core.Services;
+using Remex.Host.Services.Telemetry;
 
 namespace Remex.Host.Handlers;
 
@@ -11,7 +12,8 @@ namespace Remex.Host.Handlers;
 /// </summary>
 public sealed class PingPongHandler(
     ILogger<PingPongHandler> logger, 
-    ITelemetryService telemetryService, 
+    IConfiguration configuration,
+    TelemetryBackgroundService telemetryBackgroundService, 
     Remex.Core.Services.Command.ISystemCommandService commandService, 
     Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, 
     Remex.Core.Services.ILauncherStorageService launcherStorage, 
@@ -22,6 +24,8 @@ public sealed class PingPongHandler(
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
         logger.LogInformation("Client connected.");
+
+        var expectedKey = configuration["Remex:AccessKey"];
 
         // Sync launchers on connect
         try
@@ -64,6 +68,20 @@ public sealed class PingPongHandler(
                 }
 
                 logger.LogDebug("Received: {Type}", message.Type);
+
+                // Authentication Check
+                if (!string.IsNullOrEmpty(expectedKey) && message.AuthKey != expectedKey)
+                {
+                    logger.LogWarning("Unauthorized access attempt. Invalid AuthKey.");
+                    var authResponse = new RemexMessage
+                    {
+                        Type = MessageTypes.CommandResponse,
+                        CommandSuccess = false,
+                        CommandMessage = "Unauthorized"
+                    };
+                    await MessageSerializer.SendAsync(webSocket, authResponse, ct);
+                    continue;
+                }
 
                 switch (message.Type)
                 {
@@ -169,6 +187,15 @@ public sealed class PingPongHandler(
                         return MakeCommandResponse(killed, killed ? "Process killed." : "Failed to kill process.");
                     }
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
+                case "KILLPROCESSELEVATED":
+                    if (message.CommandParameters?.TryGetValue("ProcessId", out var epidStr) == true
+                        && int.TryParse(epidStr, out var epid))
+                    {
+                        // Use the same KillProcess for now as requested.
+                        var killed = processMonitorService.KillProcess(epid);
+                        return MakeCommandResponse(killed, killed ? "Elevated process kill executed." : "Failed to kill process (elevated).");
+                    }
+                    return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "LOCK":
                     commandService.Lock();
                     return MakeCommandResponse(true, "Lock executed.");
@@ -212,15 +239,18 @@ public sealed class PingPongHandler(
         {
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
-                var payload = await telemetryService.GetTelemetryAsync(ct);
-                var message = new RemexMessage
+                var payload = telemetryBackgroundService.CurrentPayload;
+                if (payload != null)
                 {
-                    Type = MessageTypes.Telemetry,
-                    Telemetry = payload,
-                    Timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
-                };
+                    var message = new RemexMessage
+                    {
+                        Type = MessageTypes.Telemetry,
+                        Telemetry = payload,
+                        Timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
+                    };
 
-                await MessageSerializer.SendAsync(webSocket, message, ct);
+                    await MessageSerializer.SendAsync(webSocket, message, ct);
+                }
 
                 // Assuming 1-second ticks as defined in instructions/impl generally
                 await Task.Delay(1000, ct); 

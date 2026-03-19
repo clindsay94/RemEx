@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Services;
-using Avalonia.Input;
 
 namespace Remex.Host.Services.Input;
 
@@ -281,6 +280,102 @@ public class WindowsInputSimulationService : IInputSimulationService
     }
 
     #endregion
+
+    /// <summary>
+    /// A local mirror of Avalonia.Input.Key values.
+    /// Used so the Host project does not need to reference Avalonia just to map incoming integer key codes.
+    /// </summary>
+    private enum Key
+    {
+        Back = 2,
+        Tab = 3,
+        Enter = 6,
+        Escape = 13,
+        Space = 18,
+        PageUp = 19,
+        PageDown = 20,
+        End = 21,
+        Home = 22,
+        Left = 23,
+        Up = 24,
+        Right = 25,
+        Down = 26,
+        Insert = 31,
+        Delete = 32,
+        D0 = 34,
+        D1 = 35,
+        D2 = 36,
+        D3 = 37,
+        D4 = 38,
+        D5 = 39,
+        D6 = 40,
+        D7 = 41,
+        D8 = 42,
+        D9 = 43,
+        A = 44,
+        B = 45,
+        C = 46,
+        D = 47,
+        E = 48,
+        F = 49,
+        G = 50,
+        H = 51,
+        I = 52,
+        J = 53,
+        K = 54,
+        L = 55,
+        M = 56,
+        N = 57,
+        O = 58,
+        P = 59,
+        Q = 60,
+        R = 61,
+        S = 62,
+        T = 63,
+        U = 64,
+        V = 65,
+        W = 66,
+        X = 67,
+        Y = 68,
+        Z = 69,
+        LWin = 70,
+        RWin = 71,
+        NumPad0 = 74,
+        NumPad1 = 75,
+        NumPad2 = 76,
+        NumPad3 = 77,
+        NumPad4 = 78,
+        NumPad5 = 79,
+        NumPad6 = 80,
+        NumPad7 = 81,
+        NumPad8 = 82,
+        NumPad9 = 83,
+        Multiply = 84,
+        Add = 85,
+        Separator = 86,
+        Subtract = 87,
+        Decimal = 88,
+        Divide = 89,
+        F1 = 90,
+        F2 = 91,
+        F3 = 92,
+        F4 = 93,
+        F5 = 94,
+        F6 = 95,
+        F7 = 96,
+        F8 = 97,
+        F9 = 98,
+        F10 = 99,
+        F11 = 100,
+        F12 = 101,
+        LeftShift = 114,
+        RightShift = 115,
+        LeftCtrl = 116,
+        RightCtrl = 117,
+        LeftAlt = 118,
+        RightAlt = 119
+    }
+
     /// <summary>
     /// Maps an incoming protocol-level key code (typically Avalonia.Input.Key)
     /// to a Win32 virtual-key code suitable for KEYBDINPUT.wVk.

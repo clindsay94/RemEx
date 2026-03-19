@@ -32,6 +32,9 @@ public partial class ConnectionViewModel : ObservableObject
     private string _hostAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
     [ObservableProperty]
+    private string _accessKey = string.Empty;
+
+    [ObservableProperty]
     private string _statusText = "Disconnected";
 
     [ObservableProperty]
@@ -46,6 +49,66 @@ public partial class ConnectionViewModel : ObservableObject
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
+    private readonly Remex.Client.Services.Network.MdnsDiscoveryService? _discoveryService;
+    private readonly Remex.Client.Services.DashboardLayoutService? _layoutService;
+
+    public ConnectionViewModel() : this(null, null) { }
+
+    public ConnectionViewModel(
+        Remex.Client.Services.Network.MdnsDiscoveryService? discoveryService,
+        Remex.Client.Services.DashboardLayoutService? layoutService)
+    {
+        _discoveryService = discoveryService;
+        _layoutService = layoutService;
+
+        if (_layoutService?.CurrentProfile != null)
+        {
+            AccessKey = _layoutService.CurrentProfile.AccessKey;
+        }
+    }
+
+    partial void OnAccessKeyChanged(string value)
+    {
+        if (_layoutService?.CurrentProfile != null)
+        {
+            var updatedProfile = _layoutService.CurrentProfile with { AccessKey = value };
+            _layoutService.RequestSave(updatedProfile);
+        }
+    }
+
+    [RelayCommand]
+    private async Task DiscoverHostsAsync()
+    {
+        if (_discoveryService == null)
+        {
+            StatusText = "Discovery service not available.";
+            return;
+        }
+
+        StatusText = "Searching for hosts…";
+        var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
+
+        if (foundHosts.Any())
+        {
+            var firstHost = foundHosts.First();
+            // Only overwrite if current address is default or empty
+            var defaultAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
+            if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
+            {
+                HostAddress = firstHost;
+                StatusText = $"Found host: {firstHost}";
+            }
+            else
+            {
+                StatusText = $"Found {foundHosts.Count} hosts. (Selectable discovery not yet implemented)";
+            }
+        }
+        else
+        {
+            StatusText = "No hosts found via mDNS.";
+        }
+    }
+
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
     public event Action<TelemetryPayload>? TelemetryReceived;
     public event Action<Remex.Core.Models.DashboardProfile>? LayoutProfileReceived;
@@ -54,7 +117,7 @@ public partial class ConnectionViewModel : ObservableObject
     public async Task RequestProcessListAsync()
     {
         if (_webSocket?.State != WebSocketState.Open) return;
-        var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest };
+        var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest, AuthKey = AccessKey };
         await MessageSerializer.SendAsync(_webSocket, msg);
     }
 
@@ -64,6 +127,7 @@ public partial class ConnectionViewModel : ObservableObject
         var msg = new RemexMessage
         {
             Type = MessageTypes.Command,
+            AuthKey = AccessKey,
             CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
             CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
         };
@@ -121,6 +185,7 @@ public partial class ConnectionViewModel : ObservableObject
             var msg = new RemexMessage
             {
                 Type = MessageTypes.Command,
+                AuthKey = AccessKey,
                 CommandAction = action,
                 CommandParameters = parameters,
                 Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
@@ -231,6 +296,7 @@ public partial class ConnectionViewModel : ObservableObject
             var ping = new RemexMessage
             {
                 Type = MessageTypes.Ping,
+                AuthKey = AccessKey,
                 Timestamp = Stopwatch.GetTimestamp(),
             };
             await MessageSerializer.SendAsync(_webSocket, ping);
@@ -251,6 +317,7 @@ public partial class ConnectionViewModel : ObservableObject
             var msg = new RemexMessage
             {
                 Type = MessageTypes.LayoutUpdate,
+                AuthKey = AccessKey,
                 DashboardProfile = profile,
             };
             await MessageSerializer.SendAsync(_webSocket, msg);

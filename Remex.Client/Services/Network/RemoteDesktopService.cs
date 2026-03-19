@@ -27,7 +27,7 @@ public class RemoteDesktopService : IDisposable
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
 
-    public async Task ConnectAsync(string hostAddress, CancellationToken ct = default)
+    public async Task ConnectAsync(string hostAddress, string accessKey, CancellationToken ct = default)
     {
         Disconnect();
 
@@ -40,6 +40,7 @@ public class RemoteDesktopService : IDisposable
             desktopUrl += "/ws/desktop";
 
         _webSocket = new ClientWebSocket();
+        _webSocket.Options.SetRequestHeader("X-Remex-Auth", accessKey);
         await _webSocket.ConnectAsync(new Uri(desktopUrl), ct);
 
         _receiveCts = new CancellationTokenSource();
