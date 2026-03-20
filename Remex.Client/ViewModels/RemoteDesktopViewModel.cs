@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +54,10 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = "Not streaming";
 
+    /// <summary>True when the host reports an error (e.g. capture failure). Shown as overlay during streaming.</summary>
+    [ObservableProperty]
+    private bool _hasStreamError;
+
     [ObservableProperty]
     private bool _isFullScreen;
 
@@ -98,21 +101,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     /// <summary>Remote screen height in pixels (native).</summary>
     public int ScreenHeight { get; private set; }
 
-    // ═══════════════ Multi-Monitor ═══════════════
+    // ═══════════════ Connection Panel ═══════════════
 
+    /// <summary>Show/hide the inline host panel.</summary>
     [ObservableProperty]
-    private int _selectedMonitorIndex;
-
-    [ObservableProperty]
-    private int _monitorCount = 1;
-
-    [ObservableProperty]
-    private bool _isMultiMonitor;
-
-    [ObservableProperty]
-    private string _monitorLabel = "Monitor 1";
-
-    public List<MonitorInfo> Monitors { get; private set; } = new();
+    private bool _showConnectionPanel = true;
 
     public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell, IImmersiveModeService? immersiveMode = null)
     {
@@ -122,6 +115,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService = new RemoteDesktopService();
         _desktopService.FrameReceived += OnFrameReceived;
         _desktopService.MetaReceived += OnMetaReceived;
+        _desktopService.ErrorReceived += OnErrorReceived;
         _desktopService.Disconnected += OnDisconnected;
     }
 
@@ -137,18 +131,18 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             StatusText = "Connecting...";
 
-            await _desktopService.ConnectAsync(Connection.HostAddress, Connection.AccessKey);
+            await _desktopService.ConnectAsync(Connection.HostAddress);
 
             var config = new DesktopConfig
             {
                 Quality = Quality,
                 Scale = Scale,
                 TargetFps = TargetFps,
-                MonitorIndex = SelectedMonitorIndex,
             };
             await _desktopService.StartStreamAsync(config);
 
             IsStreaming = true;
+            HasStreamError = false;
             _fpsWindowStart = DateTime.UtcNow;
             _frameCount = 0;
             StatusText = "Streaming";
@@ -185,6 +179,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             _desktopService.Disconnect();
             IsStreaming = false;
+            HasStreamError = false;
             StatusText = "Stopped";
             ActualFps = 0;
         }
@@ -200,29 +195,8 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             Quality = Quality,
             Scale = Scale,
             TargetFps = TargetFps,
-            MonitorIndex = SelectedMonitorIndex,
         };
         await _desktopService.SendConfigAsync(config);
-    }
-
-    [RelayCommand]
-    private async Task NextMonitorAsync()
-    {
-        if (MonitorCount <= 1) return;
-        SelectedMonitorIndex = (SelectedMonitorIndex + 1) % MonitorCount;
-        MonitorLabel = $"Monitor {SelectedMonitorIndex + 1}";
-
-        if (IsStreaming)
-        {
-            var config = new DesktopConfig
-            {
-                Quality = Quality,
-                Scale = Scale,
-                TargetFps = TargetFps,
-                MonitorIndex = SelectedMonitorIndex,
-            };
-            await _desktopService.SendConfigAsync(config);
-        }
     }
 
     [RelayCommand]
@@ -251,6 +225,18 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void ToggleStylusMode() => StylusMode = !StylusMode;
+
+    [RelayCommand]
+    private void ToggleConnectionPanel() => ShowConnectionPanel = !ShowConnectionPanel;
+
+    [RelayCommand]
+    private void SaveConnection()
+    {
+        // Connection.HostAddress and Connection.AccessKey are already bound via XAML
+        // and auto-persist through ConnectionViewModel's property change handlers.
+        ShowConnectionPanel = false;
+        StatusText = "Connection settings saved";
+    }
 
     [RelayCommand]
     private void ResetZoom()
@@ -284,6 +270,8 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Event Handlers ═══════════════
 
+    private int _consecutiveDecodeFailures;
+
     private void OnFrameReceived(byte[] jpegBytes)
     {
         try
@@ -298,6 +286,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 old?.Dispose();
             });
 
+            _consecutiveDecodeFailures = 0;
+            HasStreamError = false;
+
             // FPS calculation
             _frameCount++;
             var elapsed = (DateTime.UtcNow - _fpsWindowStart).TotalSeconds;
@@ -309,9 +300,17 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 _fpsWindowStart = DateTime.UtcNow;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Corrupt frame — skip
+            _consecutiveDecodeFailures++;
+            if (_consecutiveDecodeFailures <= 3)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    StatusText = $"Frame decode error ({jpegBytes.Length} bytes): {ex.GetType().Name}: {ex.Message}";
+                    HasStreamError = true;
+                });
+            }
         }
     }
 
@@ -335,21 +334,6 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             Resolution = $"{meta.ScreenWidth}×{meta.ScreenHeight}";
-            MonitorCount = meta.MonitorCount;
-            IsMultiMonitor = meta.MonitorCount > 1;
-
-            if (meta.Monitors is not null)
-            {
-                Monitors = meta.Monitors;
-                OnPropertyChanged(nameof(Monitors));
-            }
-
-            // Update label with resolution info
-            if (meta.Monitors is not null && SelectedMonitorIndex < meta.Monitors.Count)
-            {
-                var m = meta.Monitors[SelectedMonitorIndex];
-                MonitorLabel = $"Monitor {SelectedMonitorIndex + 1} ({m.Width}×{m.Height})";
-            }
         });
     }
 
@@ -363,10 +347,20 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         });
     }
 
+    private void OnErrorReceived(string errorText)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            StatusText = errorText;
+            HasStreamError = true;
+        });
+    }
+
     public void Dispose()
     {
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
+        _desktopService.ErrorReceived -= OnErrorReceived;
         _desktopService.Disconnected -= OnDisconnected;
         _desktopService.Dispose();
         CurrentFrame?.Dispose();

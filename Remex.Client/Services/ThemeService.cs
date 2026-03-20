@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Remex.Client.Models;
 using Remex.Core.Models;
 using System;
@@ -25,6 +26,14 @@ public class ThemeService
             {
                 Source = uri
             });
+
+            // SolarFlare is a light theme → switch the Fluent variant
+            if (Application.Current is { })
+            {
+                Application.Current.RequestedThemeVariant = theme == AppTheme.SolarFlare
+                    ? ThemeVariant.Light
+                    : ThemeVariant.Dark;
+            }
         });
     }
 
@@ -65,6 +74,14 @@ public class ThemeService
         {
             Source = uri
         });
+
+        // SolarFlare is a light theme → switch the Fluent variant
+        if (Application.Current is { })
+        {
+            Application.Current.RequestedThemeVariant = theme == AppTheme.SolarFlare
+                ? ThemeVariant.Light
+                : ThemeVariant.Dark;
+        }
     }
 
     public void SetResourceOverride(string key, object value)

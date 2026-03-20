@@ -1,6 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Remex.Client.App" RequestedThemeVariant="Default">
-    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Remex.Client.App" RequestedThemeVariant="Dark">
+    <!-- Forced to Dark: most themes are dark glass. ThemeService switches to Light for SolarFlare. -->
 
     <Application.Resources>
         <ResourceDictionary>
@@ -64,6 +64,27 @@
         </Style>
         <Style Selector="Button.glass-button:pressed">
             <Setter Property="RenderTransform" Value="scale(0.98)"/>
+        </Style>
+
+        <!-- Accent Color Swatch -->
+        <Style Selector="Button.accent-swatch">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.accent-swatch:pointerover">
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="RenderTransform" Value="scale(1.15)"/>
         </Style>
 
         </Application.Styles></Application>

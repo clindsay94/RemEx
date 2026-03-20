@@ -14,24 +14,24 @@
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="*, Auto">
                 <StackPanel Spacing="4" Grid.Column="0">
-                    <TextBlock Text="🚀  APP LAUNCHER" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
-                    <TextBlock Text="REMOTE APPLICATION CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
+                    <TextBlock Text="◈  APP LAUNCHER" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="REMOTE APPLICATION CONTROL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
                 </StackPanel>
 
                 <Button Content="+ Add Program" Grid.Column="1" VerticalAlignment="Center"
-                        Classes="glass-button" Background="#224A3AFF" Foreground="#A0A0FF" Padding="12,8"
+                        Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8"
                         Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
             <!-- ═══ Android Add Panel ═══ -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsAndroidAddPanelOpen}" Background="#12122A" BorderBrush="#4A3AFF" BorderThickness="1">
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsAndroidAddPanelOpen}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="ADD NEW APPLICATION" FontSize="11" FontWeight="SemiBold" Foreground="#8888AA" LetterSpacing="2"/>
-                    <TextBox Text="{Binding AndroidNewAppName}" Watermark="Display Name (e.g. Chrome)" Background="#0A0A16" Foreground="#E0E0FF" BorderBrush="#2A2A3E"/>
-                    <TextBox Text="{Binding AndroidNewAppPath}" Watermark="Target Path (e.g. C:\Program Files\...)" Background="#0A0A16" Foreground="#E0E0FF" BorderBrush="#2A2A3E"/>
+                    <TextBlock Text="ADD NEW APPLICATION" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                    <TextBox Text="{Binding AndroidNewAppName}" Watermark="Display Name (e.g. Chrome)" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
+                    <TextBox Text="{Binding AndroidNewAppPath}" Watermark="Target Path (e.g. C:\Program Files\...)" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button Content="Cancel" Command="{Binding OpenAddProgramDialogCommand}" Background="Transparent" Foreground="#8888AA"/>
-                        <Button Content="Submit" Command="{Binding SubmitAndroidNewAppCommand}" Background="#4A3AFF" Foreground="#FFFFFF" FontWeight="Bold"/>
+                        <Button Content="Cancel" Command="{Binding OpenAddProgramDialogCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <Button Content="Submit" Command="{Binding SubmitAndroidNewAppCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" FontWeight="Bold"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -67,7 +67,7 @@
                                            Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
                                     <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center"
-                                               FontWeight="SemiBold" Foreground="#E0E0FF" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
+                                               FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
                                 </Grid>
                             </Button>
                         </Border>
@@ -76,7 +76,7 @@
             </ItemsControl>
 
             <TextBlock Text="No applications configured." IsVisible="{Binding !Launchers.Count}"
-                       Foreground="#666" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
 
         </StackPanel>
     </ScrollViewer>

@@ -5,107 +5,213 @@
     xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.HomeView" x:DataType="vm:HomeViewModel">
 
     <UserControl.Styles>
-        <!-- ═══ Navigation button ═══ -->
-        <Style Selector="Button.nav-btn">
+        <!-- Quick-action pill buttons -->
+        <Style Selector="Button.action-pill">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="24 16"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="20,14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" Easing="CubicEaseOut"/>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button.nav-btn:pointerover">
+        <Style Selector="Button.action-pill:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="RenderTransform" Value="scale(1.02)"/>
+            <Setter Property="RenderTransform" Value="translateY(-2px)"/>
         </Style>
-        <Style Selector="Button.nav-btn-primary">
+        <Style Selector="Button.action-pill:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+        </Style>
+        <Style Selector="Button.action-pill-accent">
             <Setter Property="Background">
                 <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15"/>
+                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.12"/>
                 </Setter.Value>
             </Setter>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
-        </Style>
-        <Style Selector="Button.nav-btn-primary:pointerover">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.25"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24">
+        <StackPanel Margin="32,24,32,32" Spacing="28">
 
-            <!-- ═══ Header ═══ -->
-            <StackPanel Spacing="4">
-                <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Bottom">
-                    <TextBlock Text="REM" FontSize="36" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="(OTE) " FontSize="36" FontWeight="Light" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.5"/>
-                    <TextBlock Text="EX" FontSize="36" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                    <TextBlock Text="(ECUTION)" FontSize="36" FontWeight="Light" Foreground="{DynamicResource TextMutedBrush}" Opacity="0.5"/>
-                </StackPanel>
-                <TextBlock Text="COMMAND CENTER" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentHoverBrush}" LetterSpacing="6"/>
-            </StackPanel>
+            <!-- ═══ HERO WELCOME SECTION ═══ -->
+            <Border Classes="glass-card" Padding="0" ClipToBounds="True">
+                <Grid>
+                    <!-- Decorative gradient orb behind text -->
+                    <Rectangle Opacity="0.12" Name="HeroGlow">
+                        <Rectangle.Fill>
+                            <RadialGradientBrush Center="80%,30%" RadiusX="0.5" RadiusY="0.7">
+                                <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
+                                <GradientStop Offset="1" Color="#00000000" />
+                            </RadialGradientBrush>
+                        </Rectangle.Fill>
+                        <Rectangle.Styles>
+                            <Style Selector="Rectangle#HeroGlow">
+                                <Style.Animations>
+                                    <Animation Duration="0:0:6" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                        <KeyFrame KeyTime="0:0:0">
+                                            <Setter Property="Opacity" Value="0.08"/>
+                                        </KeyFrame>
+                                        <KeyFrame KeyTime="0:0:6">
+                                            <Setter Property="Opacity" Value="0.2"/>
+                                        </KeyFrame>
+                                    </Animation>
+                                </Style.Animations>
+                            </Style>
+                        </Rectangle.Styles>
+                    </Rectangle>
 
-            <!-- ═══ Connection Status Hero ═══ -->
-            <Border Classes="glass-card interactive" Padding="20">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Connection Status" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}"/>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Ellipse Width="10" Height="10">
-                                <Ellipse.Fill>
-                                    <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
-                                </Ellipse.Fill>
-                            </Ellipse>
-                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <StackPanel Margin="28,24,28,20" Spacing="12">
+                        <!-- Brand title with accent glow -->
+                        <StackPanel Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Bottom">
+                                <TextBlock Text="REM" FontSize="42" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="EX" FontSize="42" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            </StackPanel>
+                            <TextBlock Text="REMOTE EXECUTION COMMAND CENTER" FontSize="11" FontWeight="Bold" 
+                                       Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4" Opacity="0.7"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                    
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <Button Classes="nav-btn nav-btn-primary" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}"/>
-                        <Button Classes="nav-btn" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White" BorderBrush="Transparent"/>
+
+                        <!-- Connection status inline -->
+                        <Border CornerRadius="12" Padding="16,12" Margin="0,4,0,0"
+                                Background="{DynamicResource CardBackgroundBrush}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <!-- Status indicator -->
+                                <Border Width="36" Height="36" CornerRadius="18" VerticalAlignment="Center"
+                                        Background="{DynamicResource CardBackgroundBrush}">
+                                    <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Ellipse.Fill>
+                                            <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
+                                        </Ellipse.Fill>
+                                        <!-- Pulse animation for connected state -->
+                                        <Ellipse.Styles>
+                                            <Style Selector="Ellipse">
+                                                <Style.Animations>
+                                                    <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                                        <KeyFrame KeyTime="0:0:0">
+                                                            <Setter Property="Opacity" Value="0.6"/>
+                                                        </KeyFrame>
+                                                        <KeyFrame KeyTime="0:0:1">
+                                                            <Setter Property="Opacity" Value="1.0"/>
+                                                        </KeyFrame>
+                                                        <KeyFrame KeyTime="0:0:2">
+                                                            <Setter Property="Opacity" Value="0.6"/>
+                                                        </KeyFrame>
+                                                    </Animation>
+                                                </Style.Animations>
+                                            </Style>
+                                        </Ellipse.Styles>
+                                    </Ellipse>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="15" FontWeight="Bold" 
+                                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" 
+                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <Button Classes="action-pill action-pill-accent" Content="Connect" 
+                                            Command="{Binding Connection.ConnectCommand}" 
+                                            IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"/>
+                                    <Button Classes="action-pill" Content="Cancel" 
+                                            Command="{Binding Connection.DisconnectCommand}" 
+                                            IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
+                                            Foreground="#F43F5E"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- ═══ Pinned Sensors ═══ -->
-            <StackPanel Spacing="8" IsVisible="{Binding PinnedSensors.Count}">
-                <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <!-- ═══ QUICK ACTIONS ROW ═══ -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="QUICK ACTIONS" FontSize="10" FontWeight="Bold" 
+                           Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
+                <WrapPanel Orientation="Horizontal">
+                    <Button Classes="action-pill action-pill-accent" Margin="0,0,8,8"
+                            Command="{Binding NavigateToCanvasCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="▦" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Sensor Workspace" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="action-pill" Margin="0,0,8,8"
+                            Command="{Binding NavigateToRemoteCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="⏻" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="PC Remote" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="action-pill" Margin="0,0,8,8"
+                            Command="{Binding NavigateToRemoteDesktopCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🖳" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Desktop" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="action-pill" Margin="0,0,8,8"
+                            Command="{Binding NavigateToAppLauncherCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="◈" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Launcher" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="action-pill" Margin="0,0,8,8"
+                            Command="{Binding NavigateToTaskManagerCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="▤" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Tasks" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+            </StackPanel>
+
+            <!-- ═══ PINNED SENSORS ═══ -->
+            <StackPanel Spacing="10" IsVisible="{Binding PinnedSensors.Count}">
+                <TextBlock Text="LIVE TELEMETRY" FontSize="10" FontWeight="Bold" 
+                           Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
 
                 <ItemsControl ItemsSource="{Binding PinnedSensors}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Columns="4"/>
+                            <WrapPanel Orientation="Horizontal"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                            <Border Classes="glass-card interactive" Padding="16" Margin="2">
+                            <Border Classes="glass-card interactive" Padding="16" Margin="0,0,8,8" MinWidth="160" MaxWidth="220">
                                 <Grid>
-                                    <!-- Sparkline behind text -->
-                                    <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.15" Margin="0,0,0,-8"/>
+                                    <!-- Sparkline background -->
+                                    <ctrl:SparklineControl History="{Binding History}" 
+                                                           GraphType="{Binding ResolvedGraphType}" 
+                                                           AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" 
+                                                           TrackBrush="{DynamicResource TextMutedBrush}" 
+                                                           CurrentValue="{Binding Value}" 
+                                                           MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" 
+                                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+                                                           Opacity="0.12" Margin="0,0,0,-8"/>
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
-                                            <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="24" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                            <TextBlock Text="{Binding Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
+                                        <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold" 
+                                                   Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"
+                                                   LetterSpacing="0.5"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,6,0,0">
+                                            <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="28" FontWeight="Black" 
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Unit}" FontSize="11" 
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                       VerticalAlignment="Bottom" Margin="0,0,0,5"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -115,18 +221,18 @@
                 </ItemsControl>
             </StackPanel>
 
-            <!-- ═══ Navigation ═══ -->
-            <TextBlock Text="NAVIGATE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-
-            <StackPanel Spacing="8">
-                <Button Classes="nav-btn nav-btn-primary" Content="🔍  Open Sensor Workspace" Command="{Binding NavigateToCanvasCommand}"/>
-                <Button Classes="nav-btn nav-btn-primary" Content="⏻  PC Remote" Command="{Binding NavigateToRemoteCommand}"/>
-                <Button Classes="nav-btn" Content="🚀  App Launcher" Command="{Binding NavigateToAppLauncherCommand}"/>
-                <Button Classes="nav-btn" Content="🎨  Customization" Command="{Binding NavigateToCustomizationCommand}"/>
-                <Button Classes="nav-btn" Content="🖥  Remote Desktop" Command="{Binding NavigateToRemoteDesktopCommand}"/>
-                <Button Classes="nav-btn" Content="📊  Task Manager" Command="{Binding NavigateToTaskManagerCommand}"/>
-                <Button Classes="nav-btn" Content="⚙  Settings" Command="{Binding NavigateToSettingsCommand}"/>
-            </StackPanel>
+            <!-- ═══ NO SENSORS HINT ═══ -->
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding !PinnedSensors.Count}" Opacity="0.7">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <TextBlock Text="▦" FontSize="32" HorizontalAlignment="Center" 
+                               Foreground="{DynamicResource TextMutedBrush}"/>
+                    <TextBlock Text="No pinned sensors yet" FontSize="14" FontWeight="SemiBold" 
+                               HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Open the Sensor Workspace, right-click a card, and pin it to Home." 
+                               FontSize="12" Foreground="{DynamicResource TextMutedBrush}" 
+                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

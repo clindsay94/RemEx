@@ -21,12 +21,6 @@ public sealed record RemexMessage
     public long? Timestamp { get; init; }
 
     /// <summary>
-    /// Authentication key for the session.
-    /// </summary>
-    [JsonPropertyName("authKey")]
-    public string? AuthKey { get; init; }
-
-    /// <summary>
     /// Optional payload attached for telemetry streaming.
     /// </summary>
     [JsonPropertyName("telemetry")]
@@ -74,6 +68,10 @@ public sealed record RemexMessage
     /// <summary>Remote desktop screen metadata.</summary>
     [JsonPropertyName("desktopMeta")]
     public Remex.Core.Models.DesktopMeta? DesktopMeta { get; init; }
+
+    /// <summary>Human-readable error/diagnostic text sent by the host.</summary>
+    [JsonPropertyName("errorText")]
+    public string? ErrorText { get; init; }
 }
 
 /// <summary>
@@ -100,4 +98,5 @@ public static class MessageTypes
     public const string DesktopInput = "desktop_input";
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
+    public const string DesktopError = "desktop_error";
 }

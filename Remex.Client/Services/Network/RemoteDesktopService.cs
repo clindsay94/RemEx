@@ -23,11 +23,12 @@ public class RemoteDesktopService : IDisposable
 
     public event Action<byte[]>? FrameReceived;
     public event Action<DesktopMeta>? MetaReceived;
+    public event Action<string>? ErrorReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
 
-    public async Task ConnectAsync(string hostAddress, string accessKey, CancellationToken ct = default)
+    public async Task ConnectAsync(string hostAddress, CancellationToken ct = default)
     {
         Disconnect();
 
@@ -38,12 +39,6 @@ public class RemoteDesktopService : IDisposable
             desktopUrl += "/desktop";
         else
             desktopUrl += "/ws/desktop";
-
-        // Append auth key as query parameter for maximum platform compatibility
-        if (!string.IsNullOrEmpty(accessKey))
-        {
-            desktopUrl += $"?auth={Uri.EscapeDataString(accessKey)}";
-        }
 
         _webSocket = new ClientWebSocket();
         await _webSocket.ConnectAsync(new Uri(desktopUrl), ct);
@@ -180,6 +175,10 @@ public class RemoteDesktopService : IDisposable
                     if (msg?.Type == MessageTypes.DesktopMeta && msg.DesktopMeta is not null)
                     {
                         MetaReceived?.Invoke(msg.DesktopMeta);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopError && msg.ErrorText is not null)
+                    {
+                        ErrorReceived?.Invoke(msg.ErrorText);
                     }
                 }
             }

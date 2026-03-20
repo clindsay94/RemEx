@@ -12,7 +12,6 @@ namespace Remex.Host.Handlers;
 /// </summary>
 public sealed class PingPongHandler(
     ILogger<PingPongHandler> logger, 
-    IConfiguration configuration,
     TelemetryBackgroundService telemetryBackgroundService, 
     Remex.Core.Services.Command.ISystemCommandService commandService, 
     Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, 
@@ -24,8 +23,6 @@ public sealed class PingPongHandler(
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
         logger.LogInformation("Client connected.");
-
-        var expectedKey = configuration["Remex:AccessKey"];
 
         // Sync launchers on connect
         try
@@ -68,20 +65,6 @@ public sealed class PingPongHandler(
                 }
 
                 logger.LogDebug("Received: {Type}", message.Type);
-
-                // Authentication Check
-                if (!string.IsNullOrEmpty(expectedKey) && message.AuthKey != expectedKey)
-                {
-                    logger.LogWarning("Unauthorized access attempt. Invalid AuthKey.");
-                    var authResponse = new RemexMessage
-                    {
-                        Type = MessageTypes.CommandResponse,
-                        CommandSuccess = false,
-                        CommandMessage = "Unauthorized"
-                    };
-                    await MessageSerializer.SendAsync(webSocket, authResponse, ct);
-                    continue;
-                }
 
                 switch (message.Type)
                 {

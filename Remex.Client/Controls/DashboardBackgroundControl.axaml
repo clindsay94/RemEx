@@ -13,6 +13,7 @@
             <Rectangle.Fill>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                     <GradientStop Offset="0" Color="#1A0A2E" />
+                    <GradientStop Offset="0.5" Color="#0D1B2A" />
                     <GradientStop Offset="1" Color="#000000" />
                 </LinearGradientBrush>
             </Rectangle.Fill>
@@ -38,17 +39,96 @@
             </Rectangle.Styles>
         </Rectangle>
 
-        <!-- ═══ Wallpaper Mode ═══ -->
+        <!-- ═══ Wallpaper Mode — Animated Mesh Gradient ═══ -->
         <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
-            <Rectangle Fill="#0A0A10" />
-            <!-- Ensure an Assets folder exists or use a default fallback -->
-            <!-- <Image Source="avares://Remex.Client/Assets/default_wallpaper.jpg" 
-                   Stretch="UniformToFill" /> -->
-            <Panel Background="#CC000000">
-                <Panel.Effect>
-                    <BlurEffect Radius="40" />
-                </Panel.Effect>
-            </Panel>
+            <!-- Deep space base -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Offset="0" Color="#0A0015" />
+                        <GradientStop Offset="0.3" Color="#10002E" />
+                        <GradientStop Offset="0.7" Color="#001428" />
+                        <GradientStop Offset="1" Color="#000A0A" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <!-- Animated aurora layer 1 -->
+            <Rectangle Opacity="0.3" Name="AuroraLayer1">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="30%,30%" RadiusX="0.6" RadiusY="0.8">
+                        <GradientStop Offset="0" Color="#406C4CFF" />
+                        <GradientStop Offset="0.5" Color="#2000F3FF" />
+                        <GradientStop Offset="1" Color="#00000000" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.Styles>
+                    <Style Selector="Rectangle#AuroraLayer1">
+                        <Style.Animations>
+                            <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                <KeyFrame KeyTime="0:0:0">
+                                    <Setter Property="Opacity" Value="0.2"/>
+                                </KeyFrame>
+                                <KeyFrame KeyTime="0:0:4">
+                                    <Setter Property="Opacity" Value="0.45"/>
+                                </KeyFrame>
+                                <KeyFrame KeyTime="0:0:8">
+                                    <Setter Property="Opacity" Value="0.25"/>
+                                </KeyFrame>
+                            </Animation>
+                        </Style.Animations>
+                    </Style>
+                </Rectangle.Styles>
+            </Rectangle>
+            <!-- Animated aurora layer 2 -->
+            <Rectangle Opacity="0.2" Name="AuroraLayer2">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="70%,70%" RadiusX="0.7" RadiusY="0.6">
+                        <GradientStop Offset="0" Color="#30FF00FF" />
+                        <GradientStop Offset="0.4" Color="#20F43F5E" />
+                        <GradientStop Offset="1" Color="#00000000" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.Styles>
+                    <Style Selector="Rectangle#AuroraLayer2">
+                        <Style.Animations>
+                            <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                <KeyFrame KeyTime="0:0:0">
+                                    <Setter Property="Opacity" Value="0.15"/>
+                                </KeyFrame>
+                                <KeyFrame KeyTime="0:0:6">
+                                    <Setter Property="Opacity" Value="0.35"/>
+                                </KeyFrame>
+                                <KeyFrame KeyTime="0:0:12">
+                                    <Setter Property="Opacity" Value="0.1"/>
+                                </KeyFrame>
+                            </Animation>
+                        </Style.Animations>
+                    </Style>
+                </Rectangle.Styles>
+            </Rectangle>
+            <!-- Subtle accent glow top-center -->
+            <Rectangle Opacity="0.15" Name="AuroraLayer3">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="50%,10%" RadiusX="0.5" RadiusY="0.4">
+                        <GradientStop Offset="0" Color="#5022C55E" />
+                        <GradientStop Offset="1" Color="#00000000" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.Styles>
+                    <Style Selector="Rectangle#AuroraLayer3">
+                        <Style.Animations>
+                            <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                <KeyFrame KeyTime="0:0:0">
+                                    <Setter Property="Opacity" Value="0.08"/>
+                                </KeyFrame>
+                                <KeyFrame KeyTime="0:0:15">
+                                    <Setter Property="Opacity" Value="0.25"/>
+                                </KeyFrame>
+                            </Animation>
+                        </Style.Animations>
+                    </Style>
+                </Rectangle.Styles>
+            </Rectangle>
         </Panel>
 
         <!-- Main Content -->

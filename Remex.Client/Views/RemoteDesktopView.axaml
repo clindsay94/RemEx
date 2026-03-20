@@ -7,8 +7,8 @@
 
     <UserControl.Styles>
         <Style Selector="Button.rd-btn">
-            <Setter Property="Background" Value="#2A2A4A"/>
-            <Setter Property="Foreground" Value="#C0C0FF"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="16 8"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -17,7 +17,7 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.rd-btn:pointerover">
-            <Setter Property="Background" Value="#3A3A5A"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
         </Style>
         <Style Selector="Button.rd-btn-start">
             <Setter Property="Background" Value="#1A3A1A"/>
@@ -35,34 +35,32 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- ═══ TOOLBAR ═══ -->
-        <Border Grid.Row="0" Background="#1A1A2E" Padding="16 8" IsVisible="{Binding !IsFullScreen}">
+        <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="16 8" IsVisible="{Binding !IsFullScreen}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <Grid ColumnDefinitions="Auto,*,Auto">
-                <!-- Left: Nav + stream controls -->
+                <!-- Left: Stream controls -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="12" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
-                    <Border Width="1" Height="20" Background="#333355"/>
-                    <Button Content="▶ Start" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}"/>
-                    <Button Content="■ Stop" Command="{Binding StopStreamCommand}" Classes="rd-btn rd-btn-stop" IsVisible="{Binding IsStreaming}"/>
+                    <Button Content="Start" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}"/>
+                    <Button Content="Stop" Command="{Binding StopStreamCommand}" Classes="rd-btn rd-btn-stop" IsVisible="{Binding IsStreaming}"/>
                 </StackPanel>
 
                 <!-- Center: Title -->
                 <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="🖥  REMOTE DESKTOP" FontSize="14" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                    <TextBlock Text="REMOTE DESKTOP" FontSize="14" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Right: Settings -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="Quality:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="Quality:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                     <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Quality, StringFormat={}{0}%}" Foreground="#C0C0FF" FontSize="11" Width="32" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Quality, StringFormat={}{0}%}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Width="32" VerticalAlignment="Center"/>
 
-                    <Border Width="1" Height="20" Background="#333355"/>
+                    <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
-                    <TextBlock Text="Scale:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="Scale:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                     <ComboBox SelectedIndex="1" x:Name="ScaleComboBox" MinWidth="60" FontSize="11" VerticalAlignment="Center">
                         <ComboBoxItem Content="25%" Tag="0.25"/>
                         <ComboBoxItem Content="50%" Tag="0.5"/>
@@ -70,9 +68,9 @@
                         <ComboBoxItem Content="100%" Tag="1.0"/>
                     </ComboBox>
 
-                    <Border Width="1" Height="20" Background="#333355"/>
+                    <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
-                    <TextBlock Text="FPS:" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="FPS:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                     <ComboBox SelectedIndex="1" x:Name="FpsComboBox" MinWidth="55" FontSize="11" VerticalAlignment="Center">
                         <ComboBoxItem Content="5" Tag="5"/>
                         <ComboBoxItem Content="10" Tag="10"/>
@@ -87,17 +85,13 @@
 
                     <Button Content="Apply" Command="{Binding ApplySettingsCommand}" Classes="rd-btn" Margin="4,0,0,0"/>
 
-                    <Border Width="1" Height="20" Background="#333355"/>
+                    <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
                     <Button Content="D-Pad" Command="{Binding ToggleCursorPadCommand}" Classes="rd-btn"
                             ToolTip.Tip="Toggle Cursor Pad" FontSize="11" Padding="10 6"/>
 
                     <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}" Classes="rd-btn"
                             ToolTip.Tip="Stylus Mode (treat touch as pen)" FontSize="11" Padding="10 6"/>
-
-                    <Button Content="{Binding MonitorLabel}" Command="{Binding NextMonitorCommand}" Classes="rd-btn"
-                            ToolTip.Tip="Switch Monitor" FontSize="11" Padding="10 6"
-                            IsVisible="{Binding IsMultiMonitor}"/>
 
                     <Button Content="Full" Command="{Binding ToggleFullScreenCommand}" Classes="rd-btn"
                             ToolTip.Tip="Toggle Fullscreen" FontSize="11" Padding="10 6"/>
@@ -106,17 +100,42 @@
             </ScrollViewer>
         </Border>
 
+        <!-- ═══ CONNECTION / AUTH PANEL (collapsible, below toolbar) ═══ -->
+        <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" 
+                Padding="16,10" IsVisible="{Binding ShowConnectionPanel}"
+                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto">
+                <TextBlock Text="Host:" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" 
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Column="1" Text="{Binding Connection.HostAddress}" 
+                         Background="{DynamicResource CardBackgroundBrush}" 
+                         Foreground="{DynamicResource TextPrimaryBrush}" 
+                         BorderBrush="{DynamicResource CardBorderBrush}"
+                         CornerRadius="6" Padding="8,5" FontSize="11" 
+                         FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"
+                         IsEnabled="{Binding !IsStreaming}"/>
+                <Button Grid.Column="2" Content="Save" Classes="rd-btn" FontSize="11" Padding="10 5" Margin="8,0,0,0" 
+                        Command="{Binding SaveConnectionCommand}"/>
+            </Grid>
+        </Border>
+
         <!-- ═══ VIEWPORT ═══ -->
-        <Border x:Name="ViewportBorder" Grid.Row="1" Background="#0A0A14" ClipToBounds="True">
+        <Border x:Name="ViewportBorder" Grid.Row="2" Background="#0A0A14" ClipToBounds="True">
             <Panel>
                 <!-- Placeholder shown when not streaming -->
                 <StackPanel IsVisible="{Binding !IsStreaming}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                    <TextBlock Text="🖥" FontSize="64" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Remote Desktop" FontSize="20" FontWeight="Bold" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Connect and press Start to begin streaming." FontSize="13" Foreground="#8888AA" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Touch: tap = place cursor, double-tap = click, drag = move cursor, long-press = right-click, pinch = zoom" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-                    <TextBlock Text="S-Pen / Stylus: works like a mouse — press = click, barrel button = right-click" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                    <TextBlock Text="Pen Mode: enables pen-like input for touch — tap = instant click, drag = click-and-drag" FontSize="11" Foreground="#666688" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    <TextBlock Text="D" FontSize="64" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Black"/>
+                    <TextBlock Text="Remote Desktop" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Connect and press Start to begin streaming." FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#FF6B6B" HorizontalAlignment="Center" 
+                               Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="500"/>
+                    <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8" Padding="14,10" Margin="0,8,0,0" MaxWidth="500">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Touch: tap = place cursor, double-tap = click, drag = move, long-press = right-click, pinch = zoom" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            <TextBlock Text="S-Pen / Stylus: press = click, barrel button = right-click" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                            <TextBlock Text="Pen Mode: tap = instant click, drag = click-and-drag" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- Screen image (visible when streaming) -->
@@ -126,6 +145,17 @@
                        IsVisible="{Binding IsStreaming}"
                        RenderTransformOrigin="0%,0%"
                        Cursor="Cross"/>
+
+                <!-- Error overlay (shown during streaming when no frames arrive) -->
+                <Border IsVisible="{Binding HasStreamError}"
+                        Background="#CC0A0A14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        CornerRadius="12" Padding="24,16" MaxWidth="520">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="⚠ Stream Error" FontSize="18" FontWeight="Bold" Foreground="#FF6B6B" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding StatusText}" FontSize="13" Foreground="#FFAAAA" 
+                                   TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
 
                 <!-- Cursor indicator crosshair (shows where remote cursor is) -->
                 <Canvas IsVisible="{Binding IsCursorVisible}" IsHitTestVisible="False">
@@ -150,12 +180,6 @@
                             IsVisible="{Binding IsFullScreen}"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Margin="0,8,8,0">
-                    <!-- Monitor switch (fullscreen) -->
-                    <Button Content="{Binding MonitorLabel}" Command="{Binding NextMonitorCommand}"
-                            Opacity="0.7" CornerRadius="8" Padding="10 6"
-                            FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
-                            IsVisible="{Binding IsMultiMonitor}"
-                            Background="#CC1A1A2E" Foreground="#C0C0FF"/>
                     <!-- Stylus mode toggle (fullscreen) -->
                     <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}"
                             Opacity="0.7" CornerRadius="8" Padding="10 6"
@@ -187,17 +211,15 @@
         </Border>
 
         <!-- ═══ STATUS BAR ═══ -->
-        <Border Grid.Row="2" Background="#1A1A2E" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#8888AA" FontSize="11" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+        <Border Grid.Row="3" Background="{DynamicResource GlassBaseDarkBrush}" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
                 <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="#6BFF6B" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"
+                <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"
                            IsVisible="{Binding IsViewportZoomed}"/>
-                <TextBlock Grid.Column="5" Text="{Binding MonitorLabel}" Foreground="#6666AA" FontSize="11" VerticalAlignment="Center" Margin="16,0"
-                           IsVisible="{Binding IsMultiMonitor}"/>
-                <Border Grid.Column="6" Width="8" Height="8" CornerRadius="4"
+                <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4"
                         IsVisible="{Binding IsStreaming}"
                         Background="#6BFF6B"
                         VerticalAlignment="Center" Margin="8,0,0,0"/>

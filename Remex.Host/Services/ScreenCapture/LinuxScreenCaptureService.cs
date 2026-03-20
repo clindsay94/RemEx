@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Remex.Core.Models;
 using Remex.Core.Services;
 
 namespace Remex.Host.Services.ScreenCapture;
@@ -24,7 +22,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         DetectScreenSize();
     }
 
-    public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, int monitorIndex = 0, CancellationToken ct = default)
+    public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
@@ -65,24 +63,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         }
     }
 
-    public (int Width, int Height) GetScreenSize(int monitorIndex = 0) => (_screenWidth, _screenHeight);
-
-    public List<MonitorInfo> GetMonitors()
-    {
-        return new List<MonitorInfo>
-        {
-            new MonitorInfo
-            {
-                Index = 0,
-                Name = "Primary",
-                Left = 0,
-                Top = 0,
-                Width = _screenWidth,
-                Height = _screenHeight,
-                IsPrimary = true,
-            }
-        };
-    }
+    public (int Width, int Height) GetScreenSize() => (_screenWidth, _screenHeight);
 
     private void DetectScreenSize()
     {

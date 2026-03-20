@@ -154,16 +154,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 }
                 else
                 {
-                    var expectedKey = _configuration["Remex:AccessKey"];
-                    if (!string.IsNullOrEmpty(expectedKey) && request.AuthKey != expectedKey)
-                    {
-                        _logger.LogWarning("Unauthorized TCP access attempt. Invalid AuthKey.");
-                        response = new CommandResponse(false, "Unauthorized", "Access denied: Invalid AuthKey.");
-                    }
-                    else
-                    {
-                        response = await ExecuteCommandAsync(request);
-                    }
+                    response = await ExecuteCommandAsync(request);
                 }
 
                 // 4. Send length-prefixed response

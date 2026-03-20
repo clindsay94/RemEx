@@ -32,9 +32,6 @@ public partial class ConnectionViewModel : ObservableObject
     private string _hostAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
     [ObservableProperty]
-    private string _accessKey = string.Empty;
-
-    [ObservableProperty]
     private string _statusText = "Disconnected";
 
     [ObservableProperty]
@@ -60,20 +57,6 @@ public partial class ConnectionViewModel : ObservableObject
     {
         _discoveryService = discoveryService;
         _layoutService = layoutService;
-
-        if (_layoutService?.CurrentProfile != null)
-        {
-            AccessKey = _layoutService.CurrentProfile.AccessKey;
-        }
-    }
-
-    partial void OnAccessKeyChanged(string value)
-    {
-        if (_layoutService?.CurrentProfile != null)
-        {
-            var updatedProfile = _layoutService.CurrentProfile with { AccessKey = value };
-            _layoutService.RequestSave(updatedProfile);
-        }
     }
 
     [RelayCommand]
@@ -117,7 +100,7 @@ public partial class ConnectionViewModel : ObservableObject
     public async Task RequestProcessListAsync()
     {
         if (_webSocket?.State != WebSocketState.Open) return;
-        var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest, AuthKey = AccessKey };
+        var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest };
         await MessageSerializer.SendAsync(_webSocket, msg);
     }
 
@@ -127,7 +110,6 @@ public partial class ConnectionViewModel : ObservableObject
         var msg = new RemexMessage
         {
             Type = MessageTypes.Command,
-            AuthKey = AccessKey,
             CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
             CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
         };
@@ -185,7 +167,6 @@ public partial class ConnectionViewModel : ObservableObject
             var msg = new RemexMessage
             {
                 Type = MessageTypes.Command,
-                AuthKey = AccessKey,
                 CommandAction = action,
                 CommandParameters = parameters,
                 Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
@@ -296,7 +277,6 @@ public partial class ConnectionViewModel : ObservableObject
             var ping = new RemexMessage
             {
                 Type = MessageTypes.Ping,
-                AuthKey = AccessKey,
                 Timestamp = Stopwatch.GetTimestamp(),
             };
             await MessageSerializer.SendAsync(_webSocket, ping);
@@ -317,7 +297,6 @@ public partial class ConnectionViewModel : ObservableObject
             var msg = new RemexMessage
             {
                 Type = MessageTypes.LayoutUpdate,
-                AuthKey = AccessKey,
                 DashboardProfile = profile,
             };
             await MessageSerializer.SendAsync(_webSocket, msg);

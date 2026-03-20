@@ -4,82 +4,95 @@
 
     <UserControl.Styles>
         <Style Selector="Button.remote-btn">
-            <Setter Property="Background" Value="#2A2A4A"/>
-            <Setter Property="Foreground" Value="#C0C0FF"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="24 20"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="20 16"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
         </Style>
         <Style Selector="Button.remote-btn:pointerover">
-            <Setter Property="Background" Value="#3A3A5A"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="RenderTransform" Value="translateY(-1px)"/>
+        </Style>
+        <Style Selector="Button.remote-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
         <Style Selector="Button.remote-btn-danger">
-            <Setter Property="Background" Value="#3A1A1A"/>
+            <Setter Property="Background" Value="#203A1A1A"/>
             <Setter Property="Foreground" Value="#FF6B6B"/>
+            <Setter Property="BorderBrush" Value="#40FF6B6B"/>
         </Style>
         <Style Selector="Button.remote-btn-danger:pointerover">
-            <Setter Property="Background" Value="#4A2A2A"/>
+            <Setter Property="Background" Value="#304A2A2A"/>
         </Style>
         <Style Selector="Button.remote-btn-warn">
-            <Setter Property="Background" Value="#3A3A1A"/>
+            <Setter Property="Background" Value="#203A3A1A"/>
             <Setter Property="Foreground" Value="#FFD93D"/>
+            <Setter Property="BorderBrush" Value="#40FFD93D"/>
         </Style>
         <Style Selector="Button.remote-btn-warn:pointerover">
-            <Setter Property="Background" Value="#4A4A2A"/>
+            <Setter Property="Background" Value="#304A4A2A"/>
         </Style>
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24">
+        <StackPanel Margin="32,24,32,32" Spacing="20">
 
             <!-- ═══ Header ═══ -->
-            <Grid ColumnDefinitions="Auto,*">
-                <Button Grid.Column="0" Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="#8888AA" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center"/>
-            </Grid>
             <StackPanel Spacing="4">
-                <TextBlock Text="⏻  PC REMOTE" FontSize="22" FontWeight="Black" Foreground="#E0E0FF"/>
-                <TextBlock Text="POWER &amp; SYSTEM CONTROLS" FontSize="11" FontWeight="SemiBold" Foreground="#4A3AFF" LetterSpacing="3"/>
+                <TextBlock Text="⏻  PC REMOTE" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="POWER &amp; SYSTEM CONTROLS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
-                        <!-- ═══ Wake on LAN ═══ -->
+            <!-- ═══ Wake on LAN ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
                     <TextBlock Text="WAKE ON LAN" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                               Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
                     <TextBlock Text="Send a magic packet to wake the target PC."
-                               FontSize="12" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+                               FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
 
                     <TextBox Text="{Binding WolMacAddress}" Watermark="MAC Address (AA:BB:CC:DD:EE:FF)"
-                             Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E"
-                             CornerRadius="8" Padding="8 6" FontSize="12"
+                             Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" 
+                             BorderBrush="{DynamicResource CardBorderBrush}"
+                             CornerRadius="8" Padding="10,8" FontSize="12"
                              FontFamily="Consolas, monospace"/>
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0">
                         <TextBox Grid.Column="0" Text="{Binding WolBroadcastIp}"
                                  Watermark="Broadcast IP (255.255.255.255)"
-                                 Background="#12121E" Foreground="#C0C0FF" BorderBrush="#2A2A3E"
-                                 CornerRadius="8" Padding="8 6" FontSize="12"
+                                 Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" 
+                                 BorderBrush="{DynamicResource CardBorderBrush}"
+                                 CornerRadius="8" Padding="10,8" FontSize="12"
                                  FontFamily="Consolas, monospace" Margin="0,0,8,0"/>
                         <TextBox Grid.Column="1" Text="{Binding WolPort}" Width="80"
-                                 Watermark="Port" Background="#12121E" Foreground="#C0C0FF"
-                                 BorderBrush="#2A2A3E" CornerRadius="8" Padding="8 6" FontSize="12"
-                                 FontFamily="Consolas, monospace"/>
+                                 Watermark="Port" Background="{DynamicResource GlassBaseDarkBrush}" 
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" 
+                                 Padding="10,8" FontSize="12" FontFamily="Consolas, monospace"/>
                     </Grid>
 
                     <Button Classes="remote-btn" Content="🔌  Send Wake-on-LAN Packet"
                             Command="{Binding SendWolCommand}" HorizontalAlignment="Stretch"/>
                     <TextBlock Text="{Binding WolStatusText}" FontSize="11"
-                               Foreground="#8888AA" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
                                IsVisible="{Binding WolStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
             </Border>
 
             <!-- ═══ Graceful Controls ═══ -->
-            <TextBlock Text="GRACEFUL" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+            <TextBlock Text="GRACEFUL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="2" Rows="2">
                 <Button Classes="remote-btn" Content="🔒  Lock PC" Command="{Binding LockPcCommand}" Margin="0,0,4,4"/>
                 <Button Classes="remote-btn" Content="🖥  Turn Off Screen" Margin="4,0,0,4"/>
@@ -97,7 +110,7 @@
             </UniformGrid>
 
             <!-- ═══ Extra ═══ -->
-            <TextBlock Text="ADDITIONAL" FontSize="11" FontWeight="SemiBold" Foreground="#6666AA" LetterSpacing="2"/>
+            <TextBlock Text="ADDITIONAL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <Button Classes="remote-btn" Content="❄  Hibernate" HorizontalAlignment="Stretch"/>
 
         </StackPanel>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
@@ -15,6 +16,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
+    private static readonly Random _rng = new();
 
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>
     public ConnectionViewModel Connection { get; }
@@ -30,6 +32,26 @@ public partial class ShellViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _isShellChromeHidden;
+
+    /// <summary>Whether the side navigation drawer is expanded.</summary>
+    [ObservableProperty]
+    private bool _isDrawerOpen;
+
+    /// <summary>Whether the settings overlay panel is open.</summary>
+    [ObservableProperty]
+    private bool _isSettingsPanelOpen;
+
+    /// <summary>Index of the active navigation item (for highlight).</summary>
+    [ObservableProperty]
+    private int _activeNavIndex;
+
+    /// <summary>Direction of the page slide transition. 1 = forward, -1 = backward.</summary>
+    [ObservableProperty]
+    private int _transitionDirection = 1;
+
+    /// <summary>Random transition type index (0-3) for variety.</summary>
+    [ObservableProperty]
+    private int _transitionType;
 
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
@@ -66,6 +88,16 @@ public partial class ShellViewModel : ObservableObject
         NavigateToHome();
     }
 
+    private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
+    {
+        TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
+        TransitionType = _rng.Next(4); // randomize: 0=SlideH, 1=SlideV, 2=CrossFade, 3=CompositeZoomFade
+        ActiveNavIndex = targetIndex;
+        CurrentView = viewModel;
+        // Auto-close drawer on mobile/narrow after navigation
+        IsDrawerOpen = false;
+    }
+
     // ═══════════════ Navigation Commands ═══════════════
 
     [RelayCommand]
@@ -73,27 +105,13 @@ public partial class ShellViewModel : ObservableObject
     {
         _homeViewModel ??= new HomeViewModel(Connection, this);
         _homeViewModel.RefreshPinnedSensors();
-        CurrentView = _homeViewModel;
+        SetTransitionAndNavigate(0, _homeViewModel);
     }
 
     [RelayCommand]
     public void NavigateToCanvas()
     {
-        CurrentView = _canvasViewModel;
-    }
-
-    [RelayCommand]
-    public void NavigateToSettings()
-    {
-        if (_settingsViewModel is null)
-        {
-            _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this);
-            _ = _settingsViewModel.InitializeAsync();
-        }
-
-        // Refresh the sensor pin list with current canvas data.
-        _settingsViewModel.RefreshSensors();
-        CurrentView = _settingsViewModel;
+        SetTransitionAndNavigate(1, _canvasViewModel!);
     }
 
     [RelayCommand]
@@ -104,7 +122,7 @@ public partial class ShellViewModel : ObservableObject
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(App.Services),
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(App.Services),
             _layoutService);
-        CurrentView = _remoteViewModel;
+        SetTransitionAndNavigate(2, _remoteViewModel);
     }
 
     [RelayCommand]
@@ -114,27 +132,81 @@ public partial class ShellViewModel : ObservableObject
         {
             _appLauncherViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppLauncherViewModel>(App.Services);
         }
-        CurrentView = _appLauncherViewModel;
-    }
-
-    [RelayCommand]
-    public void NavigateToCustomization()
-    {
-        _customizationViewModel ??= new CustomizationViewModel(this, _layoutService, _themeService);
-        CurrentView = _customizationViewModel;
+        SetTransitionAndNavigate(3, _appLauncherViewModel);
     }
 
     [RelayCommand]
     public void NavigateToTaskManager()
     {
         _taskManagerViewModel ??= new TaskManagerViewModel(Connection);
-        CurrentView = _taskManagerViewModel;
+        SetTransitionAndNavigate(4, _taskManagerViewModel);
     }
 
+    [RelayCommand]
     public void NavigateToRemoteDesktop()
     {
         _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this, _immersiveMode);
-        CurrentView = _remoteDesktopViewModel;
+        SetTransitionAndNavigate(5, _remoteDesktopViewModel);
+    }
+
+    [RelayCommand]
+    public void ToggleSettingsPanel()
+    {
+        IsSettingsPanelOpen = !IsSettingsPanelOpen;
+
+        // Lazily create the settings/customization VMs
+        if (IsSettingsPanelOpen)
+        {
+            EnsureSettingsVm();
+            EnsureCustomizationVm();
+        }
+    }
+
+    [RelayCommand]
+    public void CloseSettingsPanel()
+    {
+        IsSettingsPanelOpen = false;
+    }
+
+    [RelayCommand]
+    public void ToggleDrawer()
+    {
+        IsDrawerOpen = !IsDrawerOpen;
+    }
+
+    // ═══════════════ Legacy navigation kept for backward compat ═══════════════
+
+    [RelayCommand]
+    public void NavigateToSettings()
+    {
+        // Now opens the settings overlay instead of navigating
+        EnsureSettingsVm();
+        EnsureCustomizationVm();
+        IsSettingsPanelOpen = true;
+    }
+
+    [RelayCommand]
+    public void NavigateToCustomization()
+    {
+        // Now opens the settings overlay instead of navigating
+        EnsureSettingsVm();
+        EnsureCustomizationVm();
+        IsSettingsPanelOpen = true;
+    }
+
+    private void EnsureSettingsVm()
+    {
+        if (_settingsViewModel is null)
+        {
+            _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this);
+            _ = _settingsViewModel.InitializeAsync();
+        }
+        _settingsViewModel.RefreshSensors();
+    }
+
+    private void EnsureCustomizationVm()
+    {
+        _customizationViewModel ??= new CustomizationViewModel(this, _layoutService, _themeService);
     }
 
     /// <summary>
@@ -142,4 +214,24 @@ public partial class ShellViewModel : ObservableObject
     /// (e.g. Home reading pinned sensors from the canvas data).
     /// </summary>
     public CanvasDashboardViewModel? CanvasViewModel => _canvasViewModel;
+
+    /// <summary>Exposed for the settings overlay to bind against.</summary>
+    public SettingsViewModel? SettingsVm
+    {
+        get
+        {
+            EnsureSettingsVm();
+            return _settingsViewModel;
+        }
+    }
+
+    /// <summary>Exposed for the settings overlay to bind against.</summary>
+    public CustomizationViewModel? CustomizationVm
+    {
+        get
+        {
+            EnsureCustomizationVm();
+            return _customizationViewModel;
+        }
+    }
 }

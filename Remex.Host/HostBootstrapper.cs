@@ -4,8 +4,6 @@ using Remex.Host.Handlers;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
 using Remex.Host.Services.ProcessMonitor;
-using Microsoft.Extensions.Configuration;
-using System.Net;
 
 namespace Remex.Host;
 
@@ -20,6 +18,8 @@ public static class HostBootstrapper
     /// Used by remote desktop to detect self-connections (infinite mirror prevention).
     /// </summary>
     public static string InstanceId { get; } = Guid.NewGuid().ToString("N");
+
+
     /// <summary>
     /// Builds and configures the Remex Host <see cref="WebApplication"/>
     /// without starting it. Call <c>Run()</c> or <c>StartAsync()</c> on
@@ -94,44 +94,11 @@ public static class HostBootstrapper
                 return;
             }
 
-            // Auth check (Header or Query Param)
-            var authHeader = context.Request.Headers["X-Remex-Auth"].ToString();
-            var authQuery = context.Request.Query["auth"].ToString();
-            var providedKey = !string.IsNullOrEmpty(authHeader) ? authHeader : authQuery;
-
-            var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-            var expectedKey = configuration["Remex:AccessKey"];
-
-            // If a key is expected, it MUST match.
-            if (!string.IsNullOrEmpty(expectedKey))
-            {
-                if (providedKey != expectedKey)
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync("Invalid access key.");
-                    return;
-                }
-            }
-            else
-            {
-                // No key configured -> Restrict to local-only for safety
-                var remoteIp = context.Connection.RemoteIpAddress;
-                var isLocalRequest = remoteIp == null || IPAddress.IsLoopback(remoteIp);
-                if (!isLocalRequest)
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    await context.Response.WriteAsync("Remote connections require an AccessKey to be configured on the host.");
-                    return;
-                }
-            }
- 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<TelemetryBackgroundService>();
-            var config = context.RequestServices.GetRequiredService<IConfiguration>();
             var handler = new PingPongHandler(
                 logger, 
-                config,
                 telemetry, 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), 
@@ -150,40 +117,6 @@ public static class HostBootstrapper
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("WebSocket connections only.");
                 return;
-            }
-
-            // Auth check (Header or Query Param)
-            var authHeader = context.Request.Headers["X-Remex-Auth"].ToString();
-            var authQuery = context.Request.Query["auth"].ToString();
-            var providedKey = !string.IsNullOrEmpty(authHeader) ? authHeader : authQuery;
-
-            var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-            var expectedKey = configuration["Remex:AccessKey"];
-
-            // If a key is expected, it MUST match.
-            if (!string.IsNullOrEmpty(expectedKey))
-            {
-                if (providedKey != expectedKey)
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync("Invalid access key.");
-                    return;
-                }
-                // Key matched -> Authorized.
-            }
-            else
-            {
-                // No key configured -> Restrict to local-only for safety
-                var remoteIp = context.Connection.RemoteIpAddress;
-                var isLocalRequest = remoteIp == null || IPAddress.IsLoopback(remoteIp);
-                var allowRemote = configuration.GetValue<bool>("RemoteDesktop:AllowRemoteConnections");
-
-                if (!isLocalRequest && !allowRemote)
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    await context.Response.WriteAsync("Remote desktop requires an AccessKey or 'RemoteDesktop:AllowRemoteConnections' to be enabled.");
-                    return;
-                }
             }
 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();

@@ -32,9 +32,6 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _hostAddress = "ws://localhost:5005/ws";
 
-    [ObservableProperty]
-    private string _accessKey = string.Empty;
-
     /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
     public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();
 
@@ -58,7 +55,6 @@ public partial class SettingsViewModel : ObservableObject
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
-            AccessKey = _profile.AccessKey;
             RefreshSensors();
         });
 
@@ -133,12 +129,6 @@ public partial class SettingsViewModel : ObservableObject
         Save();
     }
 
-    partial void OnAccessKeyChanged(string value)
-    {
-        _connection.AccessKey = value;
-        Save();
-    }
-
     [ObservableProperty]
     private string _savedStatus = string.Empty;
 
@@ -151,6 +141,23 @@ public partial class SettingsViewModel : ObservableObject
         
         // Clear status after 3 seconds
         _ = Task.Delay(3000).ContinueWith(_ => SavedStatus = string.Empty);
+    }
+
+    [RelayCommand]
+    private async Task SaveAndReconnectAsync()
+    {
+        Save();
+        await _layoutService.FlushAsync();
+
+        // Disconnect first if already connected, then reconnect with new settings
+        if (_connection.IsConnected || _connection.IsConnecting)
+        {
+            _connection.DisconnectCommand.Execute(null);
+        }
+
+        // Small delay so the disconnect completes
+        await Task.Delay(300);
+        await _connection.ConnectCommand.ExecuteAsync(null);
     }
 
     // ═══════════════ Navigation ═══════════════
@@ -656,8 +663,7 @@ public partial class SettingsViewModel : ObservableObject
         {
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
-            HostAddress = HostAddress,
-            AccessKey = AccessKey
+            HostAddress = HostAddress
         };
 
         _profile = updated;

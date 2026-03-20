@@ -38,15 +38,10 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         // Minimal valid JPEG: SOI + EOI markers
         private static readonly byte[] FakeJpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x02, 0x00, 0x00, 0xFF, 0xD9];
 
-        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, int monitorIndex = 0, CancellationToken ct = default)
+        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
             => Task.FromResult(FakeJpeg);
 
-        public (int Width, int Height) GetScreenSize(int monitorIndex = 0) => (1920, 1080);
-
-        public List<MonitorInfo> GetMonitors() => new()
-        {
-            new MonitorInfo { Index = 0, Name = "Primary", Left = 0, Top = 0, Width = 1920, Height = 1080, IsPrimary = true }
-        };
+        public (int Width, int Height) GetScreenSize() => (1920, 1080);
     }
 
     private class MockInputSimulationService : IInputSimulationService

@@ -31,7 +31,7 @@ public class RemoteDesktopMessageTests
         var original = new RemexMessage
         {
             Type = MessageTypes.DesktopMeta,
-            DesktopMeta = new DesktopMeta { ScreenWidth = 1920, ScreenHeight = 1080, MonitorCount = 2 }
+            DesktopMeta = new DesktopMeta { ScreenWidth = 1920, ScreenHeight = 1080 }
         };
 
         var bytes = MessageSerializer.Serialize(original);
@@ -42,7 +42,6 @@ public class RemoteDesktopMessageTests
         Assert.NotNull(deserialized.DesktopMeta);
         Assert.Equal(1920, deserialized.DesktopMeta!.ScreenWidth);
         Assert.Equal(1080, deserialized.DesktopMeta.ScreenHeight);
-        Assert.Equal(2, deserialized.DesktopMeta.MonitorCount);
     }
 
     [Fact]
@@ -157,10 +156,11 @@ public class RemoteDesktopMessageTests
     }
 
     [Fact]
-    public void DesktopMeta_DefaultMonitorCount_IsOne()
+    public void DesktopMeta_DefaultValues_AreCorrect()
     {
         var meta = new DesktopMeta { ScreenWidth = 1920, ScreenHeight = 1080 };
-        Assert.Equal(1, meta.MonitorCount);
+        Assert.Equal(1920, meta.ScreenWidth);
+        Assert.Equal(1080, meta.ScreenHeight);
     }
 
     [Fact]

@@ -49,9 +49,6 @@ public record DashboardProfile
     /// <summary>Persisted WebSocket host address for the remote connection.</summary>
     public string HostAddress { get; init; } = "ws://localhost:5005/ws";
 
-    /// <summary>Persisted access key for authentication.</summary>
-    public string AccessKey { get; init; } = string.Empty;
-
     /// <summary>All card positions and sizes.</summary>
     public List<CardState> Cards { get; init; } = new();
 

@@ -1,62 +1,601 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:conv="using:Remex.Client.Converters"
     xmlns:ctrl="using:Remex.Client.Controls"
     xmlns:views="using:Remex.Client.Views" x:Class="Remex.Client.Views.ShellView" x:DataType="vm:ShellViewModel">
 
+    <UserControl.Styles>
+        <!-- ═══ Sidebar nav item base ═══ -->
+        <Style Selector="Button.nav-item">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Margin" Value="8,2"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.nav-item:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Button.nav-item:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+        </Style>
+        <Style Selector="Button.nav-item-active">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- ═══ Settings overlay panel ═══ -->
+        <Style Selector="Border.settings-overlay">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- ═══ Gear FAB ═══ -->
+        <Style Selector="Button.gear-fab">
+            <Setter Property="Width" Value="52"/>
+            <Setter Property="Height" Value="52"/>
+            <Setter Property="CornerRadius" Value="26"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.gear-fab:pointerover">
+            <Setter Property="RenderTransform" Value="rotate(90deg)"/>
+        </Style>
+        <Style Selector="Button.gear-fab:pressed">
+            <Setter Property="RenderTransform" Value="rotate(90deg) scale(0.92)"/>
+        </Style>
+    </UserControl.Styles>
+
     <ctrl:DashboardBackgroundControl>
-        <Grid RowDefinitions="Auto,*">
-        
-            <!-- ═══ CUSTOM TITLE BAR ═══ -->
-            <Grid Grid.Row="0" Height="40" Background="Transparent" ColumnDefinitions="Auto,*,Auto"
-                  IsVisible="{Binding !IsShellChromeHidden}">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
-                    <TextBlock Text="REMEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                </StackPanel>
+        <Grid>
+            <!-- ═══ MAIN LAYOUT: Sidebar + Content ═══ -->
+            <SplitView IsPaneOpen="{Binding IsDrawerOpen}" 
+                       DisplayMode="CompactOverlay"
+                       OpenPaneLength="220" 
+                       CompactPaneLength="64"
+                       PaneBackground="Transparent"
+                       IsVisible="{Binding !IsShellChromeHidden}">
+                
+                <SplitView.Pane>
+                    <Border Background="{DynamicResource GlassBaseDarkBrush}" 
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="0,0,1,0">
+                        <Grid RowDefinitions="Auto,*,Auto">
+                            <!-- ═══ Top: Hamburger + Brand ═══ -->
+                            <StackPanel Grid.Row="0" Margin="0,8,0,8">
+                                <Button Background="Transparent" BorderThickness="0" 
+                                        HorizontalAlignment="Center" Width="48" Height="48"
+                                        CornerRadius="12" Cursor="Hand"
+                                        Command="{Binding ToggleDrawerCommand}">
+                                    <TextBlock Text="☰" FontSize="20" HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                </Button>
+                                <TextBlock Text="REMEX" FontSize="10" FontWeight="Black"
+                                           LetterSpacing="4" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource AccentPrimaryBrush}"
+                                           Margin="0,4,0,0"
+                                           IsVisible="{Binding IsDrawerOpen}"/>
+                            </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-                    <Button Content="Home" Command="{Binding NavigateToHomeCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
-                    <Button Content="Canvas" Command="{Binding NavigateToCanvasCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
-                    <Button Content="Remote" Command="{Binding NavigateToRemoteCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
-                    <Button Content="Launcher" Command="{Binding NavigateToAppLauncherCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
-                    <Button Content="Tasks" Command="{Binding NavigateToTaskManagerCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
-                    <Button Content="Settings" Command="{Binding NavigateToSettingsCommand}" Classes="glass-button" Background="Transparent" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="8,4"/>
-                </StackPanel>            </Grid>
+                            <!-- ═══ Navigation Items ═══ -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" 
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Spacing="2" Margin="0,8">
+                                    <!-- Home -->
+                                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
+                                            Command="{Binding NavigateToHomeCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="{DynamicResource AccentPrimaryBrush}" Opacity="0.7">
+                                                <TextBlock Text="H" FontSize="13" FontWeight="Black" 
+                                                           Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Home" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
 
-            <!-- ═══ PAGE CONTENT ═══ -->
-            <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentView}">
+                                    <!-- Canvas / Sensors -->
+                                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}"
+                                            Command="{Binding NavigateToCanvasCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="#1A22C55E">
+                                                <TextBlock Text="S" FontSize="13" FontWeight="Black" 
+                                                           Foreground="#22C55E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Sensors" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Remote Control -->
+                                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}"
+                                            Command="{Binding NavigateToRemoteCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="#1AFF6B6B">
+                                                <TextBlock Text="R" FontSize="13" FontWeight="Black" 
+                                                           Foreground="#FF6B6B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Remote" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- App Launcher -->
+                                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}"
+                                            Command="{Binding NavigateToAppLauncherCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="#1A00F3FF">
+                                                <TextBlock Text="L" FontSize="13" FontWeight="Black" 
+                                                           Foreground="#00F3FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Launcher" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Task Manager -->
+                                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}"
+                                            Command="{Binding NavigateToTaskManagerCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="#1AFFB800">
+                                                <TextBlock Text="T" FontSize="13" FontWeight="Black" 
+                                                           Foreground="#FFB800" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Tasks" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Separator -->
+                                    <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,8" Opacity="0.3"/>
+
+                                    <!-- Remote Desktop -->
+                                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=5}"
+                                            Command="{Binding NavigateToRemoteDesktopCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="#1AFF00FF">
+                                                <TextBlock Text="D" FontSize="13" FontWeight="Black" 
+                                                           Foreground="#FF00FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Desktop" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- ═══ Bottom: Connection indicator ═══ -->
+                            <Border Grid.Row="2" Margin="8,4,8,12" Padding="8" CornerRadius="10"
+                                    Background="{DynamicResource CardBackgroundBrush}">
+                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                    <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                        <Ellipse.Fill>
+                                            <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="10"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="140"
+                                               IsVisible="{Binding IsDrawerOpen}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </SplitView.Pane>
+
+                <!-- ═══ PAGE CONTENT ═══ -->
+                <SplitView.Content>
+                    <TransitioningContentControl Content="{Binding CurrentView}" Name="PageHost">
+                        <TransitioningContentControl.DataTemplates>
+                            <DataTemplate DataType="vm:HomeViewModel">
+                                <views:HomeView />
+                            </DataTemplate>
+                            <DataTemplate DataType="vm:CanvasDashboardViewModel">
+                                <views:CanvasView />
+                            </DataTemplate>
+                            <DataTemplate DataType="vm:RemoteViewModel">
+                                <views:RemoteView />
+                            </DataTemplate>
+                            <DataTemplate DataType="vm:AppLauncherViewModel">
+                                <views:AppLauncherView />
+                            </DataTemplate>
+                            <DataTemplate DataType="vm:TaskManagerViewModel">
+                                <views:TaskManagerView />
+                            </DataTemplate>
+                            <DataTemplate DataType="vm:RemoteDesktopViewModel">
+                                <views:RemoteDesktopView />
+                            </DataTemplate>
+                        </TransitioningContentControl.DataTemplates>
+                        <TransitioningContentControl.PageTransition>
+                            <CrossFade Duration="0:0:0.3"/>
+                        </TransitioningContentControl.PageTransition>
+                    </TransitioningContentControl>
+                </SplitView.Content>
+            </SplitView>
+
+            <!-- ═══ FULLSCREEN REMOTE DESKTOP (bypasses sidebar) ═══ -->
+            <TransitioningContentControl Content="{Binding CurrentView}" IsVisible="{Binding IsShellChromeHidden}">
                 <TransitioningContentControl.DataTemplates>
-                    <DataTemplate DataType="vm:HomeViewModel">
-                        <views:HomeView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:CanvasDashboardViewModel">
-                        <views:CanvasView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:SettingsViewModel">
-                        <views:SettingsView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:RemoteViewModel">
-                        <views:RemoteView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:AppLauncherViewModel">
-                        <views:AppLauncherView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:CustomizationViewModel">
-                        <views:CustomizationView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:TaskManagerViewModel">
-                        <views:TaskManagerView />
-                    </DataTemplate>
                     <DataTemplate DataType="vm:RemoteDesktopViewModel">
                         <views:RemoteDesktopView />
                     </DataTemplate>
                 </TransitioningContentControl.DataTemplates>
                 <TransitioningContentControl.PageTransition>
-                    <!-- Sleek sliding entrance transition -->
-                    <PageSlide Duration="0:0:0.25" Orientation="Horizontal" />
+                    <CrossFade Duration="0:0:0.2"/>
                 </TransitioningContentControl.PageTransition>
             </TransitioningContentControl>
+
+            <!-- ═══ SETTINGS OVERLAY BACKDROP ═══ -->
+            <Border IsVisible="{Binding IsSettingsPanelOpen}" 
+                    Background="#60000000" 
+                    PointerPressed="OnSettingsBackdropPressed"
+                    IsHitTestVisible="{Binding IsSettingsPanelOpen}">
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                    </Transitions>
+                </Border.Transitions>
+            </Border>
+
+            <!-- ═══ SETTINGS SLIDE-IN PANEL (Right side) ═══ -->
+            <Border Classes="settings-overlay"
+                    IsVisible="{Binding IsSettingsPanelOpen}"
+                    HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                    Width="400" MaxWidth="420"
+                    Background="{DynamicResource GlassBaseDarkBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1,0,0,0"
+                    BoxShadow="-8 0 40 0 #40000000">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Panel header -->
+                    <Border Grid.Row="0" Padding="20,16" 
+                            BorderBrush="{DynamicResource CardBorderBrush}" 
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="⚙ Settings" FontSize="20" FontWeight="Black"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Configuration &amp; Customization" FontSize="11"
+                                           Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="✕" 
+                                    Command="{Binding CloseSettingsPanelCommand}"
+                                    Background="Transparent" Foreground="{DynamicResource TextMutedBrush}"
+                                    FontSize="18" Padding="8" CornerRadius="8" BorderThickness="0"
+                                    VerticalAlignment="Top" Cursor="Hand"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Settings content (scrollable, combined Settings + Customization) -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="20" Spacing="20">
+
+                            <!-- ═══ CONNECTION ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="CONNECTION" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Host Address" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBox Text="{Binding SettingsVm.HostAddress}" 
+                                                 Background="{DynamicResource GlassBaseDarkBrush}" 
+                                                 Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                 BorderBrush="{DynamicResource CardBorderBrush}" 
+                                                 CornerRadius="8" Padding="10,8" FontSize="12" 
+                                                 FontFamily="Consolas, monospace" 
+                                                 Watermark="ws://host:port/ws"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Auto-saved on change. Persists across restarts." 
+                                               FontSize="10" Foreground="{DynamicResource TextMutedBrush}" 
+                                               FontStyle="Italic" Margin="0,4,0,0"/>
+                                    <Button Content="Save &amp; Reconnect"
+                                            Command="{Binding SettingsVm.SaveAndReconnectCommand}"
+                                            Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
+                                            Padding="12,7" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                                            HorizontalAlignment="Stretch" Cursor="Hand" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ THEMES ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="THEME" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <UniformGrid Columns="2" Rows="2">
+                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" 
+                                                PointerPressed="OnSelectBaseDark">
+                                            <StackPanel Spacing="6">
+                                                <Border Height="28" Background="#1AFFFFFF" CornerRadius="6" 
+                                                        BorderBrush="#2AFFFFFF" BorderThickness="1"/>
+                                                <TextBlock Text="Dark Glass" FontSize="11" FontWeight="Bold" 
+                                                           HorizontalAlignment="Center" 
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand"
+                                                PointerPressed="OnSelectCyberNOC">
+                                            <StackPanel Spacing="6">
+                                                <Border Height="28" Background="#050505" CornerRadius="2" 
+                                                        BorderBrush="#00F3FF" BorderThickness="1"/>
+                                                <TextBlock Text="Cyber-NOC" FontSize="11" FontWeight="Bold" 
+                                                           HorizontalAlignment="Center" 
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand"
+                                                PointerPressed="OnSelectSolarFlare">
+                                            <StackPanel Spacing="6">
+                                                <Border Height="28" Background="#CCFFFFFF" CornerRadius="12" 
+                                                        BorderBrush="#FFB800" BorderThickness="1"/>
+                                                <TextBlock Text="Solar-Flare" FontSize="11" FontWeight="Bold" 
+                                                           HorizontalAlignment="Center" 
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand"
+                                                PointerPressed="OnSelectMonolith">
+                                            <StackPanel Spacing="6">
+                                                <Border Height="28" Background="#2C2C2E" CornerRadius="4" 
+                                                        BorderBrush="#444" BorderThickness="3"/>
+                                                <TextBlock Text="Monolith" FontSize="11" FontWeight="Bold" 
+                                                           HorizontalAlignment="Center" 
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ FINE TUNING ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="FINE TUNING" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Corner Radius" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Minimum="0" Maximum="32" Value="{Binding CustomizationVm.CornerRadius}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding CustomizationVm.CornerRadius, StringFormat={}{0:F0}px}" 
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Glass Opacity" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Minimum="0.01" Maximum="1.0" Value="{Binding CustomizationVm.GlassOpacity}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding CustomizationVm.GlassOpacity, StringFormat={}{0:P0}}" 
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Glow Strength" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Minimum="0" Maximum="30" Value="{Binding CustomizationVm.GlowStrength}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding CustomizationVm.GlowStrength, StringFormat={}{0:F0}}" 
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <!-- Accent Colors -->
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Accent Color" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                                            <Button Classes="accent-swatch" Background="#6C4CFF" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#6C4CFF"/>
+                                            <Button Classes="accent-swatch" Background="#00F3FF" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#00F3FF"/>
+                                            <Button Classes="accent-swatch" Background="#FF00FF" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#FF00FF"/>
+                                            <Button Classes="accent-swatch" Background="#FFB800" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#FFB800"/>
+                                            <Button Classes="accent-swatch" Background="#22C55E" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#22C55E"/>
+                                            <Button Classes="accent-swatch" Background="#F43F5E" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#F43F5E"/>
+                                            <Button Classes="accent-swatch" Background="#0A84FF" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#0A84FF"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ ATMOSPHERE ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="ATMOSPHERE" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Background Mode" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <ComboBox SelectedItem="{Binding CustomizationVm.CanvasBackgroundType}" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="Mica"/>
+                                            <ComboBoxItem Content="Acrylic"/>
+                                            <ComboBoxItem Content="Custom Gradient"/>
+                                            <ComboBoxItem Content="Wallpaper"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ LAYOUT ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="LAYOUT" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Snap to Grid" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <StackPanel Spacing="4" IsEnabled="{Binding SettingsVm.IsSnapToGridEnabled}">
+                                        <TextBlock Text="Grid Size" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding SettingsVm.GridSize}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SettingsVm.GridSize, StringFormat={}{0} px}" 
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ WINDOWS SERVICE (desktop only) ═══ -->
+                            <Border Classes="glass-card" Padding="16" IsVisible="{Binding SettingsVm.IsWindowsServiceSectionVisible}">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="WINDOWS SERVICE" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                            <Ellipse.Styles>
+                                                <Style Selector="Ellipse">
+                                                    <Setter Property="Fill" Value="#F43F5E"/>
+                                                </Style>
+                                            </Ellipse.Styles>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding SettingsVm.ServiceStatusText}" FontSize="13" 
+                                                   FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+
+                                    <WrapPanel Orientation="Horizontal" IsEnabled="{Binding !SettingsVm.IsServiceBusy}">
+                                        <Button Content="⚙ Login" 
+                                                Command="{Binding SettingsVm.ConfigureLoginCommand}" 
+                                                Background="{DynamicResource CardBackgroundBrush}" 
+                                                Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                                IsVisible="{Binding !SettingsVm.IsServiceInstalled}"/>
+                                        <Button Content="📦 Install" 
+                                                Command="{Binding SettingsVm.InstallServiceCommand}" 
+                                                Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" 
+                                                Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                                IsVisible="{Binding !SettingsVm.IsServiceInstalled}"/>
+                                        <Button Content="▶ Start" 
+                                                Command="{Binding SettingsVm.StartServiceCommand}" 
+                                                Background="#22C55E" Foreground="#1A1A1A" 
+                                                Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                                IsVisible="{Binding SettingsVm.IsServiceInstalled}" 
+                                                IsEnabled="{Binding !SettingsVm.IsServiceRunning}"/>
+                                        <Button Content="⏹ Stop" 
+                                                Command="{Binding SettingsVm.StopServiceCommand}" 
+                                                Background="#F59E0B" Foreground="#1A1A1A" 
+                                                Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                                IsVisible="{Binding SettingsVm.IsServiceInstalled}" 
+                                                IsEnabled="{Binding SettingsVm.IsServiceRunning}"/>
+                                        <Button Content="🗑 Remove" 
+                                                Command="{Binding SettingsVm.UninstallServiceCommand}" 
+                                                Background="#3A1A1A" Foreground="#FF6B6B" 
+                                                Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                                IsVisible="{Binding SettingsVm.IsServiceInstalled}"/>
+                                    </WrapPanel>
+
+                                    <!-- Credential panel -->
+                                    <Border IsVisible="{Binding SettingsVm.IsCredentialPanelOpen}" 
+                                            Background="{DynamicResource GlassBaseDarkBrush}" 
+                                            CornerRadius="8" Padding="12" 
+                                            BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Username" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBox Text="{Binding SettingsVm.ServiceUsername}" 
+                                                     Background="{DynamicResource GlassBaseDarkBrush}" 
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                     BorderBrush="{DynamicResource CardBorderBrush}" 
+                                                     CornerRadius="6" Padding="8,6" FontSize="12" FontFamily="Consolas, monospace" 
+                                                     Watermark=".\Username"/>
+                                            <TextBlock Text="Password" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBox PasswordChar="●" Text="{Binding SettingsVm.ServicePassword}" 
+                                                     Background="{DynamicResource GlassBaseDarkBrush}" 
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                     BorderBrush="{DynamicResource CardBorderBrush}" 
+                                                     CornerRadius="6" Padding="8,6" FontSize="12" 
+                                                     Watermark="Windows password"/>
+                                            <Button Content="Apply" 
+                                                    Command="{Binding SettingsVm.ApplyLoginCommand}" 
+                                                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" 
+                                                    Padding="12,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" 
+                                                    HorizontalAlignment="Left"
+                                                    IsVisible="{Binding SettingsVm.IsServiceInstalled}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Service log -->
+                                    <Border IsVisible="{Binding SettingsVm.ServiceLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
+                                            Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" 
+                                            Padding="8" MaxHeight="140">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                            <TextBlock Text="{Binding SettingsVm.ServiceLog}" FontSize="10" 
+                                                       FontFamily="Consolas, monospace" 
+                                                       Foreground="{DynamicResource TextMutedBrush}" TextWrapping="NoWrap"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ PINNED SENSORS ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <TextBlock Text="Pin sensors from the Sensor Workspace to show on Home." 
+                                               FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic"
+                                               IsVisible="{Binding !SettingsVm.AvailableSensors.Count}"/>
+                                    <ItemsControl ItemsSource="{Binding SettingsVm.AvailableSensors}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:SensorPinItem">
+                                                <CheckBox IsChecked="{Binding IsPinned}" Margin="0,1" 
+                                                          Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12">
+                                                    <TextBlock Text="{Binding SensorName}" TextTrimming="CharacterEllipsis"/>
+                                                </CheckBox>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Reset -->
+                            <Button Content="Reset to Defaults" 
+                                    Command="{Binding CustomizationVm.ResetToDefaultCommand}" 
+                                    HorizontalAlignment="Center" 
+                                    Foreground="{DynamicResource TextMutedBrush}" FontSize="11" 
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+
+                            <!-- Spacer -->
+                            <Border Height="20"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
+            <Button Classes="gear-fab" 
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,20,20"
+                    Command="{Binding ToggleSettingsPanelCommand}"
+                    IsVisible="{Binding !IsShellChromeHidden}"
+                    Content="⚙"/>
         </Grid>
     </ctrl:DashboardBackgroundControl>
-
 </UserControl>
