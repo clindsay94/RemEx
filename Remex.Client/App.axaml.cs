@@ -101,6 +101,15 @@ public partial class App : Application
             viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
         }
 
+
+        // Inject Material 3 theme on Android
+        if (OperatingSystem.IsAndroid())
+        {
+            var uri = new Uri("avares://Remex.Client/Themes/Material3Android.axaml");
+            var m3Styles = new Avalonia.Markup.Xaml.Styling.StyleInclude(uri) { Source = uri };
+            this.Styles.Add(m3Styles);
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow

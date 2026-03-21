@@ -35,6 +35,19 @@ public partial class ShellView : UserControl
     {
         if (e.PropertyName == nameof(ShellViewModel.TransitionType) && _pageHost != null && sender is ShellViewModel vm)
         {
+
+            if (OperatingSystem.IsAndroid())
+            {
+                _pageHost.PageTransition = new CompositePageTransition
+                {
+                    PageTransitions = {
+                        new CrossFade(TimeSpan.FromMilliseconds(250)),
+                        new PageSlide(TimeSpan.FromMilliseconds(250), PageSlide.SlideAxis.Horizontal)
+                    }
+                };
+                return;
+            }
+
             _pageHost.PageTransition = vm.TransitionType switch
             {
                 0 => new PageSlide(TimeSpan.FromMilliseconds(250), vm.TransitionDirection >= 0 ? PageSlide.SlideAxis.Horizontal : PageSlide.SlideAxis.Horizontal),

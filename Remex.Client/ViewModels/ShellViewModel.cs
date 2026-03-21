@@ -18,6 +18,13 @@ public partial class ShellViewModel : ObservableObject
     private readonly IImmersiveModeService? _immersiveMode;
     private static readonly Random _rng = new();
 
+    /// <summary>Helper property for Android-specific UI logic.</summary>
+    public bool IsAndroid => OperatingSystem.IsAndroid();
+
+    /// <summary>Helper property for Desktop-specific UI logic.</summary>
+    public bool IsDesktop => !OperatingSystem.IsAndroid();
+
+
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>
     public ConnectionViewModel Connection { get; }
 

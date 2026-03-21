@@ -80,7 +80,7 @@
     </UserControl.Styles>
 
     <ctrl:DashboardBackgroundControl>
-        <Grid>
+        <Grid RowDefinitions="*,Auto">
             <!-- ═══ MAIN LAYOUT: Sidebar + Content ═══ -->
             <SplitView IsPaneOpen="{Binding IsDrawerOpen}" 
                        DisplayMode="CompactOverlay"
@@ -90,6 +90,7 @@
                        IsVisible="{Binding !IsShellChromeHidden}">
                 
                 <SplitView.Pane>
+                    <Border IsVisible="{Binding IsDesktop}">
                     <Border Background="{DynamicResource GlassBaseDarkBrush}" 
                             BorderBrush="{DynamicResource CardBorderBrush}"
                             BorderThickness="0,0,1,0">
@@ -214,6 +215,7 @@
                             </Border>
                         </Grid>
                     </Border>
+                </Border>
                 </SplitView.Pane>
 
                 <!-- ═══ PAGE CONTENT ═══ -->
@@ -589,13 +591,71 @@
                 </Grid>
             </Border>
 
+
             <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
             <Button Classes="gear-fab" 
                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,20,20"
                     Command="{Binding ToggleSettingsPanelCommand}"
-                    IsVisible="{Binding !IsShellChromeHidden}"
+                    IsVisible="{Binding IsDesktop}"
                     Content="⚙"/>
+
+            <Button Classes="gear-fab"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,20,90"
+                    Command="{Binding ToggleSettingsPanelCommand}"
+                    IsVisible="{Binding IsAndroid}"
+                    Content="⚙"/>
+
+            <!-- ═══ BOTTOM NAV BAR (ANDROID M3) ═══ -->
+            <Border Grid.Row="1" IsVisible="{Binding IsAndroid}" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
+                <UniformGrid Columns="5" Height="70" Margin="0,4,0,8">
+                    <!-- Home -->
+                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
+                            Command="{Binding NavigateToHomeCommand}" CornerRadius="16" Height="50" Margin="4,0" Padding="0">
+                        <StackPanel Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <PathIcon Data="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Home" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Sensors -->
+                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}"
+                            Command="{Binding NavigateToCanvasCommand}" CornerRadius="16" Height="50" Margin="4,0" Padding="0">
+                        <StackPanel Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <PathIcon Data="M19.03 7.39l1.42-1.42c-4.3-4.29-11.41-4.29-15.71 0l1.42 1.42c3.52-3.51 9.34-3.51 12.87 0zM12 17c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Sensors" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Remote -->
+                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}"
+                            Command="{Binding NavigateToRemoteCommand}" CornerRadius="16" Height="50" Margin="4,0" Padding="0">
+                        <StackPanel Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <PathIcon Data="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Remote" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Launcher -->
+                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}"
+                            Command="{Binding NavigateToAppLauncherCommand}" CornerRadius="16" Height="50" Margin="4,0" Padding="0">
+                        <StackPanel Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <PathIcon Data="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Launch" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Tasks -->
+                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}"
+                            Command="{Binding NavigateToTaskManagerCommand}" CornerRadius="16" Height="50" Margin="4,0" Padding="0">
+                        <StackPanel Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" Width="24" Height="24" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Tasks" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </UniformGrid>
+            </Border>
         </Grid>
     </ctrl:DashboardBackgroundControl>
 </UserControl>

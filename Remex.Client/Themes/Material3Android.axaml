@@ -1,0 +1,18 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector="Border.glass-card">
+        <Setter Property="CornerRadius" Value="24"/>
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BoxShadow" Value="0 4 10 0 #20000000"/>
+    </Style>
+    <Style Selector="Button.action-pill">
+        <Setter Property="CornerRadius" Value="24"/>
+    </Style>
+
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="Roboto, sans-serif"/>
+    </Style>
+    <Style Selector="Button">
+        <Setter Property="FontFamily" Value="Roboto, sans-serif"/>
+    </Style>
+</Styles>
