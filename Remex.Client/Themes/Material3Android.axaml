@@ -10,9 +10,9 @@
     </Style>
 
     <Style Selector="TextBlock">
-        <Setter Property="FontFamily" Value="Roboto, sans-serif"/>
+        <Setter Property="FontFamily" Value="Roboto"/>
     </Style>
     <Style Selector="Button">
-        <Setter Property="FontFamily" Value="Roboto, sans-serif"/>
+        <Setter Property="FontFamily" Value="Roboto"/>
     </Style>
 </Styles>
