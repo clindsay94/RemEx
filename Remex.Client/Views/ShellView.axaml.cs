@@ -38,13 +38,7 @@ public partial class ShellView : UserControl
 
             if (OperatingSystem.IsAndroid())
             {
-                _pageHost.PageTransition = new CompositePageTransition
-                {
-                    PageTransitions = {
-                        new CrossFade(TimeSpan.FromMilliseconds(250)),
-                        new PageSlide(TimeSpan.FromMilliseconds(250), PageSlide.SlideAxis.Horizontal)
-                    }
-                };
+                _pageHost.PageTransition = new CrossFade(TimeSpan.FromMilliseconds(250));
                 return;
             }
 

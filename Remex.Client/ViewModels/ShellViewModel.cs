@@ -23,6 +23,8 @@ public partial class ShellViewModel : ObservableObject
 
     /// <summary>Helper property for Desktop-specific UI logic.</summary>
     public bool IsDesktop => !OperatingSystem.IsAndroid();
+    public double CompactPaneLength => OperatingSystem.IsAndroid() ? 0 : 64;
+    public double OpenPaneLength => OperatingSystem.IsAndroid() ? 0 : 220;
 
 
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>

@@ -84,8 +84,8 @@
             <!-- ═══ MAIN LAYOUT: Sidebar + Content ═══ -->
             <SplitView IsPaneOpen="{Binding IsDrawerOpen}" 
                        DisplayMode="CompactOverlay"
-                       OpenPaneLength="220" 
-                       CompactPaneLength="64"
+                       OpenPaneLength="{Binding OpenPaneLength}"
+                       CompactPaneLength="{Binding CompactPaneLength}"
                        PaneBackground="Transparent"
                        IsVisible="{Binding !IsShellChromeHidden}">
                 
@@ -364,7 +364,7 @@
                                                         BorderBrush="#FFB800" BorderThickness="1"/>
                                                 <TextBlock Text="Solar-Flare" FontSize="11" FontWeight="Bold" 
                                                            HorizontalAlignment="Center" 
-                                                           />
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>
                                         </Border>
                                         <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand"
@@ -374,7 +374,7 @@
                                                         BorderBrush="#444" BorderThickness="3"/>
                                                 <TextBlock Text="Monolith" FontSize="11" FontWeight="Bold" 
                                                            HorizontalAlignment="Center" 
-                                                           />
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>
                                         </Border>
                                     </UniformGrid>
@@ -451,7 +451,7 @@
                                     <TextBlock Text="LAYOUT" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Text="Snap to Grid" FontSize="13"  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Snap to Grid" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                                     </Grid>
                                     <StackPanel Spacing="4" IsEnabled="{Binding SettingsVm.IsSnapToGridEnabled}">
@@ -480,7 +480,7 @@
                                             </Ellipse.Styles>
                                         </Ellipse>
                                         <TextBlock Text="{Binding SettingsVm.ServiceStatusText}" FontSize="13" 
-                                                   FontWeight="Bold" />
+                                                   FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </StackPanel>
 
                                     <WrapPanel Orientation="Horizontal" IsEnabled="{Binding !SettingsVm.IsServiceBusy}">
@@ -523,14 +523,14 @@
                                             <TextBlock Text="Username" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                             <TextBox Text="{Binding SettingsVm.ServiceUsername}" 
                                                      Background="{DynamicResource GlassBaseDarkBrush}" 
-
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                                      BorderBrush="{DynamicResource CardBorderBrush}" 
                                                      CornerRadius="6" Padding="8,6" FontSize="12" FontFamily="Consolas, monospace" 
                                                      Watermark=".\Username"/>
                                             <TextBlock Text="Password" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                             <TextBox PasswordChar="●" Text="{Binding SettingsVm.ServicePassword}" 
                                                      Background="{DynamicResource GlassBaseDarkBrush}" 
-
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                                      BorderBrush="{DynamicResource CardBorderBrush}" 
                                                      CornerRadius="6" Padding="8,6" FontSize="12" 
                                                      Watermark="Windows password"/>
