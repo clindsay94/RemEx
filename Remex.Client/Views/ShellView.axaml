@@ -91,7 +91,7 @@
                 
                 <SplitView.Pane>
                     <Border IsVisible="{Binding IsDesktop}">
-                    <Border Background="{DynamicResource GlassBaseDarkBrush}" 
+                        <Border Background="{DynamicResource GlassBaseDarkBrush}"
                             BorderBrush="{DynamicResource CardBorderBrush}"
                             BorderThickness="0,0,1,0">
                         <Grid RowDefinitions="Auto,*,Auto">
