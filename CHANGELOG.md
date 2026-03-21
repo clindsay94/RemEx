@@ -2,6 +2,35 @@
 
 All notable changes to Remex are documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
+
+---
+
+## [1.0.0] - 2026-06-12
+
+### Added
+
+- **Remote Desktop** — Live screen streaming over a dedicated WebSocket (`/ws/desktop`) with configurable JPEG quality, downscale factor, and target FPS. Supports mouse, keyboard, and stylus input forwarding. Includes fullscreen immersive mode, virtual cursor pad, and zoom/pan viewport.
+- **App Launcher** — Define app shortcuts on the host, sync them to the client, and launch applications remotely. Supports Session 0 → interactive-session launching on Windows Services. Persistent local storage with host-sync fallback.
+- **Task Manager** — Real-time process list with CPU and memory usage. Search, sort by column, and kill processes remotely. Cross-platform support via Windows `Process` API and Linux `/proc` filesystem.
+- **Wake-on-LAN** — Send magic packets to wake machines on the network. Broadcasts across all active physical NICs. Accessible from the remote execution panel and TCP command ingress.
+- **Sidebar Navigation** — Replaced per-view navigation buttons with a collapsible `SplitView` sidebar. Includes compact icon mode (64px), expanded label mode (220px), and connection status indicator.
+- **Theme Customization** — Dynamic accent color, corner radius, glass opacity, glow strength, and canvas background selection. Multiple base themes: DeepSpace (default dark), Cyberpunk, NordAurora, SolarFlare (light).
+- **Home Screen Redesign** — Quick-action pills for one-tap navigation to Remote, Desktop, Launcher, and Tasks. Live pinned sensor cards with sparkline graphs.
+- **Settings Panel** — Overlay panel accessible from the sidebar with snap-to-grid toggle, grid size slider, host address input, sensor pin management, and Windows Service status.
+- **GitHub Actions** — `build-android.yml` workflow for building and uploading signed Android APKs.
+
+### Changed
+
+- **Navigation architecture** — Moved from three-view `PageSlide` to six-view sidebar with randomized transitions (slide, crossfade, zoom-fade).
+- **Version bump** — `0.2.0` → `1.0.0`.
+- **Repository cleanup** — Removed AI agent artifacts, build logs, and internal planning documents. Cleaned `.gitignore`. Updated all documentation for public release.
+
+### Removed
+
+- **Authentication system** — Removed access-key authentication from all endpoints and client code. The TCP command ingress should be protected at the network/firewall level.
+- **Multi-monitor support** — Simplified remote desktop to primary monitor only, resolving stability issues on Android.
+
 ---
 
 ## [0.2.0] - 2026-03-06

@@ -2,12 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application android:allowBackup="true"
                android:label="Remex"
+               android:icon="@drawable/ic_launcher"
+               android:roundIcon="@drawable/ic_launcher"
                android:supportsRtl="true"
                android:extractNativeLibs="false"
                android:theme="@style/MyTheme.NoActionBar"
                android:requestLegacyExternalStorage="true"
                android:fullBackupContent="@xml/backup_rules"
-               android:dataExtractionRules="@xml/data_extraction_rules">
+               android:dataExtractionRules="@xml/data_extraction_rules"
+               android:localeConfig="@xml/locales_config">
 
     <service android:name="com.remex.client.RemexTileService"
              android:label="Remex Lock"
@@ -19,7 +22,7 @@
     </service>
 
     <receiver android:name="com.remex.client.RemexWidgetProvider"
-              android:label="Remex Telemetry"
+              android:label="Remex Telemetry (Old)"
               android:exported="true">
         <intent-filter>
             <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -28,10 +31,51 @@
                    android:resource="@xml/remex_widget_info" />
     </receiver>
 
+    <receiver android:name="com.remex.client.SensorWidgetProvider"
+              android:label="Remex Sensors"
+              android:exported="true">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data android:name="android.appwidget.provider"
+                   android:resource="@xml/sensor_widget_info" />
+    </receiver>
+
+    <receiver android:name="com.remex.client.RemoteControlWidgetProvider"
+              android:label="Remex Remote Control"
+              android:exported="true">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data android:name="android.appwidget.provider"
+                   android:resource="@xml/remote_control_widget_info" />
+    </receiver>
+
+    <receiver android:name="com.remex.client.ResourceWidgetProvider"
+              android:label="Remex Resources"
+              android:exported="true">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data android:name="android.appwidget.provider"
+                   android:resource="@xml/resource_widget_info" />
+    </receiver>
+
+    <activity android:name="com.remex.client.WidgetConfigActivity"
+              android:label="Configure Widget"
+              android:exported="true">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+        </intent-filter>
+    </activity>
+
   </application>
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+  <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 </manifest>

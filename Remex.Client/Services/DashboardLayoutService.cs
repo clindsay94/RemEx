@@ -37,10 +37,12 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     {
         _themeService = themeService;
 
-        // Store alongside the application data — works on both Desktop and Android.
-        var appData = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Remex");
+        // Use SpecialFolder.Personal on Android for better persistence (survives uninstall/backup)
+        var baseFolder = OperatingSystem.IsAndroid() 
+            ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
+            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+        var appData = Path.Combine(baseFolder, "Remex");
 
         Directory.CreateDirectory(appData);
         _filePath = Path.Combine(appData, "dashboard_layout.json");
@@ -97,6 +99,14 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     public void RequestSave(DashboardProfile profile)
     {
         _pendingProfile = profile;
+
+        // On Android, we save immediately to prevent data loss if the app is killed
+        if (OperatingSystem.IsAndroid())
+        {
+            _ = SaveInternalAsync(profile);
+            return;
+        }
+
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(
             _ => _ = FlushAsync(),
@@ -128,6 +138,18 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         {
             var json = JsonSerializer.Serialize(profile, JsonOptions);
             await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+            
+            if (OperatingSystem.IsAndroid())
+            {
+                System.Diagnostics.Debug.WriteLine($"[RemexPersistence] Saved profile to: {_filePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (OperatingSystem.IsAndroid())
+            {
+                System.Diagnostics.Debug.WriteLine($"[RemexPersistence] ERROR saving profile: {ex.Message}");
+            }
         }
         finally
         {

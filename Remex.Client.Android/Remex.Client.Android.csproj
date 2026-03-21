@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" Version="11.3.11" />
+    <PackageReference Include="Xamarin.Google.Android.Material" Version="1.11.0.3" />
     <!-- Override SkiaSharp/HarfBuzz to v3 for 16KB page size alignment on Android -->
     <PackageReference Include="SkiaSharp" Version="3.119.2" />
     <PackageReference Include="SkiaSharp.NativeAssets.Android" Version="3.119.2" />
@@ -21,5 +22,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Remex.Client\Remex.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AndroidResource Include="Resources\xml\locales_config.xml" />
   </ItemGroup>
 </Project>

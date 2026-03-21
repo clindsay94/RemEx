@@ -18,7 +18,11 @@ public interface ILauncherStorageService
 /// </summary>
 public class LauncherStorageService : ILauncherStorageService
 {
-    private static readonly string DefaultAppDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
+    private static readonly string DefaultAppDataFolder = Path.Combine(
+        OperatingSystem.IsAndroid()
+            ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
+            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Remex");
 
     private readonly string _configFilePath;
 

@@ -73,31 +73,33 @@ public partial class App : Application
 
         CommandModeContext.StartListener(Services);
 
+        // Load persisted profile BEFORE resolving ShellViewModel so it has the correct data.
+        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
+        var profile = Task.Run(async () => await layoutService.LoadAsync()).GetAwaiter().GetResult();
+
         var viewModel = Services.GetRequiredService<ShellViewModel>();
 
-        // Load persisted host address so the client remembers what the user configured.
-        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
-        _ = Task.Run(async () =>
+        // Desktop override takes priority over persisted address.
+        if (OverrideHostPort.HasValue)
         {
-            var profile = await layoutService.LoadAsync().ConfigureAwait(false);
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                // Desktop override takes priority over persisted address.
-                if (OverrideHostPort.HasValue)
-                {
-                    var port = OverrideHostPort.Value;
-                    viewModel.Connection.HostAddress =
-                        $"ws://localhost:{port}{Remex.Core.RemexConstants.WebSocketPath}";
-                }
-                else if (!string.IsNullOrWhiteSpace(profile.HostAddress))
-                {
-                    viewModel.Connection.HostAddress = profile.HostAddress;
-                }
+            var port = OverrideHostPort.Value;
+            viewModel.Connection.HostAddress =
+                $"ws://localhost:{port}{Remex.Core.RemexConstants.WebSocketPath}";
+        }
+        else if (!string.IsNullOrWhiteSpace(profile.HostAddress))
+        {
+            viewModel.Connection.HostAddress = profile.HostAddress;
+        }
 
-                // Auto-connect to the host.
-                _ = viewModel.Connection.AutoConnectAsync();
-            });
-        });
+        // Auto-connect to the host.
+        _ = viewModel.Connection.AutoConnectAsync();
+
+        // Subscribe to updates to refresh Android widgets
+        if (OperatingSystem.IsAndroid())
+        {
+            viewModel.Connection.TelemetryReceived += (t) => TriggerPlatformWidgetUpdate();
+            viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
+        }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -115,5 +117,12 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-    }
-}
+        }
+
+        public static Action? RequestPlatformWidgetUpdate { get; set; }
+
+        private void TriggerPlatformWidgetUpdate()
+        {
+        RequestPlatformWidgetUpdate?.Invoke();
+        }
+        }

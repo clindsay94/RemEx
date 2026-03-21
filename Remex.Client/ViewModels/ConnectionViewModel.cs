@@ -97,11 +97,33 @@ public partial class ConnectionViewModel : ObservableObject
     public event Action<Remex.Core.Models.DashboardProfile>? LayoutProfileReceived;
     public event Action<System.Collections.Generic.List<Remex.Core.Models.ProcessInfo>>? ProcessListReceived;
 
+    [ObservableProperty]
+    private ObservableCollection<Remex.Core.Models.ProcessInfo> _processes = new();
+
     public async Task RequestProcessListAsync()
     {
         if (_webSocket?.State != WebSocketState.Open) return;
         var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest };
         await MessageSerializer.SendAsync(_webSocket, msg);
+    }
+
+    [RelayCommand]
+    public async Task LockCommandAsync() => await SendCommandAsync("Lock");
+
+    [RelayCommand]
+    public async Task SleepCommandAsync() => await SendCommandAsync("Sleep");
+
+    [RelayCommand]
+    public async Task ShutdownCommandAsync() => await SendCommandAsync("Shutdown");
+
+    [RelayCommand]
+    public async Task RestartCommandAsync() => await SendCommandAsync("Restart");
+
+    [RelayCommand]
+    public async Task WakeOnLanCommandAsync()
+    {
+        // This needs parameters usually, but for a simple widget toggle it might use defaults
+        await SendCommandAsync("WakeOnLan");
     }
 
     public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(int processId, bool elevated = false)
@@ -356,7 +378,11 @@ public partial class ConnectionViewModel : ObservableObject
                         break;
 
                     case MessageTypes.ProcessListSync when message.ProcessList is not null:
-                        Dispatcher.UIThread.Post(() => ProcessListReceived?.Invoke(message.ProcessList));
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            Processes = new ObservableCollection<Remex.Core.Models.ProcessInfo>(message.ProcessList);
+                            ProcessListReceived?.Invoke(message.ProcessList);
+                        });
                         break;
                     case MessageTypes.LayoutSync when message.DashboardProfile is not null:
                         Dispatcher.UIThread.Post(() => LayoutProfileReceived?.Invoke(message.DashboardProfile));

@@ -131,6 +131,22 @@
             </Rectangle>
         </Panel>
 
+        <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
+        <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
+            <Rectangle Fill="#0A0A10" Opacity="0.8" />
+            <Rectangle Opacity="{Binding Customization.GlassOpacity}">
+                <Rectangle.Fill>
+                    <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
+                </Rectangle.Fill>
+            </Rectangle>
+        </Panel>
+
+        <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
+        <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
+            <Rectangle Fill="#08080A" />
+            <Rectangle Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
+        </Panel>
+
         <!-- Main Content -->
         <ContentPresenter Content="{Binding $parent[ContentControl].Content}" />
     </Grid>

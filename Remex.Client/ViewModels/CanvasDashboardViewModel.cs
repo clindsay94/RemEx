@@ -22,7 +22,6 @@ public partial class CanvasDashboardViewModel : ObservableObject
     private DashboardProfile _profile = new();
     private int _nextZIndex = 1;
     private bool _isInitialized;
-    private bool _hasSyncedWithHost;
     private DashboardProfile? _pendingSyncProfile;
 
     public ConnectionViewModel Connection { get; }
@@ -92,7 +91,6 @@ public partial class CanvasDashboardViewModel : ObservableObject
                     _pendingSyncProfile = profile;
                     return;
                 }
-                _hasSyncedWithHost = true;
                 ApplyProfile(profile);
             });
         };
@@ -117,7 +115,6 @@ public partial class CanvasDashboardViewModel : ObservableObject
             // If a host sync arrived before we finished local load, prioritize the host.
             if (_pendingSyncProfile != null)
             {
-                _hasSyncedWithHost = true;
                 ApplyProfile(_pendingSyncProfile);
                 _pendingSyncProfile = null;
                 return;

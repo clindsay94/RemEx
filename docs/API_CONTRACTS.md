@@ -1,6 +1,8 @@
 # RemEx API Contracts
 
-This document provides the full API documentation for the various communication protocols used in RemEx.
+Full API documentation for the communication protocols used in RemEx.
+
+---
 
 ## 1. WebSocket Telemetry & Remote Execution (`/ws`)
 
@@ -140,7 +142,41 @@ The background service responds with:
 
 ---
 
-## 4. REST / Minimal APIs
+## 4. WebSocket Remote Desktop (`/ws/desktop`)
+
+A dedicated WebSocket endpoint for live screen streaming and remote input forwarding.
+
+**Endpoint:** `ws://<host>:<port>/ws/desktop` (Default port: 5005)
+
+### Message Types
+
+- `desktop_start`: Client → Host. Begin streaming. Includes an optional `desktopConfig` payload.
+- `desktop_stop`: Client → Host. Stop the stream and close the connection.
+- `desktop_config`: Client → Host. Update streaming parameters mid-session.
+- `desktop_meta`: Host → Client. Screen metadata sent once after `desktop_start`.
+- `desktop_frame`: Host → Client. Binary JPEG frame (sent as a WebSocket binary message).
+- `desktop_input`: Client → Host. Forwarded input event (mouse move, click, key press, scroll).
+- `desktop_error`: Host → Client. Error message (e.g., screen capture failure).
+
+### `DesktopConfig`
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `quality` | `int` | `50` | JPEG quality (1–100). |
+| `scale` | `double` | `0.5` | Downscale factor (0.1–1.0). |
+| `targetFps` | `int` | `10` | Target frames per second. |
+
+### `DesktopMeta`
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `screenWidth` | `int` | Native screen width in pixels. |
+| `screenHeight` | `int` | Native screen height in pixels. |
+| `hostInstanceId` | `string` | Unique host process ID (used to prevent self-connections). |
+
+---
+
+## 5. REST / Minimal APIs
 
 The RemEx Host exposes a basic HTTP endpoint for health checks and service discovery.
 

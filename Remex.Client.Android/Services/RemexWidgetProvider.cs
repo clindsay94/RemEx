@@ -11,17 +11,21 @@ namespace Remex.Client.Android.Services;
 [BroadcastReceiver(Name = "com.remex.client.RemexWidgetProvider",
                  Label = "Remex Telemetry",
                  Exported = true)]
-[IntentFilter(new[] { "android.appwidget.action.APPWIDGET_UPDATE" })]
-[MetaData("android.appwidget.provider", Resource = "@xml/remex_widget_info")]
 public class RemexWidgetProvider : AppWidgetProvider
 {
-    public override void OnUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds)
+    public override void OnUpdate(Context? context, AppWidgetManager? appWidgetManager, int[]? appWidgetIds)
     {
-        if (Remex.Client.App.Services == null) return;
-        var connVm = Remex.Client.App.Services.GetRequiredService<ConnectionViewModel>();
+        if (context == null || appWidgetManager == null || appWidgetIds == null) return;
+        
+        AvaloniaInitHelper.EnsureInitialized();
+        if (App.Services == null) return;
+        var connVm = App.Services.GetRequiredService<ConnectionViewModel>();
+        if (!connVm.IsConnected) _ = connVm.AutoConnectAsync();
+
         var telemetry = connVm.Telemetry;
 
         foreach (var appWidgetId in appWidgetIds)
+
         {
             var views = new RemoteViews(context.PackageName, Resource.Layout.remex_widget);
 

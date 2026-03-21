@@ -88,23 +88,19 @@ test_*.txt
 run_*.txt
 hwinfo_reg.txt
 publish/
+*.apk
 
-# AI Agent Files (Excluded from tracking)
+# AI / Agent Artifacts
+.agent/
+.gemini_security/
+.superpowers/
+conductor/
+*AGENT_LOG.md
+EXAMINATION_REPORT.md
 AGENTS.md
 AGENT_COMMS.md
-.agent/
-*AGENT_LOG.md
-Implementation Plan
-Implementation Plan.md
-/publish
-EXAMINATION_REPORT.md
-.superpowers/brainstorm/session-1/dynamic-options.html
-.gitignore
-.superpowers/brainstorm/session-1/hybrid-customization.html
-.gitignore
-.superpowers/brainstorm/session-1/granularity.html
-.superpowers/brainstorm/session-1/theme-concepts.html
-.superpowers/brainstorm/session-1/.server-info
-conductor/CUSTOMIZATION_PLAN.md
-conductor/IMPLEMENTATION_PLAN.md
-docs/superpowers/specs/2026-03-19-remex-customization-design.md
+
+# Misc
+.gitconfig
+package-lock.json
+patch_pingpong.sh
