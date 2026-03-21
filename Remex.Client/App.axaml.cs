@@ -105,8 +105,9 @@ public partial class App : Application
         // Inject Material 3 theme on Android
         if (OperatingSystem.IsAndroid())
         {
-            var uri = new Uri("avares://Remex.Client/Themes/Material3Android.axaml");
-            var m3Styles = new Avalonia.Markup.Xaml.Styling.StyleInclude(uri) { Source = uri };
+            var baseUri = new Uri("avares://Remex.Client/");
+            var themeUri = new Uri("avares://Remex.Client/Themes/Material3Android.axaml");
+            var m3Styles = new Avalonia.Markup.Xaml.Styling.StyleInclude(baseUri) { Source = themeUri };
             this.Styles.Add(m3Styles);
         }
 
