@@ -87,7 +87,7 @@
                        OpenPaneLength="220" 
                        CompactPaneLength="64"
                        PaneBackground="Transparent"
-                       IsVisible="{Binding !IsShellChromeHidden}">
+                       IsVisible="{Binding !IsShellChromeHidden && !IsAndroid}">
                 
                 <SplitView.Pane>
                     <Border IsVisible="{Binding IsDesktop}">
