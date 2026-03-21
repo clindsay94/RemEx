@@ -87,7 +87,7 @@
                        OpenPaneLength="220" 
                        CompactPaneLength="64"
                        PaneBackground="Transparent"
-                       IsVisible="{Binding !IsShellChromeHidden && !IsAndroid}">
+                       IsVisible="{Binding !IsShellChromeHidden}">
                 
                 <SplitView.Pane>
                     <Border IsVisible="{Binding IsDesktop}">
@@ -597,15 +597,27 @@
                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,20,20"
                     Command="{Binding ToggleSettingsPanelCommand}"
-                    IsVisible="{Binding IsDesktop}"
-                    Content="⚙"/>
+                    Content="⚙">
+                <Button.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="!IsShellChromeHidden"/>
+                        <Binding Path="IsDesktop"/>
+                    </MultiBinding>
+                </Button.IsVisible>
+            </Button>
 
             <Button Classes="gear-fab"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,20,90"
                     Command="{Binding ToggleSettingsPanelCommand}"
-                    IsVisible="{Binding IsAndroid}"
-                    Content="⚙"/>
+                    Content="⚙">
+                <Button.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="!IsShellChromeHidden"/>
+                        <Binding Path="IsAndroid"/>
+                    </MultiBinding>
+                </Button.IsVisible>
+            </Button>
 
             <!-- ═══ BOTTOM NAV BAR (ANDROID M3) ═══ -->
             <Border Grid.Row="1" IsVisible="{Binding IsAndroid}" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
