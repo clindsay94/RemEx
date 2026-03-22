@@ -3,60 +3,104 @@
              xmlns:vm="using:Remex.Client.ViewModels"
              xmlns:models="using:Remex.Core.Models"
              x:Class="Remex.Client.Views.TaskManagerView"
-             x:DataType="vm:TaskManagerViewModel"
-             Margin="16">
+             x:DataType="vm:TaskManagerViewModel">
 
-    <Grid RowDefinitions="Auto,*">
-        <!-- Header Controls -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,16">
-            <TextBox Text="{Binding SearchText}" Watermark="Search by name or PID..." Width="250" HorizontalAlignment="Left" />
+    <UserControl.Styles>
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="Button.sort-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.sort-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+    </UserControl.Styles>
 
-            <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name"
-                    Content="Sort Name" Classes="glass-button" />
-            <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu"
-                    Content="Sort CPU" Classes="glass-button" />
-            <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory"
-                    Content="Sort Mem" Classes="glass-button" />
-        </Grid>
+    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,24,32,32" Spacing="24">
 
-        <!-- Process List -->
-        <ListBox Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="models:ProcessInfo">
-                    <Border Classes="glass-card" Margin="0,4" Padding="12" CornerRadius="8">
-                        <Border.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Kill Process"
-                                          Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}"
-                                          CommandParameter="{Binding}" />
-                            </ContextMenu>
-                        </Border.ContextMenu>
+            <!-- Header -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="▤  TASK MANAGER" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="PROCESS EXPLORER" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+            </StackPanel>
 
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" FontSize="16" />
-                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Id, StringFormat='PID: {0}'}" Opacity="0.7" />
+            <!-- Search and Sort Controls -->
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
+                <TextBox Text="{Binding SearchText}" Watermark="Search by name or PID..." 
+                         Background="{DynamicResource GlassBaseDarkBrush}" 
+                         Foreground="{DynamicResource TextPrimaryBrush}" 
+                         BorderBrush="{DynamicResource CardBorderBrush}"
+                         CornerRadius="16" Padding="16,10" FontSize="13" 
+                         VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="16" Margin="0,8">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBlock Text="CPU:" Opacity="0.7" />
-                                    <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBlock Text="MEM:" Opacity="0.7" />
-                                    <!-- Simple bytes to MB conversion for display -->
-                                    <TextBlock Text="{Binding MemoryUsage, StringFormat='{}{0:N0} bytes'}" />
-                                </StackPanel>
-                            </StackPanel>
+                <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name"
+                        Content="Name" Classes="sort-btn" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu"
+                        Content="CPU %" Classes="sort-btn" VerticalAlignment="Center"/>
+                <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory"
+                        Content="RAM" Classes="sort-btn" VerticalAlignment="Center"/>
+            </Grid>
 
-                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Opacity="0.6">
-                                <TextBlock Text="{Binding FilePath, StringFormat='Path: {0}'}" IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="12" />
-                                <TextBlock Text="{Binding Publisher, StringFormat='Publisher: {0}'}" IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="12" />
-                                <TextBlock Text="{Binding Version, StringFormat='Version: {0}'}" IsVisible="{Binding Version, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="12" />
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-    </Grid>
+            <!-- Unified List Container (M3 Surface) -->
+            <Border Classes="glass-card" Padding="0" ClipToBounds="True">
+                <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" 
+                         Background="Transparent" BorderThickness="0" CornerRadius="24">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:ProcessInfo">
+                            <!-- List Item Surface -->
+                            <Border Background="Transparent" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Kill Process"
+                                                  Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}"
+                                                  CommandParameter="{Binding}" 
+                                                  Foreground="#FF6B6B" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                            <TextBlock Text="{Binding Id, StringFormat='PID: {0}'}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                        </StackPanel>
+                                        <StackPanel Opacity="0.6" Spacing="1">
+                                            <TextBlock Text="{Binding FilePath, StringFormat='Path: {0}'}" IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Publisher, StringFormat='Publisher: {0}'}" IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Metrics -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <StackPanel Width="60">
+                                            <TextBlock Text="CPU" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                        <StackPanel Width="80">
+                                            <TextBlock Text="MEM" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                            <!-- Simple bytes to MB conversion for display -->
+                                            <TextBlock Text="{Binding MemoryUsage, StringFormat='{}{0:N0} B'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

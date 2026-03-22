@@ -18,6 +18,15 @@ public partial class ShellViewModel : ObservableObject
     private readonly IImmersiveModeService? _immersiveMode;
     private static readonly Random _rng = new();
 
+    /// <summary>Helper property for Android-specific UI logic.</summary>
+    public bool IsAndroid => OperatingSystem.IsAndroid();
+
+    /// <summary>Helper property for Desktop-specific UI logic.</summary>
+    public bool IsDesktop => !OperatingSystem.IsAndroid();
+    public double CompactPaneLength => OperatingSystem.IsAndroid() ? 0 : 64;
+    public double OpenPaneLength => OperatingSystem.IsAndroid() ? 0 : 220;
+
+
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>
     public ConnectionViewModel Connection { get; }
 
@@ -91,7 +100,21 @@ public partial class ShellViewModel : ObservableObject
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
     {
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
-        TransitionType = _rng.Next(4); // randomize: 0=SlideH, 1=SlideV, 2=CrossFade, 3=CompositeZoomFade
+        
+        // Material 3 style: 
+        // On Android, we use a consistent, professional transition.
+        // On Desktop, we can keep the variety.
+        if (OperatingSystem.IsAndroid())
+        {
+            // We'll use CrossFade (index 2) as it's the closest to M3 FadeThrough 
+            // without complex shared-axis custom code.
+            TransitionType = 2; 
+        }
+        else
+        {
+            TransitionType = _rng.Next(4);
+        }
+
         ActiveNavIndex = targetIndex;
         CurrentView = viewModel;
         // Auto-close drawer on mobile/narrow after navigation

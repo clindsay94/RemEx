@@ -9,7 +9,7 @@
         <Style Selector="Button.action-pill">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="CornerRadius" Value="24"/>
             <Setter Property="Padding" Value="20,14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="13"/>
@@ -37,6 +37,10 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Button.action-pill-danger">
+            <Setter Property="Foreground" Value="{DynamicResource SystemError}"/>
+            <Setter Property="BorderBrush" Value="#40FF6B6B"/>
         </Style>
     </UserControl.Styles>
 
@@ -124,10 +128,9 @@
                                     <Button Classes="action-pill action-pill-accent" Content="Connect" 
                                             Command="{Binding Connection.ConnectCommand}" 
                                             IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"/>
-                                    <Button Classes="action-pill" Content="Cancel" 
+                                    <Button Classes="action-pill action-pill-danger" Content="Cancel" 
                                             Command="{Binding Connection.DisconnectCommand}" 
-                                            IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
-                                            Foreground="#F43F5E"/>
+                                            IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
