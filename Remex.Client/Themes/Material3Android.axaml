@@ -1,18 +1,87 @@
-<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Styles xmlns="https://github.com/avaloniaui" 
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- ═══ Material 3 Design Tokens (Android Override) ═══ -->
+    <Styles.Resources>
+        <CornerRadius x:Key="M3CardCornerRadius">24</CornerRadius>
+        <CornerRadius x:Key="M3ButtonCornerRadius">24</CornerRadius>
+        <CornerRadius x:Key="M3PillCornerRadius">16</CornerRadius>
+        <CornerRadius x:Key="M3InputCornerRadius">16</CornerRadius>
+        
+        <!-- Elevation Shadows (M3 Style) -->
+        <BoxShadows x:Key="M3Elevation1">0 1 3 1 #1A000000, 0 1 2 0 #33000000</BoxShadows>
+        <BoxShadows x:Key="M3Elevation2">0 2 6 2 #1A000000, 0 1 2 0 #33000000</BoxShadows>
+    </Styles.Resources>
+
+    <!-- ═══ Base Component Overrides ═══ -->
+    
+    <!-- Cards: Tonal Elevation approach (less shadow, rely on background color) -->
     <Style Selector="Border.glass-card">
-        <Setter Property="CornerRadius" Value="24"/>
+        <Setter Property="CornerRadius" Value="{StaticResource M3CardCornerRadius}"/>
+        <!-- Slightly more opaque background for M3 Surface Container -->
         <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="BoxShadow" Value="0 4 10 0 #20000000"/>
-    </Style>
-    <Style Selector="Button.action-pill">
-        <Setter Property="CornerRadius" Value="24"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#1AFFFFFF"/>
+        <Setter Property="BoxShadow" Value="{StaticResource M3Elevation1}"/>
     </Style>
 
+    <!-- Global Buttons (Filled Tonal/Elevated style) -->
+    <Style Selector="Button:not(.nav-item):not(.gear-fab):not(.accent-swatch)">
+        <Setter Property="CornerRadius" Value="{StaticResource M3ButtonCornerRadius}"/>
+    </Style>
+
+    <!-- Inputs (Outlined TextField style) -->
+    <Style Selector="TextBox">
+        <Setter Property="CornerRadius" Value="{StaticResource M3InputCornerRadius}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="16,12"/>
+    </Style>
+
+    <!-- Navigation Icons / Pills -->
+    <Style Selector="Border.nav-pill">
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Width" Value="64"/>
+        <Setter Property="CornerRadius" Value="{StaticResource M3PillCornerRadius}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                <DoubleTransition Property="Width" Duration="0:0:0.2" Easing="BackEaseOut"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    
+    <Style Selector="Button.nav-item-active Border.nav-pill">
+        <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+        <Setter Property="Opacity" Value="0.25"/>
+    </Style>
+    
+    <!-- Active Nav Text -->
+    <Style Selector="Button.nav-item-active TextBlock">
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+
+    <!-- Typography -->
     <Style Selector="TextBlock">
-        <Setter Property="FontFamily" Value="Roboto"/>
+        <!-- Use system default sans-serif which is Roboto on Android -->
+        <Setter Property="FontFamily" Value="sans-serif"/>
+        <Setter Property="LetterSpacing" Value="0.25"/>
     </Style>
+    
+    <!-- Snappy Button Transitions (M3 Ripple emulation) -->
     <Style Selector="Button">
-        <Setter Property="FontFamily" Value="Roboto"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CircularEaseOut"/>
+                <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CircularEaseOut"/>
+            </Transitions>
+        </Setter>
     </Style>
+    
+    <Style Selector="Button:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.95)"/>
+        <!-- Emulate a ripple press state by slightly increasing opacity/lightness -->
+        <Setter Property="Opacity" Value="0.8"/>
+    </Style>
+
 </Styles>

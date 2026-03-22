@@ -100,7 +100,21 @@ public partial class ShellViewModel : ObservableObject
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
     {
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
-        TransitionType = _rng.Next(4); // randomize: 0=SlideH, 1=SlideV, 2=CrossFade, 3=CompositeZoomFade
+        
+        // Material 3 style: 
+        // On Android, we use a consistent, professional transition.
+        // On Desktop, we can keep the variety.
+        if (OperatingSystem.IsAndroid())
+        {
+            // We'll use CrossFade (index 2) as it's the closest to M3 FadeThrough 
+            // without complex shared-axis custom code.
+            TransitionType = 2; 
+        }
+        else
+        {
+            TransitionType = _rng.Next(4);
+        }
+
         ActiveNavIndex = targetIndex;
         CurrentView = viewModel;
         // Auto-close drawer on mobile/narrow after navigation
