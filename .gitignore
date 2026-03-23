@@ -110,6 +110,5 @@ package-lock.json
 dotnet-install.sh
 package-lock.json
 package-lock.json
-/RemEx.Android/app
 /Remex.Client.Android.old
 libgcc.a
