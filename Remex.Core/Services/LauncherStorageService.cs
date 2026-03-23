@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Remex.Core.Models;
+using Remex.Core.Serialization;
 
 namespace Remex.Core.Services;
 
@@ -25,8 +25,6 @@ public class LauncherStorageService : ILauncherStorageService
         "Remex");
 
     private readonly string _configFilePath;
-
-    private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
     public LauncherStorageService() : this(null) { }
 
@@ -52,7 +50,7 @@ public class LauncherStorageService : ILauncherStorageService
         try
         {
             using var stream = File.OpenRead(_configFilePath);
-            var entries = await JsonSerializer.DeserializeAsync<List<AppEntry>>(stream, _jsonOptions);
+            var entries = await RemexJson.DeserializeAsync(stream, RemexJson.TypeInfo<List<AppEntry>>()).ConfigureAwait(false);
             return entries ?? new List<AppEntry>();
         }
         catch (Exception)
@@ -70,8 +68,9 @@ public class LauncherStorageService : ILauncherStorageService
     {
         try
         {
+            var entryList = entries as List<AppEntry> ?? new List<AppEntry>(entries);
             using var stream = File.Create(_configFilePath);
-            await JsonSerializer.SerializeAsync(stream, entries, _jsonOptions);
+            await RemexJson.SerializeIndentedAsync(stream, entryList, RemexJson.TypeInfo<List<AppEntry>>()).ConfigureAwait(false);
         }
         catch (Exception)
         {

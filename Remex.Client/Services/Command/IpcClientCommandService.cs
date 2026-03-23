@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Remex.Core.Models.IPC;
+using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
 
 namespace Remex.Client.Services.Command;
@@ -25,7 +26,7 @@ public class IpcClientCommandService : ISystemCommandService
             using var pipeClient = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await pipeClient.ConnectAsync(5000); // 5 seconds timeout
 
-            var json = JsonSerializer.Serialize(request);
+            var json = JsonSerializer.Serialize(request, RemexJson.Compact);
             var bytes = Encoding.UTF8.GetBytes(json);
             await pipeClient.WriteAsync(bytes, 0, bytes.Length);
 
@@ -34,7 +35,7 @@ public class IpcClientCommandService : ISystemCommandService
             if (bytesRead > 0)
             {
                 var responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                var response = JsonSerializer.Deserialize<CommandResponse>(responseJson);
+                var response = JsonSerializer.Deserialize<CommandResponse>(responseJson, RemexJson.Compact);
                 if (response != null && !response.Success)
                 {
                     throw new Exception($"Command Failed: {response.Message}. Details: {response.ErrorDetails}");

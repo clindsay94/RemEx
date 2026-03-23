@@ -25,12 +25,12 @@ public partial class CustomizationViewModel : ObservableObject
 
         // Initialize from current profile
         var settings = _layoutService.CurrentProfile.Customization;
-        _selectedTheme = Enum.TryParse<AppTheme>(settings.BaseTheme, true, out var theme) ? theme : AppTheme.BaseDarkGlass;
+        _selectedTheme = Enum.TryParse<AppTheme>(settings.ThemeId, true, out var theme) ? theme : AppTheme.BaseDarkGlass;
         _cornerRadius = settings.CornerRadius;
         _glassOpacity = settings.GlassOpacity;
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
-        _canvasBackgroundType = settings.CanvasBackgroundType;
+        _canvasBackgroundType = settings.BackgroundMaterial;
     }
 
     [ObservableProperty]
@@ -62,12 +62,12 @@ public partial class CustomizationViewModel : ObservableObject
     {
         var settings = new CustomizationSettings
         {
-            BaseTheme = SelectedTheme.ToString(),
+            ThemeId = SelectedTheme.ToString(),
             CornerRadius = CornerRadius,
             GlassOpacity = GlassOpacity,
             GlowStrength = GlowStrength,
             AccentColor = AccentColor,
-            CanvasBackgroundType = CanvasBackgroundType
+            BackgroundMaterial = CanvasBackgroundType
         };
 
         // Update the current profile object

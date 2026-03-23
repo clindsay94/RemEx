@@ -41,7 +41,7 @@ public class ThemeService
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (Enum.TryParse<AppTheme>(settings.BaseTheme, true, out var themeEnum))
+            if (Enum.TryParse<AppTheme>(settings.ThemeId, true, out var themeEnum))
             {
                 // Internal call to SetBaseTheme without nested Post
                 ApplyBaseThemeInternal(themeEnum);
@@ -57,7 +57,7 @@ public class ThemeService
                 SetResourceOverrideInternal("AccentPrimaryBrush", new SolidColorBrush(accentColor));
             }
 
-            SetResourceOverrideInternal("CanvasBackgroundType", settings.CanvasBackgroundType);
+            SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
             
             CustomizationApplied?.Invoke(settings);
         });

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Remex.Core.Models.IPC;
 using Remex.Core.Services;
 using Remex.Core.Messages;
 
@@ -63,7 +64,10 @@ public partial class AppLauncherViewModel : ObservableObject
         }
         else
         {
-            var request = new CommandRequest("LaunchApp", entry.TargetPath);
+            var request = new CommandRequest("LaunchApp", new System.Collections.Generic.Dictionary<string, string>
+            {
+                ["TargetPath"] = entry.TargetPath,
+            });
             await RemExLocalIPC.SendCommandAsync(request);
         }
     }

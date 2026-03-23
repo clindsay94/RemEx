@@ -1,8 +1,8 @@
 using System;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Remex.Core.Models;
+using Remex.Core.Serialization;
 
 namespace Remex.Core.Services;
 
@@ -19,11 +19,6 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
 {
     private static readonly string DefaultAppDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
     private readonly string _filePath;
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
 
     public DashboardProfileStorageService()
     {
@@ -39,7 +34,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
         try
         {
             var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions) ?? new DashboardProfile();
+            return RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.DashboardProfile) ?? new DashboardProfile();
         }
         catch
         {
@@ -49,7 +44,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
 
     public async Task SaveProfileAsync(DashboardProfile profile)
     {
-        var json = JsonSerializer.Serialize(profile, JsonOptions);
+        var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
         await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
     }
 }

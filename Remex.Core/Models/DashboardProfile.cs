@@ -1,9 +1,10 @@
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Remex.Core.Models;
 
 /// <summary>
-/// Persisted state of a single card on the Canvas dashboard.
+/// Persisted state of a single card within a saved dashboard layout.
 /// </summary>
 public record CardState
 {
@@ -16,11 +17,13 @@ public record CardState
     /// <summary>HWiNFO sensor name this card is bound to (null for non-sensor cards).</summary>
     public string? SensorId { get; init; }
 
-    /// <summary>Canvas.Left coordinate.</summary>
-    public double PositionX { get; init; }
+    /// <summary>Horizontal position within the saved layout.</summary>
+    [JsonPropertyName("positionX")]
+    public double Left { get; init; }
 
-    /// <summary>Canvas.Top coordinate.</summary>
-    public double PositionY { get; init; }
+    /// <summary>Vertical position within the saved layout.</summary>
+    [JsonPropertyName("positionY")]
+    public double Top { get; init; }
 
     /// <summary>Current card width in pixels.</summary>
     public double Width { get; init; } = 220;
@@ -28,8 +31,33 @@ public record CardState
     /// <summary>Current card height in pixels.</summary>
     public double Height { get; init; } = 160;
 
-    /// <summary>Stacking order — higher values render on top.</summary>
-    public int ZIndex { get; init; }
+    /// <summary>Relative render order within the layout.</summary>
+    [JsonPropertyName("zIndex")]
+    public int Layer { get; init; }
+
+    /// <summary>Compatibility alias for older canvas-oriented callers.</summary>
+    [JsonIgnore]
+    public double PositionX
+    {
+        get => Left;
+        init => Left = value;
+    }
+
+    /// <summary>Compatibility alias for older canvas-oriented callers.</summary>
+    [JsonIgnore]
+    public double PositionY
+    {
+        get => Top;
+        init => Top = value;
+    }
+
+    /// <summary>Compatibility alias for older canvas-oriented callers.</summary>
+    [JsonIgnore]
+    public int ZIndex
+    {
+        get => Layer;
+        init => Layer = value;
+    }
 }
 
 /// <summary>
@@ -73,8 +101,9 @@ public record DashboardProfile
 /// </summary>
 public record CustomizationSettings
 {
-    /// <summary>Base .axaml theme file to load (e.g. "BaseDarkGlass").</summary>
-    public string BaseTheme { get; init; } = "BaseDarkGlass";
+    /// <summary>Identifier for the selected presentation style.</summary>
+    [JsonPropertyName("baseTheme")]
+    public string ThemeId { get; init; } = "BaseDarkGlass";
 
     /// <summary>Corner radius in pixels for cards and panels.</summary>
     public double CornerRadius { get; init; } = 16;
@@ -88,6 +117,23 @@ public record CustomizationSettings
     /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
     public string AccentColor { get; init; } = "#6C4CFF";
 
-    /// <summary>Canvas background material type ("Mica", "Acrylic", "Solid").</summary>
-    public string CanvasBackgroundType { get; init; } = "Mica";
+    /// <summary>Requested window or surface material treatment.</summary>
+    [JsonPropertyName("canvasBackgroundType")]
+    public string BackgroundMaterial { get; init; } = "Mica";
+
+    /// <summary>Compatibility alias for older UI clients.</summary>
+    [JsonIgnore]
+    public string BaseTheme
+    {
+        get => ThemeId;
+        init => ThemeId = value;
+    }
+
+    /// <summary>Compatibility alias for older UI clients.</summary>
+    [JsonIgnore]
+    public string CanvasBackgroundType
+    {
+        get => BackgroundMaterial;
+        init => BackgroundMaterial = value;
+    }
 }

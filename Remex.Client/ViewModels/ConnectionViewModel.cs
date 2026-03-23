@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core;
 using Remex.Core.Messages;
+using Remex.Core.Services.Network;
 
 namespace Remex.Client.ViewModels;
 
@@ -46,13 +47,13 @@ public partial class ConnectionViewModel : ObservableObject
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
-    private readonly Remex.Client.Services.Network.MdnsDiscoveryService? _discoveryService;
+    private readonly IMdnsDiscoveryService? _discoveryService;
     private readonly Remex.Client.Services.DashboardLayoutService? _layoutService;
 
     public ConnectionViewModel() : this(null, null) { }
 
     public ConnectionViewModel(
-        Remex.Client.Services.Network.MdnsDiscoveryService? discoveryService,
+        IMdnsDiscoveryService? discoveryService,
         Remex.Client.Services.DashboardLayoutService? layoutService)
     {
         _discoveryService = discoveryService;

@@ -104,3 +104,12 @@ AGENT_COMMS.md
 .gitconfig
 package-lock.json
 patch_pingpong.sh
+node_modules
+package.json
+package-lock.json
+dotnet-install.sh
+package-lock.json
+package-lock.json
+/RemEx.Android/app
+/Remex.Client.Android.old
+libgcc.a

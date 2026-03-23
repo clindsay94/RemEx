@@ -1,8 +1,9 @@
 using System;
 using System.IO.Pipes;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Remex.Core.Models.IPC;
+using Remex.Core.Serialization;
 
 namespace Remex.Core.Services;
 
@@ -17,14 +18,14 @@ public static class RemExLocalIPC
     /// <summary>
     /// Sends a command to the IPC Named Pipe server.
     /// </summary>
-    public static async Task<Models.CommandResponse> SendCommandAsync(Models.CommandRequest request, CancellationToken cancellationToken = default)
+    public static async Task<CommandResponse> SendCommandAsync(CommandRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
             using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await client.ConnectAsync(2000, cancellationToken);
 
-            var json = JsonSerializer.Serialize(request);
+            var json = RemexJson.Serialize(request, RemexJsonSerializerContext.Default.CommandRequest);
             await using var writer = new System.IO.StreamWriter(client, leaveOpen: true) { AutoFlush = true };
             await writer.WriteLineAsync(json);
 
@@ -35,15 +36,15 @@ public static class RemExLocalIPC
 
             if (responseJson == null)
             {
-                return new Models.CommandResponse(false, "No response from service.");
+                return new CommandResponse(false, "No response from service.", null);
             }
 
-            return JsonSerializer.Deserialize<Models.CommandResponse>(responseJson)
-                   ?? new Models.CommandResponse(false, "Failed to deserialize response.");
+                 return RemexJson.Deserialize(responseJson, RemexJsonSerializerContext.Default.CommandResponse)
+                   ?? new CommandResponse(false, "Failed to deserialize response.", null);
         }
         catch (Exception ex)
         {
-            return new Models.CommandResponse(false, $"IPC Error: {ex.Message}");
+            return new CommandResponse(false, $"IPC Error: {ex.Message}", ex.ToString());
         }
     }
 }

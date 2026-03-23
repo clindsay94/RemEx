@@ -1,6 +1,5 @@
 using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
+using Remex.Core.Serialization;
 
 namespace Remex.Core.Messages;
 
@@ -9,16 +8,11 @@ namespace Remex.Core.Messages;
 /// </summary>
 public static class MessageSerializer
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
     /// <summary>
     /// Serialize a message to a UTF-8 JSON byte array.
     /// </summary>
     public static byte[] Serialize(RemexMessage message)
-        => JsonSerializer.SerializeToUtf8Bytes(message, JsonOptions);
+        => RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
 
     /// <summary>
     /// Deserialize a UTF-8 JSON byte span into a <see cref="RemexMessage"/>.
@@ -28,9 +22,9 @@ public static class MessageSerializer
     {
         try
         {
-            return JsonSerializer.Deserialize<RemexMessage>(utf8Json, JsonOptions);
+            return RemexJson.Deserialize(utf8Json, RemexJsonSerializerContext.Default.RemexMessage);
         }
-        catch (JsonException)
+        catch (System.Text.Json.JsonException)
         {
             return null;
         }

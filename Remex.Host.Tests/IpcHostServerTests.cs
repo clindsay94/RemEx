@@ -3,7 +3,8 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
-using Remex.Core.Models;
+using Remex.Core.Models.IPC;
+using Remex.Core.Serialization;
 using Remex.Core.Services;
 using Remex.Host.Services;
 
@@ -14,10 +15,11 @@ public class IpcHostServerTests : IAsyncLifetime
     private readonly FakeAppLauncherService _commandService = new();
     private readonly IpcHostServer _server;
     private readonly CancellationTokenSource _cts = new();
+    private readonly string _pipeName = $"RemexIPC.Tests.{Guid.NewGuid():N}";
 
     public IpcHostServerTests()
     {
-        _server = new IpcHostServer(NullLogger<IpcHostServer>.Instance, _commandService);
+        _server = new IpcHostServer(NullLogger<IpcHostServer>.Instance, _commandService, _pipeName);
     }
 
     public async Task InitializeAsync()
@@ -37,7 +39,7 @@ public class IpcHostServerTests : IAsyncLifetime
     [Fact]
     public async Task SendCommand_UnknownAction_ReturnsFailure()
     {
-        var response = await SendIpcCommand(new CommandRequest("UnknownAction"));
+        var response = await SendIpcCommand(_pipeName, new CommandRequest("UnknownAction", null));
 
         Assert.False(response.Success);
         Assert.Contains("Unknown IPC Action", response.Message);
@@ -46,7 +48,7 @@ public class IpcHostServerTests : IAsyncLifetime
     [Fact]
     public async Task SendCommand_LaunchApp_MissingPath_ReturnsFailure()
     {
-        var response = await SendIpcCommand(new CommandRequest("LaunchApp", null));
+        var response = await SendIpcCommand(_pipeName, new CommandRequest("LaunchApp", null));
 
         Assert.False(response.Success);
         Assert.Contains("No target path provided", response.Message);
@@ -55,28 +57,31 @@ public class IpcHostServerTests : IAsyncLifetime
     [Fact]
     public async Task SendCommand_LaunchApp_ValidPath_ReturnsSuccess()
     {
-        var response = await SendIpcCommand(new CommandRequest("LaunchApp", "/usr/bin/true"));
+        var response = await SendIpcCommand(_pipeName, new CommandRequest("LaunchApp", new Dictionary<string, string>
+        {
+            ["TargetPath"] = "/usr/bin/true",
+        }));
 
         Assert.True(response.Success);
         Assert.Contains("launched successfully", response.Message);
         Assert.Contains("/usr/bin/true", _commandService.LaunchedPaths);
     }
 
-    private static async Task<CommandResponse> SendIpcCommand(CommandRequest request)
+    private static async Task<CommandResponse> SendIpcCommand(string pipeName, CommandRequest request)
     {
-        using var client = new NamedPipeClientStream(".", RemExLocalIPC.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+        using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         await client.ConnectAsync(5000);
 
         using var writer = new StreamWriter(client, leaveOpen: true) { AutoFlush = true };
         using var reader = new StreamReader(client, leaveOpen: true);
 
-        var json = JsonSerializer.Serialize(request);
+        var json = JsonSerializer.Serialize(request, RemexJson.Compact);
         await writer.WriteLineAsync(json);
 
         var responseJson = await reader.ReadLineAsync();
         Assert.NotNull(responseJson);
 
-        return JsonSerializer.Deserialize<CommandResponse>(responseJson!)
+        return JsonSerializer.Deserialize<CommandResponse>(responseJson!, RemexJson.Compact)
                ?? throw new InvalidOperationException("Failed to deserialize IPC response.");
     }
 

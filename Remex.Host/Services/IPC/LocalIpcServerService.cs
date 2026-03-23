@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models.IPC;
+using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
 using Remex.Core.Services.Network;
 
@@ -129,7 +130,7 @@ public class LocalIpcServerService : BackgroundService
             CommandRequest? request = null;
             try
             {
-                request = JsonSerializer.Deserialize<CommandRequest>(json);
+                request = JsonSerializer.Deserialize<CommandRequest>(json, RemexJson.Compact);
             }
             catch (Exception ex)
             {
@@ -147,7 +148,7 @@ public class LocalIpcServerService : BackgroundService
                 response = await ExecuteCommandAsync(request);
             }
 
-            var responseJson = JsonSerializer.Serialize(response);
+            var responseJson = JsonSerializer.Serialize(response, RemexJson.Compact);
             var responseBytes = Encoding.UTF8.GetBytes(responseJson);
             await pipeServer.WriteAsync(responseBytes, token);
         }

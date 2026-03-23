@@ -27,11 +27,11 @@ public partial class MainWindow : Window
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (settings.CanvasBackgroundType == "Mica")
+            if (settings.BackgroundMaterial == "Mica")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
             }
-            else if (settings.CanvasBackgroundType == "Acrylic")
+            else if (settings.BackgroundMaterial == "Acrylic")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
             }

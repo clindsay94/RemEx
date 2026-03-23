@@ -8,6 +8,7 @@ using Remex.Client.Services;
 using Remex.Client.ViewModels;
 using Remex.Client.Views;
 using Remex.Core.Services;
+using Remex.Core.Services.Network;
 
 namespace Remex.Client;
 
@@ -55,7 +56,7 @@ public partial class App : Application
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
         collection.AddSingleton<ThemeService>();
-        collection.AddSingleton<Remex.Client.Services.Network.MdnsDiscoveryService>();
+        collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
 
         // Register ViewModels
         collection.AddSingleton<ConnectionViewModel>();

@@ -5,7 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Remex.Core.Models;
+using Remex.Core.Models.IPC;
+using Remex.Core.Serialization;
 using Remex.Core.Services;
 
 namespace Remex.Host.Services;
@@ -17,11 +18,13 @@ public class IpcHostServer : BackgroundService
 {
     private readonly ILogger<IpcHostServer> _logger;
     private readonly IAppLauncherService _appLauncherService;
+    private readonly string _pipeName;
 
-    public IpcHostServer(ILogger<IpcHostServer> logger, IAppLauncherService appLauncherService)
+    public IpcHostServer(ILogger<IpcHostServer> logger, IAppLauncherService appLauncherService, string? pipeName = null)
     {
         _logger = logger;
         _appLauncherService = appLauncherService;
+        _pipeName = string.IsNullOrWhiteSpace(pipeName) ? RemExLocalIPC.PipeName : pipeName;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -31,7 +34,7 @@ public class IpcHostServer : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var server = new NamedPipeServerStream(
-                RemExLocalIPC.PipeName,
+                _pipeName,
                 PipeDirection.InOut,
                 NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Byte,
@@ -69,7 +72,7 @@ public class IpcHostServer : BackgroundService
             var requestJson = await reader.ReadLineAsync(cancellationToken);
             if (requestJson == null) return;
 
-            var request = JsonSerializer.Deserialize<CommandRequest>(requestJson);
+            var request = JsonSerializer.Deserialize<CommandRequest>(requestJson, RemexJson.Compact);
             if (request == null) return;
 
             CommandResponse response;
@@ -77,29 +80,29 @@ public class IpcHostServer : BackgroundService
             switch (request.Action)
             {
                 case "LaunchApp":
-                    if (string.IsNullOrEmpty(request.TargetPath))
+                    if (request.Parameters == null || !request.Parameters.TryGetValue("TargetPath", out var targetPath) || string.IsNullOrWhiteSpace(targetPath))
                     {
-                        response = new CommandResponse(false, "No target path provided.");
+                        response = new CommandResponse(false, "No target path provided.", null);
                         break;
                     }
 
                     try
                     {
-                        await _appLauncherService.LaunchAppAsync(request.TargetPath);
-                        response = new CommandResponse(true, "App launched successfully.");
+                        await _appLauncherService.LaunchAppAsync(targetPath);
+                        response = new CommandResponse(true, "App launched successfully.", null);
                     }
                     catch (Exception ex)
                     {
-                        response = new CommandResponse(false, $"Error launching app: {ex.Message}");
+                        response = new CommandResponse(false, $"Error launching app: {ex.Message}", ex.ToString());
                     }
                     break;
 
                 default:
-                    response = new CommandResponse(false, $"Unknown IPC Action: {request.Action}");
+                    response = new CommandResponse(false, $"Unknown IPC Action: {request.Action}", null);
                     break;
             }
 
-            var responseJson = JsonSerializer.Serialize(response);
+            var responseJson = JsonSerializer.Serialize(response, RemexJson.Compact);
             await writer.WriteLineAsync(responseJson);
         }
         catch (Exception ex)

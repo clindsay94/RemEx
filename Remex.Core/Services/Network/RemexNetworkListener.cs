@@ -4,12 +4,12 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models.IPC;
+using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
 
 namespace Remex.Core.Services.Network;
@@ -140,7 +140,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 CommandRequest? request = null;
                 try
                 {
-                    request = JsonSerializer.Deserialize<CommandRequest>(json);
+                    request = RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.CommandRequest);
                 }
                 catch (Exception ex)
                 {
@@ -158,7 +158,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 }
 
                 // 4. Send length-prefixed response
-                var responseJson = JsonSerializer.Serialize(response);
+                var responseJson = RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
                 var responseBytes = Encoding.UTF8.GetBytes(responseJson);
                 var responseLengthBuffer = new byte[4];
                 BinaryPrimitives.WriteInt32BigEndian(responseLengthBuffer, responseBytes.Length);
