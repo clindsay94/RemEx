@@ -11,9 +11,12 @@ import androidx.navigation.compose.*
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.RemoteControlScreen
+import com.clindsay94.remex.ui.screens.RemoteMouseScreen
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
+import com.clindsay94.remex.ui.screens.PersonalizationScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
+import com.clindsay94.remex.ui.screens.SplashScreen
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,8 +62,18 @@ fun AppNavigation() {
     ) {
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route
+            startDestination = Screen.Splash.route
         ) {
+            composable(Screen.Splash.route) {
+                SplashScreen(
+                    onFinished = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
             composable(Screen.Dashboard.route) {
                 DashboardScreen(onMenuClick = onMenuClick)
             }
@@ -70,6 +83,9 @@ fun AppNavigation() {
             composable(Screen.RemoteControl.route) {
                 RemoteControlScreen(onMenuClick = onMenuClick)
             }
+            composable(Screen.RemoteMouse.route) {
+                RemoteMouseScreen(onMenuClick = onMenuClick)
+            }
             composable(Screen.AppLauncher.route) {
                 AppLauncherScreen(onMenuClick = onMenuClick)
             }
@@ -78,6 +94,9 @@ fun AppNavigation() {
             }
             composable(Screen.RemoteDesktop.route) {
                 RemoteDesktopScreen(onMenuClick = onMenuClick)
+            }
+            composable(Screen.Personalization.route) {
+                PersonalizationScreen(onMenuClick = onMenuClick)
             }
         }
     }

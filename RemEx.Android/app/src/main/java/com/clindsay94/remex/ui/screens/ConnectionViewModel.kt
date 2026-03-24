@@ -13,8 +13,11 @@ import org.json.JSONObject
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
 
-    val host = settingsManager.hostFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), "")
-    val port = settingsManager.portFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 5005)
+    val connectionPreferences = settingsManager.connectionPreferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.ConnectionPreferences())
+
+    val remoteDesktopPreferences = settingsManager.remoteDesktopPreferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.RemoteDesktopPreferences())
 
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
@@ -43,9 +46,30 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun connect(newHost: String, newPort: Int) {
+    fun connect(
+        newHost: String,
+        newPort: Int,
+        macAddress: String,
+        broadcastIp: String,
+        subnetMask: String,
+        desktopQuality: Int,
+        desktopTargetFps: Int,
+        desktopScale: Float
+    ) {
         viewModelScope.launch {
-            settingsManager.saveSettings(newHost, newPort)
+            settingsManager.saveConnectionSettings(
+                host = newHost,
+                port = newPort,
+                mac = macAddress,
+                broadcast = broadcastIp,
+                subnetMask = subnetMask
+            )
+            settingsManager.saveRemoteDesktopDefaults(
+                quality = desktopQuality,
+                targetFps = desktopTargetFps,
+                scale = desktopScale
+            )
+
             _isConnecting.value = true
             _connectionStatus.value = "Connecting to $newHost:$newPort..."
 

@@ -188,20 +188,35 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             switch (request.Action.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    _commandService.Shutdown();
+                    _commandService.Shutdown(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Shutdown command executed successfully.", null);
+                case "FORCESHUTDOWN":
+                    _commandService.ForceShutdown(ParseDelaySeconds(request.Parameters));
+                    return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
                 case "RESTART":
-                    _commandService.Restart();
+                    _commandService.Restart(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart command executed successfully.", null);
                 case "FORCERESTART":
-                    _commandService.ForceRestart();
+                    _commandService.ForceRestart(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Restart command executed successfully.", null);
                 case "RESTARTTOUEFI":
-                    _commandService.RestartToUefi();
+                    _commandService.RestartToUefi(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
+                case "SLEEP":
+                    _commandService.Sleep();
+                    return new CommandResponse(true, "Sleep command executed successfully.", null);
+                case "HIBERNATE":
+                    _commandService.Hibernate();
+                    return new CommandResponse(true, "Hibernate command executed successfully.", null);
+                case "SIGNOUT":
+                    _commandService.SignOut();
+                    return new CommandResponse(true, "SignOut command executed successfully.", null);
                 case "LOCK":
                     _commandService.Lock();
                     return new CommandResponse(true, "Lock command executed successfully.", null);
+                case "MONITOROFF":
+                    _commandService.MonitorOff();
+                    return new CommandResponse(true, "Monitor off command executed successfully.", null);
                 case "WAKEONLAN":
                     if (request.Parameters != null && request.Parameters.TryGetValue("MacAddress", out var mac))
                     {
@@ -229,5 +244,25 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     {
         StopListening();
         _cts?.Dispose();
+    }
+
+    private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
+    {
+        if (parameters == null)
+        {
+            return 0;
+        }
+
+        foreach (var key in new[] { "DelaySeconds", "Seconds", "TimerSeconds" })
+        {
+            if (parameters.TryGetValue(key, out var raw)
+                && int.TryParse(raw, out var parsed)
+                && parsed > 0)
+            {
+                return Math.Clamp(parsed, 0, 315360000);
+            }
+        }
+
+        return 0;
     }
 }

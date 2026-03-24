@@ -167,19 +167,19 @@ public sealed class PingPongHandler(
             switch (message.CommandAction!.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    commandService.Shutdown();
+                    commandService.Shutdown(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Shutdown executed.");
                 case "FORCESHUTDOWN":
-                    commandService.ForceShutdown();
+                    commandService.ForceShutdown(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force shutdown executed.");
                 case "RESTART":
-                    commandService.Restart();
+                    commandService.Restart(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart executed.");
                 case "FORCERESTART":
-                    commandService.ForceRestart();
+                    commandService.ForceRestart(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force restart executed.");
                 case "RESTARTTOUEFI":
-                    commandService.RestartToUefi();
+                    commandService.RestartToUefi(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
                 case "SLEEP":
                     commandService.Sleep();
@@ -187,6 +187,9 @@ public sealed class PingPongHandler(
                 case "HIBERNATE":
                     commandService.Hibernate();
                     return MakeCommandResponse(true, "Hibernate executed.");
+                case "MONITOROFF":
+                    commandService.MonitorOff();
+                    return MakeCommandResponse(true, "Monitor off executed.");
                 case "SIGNOUT":
                     commandService.SignOut();
                     return MakeCommandResponse(true, "Sign out executed.");
@@ -243,6 +246,26 @@ public sealed class PingPongHandler(
         CommandSuccess = success,
         CommandMessage = msg,
     };
+
+    private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
+    {
+        if (parameters == null)
+        {
+            return 0;
+        }
+
+        foreach (var key in new[] { "DelaySeconds", "Seconds", "TimerSeconds" })
+        {
+            if (parameters.TryGetValue(key, out var raw)
+                && int.TryParse(raw, out var parsed)
+                && parsed > 0)
+            {
+                return Math.Clamp(parsed, 0, 315360000);
+            }
+        }
+
+        return 0;
+    }
 
     private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)
     {

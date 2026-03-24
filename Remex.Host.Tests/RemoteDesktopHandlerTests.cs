@@ -21,14 +21,15 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
     private class MockCommandService : Remex.Core.Services.Command.ISystemCommandService
     {
         public void Lock() { }
-        public void Shutdown() { }
-        public void ForceShutdown() { }
-        public void Restart() { }
-        public void ForceRestart() { }
-        public void RestartToUefi() { }
+        public void Shutdown(int delaySeconds = 0) { }
+        public void ForceShutdown(int delaySeconds = 0) { }
+        public void Restart(int delaySeconds = 0) { }
+        public void ForceRestart(int delaySeconds = 0) { }
+        public void RestartToUefi(int delaySeconds = 0) { }
         public void Sleep() { }
         public void Hibernate() { }
         public void SignOut() { }
+        public void MonitorOff() { }
     }
 
     private class MockLauncherStorageService : Remex.Core.Services.ILauncherStorageService

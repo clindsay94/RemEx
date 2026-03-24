@@ -4,7 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -16,10 +22,48 @@ data class ProcessInfo(
     val ram: Double
 )
 
+enum class ProcessSortField {
+    NAME,
+    CPU,
+    RAM,
+    PID
+}
+
 class TaskManagerViewModel : ViewModel() {
 
     private val _processes = MutableStateFlow<List<ProcessInfo>>(emptyList())
-    val processes: StateFlow<List<ProcessInfo>> = _processes.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    private val _sortField = MutableStateFlow(ProcessSortField.CPU)
+    private val _sortDescending = MutableStateFlow(true)
+
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+    val sortField: StateFlow<ProcessSortField> = _sortField.asStateFlow()
+    val sortDescending: StateFlow<Boolean> = _sortDescending.asStateFlow()
+
+    val processes: StateFlow<List<ProcessInfo>> = combine(
+        _processes,
+        _searchQuery,
+        _sortField,
+        _sortDescending
+    ) { processes, search, field, descending ->
+        val filtered = if (search.isBlank()) {
+            processes
+        } else {
+            val query = search.trim().lowercase()
+            processes.filter {
+                it.name.lowercase().contains(query) || it.id.toString().contains(query)
+            }
+        }
+
+        val sorted = when (field) {
+            ProcessSortField.NAME -> filtered.sortedBy { it.name.lowercase() }
+            ProcessSortField.CPU -> filtered.sortedBy { it.cpu }
+            ProcessSortField.RAM -> filtered.sortedBy { it.ram }
+            ProcessSortField.PID -> filtered.sortedBy { it.id }
+        }
+
+        if (descending) sorted.reversed() else sorted
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         viewModelScope.launch {
@@ -29,20 +73,35 @@ class TaskManagerViewModel : ViewModel() {
                     val list = mutableListOf<ProcessInfo>()
                     for (i in 0 until array.length()) {
                         val obj = array.getJSONObject(i)
-                        list.add(ProcessInfo(
-                            id = obj.getInt("id"),
-                            name = obj.getString("name"),
-                            cpu = obj.optDouble("cpuUsage", 0.0),
-                            ram = obj.optDouble("memoryUsage", 0.0) / (1024 * 1024) // Convert to MB
-                        ))
+                        list.add(
+                            ProcessInfo(
+                                id = obj.getInt("id"),
+                                name = obj.getString("name"),
+                                cpu = obj.optDouble("cpuUsage", 0.0),
+                                ram = obj.optDouble("memoryUsage", 0.0) / (1024 * 1024)
+                            )
+                        )
                     }
-                    _processes.value = list.sortedByDescending { it.cpu }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    _processes.value = list
+                } catch (_: Exception) {
                 }
             }
         }
         refreshProcesses()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updateSortField(field: ProcessSortField) {
+        if (_sortField.value == field) {
+            _sortDescending.value = !_sortDescending.value
+            return
+        }
+
+        _sortField.value = field
+        _sortDescending.value = field != ProcessSortField.NAME
     }
 
     fun refreshProcesses() {
@@ -66,8 +125,7 @@ class TaskManagerViewModel : ViewModel() {
                     })
                 }
                 RemexCoreClient.SendCommand(request.toString())
-                // Refresh after a short delay
-                kotlinx.coroutines.delay(1000)
+                delay(1000)
                 refreshProcesses()
             }
         }

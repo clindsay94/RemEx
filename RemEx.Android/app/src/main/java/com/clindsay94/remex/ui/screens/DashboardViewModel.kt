@@ -6,15 +6,45 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
+import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.math.roundToInt
+
+enum class HomeCardType { PC_STATUS, TELEMETRY }
+enum class TelemetryDisplayMode { VALUE, GAUGE, LINE }
 
 data class TelemetryState(
     val cpuUsage: Int = 0,
     val gpuUsage: Int = 0,
     val ramUsage: Int = 0
+)
+
+data class TelemetrySensor(
+    val id: String,
+    val name: String,
+    val category: String,
+    val value: Double,
+    val unit: String
+)
+
+data class HomeCardState(
+    val id: String,
+    val title: String,
+    val type: HomeCardType,
+    val sensorId: String? = null,
+    val xDp: Float = 12f,
+    val yDp: Float = 12f,
+    val widthDp: Float = 160f,
+    val heightDp: Float = 140f,
+    val displayMode: TelemetryDisplayMode = TelemetryDisplayMode.GAUGE
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,12 +56,33 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _telemetryState = MutableStateFlow(TelemetryState())
     val telemetryState: StateFlow<TelemetryState> = _telemetryState.asStateFlow()
 
+    private val _telemetrySensors = MutableStateFlow<List<TelemetrySensor>>(emptyList())
+    val telemetrySensors: StateFlow<List<TelemetrySensor>> = _telemetrySensors.asStateFlow()
+
+    private val _telemetryHistory = MutableStateFlow<Map<String, List<Float>>>(emptyMap())
+    val telemetryHistory: StateFlow<Map<String, List<Float>>> = _telemetryHistory.asStateFlow()
+
+    private val _homeCards = MutableStateFlow(defaultCards())
+    val homeCards: StateFlow<List<HomeCardState>> = _homeCards.asStateFlow()
+
+    private val _enabledCardIds = MutableStateFlow(setOf("pc_status", "sensor:cpu", "sensor:gpu", "sensor:ram"))
+    val enabledCardIds: StateFlow<Set<String>> = _enabledCardIds.asStateFlow()
+
+    val cardCornerRadius = settingsManager.cardCornerRadiusFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
+
+    val cardOpacity = settingsManager.cardOpacityFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
     init {
+        loadSavedHomeLayout()
+
         viewModelScope.launch {
             RemexClientManager.telemetry.collect { telemetryData ->
                 try {
                     val json = JSONObject(telemetryData)
                     val sensors = json.optJSONArray("sensors")
+
                     _telemetryState.update {
                         it.copy(
                             cpuUsage = sensors.extractPercent("CPU", listOf("cpu", "usage")),
@@ -39,8 +90,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                             ramUsage = sensors.extractPercent("Memory", listOf("memory", "load"))
                         )
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+
+                    val parsed = parseSensors(sensors)
+                    _telemetrySensors.value = parsed
+                    updateTelemetryHistory(parsed)
+                    ensureDefaultCardsExist(parsed)
+                } catch (_: Exception) {
                 }
             }
         }
@@ -56,22 +111,256 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         RemexCoreClient.WakePc(mac, broadcast, 9)
                     }
                 }
-            } catch (e: Throwable) {
-                e.printStackTrace()
+            } catch (_: Throwable) {
             }
         }
     }
 
-    fun sendCommand(command: String) {
-        try {
-            if (RemexCoreClient.isLibraryLoaded) {
-                val request = JSONObject().apply {
-                    put("action", command)
+    fun setCardEnabled(cardId: String, enabled: Boolean) {
+        if (enabled) {
+            _enabledCardIds.update { it + cardId }
+            ensureCardExists(cardId)
+        } else {
+            _enabledCardIds.update { it - cardId }
+        }
+        persistHomeLayout()
+    }
+
+    fun moveCard(cardId: String, deltaXDp: Float, deltaYDp: Float) {
+        _homeCards.update { cards ->
+            cards.map { card ->
+                if (card.id == cardId) {
+                    card.copy(
+                        xDp = (card.xDp + deltaXDp).coerceAtLeast(0f),
+                        yDp = (card.yDp + deltaYDp).coerceAtLeast(0f)
+                    )
+                } else {
+                    card
                 }
-                RemexCoreClient.SendCommand(request.toString())
             }
-        } catch (e: Throwable) {
-            e.printStackTrace()
+        }
+    }
+
+    fun resizeCard(cardId: String, deltaWidthDp: Float, deltaHeightDp: Float) {
+        _homeCards.update { cards ->
+            cards.map { card ->
+                if (card.id == cardId) {
+                    card.copy(
+                        widthDp = (card.widthDp + deltaWidthDp).coerceIn(120f, 420f),
+                        heightDp = (card.heightDp + deltaHeightDp).coerceIn(100f, 320f)
+                    )
+                } else {
+                    card
+                }
+            }
+        }
+    }
+
+    fun cycleTelemetryDisplayMode(cardId: String) {
+        _homeCards.update { cards ->
+            cards.map { card ->
+                if (card.id == cardId && card.type == HomeCardType.TELEMETRY) {
+                    val next = when (card.displayMode) {
+                        TelemetryDisplayMode.VALUE -> TelemetryDisplayMode.GAUGE
+                        TelemetryDisplayMode.GAUGE -> TelemetryDisplayMode.LINE
+                        TelemetryDisplayMode.LINE -> TelemetryDisplayMode.VALUE
+                    }
+                    card.copy(displayMode = next)
+                } else {
+                    card
+                }
+            }
+        }
+        persistHomeLayout()
+    }
+
+    fun saveCardLayout() {
+        persistHomeLayout()
+    }
+
+    private fun ensureDefaultCardsExist(sensors: List<TelemetrySensor>) {
+        val telemetryDefaults = listOf("sensor:cpu", "sensor:gpu", "sensor:ram")
+        telemetryDefaults.forEach { requiredId ->
+            if (sensors.any { it.id == requiredId } && _enabledCardIds.value.contains(requiredId)) {
+                ensureCardExists(requiredId)
+            }
+        }
+    }
+
+    private fun ensureCardExists(cardId: String) {
+        if (_homeCards.value.any { it.id == cardId }) {
+            return
+        }
+
+        val nextOffset = (_homeCards.value.size * 18).toFloat()
+        val card = if (cardId == "pc_status") {
+            HomeCardState(
+                id = "pc_status",
+                title = "PC Status",
+                type = HomeCardType.PC_STATUS,
+                xDp = 12f + nextOffset,
+                yDp = 12f + nextOffset,
+                widthDp = 220f,
+                heightDp = 140f
+            )
+        } else {
+            val sensor = _telemetrySensors.value.firstOrNull { it.id == cardId }
+                ?: return
+            HomeCardState(
+                id = cardId,
+                title = sensor.name,
+                type = HomeCardType.TELEMETRY,
+                sensorId = sensor.id,
+                xDp = 12f + nextOffset,
+                yDp = 12f + nextOffset,
+                widthDp = 170f,
+                heightDp = 150f,
+                displayMode = TelemetryDisplayMode.GAUGE
+            )
+        }
+
+        _homeCards.update { it + card }
+    }
+
+    private fun parseSensors(sensors: JSONArray?): List<TelemetrySensor> {
+        if (sensors == null) {
+            return emptyList()
+        }
+
+        val parsed = mutableListOf<TelemetrySensor>()
+        for (index in 0 until sensors.length()) {
+            val sensor = sensors.optJSONObject(index) ?: continue
+            val name = sensor.optString("name")
+            val category = sensor.optString("category")
+            val value = sensor.optDouble("value", Double.NaN)
+            val unit = sensor.optString("unit")
+            if (name.isBlank() || value.isNaN()) {
+                continue
+            }
+
+            val normalized = normalizeSensorId(name, category)
+            parsed += TelemetrySensor(
+                id = normalized,
+                name = name,
+                category = category,
+                value = value,
+                unit = unit
+            )
+        }
+
+        return parsed
+    }
+
+    private fun updateTelemetryHistory(sensors: List<TelemetrySensor>) {
+        _telemetryHistory.update { current ->
+            val mutable = current.toMutableMap()
+            for (sensor in sensors) {
+                val prior = mutable[sensor.id].orEmpty()
+                val updated = (prior + sensor.value.toFloat()).takeLast(40)
+                mutable[sensor.id] = updated
+            }
+            mutable
+        }
+    }
+
+    private fun loadSavedHomeLayout() {
+        viewModelScope.launch {
+            val savedLayout = settingsManager.homeLayoutJsonFlow.first()
+            val enabledCardsJson = settingsManager.homeEnabledCardsJsonFlow.first()
+
+            if (enabledCardsJson.isNotBlank()) {
+                val enabled = mutableSetOf<String>()
+                val array = JSONArray(enabledCardsJson)
+                for (i in 0 until array.length()) {
+                    val id = array.optString(i)
+                    if (id.isNotBlank()) {
+                        enabled += id
+                    }
+                }
+                if (enabled.isNotEmpty()) {
+                    _enabledCardIds.value = enabled
+                }
+            }
+
+            if (savedLayout.isBlank()) {
+                return@launch
+            }
+
+            val cards = mutableListOf<HomeCardState>()
+            val array = JSONArray(savedLayout)
+            for (i in 0 until array.length()) {
+                val obj = array.optJSONObject(i) ?: continue
+                val type = when (obj.optString("type")) {
+                    "PC_STATUS" -> HomeCardType.PC_STATUS
+                    else -> HomeCardType.TELEMETRY
+                }
+                val mode = when (obj.optString("displayMode")) {
+                    "VALUE" -> TelemetryDisplayMode.VALUE
+                    "LINE" -> TelemetryDisplayMode.LINE
+                    else -> TelemetryDisplayMode.GAUGE
+                }
+
+                val id = obj.optString("id")
+                if (id.isBlank()) continue
+
+                cards += HomeCardState(
+                    id = id,
+                    title = obj.optString("title").ifBlank { id },
+                    type = type,
+                    sensorId = obj.optString("sensorId").takeIf { it.isNotBlank() },
+                    xDp = obj.optDouble("xDp", 12.0).toFloat(),
+                    yDp = obj.optDouble("yDp", 12.0).toFloat(),
+                    widthDp = obj.optDouble("widthDp", 160.0).toFloat(),
+                    heightDp = obj.optDouble("heightDp", 140.0).toFloat(),
+                    displayMode = mode
+                )
+            }
+
+            if (cards.isNotEmpty()) {
+                _homeCards.value = cards
+            }
+        }
+    }
+
+    private fun persistHomeLayout() {
+        viewModelScope.launch {
+            val layoutArray = JSONArray()
+            _homeCards.value.forEach { card ->
+                val obj = JSONObject().apply {
+                    put("id", card.id)
+                    put("title", card.title)
+                    put("type", card.type.name)
+                    put("sensorId", card.sensorId)
+                    put("xDp", card.xDp)
+                    put("yDp", card.yDp)
+                    put("widthDp", card.widthDp)
+                    put("heightDp", card.heightDp)
+                    put("displayMode", card.displayMode.name)
+                }
+                layoutArray.put(obj)
+            }
+
+            val enabledArray = JSONArray()
+            _enabledCardIds.value.forEach { enabledArray.put(it) }
+
+            settingsManager.saveHomeLayout(layoutArray.toString())
+            settingsManager.saveHomeEnabledCards(enabledArray.toString())
+        }
+    }
+
+    private fun normalizeSensorId(name: String, category: String): String {
+        val loweredName = name.lowercase()
+        return when {
+            loweredName.contains("cpu") -> "sensor:cpu"
+            loweredName.contains("gpu") -> "sensor:gpu"
+            loweredName.contains("memory") || loweredName.contains("ram") -> "sensor:ram"
+            else -> {
+                val slug = "${category}_${name}"
+                    .lowercase()
+                    .replace(Regex("[^a-z0-9]+"), "_")
+                    .trim('_')
+                "sensor:$slug"
+            }
         }
     }
 
@@ -107,5 +396,51 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         return if (fallback.isNaN()) 0 else fallback.roundToInt().coerceIn(0, 100)
+    }
+
+    private companion object {
+        fun defaultCards(): List<HomeCardState> {
+            return listOf(
+                HomeCardState(
+                    id = "pc_status",
+                    title = "PC Status",
+                    type = HomeCardType.PC_STATUS,
+                    xDp = 12f,
+                    yDp = 12f,
+                    widthDp = 220f,
+                    heightDp = 140f
+                ),
+                HomeCardState(
+                    id = "sensor:cpu",
+                    title = "CPU",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:cpu",
+                    xDp = 20f,
+                    yDp = 168f,
+                    widthDp = 170f,
+                    heightDp = 150f
+                ),
+                HomeCardState(
+                    id = "sensor:gpu",
+                    title = "GPU",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:gpu",
+                    xDp = 200f,
+                    yDp = 168f,
+                    widthDp = 170f,
+                    heightDp = 150f
+                ),
+                HomeCardState(
+                    id = "sensor:ram",
+                    title = "RAM",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:ram",
+                    xDp = 20f,
+                    yDp = 326f,
+                    widthDp = 170f,
+                    heightDp = 150f
+                )
+            )
+        }
     }
 }

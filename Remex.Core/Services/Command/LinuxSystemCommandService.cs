@@ -5,28 +5,39 @@ namespace Remex.Core.Services.Command;
 
 public class LinuxSystemCommandService : ISystemCommandService
 {
-    public void Shutdown()
+    public void Shutdown(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown", "-h now");
+        ExecuteProcess("shutdown", BuildShutdownArgs("-h", delaySeconds));
     }
 
-    public void ForceShutdown()
+    public void ForceShutdown(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown", "-h now");
+        if (delaySeconds <= 0)
+        {
+            ExecuteProcess("systemctl", "poweroff -i");
+            return;
+        }
+
+        ExecuteProcess("shutdown", BuildShutdownArgs("-h", delaySeconds));
     }
 
-    public void Restart()
+    public void Restart(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown", "-r now");
+        ExecuteProcess("shutdown", BuildShutdownArgs("-r", delaySeconds));
     }
 
-    public void ForceRestart()
+    public void ForceRestart(int delaySeconds = 0)
     {
-        // Linux standard restart is generally forceful enough
-        ExecuteProcess("shutdown", "-r now");
+        if (delaySeconds <= 0)
+        {
+            ExecuteProcess("systemctl", "reboot -i");
+            return;
+        }
+
+        ExecuteProcess("shutdown", BuildShutdownArgs("-r", delaySeconds));
     }
 
-    public void RestartToUefi()
+    public void RestartToUefi(int delaySeconds = 0)
     {
         throw new NotSupportedException("RestartToUefi is not supported on Linux.");
     }
@@ -49,6 +60,22 @@ public class LinuxSystemCommandService : ISystemCommandService
     public void Lock()
     {
         throw new NotSupportedException("Lock is not supported on Linux generically via CLI.");
+    }
+
+    public void MonitorOff()
+    {
+        ExecuteProcess("sh", "-c \"xset dpms force off\"");
+    }
+
+    private static string BuildShutdownArgs(string modeArg, int delaySeconds)
+    {
+        if (delaySeconds <= 0)
+        {
+            return $"{modeArg} now";
+        }
+
+        var minutes = Math.Max(1, (int)Math.Ceiling(delaySeconds / 60d));
+        return $"{modeArg} +{minutes}";
     }
 
     private void ExecuteProcess(string fileName, string arguments)

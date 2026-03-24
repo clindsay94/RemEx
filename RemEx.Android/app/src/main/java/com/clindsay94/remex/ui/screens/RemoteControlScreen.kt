@@ -1,24 +1,72 @@
 package com.clindsay94.remex.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Monitor
+import androidx.compose.material.icons.filled.PowerOff
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+
+private data class RemoteCommandCard(
+    val id: String,
+    val title: String,
+    val action: String,
+    val icon: ImageVector,
+    val requiresConfirmation: Boolean
+)
+
+private val remoteCommandCards = listOf(
+    RemoteCommandCard("lock", "Lock PC", "Lock", Icons.Default.Lock, false),
+    RemoteCommandCard("shutdown", "Shutdown", "Shutdown", Icons.Default.PowerSettingsNew, true),
+    RemoteCommandCard("restart", "Restart", "Restart", Icons.Default.RestartAlt, true),
+    RemoteCommandCard("uefi", "Reboot to UEFI", "RestartToUefi", Icons.Default.Refresh, true),
+    RemoteCommandCard("force_shutdown", "Force Shutdown", "ForceShutdown", Icons.Default.PowerOff, true),
+    RemoteCommandCard("force_restart", "Force Restart", "ForceRestart", Icons.Default.Sensors, true),
+    RemoteCommandCard("sleep", "Sleep", "Sleep", Icons.Default.Bedtime, false),
+    RemoteCommandCard("hibernate", "Hibernate", "Hibernate", Icons.Default.Bedtime, false),
+    RemoteCommandCard("monitor_off", "Turn Off Monitor", "MonitorOff", Icons.Default.Monitor, false),
+    RemoteCommandCard("logoff", "Log Off", "SignOut", Icons.AutoMirrored.Filled.Logout, false)
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,9 +74,9 @@ fun RemoteControlScreen(
     viewModel: RemoteControlViewModel = viewModel(),
     onMenuClick: () -> Unit = {}
 ) {
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    var textValue by remember { mutableStateOf(TextFieldValue("")) }
+    val commandStatus by viewModel.commandStatus.collectAsState()
+    var activeConfirmationId by remember { mutableStateOf<String?>(null) }
+    val timerInputs = remember { mutableStateMapOf<String, String>() }
 
     Scaffold(
         topBar = {
@@ -41,100 +89,144 @@ fun RemoteControlScreen(
                 }
             )
         }
-    ) { padding ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Invisible TextField to capture keyboard input
-            BasicTextField(
-                value = textValue,
-                onValueChange = {
-                    if (it.text.length > textValue.text.length) {
-                        val newChar = it.text.last().toString()
-                        viewModel.sendText(newChar)
-                    }
-                    textValue = it
-                },
-                modifier = Modifier
-                    .size(0.dp)
-                    .focusRequester(focusRequester)
+            Text(
+                text = "System Commands",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
             )
 
-            // Trackpad Area
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            viewModel.sendMouseMove(dragAmount.x.toInt(), dragAmount.y.toInt())
-                        }
-                    },
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 4.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Mouse,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+            Text(
+                text = "Critical actions require confirmation. Optional delay sets shutdown -t seconds.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (!commandStatus.isNullOrBlank()) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
-                            "Trackpad",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            text = commandStatus.orEmpty(),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall
                         )
+                        TextButton(onClick = { viewModel.clearCommandStatus() }) {
+                            Text("Dismiss")
+                        }
                     }
                 }
             }
 
-            // Mouse Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(
-                    onClick = { viewModel.sendMouseClick(1) }, // Left Click
-                    modifier = Modifier.weight(1f).height(80.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-                ) {
-                    Text("Left Click", fontWeight = FontWeight.Bold)
-                }
-                Button(
-                    onClick = { viewModel.sendMouseClick(2) }, // Right Click
-                    modifier = Modifier.weight(1f).height(80.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-                ) {
-                    Text("Right Click", fontWeight = FontWeight.Bold)
+                items(remoteCommandCards) { card ->
+                    CommandCard(
+                        card = card,
+                        isAwaitingConfirmation = activeConfirmationId == card.id,
+                        timerText = timerInputs[card.id].orEmpty(),
+                        onTimerTextChanged = { timerInputs[card.id] = it },
+                        onPrimaryClick = {
+                            if (card.requiresConfirmation) {
+                                activeConfirmationId = if (activeConfirmationId == card.id) null else card.id
+                            } else {
+                                viewModel.sendSystemCommand(card.action)
+                            }
+                        },
+                        onConfirm = {
+                            val delay = timerInputs[card.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
+                            viewModel.sendSystemCommand(card.action, delay)
+                            activeConfirmationId = null
+                        },
+                        onCancel = {
+                            activeConfirmationId = null
+                            timerInputs[card.id] = ""
+                        }
+                    )
                 }
             }
+        }
+    }
+}
 
-            // Extra Controls
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                IconButton(onClick = { viewModel.sendScroll(-100) }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = "Scroll Up")
+@Composable
+private fun CommandCard(
+    card: RemoteCommandCard,
+    isAwaitingConfirmation: Boolean,
+    timerText: String,
+    onTimerTextChanged: (String) -> Unit,
+    onPrimaryClick: () -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (isAwaitingConfirmation) 220.dp else 140.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = card.icon,
+                contentDescription = card.title,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = if (isAwaitingConfirmation) "Confirm choice" else card.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            if (isAwaitingConfirmation) {
+                OutlinedTextField(
+                    value = timerText,
+                    onValueChange = { value -> onTimerTextChanged(value.filter(Char::isDigit).take(6)) },
+                    label = { Text("Timer (seconds)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(onClick = onConfirm, modifier = Modifier.weight(1f)) {
+                        Text("Confirm")
+                    }
+                    TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
+                    }
                 }
-                IconButton(onClick = { viewModel.sendScroll(100) }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = "Scroll Down")
-                }
-                IconButton(onClick = { 
-                    focusRequester.requestFocus()
-                    keyboardController?.show()
-                }) {
-                    Icon(Icons.Default.Keyboard, contentDescription = "Keyboard")
+            } else {
+                Button(onClick = onPrimaryClick, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (card.requiresConfirmation) "Select" else "Run")
                 }
             }
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
@@ -13,15 +14,29 @@ public class IpcClientCommandService : ISystemCommandService
 {
     private const string PipeName = "RemExLocalIPC";
 
-    public void Shutdown() => SendCommandAsync(new CommandRequest("Shutdown", null)).Wait();
-    public void ForceShutdown() => SendCommandAsync(new CommandRequest("ForceShutdown", null)).Wait();
-    public void Restart() => SendCommandAsync(new CommandRequest("Restart", null)).Wait();
-    public void ForceRestart() => SendCommandAsync(new CommandRequest("ForceRestart", null)).Wait();
-    public void RestartToUefi() => SendCommandAsync(new CommandRequest("RestartToUefi", null)).Wait();
+    public void Shutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Shutdown", CreateDelayParameters(delaySeconds))).Wait();
+    public void ForceShutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceShutdown", CreateDelayParameters(delaySeconds))).Wait();
+    public void Restart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Restart", CreateDelayParameters(delaySeconds))).Wait();
+    public void ForceRestart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceRestart", CreateDelayParameters(delaySeconds))).Wait();
+    public void RestartToUefi(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("RestartToUefi", CreateDelayParameters(delaySeconds))).Wait();
     public void Sleep() => SendCommandAsync(new CommandRequest("Sleep", null)).Wait();
     public void Hibernate() => SendCommandAsync(new CommandRequest("Hibernate", null)).Wait();
     public void SignOut() => SendCommandAsync(new CommandRequest("SignOut", null)).Wait();
     public void Lock() => SendCommandAsync(new CommandRequest("Lock", null)).Wait();
+    public void MonitorOff() => SendCommandAsync(new CommandRequest("MonitorOff", null)).Wait();
+
+    private static Dictionary<string, string>? CreateDelayParameters(int delaySeconds)
+    {
+        if (delaySeconds <= 0)
+        {
+            return null;
+        }
+
+        return new Dictionary<string, string>
+        {
+            ["DelaySeconds"] = delaySeconds.ToString()
+        };
+    }
 
     private async Task SendCommandAsync(CommandRequest request)
     {

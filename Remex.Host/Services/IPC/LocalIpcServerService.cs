@@ -165,19 +165,19 @@ public class LocalIpcServerService : BackgroundService
             switch (request.Action.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    _commandService.Shutdown();
+                    _commandService.Shutdown(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Shutdown command executed successfully.", null);
                 case "FORCESHUTDOWN":
-                    _commandService.ForceShutdown();
+                    _commandService.ForceShutdown(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
                 case "RESTART":
-                    _commandService.Restart();
+                    _commandService.Restart(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart command executed successfully.", null);
                 case "FORCERESTART":
-                    _commandService.ForceRestart();
+                    _commandService.ForceRestart(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Restart command executed successfully.", null);
                 case "RESTARTTOUEFI":
-                    _commandService.RestartToUefi();
+                    _commandService.RestartToUefi(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
                 case "SLEEP":
                     _commandService.Sleep();
@@ -185,6 +185,9 @@ public class LocalIpcServerService : BackgroundService
                 case "HIBERNATE":
                     _commandService.Hibernate();
                     return new CommandResponse(true, "Hibernate command executed successfully.", null);
+                case "MONITOROFF":
+                    _commandService.MonitorOff();
+                    return new CommandResponse(true, "Monitor off command executed successfully.", null);
                 case "SIGNOUT":
                     _commandService.SignOut();
                     return new CommandResponse(true, "SignOut command executed successfully.", null);
@@ -227,5 +230,25 @@ public class LocalIpcServerService : BackgroundService
 
         _mutex?.Dispose();
         base.Dispose();
+    }
+
+    private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
+    {
+        if (parameters == null)
+        {
+            return 0;
+        }
+
+        foreach (var key in new[] { "DelaySeconds", "Seconds", "TimerSeconds" })
+        {
+            if (parameters.TryGetValue(key, out var raw)
+                && int.TryParse(raw, out var parsed)
+                && parsed > 0)
+            {
+                return Math.Clamp(parsed, 0, 315360000);
+            }
+        }
+
+        return 0;
     }
 }
