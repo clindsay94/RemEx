@@ -19,6 +19,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
     private static readonly Random _rng = new();
+    private bool _welcomeSplashStarted;
 
     /// <summary>Helper property for Android-specific UI logic.</summary>
     public bool IsAndroid => OperatingSystem.IsAndroid();
@@ -101,7 +102,14 @@ public partial class ShellViewModel : ObservableObject
 
         // Default to Home on startup.
         NavigateToHome();
+    }
 
+    public void BeginWelcomeSplash()
+    {
+        if (_welcomeSplashStarted)
+            return;
+
+        _welcomeSplashStarted = true;
         _ = DismissWelcomeSplashAsync();
     }
 

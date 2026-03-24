@@ -140,8 +140,8 @@ public static unsafe class JniHelper
     public static void SetByteArrayRegion(IntPtr envPtr, IntPtr array, int start, int len, byte[] buf)
     {
         var env = (JNIEnv*)envPtr;
-        // SetByteArrayRegion is at index 209
-        var setByteArrayRegion = (delegate* unmanaged<IntPtr, IntPtr, int, int, byte*, void>)env->Functions[209];
+        // SetByteArrayRegion is at index 208 (209 is SetCharArrayRegion).
+        var setByteArrayRegion = (delegate* unmanaged<IntPtr, IntPtr, int, int, byte*, void>)env->Functions[208];
         fixed (byte* pBuf = buf)
         {
             setByteArrayRegion(envPtr, array, start, len, pBuf);

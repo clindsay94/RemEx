@@ -78,6 +78,19 @@
         <Style Selector="Button.stage-btn:pointerover">
             <Setter Property="Opacity" Value="0.85"/>
         </Style>
+        <Style Selector="Button.stage-mini-btn">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="6 2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.stage-mini-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
 
         <!-- ═══ Action buttons inside cards ═══ -->
         <Style Selector="Button.card-action">
@@ -277,7 +290,29 @@
             <!-- ═══ STAGING DRAWER ═══ -->
             <Border Grid.Column="1" Background="{DynamicResource GlassBaseMediumBrush}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" Padding="12">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,0,0,12"/>
+                    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+                        <TextBlock Text="ACTIVE SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+
+                        <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
+                            <ItemsControl ItemsSource="{Binding SensorActivationItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SensorActivationItem">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <Button Grid.Column="2" Classes="stage-mini-btn" Content="↑" Margin="6,0,4,0"
+                                                    Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
+                                            <Button Grid.Column="3" Classes="stage-mini-btn" Content="↓"
+                                                    Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
+                        <TextBlock Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
+                    </StackPanel>
+
                     <ScrollViewer>
                         <ItemsControl ItemsSource="{Binding StagedCards}">
                             <ItemsControl.ItemTemplate>

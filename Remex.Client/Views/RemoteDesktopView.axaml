@@ -90,6 +90,9 @@
                     <Button Content="D-Pad" Command="{Binding ToggleCursorPadCommand}" Classes="rd-btn"
                             ToolTip.Tip="Toggle Cursor Pad" FontSize="11" Padding="10 6"/>
 
+                    <Button Content="{Binding CursorPadModeText}" Command="{Binding ToggleCompactCursorPadCommand}" Classes="rd-btn"
+                            ToolTip.Tip="Switch between full and compact cursor pad" FontSize="11" Padding="10 6"/>
+
                     <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}" Classes="rd-btn"
                             ToolTip.Tip="Stylus Mode (treat touch as pen)" FontSize="11" Padding="10 6"/>
 
@@ -181,6 +184,12 @@
                             IsVisible="{Binding IsFullScreen}"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Margin="0,8,8,0">
+                    <!-- Compact pad toggle (fullscreen) -->
+                    <Button Content="Pad" Command="{Binding ToggleCompactCursorPadCommand}"
+                        Opacity="0.7" CornerRadius="8" Padding="10 6"
+                        FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                        ToolTip.Tip="Toggle compact cursor pad"
+                        Background="#CC1A1A2E" Foreground="#C0C0FF"/>
                     <!-- Stylus mode toggle (fullscreen) -->
                     <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}"
                             Opacity="0.7" CornerRadius="8" Padding="10 6"
@@ -199,7 +208,12 @@
                 <controls:VirtualCursorPad x:Name="CursorPad"
                     IsVisible="{Binding ShowCursorPad}"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                    Margin="0,0,24,24" Opacity="0.85"/>
+                    Margin="{Binding CursorPadMargin}" Opacity="0.85"
+                    RenderTransformOrigin="100%,100%">
+                    <controls:VirtualCursorPad.RenderTransform>
+                        <ScaleTransform ScaleX="{Binding CursorPadScale}" ScaleY="{Binding CursorPadScale}"/>
+                    </controls:VirtualCursorPad.RenderTransform>
+                </controls:VirtualCursorPad>
 
                 <!-- Reset zoom hint (shown when zoomed in) -->
                 <Button Content="🔍 Reset Zoom" Command="{Binding ResetZoomCommand}"

@@ -660,7 +660,13 @@
             </Border>
 
             <!-- ═══ BOTTOM NAV BAR (ANDROID M3) ═══ -->
-            <Border Grid.Row="1" IsVisible="{Binding IsAndroid}" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
+            <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
+                <Border.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="IsAndroid"/>
+                        <Binding Path="!IsShellChromeHidden"/>
+                    </MultiBinding>
+                </Border.IsVisible>
                 <UniformGrid Columns="5" Height="80" Margin="0,4,0,12">
                     <!-- Home -->
                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"

@@ -12,9 +12,13 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
     {
         public void Lock() { }
         public void Shutdown() { }
+        public void ForceShutdown() { }
         public void Restart() { }
         public void ForceRestart() { }
         public void RestartToUefi() { }
+        public void Sleep() { }
+        public void Hibernate() { }
+        public void SignOut() { }
     }
 
     private class MockLauncherStorageService : Remex.Core.Services.ILauncherStorageService

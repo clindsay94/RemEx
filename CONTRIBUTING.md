@@ -64,6 +64,29 @@ dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r wi
 dotnet publish Remex.Client.Android\Remex.Client.Android.csproj -c Release -f net10.0-android
 ```
 
+### Android — Hardened Fresh Rebuild Workflow
+
+Use the Gradle tasks below when you need guaranteed fresh APK output with native library verification:
+
+```powershell
+# From repo root (recommended wrapper)
+.\scripts\android-fresh.ps1 -Configuration Debug -Install
+.\scripts\android-fresh.ps1 -Configuration Debug
+.\scripts\android-fresh.ps1 -Configuration Release
+
+# Or from RemEx.Android directly
+.\gradlew.bat remexFreshInstallDebug --rerun-tasks --no-configuration-cache
+.\gradlew.bat remexFreshAssembleDebug --rerun-tasks --no-configuration-cache
+.\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
+```
+
+These tasks:
+
+- Delete every `bin/` and `obj/` directory across the repository.
+- Rebuild `Remex.Core` Android NativeAOT output.
+- Ensure APK-embedded `libRemexCore.so` hash matches the just-published file.
+- Validate timestamps so stale artifacts fail the build immediately.
+
 ---
 
 ## Development Notes

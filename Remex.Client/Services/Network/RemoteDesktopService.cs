@@ -14,6 +14,7 @@ public class RemoteDesktopService : IDisposable
 {
     private ClientWebSocket? _webSocket;
     private CancellationTokenSource? _receiveCts;
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
     private bool _disposed;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -49,8 +50,6 @@ public class RemoteDesktopService : IDisposable
 
     public async Task StartStreamAsync(DesktopConfig config, CancellationToken ct = default)
     {
-        if (_webSocket?.State != WebSocketState.Open) return;
-
         var msg = new RemexMessage
         {
             Type = MessageTypes.DesktopStart,
@@ -61,16 +60,12 @@ public class RemoteDesktopService : IDisposable
 
     public async Task StopStreamAsync(CancellationToken ct = default)
     {
-        if (_webSocket?.State != WebSocketState.Open) return;
-
         var msg = new RemexMessage { Type = MessageTypes.DesktopStop };
         await SendJsonAsync(msg, ct);
     }
 
     public async Task SendInputAsync(InputEvent input, CancellationToken ct = default)
     {
-        if (_webSocket?.State != WebSocketState.Open) return;
-
         var msg = new RemexMessage
         {
             Type = MessageTypes.DesktopInput,
@@ -81,8 +76,6 @@ public class RemoteDesktopService : IDisposable
 
     public async Task SendConfigAsync(DesktopConfig config, CancellationToken ct = default)
     {
-        if (_webSocket?.State != WebSocketState.Open) return;
-
         var msg = new RemexMessage
         {
             Type = MessageTypes.DesktopConfig,
@@ -134,12 +127,37 @@ public class RemoteDesktopService : IDisposable
 
     private async Task SendJsonAsync(RemexMessage message, CancellationToken ct)
     {
+        var socket = _webSocket;
+        if (socket?.State != WebSocketState.Open)
+            return;
+
         var bytes = JsonSerializer.SerializeToUtf8Bytes(message, JsonOptions);
-        await _webSocket!.SendAsync(
-            new ArraySegment<byte>(bytes),
-            WebSocketMessageType.Text,
-            endOfMessage: true,
-            ct);
+
+        await _sendLock.WaitAsync(ct);
+        try
+        {
+            // Re-check state after acquiring the lock to avoid races with Disconnect().
+            if (!ReferenceEquals(socket, _webSocket) || socket.State != WebSocketState.Open)
+                return;
+
+            await socket.SendAsync(
+                new ArraySegment<byte>(bytes),
+                WebSocketMessageType.Text,
+                endOfMessage: true,
+                ct);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Best effort during disconnect/race conditions.
+        }
+        catch (WebSocketException)
+        {
+            // Best effort during disconnect/race conditions.
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
     }
 
     private async Task ReceiveLoopAsync(CancellationToken ct)
@@ -197,5 +215,6 @@ public class RemoteDesktopService : IDisposable
         if (_disposed) return;
         _disposed = true;
         Disconnect();
+        _sendLock.Dispose();
     }
 }

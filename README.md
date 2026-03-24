@@ -128,6 +128,29 @@ dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r wi
 dotnet publish Remex.Client.Android\Remex.Client.Android.csproj -c Release -f net10.0-android
 ```
 
+### Android Fresh Rebuild (Recommended)
+
+When iterating quickly, use the hardened Android pipeline to avoid stale APKs and stale `libRemexCore.so`:
+
+```powershell
+# Debug: purge all repo bin/obj, clean, rebuild native lib, build APK, verify hashes/timestamps, install
+.\scripts\android-fresh.ps1 -Configuration Debug -Install
+
+# Debug without install
+.\scripts\android-fresh.ps1 -Configuration Debug
+
+# Release rebuild + verification
+.\scripts\android-fresh.ps1 -Configuration Release
+```
+
+Direct Gradle tasks from `RemEx.Android`:
+
+```powershell
+.\gradlew.bat remexFreshInstallDebug --rerun-tasks --no-configuration-cache
+.\gradlew.bat remexFreshAssembleDebug --rerun-tasks --no-configuration-cache
+.\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
+```
+
 ### Install as a Windows Service
 
 The host can run as a Windows Service that starts automatically at boot — no login required.

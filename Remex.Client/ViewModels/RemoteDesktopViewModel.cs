@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -70,6 +71,18 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _showCursorPad;
+
+    [ObservableProperty]
+    private bool _isCompactCursorPad;
+
+    [ObservableProperty]
+    private double _cursorPadScale = 1.0;
+
+    [ObservableProperty]
+    private Thickness _cursorPadMargin = new(0, 0, 24, 24);
+
+    [ObservableProperty]
+    private string _cursorPadModeText = "Pad: Full";
 
     /// <summary>
     /// When true, all touch input is treated as pen/stylus (tap = click, drag = click-drag).
@@ -238,6 +251,28 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void ToggleCursorPad() => ShowCursorPad = !ShowCursorPad;
+
+    [RelayCommand]
+    private void ToggleCompactCursorPad()
+    {
+        IsCompactCursorPad = !IsCompactCursorPad;
+        ShowCursorPad = true;
+
+        if (IsCompactCursorPad)
+        {
+            CursorPadScale = 0.62;
+            CursorPadMargin = new Thickness(0, 0, 14, 12);
+            CursorPadModeText = "Pad: Compact";
+            StatusText = "Compact cursor pad enabled";
+        }
+        else
+        {
+            CursorPadScale = 1.0;
+            CursorPadMargin = new Thickness(0, 0, 24, 24);
+            CursorPadModeText = "Pad: Full";
+            StatusText = "Full-size cursor pad enabled";
+        }
+    }
 
     [RelayCommand]
     private void ToggleStylusMode() => StylusMode = !StylusMode;

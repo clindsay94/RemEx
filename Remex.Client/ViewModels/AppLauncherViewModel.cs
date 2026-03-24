@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,6 +14,8 @@ namespace Remex.Client.ViewModels;
 
 public partial class AppLauncherViewModel : ObservableObject
 {
+    private const string DefaultHexColor = "#4A3AFF";
+
     private readonly ShellViewModel _shell;
     private readonly ILauncherStorageService _storageService;
 
@@ -30,7 +34,7 @@ public partial class AppLauncherViewModel : ObservableObject
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                Launchers = new ObservableCollection<AppEntry>(entries);
+                Launchers = new ObservableCollection<AppEntry>(NormalizeEntries(entries));
             });
         };
 
@@ -43,12 +47,70 @@ public partial class AppLauncherViewModel : ObservableObject
     {
         // If connected, host will sync. Fallback to local storage
         var entries = await _storageService.LoadEntriesAsync();
-        Launchers = new ObservableCollection<AppEntry>(entries);
+        Launchers = new ObservableCollection<AppEntry>(NormalizeEntries(entries));
     }
 
     public async Task SaveLaunchersAsync()
     {
         await _storageService.SaveEntriesAsync(Launchers);
+    }
+
+    private static AppEntry NormalizeEntry(AppEntry entry)
+    {
+        var targetPath = NormalizeString(entry.TargetPath);
+        var displayName = NormalizeString(entry.DisplayName);
+        var hexColor = NormalizeString(entry.HexColor);
+        var iconBase64 = NormalizeString(entry.IconBase64);
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            if (!string.IsNullOrWhiteSpace(targetPath))
+            {
+                displayName = Path.GetFileNameWithoutExtension(targetPath);
+            }
+
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                displayName = "Unnamed App";
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(hexColor) || !hexColor.StartsWith("#", StringComparison.Ordinal))
+        {
+            hexColor = DefaultHexColor;
+        }
+
+        if (string.IsNullOrWhiteSpace(iconBase64))
+        {
+            iconBase64 = null;
+        }
+
+        return new AppEntry(
+            entry.Id == Guid.Empty ? Guid.NewGuid() : entry.Id,
+            displayName,
+            targetPath,
+            hexColor,
+            iconBase64);
+    }
+
+    private static string NormalizeString(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var trimmed = value.Trim();
+        return string.Equals(trimmed, "null", StringComparison.OrdinalIgnoreCase)
+            ? string.Empty
+            : trimmed;
+    }
+
+    private static System.Collections.Generic.List<AppEntry> NormalizeEntries(System.Collections.Generic.IEnumerable<AppEntry> entries)
+    {
+        return entries
+            .Select(NormalizeEntry)
+            .GroupBy(e => string.IsNullOrWhiteSpace(e.TargetPath) ? e.Id.ToString() : e.TargetPath, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
     }
 
     [RelayCommand]
@@ -123,13 +185,13 @@ public partial class AppLauncherViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(AndroidNewAppName) || string.IsNullOrWhiteSpace(AndroidNewAppPath))
             return;
 
-        var entry = new AppEntry(
+        var entry = NormalizeEntry(new AppEntry(
             Guid.NewGuid(),
             AndroidNewAppName,
             AndroidNewAppPath,
             "#4A3AFF",
             null
-        );
+        ));
 
         if (Connection.IsConnected)
         {

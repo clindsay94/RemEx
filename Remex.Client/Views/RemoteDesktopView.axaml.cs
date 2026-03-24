@@ -25,15 +25,11 @@ public partial class RemoteDesktopView : UserControl
     // Single-finger gesture detection
     private Point _touchDownPos;
     private DateTime _touchDownTime;
-    private Point _lastTapPos;
-    private DateTime _lastTapTime = DateTime.MinValue;
     private CancellationTokenSource? _longPressCts;
     private bool _longPressFired;
     private bool _touchMoved;
 
     private const double TapThreshold = 15;
-    private const double DoubleTapDistance = 40;
-    private const double DoubleTapMaxMs = 300;
     private const int LongPressMs = 500;
 
     // ═══════════════ Cursor indicator ═══════════════
@@ -572,42 +568,18 @@ public partial class RemoteDesktopView : UserControl
                 var elapsed = (DateTime.UtcNow - _touchDownTime).TotalMilliseconds;
                 if (elapsed < LongPressMs)
                 {
-                    var timeSinceLastTap = (DateTime.UtcNow - _lastTapTime).TotalMilliseconds;
-                    var distFromLastTap = Distance(_touchDownPos, _lastTapPos);
-
-                    if (timeSinceLastTap < DoubleTapMaxMs && distFromLastTap < DoubleTapDistance)
+                    // Single tap: perform a left click directly so touch is always interactive.
+                    var coords = MapToRemoteCoords(_touchDownPos);
+                    if (coords is not null)
                     {
-                        // Double-tap → left click at FIRST tap position
-                        _lastTapTime = DateTime.MinValue;
-                        var coords = MapToRemoteCoords(_lastTapPos);
-                        if (coords is not null)
+                        ShowCursorAt(_touchDownPos);
+                        _ = vm.SendInputAsync(new InputEvent
                         {
-                            ShowCursorAt(_lastTapPos);
-                            _ = vm.SendInputAsync(new InputEvent
-                            {
-                                EventType = InputEventTypes.MouseClick,
-                                X = coords.Value.x,
-                                Y = coords.Value.y,
-                                Button = 0,
-                            });
-                        }
-                    }
-                    else
-                    {
-                        // Single tap → move cursor (no click)
-                        _lastTapTime = DateTime.UtcNow;
-                        _lastTapPos = _touchDownPos;
-                        var coords = MapToRemoteCoords(_touchDownPos);
-                        if (coords is not null)
-                        {
-                            ShowCursorAt(_touchDownPos);
-                            _ = vm.SendInputAsync(new InputEvent
-                            {
-                                EventType = InputEventTypes.MouseMove,
-                                X = coords.Value.x,
-                                Y = coords.Value.y,
-                            });
-                        }
+                            EventType = InputEventTypes.MouseClick,
+                            X = coords.Value.x,
+                            Y = coords.Value.y,
+                            Button = 0,
+                        });
                     }
                 }
             }
@@ -723,10 +695,14 @@ public partial class RemoteDesktopView : UserControl
     {
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
 
+        var keyCode = MapKeyToVirtualKey(e.Key);
+        if (keyCode == 0)
+            return;
+
         await vm.SendInputAsync(new InputEvent
         {
             EventType = InputEventTypes.KeyDown,
-            KeyCode = MapKeyToVirtualKey(e.Key),
+            KeyCode = keyCode,
         });
 
         e.Handled = true;
@@ -736,10 +712,14 @@ public partial class RemoteDesktopView : UserControl
     {
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
 
+        var keyCode = MapKeyToVirtualKey(e.Key);
+        if (keyCode == 0)
+            return;
+
         await vm.SendInputAsync(new InputEvent
         {
             EventType = InputEventTypes.KeyUp,
-            KeyCode = MapKeyToVirtualKey(e.Key),
+            KeyCode = keyCode,
         });
 
         e.Handled = true;

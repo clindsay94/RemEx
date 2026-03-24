@@ -21,6 +21,9 @@ public partial class ShellView : UserControl
     {
         base.OnLoaded(e);
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
+
+        if (DataContext is ShellViewModel vm)
+            vm.BeginWelcomeSplash();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

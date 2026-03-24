@@ -23,6 +23,7 @@ public partial class CanvasDashboardViewModel : ObservableObject
     private int _nextZIndex = 1;
     private bool _isInitialized;
     private DashboardProfile? _pendingSyncProfile;
+    private bool _isRefreshingSensorActivation;
 
     public ConnectionViewModel Connection { get; }
 
@@ -32,6 +33,7 @@ public partial class CanvasDashboardViewModel : ObservableObject
     /// <summary>Newly discovered sensors waiting to be placed by the user.</summary>
     public ObservableCollection<CanvasCardViewModel> StagedCards { get; } = new();
     public System.Collections.ObjectModel.ObservableCollection<CanvasCardViewModel> SelectedCards { get; } = new();
+    public ObservableCollection<SensorActivationItem> SensorActivationItems { get; } = new();
 
     [RelayCommand]
     public void ToggleCardSelection(CanvasCardViewModel card)
@@ -95,8 +97,13 @@ public partial class CanvasDashboardViewModel : ObservableObject
             });
         };
 
+        Cards.CollectionChanged += (_, _) => RefreshSensorActivationItems();
+
         StagedCards.CollectionChanged += (_, _) =>
+        {
             HasStagedCards = StagedCards.Count > 0;
+            RefreshSensorActivationItems();
+        };
     }
 
     /// <summary>
@@ -141,7 +148,39 @@ public partial class CanvasDashboardViewModel : ObservableObject
             // If we're already connected, maybe the host is empty? 
             // We should probably push our local layout if the host didn't send anything.
             // But for now, let's just ensure we stay in sync.
+
+            RefreshSensorActivationItems();
         });
+    }
+
+    [RelayCommand]
+    private void MoveSensorUp(SensorActivationItem item)
+    {
+        if (item is null || !item.IsActive) return;
+
+        var activeOrder = SensorActivationItems.Where(i => i.IsActive).ToList();
+        var index = activeOrder.FindIndex(i => string.Equals(i.SensorName, item.SensorName, StringComparison.OrdinalIgnoreCase));
+        if (index <= 0) return;
+
+        var previous = activeOrder[index - 1];
+        SwapPrimarySensorCardY(item.SensorName, previous.SensorName);
+        TriggerSave();
+        RefreshSensorActivationItems();
+    }
+
+    [RelayCommand]
+    private void MoveSensorDown(SensorActivationItem item)
+    {
+        if (item is null || !item.IsActive) return;
+
+        var activeOrder = SensorActivationItems.Where(i => i.IsActive).ToList();
+        var index = activeOrder.FindIndex(i => string.Equals(i.SensorName, item.SensorName, StringComparison.OrdinalIgnoreCase));
+        if (index < 0 || index >= activeOrder.Count - 1) return;
+
+        var next = activeOrder[index + 1];
+        SwapPrimarySensorCardY(item.SensorName, next.SensorName);
+        TriggerSave();
+        RefreshSensorActivationItems();
     }
 
     private void EnsureDefaultCards()
@@ -474,6 +513,112 @@ public partial class CanvasDashboardViewModel : ObservableObject
         }
     }
 
+    private CanvasCardViewModel? GetPrimarySensorCard(string sensorName)
+    {
+        return Cards
+            .Where(c => c.CardType == "Sensor" && string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(c => c.PositionY)
+            .ThenBy(c => c.PositionX)
+            .FirstOrDefault();
+    }
+
+    private void SwapPrimarySensorCardY(string firstSensorName, string secondSensorName)
+    {
+        var first = GetPrimarySensorCard(firstSensorName);
+        var second = GetPrimarySensorCard(secondSensorName);
+        if (first is null || second is null) return;
+
+        (first.PositionY, second.PositionY) = (second.PositionY, first.PositionY);
+    }
+
+    private void RefreshSensorActivationItems()
+    {
+        var activeSensors = Cards
+            .Where(c => c.CardType == "Sensor" && !string.IsNullOrWhiteSpace(c.Sensor?.Name))
+            .GroupBy(c => c.Sensor!.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new { SensorName = g.First().Sensor!.Name, SortY = g.Min(c => c.PositionY) })
+            .OrderBy(x => x.SortY)
+            .ThenBy(x => x.SensorName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var activeNameSet = activeSensors
+            .Select(x => x.SensorName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var knownNames = activeSensors
+            .Select(x => x.SensorName)
+            .Concat(
+                StagedCards
+                    .Where(c => c.CardType == "Sensor" && !string.IsNullOrWhiteSpace(c.Sensor?.Name))
+                    .Select(c => c.Sensor!.Name)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        _isRefreshingSensorActivation = true;
+        try
+        {
+            foreach (var existing in SensorActivationItems)
+            {
+                existing.ActiveChanged -= OnSensorActivationChanged;
+            }
+
+            SensorActivationItems.Clear();
+
+            foreach (var name in knownNames)
+            {
+                var item = new SensorActivationItem(name, activeNameSet.Contains(name));
+                item.ActiveChanged += OnSensorActivationChanged;
+                SensorActivationItems.Add(item);
+            }
+        }
+        finally
+        {
+            _isRefreshingSensorActivation = false;
+        }
+    }
+
+    private void OnSensorActivationChanged(object? sender, bool isActive)
+    {
+        if (_isRefreshingSensorActivation) return;
+        if (sender is not SensorActivationItem item) return;
+
+        var sensorName = item.SensorName;
+        if (string.IsNullOrWhiteSpace(sensorName)) return;
+
+        if (isActive)
+        {
+            var alreadyActive = Cards.Any(c => c.CardType == "Sensor" && string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase));
+            if (!alreadyActive)
+            {
+                var staged = StagedCards.FirstOrDefault(c => c.CardType == "Sensor" && string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase));
+                if (staged is not null)
+                {
+                    PlaceFromStaging(staged);
+                }
+            }
+        }
+        else
+        {
+            var sensorCards = Cards
+                .Where(c => c.CardType == "Sensor" && string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (sensorCards.Count > 0)
+            {
+                foreach (var card in sensorCards)
+                {
+                    Cards.Remove(card);
+                    SelectedCards.Remove(card);
+                }
+                TriggerSave();
+            }
+        }
+
+        RefreshSensorActivationItems();
+    }
+
     private void TrackZIndex(int z)
     {
         if (z >= _nextZIndex)
@@ -545,5 +690,25 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
         // Refresh home pinned sensors if it's currently showing or cached
         _shell.NavigateToHomeCommand.Execute(null);
+
+        RefreshSensorActivationItems();
     }
+}
+
+public partial class SensorActivationItem : ObservableObject
+{
+    public string SensorName { get; }
+
+    [ObservableProperty]
+    private bool _isActive;
+
+    public event Action<object?, bool>? ActiveChanged;
+
+    public SensorActivationItem(string sensorName, bool isActive)
+    {
+        SensorName = sensorName;
+        _isActive = isActive;
+    }
+
+    partial void OnIsActiveChanged(bool value) => ActiveChanged?.Invoke(this, value);
 }
