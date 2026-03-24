@@ -20,6 +20,8 @@ object RemexCoreClient {
         fun onLauncherSync(launcherData: String)
         fun onProcessListSync(processData: String)
         fun onFrameReceived(frame: ByteArray)
+        fun onHostInfoUpdate(hostInfoData: String)
+        fun onDesktopError(errorText: String)
     }
 
     init {

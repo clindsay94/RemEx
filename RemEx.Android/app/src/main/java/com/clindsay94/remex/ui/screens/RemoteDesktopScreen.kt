@@ -24,6 +24,8 @@ fun RemoteDesktopScreen(
 ) {
     val currentFrame by viewModel.currentFrame.collectAsState()
     val isStreaming by viewModel.isStreaming.collectAsState()
+    val capabilityState by viewModel.capabilityState.collectAsState()
+    val desktopError by viewModel.desktopError.collectAsState()
 
     Scaffold(
         topBar = {
@@ -40,7 +42,10 @@ fun RemoteDesktopScreen(
                             Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error)
                         }
                     } else {
-                        IconButton(onClick = { viewModel.startStreaming() }) {
+                        IconButton(
+                            onClick = { viewModel.startStreaming() },
+                            enabled = capabilityState.supportsRemoteDesktop
+                        ) {
                             Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = Color(0xFF4CAF50))
                         }
                     }
@@ -72,10 +77,15 @@ fun RemoteDesktopScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = if (isStreaming) "Waiting for frames..." else "Stream Stopped",
+                        text = when {
+                            desktopError != null -> desktopError!!
+                            !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason ?: "Remote desktop unavailable"
+                            isStreaming -> "Waiting for frames..."
+                            else -> "Stream Stopped"
+                        },
                         color = Color.Gray
                     )
-                    if (!isStreaming) {
+                    if (!isStreaming && capabilityState.supportsRemoteDesktop) {
                         Button(onClick = { viewModel.startStreaming() }, modifier = Modifier.padding(16.dp)) {
                             Text("Start Streaming")
                         }

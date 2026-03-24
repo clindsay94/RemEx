@@ -23,6 +23,8 @@ public static class AndroidNativeExports
     private static IntPtr _onLauncherSyncMethodId;
     private static IntPtr _onProcessListSyncMethodId;
     private static IntPtr _onFrameReceivedMethodId;
+    private static IntPtr _onHostInfoUpdateMethodId;
+    private static IntPtr _onDesktopErrorMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -37,6 +39,7 @@ public static class AndroidNativeExports
         RemexNativeClient.Current.MessageReceived += OnNativeMessageReceived;
 
         RemexDesktopClient.Current.FrameReceived += OnNativeFrameReceived;
+        RemexDesktopClient.Current.ErrorReceived += OnNativeDesktopError;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
@@ -72,6 +75,8 @@ public static class AndroidNativeExports
             _onLauncherSyncMethodId = JniHelper.GetMethodID(env, clazz, "onLauncherSync", "(Ljava/lang/String;)V");
             _onProcessListSyncMethodId = JniHelper.GetMethodID(env, clazz, "onProcessListSync", "(Ljava/lang/String;)V");
             _onFrameReceivedMethodId = JniHelper.GetMethodID(env, clazz, "onFrameReceived", "([B)V");
+            _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
+            _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
         }
     }
 
@@ -99,23 +104,16 @@ public static class AndroidNativeExports
     public static void StartDesktopStream(IntPtr env, IntPtr thiz, IntPtr configJsonUtf8)
     {
         var configJson = JniHelper.ReadJString(env, configJsonUtf8);
-        if (configJson == null) return;
-
-        var config = RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
+        var config = string.IsNullOrWhiteSpace(configJson)
+            ? new DesktopConfig()
+            : RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
         
         _ = Task.Run(async () =>
         {
             try
             {
-                string host;
-                int port;
-                lock (SyncRoot)
-                {
-                    host = _lastInitRequest.Host;
-                    port = _lastInitRequest.Port;
-                }
-
-                await RemexDesktopClient.Current.ConnectAsync(host, port);
+                var (host, port) = GetDesktopEndpoint();
+                await RemexDesktopClient.Current.StartStreamAsync(host, port, config);
             }
             catch { }
         });
@@ -128,6 +126,7 @@ public static class AndroidNativeExports
         {
             try
             {
+                await RemexDesktopClient.Current.StopStreamAsync();
                 await RemexDesktopClient.Current.DisconnectAsync();
             }
             catch { }
@@ -227,6 +226,11 @@ public static class AndroidNativeExports
             return SerializeOperationFailure("Failed to deserialize message.");
         }
 
+        if (HandleDesktopMessage(message))
+        {
+            return SerializeOperationSuccess($"{message.Type} dispatched.");
+        }
+
         _ = Task.Run(async () =>
         {
             try
@@ -237,6 +241,63 @@ public static class AndroidNativeExports
         });
 
         return SerializeOperationSuccess("Message dispatched.");
+    }
+
+    private static bool HandleDesktopMessage(RemexMessage message)
+    {
+        switch (message.Type)
+        {
+            case MessageTypes.DesktopStart:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig());
+                    }
+                    catch { }
+                });
+                return true;
+
+            case MessageTypes.DesktopInput when message.InputEvent != null:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent);
+                    }
+                    catch { }
+                });
+                return true;
+
+            case MessageTypes.DesktopConfig when message.DesktopConfig != null:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig);
+                    }
+                    catch { }
+                });
+                return true;
+
+            case MessageTypes.DesktopStop:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await RemexDesktopClient.Current.StopStreamAsync();
+                        await RemexDesktopClient.Current.DisconnectAsync();
+                    }
+                    catch { }
+                });
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     private static string HandleDispatchCommand(string? commandJson)
@@ -289,6 +350,11 @@ public static class AndroidNativeExports
         NotifyJavaFrame(frame);
     }
 
+    private static void OnNativeDesktopError(string errorText)
+    {
+        NotifyJavaData(_onDesktopErrorMethodId, errorText);
+    }
+
     private static void NotifyJavaFrame(byte[] frame)
     {
         IntPtr env = IntPtr.Zero;
@@ -309,6 +375,20 @@ public static class AndroidNativeExports
 
     private static void OnNativeMessageReceived(RemexMessage msg)
     {
+        if (msg.Type == MessageTypes.HostInfo && msg.HostCapabilities != null)
+        {
+            NotifyJavaData(
+                _onHostInfoUpdateMethodId,
+                RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Default.HostCapabilities));
+        }
+    }
+
+    private static (string Host, int Port) GetDesktopEndpoint()
+    {
+        lock (SyncRoot)
+        {
+            return (_lastInitRequest.Host, _lastInitRequest.Port);
+        }
     }
 
     private static void NotifyJavaData(IntPtr methodId, string json)

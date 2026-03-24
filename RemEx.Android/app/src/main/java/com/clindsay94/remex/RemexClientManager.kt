@@ -22,6 +22,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _frames = MutableSharedFlow<ByteArray>(replay = 1)
     val frames = _frames.asSharedFlow()
 
+    private val _hostCapabilities = MutableSharedFlow<String>(replay = 1)
+    val hostCapabilities = _hostCapabilities.asSharedFlow()
+
+    private val _desktopErrors = MutableSharedFlow<String>(replay = 1)
+    val desktopErrors = _desktopErrors.asSharedFlow()
+
     init {
         RemexCoreClient.setCallback(this)
     }
@@ -44,5 +50,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onFrameReceived(frame: ByteArray) {
         _frames.tryEmit(frame)
+    }
+
+    override fun onHostInfoUpdate(hostInfoData: String) {
+        _hostCapabilities.tryEmit(hostInfoData)
+    }
+
+    override fun onDesktopError(errorText: String) {
+        _desktopErrors.tryEmit(errorText)
     }
 }
