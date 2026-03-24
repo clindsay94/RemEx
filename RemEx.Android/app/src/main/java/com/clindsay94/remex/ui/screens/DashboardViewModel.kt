@@ -8,6 +8,7 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import org.json.JSONObject
 
 data class TelemetryState(
@@ -30,11 +31,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             RemexClientManager.telemetry.collect { telemetryData ->
                 try {
                     val json = JSONObject(telemetryData)
+                    val sensors = json.optJSONArray("sensors")
                     _telemetryState.update {
                         it.copy(
-                            cpuUsage = json.optInt("cpu", 0),
-                            gpuUsage = json.optInt("gpu", 0),
-                            ramUsage = json.optInt("ram", 0)
+                            cpuUsage = sensors.extractPercent("CPU", listOf("cpu", "usage")),
+                            gpuUsage = sensors.extractPercent("GPU", listOf("gpu", "usage")),
+                            ramUsage = sensors.extractPercent("Memory", listOf("memory", "load"))
                         )
                     }
                 } catch (e: Exception) {
@@ -71,5 +73,39 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         } catch (e: Throwable) {
             e.printStackTrace()
         }
+    }
+
+    private fun org.json.JSONArray?.extractPercent(category: String, preferredTokens: List<String>): Int {
+        if (this == null) {
+            return 0
+        }
+
+        var fallback = Double.NaN
+        for (index in 0 until length()) {
+            val sensor = optJSONObject(index) ?: continue
+            val sensorCategory = sensor.optString("category")
+            if (!sensorCategory.equals(category, ignoreCase = true)) {
+                continue
+            }
+
+            val unit = sensor.optString("unit")
+            val value = sensor.optDouble("value", Double.NaN)
+            if (value.isNaN()) {
+                continue
+            }
+
+            if (unit == "%") {
+                val name = sensor.optString("name").lowercase()
+                if (preferredTokens.all(name::contains)) {
+                    return value.roundToInt().coerceIn(0, 100)
+                }
+
+                if (fallback.isNaN()) {
+                    fallback = value
+                }
+            }
+        }
+
+        return if (fallback.isNaN()) 0 else fallback.roundToInt().coerceIn(0, 100)
     }
 }

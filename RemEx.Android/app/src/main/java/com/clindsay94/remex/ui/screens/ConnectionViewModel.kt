@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.*
@@ -20,6 +21,27 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _connectionStatus = MutableStateFlow("Disconnected")
     val connectionStatus: StateFlow<String> = _connectionStatus.asStateFlow()
+
+    private val _capabilitySummary = MutableStateFlow("Awaiting host metadata")
+    val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            RemexClientManager.isConnected.collect { connected ->
+                if (connected) {
+                    _connectionStatus.value = "Connected"
+                } else if (!_isConnecting.value) {
+                    _connectionStatus.value = "Disconnected"
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            RemexClientManager.hostCapabilities.collect { hostInfo ->
+                _capabilitySummary.value = buildCapabilitySummary(hostInfo)
+            }
+        }
+    }
 
     fun connect(newHost: String, newPort: Int) {
         viewModelScope.launch {
@@ -48,5 +70,23 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun updateStatus(isConnected: Boolean) {
         _connectionStatus.value = if (isConnected) "Connected" else "Disconnected"
+    }
+
+    private fun buildCapabilitySummary(hostInfo: String): String {
+        return try {
+            val json = JSONObject(hostInfo)
+            val runtimeMode = json.optString("runtimeMode", "unknown")
+            val platform = json.optString("platform", "unknown")
+            val supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false)
+            val remoteDesktopText = if (supportsRemoteDesktop) {
+                "desktop available"
+            } else {
+                json.optString("remoteDesktopUnavailableReason", "desktop unavailable")
+            }
+
+            "$platform / $runtimeMode / $remoteDesktopText"
+        } catch (_: Exception) {
+            "Host metadata unavailable"
+        }
     }
 }

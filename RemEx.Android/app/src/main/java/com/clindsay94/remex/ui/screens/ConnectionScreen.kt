@@ -21,6 +21,7 @@ fun ConnectionScreen(
     val port by viewModel.port.collectAsState()
     val isConnecting by viewModel.isConnecting.collectAsState()
     val status by viewModel.connectionStatus.collectAsState()
+    val capabilitySummary by viewModel.capabilitySummary.collectAsState()
 
     var hostInput by remember { mutableStateOf("") }
     var portInput by remember { mutableStateOf("") }
@@ -107,6 +108,12 @@ fun ConnectionScreen(
                 text = "Status: $status",
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (status == "Connected") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                text = capabilitySummary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

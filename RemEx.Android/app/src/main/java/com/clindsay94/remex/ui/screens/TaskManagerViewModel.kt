@@ -33,7 +33,7 @@ class TaskManagerViewModel : ViewModel() {
                             id = obj.getInt("id"),
                             name = obj.getString("name"),
                             cpu = obj.optDouble("cpuUsage", 0.0),
-                            ram = obj.optDouble("workingSet", 0.0) / (1024 * 1024) // Convert to MB
+                            ram = obj.optDouble("memoryUsage", 0.0) / (1024 * 1024) // Convert to MB
                         ))
                     }
                     _processes.value = list.sortedByDescending { it.cpu }
@@ -62,7 +62,7 @@ class TaskManagerViewModel : ViewModel() {
                 val request = JSONObject().apply {
                     put("action", "KillProcess")
                     put("parameters", JSONObject().apply {
-                        put("Pid", pid.toString())
+                        put("ProcessId", pid.toString())
                     })
                 }
                 RemexCoreClient.SendCommand(request.toString())

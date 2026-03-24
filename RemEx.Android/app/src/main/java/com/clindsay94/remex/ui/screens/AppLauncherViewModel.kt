@@ -32,8 +32,8 @@ class AppLauncherViewModel : ViewModel() {
                 List(array.length()) { i ->
                     val obj = array.getJSONObject(i)
                     AppEntry(
-                        name = obj.getString("name"),
-                        path = obj.getString("path"),
+                        name = obj.getString("displayName"),
+                        path = obj.getString("targetPath"),
                         iconBase64 = obj.optString("iconBase64").takeIf { it.isNotEmpty() }
                     )
                 }
@@ -54,15 +54,7 @@ class AppLauncherViewModel : ViewModel() {
     }
 
     fun refreshApps() {
-        // If SendMessage is a blocking IO operation, consider launching on Dispatchers.IO
-        viewModelScope.launch(Dispatchers.IO) {
-            if (RemexCoreClient.isLibraryLoaded) {
-                val request = JSONObject().apply {
-                    put("type", "layout_request")
-                }
-                RemexCoreClient.SendMessage(request.toString())
-            }
-        }
+        // Launcher entries are synchronized by the host immediately after the main connection opens.
     }
 
     fun launchApp(app: AppEntry) {
@@ -72,7 +64,7 @@ class AppLauncherViewModel : ViewModel() {
                 val request = JSONObject().apply {
                     put("action", "LaunchApp")
                     put("parameters", JSONObject().apply {
-                        put("Path", app.path)
+                        put("TargetPath", app.path)
                     })
                 }
                 RemexCoreClient.SendCommand(request.toString())
