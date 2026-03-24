@@ -60,8 +60,8 @@ public static unsafe class JniHelper
     public static int GetJavaVM(IntPtr envPtr, out IntPtr vmPtr)
     {
         var env = (JNIEnv*)envPtr;
-        // GetJavaVM is at index 7
-        var getJavaVm = (delegate* unmanaged<IntPtr, IntPtr*, int>)env->Functions[7];
+        // GetJavaVM is at index 219
+        var getJavaVm = (delegate* unmanaged<IntPtr, IntPtr*, int>)env->Functions[219];
         fixed (IntPtr* pVm = &vmPtr)
         {
             return getJavaVm(envPtr, pVm);
@@ -82,6 +82,15 @@ public static unsafe class JniHelper
         // DeleteGlobalRef is at index 22
         var deleteGlobalRef = (delegate* unmanaged<IntPtr, IntPtr, void>)env->Functions[22];
         deleteGlobalRef(envPtr, obj);
+    }
+
+    public static void DeleteLocalRef(IntPtr envPtr, IntPtr obj)
+    {
+        if (obj == IntPtr.Zero) return;
+        var env = (JNIEnv*)envPtr;
+        // DeleteLocalRef is at index 23
+        var deleteLocalRef = (delegate* unmanaged<IntPtr, IntPtr, void>)env->Functions[23];
+        deleteLocalRef(envPtr, obj);
     }
 
     public static IntPtr GetObjectClass(IntPtr envPtr, IntPtr obj)
@@ -107,6 +116,7 @@ public static unsafe class JniHelper
     public static void CallVoidMethod(IntPtr envPtr, IntPtr obj, IntPtr methodId, IntPtr arg)
     {
         var env = (JNIEnv*)envPtr;
+        // CallVoidMethod is at index 61
         var callVoidMethod = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)env->Functions[61];
         callVoidMethod(envPtr, obj, methodId, arg);
     }
@@ -114,6 +124,7 @@ public static unsafe class JniHelper
     public static void CallVoidMethod(IntPtr envPtr, IntPtr obj, IntPtr methodId, bool arg)
     {
         var env = (JNIEnv*)envPtr;
+        // CallVoidMethod is at index 61
         var callVoidMethod = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, byte, void>)env->Functions[61];
         callVoidMethod(envPtr, obj, methodId, arg ? (byte)1 : (byte)0);
     }
@@ -129,8 +140,8 @@ public static unsafe class JniHelper
     public static void SetByteArrayRegion(IntPtr envPtr, IntPtr array, int start, int len, byte[] buf)
     {
         var env = (JNIEnv*)envPtr;
-        // SetByteArrayRegion is at index 179
-        var setByteArrayRegion = (delegate* unmanaged<IntPtr, IntPtr, int, int, byte*, void>)env->Functions[179];
+        // SetByteArrayRegion is at index 209
+        var setByteArrayRegion = (delegate* unmanaged<IntPtr, IntPtr, int, int, byte*, void>)env->Functions[209];
         fixed (byte* pBuf = buf)
         {
             setByteArrayRegion(envPtr, array, start, len, pBuf);

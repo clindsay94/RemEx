@@ -65,6 +65,8 @@ public static class AndroidNativeExports
                 _onLauncherSyncMethodId = IntPtr.Zero;
                 _onProcessListSyncMethodId = IntPtr.Zero;
                 _onFrameReceivedMethodId = IntPtr.Zero;
+                _onHostInfoUpdateMethodId = IntPtr.Zero;
+                _onDesktopErrorMethodId = IntPtr.Zero;
                 return;
             }
 
@@ -77,30 +79,33 @@ public static class AndroidNativeExports
             _onFrameReceivedMethodId = JniHelper.GetMethodID(env, clazz, "onFrameReceived", "([B)V");
             _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
             _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
+            
+            // Clean up the local class ref
+            JniHelper.DeleteLocalRef(env, clazz);
         }
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_InitRemex")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_InitRemexNative")]
     public static IntPtr InitRemex(IntPtr env, IntPtr thiz, IntPtr initJsonUtf8)
         => Export(env, () => HandleInitialize(JniHelper.ReadJString(env, initJsonUtf8)));
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_WakePc")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_WakePcNative")]
     public static IntPtr WakePc(IntPtr env, IntPtr thiz, IntPtr macAddressUtf8, IntPtr broadcastIpUtf8, int port)
         => Export(env, () => HandleSendWakeOnLan(JniHelper.ReadJString(env, macAddressUtf8), JniHelper.ReadJString(env, broadcastIpUtf8), port));
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetTelemetry")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetTelemetryNative")]
     public static IntPtr GetTelemetry(IntPtr env, IntPtr thiz)
         => Export(env, HandleRequestTelemetry);
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessage")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessageNative")]
     public static IntPtr SendMessage(IntPtr env, IntPtr thiz, IntPtr messageJsonUtf8)
         => Export(env, () => HandleDispatchMessage(JniHelper.ReadJString(env, messageJsonUtf8)));
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendCommand")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendCommandNative")]
     public static IntPtr SendCommand(IntPtr env, IntPtr thiz, IntPtr commandJsonUtf8)
         => Export(env, () => HandleDispatchCommand(JniHelper.ReadJString(env, commandJsonUtf8)));
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartDesktopStream")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartDesktopStreamNative")]
     public static void StartDesktopStream(IntPtr env, IntPtr thiz, IntPtr configJsonUtf8)
     {
         var configJson = JniHelper.ReadJString(env, configJsonUtf8);
@@ -119,7 +124,7 @@ public static class AndroidNativeExports
         });
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStream")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStreamNative")]
     public static void StopDesktopStream(IntPtr env, IntPtr thiz)
     {
         _ = Task.Run(async () =>
@@ -142,7 +147,7 @@ public static class AndroidNativeExports
         }
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartMdnsDiscovery")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartMdnsDiscoveryNative")]
     public static void StartMdnsDiscovery(IntPtr env, IntPtr thiz)
     {
     }
@@ -364,13 +369,20 @@ public static class AndroidNativeExports
             if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
         }
 
+        IntPtr jArray = IntPtr.Zero;
         try
         {
-            var jArray = JniHelper.NewByteArray(env, frame.Length);
+            jArray = JniHelper.NewByteArray(env, frame.Length);
             JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
             JniHelper.CallVoidMethod(env, _callbackGlobalRef, _onFrameReceivedMethodId, jArray);
         }
-        finally { }
+        finally 
+        {
+            if (jArray != IntPtr.Zero)
+            {
+                JniHelper.DeleteLocalRef(env, jArray);
+            }
+        }
     }
 
     private static void OnNativeMessageReceived(RemexMessage msg)
@@ -400,12 +412,19 @@ public static class AndroidNativeExports
             if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
         }
 
+        IntPtr jString = IntPtr.Zero;
         try
         {
-            var jString = JniHelper.CreateJString(env, json);
+            jString = JniHelper.CreateJString(env, json);
             JniHelper.CallVoidMethod(env, _callbackGlobalRef, methodId, jString);
         }
-        finally { }
+        finally 
+        {
+            if (jString != IntPtr.Zero)
+            {
+                JniHelper.DeleteLocalRef(env, jString);
+            }
+        }
     }
 
     private static void NotifyJavaConnectionState(bool isConnected)

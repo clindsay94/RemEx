@@ -14,9 +14,13 @@ public class IpcClientCommandService : ISystemCommandService
     private const string PipeName = "RemExLocalIPC";
 
     public void Shutdown() => SendCommandAsync(new CommandRequest("Shutdown", null)).Wait();
+    public void ForceShutdown() => SendCommandAsync(new CommandRequest("ForceShutdown", null)).Wait();
     public void Restart() => SendCommandAsync(new CommandRequest("Restart", null)).Wait();
     public void ForceRestart() => SendCommandAsync(new CommandRequest("ForceRestart", null)).Wait();
     public void RestartToUefi() => SendCommandAsync(new CommandRequest("RestartToUefi", null)).Wait();
+    public void Sleep() => SendCommandAsync(new CommandRequest("Sleep", null)).Wait();
+    public void Hibernate() => SendCommandAsync(new CommandRequest("Hibernate", null)).Wait();
+    public void SignOut() => SendCommandAsync(new CommandRequest("SignOut", null)).Wait();
     public void Lock() => SendCommandAsync(new CommandRequest("Lock", null)).Wait();
 
     private async Task SendCommandAsync(CommandRequest request)

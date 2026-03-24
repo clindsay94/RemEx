@@ -169,6 +169,9 @@ public sealed class PingPongHandler(
                 case "SHUTDOWN":
                     commandService.Shutdown();
                     return MakeCommandResponse(true, "Shutdown executed.");
+                case "FORCESHUTDOWN":
+                    commandService.ForceShutdown();
+                    return MakeCommandResponse(true, "Force shutdown executed.");
                 case "RESTART":
                     commandService.Restart();
                     return MakeCommandResponse(true, "Restart executed.");
@@ -178,6 +181,15 @@ public sealed class PingPongHandler(
                 case "RESTARTTOUEFI":
                     commandService.RestartToUefi();
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
+                case "SLEEP":
+                    commandService.Sleep();
+                    return MakeCommandResponse(true, "Sleep executed.");
+                case "HIBERNATE":
+                    commandService.Hibernate();
+                    return MakeCommandResponse(true, "Hibernate executed.");
+                case "SIGNOUT":
+                    commandService.SignOut();
+                    return MakeCommandResponse(true, "Sign out executed.");
                 case "KILLPROCESS":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))

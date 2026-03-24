@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
@@ -62,6 +64,10 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private int _transitionType;
 
+    /// <summary>Controls the startup welcome splash overlay visibility.</summary>
+    [ObservableProperty]
+    private bool _showWelcomeSplash = true;
+
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
     private HomeViewModel? _homeViewModel;
@@ -95,6 +101,14 @@ public partial class ShellViewModel : ObservableObject
 
         // Default to Home on startup.
         NavigateToHome();
+
+        _ = DismissWelcomeSplashAsync();
+    }
+
+    private async Task DismissWelcomeSplashAsync()
+    {
+        await Task.Delay(1800).ConfigureAwait(false);
+        Dispatcher.UIThread.Post(() => ShowWelcomeSplash = false);
     }
 
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
@@ -143,7 +157,6 @@ public partial class ShellViewModel : ObservableObject
         _remoteViewModel ??= new RemoteViewModel(
             Connection, this,
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(App.Services),
-            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(App.Services),
             _layoutService);
         SetTransitionAndNavigate(2, _remoteViewModel);
     }

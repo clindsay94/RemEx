@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
 using Remex.Core.Models;
 using Remex.Core.Services.Network;
-using Remex.Core.Services.Command;
 
 namespace Remex.Client.ViewModels;
 
@@ -13,7 +12,6 @@ public partial class RemoteViewModel : ObservableObject
 {
     private readonly ShellViewModel _shell;
     private readonly IWakeOnLanService _wolService;
-    private readonly ISystemCommandService _commandService;
     private readonly DashboardLayoutService _layoutService;
     private DashboardProfile _profile = new();
 
@@ -35,13 +33,11 @@ public partial class RemoteViewModel : ObservableObject
         ConnectionViewModel connection,
         ShellViewModel shell,
         IWakeOnLanService wolService,
-        ISystemCommandService commandService,
         DashboardLayoutService layoutService)
     {
         Connection = connection;
         _shell = shell;
         _wolService = wolService;
-        _commandService = commandService;
         _layoutService = layoutService;
 
         _ = LoadWolConfigAsync();
@@ -115,36 +111,61 @@ public partial class RemoteViewModel : ObservableObject
     [RelayCommand]
     private async Task LockPcAsync()
     {
-        var (ok, msg) = await Connection.SendCommandAsync("Lock");
-        WolStatusText = ok ? "✅ Lock sent" : $"❌ {msg}";
+        await ExecuteRemoteCommandAsync("Lock", "Lock sent");
     }
 
     [RelayCommand]
     private async Task ShutdownPcAsync()
     {
-        var (ok, msg) = await Connection.SendCommandAsync("Shutdown");
-        WolStatusText = ok ? "✅ Shutdown sent" : $"❌ {msg}";
+        await ExecuteRemoteCommandAsync("Shutdown", "Shutdown sent");
+    }
+
+    [RelayCommand]
+    private async Task ForceShutdownPcAsync()
+    {
+        await ExecuteRemoteCommandAsync("ForceShutdown", "Force shutdown sent");
     }
 
     [RelayCommand]
     private async Task RestartPcAsync()
     {
-        var (ok, msg) = await Connection.SendCommandAsync("Restart");
-        WolStatusText = ok ? "✅ Restart sent" : $"❌ {msg}";
+        await ExecuteRemoteCommandAsync("Restart", "Restart sent");
     }
 
     [RelayCommand]
     private async Task ForceRestartAsync()
     {
-        var (ok, msg) = await Connection.SendCommandAsync("ForceRestart");
-        WolStatusText = ok ? "✅ Force Restart sent" : $"❌ {msg}";
+        await ExecuteRemoteCommandAsync("ForceRestart", "Force restart sent");
     }
 
     [RelayCommand]
     private async Task RestartToUefiAsync()
     {
-        var (ok, msg) = await Connection.SendCommandAsync("RestartToUefi");
-        WolStatusText = ok ? "✅ Restart to UEFI sent" : $"❌ {msg}";
+        await ExecuteRemoteCommandAsync("RestartToUefi", "Restart to UEFI sent");
+    }
+
+    [RelayCommand]
+    private async Task SleepPcAsync()
+    {
+        await ExecuteRemoteCommandAsync("Sleep", "Sleep sent");
+    }
+
+    [RelayCommand]
+    private async Task HibernatePcAsync()
+    {
+        await ExecuteRemoteCommandAsync("Hibernate", "Hibernate sent");
+    }
+
+    [RelayCommand]
+    private async Task SignOutPcAsync()
+    {
+        await ExecuteRemoteCommandAsync("SignOut", "Sign out sent");
+    }
+
+    private async Task ExecuteRemoteCommandAsync(string action, string successMessage)
+    {
+        var (ok, msg) = await Connection.SendCommandAsync(action);
+        WolStatusText = ok ? $"✅ {successMessage}" : $"❌ {msg}";
     }
 
     [RelayCommand]

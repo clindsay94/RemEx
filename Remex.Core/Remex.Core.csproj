@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
@@ -9,14 +9,14 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
-    <AssemblyName>libRemexCore</AssemblyName>
     <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
     <SelfContained>true</SelfContained>
     <PublishAot>true</PublishAot>
     <PublishTrimmed>true</PublishTrimmed>
     <AndroidAvoidEmitForPerformance>true</AndroidAvoidEmitForPerformance>
     <NativeLib>Shared</NativeLib>
-    <!-- Ensure 16KB page size alignment for the native library -->
+    <AssemblyName>libRemexCore</AssemblyName>
+    <AndroidNativeAotGenerateJniOnLoad>false</AndroidNativeAotGenerateJniOnLoad>
     <NativeLibLinkerArgs>-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384</NativeLibLinkerArgs>
   </PropertyGroup>
 

@@ -109,25 +109,23 @@
 
             <!-- ═══ Graceful Controls ═══ -->
             <TextBlock Text="GRACEFUL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <UniformGrid Columns="2" Rows="2">
+            <UniformGrid Columns="2" Rows="3">
                 <Button Classes="remote-btn" Content="🔒  Lock PC" Command="{Binding LockPcCommand}" Margin="0,0,4,4"/>
-                <Button Classes="remote-btn" Content="🖥  Turn Off Screen" Margin="4,0,0,4"/>
+                <Button Classes="remote-btn" Content="🚪  Sign Out" Command="{Binding SignOutPcCommand}" Margin="4,0,0,4"/>
                 <Button Classes="remote-btn remote-btn-warn" Content="⏻  Shutdown" Command="{Binding ShutdownPcCommand}" Margin="0,4,4,0"/>
                 <Button Classes="remote-btn remote-btn-warn" Content="🔄  Restart" Command="{Binding RestartPcCommand}" Margin="4,4,0,0"/>
+                <Button Classes="remote-btn" Content="💤  Sleep" Command="{Binding SleepPcCommand}" Margin="0,8,4,0"/>
+                <Button Classes="remote-btn" Content="❄  Hibernate" Command="{Binding HibernatePcCommand}" Margin="4,8,0,0"/>
             </UniformGrid>
 
             <!-- ═══ Forced Controls ═══ -->
             <TextBlock Text="FORCED (IMMEDIATE)" FontSize="11" FontWeight="SemiBold" Foreground="#FF6B6B" LetterSpacing="2"/>
             <UniformGrid Columns="2" Rows="2">
-                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Shutdown" Command="{Binding ShutdownPcCommand}" Margin="0,0,4,4"/>
+                <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Shutdown" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,4"/>
                 <Button Classes="remote-btn remote-btn-danger" Content="⚠  Force Restart" Command="{Binding ForceRestartCommand}" Margin="4,0,0,4"/>
                 <Button Classes="remote-btn remote-btn-danger" Content="🔧  Reboot to UEFI" Command="{Binding RestartToUefiCommand}" Margin="0,4,4,0"/>
-                <Button Classes="remote-btn" Content="💤  Sleep" Margin="4,4,0,0"/>
+                <Border Margin="4,4,0,0" Background="Transparent"/>
             </UniformGrid>
-
-            <!-- ═══ Extra ═══ -->
-            <TextBlock Text="ADDITIONAL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <Button Classes="remote-btn" Content="❄  Hibernate" HorizontalAlignment="Stretch"/>
 
         </StackPanel>
     </ScrollViewer>

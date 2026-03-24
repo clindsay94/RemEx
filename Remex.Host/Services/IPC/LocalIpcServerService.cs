@@ -167,6 +167,9 @@ public class LocalIpcServerService : BackgroundService
                 case "SHUTDOWN":
                     _commandService.Shutdown();
                     return new CommandResponse(true, "Shutdown command executed successfully.", null);
+                case "FORCESHUTDOWN":
+                    _commandService.ForceShutdown();
+                    return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
                 case "RESTART":
                     _commandService.Restart();
                     return new CommandResponse(true, "Restart command executed successfully.", null);
@@ -176,6 +179,15 @@ public class LocalIpcServerService : BackgroundService
                 case "RESTARTTOUEFI":
                     _commandService.RestartToUefi();
                     return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
+                case "SLEEP":
+                    _commandService.Sleep();
+                    return new CommandResponse(true, "Sleep command executed successfully.", null);
+                case "HIBERNATE":
+                    _commandService.Hibernate();
+                    return new CommandResponse(true, "Hibernate command executed successfully.", null);
+                case "SIGNOUT":
+                    _commandService.SignOut();
+                    return new CommandResponse(true, "SignOut command executed successfully.", null);
                 case "LOCK":
                     _commandService.Lock();
                     return new CommandResponse(true, "Lock command executed successfully.", null);

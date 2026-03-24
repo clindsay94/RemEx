@@ -10,6 +10,11 @@ public class LinuxSystemCommandService : ISystemCommandService
         ExecuteProcess("shutdown", "-h now");
     }
 
+    public void ForceShutdown()
+    {
+        ExecuteProcess("shutdown", "-h now");
+    }
+
     public void Restart()
     {
         ExecuteProcess("shutdown", "-r now");
@@ -24,6 +29,21 @@ public class LinuxSystemCommandService : ISystemCommandService
     public void RestartToUefi()
     {
         throw new NotSupportedException("RestartToUefi is not supported on Linux.");
+    }
+
+    public void Sleep()
+    {
+        ExecuteProcess("systemctl", "suspend");
+    }
+
+    public void Hibernate()
+    {
+        ExecuteProcess("systemctl", "hibernate");
+    }
+
+    public void SignOut()
+    {
+        throw new NotSupportedException("SignOut is not supported on Linux generically via CLI.");
     }
 
     public void Lock()

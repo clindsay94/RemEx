@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Copy
+import java.util.Properties
+
 android {
     namespace = "com.clindsay94.remex"
     compileSdk = 36
@@ -41,6 +45,106 @@ android {
     }
     buildToolsVersion = "37.0.0 rc2"
     ndkVersion = "29.0.14206865"
+
+    sourceSets {
+        getByName("debug") {
+            jniLibs.srcDir(layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug"))
+        }
+        getByName("release") {
+            jniLibs.srcDir(layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release"))
+        }
+    }
+}
+
+val repoRootDir = rootProject.projectDir.parentFile
+val remexCoreProjectDir = File(repoRootDir, "Remex.Core")
+val remexGeneratedDebugJniRoot = layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug")
+val remexGeneratedReleaseJniRoot = layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release")
+val androidNdkVersion = "29.0.14206865"
+val androidLocalProperties = Properties().apply {
+    rootProject.file("local.properties").inputStream().use(::load)
+}
+val androidSdkDir = androidLocalProperties.getProperty("sdk.dir")
+    ?: error("Missing sdk.dir in local.properties")
+val androidNdkDir = File(androidSdkDir, "ndk/$androidNdkVersion")
+val androidNdkDirForMsbuild = androidNdkDir.absolutePath.trimEnd('\\', '/') + File.separator
+val arm64PublishedSo = { configuration: String ->
+    File(
+        remexCoreProjectDir,
+        "bin/$configuration/net10.0-android/android-arm64/publish/libRemexCore.so"
+    )
+}
+
+val publishRemexCoreAndroidDebug by tasks.registering(Exec::class) {
+    group = "remex"
+    description = "Publishes Remex.Core Android arm64 debug native library"
+    workingDir = repoRootDir
+    commandLine(
+        "dotnet",
+        "publish",
+        "Remex.Core/Remex.Core.csproj",
+        "-c",
+        "Debug",
+        "-f",
+        "net10.0-android",
+        "-r",
+        "android-arm64",
+        "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild"
+    )
+}
+
+val publishRemexCoreAndroidRelease by tasks.registering(Exec::class) {
+    group = "remex"
+    description = "Publishes Remex.Core Android arm64 release native library"
+    workingDir = repoRootDir
+    commandLine(
+        "dotnet",
+        "publish",
+        "Remex.Core/Remex.Core.csproj",
+        "-c",
+        "Release",
+        "-f",
+        "net10.0-android",
+        "-r",
+        "android-arm64",
+        "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild"
+    )
+}
+
+val syncRemexCoreDebugSo by tasks.registering(Copy::class) {
+    group = "remex"
+    description = "Copies published debug libRemexCore.so into generated jniLibs"
+    dependsOn(publishRemexCoreAndroidDebug)
+
+    from(arm64PublishedSo("Debug"))
+    into(File(remexGeneratedDebugJniRoot, "arm64-v8a"))
+    rename { "libRemexCore.so" }
+}
+
+val syncRemexCoreReleaseSo by tasks.registering(Copy::class) {
+    group = "remex"
+    description = "Copies published release libRemexCore.so into generated jniLibs"
+    dependsOn(publishRemexCoreAndroidRelease)
+
+    from(arm64PublishedSo("Release"))
+    into(File(remexGeneratedReleaseJniRoot, "arm64-v8a"))
+    rename { "libRemexCore.so" }
+}
+
+tasks.matching { it.name == "mergeDebugNativeLibs" }.configureEach {
+    dependsOn(syncRemexCoreDebugSo)
+}
+
+tasks.matching { it.name == "mergeDebugJniLibFolders" }.configureEach {
+    dependsOn(syncRemexCoreDebugSo)
+}
+
+tasks.matching { it.name == "mergeReleaseNativeLibs" }.configureEach {
+    dependsOn(syncRemexCoreReleaseSo)
+}
+
+tasks.matching { it.name == "mergeReleaseJniLibFolders" }.configureEach {
+    dependsOn(syncRemexCoreReleaseSo)
 }
 
 dependencies {

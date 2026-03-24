@@ -235,6 +235,14 @@ public partial class CanvasDashboardViewModel : ObservableObject
     public void ReturnToStaging(CanvasCardViewModel card)
     {
         Cards.Remove(card);
+
+        // Sensor templates remain in staging; removing from canvas is enough.
+        if (card.CardType == "Sensor")
+        {
+            TriggerSave();
+            return;
+        }
+
         card.PositionX = 0;
         card.PositionY = 0;
         StagedCards.Add(card);
@@ -258,6 +266,30 @@ public partial class CanvasDashboardViewModel : ObservableObject
     [RelayCommand]
     private void PlaceFromStaging(CanvasCardViewModel card)
     {
+        // Sensor entries in the staging drawer act as reusable templates,
+        // so users can add multiple cards for the same hardware metric.
+        if (card.CardType == "Sensor" && card.Sensor is not null)
+        {
+            var lastSensorCard = Cards.LastOrDefault(c => c.CardType == "Sensor");
+
+            var clone = new CanvasCardViewModel
+            {
+                CardType = "Sensor",
+                CardTitle = card.CardTitle,
+                Sensor = card.Sensor,
+                IsPinnedToHome = card.IsPinnedToHome,
+                Width = card.Width,
+                Height = card.Height,
+                PositionX = (lastSensorCard?.PositionX ?? 0) + 40,
+                PositionY = (lastSensorCard?.PositionY ?? 200) + 40,
+                ZIndex = _nextZIndex++,
+            };
+
+            Cards.Add(clone);
+            TriggerSave();
+            return;
+        }
+
         if (!StagedCards.Remove(card)) return;
 
         // Cascade new cards diagonally from the last placed card.
@@ -361,58 +393,55 @@ public partial class CanvasDashboardViewModel : ObservableObject
             {
                 var sensorName = string.IsNullOrWhiteSpace(reading.Name) ? "Unknown" : reading.Name;
 
-                // Check if we already have a card for this sensor.
-                var existing = Cards.FirstOrDefault(c =>
-                    c.CardType == "Sensor" && c.Sensor?.Name == sensorName);
+                var sensorVms = Cards
+                    .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == sensorName)
+                    .Select(c => c.Sensor)
+                    .Concat(
+                        StagedCards
+                            .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == sensorName)
+                            .Select(c => c.Sensor))
+                    .Where(s => s is not null)
+                    .Select(s => s!)
+                    .Distinct()
+                    .ToList();
 
-                if (existing != null)
+                // First time seeing this sensor in the current session.
+                if (sensorVms.Count == 0)
                 {
-                    existing.Sensor!.Update(reading);
-                    continue;
+                    var sensor = new SensorViewModel();
+
+                    // Keep one reusable template in staging so users can add more cards.
+                    StagedCards.Add(new CanvasCardViewModel
+                    {
+                        CardType = "Sensor",
+                        CardTitle = sensorName,
+                        Sensor = sensor,
+                        Width = 200,
+                        Height = 120,
+                    });
+
+                    // Restore every persisted card for this sensor.
+                    foreach (var saved in _profile.Cards.Where(c => c.CardType == "Sensor" && c.SensorId == sensorName))
+                    {
+                        if (Cards.Any(c => c.CardId == saved.CardId))
+                        {
+                            continue;
+                        }
+
+                        var restored = CanvasCardViewModel.FromCardState(saved);
+                        restored.CardTitle = sensorName;
+                        restored.Sensor = sensor;
+                        restored.IsPinnedToHome = _profile.PinnedSensorIds.Contains(sensorName);
+                        Cards.Add(restored);
+                        TrackZIndex(saved.ZIndex);
+                    }
+
+                    sensorVms.Add(sensor);
                 }
 
-                // Check staging drawer.
-                var staged = StagedCards.FirstOrDefault(c =>
-                    c.CardType == "Sensor" && c.Sensor?.Name == sensorName);
-
-                if (staged != null)
+                foreach (var sensorVm in sensorVms)
                 {
-                    staged.Sensor!.Update(reading);
-                    continue;
-                }
-
-                // New sensor — check for a persisted CardState.
-                var saved = _profile.Cards.FirstOrDefault(c =>
-                    c.CardType == "Sensor" && c.SensorId == sensorName);
-
-                var sensor = new SensorViewModel();
-                sensor.Update(reading);
-
-                var card = new CanvasCardViewModel
-                {
-                    CardType = "Sensor",
-                    CardTitle = sensorName,
-                    Sensor = sensor,
-                };
-
-                if (saved != null)
-                {
-                    // Restore position from profile → place directly on canvas.
-                    card.PositionX = saved.PositionX;
-                    card.PositionY = saved.PositionY;
-                    card.Width = saved.Width;
-                    card.Height = saved.Height;
-                    card.ZIndex = saved.ZIndex;
-                    card.IsPinnedToHome = _profile.PinnedSensorIds.Contains(sensorName);
-                    TrackZIndex(saved.ZIndex);
-                    Cards.Add(card);
-                }
-                else
-                {
-                    // No saved state → goes to staging drawer.
-                    card.Width = 200;
-                    card.Height = 120;
-                    StagedCards.Add(card);
+                    sensorVm.Update(reading);
                 }
             }
         });
@@ -422,9 +451,8 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
     private void TriggerSave()
     {
-        var profile = new DashboardProfile
+        var profile = _profile with
         {
-            ProfileName = _profile.ProfileName,
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
             HostAddress = Connection.HostAddress,
@@ -432,8 +460,11 @@ public partial class CanvasDashboardViewModel : ObservableObject
             PinnedSensorIds = Cards
                 .Where(c => c.IsPinnedToHome && c.Sensor != null)
                 .Select(c => c.Sensor!.Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList(),
         };
+
+        _profile = profile;
 
         _layoutService.RequestSave(profile);
 
@@ -455,13 +486,19 @@ public partial class CanvasDashboardViewModel : ObservableObject
         IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
         GridSize = profile.GridSize;
 
-        // Sync cards
-        var toRemove = Cards.ToList();
+        var profileCardIds = profile.Cards
+            .Select(c => c.CardId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var existing in Cards.Where(c => !profileCardIds.Contains(c.CardId)).ToList())
+        {
+            Cards.Remove(existing);
+        }
+
         foreach (var state in profile.Cards)
         {
-            var existing = Cards.FirstOrDefault(c => 
-                (c.CardType == state.CardType && state.CardType != "Sensor") ||
-                (c.CardType == "Sensor" && c.Sensor?.Name == state.SensorId));
+            var existing = Cards.FirstOrDefault(c => c.CardId == state.CardId);
 
             if (existing != null)
             {
@@ -470,34 +507,35 @@ public partial class CanvasDashboardViewModel : ObservableObject
                 existing.Width = state.Width;
                 existing.Height = state.Height;
                 existing.ZIndex = state.ZIndex;
-                existing.IsPinnedToHome = profile.PinnedSensorIds.Contains(state.SensorId ?? "");
-                toRemove.Remove(existing);
+                existing.IsPinnedToHome = profile.PinnedSensorIds.Contains(existing.Sensor?.Name ?? state.SensorId ?? "");
+                continue;
             }
-            else if (state.CardType != "Sensor")
+
+            if (state.CardType != "Sensor")
             {
                 var card = CanvasCardViewModel.FromCardState(state);
                 card.CardTitle = state.CardType;
                 card.Connection = Connection;
                 Cards.Add(card);
+                TrackZIndex(card.ZIndex);
+                continue;
             }
-            // Sensors will be handled by ProcessTelemetry if they aren't on canvas yet
-        }
 
-        foreach (var r in toRemove)
-        {
-            // If it's a sensor, move it to staging instead of just removing?
-            // Actually, if it's not in the profile, it should be in staging.
-            if (r.CardType == "Sensor")
+            // Restore sensor cards only when the sensor model is known.
+            var sensor = StagedCards.FirstOrDefault(c => c.CardType == "Sensor" && c.Sensor?.Name == state.SensorId)?.Sensor
+                ?? Cards.FirstOrDefault(c => c.CardType == "Sensor" && c.Sensor?.Name == state.SensorId)?.Sensor;
+
+            if (sensor is null)
             {
-                Cards.Remove(r);
-                r.PositionX = 0;
-                r.PositionY = 0;
-                StagedCards.Add(r);
+                continue;
             }
-            else
-            {
-                Cards.Remove(r);
-            }
+
+            var restored = CanvasCardViewModel.FromCardState(state);
+            restored.CardTitle = state.SensorId ?? "Sensor";
+            restored.Sensor = sensor;
+            restored.IsPinnedToHome = profile.PinnedSensorIds.Contains(state.SensorId ?? "");
+            Cards.Add(restored);
+            TrackZIndex(restored.ZIndex);
         }
 
         foreach (var c in Cards) TrackZIndex(c.ZIndex);

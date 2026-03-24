@@ -1,25 +1,28 @@
 package net.dot.android.crypto;
 
-import javax.net.ssl.X509TrustManager;
-import java.security.cert.X509Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.X509TrustManager;
 
 public final class DotnetProxyTrustManager implements X509TrustManager {
-    private final long nativeHandle;
+    private final long sslStreamProxyHandle;
 
-    public DotnetProxyTrustManager(long nativeHandle) {
-        this.nativeHandle = nativeHandle;
+    public DotnetProxyTrustManager(long sslStreamProxyHandle) {
+        this.sslStreamProxyHandle = sslStreamProxyHandle;
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-        throw new CertificateException("Client trust validation not supported");
+        if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
+            throw new CertificateException();
+        }
     }
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-        if (!verifyRemoteCertificate(nativeHandle)) {
-            throw new CertificateException("Certificate validation failed");
+        if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
+            throw new CertificateException();
         }
     }
 
@@ -28,5 +31,5 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
         return new X509Certificate[0];
     }
 
-    private native boolean verifyRemoteCertificate(long handle);
+    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle);
 }

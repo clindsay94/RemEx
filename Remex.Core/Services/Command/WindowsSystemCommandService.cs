@@ -15,6 +15,11 @@ public class WindowsSystemCommandService : ISystemCommandService
         ExecuteProcess("shutdown.exe", "/s /t 0");
     }
 
+    public void ForceShutdown()
+    {
+        ExecuteProcess("shutdown.exe", "/s /f /t 0");
+    }
+
     public void Restart()
     {
         ExecuteProcess("shutdown.exe", "/r /t 0");
@@ -28,6 +33,21 @@ public class WindowsSystemCommandService : ISystemCommandService
     public void RestartToUefi()
     {
         ExecuteProcess("shutdown.exe", "/r /fw /t 0");
+    }
+
+    public void Sleep()
+    {
+        ExecuteProcess("rundll32.exe", "powrprof.dll,SetSuspendState 0,1,0");
+    }
+
+    public void Hibernate()
+    {
+        ExecuteProcess("shutdown.exe", "/h");
+    }
+
+    public void SignOut()
+    {
+        ExecuteProcess("shutdown.exe", "/l");
     }
 
     public void Lock()

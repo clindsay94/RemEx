@@ -147,7 +147,7 @@
                 <Button Grid.Column="5" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="📥" FontSize="14"/>
-                        <TextBlock Text="{Binding StagedCards.Count, StringFormat=New ({0})}" FontSize="12"/>
+                        <TextBlock Text="{Binding StagedCards.Count, StringFormat=Sensors ({0})}" FontSize="12"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -211,6 +211,8 @@
                                         <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
                                         <Button Classes="card-action" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="White"/>
                                         <Button Classes="card-action" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <Button Classes="card-action" Content="🔒 Lock PC" Command="{Binding Connection.LockCommand}"/>
+                                        <Button Classes="card-action" Content="🔧 Reboot to UEFI" Command="{Binding Connection.RestartToUefiCommand}"/>
                                         <Button Classes="card-action" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White"/>
                                     </StackPanel>
 
@@ -294,7 +296,7 @@
                                                 </TextBlock>
                                                 <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
-                                            <Button Classes="stage-btn" Content="+ Place on Canvas" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
+                                            <Button Classes="stage-btn" Content="+ Add Card" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>

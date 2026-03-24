@@ -27,10 +27,17 @@ object RemexCoreClient {
     init {
         try {
             // Loads libRemexCore.so
+            // Standard Android behavior is to strip 'lib' and '.so'
             System.loadLibrary("RemexCore")
             isLibraryLoaded = true
         } catch (e: UnsatisfiedLinkError) {
-            android.util.Log.e("RemexCoreClient", "Failed to load native library RemexCore", e)
+            android.util.Log.e("RemexCoreClient", "Failed to load native library RemexCore, trying libRemexCore", e)
+            try {
+                System.loadLibrary("libRemexCore")
+                isLibraryLoaded = true
+            } catch (e2: UnsatisfiedLinkError) {
+                android.util.Log.e("RemexCoreClient", "Failed to load native library libRemexCore", e2)
+            }
         }
     }
 
@@ -38,7 +45,11 @@ object RemexCoreClient {
     fun setCallback(callback: RemexCallback?) {
         this.callback = callback
         if (isLibraryLoaded) {
-            RegisterCallbackNative(callback)
+            try {
+                RegisterCallbackNative(callback)
+            } catch (e: UnsatisfiedLinkError) {
+                android.util.Log.e("RemexCoreClient", "Native method RegisterCallbackNative not found", e)
+            }
         }
     }
 
@@ -54,7 +65,22 @@ object RemexCoreClient {
      * @return JSON string of AndroidNativeInitializationResponse
      */
     @JvmStatic
-    external fun InitRemex(initJson: String): String
+    fun InitRemex(initJson: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                InitRemexNative(initJson)
+            } catch (e: UnsatisfiedLinkError) {
+                android.util.Log.e("RemexCoreClient", "Native method InitRemexNative not found", e)
+                "{\"success\":false,\"message\":\"Native method not found.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
+
+    @JvmStatic
+    @JvmName("InitRemexNative")
+    private external fun InitRemexNative(initJson: String): String
 
     /**
      * Sends a Wake-on-LAN packet.
@@ -64,14 +90,42 @@ object RemexCoreClient {
      * @return JSON string of AndroidNativeOperationResponse
      */
     @JvmStatic
-    external fun WakePc(macAddress: String, broadcastIp: String, port: Int): String
+    fun WakePc(macAddress: String, broadcastIp: String, port: Int): String {
+        return if (isLibraryLoaded) {
+            try {
+                WakePcNative(macAddress, broadcastIp, port)
+            } catch (e: UnsatisfiedLinkError) {
+                "{\"success\":false,\"message\":\"Native method not found.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
+
+    @JvmStatic
+    @JvmName("WakePcNative")
+    private external fun WakePcNative(macAddress: String, broadcastIp: String, port: Int): String
 
     /**
      * Retrieves the latest telemetry data from the cache or service.
      * @return JSON string of AndroidNativeTelemetryResponse
      */
     @JvmStatic
-    external fun GetTelemetry(): String
+    fun GetTelemetry(): String {
+        return if (isLibraryLoaded) {
+            try {
+                GetTelemetryNative()
+            } catch (e: UnsatisfiedLinkError) {
+                "{\"success\":false,\"message\":\"Native method not found.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
+
+    @JvmStatic
+    @JvmName("GetTelemetryNative")
+    private external fun GetTelemetryNative(): String
 
     /**
      * Sends a raw RemexMessage to the host.
@@ -79,7 +133,21 @@ object RemexCoreClient {
      * @return JSON string of operation response
      */
     @JvmStatic
-    external fun SendMessage(messageJson: String): String
+    fun SendMessage(messageJson: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                SendMessageNative(messageJson)
+            } catch (e: UnsatisfiedLinkError) {
+                "{\"success\":false,\"message\":\"Native method not found.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
+
+    @JvmStatic
+    @JvmName("SendMessageNative")
+    private external fun SendMessageNative(messageJson: String): String
 
     /**
      * Dispatches an IPC command to the remote host.
@@ -87,25 +155,69 @@ object RemexCoreClient {
      * @return JSON string of CommandResponse
      */
     @JvmStatic
-    external fun SendCommand(commandJson: String): String
+    fun SendCommand(commandJson: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                SendCommandNative(commandJson)
+            } catch (e: UnsatisfiedLinkError) {
+                "{\"success\":false,\"message\":\"Native method not found.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
+
+    @JvmStatic
+    @JvmName("SendCommandNative")
+    private external fun SendCommandNative(commandJson: String): String
 
     /**
      * Starts the remote desktop stream.
      */
     @JvmStatic
-    external fun StartDesktopStream(configJson: String)
+    fun StartDesktopStream(configJson: String) {
+        if (isLibraryLoaded) {
+            try {
+                StartDesktopStreamNative(configJson)
+            } catch (e: UnsatisfiedLinkError) { }
+        }
+    }
+
+    @JvmStatic
+    @JvmName("StartDesktopStreamNative")
+    private external fun StartDesktopStreamNative(configJson: String)
 
     /**
      * Stops the remote desktop stream.
      */
     @JvmStatic
-    external fun StopDesktopStream()
+    fun StopDesktopStream() {
+        if (isLibraryLoaded) {
+            try {
+                StopDesktopStreamNative()
+            } catch (e: UnsatisfiedLinkError) { }
+        }
+    }
+
+    @JvmStatic
+    @JvmName("StopDesktopStreamNative")
+    private external fun StopDesktopStreamNative()
 
     /**
      * Triggers mDNS service discovery on the native side.
      */
     @JvmStatic
-    external fun StartMdnsDiscovery()
+    fun StartMdnsDiscovery() {
+        if (isLibraryLoaded) {
+            try {
+                StartMdnsDiscoveryNative()
+            } catch (e: UnsatisfiedLinkError) { }
+        }
+    }
+
+    @JvmStatic
+    @JvmName("StartMdnsDiscoveryNative")
+    private external fun StartMdnsDiscoveryNative()
 
     /**
      * Frees memory allocated by the native side using Marshal.FreeCoTaskMem.

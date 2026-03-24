@@ -113,19 +113,31 @@ public partial class ConnectionViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task LockCommandAsync() => await SendCommandAsync("Lock");
+    public async Task LockAsync() => await SendCommandAsync("Lock");
 
     [RelayCommand]
-    public async Task SleepCommandAsync() => await SendCommandAsync("Sleep");
+    public async Task SleepAsync() => await SendCommandAsync("Sleep");
 
     [RelayCommand]
-    public async Task ShutdownCommandAsync() => await SendCommandAsync("Shutdown");
+    public async Task HibernateAsync() => await SendCommandAsync("Hibernate");
 
     [RelayCommand]
-    public async Task RestartCommandAsync() => await SendCommandAsync("Restart");
+    public async Task SignOutAsync() => await SendCommandAsync("SignOut");
 
     [RelayCommand]
-    public async Task WakeOnLanCommandAsync()
+    public async Task ShutdownAsync() => await SendCommandAsync("Shutdown");
+
+    [RelayCommand]
+    public async Task ForceShutdownAsync() => await SendCommandAsync("ForceShutdown");
+
+    [RelayCommand]
+    public async Task RestartAsync() => await SendCommandAsync("Restart");
+
+    [RelayCommand]
+    public async Task RestartToUefiAsync() => await SendCommandAsync("RestartToUefi");
+
+    [RelayCommand]
+    public async Task WakeOnLanAsync()
     {
         // This needs parameters usually, but for a simple widget toggle it might use defaults
         await SendCommandAsync("WakeOnLan");
