@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -117,16 +118,31 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.MetaReceived += OnMetaReceived;
         _desktopService.ErrorReceived += OnErrorReceived;
         _desktopService.Disconnected += OnDisconnected;
+        Connection.PropertyChanged += OnConnectionPropertyChanged;
     }
 
     // ═══════════════ Commands ═══════════════
 
-    private bool CanStartStream() => !IsStreaming && Connection.IsConnected;
+    public bool IsRemoteDesktopSupported => Connection.SupportsRemoteDesktop;
+
+    public string RemoteDesktopCapabilityText =>
+        Connection.IsConnected
+            ? Connection.RemoteDesktopAvailabilitySummary
+            : "Connect to a host to check remote desktop availability.";
+
+    private bool CanStartStream() => !IsStreaming && Connection.IsConnected && IsRemoteDesktopSupported;
     private bool CanStopStream() => IsStreaming;
 
     [RelayCommand(CanExecute = nameof(CanStartStream))]
     private async Task StartStreamAsync()
     {
+        if (!IsRemoteDesktopSupported)
+        {
+            StatusText = Connection.RemoteDesktopAvailabilitySummary;
+            HasStreamError = true;
+            return;
+        }
+
         try
         {
             StatusText = "Connecting...";
@@ -356,8 +372,30 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         });
     }
 
+    private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ConnectionViewModel.IsConnected)
+            or nameof(ConnectionViewModel.HostCapabilities)
+            or nameof(ConnectionViewModel.SupportsRemoteDesktop))
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                OnPropertyChanged(nameof(IsRemoteDesktopSupported));
+                OnPropertyChanged(nameof(RemoteDesktopCapabilityText));
+                StartStreamCommand.NotifyCanExecuteChanged();
+
+                if (!Connection.IsConnected && !IsStreaming)
+                {
+                    StatusText = "Not streaming";
+                    HasStreamError = false;
+                }
+            });
+        }
+    }
+
     public void Dispose()
     {
+        Connection.PropertyChanged -= OnConnectionPropertyChanged;
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
         _desktopService.ErrorReceived -= OnErrorReceived;

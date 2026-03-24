@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Remex.Core.Messages;
+using Remex.Core.Models;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 using Remex.Core.Services;
@@ -14,58 +16,123 @@ namespace Remex.Core.Native;
 public static class AndroidNativeExports
 {
     private static readonly object SyncRoot = new();
-    private static readonly Func<CommandRequest, CancellationToken, Task<CommandResponse>> DefaultIpcDispatcher =
-        static (request, cancellationToken) => RemExLocalIPC.SendCommandAsync(request, cancellationToken);
+    private static IntPtr _javaVm;
+    private static IntPtr _callbackGlobalRef;
+    private static IntPtr _onTelemetryUpdateMethodId;
+    private static IntPtr _onConnectionStateChangedMethodId;
+    private static IntPtr _onLauncherSyncMethodId;
+    private static IntPtr _onProcessListSyncMethodId;
+    private static IntPtr _onFrameReceivedMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
-    private static Func<CommandRequest, CancellationToken, Task<CommandResponse>> _ipcDispatcher = DefaultIpcDispatcher;
-    private static ITelemetryService? _telemetryService;
-    private static CancellationTokenSource? _telemetryLoopCts;
-    private static Task? _telemetryLoopTask;
     private static TelemetryPayload? _cachedTelemetry;
     private static AndroidNativeInitRequest _lastInitRequest = new();
 
-    public static void ConfigureWakeOnLanService(IWakeOnLanService? wakeOnLanService)
+    static AndroidNativeExports()
+    {
+        RemexNativeClient.Current.TelemetryReceived += OnNativeTelemetryReceived;
+        RemexNativeClient.Current.ConnectionStateChanged += OnNativeConnectionStateChanged;
+        RemexNativeClient.Current.LauncherEntriesReceived += OnNativeLauncherEntriesReceived;
+        RemexNativeClient.Current.ProcessListReceived += OnNativeProcessListReceived;
+        RemexNativeClient.Current.MessageReceived += OnNativeMessageReceived;
+
+        RemexDesktopClient.Current.FrameReceived += OnNativeFrameReceived;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
+    public static void RegisterCallbackNative(IntPtr env, IntPtr thiz, IntPtr callbackObj)
     {
         lock (SyncRoot)
         {
-            _wakeOnLanService = wakeOnLanService ?? new WakeOnLanService();
+            if (_javaVm == IntPtr.Zero)
+            {
+                JniHelper.GetJavaVM(env, out _javaVm);
+            }
+
+            if (_callbackGlobalRef != IntPtr.Zero)
+            {
+                JniHelper.DeleteGlobalRef(env, _callbackGlobalRef);
+            }
+
+            if (callbackObj == IntPtr.Zero)
+            {
+                _callbackGlobalRef = IntPtr.Zero;
+                _onTelemetryUpdateMethodId = IntPtr.Zero;
+                _onConnectionStateChangedMethodId = IntPtr.Zero;
+                _onLauncherSyncMethodId = IntPtr.Zero;
+                _onProcessListSyncMethodId = IntPtr.Zero;
+                _onFrameReceivedMethodId = IntPtr.Zero;
+                return;
+            }
+
+            _callbackGlobalRef = JniHelper.NewGlobalRef(env, callbackObj);
+            var clazz = JniHelper.GetObjectClass(env, _callbackGlobalRef);
+            _onTelemetryUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onTelemetryUpdate", "(Ljava/lang/String;)V");
+            _onConnectionStateChangedMethodId = JniHelper.GetMethodID(env, clazz, "onConnectionStateChanged", "(Z)V");
+            _onLauncherSyncMethodId = JniHelper.GetMethodID(env, clazz, "onLauncherSync", "(Ljava/lang/String;)V");
+            _onProcessListSyncMethodId = JniHelper.GetMethodID(env, clazz, "onProcessListSync", "(Ljava/lang/String;)V");
+            _onFrameReceivedMethodId = JniHelper.GetMethodID(env, clazz, "onFrameReceived", "([B)V");
         }
     }
-
-    public static void ConfigureTelemetryService(ITelemetryService? telemetryService)
-    {
-        lock (SyncRoot)
-        {
-            _telemetryService = telemetryService;
-        }
-    }
-
-    public static void ConfigureIpcDispatcher(Func<CommandRequest, CancellationToken, Task<CommandResponse>>? ipcDispatcher)
-    {
-        lock (SyncRoot)
-        {
-            _ipcDispatcher = ipcDispatcher ?? DefaultIpcDispatcher;
-        }
-    }
-
-    // JNI Entry Points must accept JNIEnv* (env) and jobject (thiz) as the first two parameters
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_InitRemex")]
     public static IntPtr InitRemex(IntPtr env, IntPtr thiz, IntPtr initJsonUtf8)
-        => Export(env, () => HandleInitializeBackgroundServices(JNIEnv.ReadJString(env, initJsonUtf8)));
+        => Export(env, () => HandleInitialize(JniHelper.ReadJString(env, initJsonUtf8)));
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_WakePc")]
     public static IntPtr WakePc(IntPtr env, IntPtr thiz, IntPtr macAddressUtf8, IntPtr broadcastIpUtf8, int port)
-        => Export(env, () => HandleSendWakeOnLan(JNIEnv.ReadJString(env, macAddressUtf8), JNIEnv.ReadJString(env, broadcastIpUtf8), port));
+        => Export(env, () => HandleSendWakeOnLan(JniHelper.ReadJString(env, macAddressUtf8), JniHelper.ReadJString(env, broadcastIpUtf8), port));
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetTelemetry")]
     public static IntPtr GetTelemetry(IntPtr env, IntPtr thiz)
         => Export(env, HandleRequestTelemetry);
 
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessage")]
+    public static IntPtr SendMessage(IntPtr env, IntPtr thiz, IntPtr messageJsonUtf8)
+        => Export(env, () => HandleDispatchMessage(JniHelper.ReadJString(env, messageJsonUtf8)));
+
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendCommand")]
     public static IntPtr SendCommand(IntPtr env, IntPtr thiz, IntPtr commandJsonUtf8)
-        => Export(env, () => HandleDispatchIpcCommand(JNIEnv.ReadJString(env, commandJsonUtf8)));
+        => Export(env, () => HandleDispatchCommand(JniHelper.ReadJString(env, commandJsonUtf8)));
+
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartDesktopStream")]
+    public static void StartDesktopStream(IntPtr env, IntPtr thiz, IntPtr configJsonUtf8)
+    {
+        var configJson = JniHelper.ReadJString(env, configJsonUtf8);
+        if (configJson == null) return;
+
+        var config = RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
+        
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                string host;
+                int port;
+                lock (SyncRoot)
+                {
+                    host = _lastInitRequest.Host;
+                    port = _lastInitRequest.Port;
+                }
+
+                await RemexDesktopClient.Current.ConnectAsync(host, port);
+            }
+            catch { }
+        });
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStream")]
+    public static void StopDesktopStream(IntPtr env, IntPtr thiz)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await RemexDesktopClient.Current.DisconnectAsync();
+            }
+            catch { }
+        });
+    }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_FreeMemory")]
     public static void FreeMemory(IntPtr env, IntPtr thiz, IntPtr pointer)
@@ -79,57 +146,50 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartMdnsDiscovery")]
     public static void StartMdnsDiscovery(IntPtr env, IntPtr thiz)
     {
-        // TODO: Wire up MdnsDiscoveryService trigger here
     }
 
-    internal static string HandleInitializeBackgroundServices(string? initJson)
+    private static string HandleInitialize(string? initJson)
     {
         var initRequest = string.IsNullOrWhiteSpace(initJson)
             ? new AndroidNativeInitRequest()
             : RemexJson.Deserialize(initJson, RemexJsonSerializerContext.Default.AndroidNativeInitRequest) ?? new AndroidNativeInitRequest();
 
-        var telemetryService = GetTelemetryService();
-
         lock (SyncRoot)
         {
-            _lastInitRequest = Normalize(initRequest);
-            RestartTelemetryLoopUnsafe(_lastInitRequest, telemetryService);
+            _lastInitRequest = initRequest;
         }
 
-        if (_lastInitRequest.WarmupTelemetry && telemetryService != null)
+        _ = Task.Run(async () =>
         {
             try
             {
-                _cachedTelemetry = telemetryService.GetTelemetryAsync(CancellationToken.None).GetAwaiter().GetResult();
+                await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port);
             }
-            catch
-            {
-                _cachedTelemetry = null;
-            }
-        }
+            catch { }
+        });
 
         var response = new AndroidNativeInitializationResponse
         {
             Success = true,
             Message = "Android native exports initialized.",
-            TelemetryAvailable = telemetryService != null,
-            BackgroundLoopStarted = telemetryService != null && _lastInitRequest.StartTelemetryPolling,
+            TelemetryAvailable = true,
+            BackgroundLoopStarted = true,
             IpcAvailable = true,
             WakeOnLanAvailable = true,
-            TelemetryPollIntervalMs = _lastInitRequest.TelemetryPollIntervalMs,
+            TelemetryPollIntervalMs = 1000,
         };
 
         return RemexJson.Serialize(response, RemexJsonSerializerContext.Default.AndroidNativeInitializationResponse);
     }
 
-    internal static string HandleSendWakeOnLan(string? macAddress, string? broadcastIp, int port)
+    private static string HandleSendWakeOnLan(string? macAddress, string? broadcastIp, int port)
     {
         if (string.IsNullOrWhiteSpace(macAddress))
         {
             return SerializeOperationFailure("Wake-on-LAN requires a MAC address.");
         }
 
-        var service = GetWakeOnLanService();
+        var service = _wakeOnLanService;
         var effectiveBroadcastIp = string.IsNullOrWhiteSpace(broadcastIp) ? "255.255.255.255" : broadcastIp;
         var effectivePort = port > 0 ? port : 9;
 
@@ -144,135 +204,155 @@ public static class AndroidNativeExports
         }
     }
 
-    internal static string HandleRequestTelemetry()
+    private static string HandleRequestTelemetry()
     {
         var telemetry = _cachedTelemetry;
         if (telemetry != null)
         {
             return SerializeTelemetrySuccess(telemetry);
         }
-
-        var telemetryService = GetTelemetryService();
-        if (telemetryService == null)
-        {
-            return SerializeTelemetryFailure("Telemetry provider is not configured.");
-        }
-
-        try
-        {
-            telemetry = telemetryService.GetTelemetryAsync(CancellationToken.None).GetAwaiter().GetResult();
-            _cachedTelemetry = telemetry;
-            return SerializeTelemetrySuccess(telemetry);
-        }
-        catch (Exception ex)
-        {
-            return SerializeTelemetryFailure("Failed to retrieve telemetry.", ex.ToString());
-        }
+        return SerializeTelemetryFailure("Telemetry not yet available.");
     }
 
-    internal static string HandleDispatchIpcCommand(string? commandJson)
+    private static string HandleDispatchMessage(string? messageJson)
+    {
+        if (string.IsNullOrWhiteSpace(messageJson))
+        {
+            return SerializeOperationFailure("Message JSON is required.");
+        }
+
+        var message = RemexJson.Deserialize(messageJson, RemexJsonSerializerContext.Default.RemexMessage);
+        if (message == null)
+        {
+            return SerializeOperationFailure("Failed to deserialize message.");
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await RemexNativeClient.Current.SendMessageAsync(message);
+            }
+            catch { }
+        });
+
+        return SerializeOperationSuccess("Message dispatched.");
+    }
+
+    private static string HandleDispatchCommand(string? commandJson)
     {
         if (string.IsNullOrWhiteSpace(commandJson))
         {
-            return SerializeCommandResponse(new CommandResponse(false, "IPC command JSON is required.", null));
+            return SerializeCommandResponse(new CommandResponse(false, "Command JSON is required.", null));
         }
 
         var command = RemexJson.Deserialize(commandJson, RemexJsonSerializerContext.Default.CommandRequest);
         if (command == null)
         {
-            return SerializeCommandResponse(new CommandResponse(false, "Failed to deserialize IPC command.", null));
+            return SerializeCommandResponse(new CommandResponse(false, "Failed to deserialize command.", null));
         }
 
         try
         {
-            var response = GetIpcDispatcher()(command, CancellationToken.None).GetAwaiter().GetResult();
+            var response = RemexNativeClient.Current.SendCommandAsync(command, CancellationToken.None).GetAwaiter().GetResult();
             return SerializeCommandResponse(response);
         }
         catch (Exception ex)
         {
-            return SerializeCommandResponse(new CommandResponse(false, "IPC command dispatch failed.", ex.ToString()));
+            return SerializeCommandResponse(new CommandResponse(false, "Command dispatch failed.", ex.ToString()));
         }
     }
 
-    private static AndroidNativeInitRequest Normalize(AndroidNativeInitRequest request)
-        => request with { TelemetryPollIntervalMs = request.TelemetryPollIntervalMs > 0 ? request.TelemetryPollIntervalMs : 1000 };
-
-    private static void RestartTelemetryLoopUnsafe(AndroidNativeInitRequest initRequest, ITelemetryService? telemetryService)
+    private static void OnNativeProcessListReceived(List<ProcessInfo> processes)
     {
-        _telemetryLoopCts?.Cancel();
-        _telemetryLoopCts?.Dispose();
-        _telemetryLoopTask = null;
-
-        if (!initRequest.StartTelemetryPolling || telemetryService == null)
-        {
-            _telemetryLoopCts = null;
-            return;
-        }
-
-        _telemetryLoopCts = new CancellationTokenSource();
-        var cancellationToken = _telemetryLoopCts.Token;
-        var interval = TimeSpan.FromMilliseconds(initRequest.TelemetryPollIntervalMs);
-        _telemetryLoopTask = Task.Run(async () =>
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    _cachedTelemetry = await telemetryService.GetTelemetryAsync(cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-                catch
-                {
-                }
-
-                try
-                {
-                    await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-            }
-        }, cancellationToken);
+        NotifyJavaData(_onProcessListSyncMethodId, RemexJson.Serialize(processes, RemexJsonSerializerContext.Default.ListProcessInfo));
     }
 
-    private static IWakeOnLanService GetWakeOnLanService()
+    private static void OnNativeLauncherEntriesReceived(List<AppEntry> entries)
     {
+        NotifyJavaData(_onLauncherSyncMethodId, RemexJson.Serialize(entries, RemexJsonSerializerContext.Default.ListAppEntry));
+    }
+
+    private static void OnNativeTelemetryReceived(TelemetryPayload telemetry)
+    {
+        _cachedTelemetry = telemetry;
+        NotifyJavaData(_onTelemetryUpdateMethodId, RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload));
+    }
+
+    private static void OnNativeConnectionStateChanged(bool isConnected)
+    {
+        NotifyJavaConnectionState(isConnected);
+    }
+
+    private static void OnNativeFrameReceived(byte[] frame)
+    {
+        NotifyJavaFrame(frame);
+    }
+
+    private static void NotifyJavaFrame(byte[] frame)
+    {
+        IntPtr env = IntPtr.Zero;
         lock (SyncRoot)
         {
-            return _wakeOnLanService;
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onFrameReceivedMethodId == IntPtr.Zero) return;
+            if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
         }
+
+        try
+        {
+            var jArray = JniHelper.NewByteArray(env, frame.Length);
+            JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
+            JniHelper.CallVoidMethod(env, _callbackGlobalRef, _onFrameReceivedMethodId, jArray);
+        }
+        finally { }
     }
 
-    private static ITelemetryService? GetTelemetryService()
+    private static void OnNativeMessageReceived(RemexMessage msg)
     {
-        lock (SyncRoot)
-        {
-            return _telemetryService;
-        }
     }
 
-    private static Func<CommandRequest, CancellationToken, Task<CommandResponse>> GetIpcDispatcher()
+    private static void NotifyJavaData(IntPtr methodId, string json)
     {
+        IntPtr env = IntPtr.Zero;
         lock (SyncRoot)
         {
-            return _ipcDispatcher;
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || methodId == IntPtr.Zero) return;
+            if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
         }
+
+        try
+        {
+            var jString = JniHelper.CreateJString(env, json);
+            JniHelper.CallVoidMethod(env, _callbackGlobalRef, methodId, jString);
+        }
+        finally { }
+    }
+
+    private static void NotifyJavaConnectionState(bool isConnected)
+    {
+        IntPtr env = IntPtr.Zero;
+        lock (SyncRoot)
+        {
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onConnectionStateChangedMethodId == IntPtr.Zero) return;
+            if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
+        }
+
+        try
+        {
+            JniHelper.CallVoidMethod(env, _callbackGlobalRef, _onConnectionStateChangedMethodId, isConnected);
+        }
+        finally { }
     }
 
     private static IntPtr Export(IntPtr env, Func<string> action)
     {
         try
         {
-            return JNIEnv.CreateJString(env, action());
+            return JniHelper.CreateJString(env, action());
         }
-        catch
+        catch (Exception ex)
         {
-            return JNIEnv.CreateJString(env, "{\"success\":false,\"message\":\"Unhandled native export failure.\"}");
+            return JniHelper.CreateJString(env, "{\"success\":false,\"message\":\"Unhandled native export failure.\",\"error\":\"" + ex.Message + "\"}");
         }
     }
 
@@ -283,10 +363,10 @@ public static class AndroidNativeExports
         => RemexJson.Serialize(new AndroidNativeOperationResponse { Success = false, Message = message, Error = error }, RemexJsonSerializerContext.Default.AndroidNativeOperationResponse);
 
     private static string SerializeTelemetrySuccess(TelemetryPayload telemetry)
-        => RemexJson.Serialize(new AndroidNativeTelemetryResponse { Success = true, Telemetry = telemetry }, RemexJsonSerializerContext.Default.AndroidNativeTelemetryResponse);
+        => RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload);
 
     private static string SerializeTelemetryFailure(string message, string? error = null)
-        => RemexJson.Serialize(new AndroidNativeTelemetryResponse { Success = false, Message = message, Error = error }, RemexJsonSerializerContext.Default.AndroidNativeTelemetryResponse);
+        => "{\"success\":false,\"message\":\"" + message + "\"}";
 
     private static string SerializeCommandResponse(CommandResponse response)
         => RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
@@ -294,32 +374,26 @@ public static class AndroidNativeExports
 
 public sealed record AndroidNativeInitRequest
 {
+    public string Host { get; init; } = "localhost";
+    public int Port { get; init; } = 5005;
     public int TelemetryPollIntervalMs { get; init; } = 1000;
-
     public bool StartTelemetryPolling { get; init; } = true;
-
     public bool WarmupTelemetry { get; init; } = true;
 }
 
 public record AndroidNativeOperationResponse
 {
     public bool Success { get; init; }
-
     public string Message { get; init; } = string.Empty;
-
     public string? Error { get; init; }
 }
 
 public sealed record AndroidNativeInitializationResponse : AndroidNativeOperationResponse
 {
     public bool TelemetryAvailable { get; init; }
-
     public bool BackgroundLoopStarted { get; init; }
-
     public bool IpcAvailable { get; init; }
-
     public bool WakeOnLanAvailable { get; init; }
-
     public int TelemetryPollIntervalMs { get; init; }
 }
 

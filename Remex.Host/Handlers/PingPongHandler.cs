@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using Remex.Core.Messages;
 using Remex.Core.Services;
+using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
 
 namespace Remex.Host.Handlers;
@@ -18,11 +19,26 @@ public sealed class PingPongHandler(
     Remex.Core.Services.ILauncherStorageService launcherStorage, 
     Remex.Core.Services.IAppLauncherService appLauncherService,
     Remex.Core.Services.IDashboardProfileStorageService profileStorage,
-    Remex.Core.Services.IProcessMonitorService processMonitorService)
+    Remex.Core.Services.IProcessMonitorService processMonitorService,
+    IHostCapabilitiesProvider hostCapabilitiesProvider)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
         logger.LogInformation("Client connected.");
+
+        try
+        {
+            var hostInfo = new RemexMessage
+            {
+                Type = MessageTypes.HostInfo,
+                HostCapabilities = hostCapabilitiesProvider.GetCurrent(),
+            };
+            await MessageSerializer.SendAsync(webSocket, hostInfo, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send host capability metadata on connect.");
+        }
 
         // Sync launchers on connect
         try

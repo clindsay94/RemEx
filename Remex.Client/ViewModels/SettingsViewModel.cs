@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -32,6 +33,12 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _hostAddress = "ws://localhost:5005/ws";
 
+    [ObservableProperty]
+    private string _hostRuntimeText = "Host capabilities unavailable";
+
+    [ObservableProperty]
+    private string _hostCapabilityText = "Connect to a host to inspect runtime capabilities.";
+
     /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
     public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();
 
@@ -43,6 +50,7 @@ public partial class SettingsViewModel : ObservableObject
         _layoutService = layoutService;
         _connection = connection;
         _shell = shell;
+        _connection.PropertyChanged += OnConnectionPropertyChanged;
     }
 
     /// <summary>Loads current values from the persisted profile.</summary>
@@ -55,6 +63,7 @@ public partial class SettingsViewModel : ObservableObject
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
+            UpdateHostCapabilitySummary();
             RefreshSensors();
         });
 
@@ -164,6 +173,21 @@ public partial class SettingsViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
+
+    private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ConnectionViewModel.HostCapabilities)
+            or nameof(ConnectionViewModel.IsConnected))
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHostCapabilitySummary);
+        }
+    }
+
+    private void UpdateHostCapabilitySummary()
+    {
+        HostRuntimeText = _connection.HostRuntimeSummary;
+        HostCapabilityText = _connection.RemoteDesktopAvailabilitySummary;
+    }
 
     // ═══════════════ Windows Service Management ═══════════════
 

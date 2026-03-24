@@ -127,6 +127,7 @@
                     <TextBlock Text="D" FontSize="64" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Black"/>
                     <TextBlock Text="Remote Desktop" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="Connect and press Start to begin streaming." FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding RemoteDesktopCapabilityText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" TextAlignment="Center"/>
                     <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#FF6B6B" HorizontalAlignment="Center" 
                                Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="500"/>
                     <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8" Padding="14,10" Margin="0,8,0,0" MaxWidth="500">

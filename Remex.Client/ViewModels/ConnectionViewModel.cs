@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core;
 using Remex.Core.Messages;
+using Remex.Core.Models;
 using Remex.Core.Services.Network;
 
 namespace Remex.Client.ViewModels;
@@ -43,6 +44,9 @@ public partial class ConnectionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isConnecting;
+
+    [ObservableProperty]
+    private HostCapabilities? _hostCapabilities;
 
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
@@ -160,6 +164,35 @@ public partial class ConnectionViewModel : ObservableObject
     [ObservableProperty]
     private double _maxLatency;
 
+    public bool SupportsRemoteDesktop => HostCapabilities?.SupportsRemoteDesktop ?? true;
+
+    public string HostRuntimeSummary
+    {
+        get
+        {
+            if (HostCapabilities is null)
+            {
+                return IsConnected ? "Connected to host" : "Host not connected";
+            }
+
+            var runtimeLabel = HostCapabilities.RuntimeMode switch
+            {
+                "interactive" => "Interactive host",
+                "service" => "Service host",
+                "headless" => "Headless host",
+                _ => "Host"
+            };
+
+            return $"{runtimeLabel} on {HostCapabilities.Platform}";
+        }
+    }
+
+    public string RemoteDesktopAvailabilitySummary =>
+        SupportsRemoteDesktop
+            ? "Remote desktop available"
+            : HostCapabilities?.RemoteDesktopUnavailableReason
+                ?? "Remote desktop unavailable";
+
     private TelemetryPayload? _telemetry;
     public TelemetryPayload? Telemetry
     {
@@ -169,6 +202,13 @@ public partial class ConnectionViewModel : ObservableObject
             _telemetry = value;
             OnPropertyChanged(nameof(Telemetry));
         }
+    }
+
+    partial void OnHostCapabilitiesChanged(HostCapabilities? value)
+    {
+        OnPropertyChanged(nameof(SupportsRemoteDesktop));
+        OnPropertyChanged(nameof(HostRuntimeSummary));
+        OnPropertyChanged(nameof(RemoteDesktopAvailabilitySummary));
     }
 
     private bool CanConnect() => !IsConnected && !IsConnecting;
@@ -223,6 +263,7 @@ public partial class ConnectionViewModel : ObservableObject
     {
         _userDisconnected = false;
         IsConnecting = true;
+        HostCapabilities = null;
         StopReconnecting();
 
         // Define CTS outside try to be accessible in catch
@@ -385,6 +426,11 @@ public partial class ConnectionViewModel : ObservableObject
                             ProcessListReceived?.Invoke(message.ProcessList);
                         });
                         break;
+
+                    case MessageTypes.HostInfo when message.HostCapabilities is not null:
+                        Dispatcher.UIThread.Post(() => HostCapabilities = message.HostCapabilities);
+                        break;
+
                     case MessageTypes.LayoutSync when message.DashboardProfile is not null:
                         Dispatcher.UIThread.Post(() => LayoutProfileReceived?.Invoke(message.DashboardProfile));
                         break;
@@ -465,6 +511,7 @@ public partial class ConnectionViewModel : ObservableObject
                     // Success — adopt the new socket.
                     _webSocket = ws;
                     _receiveCts = new CancellationTokenSource();
+                    HostCapabilities = null;
 
                     Dispatcher.UIThread.Post(() =>
                     {
@@ -524,5 +571,6 @@ public partial class ConnectionViewModel : ObservableObject
         _webSocket = null;
 
         IsConnected = false;
+        HostCapabilities = null;
     }
 }

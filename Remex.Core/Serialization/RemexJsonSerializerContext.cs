@@ -27,6 +27,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(DesktopConfig))]
 [JsonSerializable(typeof(DesktopMeta))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(HostCapabilities))]
 [JsonSerializable(typeof(InputEvent))]
 [JsonSerializable(typeof(List<AppEntry>))]
 [JsonSerializable(typeof(List<CardState>))]

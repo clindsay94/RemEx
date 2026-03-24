@@ -1,4 +1,5 @@
 using Remex.Core.Messages;
+using Remex.Core.Models;
 
 namespace Remex.Core.Tests;
 
@@ -53,5 +54,30 @@ public class RemexMessageTests
     {
         Assert.Equal("ping", MessageTypes.Ping);
         Assert.Equal("pong", MessageTypes.Pong);
+    }
+
+    [Fact]
+    public void HostInfoMessage_RoundTripsCapabilities()
+    {
+        var msg = new RemexMessage
+        {
+            Type = MessageTypes.HostInfo,
+            HostCapabilities = new HostCapabilities
+            {
+                RuntimeMode = "service",
+                Platform = "windows",
+                SupportsRemoteDesktop = false,
+                RemoteDesktopUnavailableReason = "Interactive session required."
+            }
+        };
+
+        var bytes = MessageSerializer.Serialize(msg);
+        var deserialized = MessageSerializer.Deserialize(bytes);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(MessageTypes.HostInfo, deserialized!.Type);
+        Assert.NotNull(deserialized.HostCapabilities);
+        Assert.False(deserialized.HostCapabilities!.SupportsRemoteDesktop);
+        Assert.Equal("Interactive session required.", deserialized.HostCapabilities.RemoteDesktopUnavailableReason);
     }
 }

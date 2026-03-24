@@ -57,6 +57,11 @@ public sealed record RemexMessage
     /// <summary>List of running processes.</summary>
     [JsonPropertyName("processList")]
     public List<Remex.Core.Models.ProcessInfo>? ProcessList { get; init; }
+
+    /// <summary>Capability summary for the active host runtime.</summary>
+    [JsonPropertyName("hostCapabilities")]
+    public Remex.Core.Models.HostCapabilities? HostCapabilities { get; init; }
+
     /// <summary>Remote desktop input event.</summary>
     [JsonPropertyName("inputEvent")]
     public Remex.Core.Models.InputEvent? InputEvent { get; init; }
@@ -92,6 +97,7 @@ public static class MessageTypes
     public const string LayoutRequest = "layout_request";
     public const string ProcessListRequest = "process_list_request";
     public const string ProcessListSync = "process_list_sync";
+    public const string HostInfo = "host_info";
     public const string DesktopStart = "desktop_start";
     public const string DesktopStop = "desktop_stop";
     public const string DesktopFrame = "desktop_frame";

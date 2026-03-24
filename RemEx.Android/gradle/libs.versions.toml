@@ -11,8 +11,12 @@ composeBom = "2024.09.00"
 lifecycleViewmodelCompose = "2.6.1"
 materialIconsExtended = "1.7.5"
 androidxGraphicsPath = "1.0.1"
+navigationCompose = "2.8.1"
+androidxDatastorePreferences = "1.1.1"
 
 [libraries]
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidxDatastorePreferences" }
 androidx-graphics-path = { group = "androidx.graphics", name = "graphics-path", version.ref = "androidxGraphicsPath" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

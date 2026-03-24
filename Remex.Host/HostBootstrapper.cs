@@ -42,6 +42,7 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<Remex.Core.Services.Network.IWakeOnLanService, Remex.Core.Services.Network.WakeOnLanService>();
         builder.Services.AddSingleton<Remex.Core.Services.Network.INetworkListener, Remex.Core.Services.Network.RemexNetworkListener>();
+        builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
         builder.Services.AddHostedService<Remex.Host.Services.IPC.LocalIpcServerService>();
         builder.Services.AddHostedService<Remex.Host.Services.Network.ExternalNetworkListenerService>();
         builder.Services.AddHostedService<Remex.Host.Services.Network.MdnsAdvertisingService>();
@@ -82,7 +83,12 @@ public static class HostBootstrapper
         // --- Minimal API endpoints ---
 
         // Health-check / discovery
-        app.MapGet("/", () => Results.Ok(new { service = "Remex.Host", status = "running" }));
+        app.MapGet("/", (IHostCapabilitiesProvider hostCapabilitiesProvider) => Results.Ok(new
+        {
+            service = "Remex.Host",
+            status = "running",
+            capabilities = hostCapabilitiesProvider.GetCurrent(),
+        }));
 
         // WebSocket hub
         app.Map(RemexConstants.WebSocketPath, async (HttpContext context) =>
@@ -105,7 +111,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(), 
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
-                context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>());
+                context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>(),
+                context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 
@@ -123,7 +130,8 @@ public static class HostBootstrapper
             var handler = new RemoteDesktopHandler(
                 context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
                 context.RequestServices.GetRequiredService<IScreenCaptureService>(),
-                context.RequestServices.GetRequiredService<IInputSimulationService>());
+                context.RequestServices.GetRequiredService<IInputSimulationService>(),
+                context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 

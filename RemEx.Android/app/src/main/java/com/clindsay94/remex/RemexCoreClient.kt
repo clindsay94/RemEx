@@ -17,6 +17,9 @@ object RemexCoreClient {
     interface RemexCallback {
         fun onTelemetryUpdate(telemetryData: String)
         fun onConnectionStateChanged(isConnected: Boolean)
+        fun onLauncherSync(launcherData: String)
+        fun onProcessListSync(processData: String)
+        fun onFrameReceived(frame: ByteArray)
     }
 
     init {
@@ -32,7 +35,16 @@ object RemexCoreClient {
     @JvmStatic
     fun setCallback(callback: RemexCallback?) {
         this.callback = callback
+        if (isLibraryLoaded) {
+            RegisterCallbackNative(callback)
+        }
     }
+
+    /**
+     * Registers the callback object in the native layer for real-time notifications.
+     */
+    @JvmStatic
+    private external fun RegisterCallbackNative(callback: RemexCallback?)
 
     /**
      * Initializes background services (telemetry polling, etc.)
@@ -60,12 +72,32 @@ object RemexCoreClient {
     external fun GetTelemetry(): String
 
     /**
+     * Sends a raw RemexMessage to the host.
+     * @param messageJson Full JSON of RemexMessage
+     * @return JSON string of operation response
+     */
+    @JvmStatic
+    external fun SendMessage(messageJson: String): String
+
+    /**
      * Dispatches an IPC command to the remote host.
      * @param commandJson JSON string of CommandRequest
      * @return JSON string of CommandResponse
      */
     @JvmStatic
     external fun SendCommand(commandJson: String): String
+
+    /**
+     * Starts the remote desktop stream.
+     */
+    @JvmStatic
+    external fun StartDesktopStream(configJson: String)
+
+    /**
+     * Stops the remote desktop stream.
+     */
+    @JvmStatic
+    external fun StopDesktopStream()
 
     /**
      * Triggers mDNS service discovery on the native side.

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Host.Services;
 using Remex.Host;
 
 namespace Remex.Host.Handlers;
@@ -18,6 +19,7 @@ public sealed class RemoteDesktopHandler
     private readonly ILogger<RemoteDesktopHandler> _logger;
     private readonly IScreenCaptureService _screenCapture;
     private readonly IInputSimulationService _inputSimulation;
+    private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
 
     private int _quality = 50;
     private double _scale = 0.5;
@@ -28,15 +30,42 @@ public sealed class RemoteDesktopHandler
     public RemoteDesktopHandler(
         ILogger<RemoteDesktopHandler> logger,
         IScreenCaptureService screenCapture,
-        IInputSimulationService inputSimulation)
+        IInputSimulationService inputSimulation,
+        IHostCapabilitiesProvider hostCapabilitiesProvider)
     {
         _logger = logger;
         _screenCapture = screenCapture;
         _inputSimulation = inputSimulation;
+        _hostCapabilitiesProvider = hostCapabilitiesProvider;
     }
 
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
+        var hostCapabilities = _hostCapabilitiesProvider.GetCurrent();
+
+        if (!hostCapabilities.SupportsRemoteDesktop)
+        {
+            await SendDesktopError(
+                webSocket,
+                hostCapabilities.RemoteDesktopUnavailableReason
+                    ?? "Remote desktop is unavailable in the current host runtime.",
+                ct);
+
+            try
+            {
+                if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
+                {
+                    await webSocket.CloseOutputAsync(WebSocketCloseStatus.PolicyViolation, "interactive desktop unavailable", ct);
+                }
+            }
+            catch
+            {
+                // Best effort close.
+            }
+
+            return;
+        }
+
         _logger.LogInformation("Remote desktop client connected.");
 
         try
