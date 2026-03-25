@@ -30,13 +30,13 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
         fontScale: Float,
         cardCornerRadius: Int,
         cardOpacity: Float,
-        pcCardShapePreset: String,
-        telemetryCardShapePreset: String,
-        appLauncherCardShapePreset: String,
-        taskManagerCardShapePreset: String,
-        remoteDesktopCardShapePreset: String,
-        remoteControlCardShapePreset: String,
-        remoteMouseCardShapePreset: String
+        pcCardShapePreset: Float,
+        telemetryCardShapePreset: Float,
+        appLauncherCardShapePreset: Float,
+        taskManagerCardShapePreset: Float,
+        remoteDesktopCardShapePreset: Float,
+        remoteControlCardShapePreset: Float,
+        remoteMouseCardShapePreset: Float
     ) {
         viewModelScope.launch {
             settingsManager.savePersonalization(

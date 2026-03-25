@@ -1,19 +1,25 @@
 package com.clindsay94.remex.ui.navigation
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
@@ -37,30 +43,30 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide navigation for splash screen
-    val showNav = currentRoute != Screen.Splash.route
+    // Hide navigation for splash screen and remote desktop
+    val showNav = currentRoute != Screen.Splash.route && currentRoute != Screen.RemoteDesktop.route
 
     Scaffold(
         bottomBar = {
             if (showNav) {
-                NavigationBar {
-                    navItems.forEach { screen ->
-                        // Only show main screens in bottom bar to avoid overcrowding
-                        // (Connection, Dashboard, RemoteControl, RemoteMouse, AppLauncher, TaskManager, RemoteDesktop, Personalization)
-                        // We'll show a subset or all if they fit. User mentioned "bottom bar anyway".
-                        // Let's show the most important ones.
-                        val mainScreens = listOf(
-                            Screen.Connection,
-                            Screen.Dashboard,
-                            Screen.RemoteDesktop,
-                            Screen.RemoteControl,
-                            Screen.RemoteMouse,
-                            Screen.AppLauncher
-                        )
-                        if (screen in mainScreens) {
+                Surface(
+                    tonalElevation = 3.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        navItems.forEach { screen ->
+                            val isSelected = currentRoute == screen.route
                             NavigationBarItem(
                                 icon = { Icon(screen.icon, contentDescription = screen.title) },
-                                selected = currentRoute == screen.route,
+                                label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) },
+                                selected = isSelected,
+                                alwaysShowLabel = false,
                                 onClick = {
                                     navController.navigate(screen.route) {
                                         popUpTo(navController.graph.startDestinationId) {

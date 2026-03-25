@@ -7,7 +7,8 @@ Thanks for your interest in contributing! This document covers how to set up the
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- For Android builds: `dotnet workload install android`
+- For Avalonia Android builds: `dotnet workload install android`
+- For the native Android app (`RemEx.Android`): Android Studio (or a standalone JDK 17+ and Android SDK with `ANDROID_HOME` set)
 - An IDE that supports .NET — Visual Studio 2022+, Rider, or VS Code with the C# Dev Kit
 
 ---
@@ -15,15 +16,17 @@ Thanks for your interest in contributing! This document covers how to set up the
 ## Project Structure
 
 ```text
-Remex.sln                    Solution root
+Remex.sln                    .NET solution
 ├── Remex.Core/              Shared models, messages, and service interfaces
-├── Remex.Host/              ASP.NET headless service (Minimal APIs + WebSocket)
-├── Remex.Client/            Shared Avalonia UI — views, view-models, controls, services
+│                            ↳ Also compiled as libRemexCore.so (NativeAOT) for Android JNI
+├── Remex.Host/              ASP.NET headless service (Minimal APIs + WebSocket + mDNS)
+├── Remex.Client/            Shared Avalonia UI — views, viewmodels, controls, services, themes
 ├── Remex.Client.Desktop/    Desktop entry point (Windows / Linux)
-├── Remex.Client.Android/    Android entry point
+├── Remex.Client.Android/    Avalonia Android entry point + M3 theme overrides
 ├── Remex.Core.Tests/        xUnit tests for Core
 ├── Remex.Host.Tests/        xUnit tests for Host
-└── scripts/                 Utility scripts (Windows Service installer)
+├── RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+└── scripts/                 Utility scripts (Windows Service installer, android-fresh pipeline)
 ```
 
 ---
@@ -58,23 +61,23 @@ dotnet test Remex.sln
 dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-### Android — APK
+### Avalonia Android APK
 
 ```bash
 dotnet publish Remex.Client.Android\Remex.Client.Android.csproj -c Release -f net10.0-android
 ```
 
-### Android — Hardened Fresh Rebuild Workflow
+### Native Android App (`RemEx.Android`) — Hardened Fresh Rebuild
 
-Use the Gradle tasks below when you need guaranteed fresh APK output with native library verification:
+The native Android app requires `libRemexCore.so` to be built from `Remex.Core` before assembling the APK. Use the hardened pipeline to guarantee a verified artifact every time:
 
 ```powershell
-# From repo root (recommended wrapper)
-.\scripts\android-fresh.ps1 -Configuration Debug -Install
-.\scripts\android-fresh.ps1 -Configuration Debug
-.\scripts\android-fresh.ps1 -Configuration Release
+# From repo root (recommended)
+.\scripts\android-fresh.ps1 -Configuration Debug -Install   # build + install to connected device
+.\scripts\android-fresh.ps1 -Configuration Debug            # build only
+.\scripts\android-fresh.ps1 -Configuration Release          # release build + verification
 
-# Or from RemEx.Android directly
+# Or run Gradle tasks directly from RemEx.Android/
 .\gradlew.bat remexFreshInstallDebug --rerun-tasks --no-configuration-cache
 .\gradlew.bat remexFreshAssembleDebug --rerun-tasks --no-configuration-cache
 .\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
@@ -83,28 +86,39 @@ Use the Gradle tasks below when you need guaranteed fresh APK output with native
 These tasks:
 
 - Delete every `bin/` and `obj/` directory across the repository.
-- Rebuild `Remex.Core` Android NativeAOT output.
-- Ensure APK-embedded `libRemexCore.so` hash matches the just-published file.
-- Validate timestamps so stale artifacts fail the build immediately.
+- Rebuild `Remex.Core` as a NativeAOT Android shared library (`libRemexCore.so`).
+- Copy the `.so` into `RemEx.Android/app/src/main/jniLibs/arm64-v8a/` via `SyncRemexCoreSoTask`.
+- Verify the APK-embedded library SHA-256 matches the just-built file via `VerifyRemexCoreInApkTask`.
+- Fail immediately on any hash mismatch or missing artifact.
 
 ---
 
 ## Development Notes
 
-### Architecture
+### Architecture (Avalonia client)
 
 - **MVVM** — Views in `Remex.Client/Views/`, ViewModels in `Remex.Client/ViewModels/`. Uses `CommunityToolkit.Mvvm` source generators (`[ObservableProperty]`, `[RelayCommand]`).
 - **Navigation** — `ShellViewModel` owns the sidebar and child VM lifecycle. Views are resolved via `DataTemplate` in `ShellView.axaml`.
 - **Communication** — `ConnectionViewModel` manages the primary WebSocket. `RemoteDesktopService` has its own dedicated socket (`/ws/desktop`). Local IPC uses a named pipe (`RemExLocalIPC`).
 - **Telemetry** — `HWiNFO` (Windows) / `lmsensors` (Linux) polled by the host and broadcast over the WebSocket.
+- **mDNS** — `MdnsAdvertisingService` (host) and `MdnsDiscoveryService` (client) enable auto-discovery on the LAN.
+
+### Architecture (native Android — `RemEx.Android`)
+
+- **Compose + ViewModel** — Each screen has a `*Screen.kt` Composable and a `*ViewModel.kt` backed by `StateFlow`.
+- **JNI Bridge** — `RemexCoreClient` (Kotlin `object`) loads `libRemexCore.so` at startup and exposes all native entry points. Register callbacks via `RemexCoreClient.setCallback()`.
+- **`RemexClientManager`** — Singleton that owns connection state and routes JNI callbacks to the active ViewModel.
+- **Navigation** — `AppNavigation.kt` with `NavHost`; routes defined in `NavRoutes.kt`. Bottom `NavigationBar` visible on all main screens; hidden during splash/connection.
+- **Personalization** — `SettingsManager` (DataStore) persists theme seed color, font family, and card-shape preset. `PersonalizationViewModel` exposes `StateFlow`s consumed by `RemExTheme` and card Composables.
+- **Widgets** — Each widget provider reads from `WidgetSettingsManager` (DataStore) and is configured via `WidgetConfigActivity`.
 
 ### Versioning
 
-The version is set once in `Directory.Build.props` and applied to all projects automatically.
+The .NET version is set once in `Directory.Build.props` and applied to all .NET projects automatically. The Android Gradle version (`versionName`) should be kept in sync with `Directory.Build.props`.
 
-### Themes
+### Themes (Avalonia)
 
-Theme resource dictionaries live in `Remex.Client/Themes/`. The `ThemeService` swaps them at runtime and applies customization overrides (accent color, corner radius, opacity, glow).
+Theme resource dictionaries live in `Remex.Client/Themes/`. The `ThemeService` swaps them at runtime and applies customization overrides (accent color, corner radius, opacity, glow). Android-specific overrides are in `Material3Android.axaml`.
 
 ---
 

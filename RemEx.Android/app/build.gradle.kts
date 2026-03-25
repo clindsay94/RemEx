@@ -544,6 +544,7 @@ dependencies {
     implementation(libs.material.color.utilities)
     implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.androidx.graphics.path)
+    implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

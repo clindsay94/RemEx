@@ -75,25 +75,25 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
     val pcCardShapePreset = settingsManager.pcCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val telemetryCardShapePreset = settingsManager.telemetryCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val appLauncherCardShapePreset = settingsManager.appLauncherCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val taskManagerCardShapePreset = settingsManager.taskManagerCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val remoteDesktopCardShapePreset = settingsManager.remoteDesktopCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val remoteControlCardShapePreset = settingsManager.remoteControlCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val remoteMouseCardShapePreset = settingsManager.remoteMouseCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     init {
         loadSavedHomeLayout()

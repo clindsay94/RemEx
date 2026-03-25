@@ -21,10 +21,10 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
     private val settingsManager = SettingsManager(application)
 
     val remoteControlCardShapePreset = settingsManager.remoteControlCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val remoteMouseCardShapePreset = settingsManager.remoteMouseCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)

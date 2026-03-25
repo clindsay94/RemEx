@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
@@ -41,11 +42,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.materialShapesList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -84,13 +88,13 @@ fun PersonalizationScreen(
     var fontScale by remember { mutableFloatStateOf(settings.fontScale) }
     var cornerRadius by remember { mutableIntStateOf(settings.cardCornerRadius) }
     var cardOpacity by remember { mutableFloatStateOf(settings.cardOpacity) }
-    var pcCardShapePreset by remember { mutableStateOf(settings.pcCardShapePreset) }
-    var telemetryCardShapePreset by remember { mutableStateOf(settings.telemetryCardShapePreset) }
-    var appLauncherCardShapePreset by remember { mutableStateOf(settings.appLauncherCardShapePreset) }
-    var taskManagerCardShapePreset by remember { mutableStateOf(settings.taskManagerCardShapePreset) }
-    var remoteDesktopCardShapePreset by remember { mutableStateOf(settings.remoteDesktopCardShapePreset) }
-    var remoteControlCardShapePreset by remember { mutableStateOf(settings.remoteControlCardShapePreset) }
-    var remoteMouseCardShapePreset by remember { mutableStateOf(settings.remoteMouseCardShapePreset) }
+    var pcCardShapePreset by remember { mutableFloatStateOf(settings.pcCardShapePreset) }
+    var telemetryCardShapePreset by remember { mutableFloatStateOf(settings.telemetryCardShapePreset) }
+    var appLauncherCardShapePreset by remember { mutableFloatStateOf(settings.appLauncherCardShapePreset) }
+    var taskManagerCardShapePreset by remember { mutableFloatStateOf(settings.taskManagerCardShapePreset) }
+    var remoteDesktopCardShapePreset by remember { mutableFloatStateOf(settings.remoteDesktopCardShapePreset) }
+    var remoteControlCardShapePreset by remember { mutableFloatStateOf(settings.remoteControlCardShapePreset) }
+    var remoteMouseCardShapePreset by remember { mutableFloatStateOf(settings.remoteMouseCardShapePreset) }
 
     LaunchedEffect(
         themeMode,
@@ -272,26 +276,40 @@ fun PersonalizationScreen(
                     Text("Individual Card Shapes", fontWeight = FontWeight.Bold)
 
                     val cards = listOf(
-                        "PC Status" to { v: String -> pcCardShapePreset = v } to pcCardShapePreset,
-                        "Telemetry" to { v: String -> telemetryCardShapePreset = v } to telemetryCardShapePreset,
-                        "App Launcher" to { v: String -> appLauncherCardShapePreset = v } to appLauncherCardShapePreset,
-                        "Task Manager" to { v: String -> taskManagerCardShapePreset = v } to taskManagerCardShapePreset,
-                        "Remote Desktop" to { v: String -> remoteDesktopCardShapePreset = v } to remoteDesktopCardShapePreset,
-                        "Remote Control" to { v: String -> remoteControlCardShapePreset = v } to remoteControlCardShapePreset,
-                        "Remote Mouse" to { v: String -> remoteMouseCardShapePreset = v } to remoteMouseCardShapePreset
+                        "PC Status" to { v: Float -> pcCardShapePreset = v } to pcCardShapePreset,
+                        "Telemetry" to { v: Float -> telemetryCardShapePreset = v } to telemetryCardShapePreset,
+                        "App Launcher" to { v: Float -> appLauncherCardShapePreset = v } to appLauncherCardShapePreset,
+                        "Task Manager" to { v: Float -> taskManagerCardShapePreset = v } to taskManagerCardShapePreset,
+                        "Remote Desktop" to { v: Float -> remoteDesktopCardShapePreset = v } to remoteDesktopCardShapePreset,
+                        "Remote Control" to { v: Float -> remoteControlCardShapePreset = v } to remoteControlCardShapePreset,
+                        "Remote Mouse" to { v: Float -> remoteMouseCardShapePreset = v } to remoteMouseCardShapePreset
                     )
+
+                    val maxShapes = (materialShapesList.size - 1).toFloat()
 
                     cards.forEach { (pair, current) ->
                         val (label, setter) = pair
-                        Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("rounded", "cut", "pill").forEach { option ->
-                                FilterChip(
-                                    selected = current == option,
-                                    onClick = { setter(option) },
-                                    label = { Text(option.replaceFirstChar { it.uppercase() }) }
-                                )
-                            }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(label, style = MaterialTheme.typography.labelLarge)
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Slider(
+                                value = current,
+                                onValueChange = { setter(it) },
+                                valueRange = 0f..maxShapes,
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(cardShape(current, cornerRadius))
+                                    .background(MaterialTheme.colorScheme.primary)
+                            )
                         }
                     }
                 }

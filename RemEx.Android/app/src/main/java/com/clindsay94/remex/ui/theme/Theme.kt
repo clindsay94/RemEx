@@ -3,7 +3,6 @@ package com.clindsay94.remex.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -12,18 +11,36 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.circle
+import androidx.graphics.shapes.star
 import dev.sasikanth.material.color.utilities.dynamiccolor.MaterialDynamicColors
 import dev.sasikanth.material.color.utilities.hct.Hct
 import dev.sasikanth.material.color.utilities.scheme.SchemeExpressive
+import dev.sasikanth.material.color.utilities.scheme.SchemeMonochrome
+import dev.sasikanth.material.color.utilities.scheme.SchemeNeutral
 import dev.sasikanth.material.color.utilities.scheme.SchemeTonalSpot
 import dev.sasikanth.material.color.utilities.scheme.SchemeVibrant
-import dev.sasikanth.material.color.utilities.scheme.SchemeNeutral
-import dev.sasikanth.material.color.utilities.scheme.SchemeMonochrome
+
+private val Purple80 = Color(0xFFD0BCFF)
+private val PurpleGrey80 = Color(0xFFCCC2DC)
+private val Pink80 = Color(0xFFEFB8C8)
+
+private val Purple40 = Color(0xFF6650a4)
+private val PurpleGrey40 = Color(0xFF625b71)
+private val Pink40 = Color(0xFF7D5260)
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -47,13 +64,70 @@ val Shapes = Shapes(
 
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
-fun cardShape(preset: String, cornerRadiusDp: Int): Shape {
-    val radius = cornerRadiusDp.dp
-    return when (preset.lowercase()) {
-        "cut" -> CutCornerShape(radius)
-        "pill" -> RoundedCornerShape(percent = 50)
-        else -> RoundedCornerShape(radius)
+val materialShapesList = listOf(
+    RoundedPolygon.circle(numVertices = 4), // Square
+    RoundedPolygon.circle(numVertices = 4, cornerRadius = 0.2f), // Rounded Square
+    RoundedPolygon.circle(), // Circle
+    RoundedPolygon(numVertices = 3), // Triangle
+    RoundedPolygon(numVertices = 3, cornerRadius = 0.2f), // Rounded Triangle
+    RoundedPolygon(numVertices = 5), // Pentagon
+    RoundedPolygon(numVertices = 6), // Hexagon
+    RoundedPolygon(numVertices = 8), // Octagon
+    RoundedPolygon.star(numVerticesPerRadius = 5, innerRadiusRatio = 0.5f), // Star
+    RoundedPolygon.star(numVerticesPerRadius = 5, innerRadiusRatio = 0.5f, innerRadiusRoundingRadius = 0.2f, radius = 1f, roundingRadius = 0.2f), // Soft Star
+    RoundedPolygon.star(numVerticesPerRadius = 8, innerRadiusRatio = 0.8f), // Cog
+    RoundedPolygon.star(numVerticesPerRadius = 4, innerRadiusRatio = 0.3f), // Cross
+    RoundedPolygon.star(numVerticesPerRadius = 12, innerRadiusRatio = 0.9f), // Certificate
+    RoundedPolygon.star(numVerticesPerRadius = 4, innerRadiusRatio = 0.5f), // Diamond
+    RoundedPolygon.star(numVerticesPerRadius = 6, innerRadiusRatio = 0.7f), // Flower
+    RoundedPolygon.star(numVerticesPerRadius = 10, innerRadiusRatio = 0.6f) // Burst
+)
+
+class MorphPolygonShape(
+    private val morph: Morph,
+    private val progress: Float
+) : Shape {
+    private val matrix = Matrix()
+
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val androidPath = android.graphics.Path()
+        morph.toPath(progress, androidPath)
+        
+        val composePath = androidPath.asComposePath()
+        
+        matrix.reset()
+        val bounds = morph.calculateBounds()
+        val scaleX = size.width / (bounds[2] - bounds[0])
+        val scaleY = size.height / (bounds[3] - bounds[1])
+        
+        matrix.translate(size.width / 2f, size.height / 2f)
+        matrix.scale(scaleX, scaleY)
+        
+        composePath.transform(matrix)
+        return Outline.Generic(composePath)
     }
+}
+
+fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
+    if (materialShapesList.isEmpty()) {
+        return RoundedCornerShape(cornerRadiusDp.dp)
+    }
+    val maxIndex = materialShapesList.size - 1
+    val safeIndex = index.coerceIn(0f, maxIndex.toFloat())
+    
+    val startIndex = safeIndex.toInt()
+    val endIndex = (startIndex + 1).coerceAtMost(maxIndex)
+    val progress = safeIndex - startIndex
+    
+    val startPolygon = materialShapesList[startIndex]
+    val endPolygon = materialShapesList[endIndex]
+    
+    val morph = Morph(startPolygon, endPolygon)
+    return MorphPolygonShape(morph, progress)
 }
 
 fun colorSchemeFromSeed(seedColor: Color, darkTheme: Boolean, style: String = "tonal_spot"): ColorScheme {

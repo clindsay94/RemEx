@@ -25,6 +25,7 @@ public static class AndroidNativeExports
     private static IntPtr _onFrameReceivedMethodId;
     private static IntPtr _onHostInfoUpdateMethodId;
     private static IntPtr _onDesktopErrorMethodId;
+    private static IntPtr _onDesktopMetaMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -40,6 +41,7 @@ public static class AndroidNativeExports
 
         RemexDesktopClient.Current.FrameReceived += OnNativeFrameReceived;
         RemexDesktopClient.Current.ErrorReceived += OnNativeDesktopError;
+        RemexDesktopClient.Current.MetaReceived += OnNativeMetaReceived;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
@@ -79,6 +81,7 @@ public static class AndroidNativeExports
             _onFrameReceivedMethodId = JniHelper.GetMethodID(env, clazz, "onFrameReceived", "([B)V");
             _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
             _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
+            _onDesktopMetaMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
             
             // Clean up the local class ref
             JniHelper.DeleteLocalRef(env, clazz);
@@ -358,6 +361,11 @@ public static class AndroidNativeExports
     private static void OnNativeDesktopError(string errorText)
     {
         NotifyJavaData(_onDesktopErrorMethodId, errorText);
+    }
+
+    private static void OnNativeMetaReceived(DesktopMeta meta)
+    {
+        NotifyJavaData(_onDesktopMetaMethodId, RemexJson.Serialize(meta, RemexJsonSerializerContext.Default.DesktopMeta));
     }
 
     private static void NotifyJavaFrame(byte[] frame)

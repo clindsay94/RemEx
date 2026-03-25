@@ -32,9 +32,9 @@ class AppLauncherViewModel(
     private val remexCoreClient: RemexCoreClient
 ) : ViewModel() {
 
-    val appLauncherCardShapePreset: StateFlow<String> =
+    val appLauncherCardShapePreset: StateFlow<Float> =
         settingsManager.appLauncherCardShapePresetFlow
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)

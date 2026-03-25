@@ -28,6 +28,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _desktopErrors = MutableSharedFlow<String>(replay = 1)
     val desktopErrors = _desktopErrors.asSharedFlow()
 
+    private val _desktopMeta = MutableSharedFlow<String>(replay = 1)
+    val desktopMeta = _desktopMeta.asSharedFlow()
+
     init {
         RemexCoreClient.setCallback(this)
     }
@@ -58,5 +61,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onDesktopError(errorText: String) {
         _desktopErrors.tryEmit(errorText)
+    }
+
+    override fun onDesktopMeta(metaData: String) {
+        _desktopMeta.tryEmit(metaData)
     }
 }

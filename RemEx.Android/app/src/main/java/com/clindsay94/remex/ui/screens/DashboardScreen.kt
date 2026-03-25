@@ -165,7 +165,7 @@ fun DashboardScreen(
                 val cardShapePreset = when {
                     card.id == "pc_status" -> pcCardShapePreset
                     card.id.startsWith("sensor:") -> telemetryCardShapePreset
-                    else -> "rounded"
+                    else -> 0f
                 }
 
 
@@ -543,23 +543,6 @@ private fun TelemetryCardContent(
                 )
             }
         }
-    }
-}
-
-private fun cardShape(preset: String, cornerRadiusDp: Int): Shape {
-    val radius = cornerRadiusDp.dp
-    return when (preset.lowercase()) {
-        "cut" -> CutCornerShape(radius)
-        "pill" -> RoundedCornerShape(percent = 50)
-        else -> RoundedCornerShape(radius)
-    }
-}
-
-private fun defaultCardSizeFor(cardId: String): CardSizeDp {
-    return if (cardId == "pc_status") {
-        CardSizeDp(widthDp = 220f, heightDp = 140f)
-    } else {
-        CardSizeDp(widthDp = 170f, heightDp = 150f)
     }
 }
 

@@ -31,6 +31,9 @@ data class RemoteDesktopConfigState(
 class RemoteDesktopViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsManager = SettingsManager(application)
+    
+    private var hostScreenWidth: Int = 1920
+    private var hostScreenHeight: Int = 1080
 
     private val _currentFrame = MutableStateFlow<Bitmap?>(null)
     val currentFrame: StateFlow<Bitmap?> = _currentFrame.asStateFlow()
@@ -95,6 +98,16 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         viewModelScope.launch {
+            RemexClientManager.desktopMeta.collect { metaData ->
+                try {
+                    val json = JSONObject(metaData)
+                    hostScreenWidth = json.optInt("screenWidth", 1920)
+                    hostScreenHeight = json.optInt("screenHeight", 1080)
+                } catch (_: Exception) { }
+            }
+        }
+
+        viewModelScope.launch {
             RemexClientManager.isConnected.collect { connected ->
                 if (!connected) {
                     _isStreaming.value = false
@@ -120,6 +133,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         _configState.update { it.copy(scale = value.coerceIn(0.25f, 1.0f)) }
         persistDesktopDefaults()
         pushConfigIfStreaming()
+    }
+
+    fun updateDirectTouch(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsManager.saveRemoteDesktopDirectTouch(enabled)
+        }
     }
 
     fun startStreaming() {
@@ -184,6 +203,25 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("button", button)
         })
     }
+
+    fun sendMouseAbsolute(x: Int, y: Int) {
+        sendInput(JSONObject().apply {
+            put("eventType", "mouseMove")
+            put("x", x)
+            put("y", y)
+        })
+    }
+
+    fun sendMouseAbsoluteClick(button: Int, x: Int, y: Int) {
+        sendInput(JSONObject().apply {
+            put("eventType", "mouseClick")
+            put("button", button)
+            put("x", x)
+            put("y", y)
+        })
+    }
+
+    fun getHostScreenSize(): Pair<Int, Int> = Pair(hostScreenWidth, hostScreenHeight)
 
     private fun pushConfigIfStreaming() {
         if (!_isStreaming.value || !RemexCoreClient.isLibraryLoaded) {

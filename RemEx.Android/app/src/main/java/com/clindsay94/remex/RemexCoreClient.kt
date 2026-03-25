@@ -22,6 +22,7 @@ object RemexCoreClient {
         fun onFrameReceived(frame: ByteArray)
         fun onHostInfoUpdate(hostInfoData: String)
         fun onDesktopError(errorText: String)
+        fun onDesktopMeta(metaData: String)
     }
 
     init {
