@@ -4,11 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
 }
 
-tasks.register("remexPurgeBinObj") {
-    group = "remex"
-    description = "Deletes every bin/ and obj/ directory across the repository"
-    dependsOn(":app:purgeRepoBinObj")
-}
 
 tasks.register("remexFreshAssembleDebug") {
     group = "remex"

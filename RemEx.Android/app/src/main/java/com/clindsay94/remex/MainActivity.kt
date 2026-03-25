@@ -22,9 +22,10 @@ class MainActivity : ComponentActivity() {
             val settingsManager = remember { SettingsManager(this) }
             val themeMode by settingsManager.themeModeFlow.collectAsState(initial = "system")
             val themePalette by settingsManager.themePaletteFlow.collectAsState(initial = "default")
+            val fontFamily by settingsManager.fontFamilyFlow.collectAsState(initial = "default")
             val fontScale by settingsManager.fontScaleFlow.collectAsState(initial = 1.0f)
 
-            RemExTheme(themeMode = themeMode, themePalette = themePalette) {
+            RemExTheme(themeMode = themeMode, themePalette = themePalette, fontFamilyKey = fontFamily) {
                 val density = LocalDensity.current
                 CompositionLocalProvider(
                     LocalDensity provides Density(density = density.density, fontScale = fontScale)

@@ -32,3 +32,31 @@ val Typography = Typography(
     )
     */
 )
+
+fun typographyForFontFamily(fontFamilyKey: String): Typography {
+    val family = when (fontFamilyKey.lowercase()) {
+        "sans" -> FontFamily.SansSerif
+        "serif" -> FontFamily.Serif
+        "mono" -> FontFamily.Monospace
+        "cursive" -> FontFamily.Cursive
+        else -> FontFamily.Default
+    }
+
+    return Typography.copy(
+        displayLarge = Typography.displayLarge.copy(fontFamily = family),
+        displayMedium = Typography.displayMedium.copy(fontFamily = family),
+        displaySmall = Typography.displaySmall.copy(fontFamily = family),
+        headlineLarge = Typography.headlineLarge.copy(fontFamily = family),
+        headlineMedium = Typography.headlineMedium.copy(fontFamily = family),
+        headlineSmall = Typography.headlineSmall.copy(fontFamily = family),
+        titleLarge = Typography.titleLarge.copy(fontFamily = family),
+        titleMedium = Typography.titleMedium.copy(fontFamily = family),
+        titleSmall = Typography.titleSmall.copy(fontFamily = family),
+        bodyLarge = Typography.bodyLarge.copy(fontFamily = family),
+        bodyMedium = Typography.bodyMedium.copy(fontFamily = family),
+        bodySmall = Typography.bodySmall.copy(fontFamily = family),
+        labelLarge = Typography.labelLarge.copy(fontFamily = family),
+        labelMedium = Typography.labelMedium.copy(fontFamily = family),
+        labelSmall = Typography.labelSmall.copy(fontFamily = family)
+    )
+}

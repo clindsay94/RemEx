@@ -74,6 +74,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val cardOpacity = settingsManager.cardOpacityFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
+    val pcCardShapePreset = settingsManager.pcCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val telemetryCardShapePreset = settingsManager.telemetryCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
     init {
         loadSavedHomeLayout()
 
@@ -175,6 +181,26 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun saveCardLayout() {
+        persistHomeLayout()
+    }
+
+    fun placeCardAt(cardId: String, xDp: Float, yDp: Float) {
+        _enabledCardIds.update { it + cardId }
+        ensureCardExists(cardId)
+
+        _homeCards.update { cards ->
+            cards.map { card ->
+                if (card.id == cardId) {
+                    card.copy(
+                        xDp = xDp.coerceAtLeast(0f),
+                        yDp = yDp.coerceAtLeast(0f)
+                    )
+                } else {
+                    card
+                }
+            }
+        }
+
         persistHomeLayout()
     }
 

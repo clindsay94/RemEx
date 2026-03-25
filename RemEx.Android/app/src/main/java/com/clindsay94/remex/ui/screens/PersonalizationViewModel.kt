@@ -24,17 +24,23 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
     fun save(
         themeMode: String,
         themePalette: String,
+        fontFamily: String,
         fontScale: Float,
         cardCornerRadius: Int,
-        cardOpacity: Float
+        cardOpacity: Float,
+        pcCardShapePreset: String,
+        telemetryCardShapePreset: String
     ) {
         viewModelScope.launch {
             settingsManager.savePersonalization(
                 themeMode = themeMode,
                 themePalette = themePalette,
+                fontFamily = fontFamily,
                 fontScale = fontScale,
                 cardCornerRadius = cardCornerRadius,
-                cardOpacity = cardOpacity
+                cardOpacity = cardOpacity,
+                pcCardShapePreset = pcCardShapePreset,
+                telemetryCardShapePreset = telemetryCardShapePreset
             )
         }
     }

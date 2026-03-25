@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -40,15 +42,20 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -59,6 +66,11 @@ private data class AvailableCardItem(
     val id: String,
     val title: String,
     val subtitle: String
+)
+
+private data class CardSizeDp(
+    val widthDp: Float,
+    val heightDp: Float
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +86,8 @@ fun DashboardScreen(
     val enabledCards by viewModel.enabledCardIds.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val cardOpacity by viewModel.cardOpacity.collectAsState()
+    val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
+    val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
 
     val availableCards = remember(telemetrySensors) {
         buildList {
@@ -94,6 +108,30 @@ fun DashboardScreen(
     val sensorMap = remember(telemetrySensors) { telemetrySensors.associateBy { it.id } }
 
     var showCardDrawer by remember { mutableStateOf(false) }
+    var canvasTopLeftPx by remember { mutableStateOf(Offset.Zero) }
+    var drawerLeftPx by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    var draggingCardId by remember { mutableStateOf<String?>(null) }
+    var draggingPointerPx by remember { mutableStateOf(Offset.Zero) }
+
+    val draggingCard = availableCards.firstOrNull { it.id == draggingCardId }
+    val draggingCardSize = remember(draggingCard?.id, cards) {
+        draggingCard?.let { item ->
+            cards.firstOrNull { it.id == item.id }?.let { card ->
+                CardSizeDp(card.widthDp, card.heightDp)
+            } ?: defaultCardSizeFor(item.id)
+        }
+    }
+    val canDropOnCanvas = draggingCardId != null && draggingPointerPx.x < drawerLeftPx - 24f
+    val dragPointerCanvasPx = Offset(
+        x = draggingPointerPx.x - canvasTopLeftPx.x,
+        y = draggingPointerPx.y - canvasTopLeftPx.y
+    )
+    val dropTargetXDp = draggingCardSize?.let { size ->
+        ((dragPointerCanvasPx.x / density) - (size.widthDp / 2f)).coerceAtLeast(0f)
+    } ?: 0f
+    val dropTargetYDp = draggingCardSize?.let { size ->
+        ((dragPointerCanvasPx.y / density) - (size.heightDp / 2f)).coerceAtLeast(0f)
+    } ?: 0f
 
     Scaffold(
         topBar = {
@@ -116,11 +154,16 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .onGloballyPositioned { canvasTopLeftPx = it.positionInRoot() }
                 .background(MaterialTheme.colorScheme.background)
         ) {
             cards.filter { enabledCards.contains(it.id) }.forEach { card ->
                 val xPx = (card.xDp * density).roundToInt()
                 val yPx = (card.yDp * density).roundToInt()
+                val cardShapePreset = when (card.type) {
+                    HomeCardType.PC_STATUS -> pcCardShapePreset
+                    HomeCardType.TELEMETRY -> telemetryCardShapePreset
+                }
 
                 Card(
                     modifier = Modifier
@@ -140,7 +183,7 @@ fun DashboardScreen(
                                 onDragEnd = { viewModel.saveCardLayout() }
                             )
                         },
-                    shape = RoundedCornerShape(cornerRadius.dp),
+                    shape = cardShape(cardShapePreset, cornerRadius),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardOpacity)
                     )
@@ -201,6 +244,7 @@ fun DashboardScreen(
                     shadowElevation = 8.dp,
                     modifier = Modifier
                         .fillMaxHeight()
+                        .onGloballyPositioned { drawerLeftPx = it.positionInRoot().x }
                         .width(300.dp)
                 ) {
                     Column(
@@ -214,7 +258,7 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Check to place card, uncheck to send it back to drawer.",
+                            text = "Check to place card, uncheck to remove, or drag a card out onto canvas.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -227,8 +271,47 @@ fun DashboardScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             availableCards.forEach { availableCard ->
+                                var itemTopLeftPx by remember(availableCard.id) { mutableStateOf(Offset.Zero) }
                                 Card(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onGloballyPositioned { itemTopLeftPx = it.positionInRoot() }
+                                        .pointerInput(availableCard.id, density, drawerLeftPx, canvasTopLeftPx, cards) {
+                                            detectDragGestures(
+                                                onDragStart = { startOffset ->
+                                                    draggingCardId = availableCard.id
+                                                    draggingPointerPx = Offset(
+                                                        x = itemTopLeftPx.x + startOffset.x,
+                                                        y = itemTopLeftPx.y + startOffset.y
+                                                    )
+                                                },
+                                                onDragEnd = {
+                                                    val draggingId = draggingCardId
+                                                    if (draggingId == availableCard.id && draggingPointerPx.x < drawerLeftPx - 24f) {
+                                                        val dragSize = cards.firstOrNull { it.id == draggingId }
+                                                            ?.let { CardSizeDp(it.widthDp, it.heightDp) }
+                                                            ?: defaultCardSizeFor(draggingId)
+                                                        val dropXDp = ((draggingPointerPx.x - canvasTopLeftPx.x) / density - (dragSize.widthDp / 2f))
+                                                            .coerceAtLeast(0f)
+                                                        val dropYDp = ((draggingPointerPx.y - canvasTopLeftPx.y) / density - (dragSize.heightDp / 2f))
+                                                            .coerceAtLeast(0f)
+                                                        viewModel.placeCardAt(draggingId, dropXDp, dropYDp)
+                                                    }
+
+                                                    draggingCardId = null
+                                                },
+                                                onDragCancel = {
+                                                    draggingCardId = null
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    draggingPointerPx = Offset(
+                                                        x = draggingPointerPx.x + dragAmount.x,
+                                                        y = draggingPointerPx.y + dragAmount.y
+                                                    )
+                                                }
+                                            )
+                                        },
                                     onClick = {
                                         val checked = !enabledCards.contains(availableCard.id)
                                         viewModel.setCardEnabled(availableCard.id, checked)
@@ -265,6 +348,62 @@ fun DashboardScreen(
                         ) {
                             Text("Done")
                         }
+                    }
+                }
+            }
+
+            if (draggingCard != null && draggingCardSize != null) {
+                if (canDropOnCanvas) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
+                    )
+                }
+
+                val previewX = if (canDropOnCanvas) {
+                    (dropTargetXDp * density).roundToInt()
+                } else {
+                    (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density / 2f)).roundToInt().coerceAtLeast(0)
+                }
+                val previewY = if (canDropOnCanvas) {
+                    (dropTargetYDp * density).roundToInt()
+                } else {
+                    (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density / 2f)).roundToInt().coerceAtLeast(0)
+                }
+
+                Card(
+                    modifier = Modifier
+                        .offset { IntOffset(previewX, previewY) }
+                        .width(draggingCardSize.widthDp.dp)
+                        .height(draggingCardSize.heightDp.dp),
+                    border = BorderStroke(
+                        width = if (canDropOnCanvas) 2.dp else 1.dp,
+                        color = if (canDropOnCanvas) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        }
+                    ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (canDropOnCanvas) {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
+                        }
+                    )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (canDropOnCanvas) "Drop to place ${draggingCard.title}" else draggingCard.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -354,6 +493,23 @@ private fun TelemetryCardContent(
                 )
             }
         }
+    }
+}
+
+private fun cardShape(preset: String, cornerRadiusDp: Int): Shape {
+    val radius = cornerRadiusDp.dp
+    return when (preset.lowercase()) {
+        "cut" -> CutCornerShape(radius)
+        "pill" -> RoundedCornerShape(percent = 50)
+        else -> RoundedCornerShape(radius)
+    }
+}
+
+private fun defaultCardSizeFor(cardId: String): CardSizeDp {
+    return if (cardId == "pc_status") {
+        CardSizeDp(widthDp = 220f, heightDp = 140f)
+    } else {
+        CardSizeDp(widthDp = 170f, heightDp = 150f)
     }
 }
 

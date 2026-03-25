@@ -31,9 +31,12 @@ class SettingsManager(private val context: Context) {
 
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val THEME_PALETTE_KEY = stringPreferencesKey("theme_palette")
+        val FONT_FAMILY_KEY = stringPreferencesKey("font_family")
         val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
         val CARD_CORNER_RADIUS_KEY = intPreferencesKey("card_corner_radius")
         val CARD_OPACITY_KEY = floatPreferencesKey("card_opacity")
+        val PC_CARD_SHAPE_PRESET_KEY = stringPreferencesKey("pc_card_shape_preset")
+        val TELEMETRY_CARD_SHAPE_PRESET_KEY = stringPreferencesKey("telemetry_card_shape_preset")
     }
 
     data class ConnectionPreferences(
@@ -53,9 +56,12 @@ class SettingsManager(private val context: Context) {
     data class PersonalizationPreferences(
         val themeMode: String = "system",
         val themePalette: String = "default",
+        val fontFamily: String = "default",
         val fontScale: Float = 1.0f,
         val cardCornerRadius: Int = 20,
-        val cardOpacity: Float = 1.0f
+        val cardOpacity: Float = 1.0f,
+        val pcCardShapePreset: String = "rounded",
+        val telemetryCardShapePreset: String = "rounded"
     )
 
     val hostFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -110,12 +116,24 @@ class SettingsManager(private val context: Context) {
         preferences[FONT_SCALE_KEY] ?: 1.0f
     }
 
+    val fontFamilyFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[FONT_FAMILY_KEY] ?: "default"
+    }
+
     val cardCornerRadiusFlow: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[CARD_CORNER_RADIUS_KEY] ?: 20
     }
 
     val cardOpacityFlow: Flow<Float> = context.dataStore.data.map { preferences ->
         preferences[CARD_OPACITY_KEY] ?: 1.0f
+    }
+
+    val pcCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[PC_CARD_SHAPE_PRESET_KEY] ?: "rounded"
+    }
+
+    val telemetryCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: "rounded"
     }
 
     val connectionPreferencesFlow: Flow<ConnectionPreferences> = context.dataStore.data.map { preferences ->
@@ -140,9 +158,12 @@ class SettingsManager(private val context: Context) {
         PersonalizationPreferences(
             themeMode = preferences[THEME_MODE_KEY] ?: "system",
             themePalette = preferences[THEME_PALETTE_KEY] ?: "default",
+            fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
             fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
             cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
-            cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f
+            cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
+            pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: "rounded",
+            telemetryCardShapePreset = preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: "rounded"
         )
     }
 
@@ -195,16 +216,22 @@ class SettingsManager(private val context: Context) {
     suspend fun savePersonalization(
         themeMode: String,
         themePalette: String,
+        fontFamily: String,
         fontScale: Float,
         cardCornerRadius: Int,
-        cardOpacity: Float
+        cardOpacity: Float,
+        pcCardShapePreset: String,
+        telemetryCardShapePreset: String
     ) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE_KEY] = themeMode
             preferences[THEME_PALETTE_KEY] = themePalette
+            preferences[FONT_FAMILY_KEY] = fontFamily
             preferences[FONT_SCALE_KEY] = fontScale.coerceIn(0.85f, 1.4f)
             preferences[CARD_CORNER_RADIUS_KEY] = cardCornerRadius.coerceIn(4, 36)
             preferences[CARD_OPACITY_KEY] = cardOpacity.coerceIn(0.4f, 1.0f)
+            preferences[PC_CARD_SHAPE_PRESET_KEY] = pcCardShapePreset
+            preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] = telemetryCardShapePreset
         }
     }
 }

@@ -48,12 +48,24 @@ fun PersonalizationScreen(
 
     var themeMode by remember(settings.themeMode) { mutableStateOf(settings.themeMode) }
     var palette by remember(settings.themePalette) { mutableStateOf(settings.themePalette) }
+    var fontFamily by remember(settings.fontFamily) { mutableStateOf(settings.fontFamily) }
     var fontScale by remember(settings.fontScale) { mutableFloatStateOf(settings.fontScale) }
     var cornerRadius by remember(settings.cardCornerRadius) { mutableIntStateOf(settings.cardCornerRadius) }
     var cardOpacity by remember(settings.cardOpacity) { mutableFloatStateOf(settings.cardOpacity) }
+    var pcCardShapePreset by remember(settings.pcCardShapePreset) { mutableStateOf(settings.pcCardShapePreset) }
+    var telemetryCardShapePreset by remember(settings.telemetryCardShapePreset) { mutableStateOf(settings.telemetryCardShapePreset) }
 
-    LaunchedEffect(themeMode, palette, fontScale, cornerRadius, cardOpacity) {
-        viewModel.save(themeMode, palette, fontScale, cornerRadius, cardOpacity)
+    LaunchedEffect(themeMode, palette, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset) {
+        viewModel.save(
+            themeMode = themeMode,
+            themePalette = palette,
+            fontFamily = fontFamily,
+            fontScale = fontScale,
+            cardCornerRadius = cornerRadius,
+            cardOpacity = cardOpacity,
+            pcCardShapePreset = pcCardShapePreset,
+            telemetryCardShapePreset = telemetryCardShapePreset
+        )
     }
 
     Scaffold(
@@ -120,6 +132,25 @@ fun PersonalizationScreen(
 
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Font Family", fontWeight = FontWeight.SemiBold)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            "default" to "Default",
+                            "sans" to "Sans",
+                            "serif" to "Serif",
+                            "mono" to "Mono",
+                            "cursive" to "Cursive"
+                        ).forEach { (option, label) ->
+                            FilterChip(
+                                selected = fontFamily == option,
+                                onClick = { fontFamily = option },
+                                label = { Text(label) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text("Font Scale: ${"%.2f".format(fontScale)}", fontWeight = FontWeight.SemiBold)
                     Slider(
                         value = fontScale,
@@ -144,6 +175,38 @@ fun PersonalizationScreen(
                         onValueChange = { cardOpacity = it },
                         valueRange = 0.4f..1.0f
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text("PC Status Card Shape", fontWeight = FontWeight.SemiBold)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            "rounded" to "Rounded",
+                            "cut" to "Cut",
+                            "pill" to "Pill"
+                        ).forEach { (option, label) ->
+                            FilterChip(
+                                selected = pcCardShapePreset == option,
+                                onClick = { pcCardShapePreset = option },
+                                label = { Text(label) }
+                            )
+                        }
+                    }
+
+                    Text("Telemetry Card Shape", fontWeight = FontWeight.SemiBold)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            "rounded" to "Rounded",
+                            "cut" to "Cut",
+                            "pill" to "Pill"
+                        ).forEach { (option, label) ->
+                            FilterChip(
+                                selected = telemetryCardShapePreset == option,
+                                onClick = { telemetryCardShapePreset = option },
+                                label = { Text(label) }
+                            )
+                        }
+                    }
                 }
             }
         }

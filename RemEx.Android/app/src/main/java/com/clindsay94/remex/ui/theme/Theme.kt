@@ -61,6 +61,7 @@ private val MonolithDarkScheme = darkColorScheme(
 fun RemExTheme(
     themeMode: String = "system",
     themePalette: String = "default",
+    fontFamilyKey: String = "default",
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
@@ -86,7 +87,7 @@ fun RemExTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typographyForFontFamily(fontFamilyKey),
         content = content
     )
 }

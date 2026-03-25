@@ -1,15 +1,13 @@
+import java.security.MessageDigest
+import java.util.Properties
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.zip.ZipFile
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
-
-import org.gradle.api.tasks.Exec
-import org.gradle.api.GradleException
-import java.util.Properties
-import java.security.MessageDigest
-import java.util.zip.ZipFile
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 android {
     namespace = "com.clindsay94.remex"
@@ -70,13 +68,15 @@ android {
     }
 }
 
-val repoRootDir = rootProject.projectDir.parentFile
-val remexCoreProjectDir = File(repoRootDir, "Remex.Core")
-val remexGeneratedDebugJniRoot = layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug")
-val remexGeneratedReleaseJniRoot = layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release")
+val repoRootDir: File = rootProject.projectDir.parentFile
+val remexCoreProjectDirLocal = File(repoRootDir, "Remex.Core")
+val remexGeneratedDebugJniRoot =
+    layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug")
+val remexGeneratedReleaseJniRoot =
+    layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release")
 val androidNdkVersion = "29.0.14206865"
 val androidLocalProperties = Properties().apply {
-    rootProject.file("local.properties").inputStream().use(::load)
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
 val androidSdkDir = androidLocalProperties.getProperty("sdk.dir")
     ?: error("Missing sdk.dir in local.properties")
@@ -115,7 +115,8 @@ fun sha256(file: File): String {
     return digest.digest().toHexString()
 }
 
-fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).toHexString()
+fun sha256(bytes: ByteArray): String =
+    MessageDigest.getInstance("SHA-256").digest(bytes).toHexString()
 
 fun requireExistingFile(file: File, label: String): File {
     if (!file.exists()) {
@@ -131,10 +132,11 @@ fun latestApkIn(directory: File): File {
         ?.sortedByDescending { it.lastModified() }
         .orEmpty()
 
-    return apks.firstOrNull() ?: throw GradleException("No APK was found in ${directory.absolutePath}")
+    return apks.firstOrNull()
+        ?: throw GradleException("No APK was found in ${directory.absolutePath}")
 }
 
-val arm64PublishedSo = { configuration: String ->
+fun getArm64PublishedSoPath(remexCoreProjectDir: File, configuration: String): File {
     val publishPath = File(
         remexCoreProjectDir,
         "bin/$configuration/net10.0-android/android-arm64/publish/libRemexCore.so"
@@ -144,7 +146,7 @@ val arm64PublishedSo = { configuration: String ->
         "bin/$configuration/net10.0-android/android-arm64/native/libRemexCore.so"
     )
 
-    listOf(nativePath, publishPath)
+    return listOf(nativePath, publishPath)
         .filter { it.exists() }
         .maxByOrNull { it.lastModified() }
         ?: nativePath
@@ -184,281 +186,248 @@ val publishRemexCoreAndroidRelease by tasks.registering(Exec::class) {
     )
 }
 
-val syncRemexCoreDebugSo by tasks.registering {
+abstract class SyncRemexCoreSoTask : DefaultTask() {
+    @get:Input
+    abstract val configuration: Property<String>
+
+    @get:Input
+    abstract val rcDir: Property<String>
+
+    @get:OutputFile
+    abstract val generatedSo: RegularFileProperty
+
+    @TaskAction
+    fun doSync() {
+        val conf = configuration.get()
+        val generated = generatedSo.get().asFile
+        val rcDirFile = File(rcDir.get())
+
+        val publishPath = File(
+            rcDirFile,
+            "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so"
+        )
+        val nativePath = File(
+            rcDirFile,
+            "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"
+        )
+
+        val source = listOf(nativePath, publishPath)
+            .filter { it.exists() }
+            .maxByOrNull { it.lastModified() }
+            ?: nativePath
+
+        if (!source.exists()) {
+            throw GradleException("Published $conf libRemexCore.so not found: ${source.absolutePath}")
+        }
+
+        generated.parentFile.mkdirs()
+        source.copyTo(generated, overwrite = true)
+
+        fun sha256local(file: File): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().buffered().use { input ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) {
+                        break
+                    }
+                    digest.update(buffer, 0, read)
+                }
+            }
+            return digest.digest().joinToString("") { "%02x".format(it) }
+        }
+
+        val sourceHash = sha256local(source)
+        val destHash = sha256local(generated)
+        if (sourceHash != destHash) {
+            throw GradleException(
+                "$conf native library hash mismatch after sync. source=$sourceHash, destination=$destHash"
+            )
+        }
+        if (generated.lastModified() < source.lastModified()) {
+            throw GradleException(
+                "$conf generated libRemexCore.so is older than published source. source=${source.lastModified()}, destination=${generated.lastModified()}"
+            )
+        }
+
+        println("Synced $conf libRemexCore.so => ${generated.absolutePath} (sha256=$destHash)")
+    }
+}
+
+val syncRemexCoreDebugSo by tasks.registering(SyncRemexCoreSoTask::class) {
     group = "remex"
     description = "Publishes and synchronizes debug libRemexCore.so into generated jniLibs"
     dependsOn(publishRemexCoreAndroidDebug)
-    outputs.file(remexGeneratedDebugArm64So)
-
-    doLast {
-        val source = requireExistingFile(arm64PublishedSo("Debug"), "Published debug libRemexCore.so")
-        remexGeneratedDebugArm64So.parentFile.mkdirs()
-        source.copyTo(remexGeneratedDebugArm64So, overwrite = true)
-
-        val sourceHash = sha256(source)
-        val destHash = sha256(remexGeneratedDebugArm64So)
-        if (sourceHash != destHash) {
-            throw GradleException(
-                "Debug native library hash mismatch after sync. source=$sourceHash, destination=$destHash"
-            )
-        }
-        if (remexGeneratedDebugArm64So.lastModified() < source.lastModified()) {
-            throw GradleException(
-                "Debug generated libRemexCore.so is older than published source. source=${source.lastModified()}, destination=${remexGeneratedDebugArm64So.lastModified()}"
-            )
-        }
-
-        logger.lifecycle(
-            "Synced debug libRemexCore.so => ${remexGeneratedDebugArm64So.absolutePath} (sha256=$destHash)"
-        )
-    }
+    
+    configuration.set("Debug")
+    rcDir.set(remexCoreProjectDirLocal.absolutePath)
+    generatedSo.set(remexGeneratedDebugArm64So)
 }
 
-val syncRemexCoreReleaseSo by tasks.registering {
+val syncRemexCoreReleaseSo by tasks.registering(SyncRemexCoreSoTask::class) {
     group = "remex"
     description = "Publishes and synchronizes release libRemexCore.so into generated jniLibs"
     dependsOn(publishRemexCoreAndroidRelease)
-    outputs.file(remexGeneratedReleaseArm64So)
+    
+    configuration.set("Release")
+    rcDir.set(remexCoreProjectDirLocal.absolutePath)
+    generatedSo.set(remexGeneratedReleaseArm64So)
+}
 
-    doLast {
-        val source = requireExistingFile(arm64PublishedSo("Release"), "Published release libRemexCore.so")
-        remexGeneratedReleaseArm64So.parentFile.mkdirs()
-        source.copyTo(remexGeneratedReleaseArm64So, overwrite = true)
+abstract class VerifyRemexCoreInApkTask : DefaultTask() {
+    @get:Input
+    abstract val configuration: Property<String>
 
-        val sourceHash = sha256(source)
-        val destHash = sha256(remexGeneratedReleaseArm64So)
-        if (sourceHash != destHash) {
+    @get:Input
+    abstract val rcDir: Property<String>
+
+    @get:InputFile
+    abstract val generatedArm64So: RegularFileProperty
+
+    @get:InputFile
+    abstract val mergedArm64So: RegularFileProperty
+
+    @get:Internal
+    abstract val strippedArm64So: RegularFileProperty
+
+    @get:InputDirectory
+    abstract val apkDirectory: DirectoryProperty
+
+    @TaskAction
+    fun verify() {
+        val conf = configuration.get()
+        val rcDirFile = File(rcDir.get())
+        val generated = generatedArm64So.get().asFile
+        val merged = mergedArm64So.get().asFile
+        val stripped = strippedArm64So.asFile.orNull
+        val apkDir = apkDirectory.get().asFile
+
+        val publishPath = File(
+            rcDirFile,
+            "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so"
+        )
+        val nativePath = File(
+            rcDirFile,
+            "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"
+        )
+
+        val published = listOf(nativePath, publishPath)
+            .filter { it.exists() }
+            .maxByOrNull { it.lastModified() }
+            ?: nativePath
+            
+        if (!published.exists()) {
+             throw GradleException("Published $conf libRemexCore.so not found: ${published.absolutePath}")
+        }
+        
+        if (!generated.exists()) {
+             throw GradleException("Generated $conf libRemexCore.so not found: ${generated.absolutePath}")
+        }
+        
+        if (!merged.exists()) {
+             throw GradleException("Merged $conf libRemexCore.so not found: ${merged.absolutePath}")
+        }
+        
+        val apks = apkDir
+            .listFiles()
+            ?.filter { it.isFile && it.extension.equals("apk", ignoreCase = true) }
+            ?.sortedByDescending { it.lastModified() }
+            .orEmpty()
+    
+        val apk = apks.firstOrNull()
+            ?: throw GradleException("No APK was found in ${apkDir.absolutePath}")
+
+        fun sha256local(file: File): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().buffered().use { input ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) {
+                        break
+                    }
+                    digest.update(buffer, 0, read)
+                }
+            }
+            return digest.digest().joinToString("") { "%02x".format(it) }
+        }
+
+        fun sha256localBytes(bytes: ByteArray): String {
+            return MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        }
+
+        val publishedHash = sha256local(published)
+        val generatedHash = sha256local(generated)
+        val mergedHash = sha256local(merged)
+        val packagedReference = if (stripped != null && stripped.exists()) stripped else merged
+        val packagedReferenceHash = sha256local(packagedReference)
+
+        if (publishedHash != generatedHash) {
             throw GradleException(
-                "Release native library hash mismatch after sync. source=$sourceHash, destination=$destHash"
+                "Generated $conf libRemexCore.so is stale. published=$publishedHash, generated=$generatedHash"
             )
         }
-        if (remexGeneratedReleaseArm64So.lastModified() < source.lastModified()) {
+        if (publishedHash != mergedHash) {
             throw GradleException(
-                "Release generated libRemexCore.so is older than published source. source=${source.lastModified()}, destination=${remexGeneratedReleaseArm64So.lastModified()}"
+                "Merged $conf libRemexCore.so is stale. published=$publishedHash, merged=$mergedHash"
             )
         }
 
-        logger.lifecycle(
-            "Synced release libRemexCore.so => ${remexGeneratedReleaseArm64So.absolutePath} (sha256=$destHash)"
+        val apkHash = ZipFile(apk).use { zip ->
+            val entry = zip.getEntry("lib/arm64-v8a/libRemexCore.so")
+                ?: throw GradleException("${apk.name} does not contain lib/arm64-v8a/libRemexCore.so")
+            zip.getInputStream(entry).use { input ->
+                sha256localBytes(input.readBytes())
+            }
+        }
+
+        if (apkHash != packagedReferenceHash) {
+            throw GradleException(
+                "$conf APK contains stale libRemexCore.so. packagedReference=$packagedReferenceHash, apk=$apkHash"
+            )
+        }
+        if (apk.lastModified() < packagedReference.lastModified()) {
+            throw GradleException(
+                "$conf APK timestamp is older than packaged libRemexCore.so. apk=${apk.lastModified()}, packaged=${packagedReference.lastModified()}"
+            )
+        }
+
+        println(
+            "Verified $conf APK ${apk.name} with libRemexCore.so hash $publishedHash"
         )
     }
 }
 
-val verifyRemexCoreInDebugApk by tasks.registering {
+val verifyRemexCoreInDebugApk by tasks.registering(VerifyRemexCoreInApkTask::class) {
     group = "remex"
     description = "Verifies debug APK contains the latest libRemexCore.so built from Remex.Core"
     dependsOn("assembleDebug")
-
-    doLast {
-        val published = requireExistingFile(arm64PublishedSo("Debug"), "Published debug libRemexCore.so")
-        val generated = requireExistingFile(remexGeneratedDebugArm64So, "Generated debug libRemexCore.so")
-        val merged = requireExistingFile(mergedDebugArm64So, "Merged debug libRemexCore.so")
-        val debugApk = latestApkIn(layout.buildDirectory.get().asFile.resolve("outputs/apk/debug"))
-
-        val publishedHash = sha256(published)
-        val generatedHash = sha256(generated)
-        val mergedHash = sha256(merged)
-        val packagedReference = if (strippedDebugArm64So.exists()) strippedDebugArm64So else merged
-        val packagedReferenceHash = sha256(packagedReference)
-
-        if (publishedHash != generatedHash) {
-            throw GradleException(
-                "Generated debug libRemexCore.so is stale. published=$publishedHash, generated=$generatedHash"
-            )
-        }
-        if (publishedHash != mergedHash) {
-            throw GradleException(
-                "Merged debug libRemexCore.so is stale. published=$publishedHash, merged=$mergedHash"
-            )
-        }
-
-        val apkHash = ZipFile(debugApk).use { zip ->
-            val entry = zip.getEntry("lib/arm64-v8a/libRemexCore.so")
-                ?: throw GradleException("${debugApk.name} does not contain lib/arm64-v8a/libRemexCore.so")
-            zip.getInputStream(entry).use { input ->
-                sha256(input.readBytes())
-            }
-        }
-
-        if (apkHash != packagedReferenceHash) {
-            throw GradleException(
-                "Debug APK contains stale libRemexCore.so. packagedReference=$packagedReferenceHash, apk=$apkHash"
-            )
-        }
-        if (debugApk.lastModified() < packagedReference.lastModified()) {
-            throw GradleException(
-                "Debug APK timestamp is older than packaged libRemexCore.so. apk=${debugApk.lastModified()}, packaged=${packagedReference.lastModified()}"
-            )
-        }
-
-        logger.lifecycle(
-            "Verified debug APK ${debugApk.name} with libRemexCore.so hash $publishedHash"
-        )
-    }
+    configuration.set("Debug")
+    rcDir.set(remexCoreProjectDirLocal.absolutePath)
+    generatedArm64So.set(remexGeneratedDebugArm64So)
+    mergedArm64So.set(mergedDebugArm64So)
+    strippedArm64So.set(strippedDebugArm64So)
+    apkDirectory.set(layout.buildDirectory.dir("outputs/apk/debug"))
 }
 
-val verifyRemexCoreInReleaseApk by tasks.registering {
+val verifyRemexCoreInReleaseApk by tasks.registering(VerifyRemexCoreInApkTask::class) {
     group = "remex"
     description = "Verifies release APK contains the latest libRemexCore.so built from Remex.Core"
     dependsOn("assembleRelease")
-
-    doLast {
-        val published = requireExistingFile(arm64PublishedSo("Release"), "Published release libRemexCore.so")
-        val generated = requireExistingFile(remexGeneratedReleaseArm64So, "Generated release libRemexCore.so")
-        val merged = requireExistingFile(mergedReleaseArm64So, "Merged release libRemexCore.so")
-        val releaseApk = latestApkIn(layout.buildDirectory.get().asFile.resolve("outputs/apk/release"))
-
-        val publishedHash = sha256(published)
-        val generatedHash = sha256(generated)
-        val mergedHash = sha256(merged)
-        val packagedReference = if (strippedReleaseArm64So.exists()) strippedReleaseArm64So else merged
-        val packagedReferenceHash = sha256(packagedReference)
-
-        if (publishedHash != generatedHash) {
-            throw GradleException(
-                "Generated release libRemexCore.so is stale. published=$publishedHash, generated=$generatedHash"
-            )
-        }
-        if (publishedHash != mergedHash) {
-            throw GradleException(
-                "Merged release libRemexCore.so is stale. published=$publishedHash, merged=$mergedHash"
-            )
-        }
-
-        val apkHash = ZipFile(releaseApk).use { zip ->
-            val entry = zip.getEntry("lib/arm64-v8a/libRemexCore.so")
-                ?: throw GradleException("${releaseApk.name} does not contain lib/arm64-v8a/libRemexCore.so")
-            zip.getInputStream(entry).use { input ->
-                sha256(input.readBytes())
-            }
-        }
-
-        if (apkHash != packagedReferenceHash) {
-            throw GradleException(
-                "Release APK contains stale libRemexCore.so. packagedReference=$packagedReferenceHash, apk=$apkHash"
-            )
-        }
-        if (releaseApk.lastModified() < packagedReference.lastModified()) {
-            throw GradleException(
-                "Release APK timestamp is older than packaged libRemexCore.so. apk=${releaseApk.lastModified()}, packaged=${packagedReference.lastModified()}"
-            )
-        }
-
-        logger.lifecycle(
-            "Verified release APK ${releaseApk.name} with libRemexCore.so hash $publishedHash"
-        )
-    }
+    configuration.set("Release")
+    rcDir.set(remexCoreProjectDirLocal.absolutePath)
+    generatedArm64So.set(remexGeneratedReleaseArm64So)
+    mergedArm64So.set(mergedReleaseArm64So)
+    strippedArm64So.set(strippedReleaseArm64So)
+    apkDirectory.set(layout.buildDirectory.dir("outputs/apk/release"))
 }
 
-val purgeRepoBinObj by tasks.registering {
-    group = "remex"
-    description = "Deletes every bin/ and obj/ directory under the repository root"
-
-    doLast {
-        val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
-        if (isWindows) {
-            logger.lifecycle("Force-stopping dotnet and RemEx desktop processes before purge.")
-            fun runWindowsKill(vararg args: String) {
-                val process = ProcessBuilder(*args)
-                    .redirectErrorStream(true)
-                    .start()
-                process.inputStream.bufferedReader().use { reader ->
-                    reader.lineSequence().forEach { line ->
-                        if (line.isNotBlank()) {
-                            logger.lifecycle(line)
-                        }
-                    }
-                }
-                process.waitFor(10, TimeUnit.SECONDS)
-            }
-
-            runWindowsKill("cmd", "/c", "taskkill", "/F", "/IM", "dotnet.exe", "/T")
-            runWindowsKill("cmd", "/c", "taskkill", "/F", "/IM", "Remex.Client.Desktop.exe", "/T")
-            Thread.sleep(1000)
-        }
-
-        val currentPid = ProcessHandle.current().pid()
-        val repoPath = repoRootDir.absolutePath
-        val processesToStop = ProcessHandle
-            .allProcesses()
-            .filter { process -> process.pid() != currentPid }
-            .filter { process ->
-                val commandLine = process.info().commandLine().orElse("")
-                commandLine.contains("dotnet", ignoreCase = true) &&
-                    commandLine.contains(repoPath, ignoreCase = true)
-            }
-            .toList()
-
-        if (processesToStop.isNotEmpty()) {
-            logger.lifecycle("Stopping ${processesToStop.size} repo-scoped dotnet process(es) before purge.")
-            processesToStop.forEach { process ->
-                val commandLine = process.info().commandLine().orElse("<unknown>")
-                process.destroy()
-                try {
-                    process.onExit().get(8, TimeUnit.SECONDS)
-                } catch (_: TimeoutException) {
-                    process.destroyForcibly()
-                    process.onExit().get(8, TimeUnit.SECONDS)
-                }
-                logger.lifecycle("Stopped PID ${process.pid()} :: $commandLine")
-            }
-        }
-
-        val protectedRoots = listOf(
-            File(repoRootDir, ".git").canonicalPath,
-            File(repoRootDir, ".gradle").canonicalPath
-        )
-
-        val candidates = repoRootDir
-            .walkTopDown()
-            .filter {
-                it.isDirectory && (it.name.equals("bin", ignoreCase = true) || it.name.equals("obj", ignoreCase = true))
-            }
-            .filter { directory ->
-                val canonical = directory.canonicalPath
-                protectedRoots.none { protected ->
-                    canonical == protected || canonical.startsWith("$protected${File.separator}")
-                }
-            }
-            .toList()
-            .sortedByDescending { it.absolutePath.length }
-
-        if (candidates.isEmpty()) {
-            logger.lifecycle("No bin/obj directories found under ${repoRootDir.absolutePath}.")
-            return@doLast
-        }
-
-        fun deleteWithRetry(directory: File): Boolean {
-            val delays = listOf(0L, 200L, 500L, 1000L, 1500L)
-            delays.forEach { delayMs ->
-                if (delayMs > 0L) {
-                    Thread.sleep(delayMs)
-                }
-                project.delete(directory)
-                if (!directory.exists()) {
-                    return true
-                }
-            }
-            return !directory.exists()
-        }
-
-        candidates.forEach { directory ->
-            if (!deleteWithRetry(directory)) {
-                throw GradleException(
-                    "Failed to delete ${directory.absolutePath}. Ensure no external process is locking files under this directory."
-                )
-            }
-            logger.lifecycle("Deleted ${directory.relativeTo(repoRootDir)}")
-        }
-
-        logger.lifecycle("Deleted ${candidates.size} bin/obj directories under ${repoRootDir.absolutePath}.")
-    }
-}
 
 val remexFreshAssembleDebug by tasks.registering {
     group = "remex"
-    description = "Hard reset build for debug: purge bin/obj, clean Android build, assemble, and verify native freshness"
-    dependsOn(purgeRepoBinObj)
+    description =
+        "Hard reset build for debug: clean Android build, assemble, and verify native freshness"
     dependsOn("clean")
     dependsOn("assembleDebug")
     dependsOn(verifyRemexCoreInDebugApk)
@@ -474,20 +443,17 @@ val remexFreshInstallDebug by tasks.registering {
 
 val remexFreshAssembleRelease by tasks.registering {
     group = "remex"
-    description = "Hard reset build for release: purge bin/obj, clean Android build, assemble, and verify native freshness"
-    dependsOn(purgeRepoBinObj)
+    description =
+        "Hard reset build for release: clean Android build, assemble, and verify native freshness"
     dependsOn("clean")
     dependsOn("assembleRelease")
     dependsOn(verifyRemexCoreInReleaseApk)
 }
 
-tasks.named("clean").configure {
-    mustRunAfter(purgeRepoBinObj)
-}
-
 tasks.matching { it.name == "assembleDebug" }.configureEach {
     mustRunAfter("clean")
 }
+
 
 tasks.matching { it.name == "assembleRelease" }.configureEach {
     mustRunAfter("clean")
@@ -508,7 +474,8 @@ verifyRemexCoreInReleaseApk.configure {
 
 val remexUninstallExistingDebugApp by tasks.registering {
     group = "remex"
-    description = "Uninstalls existing app package from connected device to avoid signature conflicts"
+    description =
+        "Uninstalls existing app package from connected device to avoid signature conflicts"
 
     doLast {
         val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
@@ -535,7 +502,7 @@ val remexUninstallExistingDebugApp by tasks.registering {
             reader.lineSequence().forEach { line ->
                 output.appendLine(line)
                 if (line.isNotBlank()) {
-                    logger.lifecycle(line)
+                    println(line)
                 }
             }
         }
