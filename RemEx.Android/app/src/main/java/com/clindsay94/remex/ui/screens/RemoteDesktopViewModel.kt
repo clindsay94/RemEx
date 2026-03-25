@@ -149,12 +149,25 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun sendMouseMove(deltaX: Int, deltaY: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseMove")
-            put("deltaX", deltaX)
-            put("deltaY", deltaY)
-        })
+    private var accumulatedX = 0f
+    private var accumulatedY = 0f
+
+    fun sendMouseMove(deltaX: Float, deltaY: Float) {
+        accumulatedX += deltaX
+        accumulatedY += deltaY
+        
+        val intX = accumulatedX.toInt()
+        val intY = accumulatedY.toInt()
+        
+        if (intX != 0 || intY != 0) {
+            sendInput(JSONObject().apply {
+                put("eventType", "mouseMove")
+                put("deltaX", intX)
+                put("deltaY", intY)
+            })
+            accumulatedX -= intX
+            accumulatedY -= intY
+        }
     }
 
     fun sendMouseScroll(deltaX: Int, deltaY: Int) {

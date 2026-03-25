@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Default
 import androidx.compose.material.icons.automirrored.filled.Launch
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -32,30 +31,42 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.theme.cardShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppLauncherScreen(
-    viewModel: AppLauncherViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: AppLauncherViewModel = run {
+        val context = LocalContext.current
+        val settingsManager = remember(context) { SettingsManager(context) }
+        viewModel(
+            factory = AppLauncherViewModel.provideFactory(
+                settingsManager = settingsManager,
+                remexClientManager = RemexClientManager,
+                remexCoreClient = RemexCoreClient
+            )
+        )
+    }
 ) {
     val apps by viewModel.apps.collectAsState()
+    val shapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("App Launcher", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Default.Menu, contentDescription = "Menu")
-                    }
-                },
                 actions = {
                     IconButton(onClick = { viewModel.refreshApps() }) {
                         Icon(Default.Refresh, contentDescription = "Refresh")
@@ -99,7 +110,11 @@ fun AppLauncherScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(apps) { app ->
-                    AppItem(app = app, onClick = { viewModel.launchApp(app) })
+                    AppItem(
+                        app = app,
+                        shape = cardShape(shapePreset, cornerRadius),
+                        onClick = { viewModel.launchApp(app) }
+                    )
                 }
             }
         }
@@ -108,10 +123,11 @@ fun AppLauncherScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppItem(app: AppEntry, onClick: () -> Unit) {
+fun AppItem(app: AppEntry, shape: androidx.compose.ui.graphics.Shape, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(

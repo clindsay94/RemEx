@@ -13,11 +13,11 @@ import org.json.JSONObject
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
 
-    val connectionPreferences = settingsManager.connectionPreferencesFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.ConnectionPreferences())
+    val connectionPreferences: StateFlow<SettingsManager.ConnectionPreferences?> = settingsManager.connectionPreferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val remoteDesktopPreferences = settingsManager.remoteDesktopPreferencesFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.RemoteDesktopPreferences())
+    val remoteDesktopPreferences: StateFlow<SettingsManager.RemoteDesktopPreferences?> = settingsManager.remoteDesktopPreferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()

@@ -1,6 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -9,74 +12,126 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PersonalizationScreen(
-    viewModel: PersonalizationViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: PersonalizationViewModel = viewModel()
 ) {
-    val settings by viewModel.personalization.collectAsState()
+    val settingsState by viewModel.personalization.collectAsState()
 
-    var themeMode by remember(settings.themeMode) { mutableStateOf(settings.themeMode) }
-    var palette by remember(settings.themePalette) { mutableStateOf(settings.themePalette) }
-    var fontFamily by remember(settings.fontFamily) { mutableStateOf(settings.fontFamily) }
-    var fontScale by remember(settings.fontScale) { mutableFloatStateOf(settings.fontScale) }
-    var cornerRadius by remember(settings.cardCornerRadius) { mutableIntStateOf(settings.cardCornerRadius) }
-    var cardOpacity by remember(settings.cardOpacity) { mutableFloatStateOf(settings.cardOpacity) }
-    var pcCardShapePreset by remember(settings.pcCardShapePreset) { mutableStateOf(settings.pcCardShapePreset) }
-    var telemetryCardShapePreset by remember(settings.telemetryCardShapePreset) { mutableStateOf(settings.telemetryCardShapePreset) }
+    if (settingsState == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Personalization", fontWeight = FontWeight.Bold) }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        return
+    }
 
-    LaunchedEffect(themeMode, palette, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset) {
+    val settings = settingsState!!
+
+    var themeMode by remember { mutableStateOf(settings.themeMode) }
+    var palette by remember { mutableStateOf(settings.themePalette) }
+    var themeStyle by remember { mutableStateOf(settings.themeStyle) }
+    var seedColor by remember { mutableStateOf(settings.themeSeedColor) }
+    var fontFamily by remember { mutableStateOf(settings.fontFamily) }
+    var fontScale by remember { mutableFloatStateOf(settings.fontScale) }
+    var cornerRadius by remember { mutableIntStateOf(settings.cardCornerRadius) }
+    var cardOpacity by remember { mutableFloatStateOf(settings.cardOpacity) }
+    var pcCardShapePreset by remember { mutableStateOf(settings.pcCardShapePreset) }
+    var telemetryCardShapePreset by remember { mutableStateOf(settings.telemetryCardShapePreset) }
+    var appLauncherCardShapePreset by remember { mutableStateOf(settings.appLauncherCardShapePreset) }
+    var taskManagerCardShapePreset by remember { mutableStateOf(settings.taskManagerCardShapePreset) }
+    var remoteDesktopCardShapePreset by remember { mutableStateOf(settings.remoteDesktopCardShapePreset) }
+    var remoteControlCardShapePreset by remember { mutableStateOf(settings.remoteControlCardShapePreset) }
+    var remoteMouseCardShapePreset by remember { mutableStateOf(settings.remoteMouseCardShapePreset) }
+
+    LaunchedEffect(
+        themeMode,
+        palette,
+        themeStyle,
+        seedColor,
+        fontFamily,
+        fontScale,
+        cornerRadius,
+        cardOpacity,
+        pcCardShapePreset,
+        telemetryCardShapePreset,
+        appLauncherCardShapePreset,
+        taskManagerCardShapePreset,
+        remoteDesktopCardShapePreset,
+        remoteControlCardShapePreset,
+        remoteMouseCardShapePreset
+    ) {
         viewModel.save(
             themeMode = themeMode,
             themePalette = palette,
+            themeStyle = themeStyle,
+            themeSeedColor = seedColor,
             fontFamily = fontFamily,
             fontScale = fontScale,
             cardCornerRadius = cornerRadius,
             cardOpacity = cardOpacity,
             pcCardShapePreset = pcCardShapePreset,
-            telemetryCardShapePreset = telemetryCardShapePreset
+            telemetryCardShapePreset = telemetryCardShapePreset,
+            appLauncherCardShapePreset = appLauncherCardShapePreset,
+            taskManagerCardShapePreset = taskManagerCardShapePreset,
+            remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
+            remoteControlCardShapePreset = remoteControlCardShapePreset,
+            remoteMouseCardShapePreset = remoteMouseCardShapePreset
         )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personalization", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                }
+                title = { Text("Personalization", fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -94,14 +149,11 @@ fun PersonalizationScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            Text(
-                text = "Tune palette, typography scale, card corners, and card opacity. Changes are saved automatically.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text("Theme Mode", fontWeight = FontWeight.SemiBold)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("system", "light", "dark").forEach { option ->
@@ -116,10 +168,24 @@ fun PersonalizationScreen(
             }
 
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Palette", fontWeight = FontWeight.SemiBold)
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Palette Style", fontWeight = FontWeight.SemiBold)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("default", "cyber", "solar", "monolith").forEach { option ->
+                        listOf("tonal_spot", "expressive", "fruit_salad", "rainbow", "vibrant").forEach { option ->
+                            FilterChip(
+                                selected = themeStyle == option,
+                                onClick = { themeStyle = option },
+                                label = { Text(option.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { it.uppercase() } }) }
+                            )
+                        }
+                    }
+
+                    Text("Palette Mode", fontWeight = FontWeight.SemiBold)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("default", "custom").forEach { option ->
                             FilterChip(
                                 selected = palette == option,
                                 onClick = { palette = option },
@@ -127,84 +193,105 @@ fun PersonalizationScreen(
                             )
                         }
                     }
+
+                    if (palette == "custom") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Seed Color", style = MaterialTheme.typography.labelMedium)
+
+                        val colors = listOf(
+                            "#6750A4", "#0061A4", "#006A60", "#7D5260",
+                            "#625B71", "#BA1A1A", "#686000", "#006D31"
+                        )
+
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            colors.forEach { colorHex ->
+                                val colorValue = Color(colorHex.toColorInt())
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(colorValue, MaterialTheme.shapes.small)
+                                        .padding(4.dp)
+                                        .clickable { seedColor = colorHex }
+                                        .let {
+                                            if (seedColor.equals(colorHex, ignoreCase = true)) {
+                                                it.background(
+                                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                                    MaterialTheme.shapes.small
+                                                )
+                                            } else it
+                                        }
+                                )
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = seedColor,
+                            onValueChange = { seedColor = it },
+                            label = { Text("Hex Color Code") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
                 }
             }
 
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Font Family", fontWeight = FontWeight.SemiBold)
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Typography", fontWeight = FontWeight.SemiBold)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(
-                            "default" to "Default",
-                            "sans" to "Sans",
-                            "serif" to "Serif",
-                            "mono" to "Mono",
-                            "cursive" to "Cursive"
-                        ).forEach { (option, label) ->
+                        listOf("default", "roboto", "lato", "montserrat", "poppins", "mono", "cursive").forEach { option ->
                             FilterChip(
                                 selected = fontFamily == option,
                                 onClick = { fontFamily = option },
-                                label = { Text(label) }
+                                label = { Text(option.replaceFirstChar { it.uppercase() }) }
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text("Font Scale: ${"%.2f".format(fontScale)}", fontWeight = FontWeight.SemiBold)
-                    Slider(
-                        value = fontScale,
-                        onValueChange = { fontScale = it },
-                        valueRange = 0.85f..1.4f
+                    Slider(value = fontScale, onValueChange = { fontScale = it }, valueRange = 0.85f..1.4f)
+                }
+            }
+
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Card General Style", fontWeight = FontWeight.SemiBold)
+                    Text("Corner Radius: ${cornerRadius}dp", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = cornerRadius.toFloat(), onValueChange = { cornerRadius = it.toInt() }, valueRange = 0f..40f)
+
+                    Text("Opacity: ${"%.2f".format(cardOpacity)}", style = MaterialTheme.typography.bodySmall)
+                    Slider(value = cardOpacity, onValueChange = { cardOpacity = it }, valueRange = 0.4f..1.0f)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Individual Card Shapes", fontWeight = FontWeight.Bold)
+
+                    val cards = listOf(
+                        "PC Status" to { v: String -> pcCardShapePreset = v } to pcCardShapePreset,
+                        "Telemetry" to { v: String -> telemetryCardShapePreset = v } to telemetryCardShapePreset,
+                        "App Launcher" to { v: String -> appLauncherCardShapePreset = v } to appLauncherCardShapePreset,
+                        "Task Manager" to { v: String -> taskManagerCardShapePreset = v } to taskManagerCardShapePreset,
+                        "Remote Desktop" to { v: String -> remoteDesktopCardShapePreset = v } to remoteDesktopCardShapePreset,
+                        "Remote Control" to { v: String -> remoteControlCardShapePreset = v } to remoteControlCardShapePreset,
+                        "Remote Mouse" to { v: String -> remoteMouseCardShapePreset = v } to remoteMouseCardShapePreset
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text("Card Corner Radius: ${cornerRadius}dp", fontWeight = FontWeight.SemiBold)
-                    Slider(
-                        value = cornerRadius.toFloat(),
-                        onValueChange = { cornerRadius = it.toInt() },
-                        valueRange = 4f..36f
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text("Card Opacity: ${"%.2f".format(cardOpacity)}", fontWeight = FontWeight.SemiBold)
-                    Slider(
-                        value = cardOpacity,
-                        onValueChange = { cardOpacity = it },
-                        valueRange = 0.4f..1.0f
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text("PC Status Card Shape", fontWeight = FontWeight.SemiBold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(
-                            "rounded" to "Rounded",
-                            "cut" to "Cut",
-                            "pill" to "Pill"
-                        ).forEach { (option, label) ->
-                            FilterChip(
-                                selected = pcCardShapePreset == option,
-                                onClick = { pcCardShapePreset = option },
-                                label = { Text(label) }
-                            )
-                        }
-                    }
-
-                    Text("Telemetry Card Shape", fontWeight = FontWeight.SemiBold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(
-                            "rounded" to "Rounded",
-                            "cut" to "Cut",
-                            "pill" to "Pill"
-                        ).forEach { (option, label) ->
-                            FilterChip(
-                                selected = telemetryCardShapePreset == option,
-                                onClick = { telemetryCardShapePreset = option },
-                                label = { Text(label) }
-                            )
+                    cards.forEach { (pair, current) ->
+                        val (label, setter) = pair
+                        Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("rounded", "cut", "pill").forEach { option ->
+                                FilterChip(
+                                    selected = current == option,
+                                    onClick = { setter(option) },
+                                    label = { Text(option.replaceFirstChar { it.uppercase() }) }
+                                )
+                            }
                         }
                     }
                 }

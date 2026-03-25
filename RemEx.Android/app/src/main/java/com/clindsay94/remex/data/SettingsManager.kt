@@ -31,12 +31,24 @@ class SettingsManager(private val context: Context) {
 
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val THEME_PALETTE_KEY = stringPreferencesKey("theme_palette")
+        val THEME_STYLE_KEY = stringPreferencesKey("theme_style")
         val FONT_FAMILY_KEY = stringPreferencesKey("font_family")
         val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
         val CARD_CORNER_RADIUS_KEY = intPreferencesKey("card_corner_radius")
         val CARD_OPACITY_KEY = floatPreferencesKey("card_opacity")
         val PC_CARD_SHAPE_PRESET_KEY = stringPreferencesKey("pc_card_shape_preset")
         val TELEMETRY_CARD_SHAPE_PRESET_KEY = stringPreferencesKey("telemetry_card_shape_preset")
+        val APP_LAUNCHER_CARD_SHAPE_PRESET_KEY =
+            stringPreferencesKey("app_launcher_card_shape_preset")
+        val TASK_MANAGER_CARD_SHAPE_PRESET_KEY =
+            stringPreferencesKey("task_manager_card_shape_preset")
+        val REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY =
+            stringPreferencesKey("remote_desktop_card_shape_preset")
+        val REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY =
+            stringPreferencesKey("remote_control_card_shape_preset")
+        val REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY =
+            stringPreferencesKey("remote_mouse_card_shape_preset")
+        val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
     }
 
     data class ConnectionPreferences(
@@ -56,13 +68,40 @@ class SettingsManager(private val context: Context) {
     data class PersonalizationPreferences(
         val themeMode: String = "system",
         val themePalette: String = "default",
+        val themeStyle: String = "tonal_spot",
+        val themeSeedColor: String = "#6750A4", // Default M3 Purple
         val fontFamily: String = "default",
         val fontScale: Float = 1.0f,
         val cardCornerRadius: Int = 20,
         val cardOpacity: Float = 1.0f,
         val pcCardShapePreset: String = "rounded",
-        val telemetryCardShapePreset: String = "rounded"
+        val telemetryCardShapePreset: String = "rounded",
+        val appLauncherCardShapePreset: String = "rounded",
+        val taskManagerCardShapePreset: String = "rounded",
+        val remoteDesktopCardShapePreset: String = "rounded",
+        val remoteControlCardShapePreset: String = "rounded",
+        val remoteMouseCardShapePreset: String = "rounded"
     )
+
+    val appLauncherCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: "rounded"
+    }
+
+    val taskManagerCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: "rounded"
+    }
+
+    val remoteDesktopCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: "rounded"
+    }
+
+    val remoteControlCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: "rounded"
+    }
+
+    val remoteMouseCardShapePresetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: "rounded"
+    }
 
     val hostFlow: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[HOST_KEY] ?: "192.168.1.100"
@@ -112,6 +151,10 @@ class SettingsManager(private val context: Context) {
         preferences[THEME_PALETTE_KEY] ?: "default"
     }
 
+    val themeSeedColorFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4"
+    }
+
     val fontScaleFlow: Flow<Float> = context.dataStore.data.map { preferences ->
         preferences[FONT_SCALE_KEY] ?: 1.0f
     }
@@ -136,38 +179,59 @@ class SettingsManager(private val context: Context) {
         preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: "rounded"
     }
 
-    val connectionPreferencesFlow: Flow<ConnectionPreferences> = context.dataStore.data.map { preferences ->
-        ConnectionPreferences(
-            host = preferences[HOST_KEY] ?: "192.168.1.100",
-            port = preferences[PORT_KEY] ?: 5005,
-            macAddress = preferences[MAC_KEY] ?: "",
-            broadcastIp = preferences[BROADCAST_IP_KEY] ?: "255.255.255.255",
-            subnetMask = preferences[SUBNET_MASK_KEY] ?: "255.255.255.0"
-        )
-    }
+    val connectionPreferencesFlow: Flow<ConnectionPreferences> =
+        context.dataStore.data.map { preferences ->
+            ConnectionPreferences(
+                host = preferences[HOST_KEY] ?: "192.168.1.100",
+                port = preferences[PORT_KEY] ?: 5005,
+                macAddress = preferences[MAC_KEY] ?: "",
+                broadcastIp = preferences[BROADCAST_IP_KEY] ?: "255.255.255.255",
+                subnetMask = preferences[SUBNET_MASK_KEY] ?: "255.255.255.0"
+            )
+        }
 
-    val remoteDesktopPreferencesFlow: Flow<RemoteDesktopPreferences> = context.dataStore.data.map { preferences ->
-        RemoteDesktopPreferences(
-            quality = preferences[DESKTOP_QUALITY_KEY] ?: 50,
-            targetFps = preferences[DESKTOP_TARGET_FPS_KEY] ?: 30,
-            scale = preferences[DESKTOP_SCALE_KEY] ?: 0.6f
-        )
-    }
+    val remoteDesktopPreferencesFlow: Flow<RemoteDesktopPreferences> =
+        context.dataStore.data.map { preferences ->
+            RemoteDesktopPreferences(
+                quality = preferences[DESKTOP_QUALITY_KEY] ?: 50,
+                targetFps = preferences[DESKTOP_TARGET_FPS_KEY] ?: 30,
+                scale = preferences[DESKTOP_SCALE_KEY] ?: 0.6f
+            )
+        }
 
-    val personalizationPreferencesFlow: Flow<PersonalizationPreferences> = context.dataStore.data.map { preferences ->
-        PersonalizationPreferences(
-            themeMode = preferences[THEME_MODE_KEY] ?: "system",
-            themePalette = preferences[THEME_PALETTE_KEY] ?: "default",
-            fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
-            fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
-            cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
-            cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
-            pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: "rounded",
-            telemetryCardShapePreset = preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: "rounded"
-        )
-    }
+    val personalizationPreferencesFlow: Flow<PersonalizationPreferences> =
+        context.dataStore.data.map { preferences ->
+            PersonalizationPreferences(
+                themeMode = preferences[THEME_MODE_KEY] ?: "system",
+                themePalette = preferences[THEME_PALETTE_KEY] ?: "default",
+                themeStyle = preferences[THEME_STYLE_KEY] ?: "tonal_spot",
+                themeSeedColor = preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4",
+                fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
+                fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
+                cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
+                cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
+                pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: "rounded",
+                telemetryCardShapePreset = preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY]
+                    ?: "rounded",
+                appLauncherCardShapePreset = preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY]
+                    ?: "rounded",
+                taskManagerCardShapePreset = preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY]
+                    ?: "rounded",
+                remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY]
+                    ?: "rounded",
+                remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY]
+                    ?: "rounded",
+                remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY]
+                    ?: "rounded"
+            )
+        }
 
-    suspend fun saveSettings(host: String, port: Int, mac: String = "", broadcast: String = "255.255.255.255") {
+    suspend fun saveSettings(
+        host: String,
+        port: Int,
+        mac: String = "",
+        broadcast: String = "255.255.255.255"
+    ) {
         saveConnectionSettings(
             host = host,
             port = port,
@@ -216,22 +280,36 @@ class SettingsManager(private val context: Context) {
     suspend fun savePersonalization(
         themeMode: String,
         themePalette: String,
+        themeStyle: String,
+        themeSeedColor: String,
         fontFamily: String,
         fontScale: Float,
         cardCornerRadius: Int,
         cardOpacity: Float,
         pcCardShapePreset: String,
-        telemetryCardShapePreset: String
+        telemetryCardShapePreset: String,
+        appLauncherCardShapePreset: String,
+        taskManagerCardShapePreset: String,
+        remoteDesktopCardShapePreset: String,
+        remoteControlCardShapePreset: String,
+        remoteMouseCardShapePreset: String
     ) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE_KEY] = themeMode
             preferences[THEME_PALETTE_KEY] = themePalette
+            preferences[THEME_STYLE_KEY] = themeStyle
+            preferences[THEME_SEED_COLOR_KEY] = themeSeedColor
             preferences[FONT_FAMILY_KEY] = fontFamily
             preferences[FONT_SCALE_KEY] = fontScale.coerceIn(0.85f, 1.4f)
             preferences[CARD_CORNER_RADIUS_KEY] = cardCornerRadius.coerceIn(4, 36)
             preferences[CARD_OPACITY_KEY] = cardOpacity.coerceIn(0.4f, 1.0f)
             preferences[PC_CARD_SHAPE_PRESET_KEY] = pcCardShapePreset
             preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] = telemetryCardShapePreset
+            preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] = appLauncherCardShapePreset
+            preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] = taskManagerCardShapePreset
+            preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] = remoteDesktopCardShapePreset
+            preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] = remoteControlCardShapePreset
+            preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -62,11 +63,14 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.roundToInt
 
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteDesktopScreen(
-    viewModel: RemoteDesktopViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: RemoteDesktopViewModel = viewModel()
 ) {
     val currentFrame by viewModel.currentFrame.collectAsState()
     val isStreaming by viewModel.isStreaming.collectAsState()
@@ -76,6 +80,9 @@ fun RemoteDesktopScreen(
 
     val activity = LocalContext.current as? Activity
     var isFullscreen by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    
     var zoomFactor by remember { mutableFloatStateOf(1f) }
     var cursorX by remember { mutableFloatStateOf(0f) }
     var cursorY by remember { mutableFloatStateOf(0f) }
@@ -103,40 +110,40 @@ fun RemoteDesktopScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Remote Desktop", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { isFullscreen = !isFullscreen }) {
-                        Icon(
-                            imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                            contentDescription = "Toggle fullscreen"
-                        )
-                    }
-                    if (isStreaming) {
-                        IconButton(onClick = { viewModel.stopStreaming() }) {
-                            Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error)
+            if (!isFullscreen) {
+                TopAppBar(
+                    title = { Text("Remote Desktop", fontWeight = FontWeight.Bold) },
+                    actions = {
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(Icons.Default.Tune, contentDescription = "Settings")
                         }
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.startStreaming() },
-                            enabled = capabilityState.supportsRemoteDesktop
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = Color(0xFF4CAF50))
+                        IconButton(onClick = { isFullscreen = !isFullscreen }) {
+                            Icon(
+                                imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                contentDescription = "Toggle fullscreen"
+                            )
+                        }
+                        if (isStreaming) {
+                            IconButton(onClick = { viewModel.stopStreaming() }) {
+                                Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error)
+                            }
+                        } else {
+                            IconButton(
+                                onClick = { viewModel.startStreaming() },
+                                enabled = capabilityState.supportsRemoteDesktop
+                            ) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = Color(0xFF4CAF50))
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(if (isFullscreen) PaddingValues(0.dp) else padding)
                 .background(Color.Black)
         ) {
             Box(
@@ -147,7 +154,7 @@ fun RemoteDesktopScreen(
                         detectDragGestures { change, dragAmount ->
                             if (!isStreaming) return@detectDragGestures
                             change.consume()
-                            viewModel.sendMouseMove(dragAmount.x.toInt(), dragAmount.y.toInt())
+                            viewModel.sendMouseMove(dragAmount.x, dragAmount.y)
                             cursorX += dragAmount.x
                             cursorY += dragAmount.y
                         }
@@ -220,45 +227,65 @@ fun RemoteDesktopScreen(
                         }
                     }
                 }
+
+                if (isFullscreen) {
+                    IconButton(
+                        onClick = { isFullscreen = false },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.FullscreenExit, contentDescription = "Exit Fullscreen", tint = Color.White)
+                    }
+                }
             }
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Quality: ${config.quality}%", fontWeight = FontWeight.SemiBold)
-                    Slider(
-                        value = config.quality.toFloat(),
-                        onValueChange = { viewModel.updateQuality(it.toInt()) },
-                        valueRange = 1f..100f
-                    )
-
-                    Text("Target FPS: ${config.targetFps} (max 120)", fontWeight = FontWeight.SemiBold)
-                    Slider(
-                        value = config.targetFps.toFloat(),
-                        onValueChange = { viewModel.updateTargetFps(it.toInt().coerceIn(1, 120)) },
-                        valueRange = 1f..120f
-                    )
-
-                    Text("Scale: ${"%.2f".format(config.scale)}", fontWeight = FontWeight.SemiBold)
-                    Slider(
-                        value = config.scale,
-                        onValueChange = { viewModel.updateScale(it) },
-                        valueRange = 0.25f..1.0f
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+            if (showSettings) {
+                ModalBottomSheet(
+                    onDismissRequest = { showSettings = false },
+                    sheetState = sheetState
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                            .padding(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        Text("Stream Configuration", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Quality: ${config.quality}%", fontWeight = FontWeight.SemiBold)
+                            Slider(
+                                value = config.quality.toFloat(),
+                                onValueChange = { viewModel.updateQuality(it.toInt()) },
+                                valueRange = 1f..100f
+                            )
+                        }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Target FPS: ${config.targetFps} (max 120)", fontWeight = FontWeight.SemiBold)
+                            Slider(
+                                value = config.targetFps.toFloat(),
+                                onValueChange = { viewModel.updateTargetFps(it.toInt().coerceIn(1, 120)) },
+                                valueRange = 1f..120f
+                            )
+                        }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Scale: ${"%.2f".format(config.scale)}", fontWeight = FontWeight.SemiBold)
+                            Slider(
+                                value = config.scale,
+                                onValueChange = { viewModel.updateScale(it) },
+                                valueRange = 0.25f..1.0f
+                            )
+                        }
+
                         Text(
                             text = "Single finger drag = move cursor, pinch = zoom, two-finger pan = scroll.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

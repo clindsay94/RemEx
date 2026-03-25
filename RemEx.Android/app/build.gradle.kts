@@ -1,7 +1,5 @@
 import java.security.MessageDigest
 import java.util.Properties
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.zip.ZipFile
 
 plugins {
@@ -259,7 +257,7 @@ val syncRemexCoreDebugSo by tasks.registering(SyncRemexCoreSoTask::class) {
     group = "remex"
     description = "Publishes and synchronizes debug libRemexCore.so into generated jniLibs"
     dependsOn(publishRemexCoreAndroidDebug)
-    
+
     configuration.set("Debug")
     rcDir.set(remexCoreProjectDirLocal.absolutePath)
     generatedSo.set(remexGeneratedDebugArm64So)
@@ -269,7 +267,7 @@ val syncRemexCoreReleaseSo by tasks.registering(SyncRemexCoreSoTask::class) {
     group = "remex"
     description = "Publishes and synchronizes release libRemexCore.so into generated jniLibs"
     dependsOn(publishRemexCoreAndroidRelease)
-    
+
     configuration.set("Release")
     rcDir.set(remexCoreProjectDirLocal.absolutePath)
     generatedSo.set(remexGeneratedReleaseArm64So)
@@ -316,25 +314,25 @@ abstract class VerifyRemexCoreInApkTask : DefaultTask() {
             .filter { it.exists() }
             .maxByOrNull { it.lastModified() }
             ?: nativePath
-            
+
         if (!published.exists()) {
-             throw GradleException("Published $conf libRemexCore.so not found: ${published.absolutePath}")
+            throw GradleException("Published $conf libRemexCore.so not found: ${published.absolutePath}")
         }
-        
+
         if (!generated.exists()) {
-             throw GradleException("Generated $conf libRemexCore.so not found: ${generated.absolutePath}")
+            throw GradleException("Generated $conf libRemexCore.so not found: ${generated.absolutePath}")
         }
-        
+
         if (!merged.exists()) {
-             throw GradleException("Merged $conf libRemexCore.so not found: ${merged.absolutePath}")
+            throw GradleException("Merged $conf libRemexCore.so not found: ${merged.absolutePath}")
         }
-        
+
         val apks = apkDir
             .listFiles()
             ?.filter { it.isFile && it.extension.equals("apk", ignoreCase = true) }
             ?.sortedByDescending { it.lastModified() }
             .orEmpty()
-    
+
         val apk = apks.firstOrNull()
             ?: throw GradleException("No APK was found in ${apkDir.absolutePath}")
 
@@ -354,7 +352,8 @@ abstract class VerifyRemexCoreInApkTask : DefaultTask() {
         }
 
         fun sha256localBytes(bytes: ByteArray): String {
-            return MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            return MessageDigest.getInstance("SHA-256").digest(bytes)
+                .joinToString("") { "%02x".format(it) }
         }
 
         val publishedHash = sha256local(published)
@@ -542,6 +541,8 @@ tasks.matching { it.name == "mergeReleaseJniLibFolders" }.configureEach {
 }
 
 dependencies {
+    implementation(libs.material.color.utilities)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

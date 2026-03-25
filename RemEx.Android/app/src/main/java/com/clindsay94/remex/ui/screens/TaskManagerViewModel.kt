@@ -1,9 +1,11 @@
 package com.clindsay94.remex.ui.screens
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,7 +31,15 @@ enum class ProcessSortField {
     PID
 }
 
-class TaskManagerViewModel : ViewModel() {
+class TaskManagerViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val settingsManager = SettingsManager(application)
+
+    val taskManagerCardShapePreset = settingsManager.taskManagerCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val cardCornerRadius = settingsManager.cardCornerRadiusFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
 
     private val _processes = MutableStateFlow<List<ProcessInfo>>(emptyList())
     private val _searchQuery = MutableStateFlow("")

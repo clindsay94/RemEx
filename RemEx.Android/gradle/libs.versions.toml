@@ -9,6 +9,8 @@ activityCompose = "1.13.0"
 kotlin = "2.2.10"
 composeBom = "2024.09.00"
 lifecycleViewmodelCompose = "2.6.1"
+materialColorUtilities = "1.0.0-alpha01"
+androidxComposeUiTextGoogleFonts = "1.7.8"
 materialIconsExtended = "1.7.5"
 androidxGraphicsPath = "1.0.1"
 navigationCompose = "2.8.1"
@@ -34,6 +36,8 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version = "1.7.8" }
+material-color-utilities = { module = "dev.sasikanth:material-color-utilities", version.ref = "materialColorUtilities" }
+androidx-compose-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "androidxComposeUiTextGoogleFonts" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -9,7 +9,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-class RemoteControlViewModel : ViewModel() {
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.clindsay94.remex.data.SettingsManager
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+
+class RemoteControlViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val settingsManager = SettingsManager(application)
+
+    val remoteControlCardShapePreset = settingsManager.remoteControlCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val remoteMouseCardShapePreset = settingsManager.remoteMouseCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val cardCornerRadius = settingsManager.cardCornerRadiusFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
 
     private val _commandStatus = MutableStateFlow<String?>(null)
     val commandStatus: StateFlow<String?> = _commandStatus.asStateFlow()

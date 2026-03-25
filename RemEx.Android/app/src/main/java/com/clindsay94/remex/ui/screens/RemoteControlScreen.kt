@@ -71,22 +71,18 @@ private val remoteCommandCards = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlScreen(
-    viewModel: RemoteControlViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: RemoteControlViewModel = viewModel()
 ) {
     val commandStatus by viewModel.commandStatus.collectAsState()
+    val shapePreset by viewModel.remoteControlCardShapePreset.collectAsState()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Remote Control", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                }
+                title = { Text("Remote Control", fontWeight = FontWeight.Bold) }
             )
         }
     ) { paddingValues ->
@@ -115,7 +111,8 @@ fun RemoteControlScreen(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius)
                 ) {
                     Row(
                         modifier = Modifier
@@ -146,6 +143,7 @@ fun RemoteControlScreen(
                         card = card,
                         isAwaitingConfirmation = activeConfirmationId == card.id,
                         timerText = timerInputs[card.id].orEmpty(),
+                        shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius),
                         onTimerTextChanged = { timerInputs[card.id] = it },
                         onPrimaryClick = {
                             if (card.requiresConfirmation) {
@@ -175,6 +173,7 @@ private fun CommandCard(
     card: RemoteCommandCard,
     isAwaitingConfirmation: Boolean,
     timerText: String,
+    shape: androidx.compose.ui.graphics.Shape,
     onTimerTextChanged: (String) -> Unit,
     onPrimaryClick: () -> Unit,
     onConfirm: () -> Unit,
@@ -184,6 +183,7 @@ private fun CommandCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(if (isAwaitingConfirmation) 220.dp else 140.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(

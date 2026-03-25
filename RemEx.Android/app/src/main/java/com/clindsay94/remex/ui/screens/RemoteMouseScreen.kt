@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -45,21 +47,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteMouseScreen(
-    viewModel: RemoteControlViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: RemoteControlViewModel = viewModel()
 ) {
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
+    val shapePreset by viewModel.remoteMouseCardShapePreset.collectAsState()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Remote Mouse", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                }
+                title = { Text("Remote Mouse", fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -80,7 +78,8 @@ fun RemoteMouseScreen(
                     textValue = it
                 },
                 modifier = Modifier
-                    .size(0.dp)
+                    .size(1.dp)
+                    .graphicsLayer { alpha = 0f }
                     .focusRequester(focusRequester)
             )
 
@@ -94,7 +93,7 @@ fun RemoteMouseScreen(
                             viewModel.sendMouseMove(dragAmount.x.toInt(), dragAmount.y.toInt())
                         }
                     },
-                shape = MaterialTheme.shapes.large,
+                shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 tonalElevation = 4.dp
             ) {

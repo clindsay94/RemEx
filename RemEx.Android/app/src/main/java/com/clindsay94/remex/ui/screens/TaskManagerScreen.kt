@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,23 +48,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskManagerScreen(
-    viewModel: TaskManagerViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: TaskManagerViewModel = viewModel()
 ) {
     val processes by viewModel.processes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortField by viewModel.sortField.collectAsState()
     val sortDescending by viewModel.sortDescending.collectAsState()
+    val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Task Manager", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
                 actions = {
                     IconButton(onClick = { viewModel.refreshProcesses() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
@@ -84,7 +81,8 @@ fun TaskManagerScreen(
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius)
             )
 
             Row(
@@ -121,12 +119,17 @@ fun TaskManagerScreen(
                     }
                 }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item {
-                        ProcessHeader()
-                    }
-                    items(processes) { process ->
-                        ProcessItem(process = process, onKill = { viewModel.killProcess(process.id) })
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + expandVertically()
+                ) {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        item {
+                            ProcessHeader()
+                        }
+                        items(processes, key = { it.id }) { process ->
+                            ProcessItem(process = process, onKill = { viewModel.killProcess(process.id) })
+                        }
                     }
                 }
             }

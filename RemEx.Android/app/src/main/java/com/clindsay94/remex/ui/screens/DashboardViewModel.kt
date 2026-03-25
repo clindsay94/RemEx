@@ -80,6 +80,21 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val telemetryCardShapePreset = settingsManager.telemetryCardShapePresetFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
 
+    val appLauncherCardShapePreset = settingsManager.appLauncherCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val taskManagerCardShapePreset = settingsManager.taskManagerCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val remoteDesktopCardShapePreset = settingsManager.remoteDesktopCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val remoteControlCardShapePreset = settingsManager.remoteControlCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
+    val remoteMouseCardShapePreset = settingsManager.remoteMouseCardShapePresetFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "rounded")
+
     init {
         loadSavedHomeLayout()
 

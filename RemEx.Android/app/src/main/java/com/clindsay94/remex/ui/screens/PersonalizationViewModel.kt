@@ -13,34 +13,48 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
 
     private val settingsManager = SettingsManager(application)
 
-    val personalization: StateFlow<SettingsManager.PersonalizationPreferences> =
+    val personalization: StateFlow<SettingsManager.PersonalizationPreferences?> =
         settingsManager.personalizationPreferencesFlow
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = SettingsManager.PersonalizationPreferences()
+                initialValue = null
             )
 
     fun save(
         themeMode: String,
         themePalette: String,
+        themeStyle: String,
+        themeSeedColor: String,
         fontFamily: String,
         fontScale: Float,
         cardCornerRadius: Int,
         cardOpacity: Float,
         pcCardShapePreset: String,
-        telemetryCardShapePreset: String
+        telemetryCardShapePreset: String,
+        appLauncherCardShapePreset: String,
+        taskManagerCardShapePreset: String,
+        remoteDesktopCardShapePreset: String,
+        remoteControlCardShapePreset: String,
+        remoteMouseCardShapePreset: String
     ) {
         viewModelScope.launch {
             settingsManager.savePersonalization(
                 themeMode = themeMode,
                 themePalette = themePalette,
+                themeStyle = themeStyle,
+                themeSeedColor = themeSeedColor,
                 fontFamily = fontFamily,
                 fontScale = fontScale,
                 cardCornerRadius = cardCornerRadius,
                 cardOpacity = cardOpacity,
                 pcCardShapePreset = pcCardShapePreset,
-                telemetryCardShapePreset = telemetryCardShapePreset
+                telemetryCardShapePreset = telemetryCardShapePreset,
+                appLauncherCardShapePreset = appLauncherCardShapePreset,
+                taskManagerCardShapePreset = taskManagerCardShapePreset,
+                remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
+                remoteControlCardShapePreset = remoteControlCardShapePreset,
+                remoteMouseCardShapePreset = remoteMouseCardShapePreset
             )
         }
     }

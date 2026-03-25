@@ -1,6 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -76,8 +79,7 @@ private data class CardSizeDp(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel = viewModel(),
-    onMenuClick: () -> Unit = {}
+    viewModel: DashboardViewModel = viewModel()
 ) {
     val isConnected by viewModel.isConnected.collectAsState()
     val telemetrySensors by viewModel.telemetrySensors.collectAsState()
@@ -88,6 +90,11 @@ fun DashboardScreen(
     val cardOpacity by viewModel.cardOpacity.collectAsState()
     val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
     val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
+    val appLauncherCardShapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
+    val taskManagerCardShapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
+    val remoteDesktopCardShapePreset by viewModel.remoteDesktopCardShapePreset.collectAsState()
+    val remoteControlCardShapePreset by viewModel.remoteControlCardShapePreset.collectAsState()
+    val remoteMouseCardShapePreset by viewModel.remoteMouseCardShapePreset.collectAsState()
 
     val availableCards = remember(telemetrySensors) {
         buildList {
@@ -137,11 +144,6 @@ fun DashboardScreen(
         topBar = {
             TopAppBar(
                 title = { Text("RemEx Home Base", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
                 actions = {
                     IconButton(onClick = { showCardDrawer = !showCardDrawer }) {
                         Icon(Icons.Default.Tune, contentDescription = "Customize cards")
@@ -160,16 +162,24 @@ fun DashboardScreen(
             cards.filter { enabledCards.contains(it.id) }.forEach { card ->
                 val xPx = (card.xDp * density).roundToInt()
                 val yPx = (card.yDp * density).roundToInt()
-                val cardShapePreset = when (card.type) {
-                    HomeCardType.PC_STATUS -> pcCardShapePreset
-                    HomeCardType.TELEMETRY -> telemetryCardShapePreset
+                val cardShapePreset = when {
+                    card.id == "pc_status" -> pcCardShapePreset
+                    card.id.startsWith("sensor:") -> telemetryCardShapePreset
+                    else -> "rounded"
                 }
+
 
                 Card(
                     modifier = Modifier
                         .offset { IntOffset(xPx, yPx) }
                         .width(card.widthDp.dp)
                         .height(card.heightDp.dp)
+                        .animateContentSize(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        )
                         .pointerInput(card.id) {
                             detectDragGestures(
                                 onDrag = { change, dragAmount ->
@@ -271,12 +281,24 @@ fun DashboardScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             availableCards.forEach { availableCard ->
-                                var itemTopLeftPx by remember(availableCard.id) { mutableStateOf(Offset.Zero) }
+                                var itemTopLeftPx by remember(availableCard.id) {
+                                    mutableStateOf(
+                                        Offset.Zero
+                                    )
+                                }
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .onGloballyPositioned { itemTopLeftPx = it.positionInRoot() }
-                                        .pointerInput(availableCard.id, density, drawerLeftPx, canvasTopLeftPx, cards) {
+                                        .onGloballyPositioned {
+                                            itemTopLeftPx = it.positionInRoot()
+                                        }
+                                        .pointerInput(
+                                            availableCard.id,
+                                            density,
+                                            drawerLeftPx,
+                                            canvasTopLeftPx,
+                                            cards
+                                        ) {
                                             detectDragGestures(
                                                 onDragStart = { startOffset ->
                                                     draggingCardId = availableCard.id
@@ -288,14 +310,26 @@ fun DashboardScreen(
                                                 onDragEnd = {
                                                     val draggingId = draggingCardId
                                                     if (draggingId == availableCard.id && draggingPointerPx.x < drawerLeftPx - 24f) {
-                                                        val dragSize = cards.firstOrNull { it.id == draggingId }
-                                                            ?.let { CardSizeDp(it.widthDp, it.heightDp) }
-                                                            ?: defaultCardSizeFor(draggingId)
-                                                        val dropXDp = ((draggingPointerPx.x - canvasTopLeftPx.x) / density - (dragSize.widthDp / 2f))
-                                                            .coerceAtLeast(0f)
-                                                        val dropYDp = ((draggingPointerPx.y - canvasTopLeftPx.y) / density - (dragSize.heightDp / 2f))
-                                                            .coerceAtLeast(0f)
-                                                        viewModel.placeCardAt(draggingId, dropXDp, dropYDp)
+                                                        val dragSize =
+                                                            cards.firstOrNull { it.id == draggingId }
+                                                                ?.let {
+                                                                    CardSizeDp(
+                                                                        it.widthDp,
+                                                                        it.heightDp
+                                                                    )
+                                                                }
+                                                                ?: defaultCardSizeFor(draggingId)
+                                                        val dropXDp =
+                                                            ((draggingPointerPx.x - canvasTopLeftPx.x) / density - (dragSize.widthDp / 2f))
+                                                                .coerceAtLeast(0f)
+                                                        val dropYDp =
+                                                            ((draggingPointerPx.y - canvasTopLeftPx.y) / density - (dragSize.heightDp / 2f))
+                                                                .coerceAtLeast(0f)
+                                                        viewModel.placeCardAt(
+                                                            draggingId,
+                                                            dropXDp,
+                                                            dropYDp
+                                                        )
                                                     }
 
                                                     draggingCardId = null
@@ -330,7 +364,10 @@ fun DashboardScreen(
                                             contentDescription = null
                                         )
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(availableCard.title, fontWeight = FontWeight.SemiBold)
+                                            Text(
+                                                availableCard.title,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
                                             Text(
                                                 availableCard.subtitle,
                                                 style = MaterialTheme.typography.bodySmall,
@@ -364,12 +401,14 @@ fun DashboardScreen(
                 val previewX = if (canDropOnCanvas) {
                     (dropTargetXDp * density).roundToInt()
                 } else {
-                    (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density / 2f)).roundToInt().coerceAtLeast(0)
+                    (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density / 2f)).roundToInt()
+                        .coerceAtLeast(0)
                 }
                 val previewY = if (canDropOnCanvas) {
                     (dropTargetYDp * density).roundToInt()
                 } else {
-                    (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density / 2f)).roundToInt().coerceAtLeast(0)
+                    (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density / 2f)).roundToInt()
+                        .coerceAtLeast(0)
                 }
 
                 Card(
@@ -420,7 +459,11 @@ private fun PcStatusCardContent(isConnected: Boolean, onWakeClicked: () -> Unit)
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("PC Status", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                "PC Status",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
             Text(
                 text = if (isConnected) "Online" else "Offline",
                 style = MaterialTheme.typography.headlineSmall,
@@ -479,8 +522,15 @@ private fun TelemetryCardContent(
             TelemetryDisplayMode.GAUGE -> {
                 val percent = (sensor?.value ?: 0.0).toFloat().coerceIn(0f, 100f) / 100f
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                    CircularProgressIndicator(progress = { percent }, modifier = Modifier.size(72.dp))
-                    Text(valueText, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                    CircularProgressIndicator(
+                        progress = { percent },
+                        modifier = Modifier.size(72.dp)
+                    )
+                    Text(
+                        valueText,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
