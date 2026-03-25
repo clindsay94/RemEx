@@ -10,7 +10,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -314,19 +313,47 @@ fun RemoteDesktopScreen(
                         )
                     }
                     .pointerInput(isStreaming) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            if (isStreaming) {
-                                zoomFactor = (zoomFactor * zoom).coerceIn(1f, 4f)
-                                // When zoomed in, allow panning the view
-                                if (zoomFactor > 1f) {
-                                    panOffsetX += pan.x
-                                    panOffsetY += pan.y
-                                } else {
-                                    panOffsetX = 0f
-                                    panOffsetY = 0f
-                                    // At 1x zoom, two-finger pan = scroll
-                                    if (pan.x != 0f || pan.y != 0f) {
-                                        viewModel.sendMouseScroll(pan.x.toInt(), (-pan.y).toInt())
+                        // Multi-touch only: pinch to zoom, two-finger pan.
+                        // Single-finger drags are handled by detectDragGestures above.
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val pressed = event.changes.filter { it.pressed }
+                                if (pressed.size >= 2 && isStreaming) {
+                                    // Consume all changes to prevent single-finger handlers from firing
+                                    event.changes.forEach { it.consume() }
+
+                                    val p1 = pressed[0].position
+                                    val p2 = pressed[1].position
+                                    val currentDist = kotlin.math.sqrt(
+                                        (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y)
+                                    )
+                                    val currentCenter = Offset((p1.x + p2.x) / 2f, (p1.y + p2.y) / 2f)
+
+                                    val prevP1 = pressed[0].previousPosition
+                                    val prevP2 = pressed[1].previousPosition
+                                    val prevDist = kotlin.math.sqrt(
+                                        (prevP1.x - prevP2.x) * (prevP1.x - prevP2.x) + (prevP1.y - prevP2.y) * (prevP1.y - prevP2.y)
+                                    )
+                                    val prevCenter = Offset((prevP1.x + prevP2.x) / 2f, (prevP1.y + prevP2.y) / 2f)
+
+                                    // Pinch zoom
+                                    if (prevDist > 10f) {
+                                        val zoomDelta = currentDist / prevDist
+                                        zoomFactor = (zoomFactor * zoomDelta).coerceIn(1f, 4f)
+                                    }
+
+                                    // Two-finger pan
+                                    val panDelta = currentCenter - prevCenter
+                                    if (zoomFactor > 1f) {
+                                        panOffsetX += panDelta.x
+                                        panOffsetY += panDelta.y
+                                    } else {
+                                        panOffsetX = 0f
+                                        panOffsetY = 0f
+                                        if (panDelta.x != 0f || panDelta.y != 0f) {
+                                            viewModel.sendMouseScroll(panDelta.x.toInt(), (-panDelta.y).toInt())
+                                        }
                                     }
                                 }
                             }
@@ -334,9 +361,10 @@ fun RemoteDesktopScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (currentFrame != null) {
+                val safeFrame = currentFrame
+                if (safeFrame != null && !safeFrame.isRecycled) {
                     Image(
-                        bitmap = currentFrame!!.asImageBitmap(),
+                        bitmap = safeFrame.asImageBitmap(),
                         contentDescription = "Remote Desktop Frame",
                         modifier = Modifier
                             .fillMaxSize()

@@ -169,8 +169,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             cards.map { card ->
                 if (card.id == cardId) {
                     card.copy(
-                        widthDp = (card.widthDp + deltaWidthDp).coerceIn(120f, 420f),
-                        heightDp = (card.heightDp + deltaHeightDp).coerceIn(100f, 320f)
+                        widthDp = (card.widthDp + deltaWidthDp).coerceIn(140f, 600f),
+                        heightDp = (card.heightDp + deltaHeightDp).coerceIn(120f, 500f)
                     )
                 } else {
                     card

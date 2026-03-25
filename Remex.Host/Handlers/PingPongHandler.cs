@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using Remex.Core.Messages;
+using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
@@ -20,7 +21,8 @@ public sealed class PingPongHandler(
     Remex.Core.Services.IAppLauncherService appLauncherService,
     Remex.Core.Services.IDashboardProfileStorageService profileStorage,
     Remex.Core.Services.IProcessMonitorService processMonitorService,
-    IHostCapabilitiesProvider hostCapabilitiesProvider)
+    IHostCapabilitiesProvider hostCapabilitiesProvider,
+    IInputSimulationService inputSimulation)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
@@ -127,6 +129,10 @@ public sealed class PingPongHandler(
                         var reqProfile = await profileStorage.LoadProfileAsync();
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = reqProfile }, ct);
                         logger.LogInformation("Dashboard layout sent to client on request.");
+                        break;
+
+                    case MessageTypes.DesktopInput when message.InputEvent is not null:
+                        DispatchInput(message.InputEvent);
                         break;
 
                     default:
@@ -294,6 +300,51 @@ public sealed class PingPongHandler(
         catch (Exception ex)
         {
             logger.LogTrace(ex, "Telemetry stream halted.");
+        }
+    }
+
+    private void DispatchInput(InputEvent input)
+    {
+        try
+        {
+            switch (input.EventType)
+            {
+                case InputEventTypes.MouseMove when input.X.HasValue && input.Y.HasValue:
+                    inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    break;
+                case InputEventTypes.MouseMove when input.DeltaX.HasValue || input.DeltaY.HasValue:
+                    inputSimulation.MouseMoveRelative(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    break;
+                case InputEventTypes.MouseDown when input.Button.HasValue:
+                    if (input.X.HasValue && input.Y.HasValue)
+                        inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    inputSimulation.MouseDown(input.Button.Value);
+                    break;
+                case InputEventTypes.MouseUp when input.Button.HasValue:
+                    inputSimulation.MouseUp(input.Button.Value);
+                    break;
+                case InputEventTypes.MouseClick when input.Button.HasValue:
+                    if (input.X.HasValue && input.Y.HasValue)
+                        inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    inputSimulation.MouseClick(input.Button.Value);
+                    break;
+                case InputEventTypes.MouseScroll:
+                    inputSimulation.MouseScroll(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    break;
+                case InputEventTypes.KeyDown when input.KeyCode.HasValue:
+                    inputSimulation.KeyDown(input.KeyCode.Value);
+                    break;
+                case InputEventTypes.KeyUp when input.KeyCode.HasValue:
+                    inputSimulation.KeyUp(input.KeyCode.Value);
+                    break;
+                case InputEventTypes.TypeText when input.Text is not null:
+                    inputSimulation.TypeText(input.Text);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to dispatch input: {Type}", input.EventType);
         }
     }
 }

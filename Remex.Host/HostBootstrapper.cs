@@ -112,7 +112,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>(),
-                context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
+                context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
+                context.RequestServices.GetRequiredService<IInputSimulationService>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 

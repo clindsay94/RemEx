@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -153,14 +154,40 @@ fun DashboardScreen(
             )
         }
     ) { paddingValues ->
+        // Compute a canvas size that grows to fit all cards
+        val visibleCards = cards.filter { enabledCards.contains(it.id) }
+        val canvasWidthDp = remember(visibleCards) {
+            val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
+            (maxRight + 200f).coerceAtLeast(800f)
+        }
+        val canvasHeightDp = remember(visibleCards) {
+            val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
+            (maxBottom + 200f).coerceAtLeast(1200f)
+        }
+        val hScrollState = rememberScrollState()
+        val vScrollState = rememberScrollState()
+
+        // Outer fixed Box holds both the scrollable canvas and the floating overlays
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+        ) {
+          // Scrollable canvas for cards
+          Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(hScrollState)
+                .verticalScroll(vScrollState)
+          ) {
+            Box(
+              modifier = Modifier
+                .width(canvasWidthDp.dp)
+                .height(canvasHeightDp.dp)
                 .onGloballyPositioned { canvasTopLeftPx = it.positionInRoot() }
                 .background(MaterialTheme.colorScheme.background)
-        ) {
-            cards.filter { enabledCards.contains(it.id) }.forEach { card ->
+          ) {
+            visibleCards.forEach { card ->
                 val xPx = (card.xDp * density).roundToInt()
                 val yPx = (card.yDp * density).roundToInt()
                 val cardShapePreset = when {
@@ -199,7 +226,7 @@ fun DashboardScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardOpacity)
                     )
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
                         when (card.type.name) {
                             "PC_STATUS" -> {
                                 PcStatusCardContent(
@@ -221,11 +248,12 @@ fun DashboardScreen(
                             }
                         }
 
+                        // Resize handle — inset enough to stay within any card shape
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(6.dp)
-                                .size(18.dp)
+                                .padding(12.dp)
+                                .size(24.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
                                 .pointerInput("resize_${card.id}") {
@@ -245,6 +273,8 @@ fun DashboardScreen(
                     }
                 }
             }
+          } // end inner canvas Box with cards
+          } // end scrollable canvas Box
 
             AnimatedVisibility(
                 visible = showCardDrawer,

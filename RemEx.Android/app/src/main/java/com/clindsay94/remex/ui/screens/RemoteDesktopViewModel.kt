@@ -188,7 +188,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     private fun recycleCurrentFrame() {
         _currentFrame.value = null
-        reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
+        // Don't recycle the bitmap eagerly — Compose may still be rendering the
+        // previous frame.  Clearing the StateFlow reference lets the GC collect it
+        // once the recomposition is done.
         reusableBitmap = null
     }
 
@@ -265,10 +267,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
 
+        // Set streaming to false FIRST so the UI stops referencing the frame,
+        // then clear the frame reference.
+        _isStreaming.value = false
+        recycleCurrentFrame()
+
         if (RemexCoreClient.isLibraryLoaded) {
             RemexCoreClient.StopDesktopStream()
-            _isStreaming.value = false
-            recycleCurrentFrame()
         }
     }
 
