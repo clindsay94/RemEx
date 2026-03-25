@@ -24,12 +24,15 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 }
 
 val navItems = listOf(
-    Screen.Connection,
     Screen.Dashboard,
-    Screen.RemoteControl,
+    Screen.Connection,
+    Screen.RemoteDesktop,
+    Screen.TaskManager,
+    Screen.RemoteControl
+)
+
+val secondaryNavItems = listOf(
     Screen.RemoteMouse,
     Screen.AppLauncher,
-    Screen.TaskManager,
-    Screen.RemoteDesktop,
     Screen.Personalization
 )

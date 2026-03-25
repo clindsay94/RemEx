@@ -3,10 +3,10 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -93,7 +93,8 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                         )
                     }
                     _processes.value = list
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w("TaskManagerVM", "Failed to parse process list", e)
                 }
             }
         }
@@ -134,8 +135,9 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                         put("ProcessId", pid.toString())
                     })
                 }
-                RemexCoreClient.SendCommand(request.toString())
-                delay(1000)
+                val result = RemexCoreClient.SendCommand(request.toString())
+                // Request a fresh process list immediately; the host will respond
+                // via the processList SharedFlow when it's ready.
                 refreshProcesses()
             }
         }

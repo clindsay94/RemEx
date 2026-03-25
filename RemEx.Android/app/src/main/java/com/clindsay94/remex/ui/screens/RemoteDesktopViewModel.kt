@@ -3,11 +3,15 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +20,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+
+private const val TAG = "RemoteDesktopVM"
 
 data class RemoteDesktopCapabilityState(
     val supportsRemoteDesktop: Boolean = true,
@@ -31,9 +37,18 @@ data class RemoteDesktopConfigState(
 class RemoteDesktopViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsManager = SettingsManager(application)
-    
+
     private var hostScreenWidth: Int = 1920
     private var hostScreenHeight: Int = 1080
+
+    /** Reusable BitmapFactory options to reduce allocation pressure. */
+    private val decodeOptions = BitmapFactory.Options().apply {
+        inMutable = true
+        inPreferredConfig = Bitmap.Config.RGB_565 // Half the memory of ARGB_8888
+    }
+
+    /** Previous frame bitmap kept for inBitmap reuse (avoids GC churn). */
+    private var reusableBitmap: Bitmap? = null
 
     private val _currentFrame = MutableStateFlow<Bitmap?>(null)
     val currentFrame: StateFlow<Bitmap?> = _currentFrame.asStateFlow()
@@ -53,6 +68,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     val savedDesktopDefaults = settingsManager.remoteDesktopPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.RemoteDesktopPreferences())
 
+    /** Tracks reconnection attempts to avoid stacking. */
+    private var reconnectJob: Job? = null
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 5
+
     init {
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
@@ -64,12 +84,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             }
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             RemexClientManager.frames.collect { bytes ->
-                try {
-                    _currentFrame.value = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                } catch (_: Exception) {
-                }
+                decodeFrame(bytes)
             }
         }
 
@@ -81,7 +98,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false),
                         unavailableReason = json.optString("remoteDesktopUnavailableReason").takeIf { it.isNotBlank() }
                     )
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse host capabilities", e)
                     _capabilityState.value = RemoteDesktopCapabilityState(
                         supportsRemoteDesktop = false,
                         unavailableReason = "Host metadata unavailable"
@@ -92,8 +110,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         viewModelScope.launch {
             RemexClientManager.desktopErrors.collect { errorText ->
+                Log.e(TAG, "Desktop stream error: $errorText")
                 _desktopError.value = errorText
                 _isStreaming.value = false
+                attemptReconnect()
             }
         }
 
@@ -103,7 +123,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     val json = JSONObject(metaData)
                     hostScreenWidth = json.optInt("screenWidth", 1920)
                     hostScreenHeight = json.optInt("screenHeight", 1080)
-                } catch (_: Exception) { }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse desktop meta", e)
+                }
             }
         }
 
@@ -111,8 +133,85 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             RemexClientManager.isConnected.collect { connected ->
                 if (!connected) {
                     _isStreaming.value = false
-                    _currentFrame.value = null
+                    recycleCurrentFrame()
+                    attemptReconnect()
+                } else {
+                    // Connection restored — reset reconnect counter
+                    reconnectAttempts = 0
+                    reconnectJob?.cancel()
+                    reconnectJob = null
                 }
+            }
+        }
+    }
+
+    /**
+     * Decodes a JPEG frame using bitmap pooling to avoid OOM.
+     * Uses inBitmap for memory reuse when dimensions match.
+     */
+    private fun decodeFrame(bytes: ByteArray) {
+        try {
+            // Try to reuse the previous bitmap buffer
+            val existing = reusableBitmap
+            if (existing != null && !existing.isRecycled) {
+                decodeOptions.inBitmap = existing
+            } else {
+                decodeOptions.inBitmap = null
+            }
+
+            val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+            if (decoded != null) {
+                reusableBitmap = decoded
+                _currentFrame.value = decoded
+            }
+        } catch (e: IllegalArgumentException) {
+            // inBitmap reuse failed (dimensions changed) — decode without reuse
+            decodeOptions.inBitmap = null
+            try {
+                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+                if (decoded != null) {
+                    reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
+                    reusableBitmap = decoded
+                    _currentFrame.value = decoded
+                }
+            } catch (e2: Exception) {
+                Log.e(TAG, "Frame decode failed after fallback", e2)
+            }
+        } catch (e: OutOfMemoryError) {
+            Log.e(TAG, "OOM during frame decode — recycling buffers", e)
+            recycleCurrentFrame()
+            System.gc()
+        } catch (e: Exception) {
+            Log.w(TAG, "Frame decode failed", e)
+        }
+    }
+
+    private fun recycleCurrentFrame() {
+        _currentFrame.value = null
+        reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
+        reusableBitmap = null
+    }
+
+    /**
+     * Attempts to restart the stream after transient network errors
+     * with exponential backoff (1s, 2s, 4s, 8s, 16s).
+     */
+    private fun attemptReconnect() {
+        if (!_capabilityState.value.supportsRemoteDesktop) return
+        if (reconnectJob?.isActive == true) return
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            _desktopError.value = "Connection lost. Tap Start to reconnect."
+            return
+        }
+
+        reconnectJob = viewModelScope.launch {
+            val backoffMs = (1000L shl reconnectAttempts).coerceAtMost(16_000L)
+            reconnectAttempts++
+            Log.i(TAG, "Reconnect attempt $reconnectAttempts in ${backoffMs}ms")
+            delay(backoffMs)
+
+            if (RemexClientManager.isConnected.value && _capabilityState.value.supportsRemoteDesktop) {
+                startStreaming()
             }
         }
     }
@@ -156,15 +255,20 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         val config = buildConfigJson()
 
         _desktopError.value = null
+        reconnectAttempts = 0
         RemexCoreClient.StartDesktopStream(config.toString())
         _isStreaming.value = true
     }
 
     fun stopStreaming() {
+        reconnectJob?.cancel()
+        reconnectJob = null
+        reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
+
         if (RemexCoreClient.isLibraryLoaded) {
             RemexCoreClient.StopDesktopStream()
             _isStreaming.value = false
-            _currentFrame.value = null
+            recycleCurrentFrame()
         }
     }
 
@@ -174,10 +278,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     fun sendMouseMove(deltaX: Float, deltaY: Float) {
         accumulatedX += deltaX
         accumulatedY += deltaY
-        
+
         val intX = accumulatedX.toInt()
         val intY = accumulatedY.toInt()
-        
+
         if (intX != 0 || intY != 0) {
             sendInput(JSONObject().apply {
                 put("eventType", "mouseMove")
@@ -234,7 +338,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 put("desktopConfig", buildConfigJson())
             }
             RemexCoreClient.SendMessage(message.toString())
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to push config update", e)
         }
     }
 
@@ -272,6 +377,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     override fun onCleared() {
         super.onCleared()
+        reconnectJob?.cancel()
         stopStreaming()
+        recycleCurrentFrame()
     }
 }

@@ -112,10 +112,7 @@ public class SparklineControl : Control
 
             // Subscribe to new collection
             if (change.NewValue is INotifyCollectionChanged newNcc)
-                newNcc.CollectionChanged -= OnHistoryCollectionChanged;
-
-            if (change.NewValue is INotifyCollectionChanged newNcc2)
-                newNcc2.CollectionChanged += OnHistoryCollectionChanged;
+                newNcc.CollectionChanged += OnHistoryCollectionChanged;
 
             InvalidateVisual();
         }

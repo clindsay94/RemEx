@@ -17,7 +17,7 @@ namespace Remex.Client.ViewModels;
 /// Manages snap-to-grid toggle, grid size, persisted host address,
 /// and sensor pinning to the Home screen.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ConnectionViewModel _connection;
@@ -73,8 +73,18 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>
     /// Rebuilds the available sensors list from the canvas VM's current cards.
     /// </summary>
+    public void Dispose()
+    {
+        _connection.PropertyChanged -= OnConnectionPropertyChanged;
+        foreach (var item in AvailableSensors)
+            item.PinChanged -= OnSensorPinChanged;
+    }
+
     public void RefreshSensors()
     {
+        // Unsubscribe from old items before clearing
+        foreach (var item in AvailableSensors)
+            item.PinChanged -= OnSensorPinChanged;
         AvailableSensors.Clear();
 
         var canvas = _shell.CanvasViewModel;

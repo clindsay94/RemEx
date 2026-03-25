@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.1.1] - 2026-03-25
+
+### Fixed
+
+**Avalonia Client (Critical Bugs)**
+- **Base64ToImageConverter memory leak** — Removed `using` statement that disposed MemoryStream before Bitmap finished reading. Bitmap now properly takes ownership of the stream lifecycle.
+- **SparklineControl collection event unsubscription bug** — Fixed copy-paste error that was unsubscribing from the *new* collection change event instead of just the old one, causing duplicate event handler accumulation on each property change.
+- **MainWindow ThemeService event leak** — Added `OnClosed` override to properly unsubscribe from `ThemeService.CustomizationApplied` event. Stored handler reference for cleanup.
+- **SensorColorConverter brush allocation** — Cached brush instances (`NeutralBrush`, `RedBrush`, `YellowBrush`) as `static readonly` fields to eliminate per-frame allocations on every Convert() call.
+
+**ViewModel Event Handler Leaks**
+- **ShellViewModel** — Implemented `IDisposable` with proper cleanup of `ThemeService.CustomizationApplied` handler.
+- **SettingsViewModel** — Implemented `IDisposable` with cleanup of `ConnectionViewModel.PropertyChanged`; `RefreshSensors()` now unsubscribes old `SensorPinItem.PinChanged` handlers before clearing the collection to prevent accumulation across refresh cycles.
+- **RemoteDesktopView** — Moved ComboBox `SelectionChanged` subscriptions from constructor to `OnAttachedToVisualTree`/`OnDetachedFromVisualTree` lifecycle methods for proper subscription/unsubscription balance.
+
+**Android Native Client**
+- **Missing imports** — Added `androidx.compose.foundation.layout.padding` extension import to AppNavigation.kt and `androidx.compose.ui.input.pointer.isSecondaryPressed` extension import to RemoteDesktopScreen.kt for S-Pen button press detection.
+
+### Changed
+
+- **Build quality** — All Kotlin and .NET code compiles with zero errors and zero warnings.
+- **Test coverage** — All 94 unit tests pass successfully.
+
+---
+
 ## [1.1.0] - 2026-03-25
 
 ### Added

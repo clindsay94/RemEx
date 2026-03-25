@@ -1,0 +1,75 @@
+<h2>Layered Customization Architecture</h2>
+<p class="subtitle">Presets as the foundation, Atomic Control for fine-tuning</p>
+
+<div class="mockup">
+  <div class="mockup-header">Customization Hub: Theme Editor</div>
+  <div class="mockup-body" style="background: #0a0a0f; color: #fff; padding: 20px;">
+    
+    <!-- Step 1: Presets -->
+    <div style="margin-bottom: 20px;">
+      <div class="label" style="color: #6C4CFF; margin-bottom: 10px;">BASE PRESET</div>
+      <div style="display: flex; gap: 10px;">
+        <div style="flex: 1; border: 2px solid #6C4CFF; padding: 10px; border-radius: 8px; text-align: center; background: rgba(108, 76, 255, 0.1);">
+          <strong>Cyber-NOC</strong>
+        </div>
+        <div style="flex: 1; border: 1px solid #333; padding: 10px; border-radius: 8px; text-align: center; color: #666;">
+          Solar-Flare
+        </div>
+        <div style="flex: 1; border: 1px solid #333; padding: 10px; border-radius: 8px; text-align: center; color: #666;">
+          Monolith
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Overrides -->
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid #222; border-radius: 12px; padding: 15px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="label">ADVANCED FINE-TUNING</div>
+        <div style="font-size: 10px; color: #00f3ff; background: rgba(0,243,255,0.1); padding: 2px 6px; border-radius: 4px;">ACTIVE OVERRIDES</div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 5px;">Glow Intensity</div>
+          <input type="range" style="width: 100%; accent-color: #6C4CFF;">
+        </div>
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 5px;">Glass Blur</div>
+          <input type="range" style="width: 100%; accent-color: #6C4CFF;">
+        </div>
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 5px;">Corner Radius</div>
+          <div style="display: flex; gap: 5px;">
+            <div style="background: #222; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Sharp</div>
+            <div style="background: #6C4CFF; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Soft</div>
+            <div style="background: #222; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Round</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 5px;">Accent Color</div>
+          <div style="display: flex; gap: 5px;">
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: #6C4CFF; border: 2px solid #fff;"></div>
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: #00f3ff;"></div>
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: #ff00ff;"></div>
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: #22C55E;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+      <button style="flex: 1; background: #6C4CFF; border: none; padding: 10px; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Save Current View</button>
+      <button style="flex: 1; background: transparent; border: 1px solid #444; padding: 10px; color: #888; border-radius: 8px; cursor: pointer;">Reset to Default</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h3>The "Hybrid" Workflow</h3>
+  <ol class="subtitle">
+    <li>User picks a <strong>Base Preset</strong> (e.g., Cyber-NOC). All resources load from that preset.</li>
+    <li>An <strong>Advanced Panel</strong> exposes specific sliders that override individual <code>DynamicResource</code> values in <code>App.axaml</code>.</li>
+    <li>Users can save their tweaks as a <strong>Custom Profile</strong>.</li>
+  </ol>
+</div>

@@ -1,5 +1,6 @@
 package com.clindsay94.remex
 
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -19,7 +20,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _processList = MutableSharedFlow<String>(replay = 1)
     val processList = _processList.asSharedFlow()
 
-    private val _frames = MutableSharedFlow<ByteArray>(replay = 1)
+    // Frame buffer: no replay (don't hold stale frames in memory), drop oldest under back-pressure
+    private val _frames = MutableSharedFlow<ByteArray>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val frames = _frames.asSharedFlow()
 
     private val _hostCapabilities = MutableSharedFlow<String>(replay = 1)

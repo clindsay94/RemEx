@@ -55,14 +55,6 @@ public partial class RemoteDesktopView : UserControl
     public RemoteDesktopView()
     {
         InitializeComponent();
-
-        var scaleCombo = this.FindControl<ComboBox>("ScaleComboBox");
-        if (scaleCombo is not null)
-            scaleCombo.SelectionChanged += OnScaleChanged;
-
-        var fpsCombo = this.FindControl<ComboBox>("FpsComboBox");
-        if (fpsCombo is not null)
-            fpsCombo.SelectionChanged += OnFpsChanged;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -81,6 +73,14 @@ public partial class RemoteDesktopView : UserControl
         var cursorPad = this.FindControl<VirtualCursorPad>("CursorPad");
         if (cursorPad is not null)
             cursorPad.InputRequested += OnCursorPadInput;
+
+        var scaleCombo = this.FindControl<ComboBox>("ScaleComboBox");
+        if (scaleCombo is not null)
+            scaleCombo.SelectionChanged += OnScaleChanged;
+
+        var fpsCombo = this.FindControl<ComboBox>("FpsComboBox");
+        if (fpsCombo is not null)
+            fpsCombo.SelectionChanged += OnFpsChanged;
 
         this.KeyDown += OnViewKeyDown;
         this.KeyUp += OnViewKeyUp;
@@ -103,6 +103,14 @@ public partial class RemoteDesktopView : UserControl
         var cursorPad = this.FindControl<VirtualCursorPad>("CursorPad");
         if (cursorPad is not null)
             cursorPad.InputRequested -= OnCursorPadInput;
+
+        var scaleCombo = this.FindControl<ComboBox>("ScaleComboBox");
+        if (scaleCombo is not null)
+            scaleCombo.SelectionChanged -= OnScaleChanged;
+
+        var fpsCombo = this.FindControl<ComboBox>("FpsComboBox");
+        if (fpsCombo is not null)
+            fpsCombo.SelectionChanged -= OnFpsChanged;
 
         this.KeyDown -= OnViewKeyDown;
         this.KeyUp -= OnViewKeyUp;

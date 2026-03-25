@@ -289,7 +289,7 @@ fun PersonalizationScreen(
 
                     cards.forEach { (pair, current) ->
                         val (label, setter) = pair
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(label, style = MaterialTheme.typography.labelLarge)
                         
                         Row(
@@ -306,7 +306,7 @@ fun PersonalizationScreen(
                             
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(80.dp)
                                     .clip(cardShape(current, cornerRadius))
                                     .background(MaterialTheme.colorScheme.primary)
                             )

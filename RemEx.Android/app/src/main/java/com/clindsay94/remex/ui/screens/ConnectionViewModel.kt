@@ -25,6 +25,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _connectionStatus = MutableStateFlow("Disconnected")
     val connectionStatus: StateFlow<String> = _connectionStatus.asStateFlow()
 
+    private val _connectionError = MutableStateFlow<String?>(null)
+    val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
+
     private val _capabilitySummary = MutableStateFlow("Awaiting host metadata")
     val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
 
@@ -74,17 +77,28 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             _connectionStatus.value = "Connecting to $newHost:$newPort..."
 
             try {
+                _connectionError.value = null
                 if (RemexCoreClient.isLibraryLoaded) {
                     val initRequest = JSONObject().apply {
                         put("host", newHost)
                         put("port", newPort)
                         put("startTelemetryPolling", true)
                     }
-                    RemexCoreClient.InitRemex(initRequest.toString())
+                    val result = RemexCoreClient.InitRemex(initRequest.toString())
+                    try {
+                        val json = JSONObject(result)
+                        if (!json.optBoolean("success", false)) {
+                            val msg = json.optString("message", "Connection failed")
+                            _connectionError.value = msg
+                            _connectionStatus.value = "Error: $msg"
+                        }
+                    } catch (_: Exception) { /* non-JSON result is fine */ }
                 } else {
+                    _connectionError.value = "Native library not loaded"
                     _connectionStatus.value = "Native library not loaded"
                 }
             } catch (e: Exception) {
+                _connectionError.value = e.message
                 _connectionStatus.value = "Error: ${e.message}"
             } finally {
                 _isConnecting.value = false

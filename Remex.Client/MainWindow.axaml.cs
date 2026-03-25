@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Remex.Client.Services;
@@ -8,19 +9,29 @@ namespace Remex.Client;
 
 public partial class MainWindow : Window
 {
+    private ThemeService? _themeService;
+
     public MainWindow()
     {
         InitializeComponent();
 
-        if (App.Services.GetService<ThemeService>() is { } themeService)
+        _themeService = App.Services.GetService<ThemeService>();
+        if (_themeService is not null)
         {
-            themeService.CustomizationApplied += OnCustomizationApplied;
+            _themeService.CustomizationApplied += OnCustomizationApplied;
 
             if (App.Services.GetService<DashboardLayoutService>() is { CurrentProfile.Customization: { } settings })
             {
                 OnCustomizationApplied(settings);
             }
         }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        if (_themeService is not null)
+            _themeService.CustomizationApplied -= OnCustomizationApplied;
+        base.OnClosed(e);
     }
 
     private void OnCustomizationApplied(CustomizationSettings settings)

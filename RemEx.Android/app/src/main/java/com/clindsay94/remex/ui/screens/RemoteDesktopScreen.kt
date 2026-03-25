@@ -1,6 +1,11 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Activity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,31 +18,49 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
+import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.Monitor
+import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -54,7 +77,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -84,12 +109,17 @@ fun RemoteDesktopScreen(
     val activity = LocalContext.current as? Activity
     var isFullscreen by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showMouseControls by remember { mutableStateOf(true) }
     val sheetState = rememberModalBottomSheetState()
-    
+
     var zoomFactor by remember { mutableFloatStateOf(1f) }
+    var panOffsetX by remember { mutableFloatStateOf(0f) }
+    var panOffsetY by remember { mutableFloatStateOf(0f) }
     var cursorX by remember { mutableFloatStateOf(0f) }
     var cursorY by remember { mutableFloatStateOf(0f) }
     var imageSize by remember { mutableStateOf(IntSize.Zero) }
+    var isStylusActive by remember { mutableStateOf(false) }
+    var stylusButtonPressed by remember { mutableStateOf(false) }
 
     DisposableEffect(activity, isFullscreen) {
         if (activity == null) {
@@ -114,35 +144,46 @@ fun RemoteDesktopScreen(
 
     fun mapLocalToHost(localOffset: Offset): Offset {
         if (imageSize.width == 0 || imageSize.height == 0) return Offset.Zero
+        val frame = currentFrame ?: return Offset.Zero
         val (hostW, hostH) = viewModel.getHostScreenSize()
-        
-        // This mapping assumes ContentScale.Fit logic:
-        // The image is scaled to fit while maintaining aspect ratio.
-        val hostAspect = hostW.toFloat() / hostH
-        val localAspect = imageSize.width.toFloat() / imageSize.height
-        
-        var effectiveImageWidth = imageSize.width.toFloat()
-        var effectiveImageHeight = imageSize.height.toFloat()
-        var offsetX = 0f
-        var offsetY = 0f
-        
-        if (hostAspect > localAspect) {
-            // Host is wider, local is limited by width
-            effectiveImageHeight = effectiveImageWidth / hostAspect
-            offsetY = (imageSize.height - effectiveImageHeight) / 2
+
+        // 1. Reverse the graphicsLayer zoom/pan transform.
+        //    graphicsLayer scales around the composable center and then translates.
+        val centerX = imageSize.width / 2f
+        val centerY = imageSize.height / 2f
+        val adjustedX = (localOffset.x - centerX - panOffsetX) / zoomFactor + centerX
+        val adjustedY = (localOffset.y - centerY - panOffsetY) / zoomFactor + centerY
+
+        // 2. Compute the letterbox offsets using the *actual bitmap* dimensions.
+        //    This matches exactly what ContentScale.Fit does — not the host metadata.
+        val bmpAspect = frame.width.toFloat() / frame.height.toFloat()
+        val boxAspect = imageSize.width.toFloat() / imageSize.height.toFloat()
+
+        val effectiveW: Float
+        val effectiveH: Float
+        val letterboxX: Float
+        val letterboxY: Float
+
+        if (bmpAspect > boxAspect) {
+            // Image is wider than box → full width, black bars top/bottom
+            effectiveW = imageSize.width.toFloat()
+            effectiveH = effectiveW / bmpAspect
+            letterboxX = 0f
+            letterboxY = (imageSize.height - effectiveH) / 2f
         } else {
-            // Host is taller, local is limited by height
-            effectiveImageWidth = effectiveImageHeight * hostAspect
-            offsetX = (imageSize.width - effectiveImageWidth) / 2
+            // Image is taller than box → full height, black bars left/right
+            effectiveH = imageSize.height.toFloat()
+            effectiveW = effectiveH * bmpAspect
+            letterboxX = (imageSize.width - effectiveW) / 2f
+            letterboxY = 0f
         }
-        
-        val relativeX = (localOffset.x - offsetX) / effectiveImageWidth
-        val relativeY = (localOffset.y - offsetY) / effectiveImageHeight
-        
-        return Offset(
-            (relativeX * hostW).coerceIn(0f, hostW.toFloat()),
-            (relativeY * hostH).coerceIn(0f, hostH.toFloat())
-        )
+
+        // 3. Map to 0..1 relative position within the visible image content
+        val relativeX = ((adjustedX - letterboxX) / effectiveW).coerceIn(0f, 1f)
+        val relativeY = ((adjustedY - letterboxY) / effectiveH).coerceIn(0f, 1f)
+
+        // 4. Scale to host screen coordinates
+        return Offset(relativeX * hostW, relativeY * hostH)
     }
 
     Scaffold(
@@ -150,13 +191,25 @@ fun RemoteDesktopScreen(
             if (!isFullscreen) {
                 TopAppBar(
                     title = { Text("Remote Desktop", fontWeight = FontWeight.Bold) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    ),
                     actions = {
+                        // Toggle integrated mouse controls
+                        IconButton(onClick = { showMouseControls = !showMouseControls }) {
+                            Icon(
+                                if (showMouseControls) Icons.Default.Mouse else Icons.Default.TouchApp,
+                                contentDescription = if (showMouseControls) "Hide mouse controls" else "Show mouse controls",
+                                tint = if (showMouseControls) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         IconButton(onClick = { showSettings = true }) {
                             Icon(Icons.Default.Tune, contentDescription = "Settings")
                         }
                         IconButton(onClick = { isFullscreen = !isFullscreen }) {
                             Icon(
-                                imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                imageVector = Icons.Default.Fullscreen,
                                 contentDescription = "Toggle fullscreen"
                             )
                         }
@@ -169,7 +222,11 @@ fun RemoteDesktopScreen(
                                 onClick = { viewModel.startStreaming() },
                                 enabled = capabilityState.supportsRemoteDesktop
                             ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = Color(0xFF4CAF50))
+                                Icon(
+                                    Icons.Default.PlayArrow,
+                                    contentDescription = "Start",
+                                    tint = if (capabilityState.supportsRemoteDesktop) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
@@ -183,33 +240,54 @@ fun RemoteDesktopScreen(
                 .padding(if (isFullscreen) PaddingValues(0.dp) else padding)
                 .background(Color.Black)
         ) {
+            // --- Stream viewport ---
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .onGloballyPositioned { imageSize = it.size }
+                    // Passive observer: detect stylus vs finger without consuming events
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                val stylusChange = event.changes.firstOrNull { it.type == PointerType.Stylus }
+                                if (stylusChange != null) {
+                                    isStylusActive = true
+                                    if (stylusChange.pressed) {
+                                        stylusButtonPressed = event.buttons.isSecondaryPressed
+                                    }
+                                } else if (event.changes.any { it.type == PointerType.Touch }) {
+                                    isStylusActive = false
+                                    stylusButtonPressed = false
+                                }
+                            }
+                        }
+                    }
                     .pointerInput(isStreaming, desktopPrefs.directTouch) {
                         detectTapGestures(
                             onTap = { offset ->
-                                if (!isStreaming) return@detectTapGestures
-                                // Note: pointerInput doesn't easily expose the current event's pointer type here
-                                // But detectDragGestures does. For tap, we'll check settings.
-                                if (desktopPrefs.directTouch) {
-                                    val hostOffset = mapLocalToHost(offset)
-                                    viewModel.sendMouseAbsoluteClick(1, hostOffset.x.toInt(), hostOffset.y.toInt())
-                                    cursorX = offset.x
-                                    cursorY = offset.y
-                                } else {
-                                    viewModel.sendMouseClick(1)
+                                if (isStreaming) {
+                                    if (desktopPrefs.directTouch || isStylusActive) {
+                                        // S-Pen button held = right-click; otherwise left-click
+                                        val button = if (stylusButtonPressed) 2 else 1
+                                        val hostOffset = mapLocalToHost(offset)
+                                        viewModel.sendMouseAbsoluteClick(button, hostOffset.x.toInt(), hostOffset.y.toInt())
+                                        cursorX = offset.x
+                                        cursorY = offset.y
+                                    } else {
+                                        viewModel.sendMouseClick(1)
+                                    }
                                 }
                             },
                             onLongPress = { offset ->
-                                if (!isStreaming) return@onLongPress
-                                if (desktopPrefs.directTouch) {
-                                    val hostOffset = mapLocalToHost(offset)
-                                    viewModel.sendMouseAbsoluteClick(2, hostOffset.x.toInt(), hostOffset.y.toInt())
-                                } else {
-                                    viewModel.sendMouseClick(2)
+                                if (isStreaming) {
+                                    if (desktopPrefs.directTouch || isStylusActive) {
+                                        val hostOffset = mapLocalToHost(offset)
+                                        viewModel.sendMouseAbsoluteClick(2, hostOffset.x.toInt(), hostOffset.y.toInt())
+                                    } else {
+                                        viewModel.sendMouseClick(2)
+                                    }
                                 }
                             }
                         )
@@ -217,29 +295,40 @@ fun RemoteDesktopScreen(
                     .pointerInput(isStreaming, desktopPrefs.directTouch) {
                         detectDragGestures(
                             onDrag = { change, dragAmount ->
-                                if (!isStreaming) return@detectDragGestures
-                                change.consume()
-                                
-                                val isStylus = change.type == PointerType.Stylus
-                                if (isStylus || desktopPrefs.directTouch) {
-                                    val hostOffset = mapLocalToHost(change.position)
-                                    viewModel.sendMouseAbsolute(hostOffset.x.toInt(), hostOffset.y.toInt())
-                                    cursorX = change.position.x
-                                    cursorY = change.position.y
-                                } else {
-                                    viewModel.sendMouseMove(dragAmount.x, dragAmount.y)
-                                    cursorX += dragAmount.x
-                                    cursorY += dragAmount.y
+                                if (isStreaming) {
+                                    change.consume()
+
+                                    val isStylus = change.type == PointerType.Stylus
+                                    if (isStylus || desktopPrefs.directTouch) {
+                                        val hostOffset = mapLocalToHost(change.position)
+                                        viewModel.sendMouseAbsolute(hostOffset.x.toInt(), hostOffset.y.toInt())
+                                        cursorX = change.position.x
+                                        cursorY = change.position.y
+                                    } else {
+                                        viewModel.sendMouseMove(dragAmount.x, dragAmount.y)
+                                        cursorX += dragAmount.x
+                                        cursorY += dragAmount.y
+                                    }
                                 }
                             }
                         )
                     }
                     .pointerInput(isStreaming) {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            if (!isStreaming) return@detectTransformGestures
-                            zoomFactor = (zoomFactor * zoom).coerceIn(1f, 4f)
-                            if (pan.x != 0f || pan.y != 0f) {
-                                viewModel.sendMouseScroll(pan.x.toInt(), (-pan.y).toInt())
+                            if (isStreaming) {
+                                zoomFactor = (zoomFactor * zoom).coerceIn(1f, 4f)
+                                // When zoomed in, allow panning the view
+                                if (zoomFactor > 1f) {
+                                    panOffsetX += pan.x
+                                    panOffsetY += pan.y
+                                } else {
+                                    panOffsetX = 0f
+                                    panOffsetY = 0f
+                                    // At 1x zoom, two-finger pan = scroll
+                                    if (pan.x != 0f || pan.y != 0f) {
+                                        viewModel.sendMouseScroll(pan.x.toInt(), (-pan.y).toInt())
+                                    }
+                                }
                             }
                         }
                     },
@@ -254,67 +343,183 @@ fun RemoteDesktopScreen(
                             .graphicsLayer {
                                 scaleX = zoomFactor
                                 scaleY = zoomFactor
+                                translationX = panOffsetX
+                                translationY = panOffsetY
                             },
                         contentScale = ContentScale.Fit
                     )
 
+                    // Cursor indicator — adapts to input method
                     if (isStreaming) {
-                        // Improved cursor indicator
+                        val cursorSizeDp = if (isStylusActive) 8.dp else 14.dp
                         Box(
                             modifier = Modifier
-                                .offset { IntOffset(cursorX.roundToInt() - 7, cursorY.roundToInt() - 7) }
-                                .size(14.dp)
+                                .offset {
+                                    val halfPx = (cursorSizeDp / 2).roundToPx()
+                                    IntOffset(cursorX.roundToInt() - halfPx, cursorY.roundToInt() - halfPx)
+                                }
+                                .size(cursorSizeDp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (desktopPrefs.directTouch) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                                    else Color.White.copy(alpha = 0.6f)
+                                    when {
+                                        isStylusActive -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
+                                        desktopPrefs.directTouch -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        else -> MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.6f)
+                                    }
                                 )
-                                .border(1.dp, Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .border(
+                                    width = if (isStylusActive) 1.5.dp else 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = if (isStylusActive) 0.5f else 0.3f),
+                                    shape = CircleShape
+                                )
                         )
                     }
                 } else {
+                    // Empty state placeholder
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             imageVector = Icons.Default.Monitor,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = when {
                                 desktopError != null -> desktopError!!
                                 !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason ?: "Remote desktop unavailable"
-                                isStreaming -> "Waiting for frames..."
+                                isStreaming -> "Waiting for frames\u2026"
                                 else -> "Stream Stopped"
                             },
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            style = MaterialTheme.typography.bodyLarge
                         )
                         if (!isStreaming && capabilityState.supportsRemoteDesktop) {
-                            Button(onClick = { viewModel.startStreaming() }, modifier = Modifier.padding(16.dp)) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            FilledTonalButton(onClick = { viewModel.startStreaming() }) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text("Start Streaming")
                             }
                         }
                     }
                 }
 
+                // Fullscreen exit FAB
                 if (isFullscreen) {
-                    IconButton(
+                    FilledTonalIconButton(
                         onClick = { isFullscreen = false },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(16.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            .padding(16.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
+                        )
                     ) {
-                        Icon(Icons.Default.FullscreenExit, contentDescription = "Exit Fullscreen", tint = Color.White)
+                        Icon(Icons.Default.FullscreenExit, contentDescription = "Exit Fullscreen", tint = MaterialTheme.colorScheme.onSurface)
+                    }
+
+                    // Fullscreen mouse toggle
+                    FilledTonalIconButton(
+                        onClick = { showMouseControls = !showMouseControls },
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(16.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Icon(
+                            if (showMouseControls) Icons.Default.Mouse else Icons.Default.TouchApp,
+                            contentDescription = "Toggle mouse",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
 
+            // --- Integrated Remote Mouse Controls ---
+            AnimatedVisibility(
+                visible = isStreaming && showMouseControls,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            ) {
+                Surface(
+                    tonalElevation = 3.dp,
+                    shadowElevation = 2.dp,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .let { if (isFullscreen) it.windowInsetsPadding(WindowInsets.navigationBars) else it }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Left Click / Right Click row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilledTonalButton(
+                                onClick = { viewModel.sendMouseClick(1) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = MaterialTheme.shapes.medium
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Left Click", style = MaterialTheme.typography.labelLarge)
+                            }
+                            FilledTonalButton(
+                                onClick = { viewModel.sendMouseClick(2) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = MaterialTheme.shapes.medium
+                            ) {
+                                Text("Right Click", style = MaterialTheme.typography.labelLarge)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        }
+
+                        // Scroll + utility row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { viewModel.sendMouseScroll(0, 120) }) {
+                                Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = "Scroll Up", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            IconButton(onClick = { viewModel.sendMouseScroll(0, -120) }) {
+                                Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = "Scroll Down", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            // Zoom reset
+                            if (zoomFactor > 1.05f) {
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        zoomFactor = 1f
+                                        panOffsetX = 0f
+                                        panOffsetY = 0f
+                                    }
+                                ) {
+                                    Text("1×", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- Settings Bottom Sheet ---
             if (showSettings) {
                 ModalBottomSheet(
                     onDismissRequest = { showSettings = false },
-                    sheetState = sheetState
+                    sheetState = sheetState,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
                     Column(
                         modifier = Modifier
@@ -323,26 +528,41 @@ fun RemoteDesktopScreen(
                             .padding(bottom = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Stream Configuration", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Direct Touch (Absolute)", style = MaterialTheme.typography.bodyLarge)
-                            Switch(
-                                checked = desktopPrefs.directTouch,
-                                onCheckedChange = { viewModel.updateDirectTouch(it) }
-                            )
-                        }
                         Text(
-                            "When enabled, tapping the screen clicks that exact spot. S Pen always uses Direct Touch.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            "Stream Configuration",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            shape = MaterialTheme.shapes.medium,
+                            tonalElevation = 1.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("Direct Touch", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "Tap maps to screen position. S Pen always enabled.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = desktopPrefs.directTouch,
+                                    onCheckedChange = { viewModel.updateDirectTouch(it) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Quality: ${config.quality}%", fontWeight = FontWeight.SemiBold)
@@ -354,7 +574,7 @@ fun RemoteDesktopScreen(
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Target FPS: ${config.targetFps} (max 120)", fontWeight = FontWeight.SemiBold)
+                            Text("Target FPS: ${config.targetFps}", fontWeight = FontWeight.SemiBold)
                             Slider(
                                 value = config.targetFps.toFloat(),
                                 onValueChange = { viewModel.updateTargetFps(it.toInt().coerceIn(1, 120)) },
@@ -372,7 +592,7 @@ fun RemoteDesktopScreen(
                         }
 
                         Text(
-                            text = "Single finger drag = move cursor, pinch = zoom, two-finger pan = scroll.",
+                            text = "Drag = move cursor \u2022 Pinch = zoom \u2022 Two-finger pan = scroll",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

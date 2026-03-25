@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -76,6 +77,11 @@ private data class CardSizeDp(
     val heightDp: Float
 )
 
+private fun defaultCardSizeFor(id: String): CardSizeDp {
+    return if (id == "pc_status") CardSizeDp(200f, 150f)
+    else CardSizeDp(150f, 150f)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -90,11 +96,6 @@ fun DashboardScreen(
     val cardOpacity by viewModel.cardOpacity.collectAsState()
     val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
     val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
-    val appLauncherCardShapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
-    val taskManagerCardShapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
-    val remoteDesktopCardShapePreset by viewModel.remoteDesktopCardShapePreset.collectAsState()
-    val remoteControlCardShapePreset by viewModel.remoteControlCardShapePreset.collectAsState()
-    val remoteMouseCardShapePreset by viewModel.remoteMouseCardShapePreset.collectAsState()
 
     val availableCards = remember(telemetrySensors) {
         buildList {
@@ -193,21 +194,21 @@ fun DashboardScreen(
                                 onDragEnd = { viewModel.saveCardLayout() }
                             )
                         },
-                    shape = cardShape(cardShapePreset, cornerRadius),
+                    shape = com.clindsay94.remex.ui.theme.cardShape(cardShapePreset, cornerRadius),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardOpacity)
                     )
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        when (card.type) {
-                            HomeCardType.PC_STATUS -> {
+                        when (card.type.name) {
+                            "PC_STATUS" -> {
                                 PcStatusCardContent(
                                     isConnected = isConnected,
                                     onWakeClicked = { viewModel.wakePc() }
                                 )
                             }
 
-                            HomeCardType.TELEMETRY -> {
+                            "TELEMETRY" -> {
                                 val sensor = sensorMap[card.sensorId]
                                 val history = telemetryHistory[card.sensorId].orEmpty()
                                 TelemetryCardContent(
@@ -452,32 +453,40 @@ fun DashboardScreen(
 
 @Composable
 private fun PcStatusCardContent(isConnected: Boolean, onWakeClicked: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                "PC Status",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = if (isConnected) "Online" else "Offline",
-                style = MaterialTheme.typography.headlineSmall,
-                color = if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-            )
-            Text(
-                text = "Drag to move. Use the bottom-right handle to resize.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (!isConnected) {
-            Button(onClick = onWakeClicked, modifier = Modifier.fillMaxWidth()) {
-                Text("Wake on LAN")
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val dynamicPadding = (minOf(maxWidth, maxHeight) * 0.12f).coerceAtLeast(12.dp)
+        
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(dynamicPadding),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "PC Status",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (isConnected) "Online" else "Offline",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+                Text(
+                    text = "Drag to move. Use the bottom-right handle to resize.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (!isConnected) {
+                Button(onClick = onWakeClicked, modifier = Modifier.fillMaxWidth()) {
+                    Text("Wake on LAN")
+                }
             }
         }
     }
@@ -491,56 +500,61 @@ private fun TelemetryCardContent(
     mode: TelemetryDisplayMode,
     onCycleDisplayMode: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val dynamicPadding = (minOf(maxWidth, maxHeight) * 0.12f).coerceAtLeast(12.dp)
+        
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(dynamicPadding),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            IconButton(onClick = onCycleDisplayMode) {
-                Icon(Icons.Default.Tune, contentDescription = "Change display mode")
-            }
-        }
-
-        val valueText = if (sensor == null) "--" else "${"%.1f".format(sensor.value)}${sensor.unit}"
-
-        when (mode) {
-            TelemetryDisplayMode.VALUE -> {
-                Text(
-                    valueText,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            TelemetryDisplayMode.GAUGE -> {
-                val percent = (sensor?.value ?: 0.0).toFloat().coerceIn(0f, 100f) / 100f
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                    CircularProgressIndicator(
-                        progress = { percent },
-                        modifier = Modifier.size(72.dp)
-                    )
-                    Text(
-                        valueText,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                IconButton(onClick = onCycleDisplayMode) {
+                    Icon(Icons.Default.Tune, contentDescription = "Change display mode")
                 }
             }
 
-            TelemetryDisplayMode.LINE -> {
-                Sparkline(history = history)
-                Text(
-                    valueText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+            val valueText = if (sensor == null) "--" else "${"%.1f".format(sensor.value)}${sensor.unit}"
+
+            when (mode.name) {
+                "VALUE" -> {
+                    Text(
+                        valueText,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                "GAUGE" -> {
+                    val percent = (sensor?.value ?: 0.0).toFloat().coerceIn(0f, 100f) / 100f
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                        CircularProgressIndicator(
+                            progress = { percent },
+                            modifier = Modifier.size(72.dp)
+                        )
+                        Text(
+                            valueText,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                "LINE" -> {
+                    Sparkline(history = history)
+                    Text(
+                        valueText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
@@ -560,6 +574,7 @@ private fun Sparkline(history: List<Float>) {
     val high = history.maxOrNull() ?: 1f
     val low = history.minOrNull() ?: 0f
     val range = (high - low).takeIf { it > 0f } ?: 1f
+    val lineColor = MaterialTheme.colorScheme.primary
 
     Canvas(
         modifier = Modifier
@@ -581,7 +596,7 @@ private fun Sparkline(history: List<Float>) {
 
         drawPath(
             path = path,
-            color = androidx.compose.ui.graphics.Color.Cyan,
+            color = lineColor,
             style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f, cap = StrokeCap.Round)
         )
     }

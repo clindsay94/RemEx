@@ -15,7 +15,8 @@ public class Base64ToImageConverter : IValueConverter
             try
             {
                 byte[] bytes = System.Convert.FromBase64String(base64);
-                using var stream = new MemoryStream(bytes);
+                var stream = new MemoryStream(bytes, writable: false);
+                // Avalonia Bitmap takes ownership of the stream; do NOT dispose it here.
                 return new Bitmap(stream);
             }
             catch

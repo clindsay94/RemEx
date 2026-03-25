@@ -13,11 +13,12 @@ namespace Remex.Client.ViewModels;
 /// Shared resources (ConnectionViewModel, DashboardLayoutService) live here and
 /// are injected into child ViewModels.
 /// </summary>
-public partial class ShellViewModel : ObservableObject
+public partial class ShellViewModel : ObservableObject, IDisposable
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
+    private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
     private static readonly Random _rng = new();
     private bool _welcomeSplashStarted;
 
@@ -90,7 +91,8 @@ public partial class ShellViewModel : ObservableObject
         _immersiveMode = immersiveMode;
         Connection = connectionViewModel;
 
-        _themeService.CustomizationApplied += settings => Customization = settings;
+        _onCustomizationApplied = settings => Customization = settings;
+        _themeService.CustomizationApplied += _onCustomizationApplied;
         if (_layoutService.CurrentProfile?.Customization != null)
         {
             Customization = _layoutService.CurrentProfile.Customization;
@@ -102,6 +104,11 @@ public partial class ShellViewModel : ObservableObject
 
         // Default to Home on startup.
         NavigateToHome();
+    }
+
+    public void Dispose()
+    {
+        _themeService.CustomizationApplied -= _onCustomizationApplied;
     }
 
     public void BeginWelcomeSplash()

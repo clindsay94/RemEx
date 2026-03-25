@@ -61,57 +61,33 @@ coverage.opencover.xml
 *.ap_
 *.dex
 *.class
-bin/
-gen/
-out/
-.gradle/
-build/
 local.properties
 proguard/
-*.iml
-.idea/modules.xml
-.idea/workspace.xml
-captures/
+.gradle/
+build/
 .externalNativeBuild
 .cxx
 *.keystore
+*.iml
 
 # macOS
 .DS_Store
 
-# Avalonia
-*.Avalonia/
-
-# Project-Specific Artifacts & Logs
+# Project-Specific Artifacts
 build_*.txt
 test_*.txt
 run_*.txt
 hwinfo_reg.txt
 publish/
-*.apk
+RemEx.Android/app/src/main/jniLibs/
 
-# AI / Agent Artifacts
-.agent/
-.gemini_security/
-.superpowers/
-conductor/
-*AGENT_LOG.md
-EXAMINATION_REPORT.md
-AGENTS.md
-AGENT_COMMS.md
+# Node.js
+node_modules/
+package-lock.json
+package.json
 
 # Misc
 .gitconfig
-package-lock.json
-patch_pingpong.sh
-node_modules
-package.json
-package-lock.json
 dotnet-install.sh
-package-lock.json
-package-lock.json
 /Remex.Client.Android.old
 libgcc.a
-RemEx.Android/app/src/main/jniLibs/arm64-v8a/_Microsoft.Android.Resource.Designer.dll
-RemEx.Android/app/src/main/jniLibs/arm64-v8a/libRemexCore.so
-RemEx.Android/app/src/main/jniLibs/arm64-v8a/libRemexCore.so

@@ -1,25 +1,25 @@
 package com.clindsay94.remex.ui.navigation
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
@@ -45,45 +45,67 @@ fun AppNavigation() {
 
     // Hide navigation for splash screen and remote desktop
     val showNav = currentRoute != Screen.Splash.route && currentRoute != Screen.RemoteDesktop.route
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
             if (showNav) {
-                Surface(
-                    tonalElevation = 3.dp,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(80.dp)
-                            .horizontalScroll(rememberScrollState()),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        navItems.forEach { screen ->
-                            val isSelected = currentRoute == screen.route
-                            NavigationBarItem(
-                                icon = { Icon(screen.icon, contentDescription = screen.title) },
-                                label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) },
-                                selected = isSelected,
-                                alwaysShowLabel = false,
-                                onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
+                NavigationBar {
+                    navItems.forEach { screen ->
+                        val isSelected = currentRoute == screen.route
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = screen.title) },
+                            label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) },
+                            selected = isSelected,
+                            alwaysShowLabel = false,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
                                     }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
+                    // Overflow "More" item for secondary destinations
+                    NavigationBarItem(
+                        icon = {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false }
+                            ) {
+                                secondaryNavItems.forEach { screen ->
+                                    DropdownMenuItem(
+                                        text = { Text(screen.title) },
+                                        leadingIcon = { Icon(screen.icon, contentDescription = null) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            navController.navigate(screen.route) {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        },
+                        label = { Text("More", style = MaterialTheme.typography.labelSmall) },
+                        selected = secondaryNavItems.any { it.route == currentRoute },
+                        alwaysShowLabel = false,
+                        onClick = { showOverflowMenu = !showOverflowMenu }
+                    )
                 }
             }
         },
         floatingActionButton = {
-            if (showNav) {
+            // Only show FAB on Dashboard for quick Personalization access
+            if (showNav && currentRoute == Screen.Dashboard.route) {
                 FloatingActionButton(
                     onClick = { navController.navigate(Screen.Personalization.route) },
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,

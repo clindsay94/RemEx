@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
@@ -116,7 +117,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     _telemetrySensors.value = parsed
                     updateTelemetryHistory(parsed)
                     ensureDefaultCardsExist(parsed)
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w("DashboardVM", "Failed to parse telemetry", e)
                 }
             }
         }
