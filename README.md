@@ -75,9 +75,23 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 
 ### 🔐 Access Key Security
 
-- WebSocket connections are authenticated with a shared access key
-- Key is configured in host `appsettings.json` and entered once in the client Settings panel
-- Protects WebSocket endpoints without requiring a full auth stack
+
+| Layer | Files Modified | What was added |
+|-------|---------------|----------------|
+| **Host** | HostBootstrapper.cs | `Remex:AccessKey` config read, constant-time validation on both `/ws` and `/ws/desktop` endpoints, returns 401 on mismatch |
+| **Host config** | appsettings.json | `Remex.AccessKey` section (empty = disabled) |
+| **Core models** | DashboardProfile.cs | `AccessKey` property for desktop profile persistence |
+| **Core clients** | RemexNativeClient.cs, RemexDesktopClient.cs | `accessKey` parameter + `BuildUri()` helper appending `?key=` |
+| **JNI bridge** | AndroidNativeExports.cs | `AccessKey` in init request, threaded through all desktop endpoints |
+| **Avalonia UI** | SettingsView.axaml, SettingsViewModel.cs, ConnectionViewModel.cs | Password field in Settings, persisted to profile, applied on connect/reconnect |
+| **Android** | SettingsManager.kt, ConnectionViewModel.kt, ConnectionScreen.kt | DataStore persistence, Key icon text field, passed through JNI init JSON |
+
+**Key design decisions:**
+- Empty access key = authentication disabled (backward compatible)
+- Key sent as `?key=<value>` query parameter on WebSocket URI
+- Server uses `CryptographicOperations.FixedTimeEquals` to prevent timing attacks
+- Configurable from all UIs (no JSON file editing required) 
+
 
 ### ◈ App Launcher
 
