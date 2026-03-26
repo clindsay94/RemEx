@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.Density
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.navigation.AppNavigation
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.widget.WidgetDataCache
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.map
 
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        WidgetDataCache.startCaching(this)
         setContent {
             val settingsManager = remember { SettingsManager(this) }
             val themeMode by settingsManager.themeModeFlow.collectAsState(initial = "system")

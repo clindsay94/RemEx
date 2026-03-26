@@ -3,7 +3,14 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
     <application
         android:allowBackup="true"
@@ -25,6 +32,66 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Widget: Remote Control -->
+        <receiver
+            android:name=".widget.RemoteControlWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_remote_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/remote_control_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.RemoteControlConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.RemEx" />
+
+        <!-- Widget: Hardware Info -->
+        <receiver
+            android:name=".widget.HardwareInfoWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_hardware_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hardware_info_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.HardwareInfoConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.RemEx" />
+
+        <!-- Widget: App Launcher -->
+        <receiver
+            android:name=".widget.AppLauncherWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_launcher_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_launcher_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.AppLauncherConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.RemEx" />
+
+        <!-- Foreground service for keeping connection alive -->
+        <service
+            android:name=".service.RemexConnectionService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
     </application>
 
 </manifest>

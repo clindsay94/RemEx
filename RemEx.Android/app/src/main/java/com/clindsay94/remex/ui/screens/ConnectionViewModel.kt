@@ -8,6 +8,7 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.NsdDiscoveryManager
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.service.RemexConnectionService
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -103,6 +104,13 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                             val msg = json.optString("message", "Connection failed")
                             _connectionError.value = msg
                             _connectionStatus.value = "Error: $msg"
+                        } else {
+                            // Start foreground service to keep connection alive
+                            try {
+                                RemexConnectionService.start(getApplication())
+                            } catch (e: Exception) {
+                                android.util.Log.w("ConnectionVM", "Foreground service could not be started, connection will work without background persistence", e)
+                            }
                         }
                     } catch (_: Exception) { /* non-JSON result is fine */ }
                 } else {
@@ -122,13 +130,23 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         _connectionStatus.value = if (isConnected) "Connected" else "Disconnected"
     }
 
+    fun clearError() {
+        _connectionError.value = null
+    }
+
     fun discoverHost() {
         viewModelScope.launch {
             _isDiscovering.value = true
             _discoveredHost.value = null
+            _connectionError.value = null
             try {
                 val result = nsdDiscoveryManager.discoverHost()
                 _discoveredHost.value = result
+                if (result == null) {
+                    _connectionError.value = "No RemEx host found on the network"
+                }
+            } catch (e: Exception) {
+                _connectionError.value = "Discovery failed: ${e.message}"
             } finally {
                 _isDiscovering.value = false
             }

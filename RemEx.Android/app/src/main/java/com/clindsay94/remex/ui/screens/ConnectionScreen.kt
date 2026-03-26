@@ -1,5 +1,11 @@
 package com.clindsay94.remex.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,8 +15,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -18,10 +26,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun ConnectionScreen(
     viewModel: ConnectionViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val connectionPrefs by viewModel.connectionPreferences.collectAsState()
     val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsState()
     val isConnecting by viewModel.isConnecting.collectAsState()
     val status by viewModel.connectionStatus.collectAsState()
+    val connectionError by viewModel.connectionError.collectAsState()
     val capabilitySummary by viewModel.capabilitySummary.collectAsState()
     val isDiscovering by viewModel.isDiscovering.collectAsState()
     val discoveredHost by viewModel.discoveredHost.collectAsState()
@@ -35,6 +45,53 @@ fun ConnectionScreen(
     var qualityInput by remember { mutableFloatStateOf(50f) }
     var targetFpsInput by remember { mutableFloatStateOf(30f) }
     var scaleInput by remember { mutableFloatStateOf(0.6f) }
+
+    // --- Runtime permission request (Option A: at connect time) ---
+    // Pending connect args: when the user taps "Save & Connect" but permissions aren't granted yet,
+    // we store the args here and launch the permission request. On grant, we call connect().
+    var pendingConnect by remember { mutableStateOf(false) }
+
+    // Build the list of permissions that need to be requested
+    val requiredPermissions = remember {
+        buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+                add(Manifest.permission.NEARBY_WIFI_DEVICES)
+            }
+        }.toTypedArray()
+    }
+
+    fun hasAllPermissions(): Boolean {
+        return requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    fun doConnect() {
+        val p = portInput.toIntOrNull() ?: 5005
+        viewModel.connect(
+            newHost = hostInput.trim(),
+            newPort = p,
+            macAddress = macInput.trim(),
+            broadcastIp = broadcastInput.trim().ifEmpty { "255.255.255.255" },
+            subnetMask = subnetInput.trim().ifEmpty { "255.255.255.0" },
+            accessKey = accessKeyInput.trim(),
+            desktopQuality = qualityInput.toInt(),
+            desktopTargetFps = targetFpsInput.toInt().coerceIn(1, 120),
+            desktopScale = scaleInput
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        // Proceed with connect regardless of whether permissions were granted.
+        // The service start is already wrapped in try-catch, so it won't crash.
+        if (pendingConnect) {
+            pendingConnect = false
+            doConnect()
+        }
+    }
 
     // Initialize inputs from saved values only once they are loaded
     LaunchedEffect(connectionPrefs, desktopPrefs) {
@@ -95,6 +152,41 @@ fun ConnectionScreen(
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
+
+                // --- Error display ---
+                AnimatedVisibility(visible = connectionError != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = connectionError ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { viewModel.clearError() }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Dismiss",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+                }
 
                 OutlinedButton(
                     onClick = { viewModel.discoverHost() },
@@ -217,18 +309,13 @@ fun ConnectionScreen(
 
                 Button(
                     onClick = {
-                        val p = portInput.toIntOrNull() ?: 5005
-                        viewModel.connect(
-                            newHost = hostInput.trim(),
-                            newPort = p,
-                            macAddress = macInput.trim(),
-                            broadcastIp = broadcastInput.trim().ifEmpty { "255.255.255.255" },
-                            subnetMask = subnetInput.trim().ifEmpty { "255.255.255.0" },
-                            accessKey = accessKeyInput.trim(),
-                            desktopQuality = qualityInput.toInt(),
-                            desktopTargetFps = targetFpsInput.toInt().coerceIn(1, 120),
-                            desktopScale = scaleInput
-                        )
+                        if (requiredPermissions.isNotEmpty() && !hasAllPermissions()) {
+                            // Request permissions first, then connect on callback
+                            pendingConnect = true
+                            permissionLauncher.launch(requiredPermissions)
+                        } else {
+                            doConnect()
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     enabled = !isConnecting && hostInput.isNotEmpty()

@@ -5,7 +5,7 @@
     xmlns:views="using:Remex.Client.Views" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
     x:Class="Remex.Client.MainWindow" Title="Remex — Command Center"
     ExtendClientAreaToDecorationsHint="True"
-    ExtendClientAreaChromeHints="NoChrome"
+    ExtendClientAreaChromeHints="PreferSystemChrome"
     ExtendClientAreaTitleBarHeightHint="32"
     TransparencyLevelHint="Mica, AcrylicBlur, Blur"
     Background="Transparent"

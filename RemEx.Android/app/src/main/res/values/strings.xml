@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">RemEx</string>
+    <string name="widget_remote_description">Quick access to PC remote commands like shutdown, restart, lock, and more.</string>
+    <string name="widget_hardware_description">Live hardware sensor readings from your connected PC.</string>
+    <string name="widget_launcher_description">Launch your favorite PC apps directly from your home screen.</string>
+    <string name="widget_remote_label">RemEx Remote</string>
+    <string name="widget_hardware_label">RemEx Hardware</string>
+    <string name="widget_launcher_label">RemEx Launcher</string>
 </resources>

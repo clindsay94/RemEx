@@ -1,6 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
-import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,37 +14,33 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -63,12 +59,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,7 +78,6 @@ import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -105,7 +100,7 @@ fun RemoteDesktopScreen(
     val config by viewModel.configState.collectAsState()
     val desktopPrefs by viewModel.savedDesktopDefaults.collectAsState()
 
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
     var isFullscreen by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showMouseControls by remember { mutableStateOf(true) }
@@ -129,7 +124,8 @@ fun RemoteDesktopScreen(
             WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
             if (isFullscreen) {
                 controller.hide(WindowInsetsCompat.Type.systemBars())
-                controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             } else {
                 controller.show(WindowInsetsCompat.Type.systemBars())
             }
@@ -203,7 +199,7 @@ fun RemoteDesktopScreen(
                                 tint = if (showMouseControls) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = { showSettings = true }) {
+                        IconButton(onClick = { }) {
                             Icon(Icons.Default.Tune, contentDescription = "Settings")
                         }
                         IconButton(onClick = { isFullscreen = !isFullscreen }) {
@@ -214,7 +210,11 @@ fun RemoteDesktopScreen(
                         }
                         if (isStreaming) {
                             IconButton(onClick = { viewModel.stopStreaming() }) {
-                                Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error)
+                                Icon(
+                                    Icons.Default.Stop,
+                                    contentDescription = "Stop",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                             }
                         } else {
                             IconButton(
@@ -250,7 +250,8 @@ fun RemoteDesktopScreen(
                         awaitPointerEventScope {
                             while (true) {
                                 val event = awaitPointerEvent(PointerEventPass.Initial)
-                                val stylusChange = event.changes.firstOrNull { it.type == PointerType.Stylus }
+                                val stylusChange =
+                                    event.changes.firstOrNull { it.type == PointerType.Stylus }
                                 if (stylusChange != null) {
                                     isStylusActive = true
                                     if (stylusChange.pressed) {
@@ -271,7 +272,11 @@ fun RemoteDesktopScreen(
                                         // S-Pen button held = right-click; otherwise left-click
                                         val button = if (stylusButtonPressed) 2 else 1
                                         val hostOffset = mapLocalToHost(offset)
-                                        viewModel.sendMouseAbsoluteClick(button, hostOffset.x.toInt(), hostOffset.y.toInt())
+                                        viewModel.sendMouseAbsoluteClick(
+                                            button,
+                                            hostOffset.x.toInt(),
+                                            hostOffset.y.toInt()
+                                        )
                                         cursorX = offset.x
                                         cursorY = offset.y
                                     } else {
@@ -283,7 +288,11 @@ fun RemoteDesktopScreen(
                                 if (isStreaming) {
                                     if (desktopPrefs.directTouch || isStylusActive) {
                                         val hostOffset = mapLocalToHost(offset)
-                                        viewModel.sendMouseAbsoluteClick(2, hostOffset.x.toInt(), hostOffset.y.toInt())
+                                        viewModel.sendMouseAbsoluteClick(
+                                            2,
+                                            hostOffset.x.toInt(),
+                                            hostOffset.y.toInt()
+                                        )
                                     } else {
                                         viewModel.sendMouseClick(2)
                                     }
@@ -300,7 +309,10 @@ fun RemoteDesktopScreen(
                                     val isStylus = change.type == PointerType.Stylus
                                     if (isStylus || desktopPrefs.directTouch) {
                                         val hostOffset = mapLocalToHost(change.position)
-                                        viewModel.sendMouseAbsolute(hostOffset.x.toInt(), hostOffset.y.toInt())
+                                        viewModel.sendMouseAbsolute(
+                                            hostOffset.x.toInt(),
+                                            hostOffset.y.toInt()
+                                        )
                                         cursorX = change.position.x
                                         cursorY = change.position.y
                                     } else {
@@ -313,7 +325,7 @@ fun RemoteDesktopScreen(
                         )
                     }
                     .pointerInput(isStreaming) {
-                        // Multi-touch only: pinch to zoom, two-finger pan.
+                        // Multitouch only: pinch to zoom, two-finger pan.
                         // Single-finger drags are handled by detectDragGestures above.
                         awaitPointerEventScope {
                             while (true) {
@@ -328,14 +340,18 @@ fun RemoteDesktopScreen(
                                     val currentDist = kotlin.math.sqrt(
                                         (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y)
                                     )
-                                    val currentCenter = Offset((p1.x + p2.x) / 2f, (p1.y + p2.y) / 2f)
+                                    val currentCenter =
+                                        Offset((p1.x + p2.x) / 2f, (p1.y + p2.y) / 2f)
 
                                     val prevP1 = pressed[0].previousPosition
                                     val prevP2 = pressed[1].previousPosition
                                     val prevDist = kotlin.math.sqrt(
                                         (prevP1.x - prevP2.x) * (prevP1.x - prevP2.x) + (prevP1.y - prevP2.y) * (prevP1.y - prevP2.y)
                                     )
-                                    val prevCenter = Offset((prevP1.x + prevP2.x) / 2f, (prevP1.y + prevP2.y) / 2f)
+                                    val prevCenter = Offset(
+                                        (prevP1.x + prevP2.x) / 2f,
+                                        (prevP1.y + prevP2.y) / 2f
+                                    )
 
                                     // Pinch zoom
                                     if (prevDist > 10f) {
@@ -352,7 +368,10 @@ fun RemoteDesktopScreen(
                                         panOffsetX = 0f
                                         panOffsetY = 0f
                                         if (panDelta.x != 0f || panDelta.y != 0f) {
-                                            viewModel.sendMouseScroll(panDelta.x.toInt(), (-panDelta.y).toInt())
+                                            viewModel.sendMouseScroll(
+                                                panDelta.x.toInt(),
+                                                (-panDelta.y).toInt()
+                                            )
                                         }
                                     }
                                 }
@@ -384,14 +403,23 @@ fun RemoteDesktopScreen(
                             modifier = Modifier
                                 .offset {
                                     val halfPx = (cursorSizeDp / 2).roundToPx()
-                                    IntOffset(cursorX.roundToInt() - halfPx, cursorY.roundToInt() - halfPx)
+                                    IntOffset(
+                                        cursorX.roundToInt() - halfPx,
+                                        cursorY.roundToInt() - halfPx
+                                    )
                                 }
                                 .size(cursorSizeDp)
                                 .clip(CircleShape)
                                 .background(
                                     when {
-                                        isStylusActive -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
-                                        desktopPrefs.directTouch -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        isStylusActive -> MaterialTheme.colorScheme.tertiary.copy(
+                                            alpha = 0.8f
+                                        )
+
+                                        desktopPrefs.directTouch -> MaterialTheme.colorScheme.primary.copy(
+                                            alpha = 0.5f
+                                        )
+
                                         else -> MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.6f)
                                     }
                                 )
@@ -415,7 +443,9 @@ fun RemoteDesktopScreen(
                         Text(
                             text = when {
                                 desktopError != null -> desktopError!!
-                                !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason ?: "Remote desktop unavailable"
+                                !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason
+                                    ?: "Remote desktop unavailable"
+
                                 isStreaming -> "Waiting for frames\u2026"
                                 else -> "Stream Stopped"
                             },
@@ -425,7 +455,11 @@ fun RemoteDesktopScreen(
                         if (!isStreaming && capabilityState.supportsRemoteDesktop) {
                             Spacer(modifier = Modifier.height(16.dp))
                             FilledTonalButton(onClick = { viewModel.startStreaming() }) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Start Streaming")
                             }
@@ -441,10 +475,16 @@ fun RemoteDesktopScreen(
                             .align(Alignment.TopEnd)
                             .padding(16.dp),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+                                alpha = 0.7f
+                            )
                         )
                     ) {
-                        Icon(Icons.Default.FullscreenExit, contentDescription = "Exit Fullscreen", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(
+                            Icons.Default.FullscreenExit,
+                            contentDescription = "Exit Fullscreen",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
                     // Fullscreen mouse toggle
@@ -454,7 +494,9 @@ fun RemoteDesktopScreen(
                             .align(Alignment.TopStart)
                             .padding(16.dp),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+                                alpha = 0.7f
+                            )
                         )
                     ) {
                         Icon(
@@ -496,7 +538,11 @@ fun RemoteDesktopScreen(
                                     .height(48.dp),
                                 shape = MaterialTheme.shapes.medium
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Left Click", style = MaterialTheme.typography.labelLarge)
                             }
@@ -509,7 +555,11 @@ fun RemoteDesktopScreen(
                             ) {
                                 Text("Right Click", style = MaterialTheme.typography.labelLarge)
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
 
@@ -520,10 +570,18 @@ fun RemoteDesktopScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = { viewModel.sendMouseScroll(0, 120) }) {
-                                Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = "Scroll Up", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(
+                                    Icons.Default.KeyboardDoubleArrowUp,
+                                    contentDescription = "Scroll Up",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                             IconButton(onClick = { viewModel.sendMouseScroll(0, -120) }) {
-                                Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = "Scroll Down", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(
+                                    Icons.Default.KeyboardDoubleArrowDown,
+                                    contentDescription = "Scroll Down",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                             // Zoom reset
                             if (zoomFactor > 1.05f) {
@@ -534,7 +592,11 @@ fun RemoteDesktopScreen(
                                         panOffsetY = 0f
                                     }
                                 ) {
-                                    Text("1×", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        "1×",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
@@ -576,7 +638,11 @@ fun RemoteDesktopScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Text("Direct Touch", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "Direct Touch",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                     Text(
                                         "Tap maps to screen position. S Pen always enabled.",
                                         style = MaterialTheme.typography.bodySmall,
@@ -602,16 +668,26 @@ fun RemoteDesktopScreen(
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Target FPS: ${config.targetFps}", fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Target FPS: ${config.targetFps}",
+                                fontWeight = FontWeight.SemiBold
+                            )
                             Slider(
                                 value = config.targetFps.toFloat(),
-                                onValueChange = { viewModel.updateTargetFps(it.toInt().coerceIn(1, 120)) },
+                                onValueChange = {
+                                    viewModel.updateTargetFps(
+                                        it.toInt().coerceIn(1, 120)
+                                    )
+                                },
                                 valueRange = 1f..120f
                             )
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Scale: ${"%.2f".format(config.scale)}", fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Scale: ${"%.2f".format(config.scale)}",
+                                fontWeight = FontWeight.SemiBold
+                            )
                             Slider(
                                 value = config.scale,
                                 onValueChange = { viewModel.updateScale(it) },

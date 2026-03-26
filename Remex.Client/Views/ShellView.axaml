@@ -80,9 +80,13 @@
     </UserControl.Styles>
 
     <ctrl:DashboardBackgroundControl>
-        <Grid RowDefinitions="*,Auto">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- ═══ TITLE BAR DRAG REGION ═══ -->
+            <Border Grid.Row="0" Height="32" Background="Transparent"
+                    IsHitTestVisible="False"/>
+
             <!-- ═══ MAIN LAYOUT: Sidebar + Content ═══ -->
-            <SplitView IsPaneOpen="{Binding IsDrawerOpen}" 
+            <SplitView Grid.Row="1" IsPaneOpen="{Binding IsDrawerOpen}" 
                        DisplayMode="CompactOverlay"
                        OpenPaneLength="{Binding OpenPaneLength}"
                        CompactPaneLength="{Binding CompactPaneLength}"
@@ -195,6 +199,19 @@
                                             <TextBlock Text="Desktop" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
+
+                                    <!-- Settings -->
+                                    <Button Classes="nav-item"
+                                            Command="{Binding NavigateToSettingsCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="14">
+                                            <Border Width="24" Height="24" CornerRadius="6" 
+                                                    Background="#1A9999FF">
+                                                <TextBlock Text="⚙" FontSize="13" 
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="Settings" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
                             </ScrollViewer>
 
@@ -261,7 +278,8 @@
             </TransitioningContentControl>
 
             <!-- ═══ SETTINGS OVERLAY BACKDROP ═══ -->
-            <Border IsVisible="{Binding IsSettingsPanelOpen}" 
+            <Border Grid.Row="0" Grid.RowSpan="3"
+                    IsVisible="{Binding IsSettingsPanelOpen}" 
                     Background="#60000000" 
                     PointerPressed="OnSettingsBackdropPressed"
                     IsHitTestVisible="{Binding IsSettingsPanelOpen}">
@@ -273,7 +291,8 @@
             </Border>
 
             <!-- ═══ SETTINGS SLIDE-IN PANEL (Right side) ═══ -->
-            <Border Classes="settings-overlay"
+            <Border Grid.Row="0" Grid.RowSpan="3"
+                    Classes="settings-overlay"
                     IsVisible="{Binding IsSettingsPanelOpen}"
                     HorizontalAlignment="Right" VerticalAlignment="Stretch"
                     Width="400" MaxWidth="420"
@@ -319,6 +338,15 @@
                                                  CornerRadius="8" Padding="10,8" FontSize="12" 
                                                  FontFamily="Consolas, monospace" 
                                                  Watermark="ws://host:port/ws"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Access Key" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBox PasswordChar="●" Text="{Binding SettingsVm.AccessKey}" 
+                                                 Background="{DynamicResource GlassBaseDarkBrush}" 
+                                                 BorderBrush="{DynamicResource CardBorderBrush}" 
+                                                 CornerRadius="8" Padding="10,8" FontSize="12" 
+                                                 FontFamily="Consolas, monospace" 
+                                                 Watermark="Leave empty to disable"/>
                                     </StackPanel>
                                     <TextBlock Text="Auto-saved on change. Persists across restarts." 
                                                FontSize="10" Foreground="{DynamicResource TextMutedBrush}" 
@@ -593,7 +621,7 @@
 
 
             <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
-            <Button Classes="gear-fab" 
+            <Button Grid.Row="1" Classes="gear-fab" 
                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,20,20"
                     Command="{Binding ToggleSettingsPanelCommand}"
@@ -606,7 +634,7 @@
                 </Button.IsVisible>
             </Button>
 
-            <Button Classes="gear-fab"
+            <Button Grid.Row="1" Classes="gear-fab"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,20,90"
                     Command="{Binding ToggleSettingsPanelCommand}"
@@ -660,7 +688,7 @@
             </Border>
 
             <!-- ═══ BOTTOM NAV BAR (ANDROID M3) ═══ -->
-            <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
+            <Border Grid.Row="2" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
                 <Border.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="IsAndroid"/>
