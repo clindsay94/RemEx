@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Remex.Core;
 using Remex.Core.Services;
 using Remex.Host.Handlers;
@@ -77,6 +79,10 @@ public static class HostBootstrapper
 
         var app = builder.Build();
 
+        // Read the access key from configuration (supports appsettings.json, env vars, CLI args).
+        // Env var: Remex__AccessKey   CLI: --Remex:AccessKey=<value>
+        var accessKey = app.Configuration["Remex:AccessKey"] ?? "";
+
         // Enable WebSocket support.
         app.UseWebSockets();
 
@@ -97,6 +103,13 @@ public static class HostBootstrapper
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("WebSocket connections only.");
+                return;
+            }
+
+            if (!ValidateAccessKey(context, accessKey))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsync("Invalid or missing access key.");
                 return;
             }
 
@@ -127,6 +140,13 @@ public static class HostBootstrapper
                 return;
             }
 
+            if (!ValidateAccessKey(context, accessKey))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsync("Invalid or missing access key.");
+                return;
+            }
+
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var handler = new RemoteDesktopHandler(
                 context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
@@ -137,5 +157,24 @@ public static class HostBootstrapper
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Validates the access key from the <c>key</c> query-string parameter.
+    /// Returns <c>true</c> when no key is configured (feature disabled) or
+    /// when the supplied key matches using a constant-time comparison.
+    /// </summary>
+    private static bool ValidateAccessKey(HttpContext context, string configuredKey)
+    {
+        if (string.IsNullOrEmpty(configuredKey))
+            return true; // Access key not configured — open access.
+
+        var suppliedKey = context.Request.Query["key"].ToString();
+        if (string.IsNullOrEmpty(suppliedKey))
+            return false;
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(configuredKey),
+            Encoding.UTF8.GetBytes(suppliedKey));
     }
 }

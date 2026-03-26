@@ -114,6 +114,11 @@
                     <TextBlock Text="Host Address" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
                     <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
 
+                    <TextBlock Text="Access Key" FontSize="13" Foreground="{DynamicResource TextSecondary}" Margin="0,8,0,0"/>
+                    <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="Leave empty to disable"/>
+
+                    <Button Content="Save &amp; Reconnect" Command="{Binding SaveAndReconnectCommand}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+
                     <TextBlock Text="Changes are saved automatically and persist across restarts." FontSize="11" Foreground="#4444AA" FontStyle="Italic" Margin="0,8,0,0"/>
                 </StackPanel>
             </Border>

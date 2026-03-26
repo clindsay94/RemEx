@@ -34,6 +34,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private string _hostAddress = "ws://localhost:5005/ws";
 
     [ObservableProperty]
+    private string _accessKey = string.Empty;
+
+    [ObservableProperty]
     private string _hostRuntimeText = "Host capabilities unavailable";
 
     [ObservableProperty]
@@ -63,6 +66,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
+            AccessKey = _profile.AccessKey;
             UpdateHostCapabilitySummary();
             RefreshSensors();
         });
@@ -145,6 +149,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         // Push the value to the live ConnectionViewModel.
         _connection.HostAddress = value;
+        Save();
+    }
+
+    partial void OnAccessKeyChanged(string value)
+    {
+        _connection.AccessKey = value;
         Save();
     }
 
@@ -697,7 +707,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
-            HostAddress = HostAddress
+            HostAddress = HostAddress,
+            AccessKey = AccessKey
         };
 
         _profile = updated;

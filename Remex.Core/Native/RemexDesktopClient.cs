@@ -30,11 +30,11 @@ public sealed class RemexDesktopClient : IDisposable
 
     private RemexDesktopClient() { }
 
-    public async Task ConnectAsync(string host, int port, CancellationToken ct = default)
+    public async Task ConnectAsync(string host, int port, string? accessKey = null, CancellationToken ct = default)
     {
         await DisconnectAsync();
 
-        var wsUri = new Uri($"ws://{host}:{port}{RemexConstants.WebSocketPath}/desktop");
+        var wsUri = BuildUri($"ws://{host}:{port}{RemexConstants.WebSocketPath}/desktop", accessKey);
         _webSocket = new ClientWebSocket();
         await _webSocket.ConnectAsync(wsUri, ct);
 
@@ -42,19 +42,19 @@ public sealed class RemexDesktopClient : IDisposable
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
     }
 
-    public async Task EnsureConnectedAsync(string host, int port, CancellationToken ct = default)
+    public async Task EnsureConnectedAsync(string host, int port, string? accessKey = null, CancellationToken ct = default)
     {
         if (IsConnected)
         {
             return;
         }
 
-        await ConnectAsync(host, port, ct);
+        await ConnectAsync(host, port, accessKey, ct);
     }
 
-    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, CancellationToken ct = default)
+    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? accessKey = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, ct);
+        await EnsureConnectedAsync(host, port, accessKey, ct);
 
         var resolvedConfig = config ?? DefaultConfig;
 
@@ -88,13 +88,13 @@ public sealed class RemexDesktopClient : IDisposable
         _isStreaming = false;
     }
 
-    public async Task SendInputAsync(string host, int port, InputEvent input, CancellationToken ct = default)
+    public async Task SendInputAsync(string host, int port, InputEvent input, string? accessKey = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, ct);
+        await EnsureConnectedAsync(host, port, accessKey, ct);
 
         if (!_isStreaming)
         {
-            await StartStreamAsync(host, port, DefaultConfig, ct);
+            await StartStreamAsync(host, port, DefaultConfig, accessKey, ct);
         }
 
         await SendMessageAsync(new RemexMessage
@@ -206,5 +206,14 @@ public sealed class RemexDesktopClient : IDisposable
     public void Dispose()
     {
         DisconnectAsync().GetAwaiter().GetResult();
+    }
+
+    private static Uri BuildUri(string baseUrl, string? accessKey)
+    {
+        if (string.IsNullOrEmpty(accessKey))
+            return new Uri(baseUrl);
+
+        var separator = baseUrl.Contains('?') ? "&" : "?";
+        return new Uri($"{baseUrl}{separator}key={Uri.EscapeDataString(accessKey)}");
     }
 }

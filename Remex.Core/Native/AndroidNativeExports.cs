@@ -120,8 +120,8 @@ public static class AndroidNativeExports
         {
             try
             {
-                var (host, port) = GetDesktopEndpoint();
-                await RemexDesktopClient.Current.StartStreamAsync(host, port, config);
+                var (host, port, accessKey) = GetDesktopEndpoint();
+                await RemexDesktopClient.Current.StartStreamAsync(host, port, config, accessKey);
             }
             catch { }
         });
@@ -170,7 +170,7 @@ public static class AndroidNativeExports
         {
             try
             {
-                await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port);
+                await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port, initRequest.AccessKey);
             }
             catch { }
         });
@@ -260,8 +260,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig());
+                        var (host, port, accessKey) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), accessKey);
                     }
                     catch { }
                 });
@@ -272,8 +272,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent);
+                        var (host, port, accessKey) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, accessKey);
                     }
                     catch { }
                 });
@@ -284,8 +284,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig);
+                        var (host, port, accessKey) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, accessKey);
                     }
                     catch { }
                 });
@@ -403,11 +403,11 @@ public static class AndroidNativeExports
         }
     }
 
-    private static (string Host, int Port) GetDesktopEndpoint()
+    private static (string Host, int Port, string AccessKey) GetDesktopEndpoint()
     {
         lock (SyncRoot)
         {
-            return (_lastInitRequest.Host, _lastInitRequest.Port);
+            return (_lastInitRequest.Host, _lastInitRequest.Port, _lastInitRequest.AccessKey);
         }
     }
 
@@ -483,6 +483,7 @@ public sealed record AndroidNativeInitRequest
 {
     public string Host { get; init; } = "localhost";
     public int Port { get; init; } = 5005;
+    public string AccessKey { get; init; } = string.Empty;
     public int TelemetryPollIntervalMs { get; init; } = 1000;
     public bool StartTelemetryPolling { get; init; } = true;
     public bool WarmupTelemetry { get; init; } = true;

@@ -34,6 +34,9 @@ public partial class ConnectionViewModel : ObservableObject
     private string _hostAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
     [ObservableProperty]
+    private string _accessKey = string.Empty;
+
+    [ObservableProperty]
     private string _statusText = "Disconnected";
 
     [ObservableProperty]
@@ -288,8 +291,9 @@ public partial class ConnectionViewModel : ObservableObject
         {
             StatusText = "Connecting…";
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-            
-            await _webSocket.ConnectAsync(new Uri(HostAddress), linkedCts.Token);
+
+            var uri = BuildWebSocketUri(HostAddress, AccessKey);
+            await _webSocket.ConnectAsync(uri, linkedCts.Token);
 
             IsConnected = true;
             IsConnecting = false;
@@ -518,7 +522,7 @@ public partial class ConnectionViewModel : ObservableObject
 
                     using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     connectCts.CancelAfter(TimeSpan.FromSeconds(10));
-                    await ws.ConnectAsync(new Uri(HostAddress), connectCts.Token);
+                    await ws.ConnectAsync(BuildWebSocketUri(HostAddress, AccessKey), connectCts.Token);
 
                     // Success — adopt the new socket.
                     _webSocket = ws;
@@ -584,5 +588,17 @@ public partial class ConnectionViewModel : ObservableObject
 
         IsConnected = false;
         HostCapabilities = null;
+    }
+
+    /// <summary>
+    /// Builds the WebSocket URI, appending the access key as a query parameter if set.
+    /// </summary>
+    private static Uri BuildWebSocketUri(string hostAddress, string accessKey)
+    {
+        if (string.IsNullOrEmpty(accessKey))
+            return new Uri(hostAddress);
+
+        var separator = hostAddress.Contains('?') ? "&" : "?";
+        return new Uri($"{hostAddress}{separator}key={Uri.EscapeDataString(accessKey)}");
     }
 }

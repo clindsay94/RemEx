@@ -55,6 +55,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         macAddress: String,
         broadcastIp: String,
         subnetMask: String,
+        accessKey: String,
         desktopQuality: Int,
         desktopTargetFps: Int,
         desktopScale: Float
@@ -65,7 +66,8 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 port = newPort,
                 mac = macAddress,
                 broadcast = broadcastIp,
-                subnetMask = subnetMask
+                subnetMask = subnetMask,
+                accessKey = accessKey
             )
             settingsManager.saveRemoteDesktopDefaults(
                 quality = desktopQuality,
@@ -82,6 +84,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     val initRequest = JSONObject().apply {
                         put("host", newHost)
                         put("port", newPort)
+                        put("accessKey", accessKey)
                         put("startTelemetryPolling", true)
                     }
                     val result = RemexCoreClient.InitRemex(initRequest.toString())

@@ -29,6 +29,7 @@ fun ConnectionScreen(
     var macInput by remember { mutableStateOf("") }
     var broadcastInput by remember { mutableStateOf("") }
     var subnetInput by remember { mutableStateOf("") }
+    var accessKeyInput by remember { mutableStateOf("") }
     var qualityInput by remember { mutableFloatStateOf(50f) }
     var targetFpsInput by remember { mutableFloatStateOf(30f) }
     var scaleInput by remember { mutableFloatStateOf(0.6f) }
@@ -43,6 +44,7 @@ fun ConnectionScreen(
             if (macInput.isEmpty()) macInput = cp.macAddress
             if (broadcastInput.isEmpty()) broadcastInput = cp.broadcastIp
             if (subnetInput.isEmpty()) subnetInput = cp.subnetMask
+            if (accessKeyInput.isEmpty()) accessKeyInput = cp.accessKey
             // Only set once when not modified by user or to initialized default
             if (qualityInput == 50f && dp.quality != 50) qualityInput = dp.quality.toFloat()
             if (targetFpsInput == 30f && dp.targetFps != 30) targetFpsInput = dp.targetFps.toFloat()
@@ -129,6 +131,16 @@ fun ConnectionScreen(
                     leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) }
                 )
 
+                OutlinedTextField(
+                    value = accessKeyInput,
+                    onValueChange = { accessKeyInput = it },
+                    label = { Text("Access Key") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
+                    supportingText = { Text("Leave empty to disable authentication") }
+                )
+
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -183,6 +195,7 @@ fun ConnectionScreen(
                             macAddress = macInput.trim(),
                             broadcastIp = broadcastInput.trim().ifEmpty { "255.255.255.255" },
                             subnetMask = subnetInput.trim().ifEmpty { "255.255.255.0" },
+                            accessKey = accessKeyInput.trim(),
                             desktopQuality = qualityInput.toInt(),
                             desktopTargetFps = targetFpsInput.toInt().coerceIn(1, 120),
                             desktopScale = scaleInput

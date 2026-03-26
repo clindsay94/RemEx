@@ -38,14 +38,14 @@ public sealed class RemexNativeClient : IDisposable
 
     private RemexNativeClient() { }
 
-    public async Task ConnectAsync(string host, int port, CancellationToken ct = default)
+    public async Task ConnectAsync(string host, int port, string? accessKey = null, CancellationToken ct = default)
     {
         await DisconnectAsync();
 
         _connectionCts = new CancellationTokenSource();
         var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_connectionCts.Token, ct);
 
-        var wsUri = new Uri($"ws://{host}:{port}{RemexConstants.WebSocketPath}");
+        var wsUri = BuildUri($"ws://{host}:{port}{RemexConstants.WebSocketPath}", accessKey);
         _webSocket = new ClientWebSocket();
 
         try
@@ -203,5 +203,14 @@ public sealed class RemexNativeClient : IDisposable
     public void Dispose()
     {
         DisconnectAsync().GetAwaiter().GetResult();
+    }
+
+    private static Uri BuildUri(string baseUrl, string? accessKey)
+    {
+        if (string.IsNullOrEmpty(accessKey))
+            return new Uri(baseUrl);
+
+        var separator = baseUrl.Contains('?') ? "&" : "?";
+        return new Uri($"{baseUrl}{separator}key={Uri.EscapeDataString(accessKey)}");
     }
 }
