@@ -74,8 +74,7 @@ public class LauncherStorageService : ILauncherStorageService
         }
         catch (Exception)
         {
-            // TODO: Log serialization errors (e.g. with ILogger)
-            throw; // Re-throw the exception to allow the caller to handle it.
+            throw;
         }
     }
 }

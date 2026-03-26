@@ -35,9 +35,9 @@ public partial class AppLauncherView : UserControl
                         {
                             await viewModel.SaveLaunchersAsync();
                         }
-                        catch (System.Exception)
+                        catch (System.Exception ex)
                         {
-                            // TODO: Log error
+                            System.Diagnostics.Debug.WriteLine($"[Remex] Failed to save launchers: {ex.Message}");
                         }
                     };
                 }

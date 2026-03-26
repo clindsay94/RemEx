@@ -112,7 +112,10 @@
                     </Border>
                     
                     <TextBlock Text="Host Address" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
-                    <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
+                        <Button Grid.Column="1" Content="Discover" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    </Grid>
 
                     <TextBlock Text="Access Key" FontSize="13" Foreground="{DynamicResource TextSecondary}" Margin="0,8,0,0"/>
                     <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="Leave empty to disable"/>

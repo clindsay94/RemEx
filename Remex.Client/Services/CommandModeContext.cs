@@ -14,6 +14,7 @@ public static class CommandModeContext
 {
     private const string MutexName = @"Global\RemExServiceMutex";
     private static Mutex? _mutex;
+    private static CancellationTokenSource? _listenerCts;
     public static bool IsServerMode { get; private set; }
 
     public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
@@ -85,13 +86,22 @@ public static class CommandModeContext
         if (IsServerMode)
         {
             // Start the network listener in the background if we are the server
+            _listenerCts = new CancellationTokenSource();
             var listener = provider.GetRequiredService<INetworkListener>();
-            _ = listener.StartListeningAsync(CancellationToken.None);
+            _ = listener.StartListeningAsync(_listenerCts.Token);
         }
     }
 
     public static void Cleanup()
     {
+        // Cancel the background listener so the process can exit
+        if (_listenerCts != null)
+        {
+            _listenerCts.Cancel();
+            _listenerCts.Dispose();
+            _listenerCts = null;
+        }
+
         if (IsServerMode && _mutex != null)
         {
             try

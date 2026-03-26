@@ -123,7 +123,7 @@ public static class AndroidNativeExports
                 var (host, port, accessKey) = GetDesktopEndpoint();
                 await RemexDesktopClient.Current.StartStreamAsync(host, port, config, accessKey);
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] StartDesktopStream failed: {ex.Message}"); }
         });
     }
 
@@ -137,7 +137,7 @@ public static class AndroidNativeExports
                 await RemexDesktopClient.Current.StopStreamAsync();
                 await RemexDesktopClient.Current.DisconnectAsync();
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] StopDesktopStream failed: {ex.Message}"); }
         });
     }
 
@@ -148,11 +148,6 @@ public static class AndroidNativeExports
         {
             Marshal.FreeCoTaskMem(pointer);
         }
-    }
-
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartMdnsDiscoveryNative")]
-    public static void StartMdnsDiscovery(IntPtr env, IntPtr thiz)
-    {
     }
 
     private static string HandleInitialize(string? initJson)
@@ -172,7 +167,7 @@ public static class AndroidNativeExports
             {
                 await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port, initRequest.AccessKey);
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] ConnectAsync failed: {ex.Message}"); }
         });
 
         var response = new AndroidNativeInitializationResponse
@@ -245,7 +240,7 @@ public static class AndroidNativeExports
             {
                 await RemexNativeClient.Current.SendMessageAsync(message);
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] SendMessage failed: {ex.Message}"); }
         });
 
         return SerializeOperationSuccess("Message dispatched.");
@@ -263,7 +258,7 @@ public static class AndroidNativeExports
                         var (host, port, accessKey) = GetDesktopEndpoint();
                         await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), accessKey);
                     }
-                    catch { }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopStart failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -275,7 +270,7 @@ public static class AndroidNativeExports
                         var (host, port, accessKey) = GetDesktopEndpoint();
                         await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, accessKey);
                     }
-                    catch { }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopInput failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -287,7 +282,7 @@ public static class AndroidNativeExports
                         var (host, port, accessKey) = GetDesktopEndpoint();
                         await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, accessKey);
                     }
-                    catch { }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopConfig failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -299,7 +294,7 @@ public static class AndroidNativeExports
                         await RemexDesktopClient.Current.StopStreamAsync();
                         await RemexDesktopClient.Current.DisconnectAsync();
                     }
-                    catch { }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopStop failed: {ex.Message}"); }
                 });
                 return true;
 

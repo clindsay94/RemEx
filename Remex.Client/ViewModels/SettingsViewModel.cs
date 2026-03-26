@@ -159,6 +159,25 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     [ObservableProperty]
+    private bool _isDiscovering;
+
+    [RelayCommand]
+    private async Task DiscoverHostAsync()
+    {
+        IsDiscovering = true;
+        try
+        {
+            await _connection.DiscoverHostsCommand.ExecuteAsync(null);
+            // Sync the discovered address back into our property
+            HostAddress = _connection.HostAddress;
+        }
+        finally
+        {
+            IsDiscovering = false;
+        }
+    }
+
+    [ObservableProperty]
     private string _savedStatus = string.Empty;
 
     [RelayCommand]
@@ -200,6 +219,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             or nameof(ConnectionViewModel.IsConnected))
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHostCapabilitySummary);
+        }
+        else if (e.PropertyName is nameof(ConnectionViewModel.HostAddress))
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => HostAddress = _connection.HostAddress);
         }
     }
 

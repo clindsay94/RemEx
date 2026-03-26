@@ -23,6 +23,8 @@ fun ConnectionScreen(
     val isConnecting by viewModel.isConnecting.collectAsState()
     val status by viewModel.connectionStatus.collectAsState()
     val capabilitySummary by viewModel.capabilitySummary.collectAsState()
+    val isDiscovering by viewModel.isDiscovering.collectAsState()
+    val discoveredHost by viewModel.discoveredHost.collectAsState()
 
     var hostInput by remember { mutableStateOf("") }
     var portInput by remember { mutableStateOf("") }
@@ -49,6 +51,14 @@ fun ConnectionScreen(
             if (qualityInput == 50f && dp.quality != 50) qualityInput = dp.quality.toFloat()
             if (targetFpsInput == 30f && dp.targetFps != 30) targetFpsInput = dp.targetFps.toFloat()
             if (scaleInput == 0.6f && dp.scale != 0.6f) scaleInput = dp.scale
+        }
+    }
+
+    // Auto-fill host/port when a host is discovered
+    LaunchedEffect(discoveredHost) {
+        discoveredHost?.let {
+            hostInput = it.host
+            portInput = it.port.toString()
         }
     }
 
@@ -85,6 +95,25 @@ fun ConnectionScreen(
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
+
+                OutlinedButton(
+                    onClick = { viewModel.discoverHost() },
+                    enabled = !isDiscovering,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isDiscovering) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Searching…")
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Discover Host on LAN")
+                    }
+                }
 
                 OutlinedTextField(
                     value = hostInput,

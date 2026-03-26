@@ -80,6 +80,11 @@ run_*.txt
 hwinfo_reg.txt
 publish/
 RemEx.Android/app/src/main/jniLibs/
+.agent/
+.gemini_security/
+.superpowers/
+conductor/ 
+/docs/superpowers/
 
 # Node.js
 node_modules/

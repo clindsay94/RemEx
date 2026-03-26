@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.DiscoveredHost
+import com.clindsay94.remex.data.NsdDiscoveryManager
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -12,6 +14,7 @@ import org.json.JSONObject
 
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
+    private val nsdDiscoveryManager = NsdDiscoveryManager(application)
 
     val connectionPreferences: StateFlow<SettingsManager.ConnectionPreferences?> = settingsManager.connectionPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -30,6 +33,12 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _capabilitySummary = MutableStateFlow("Awaiting host metadata")
     val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
+
+    private val _isDiscovering = MutableStateFlow(false)
+    val isDiscovering: StateFlow<Boolean> = _isDiscovering.asStateFlow()
+
+    private val _discoveredHost = MutableStateFlow<DiscoveredHost?>(null)
+    val discoveredHost: StateFlow<DiscoveredHost?> = _discoveredHost.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -111,6 +120,19 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun updateStatus(isConnected: Boolean) {
         _connectionStatus.value = if (isConnected) "Connected" else "Disconnected"
+    }
+
+    fun discoverHost() {
+        viewModelScope.launch {
+            _isDiscovering.value = true
+            _discoveredHost.value = null
+            try {
+                val result = nsdDiscoveryManager.discoverHost()
+                _discoveredHost.value = result
+            } finally {
+                _isDiscovering.value = false
+            }
+        }
     }
 
     private fun buildCapabilitySummary(hostInfo: String): String {

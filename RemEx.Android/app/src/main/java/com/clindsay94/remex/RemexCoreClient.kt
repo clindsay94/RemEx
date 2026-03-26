@@ -182,20 +182,5 @@ object RemexCoreClient {
     private external fun StopDesktopStreamNative()
 
     @JvmStatic
-    fun StartMdnsDiscovery() {
-        if (isLibraryLoaded) {
-            try {
-                StartMdnsDiscoveryNative()
-            } catch (e: UnsatisfiedLinkError) {
-                Log.e(TAG, "StartMdnsDiscoveryNative not linked", e)
-            }
-        }
-    }
-
-    @JvmStatic
-    @JvmName("StartMdnsDiscoveryNative")
-    private external fun StartMdnsDiscoveryNative()
-
-    @JvmStatic
     private external fun FreeMemory(pointer: Long)
 }

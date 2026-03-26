@@ -1,6 +1,7 @@
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Client;
+using Remex.Client.Services;
 using Remex.Core;
 using Remex.Host;
 using System;
@@ -68,6 +69,9 @@ class Program
         }
         finally
         {
+            // Stop the background listener so the process can exit cleanly
+            CommandModeContext.Cleanup();
+
             // Gracefully shut down the embedded host when the UI exits.
             if (_hostApp is not null)
             {
