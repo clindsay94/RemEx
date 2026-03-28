@@ -90,7 +90,8 @@ public partial class AppLauncherViewModel : ObservableObject
             displayName,
             targetPath,
             hexColor,
-            iconBase64);
+            iconBase64,
+            entry.Order);
     }
 
     private static string NormalizeString(string? value)
@@ -110,6 +111,7 @@ public partial class AppLauncherViewModel : ObservableObject
             .Select(NormalizeEntry)
             .GroupBy(e => string.IsNullOrWhiteSpace(e.TargetPath) ? e.Id.ToString() : e.TargetPath, StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
+            .OrderBy(e => e.Order)
             .ToList();
     }
 
@@ -208,6 +210,36 @@ public partial class AppLauncherViewModel : ObservableObject
         AndroidNewAppName = string.Empty;
         AndroidNewAppPath = string.Empty;
         IsAndroidAddPanelOpen = false;
+    }
+
+    [RelayCommand]
+    private async Task ReorderLauncherAsync((AppEntry source, AppEntry target) param)
+    {
+        var sourceIndex = Launchers.IndexOf(param.source);
+        var targetIndex = Launchers.IndexOf(param.target);
+
+        if (sourceIndex == -1 || targetIndex == -1 || sourceIndex == targetIndex)
+            return;
+
+        Launchers.Move(sourceIndex, targetIndex);
+
+        // Update Order property for all
+        for (int i = 0; i < Launchers.Count; i++)
+        {
+            var old = Launchers[i];
+            Launchers[i] = old with { Order = i };
+        }
+
+        if (Connection.IsConnected)
+        {
+            var msg = new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = Launchers.ToList() };
+            var ws = Connection.GetWebSocket();
+            if (ws != null) { await Remex.Core.Messages.MessageSerializer.SendAsync(ws, msg); }
+        }
+        else
+        {
+            await SaveLaunchersAsync();
+        }
     }
 
     public Action? OnOpenAddProgramDialogRequested { get; set; }

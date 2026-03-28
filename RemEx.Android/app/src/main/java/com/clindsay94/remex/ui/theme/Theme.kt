@@ -1,11 +1,13 @@
 package com.clindsay94.remex.ui.theme
 
+import android.graphics.Matrix as AndroidMatrix
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
@@ -29,6 +31,7 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.circle
 import androidx.graphics.shapes.star
+import androidx.graphics.shapes.transformed
 import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.SchemeExpressive
@@ -61,92 +64,50 @@ val Shapes = Shapes(
 
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
-/**
- * Curated Material 3 Expressive shape set.
- * Allowed shapes: square, pentagon, circle, puffy, clover4leaf, pill,
- * slanted, diamond, soft burst, arrow, gem, 4-sided cookie, bun,
- * clamshell, ghost-ish, arch.
- */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 val materialShapesList: List<RoundedPolygon> = listOf(
-    // 0: Square
-    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.05f)),
-    // 1: Pentagon
-    RoundedPolygon(numVertices = 5, rounding = CornerRounding(0.1f)),
-    // 2: Circle
-    RoundedPolygon.circle(),
-    // 3: Puffy (inflated quad)
-    RoundedPolygon.star(
-        numVerticesPerRadius = 4, innerRadius = 0.85f,
-        rounding = CornerRounding(0.6f), innerRounding = CornerRounding(0.6f)
-    ),
-    // 4: Clover 4-leaf
-    RoundedPolygon.star(
-        numVerticesPerRadius = 4, innerRadius = 0.4f,
-        rounding = CornerRounding(0.5f), innerRounding = CornerRounding(0.1f)
-    ),
-    // 5: Pill
-    RoundedPolygon(numVertices = 4, rounding = CornerRounding(1.0f)),
-    // 6: Slanted (parallelogram)
-    RoundedPolygon(
-        vertices = floatArrayOf(-0.7f, -1f, 1f, -1f, 0.7f, 1f, -1f, 1f),
-        rounding = CornerRounding(0.15f)
-    ),
-    // 7: Diamond
-    RoundedPolygon.star(
-        numVerticesPerRadius = 2, innerRadius = 0.5f,
-        rounding = CornerRounding(0.1f)
-    ),
-    // 8: Soft Burst
-    RoundedPolygon.star(
-        numVerticesPerRadius = 8, innerRadius = 0.75f,
-        rounding = CornerRounding(0.15f), innerRounding = CornerRounding(0.15f)
-    ),
-    // 9: Arrow
-    RoundedPolygon(
-        vertices = floatArrayOf(
-            0f, -1f, 0.6f, -0.2f, 0.3f, -0.2f,
-            0.3f, 1f, -0.3f, 1f, -0.3f, -0.2f, -0.6f, -0.2f
-        ),
-        rounding = CornerRounding(0.1f)
-    ),
-    // 10: Gem
-    RoundedPolygon(numVertices = 6, rounding = CornerRounding(0.2f)),
-    // 11: 4-sided Cookie
-    RoundedPolygon.star(
-        numVerticesPerRadius = 4, innerRadius = 0.6f,
-        rounding = CornerRounding(0.3f), innerRounding = CornerRounding(0.3f)
-    ),
-    // 12: Bun
-    RoundedPolygon.star(
-        numVerticesPerRadius = 3, innerRadius = 0.75f,
-        rounding = CornerRounding(0.5f), innerRounding = CornerRounding(0.5f)
-    ),
-    // 13: Clamshell
-    RoundedPolygon(
-        vertices = floatArrayOf(
-            -1f, 0.5f, -0.7f, -0.5f, 0f, -1f,
-            0.7f, -0.5f, 1f, 0.5f, 0f, 1f
-        ),
-        rounding = CornerRounding(0.3f)
-    ),
-    // 14: Ghost-ish
-    RoundedPolygon(
-        vertices = floatArrayOf(
-            -0.8f, -1f, 0.8f, -1f, 0.8f, 0.6f, 0.5f, 1f,
-            0.2f, 0.6f, 0f, 1f, -0.2f, 0.6f, -0.5f, 1f, -0.8f, 0.6f
-        ),
-        rounding = CornerRounding(0.25f)
-    ),
-    // 15: Arch
-    RoundedPolygon(
-        vertices = floatArrayOf(
-            -1f, 1f, -1f, -0.3f, -0.5f, -1f,
-            0.5f, -1f, 1f, -0.3f, 1f, 1f
-        ),
-        rounding = CornerRounding(0.4f)
-    ),
+    // Geometric
+    MaterialShapes.Circle,
+    MaterialShapes.Square,
+    MaterialShapes.Triangle,
+    MaterialShapes.Diamond,
+    MaterialShapes.Pentagon,
+    
+    // Expressive / Organic
+    MaterialShapes.Arch,
+    MaterialShapes.SemiCircle,
+    MaterialShapes.Pill,
+    MaterialShapes.Slanted,
+    MaterialShapes.Fan,
+    MaterialShapes.ClamShell,
+    MaterialShapes.Gem,
+    MaterialShapes.Heart,
+    MaterialShapes.Flower,
+    MaterialShapes.Puffy,
+    MaterialShapes.PuffyDiamond,
+    MaterialShapes.Ghostish,
+    MaterialShapes.Oval,
+    
+    // Decorative / Stars / Patterns
+    MaterialShapes.Clover4Leaf,
+    MaterialShapes.Clover8Leaf,
+    MaterialShapes.Cookie4Sided,
+    MaterialShapes.Cookie6Sided,
+    MaterialShapes.Cookie7Sided,
+    MaterialShapes.Cookie9Sided,
+    MaterialShapes.Cookie12Sided,
+    MaterialShapes.Sunny,
+    MaterialShapes.VerySunny,
+    MaterialShapes.Burst,
+    MaterialShapes.SoftBurst,
+    MaterialShapes.Boom,
+    MaterialShapes.SoftBoom,
+    MaterialShapes.PixelCircle,
+    MaterialShapes.PixelTriangle,
+    
+    // Directional
+    MaterialShapes.Arrow,
 )
-
 class MorphPolygonShape(
     private val morph: Morph,
     private val progress: Float
@@ -173,12 +134,6 @@ class MorphPolygonShape(
             )
         }
         composePath.close()
-
-        // Fix orientation: Rotate by -45 degrees to align square/diamond correctly
-        // Doing this BEFORE calculateBounds ensures the shape fills the container properly.
-        matrix.reset()
-        matrix.rotateZ(-45f)
-        composePath.transform(matrix)
 
         val bounds = composePath.getBounds()
 

@@ -45,7 +45,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Classes="glass-card" Margin="8" Padding="16" Cursor="Hand">
+                        <Border Classes="glass-card" Margin="8" Padding="16" Cursor="Hand"
+                                PointerPressed="OnPointerPressed"
+                                DragDrop.AllowDrop="True">
                             <Border.Background>
                                 <SolidColorBrush Color="{Binding HexColor}" Opacity="0.1" />
                             </Border.Background>

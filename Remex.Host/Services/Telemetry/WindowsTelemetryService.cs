@@ -151,6 +151,12 @@ public class WindowsTelemetryService : ITelemetryService
                     
                     if (!string.IsNullOrWhiteSpace(label))
                     {
+                        // Filter: Only include sensors that the user has explicitly enabled in HWInfo Shared Memory gadgets
+                        if (_hwinfoGadgetLabels.Count > 0 && !_hwinfoGadgetLabels.Contains(label))
+                        {
+                            continue;
+                        }
+
                         var value = FormatSensorValue(reading.Value, reading.szUnit, reading.tReading);
                         sensors.Add(new SensorReading
                         {

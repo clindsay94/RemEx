@@ -10,5 +10,6 @@ public record AppEntry(
     string DisplayName,
     string TargetPath,
     string HexColor,
-    string? IconBase64
+    string? IconBase64,
+    int Order = 0
 );
