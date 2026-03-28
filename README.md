@@ -116,7 +116,6 @@ Remex.Core/              Shared models, messages, and service contracts
 Remex.Host/              Headless ASP.NET background service (Minimal APIs + WebSocket + mDNS)
 Remex.Client/            Shared Avalonia UI (Views, ViewModels, Controls, Services, Themes)
 Remex.Client.Desktop/    Desktop entry point — Windows / Linux
-Remex.Client.Android/    Avalonia Android entry point (Activity + M3 theme overrides)
 RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
 Remex.Core.Tests/        xUnit tests — Core models and serialization
 Remex.Host.Tests/        xUnit tests — Host endpoints and handlers
@@ -143,7 +142,6 @@ Full API documentation: [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md)
 ### Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- Android workload (for Avalonia Android builds): `dotnet workload install android`
 - Android Studio or a JDK + Android SDK (for the native `RemEx.Android` Gradle build)
 
 ### Build & Run
@@ -174,18 +172,13 @@ dotnet test Remex.sln
 dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-**Avalonia Android APK**:
-
-```bash
-dotnet publish Remex.Client.Android\Remex.Client.Android.csproj -c Release -f net10.0-android
-```
 
 ### Native Android App — Hardened Fresh Build (Recommended)
 
 The native `RemEx.Android` Gradle project embeds `libRemexCore.so` built from `Remex.Core`. Use the hardened pipeline to guarantee a fresh native library and verified APK every time:
 
 ```powershell
-# From repo root — purge bin/obj, rebuild libRemexCore.so, assemble APK, verify SHA-256, install
+# From repo root — rebuild libRemexCore.so, assemble APK, verify SHA-256, install
 .\scripts\android-fresh.ps1 -Configuration Debug -Install
 
 # Build only (no install)
