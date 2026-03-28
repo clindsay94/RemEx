@@ -33,6 +33,7 @@ import com.clindsay94.remex.ui.screens.PersonalizationScreen
 import com.clindsay94.remex.ui.screens.RemoteControlScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
 import com.clindsay94.remex.ui.screens.RemoteMouseScreen
+import com.clindsay94.remex.ui.screens.SettingsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 
@@ -154,6 +155,9 @@ fun AppNavigation() {
             }
             composable(Screen.Personalization.route) {
                 PersonalizationScreen()
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen()
             }
         }
     }

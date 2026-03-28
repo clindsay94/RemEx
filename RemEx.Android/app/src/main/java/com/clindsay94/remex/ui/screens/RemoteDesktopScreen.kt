@@ -114,6 +114,8 @@ fun RemoteDesktopScreen(
     var imageSize by remember { mutableStateOf(IntSize.Zero) }
     var isStylusActive by remember { mutableStateOf(false) }
     var stylusButtonPressed by remember { mutableStateOf(false) }
+    var lastTapTimeMs by remember { mutableStateOf(0L) }
+    val tapDebounceMs = 150L
 
     DisposableEffect(activity, isFullscreen) {
         if (activity == null) {
@@ -199,7 +201,7 @@ fun RemoteDesktopScreen(
                                 tint = if (showMouseControls) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { showSettings = true }) {
                             Icon(Icons.Default.Tune, contentDescription = "Settings")
                         }
                         IconButton(onClick = { isFullscreen = !isFullscreen }) {
@@ -267,7 +269,9 @@ fun RemoteDesktopScreen(
                     .pointerInput(isStreaming, desktopPrefs.directTouch) {
                         detectTapGestures(
                             onTap = { offset ->
-                                if (isStreaming) {
+                                val now = System.currentTimeMillis()
+                                if (isStreaming && now - lastTapTimeMs > tapDebounceMs) {
+                                    lastTapTimeMs = now
                                     if (desktopPrefs.directTouch || isStylusActive) {
                                         // S-Pen button held = right-click; otherwise left-click
                                         val button = if (stylusButtonPressed) 2 else 1
@@ -285,7 +289,9 @@ fun RemoteDesktopScreen(
                                 }
                             },
                             onLongPress = { offset ->
-                                if (isStreaming) {
+                                val now = System.currentTimeMillis()
+                                if (isStreaming && now - lastTapTimeMs > tapDebounceMs) {
+                                    lastTapTimeMs = now
                                     if (desktopPrefs.directTouch || isStylusActive) {
                                         val hostOffset = mapLocalToHost(offset)
                                         viewModel.sendMouseAbsoluteClick(

@@ -25,7 +25,7 @@
 
             <TextBlock Text="Executable Path" Foreground="#A0A0FF" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0" Text="{Binding TargetPath}" Watermark="C:\Path\To\App.exe" IsReadOnly="True" Margin="0,0,8,0" />
+                <TextBox Grid.Column="0" Text="{Binding TargetPath}" Watermark="C:\Path\To\App.exe" Margin="0,0,8,0" />
                 <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}" Classes="glass-button" />
             </Grid>
 

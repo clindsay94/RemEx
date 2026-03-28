@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val repoRootDir: File = rootProject.projectDir.parentFile
+val remexCoreProjectDirLocal = File(repoRootDir, "Remex.Core")
+val androidLocalProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+
 android {
     namespace = "com.clindsay94.remex"
     compileSdk = 36
@@ -21,9 +27,19 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = androidLocalProperties.getProperty("remex.signing.storeFile")?.let { file(it) }
+            storePassword = androidLocalProperties.getProperty("remex.signing.storePassword")
+            keyAlias = androidLocalProperties.getProperty("remex.signing.keyAlias")
+            keyPassword = androidLocalProperties.getProperty("remex.signing.keyPassword")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -66,16 +82,11 @@ android {
     }
 }
 
-val repoRootDir: File = rootProject.projectDir.parentFile
-val remexCoreProjectDirLocal = File(repoRootDir, "Remex.Core")
 val remexGeneratedDebugJniRoot =
     layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug")
 val remexGeneratedReleaseJniRoot =
     layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release")
 val androidNdkVersion = "29.0.14206865"
-val androidLocalProperties = Properties().apply {
-    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
-}
 val androidSdkDir = androidLocalProperties.getProperty("sdk.dir")
     ?: error("Missing sdk.dir in local.properties")
 val androidNdkDir = File(androidSdkDir, "ndk/$androidNdkVersion")
@@ -443,9 +454,10 @@ val remexFreshInstallDebug by tasks.registering {
 val remexFreshAssembleRelease by tasks.registering {
     group = "remex"
     description =
-        "Hard reset build for release: clean Android build, assemble, and verify native freshness"
+        "Hard reset build for release: clean Android build, assemble, bundle, and verify native freshness"
     dependsOn("clean")
     dependsOn("assembleRelease")
+    dependsOn("bundleRelease")
     dependsOn(verifyRemexCoreInReleaseApk)
 }
 
@@ -455,6 +467,10 @@ tasks.matching { it.name == "assembleDebug" }.configureEach {
 
 
 tasks.matching { it.name == "assembleRelease" }.configureEach {
+    mustRunAfter("clean")
+}
+
+tasks.matching { it.name == "bundleRelease" }.configureEach {
     mustRunAfter("clean")
 }
 
@@ -541,7 +557,7 @@ tasks.matching { it.name == "mergeReleaseJniLibFolders" }.configureEach {
 }
 
 dependencies {
-    implementation(libs.material.color.utilities)
+    implementation(libs.material)
     implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.graphics.shapes)

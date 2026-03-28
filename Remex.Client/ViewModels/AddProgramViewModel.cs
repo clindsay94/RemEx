@@ -50,6 +50,18 @@ public partial class AddProgramViewModel : ObservableObject
         UpdateValidatedColor();
     }
 
+    partial void OnTargetPathChanged(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value) && File.Exists(value))
+        {
+            if (string.IsNullOrWhiteSpace(DisplayName))
+            {
+                DisplayName = Path.GetFileNameWithoutExtension(value);
+            }
+            IconBase64 = _iconService.ExtractIconAsBase64(value);
+        }
+    }
+
     private void UpdateValidatedColor()
     {
         if (Avalonia.Media.Color.TryParse(HexColor, out var color))

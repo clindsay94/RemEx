@@ -149,13 +149,14 @@ public class WindowsTelemetryService : ITelemetryService
                     var reading = Marshal.PtrToStructure<HWiNFO_READING_ELEMENT>(elementHandle.AddrOfPinnedObject());
                     var label = !string.IsNullOrWhiteSpace(reading.szLabelUser) ? reading.szLabelUser : reading.szLabelOrig;
                     
-                    if (!string.IsNullOrWhiteSpace(label) && _hwinfoGadgetLabels.Contains(label))
+                    if (!string.IsNullOrWhiteSpace(label))
                     {
+                        var value = FormatSensorValue(reading.Value, reading.szUnit, reading.tReading);
                         sensors.Add(new SensorReading
                         {
                             Name = label,
-                            Value = reading.Value,
-                            Unit = reading.szUnit,
+                            Value = value,
+                            Unit = NormalizeUnit(reading.szUnit, reading.Value),
                             Category = DetermineCategory(label)
                         });
                     }
@@ -222,6 +223,27 @@ public class WindowsTelemetryService : ITelemetryService
         {
             _lastGadgetLabelUpdate = DateTime.UtcNow;
         }
+    }
+
+    private static double FormatSensorValue(double value, string unit, SENSOR_READING_TYPE readingType)
+    {
+        // Convert MB to GB for large memory values
+        if (unit.Equals("MB", StringComparison.OrdinalIgnoreCase) && value >= 1024)
+            return Math.Round(value / 1024.0, 2);
+
+        // Voltages keep decimal precision
+        if (readingType == SENSOR_READING_TYPE.SENSOR_TYPE_VOLT)
+            return Math.Round(value, 3);
+
+        // Everything else: round to integer
+        return Math.Round(value);
+    }
+
+    private static string NormalizeUnit(string unit, double originalValue)
+    {
+        if (unit.Equals("MB", StringComparison.OrdinalIgnoreCase) && originalValue >= 1024)
+            return "GB";
+        return unit;
     }
 
     private string DetermineCategory(string label)

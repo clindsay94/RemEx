@@ -21,18 +21,20 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object TaskManager : Screen("task_manager", "Task Manager", Icons.AutoMirrored.Filled.List)
     object RemoteDesktop : Screen("remote_desktop", "Remote Desktop", Icons.Default.Computer)
     object Personalization : Screen("personalization", "Personalization", Icons.Default.Palette)
+    object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 }
 
+/** Bottom navigation bar items — App Launcher replaces old Connection/Settings tab. */
 val navItems = listOf(
     Screen.Dashboard,
-    Screen.Connection,
+    Screen.AppLauncher,
     Screen.RemoteDesktop,
     Screen.TaskManager,
     Screen.RemoteControl
 )
 
+/** Overflow (3-dot) menu: Remote Mouse + unified Settings only. */
 val secondaryNavItems = listOf(
     Screen.RemoteMouse,
-    Screen.AppLauncher,
-    Screen.Personalization
+    Screen.Settings
 )

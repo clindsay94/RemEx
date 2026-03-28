@@ -4,7 +4,9 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -27,13 +29,13 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.circle
 import androidx.graphics.shapes.star
-import dev.sasikanth.material.color.utilities.dynamiccolor.MaterialDynamicColors
-import dev.sasikanth.material.color.utilities.hct.Hct
-import dev.sasikanth.material.color.utilities.scheme.SchemeExpressive
-import dev.sasikanth.material.color.utilities.scheme.SchemeMonochrome
-import dev.sasikanth.material.color.utilities.scheme.SchemeNeutral
-import dev.sasikanth.material.color.utilities.scheme.SchemeTonalSpot
-import dev.sasikanth.material.color.utilities.scheme.SchemeVibrant
+import com.google.android.material.color.utilities.MaterialDynamicColors
+import com.google.android.material.color.utilities.Hct
+import com.google.android.material.color.utilities.SchemeExpressive
+import com.google.android.material.color.utilities.SchemeMonochrome
+import com.google.android.material.color.utilities.SchemeNeutral
+import com.google.android.material.color.utilities.SchemeTonalSpot
+import com.google.android.material.color.utilities.SchemeVibrant
 
 // Standard M3 colors are already defined in Color.kt
 
@@ -60,37 +62,89 @@ val Shapes = Shapes(
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
 /**
- * A comprehensive list of expressive Material 3 shapes.
- * These are manually constructed to ensure maximum compatibility and variety.
+ * Curated Material 3 Expressive shape set.
+ * Allowed shapes: square, pentagon, circle, puffy, clover4leaf, pill,
+ * slanted, diamond, soft burst, arrow, gem, 4-sided cookie, bun,
+ * clamshell, ghost-ish, arch.
  */
 val materialShapesList: List<RoundedPolygon> = listOf(
-    RoundedPolygon(numVertices = 4), // Square (will be rotated)
-    RoundedPolygon(
-        numVertices = 4,
-        rounding = CornerRounding(0.2f)
-    ), // Rounded Square
-    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.4f)), // Smoother Square
-    RoundedPolygon.circle(), // Circle
-    RoundedPolygon(numVertices = 3), // Triangle
-    RoundedPolygon(numVertices = 3, rounding = CornerRounding(0.2f)), // Rounded Triangle
-    RoundedPolygon(numVertices = 5), // Pentagon
-    RoundedPolygon(numVertices = 6), // Hexagon
-    RoundedPolygon(numVertices = 8), // Octagon
-    RoundedPolygon(numVertices = 12), // Dodecagon
-    RoundedPolygon.star(numVerticesPerRadius = 5, innerRadius = 0.5f), // Star
+    // 0: Square
+    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.05f)),
+    // 1: Pentagon
+    RoundedPolygon(numVertices = 5, rounding = CornerRounding(0.1f)),
+    // 2: Circle
+    RoundedPolygon.circle(),
+    // 3: Puffy (inflated quad)
     RoundedPolygon.star(
-        numVerticesPerRadius = 5,
-        innerRadius = 0.5f,
-        innerRounding = CornerRounding(0.2f),
-        radius = 1f,
-        rounding = CornerRounding(0.2f)
-    ), // Soft Star
-    RoundedPolygon.star(numVerticesPerRadius = 8, innerRadius = 0.8f), // Cog
-    RoundedPolygon.star(numVerticesPerRadius = 4, innerRadius = 0.3f), // Cross
-    RoundedPolygon.star(numVerticesPerRadius = 12, innerRadius = 0.9f), // Certificate
-    RoundedPolygon.star(numVerticesPerRadius = 4, innerRadius = 0.5f), // Diamond
-    RoundedPolygon.star(numVerticesPerRadius = 6, innerRadius = 0.7f), // Flower
-    RoundedPolygon.star(numVerticesPerRadius = 10, innerRadius = 0.6f) // Burst
+        numVerticesPerRadius = 4, innerRadius = 0.85f,
+        rounding = CornerRounding(0.6f), innerRounding = CornerRounding(0.6f)
+    ),
+    // 4: Clover 4-leaf
+    RoundedPolygon.star(
+        numVerticesPerRadius = 4, innerRadius = 0.4f,
+        rounding = CornerRounding(0.5f), innerRounding = CornerRounding(0.1f)
+    ),
+    // 5: Pill
+    RoundedPolygon(numVertices = 4, rounding = CornerRounding(1.0f)),
+    // 6: Slanted (parallelogram)
+    RoundedPolygon(
+        vertices = floatArrayOf(-0.7f, -1f, 1f, -1f, 0.7f, 1f, -1f, 1f),
+        rounding = CornerRounding(0.15f)
+    ),
+    // 7: Diamond
+    RoundedPolygon.star(
+        numVerticesPerRadius = 2, innerRadius = 0.5f,
+        rounding = CornerRounding(0.1f)
+    ),
+    // 8: Soft Burst
+    RoundedPolygon.star(
+        numVerticesPerRadius = 8, innerRadius = 0.75f,
+        rounding = CornerRounding(0.15f), innerRounding = CornerRounding(0.15f)
+    ),
+    // 9: Arrow
+    RoundedPolygon(
+        vertices = floatArrayOf(
+            0f, -1f, 0.6f, -0.2f, 0.3f, -0.2f,
+            0.3f, 1f, -0.3f, 1f, -0.3f, -0.2f, -0.6f, -0.2f
+        ),
+        rounding = CornerRounding(0.1f)
+    ),
+    // 10: Gem
+    RoundedPolygon(numVertices = 6, rounding = CornerRounding(0.2f)),
+    // 11: 4-sided Cookie
+    RoundedPolygon.star(
+        numVerticesPerRadius = 4, innerRadius = 0.6f,
+        rounding = CornerRounding(0.3f), innerRounding = CornerRounding(0.3f)
+    ),
+    // 12: Bun
+    RoundedPolygon.star(
+        numVerticesPerRadius = 3, innerRadius = 0.75f,
+        rounding = CornerRounding(0.5f), innerRounding = CornerRounding(0.5f)
+    ),
+    // 13: Clamshell
+    RoundedPolygon(
+        vertices = floatArrayOf(
+            -1f, 0.5f, -0.7f, -0.5f, 0f, -1f,
+            0.7f, -0.5f, 1f, 0.5f, 0f, 1f
+        ),
+        rounding = CornerRounding(0.3f)
+    ),
+    // 14: Ghost-ish
+    RoundedPolygon(
+        vertices = floatArrayOf(
+            -0.8f, -1f, 0.8f, -1f, 0.8f, 0.6f, 0.5f, 1f,
+            0.2f, 0.6f, 0f, 1f, -0.2f, 0.6f, -0.5f, 1f, -0.8f, 0.6f
+        ),
+        rounding = CornerRounding(0.25f)
+    ),
+    // 15: Arch
+    RoundedPolygon(
+        vertices = floatArrayOf(
+            -1f, 1f, -1f, -0.3f, -0.5f, -1f,
+            0.5f, -1f, 1f, -0.3f, 1f, 1f
+        ),
+        rounding = CornerRounding(0.4f)
+    ),
 )
 
 class MorphPolygonShape(
@@ -180,6 +234,8 @@ fun colorSchemeFromSeed(
         "vibrant" -> SchemeVibrant(hct, darkTheme, 0.0)
         "neutral" -> SchemeNeutral(hct, darkTheme, 0.0)
         "monochrome" -> SchemeMonochrome(hct, darkTheme, 0.0)
+        "fruit_salad" -> SchemeFruitSalad(hct, darkTheme, 0.0)
+        "rainbow" -> SchemeRainbow(hct, darkTheme, 0.0)
         else -> SchemeTonalSpot(hct, darkTheme, 0.0)
     }
     val m3 = MaterialDynamicColorsInstance
@@ -287,10 +343,12 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typographyForFontFamily(fontFamilyKey),
         shapes = Shapes,
+        motionScheme = MotionScheme.expressive(),
         content = content
     )
 }

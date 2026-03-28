@@ -33,6 +33,17 @@ enum class ProcessSortField {
 
 class TaskManagerViewModel(application: Application) : AndroidViewModel(application) {
 
+    companion object {
+        private val EXCLUDED_PROCESSES = setOf(
+            "svchost", "system idle process", "system", "registry",
+            "smss", "csrss", "wininit", "services", "lsass",
+            "fontdrvhost", "dwm", "conhost", "sihost",
+            "dashost", "ctfmon", "dllhost", "wudfhost",
+            "searchindexer", "securityhealthservice", "sgrmbroker",
+            "spoolsv", "lsaiso", "memory compression"
+        )
+    }
+
     private val settingsManager = SettingsManager(application)
 
     val taskManagerCardShapePreset = settingsManager.taskManagerCardShapePresetFlow
@@ -56,11 +67,15 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         _sortField,
         _sortDescending
     ) { processes, search, field, descending ->
+        val excluded = processes.filter { proc ->
+            !EXCLUDED_PROCESSES.contains(proc.name.lowercase())
+        }
+
         val filtered = if (search.isBlank()) {
-            processes
+            excluded
         } else {
             val query = search.trim().lowercase()
-            processes.filter {
+            excluded.filter {
                 it.name.lowercase().contains(query) || it.id.toString().contains(query)
             }
         }

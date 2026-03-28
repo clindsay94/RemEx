@@ -17,6 +17,16 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     private readonly ConnectionViewModel _connection;
     private CancellationTokenSource? _pollingCts;
 
+    private static readonly HashSet<string> ExcludedProcesses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "svchost", "System Idle Process", "System", "Registry",
+        "smss", "csrss", "wininit", "services", "lsass",
+        "fontdrvhost", "dwm", "conhost", "sihost",
+        "dasHost", "ctfmon", "dllhost", "WUDFHost",
+        "SearchIndexer", "SecurityHealthService", "SgrmBroker",
+        "spoolsv", "LsaIso", "Memory Compression"
+    };
+
     [ObservableProperty]
     private ObservableCollection<ProcessInfo> _processes = new();
 
@@ -79,7 +89,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
 
     private void UpdateProcessList()
     {
-        var query = _lastRawProcesses.AsEnumerable();
+        var query = _lastRawProcesses.Where(p => !ExcludedProcesses.Contains(p.Name)).AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
