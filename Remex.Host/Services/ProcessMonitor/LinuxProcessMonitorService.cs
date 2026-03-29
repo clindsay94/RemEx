@@ -126,7 +126,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
 
             lock (_lock)
             {
-                var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
+                var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k));
                 foreach (var k in toRemove) _cpuTrackers.Remove(k);
             }
 
