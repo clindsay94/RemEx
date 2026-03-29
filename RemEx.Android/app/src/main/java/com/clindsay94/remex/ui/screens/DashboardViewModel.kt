@@ -53,6 +53,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val settingsManager = SettingsManager(application)
 
     val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
+    val isConnecting: StateFlow<Boolean> = RemexClientManager.isConnecting
 
     private val _telemetryState = MutableStateFlow(TelemetryState())
     val telemetryState: StateFlow<TelemetryState> = _telemetryState.asStateFlow()
@@ -137,6 +138,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             } catch (_: Throwable) {
             }
         }
+    }
+
+    fun toggleConnection() {
+        RemexClientManager.toggleConnection()
     }
 
     fun setCardEnabled(cardId: String, enabled: Boolean) {

@@ -78,6 +78,14 @@ public class LocalIpcServerService : BackgroundService
                     var worldSid = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
                     pipeSecurity.AddAccessRule(new PipeAccessRule(worldSid, PipeAccessRights.ReadWrite, AccessControlType.Allow));
 
+                    // Also grant FullControl to the current identity so elevated/service
+                    // accounts can recreate the pipe even when a stale handle exists.
+                    var currentUser = WindowsIdentity.GetCurrent().User;
+                    if (currentUser != null)
+                    {
+                        pipeSecurity.AddAccessRule(new PipeAccessRule(currentUser, PipeAccessRights.FullControl, AccessControlType.Allow));
+                    }
+
                     pipeServer = NamedPipeServerStreamAcl.Create(
                         PipeName,
                         PipeDirection.InOut,
@@ -109,6 +117,14 @@ public class LocalIpcServerService : BackgroundService
             catch (OperationCanceledException)
             {
                 // Expected on shutdown
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex,
+                    "Access denied creating named pipe '{Pipe}'. " +
+                    "Another process may own the pipe, or the service account lacks pipe-creation rights. Retrying in 5s.",
+                    PipeName);
+                await Task.Delay(5000, stoppingToken);
             }
             catch (Exception ex)
             {

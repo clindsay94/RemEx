@@ -87,4 +87,23 @@
             <Setter Property="RenderTransform" Value="scale(1.15)"/>
         </Style>
 
-        </Application.Styles></Application>
+        </Application.Styles>
+
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="avares://Remex.Client/Assets/icon.png" 
+                      ToolTipText="Remex Desktop - Remote Execution"
+                      IsVisible="True"
+                      Clicked="OnTrayIconClicked">
+                <TrayIcon.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Show Main Window" Click="OnShowMainWindow" />
+                        <NativeMenuItem Header="Live Glance" Click="OnToggleLiveGlance" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Exit" Click="OnExitApp" />
+                    </NativeMenu>
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
+</Application>

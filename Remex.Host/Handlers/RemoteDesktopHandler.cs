@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
@@ -20,6 +21,9 @@ public sealed class RemoteDesktopHandler
     private readonly IScreenCaptureService _screenCapture;
     private readonly IInputSimulationService _inputSimulation;
     private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
+    private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
+
+    private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
 
     private int _quality = 50;
     private double _scale = 0.5;
@@ -37,6 +41,17 @@ public sealed class RemoteDesktopHandler
         _screenCapture = screenCapture;
         _inputSimulation = inputSimulation;
         _hostCapabilitiesProvider = hostCapabilitiesProvider;
+
+        // Start dedicated input processing thread
+        Task.Factory.StartNew(ProcessInputQueue, TaskCreationOptions.LongRunning);
+    }
+
+    private void ProcessInputQueue()
+    {
+        foreach (var input in _inputQueue.GetConsumingEnumerable())
+        {
+            DispatchInput(input);
+        }
     }
 
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
@@ -182,6 +197,7 @@ public sealed class RemoteDesktopHandler
         // ── Main frame loop ──
         var stopwatch = Stopwatch.StartNew();
         int consecutiveFailures = 0;
+        int consecutiveSendStalls = 0;
         bool errorReported = false;
         int totalFramesSent = 0;
 
@@ -196,11 +212,44 @@ public sealed class RemoteDesktopHandler
                 {
                     consecutiveFailures = 0;
                     errorReported = false;
-                    await webSocket.SendAsync(
-                        new ArraySegment<byte>(jpegBytes),
-                        WebSocketMessageType.Binary,
-                        endOfMessage: true,
-                        ct);
+
+                    // Apply a per-send timeout to detect TCP congestion (Error 10054).
+                    // If the socket send buffer is full, SendAsync will stall indefinitely.
+                    using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    sendCts.CancelAfter(FrameSendTimeout);
+                    var sendSw = Stopwatch.StartNew();
+                    try
+                    {
+                        await webSocket.SendAsync(
+                            new ArraySegment<byte>(jpegBytes),
+                            WebSocketMessageType.Binary,
+                            endOfMessage: true,
+                            sendCts.Token);
+                        sendSw.Stop();
+                        consecutiveSendStalls = 0;
+
+                        if (sendSw.ElapsedMilliseconds > 1000)
+                        {
+                            _logger.LogWarning(
+                                "Frame send took {Ms}ms — network may be congested (frame #{N}, {Size} bytes).",
+                                sendSw.ElapsedMilliseconds, totalFramesSent, jpegBytes.Length);
+                        }
+                    }
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    {
+                        consecutiveSendStalls++;
+                        _logger.LogWarning(
+                            "Frame send timed out after {Timeout}s (stall #{N}) — dropping frame.",
+                            FrameSendTimeout.TotalSeconds, consecutiveSendStalls);
+
+                        if (consecutiveSendStalls >= 3)
+                        {
+                            _logger.LogError("3 consecutive frame send timeouts — connection is stalled, aborting stream.");
+                            break;
+                        }
+                        continue; // Skip the throttle delay, try next frame immediately
+                    }
+
                     totalFramesSent++;
                 }
                 else
@@ -276,7 +325,11 @@ public sealed class RemoteDesktopHandler
                 switch (message.Type)
                 {
                     case MessageTypes.DesktopInput when message.InputEvent is not null:
-                        DispatchInput(message.InputEvent);
+                        if (!_inputQueue.TryAdd(message.InputEvent))
+                        {
+                            _logger.LogWarning("Input queue full ({Capacity} items) — dropping {Type} event.",
+                                _inputQueue.BoundedCapacity, message.InputEvent.EventType);
+                        }
                         break;
 
                     case MessageTypes.DesktopConfig when message.DesktopConfig is not null:

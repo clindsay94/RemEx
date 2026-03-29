@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Remex.Client.ViewModels"
+        x:Class="Remex.Client.Views.TrayFlyoutWindow"
+        x:DataType="vm:HomeViewModel"
+        Width="320" Height="420"
+        Title="Live Glance"
+        CanResize="False"
+        Focusable="False"
+        ShowInTaskbar="False">
+
+    <Border Classes="glass-card" Margin="12" BorderThickness="1">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Spacing="4">
+                <TextBlock Text="LIVE GLANCE" FontSize="12" FontWeight="Black" 
+                           Foreground="{DynamicResource AccentPrimaryBrush}" Opacity="0.8"/>
+                <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" 
+                           Foreground="{DynamicResource TextMutedBrush}"/>
+            </StackPanel>
+
+            <!-- Pinned Sensors List (Simplified for Flyout) -->
+            <ScrollViewer Grid.Row="1" Margin="0,16">
+                <ItemsControl ItemsSource="{Binding PinnedSensors}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#10FFFFFF" CornerRadius="8" Margin="0,0,0,8" Padding="12,8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Value, StringFormat={}{0}}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding Unit}" FontSize="10" VerticalAlignment="Bottom" 
+                                               Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,2"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Footer / Quick Actions -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Content="Open App" Classes="glass-button" FontSize="11" Click="OnOpenMainApp"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -1,15 +1,31 @@
 package com.clindsay94.remex
 
+import android.content.Context
+import android.util.Log
+import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 object RemexClientManager : RemexCoreClient.RemexCallback {
 
+    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var settingsManager: SettingsManager? = null
+
     private val _isConnected = MutableStateFlow(false)
     val isConnected = _isConnected.asStateFlow()
+
+    private val _isConnecting = MutableStateFlow(false)
+    val isConnecting = _isConnecting.asStateFlow()
 
     private val _telemetry = MutableSharedFlow<String>(replay = 1)
     val telemetry = _telemetry.asSharedFlow()
@@ -20,7 +36,6 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _processList = MutableSharedFlow<String>(replay = 1)
     val processList = _processList.asSharedFlow()
 
-    // Frame buffer: no replay (don't hold stale frames in memory), drop oldest under back-pressure
     private val _frames = MutableSharedFlow<ByteArray>(
         replay = 0,
         extraBufferCapacity = 1,
@@ -41,12 +56,71 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         RemexCoreClient.setCallback(this)
     }
 
+    fun initialize(context: Context) {
+        if (settingsManager != null) return
+        
+        settingsManager = SettingsManager(context)
+        
+        // Start Global Connection Heartbeat
+        managerScope.launch {
+            while (true) {
+                if (!isConnected.value && !isConnecting.value) {
+                    val settings = settingsManager!!
+                    val host = settings.hostFlow.first()
+                    // Auto-connect if a valid host is configured
+                    if (host.isNotBlank() && host != "192.168.1.100") {
+                        Log.i("RemexManager", "Heartbeat triggering auto-connect to $host")
+                        connect()
+                    }
+                }
+                delay(5000)
+            }
+        }
+    }
+
+    fun toggleConnection() {
+        if (isConnecting.value) return
+        managerScope.launch {
+            connect()
+        }
+    }
+
+    private suspend fun connect() {
+        val settings = settingsManager ?: return
+        val host = settings.hostFlow.first()
+        val port = settings.portFlow.first()
+        val key = settings.accessKeyFlow.first()
+
+        _isConnecting.value = true
+        try {
+            if (RemexCoreClient.isLibraryLoaded) {
+                val initRequest = JSONObject().apply {
+                    put("host", host)
+                    put("port", port)
+                    put("accessKey", key)
+                    put("startTelemetryPolling", true)
+                }
+                RemexCoreClient.InitRemex(initRequest.toString())
+            } else {
+                _isConnecting.value = false
+            }
+        } catch (e: Exception) {
+            Log.e("RemexManager", "Connect failed", e)
+            _isConnecting.value = false
+        }
+    }
+
     override fun onTelemetryUpdate(telemetryData: String) {
         _telemetry.tryEmit(telemetryData)
     }
 
     override fun onConnectionStateChanged(isConnected: Boolean) {
         _isConnected.value = isConnected
+        if (isConnected) _isConnecting.value = false
+    }
+
+    fun setConnecting(isConnecting: Boolean) {
+        _isConnecting.value = isConnecting
     }
 
     override fun onLauncherSync(launcherData: String) {

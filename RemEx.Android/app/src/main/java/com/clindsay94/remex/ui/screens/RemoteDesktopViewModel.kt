@@ -313,6 +313,22 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         })
     }
 
+    fun sendMouseDown(button: Int, x: Int? = null, y: Int? = null) {
+        sendInput(JSONObject().apply {
+            put("eventType", "mouseDown")
+            put("button", button)
+            if (x != null) put("x", x)
+            if (y != null) put("y", y)
+        })
+    }
+
+    fun sendMouseUp(button: Int) {
+        sendInput(JSONObject().apply {
+            put("eventType", "mouseUp")
+            put("button", button)
+        })
+    }
+
     fun sendMouseAbsolute(x: Int, y: Int) {
         sendInput(JSONObject().apply {
             put("eventType", "mouseMove")

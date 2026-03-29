@@ -3,7 +3,6 @@ package com.clindsay94.remex.widget
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -36,11 +35,6 @@ import org.json.JSONObject
 
 val SELECTED_SENSORS_KEY = stringPreferencesKey("selected_sensors")
 
-private val SMALL = DpSize(110.dp, 40.dp)
-private val MEDIUM = DpSize(180.dp, 100.dp)
-private val LARGE = DpSize(250.dp, 160.dp)
-private val XLARGE = DpSize(320.dp, 240.dp)
-
 data class WidgetSensorData(
     val id: String,
     val name: String,
@@ -51,7 +45,7 @@ data class WidgetSensorData(
 
 class HardwareInfoWidget : GlanceAppWidget() {
 
-    override val sizeMode = SizeMode.Responsive(setOf(SMALL, MEDIUM, LARGE, XLARGE))
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val telemetryJson = WidgetDataCache.getTelemetryJson(context)
@@ -98,7 +92,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             modifier = GlanceModifier.fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(16.dp)
-                .padding(8.dp),
+                .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -114,19 +108,21 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
 
     val sensors = allSensors.filter { it.id in selectedIds }
 
-    val showTitle = size.height >= 100.dp
-    val showCategory = size.width >= 250.dp
-    val useCards = size.height >= 80.dp
-    val availableWidth = size.width - 8.dp
+    val showTitle = size.height >= 80.dp
+    val showCategory = size.width >= 240.dp
+    val useCards = size.height >= 60.dp
+    
+    // Balanced padding for all sizes
+    val outerPadding = 8.dp
+    val availableWidth = size.width - (outerPadding * 2)
 
-    // Dynamic column calculation based on available width
-    val cardMinWidth = if (useCards) 88.dp else 70.dp
-    val columns = (availableWidth / cardMinWidth).toInt().coerceAtLeast(1)
+    val cardMinWidth = if (useCards) 100.dp else 80.dp
+    val columns = (availableWidth / cardMinWidth).toInt().coerceIn(1, 4)
 
-    val titleHeight = if (showTitle) 20.dp else 0.dp
-    val contentHeight = size.height - 8.dp - titleHeight
-    val cardMinHeight = if (useCards) 48.dp else 28.dp
-    val maxRows = (contentHeight / (cardMinHeight + 2.dp)).toInt().coerceAtLeast(1)
+    val titleHeight = if (showTitle) 24.dp else 0.dp
+    val contentHeight = size.height - (outerPadding * 2) - titleHeight
+    val cardMinHeight = if (useCards) 54.dp else 34.dp
+    val maxRows = (contentHeight / (cardMinHeight + 4.dp)).toInt().coerceAtLeast(1)
     val maxItems = (columns * maxRows).coerceAtMost(sensors.size)
     val visibleSensors = sensors.take(maxItems)
 
@@ -134,7 +130,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
         modifier = GlanceModifier.fillMaxSize()
             .background(GlanceTheme.colors.surface)
             .cornerRadius(16.dp)
-            .padding(4.dp)
+            .padding(outerPadding)
     ) {
         if (showTitle) {
             Text(
@@ -142,113 +138,87 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 14.sp
                 ),
-                modifier = GlanceModifier.padding(bottom = 2.dp, start = 2.dp)
+                modifier = GlanceModifier.padding(bottom = 6.dp, start = 4.dp)
             )
         }
 
-        if (visibleSensors.isEmpty() && selectedIds.isNotEmpty()) {
-            Box(
-                modifier = GlanceModifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Waiting for data\u2026",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 12.sp
-                    )
-                )
+        if (visibleSensors.isEmpty()) {
+            Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Waiting for data\u2026", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
         } else if (useCards) {
-            val cardWidth = availableWidth / columns
+            val cardWidth = (availableWidth / columns) - 4.dp
             val rows = visibleSensors.chunked(columns)
-            rows.forEach { rowItems ->
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp)
-                ) {
-                    rowItems.forEach { sensor ->
-                        Box(
-                            modifier = GlanceModifier
-                                .width(cardWidth - 2.dp)
-                                .background(GlanceTheme.colors.secondaryContainer)
-                                .cornerRadius(10.dp)
-                                .padding(6.dp)
-                        ) {
-                            Column {
-                                Text(
-                                    sensor.name,
-                                    style = TextStyle(
-                                        color = GlanceTheme.colors.onSecondaryContainer,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    maxLines = 1
-                                )
-                                if (showCategory && sensor.category.isNotBlank()) {
+            
+            Column(modifier = GlanceModifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                rows.forEach { rowItems ->
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        rowItems.forEach { sensor ->
+                            Box(
+                                modifier = GlanceModifier
+                                    .width(cardWidth)
+                                    .background(GlanceTheme.colors.secondaryContainer)
+                                    .cornerRadius(12.dp)
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Column {
                                     Text(
-                                        sensor.category,
+                                        sensor.name,
                                         style = TextStyle(
                                             color = GlanceTheme.colors.onSecondaryContainer,
-                                            fontSize = 9.sp
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        maxLines = 1
+                                    )
+                                    if (showCategory && sensor.category.isNotBlank()) {
+                                        Text(
+                                            sensor.category,
+                                            style = TextStyle(
+                                                color = GlanceTheme.colors.onSecondaryContainer,
+                                                fontSize = 8.sp
+                                            ),
+                                            maxLines = 1
+                                        )
+                                    }
+                                    Spacer(modifier = GlanceModifier.height(2.dp))
+                                    Text(
+                                        formatSensorValue(sensor),
+                                        style = TextStyle(
+                                            color = GlanceTheme.colors.onSecondaryContainer,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
                                         ),
                                         maxLines = 1
                                     )
                                 }
-                                Spacer(modifier = GlanceModifier.height(1.dp))
-                                Text(
-                                    formatSensorValue(sensor),
-                                    style = TextStyle(
-                                        color = GlanceTheme.colors.onSecondaryContainer,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    maxLines = 1
-                                )
+                            }
+                            if (rowItems.indexOf(sensor) < rowItems.lastIndex) {
+                                Spacer(modifier = GlanceModifier.width(4.dp))
                             }
                         }
-                    }
-                    repeat(columns - rowItems.size) {
-                        Box(modifier = GlanceModifier.width(cardWidth - 2.dp)) {}
                     }
                 }
             }
         } else {
-            // Compact horizontal mode for small widget
             Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp)
+                modifier = GlanceModifier.fillMaxWidth().padding(4.dp), 
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 visibleSensors.forEachIndexed { index, sensor ->
-                    Column(
-                        modifier = GlanceModifier.padding(horizontal = 3.dp)
-                    ) {
-                        Text(
-                            sensor.name,
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onSurface,
-                                fontSize = 9.sp
-                            ),
-                            maxLines = 1
-                        )
-                        Text(
-                            formatSensorValue(sensor),
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onSurface,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            maxLines = 1
-                        )
+                    Column(modifier = GlanceModifier.padding(horizontal = 6.dp)) {
+                        Text(sensor.name, style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 9.sp), maxLines = 1)
+                        Text(formatSensorValue(sensor), style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                     }
                     if (index < visibleSensors.lastIndex) {
-                        Text(
-                            "\u2502",
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = 13.sp
-                            )
-                        )
+                        Box(modifier = GlanceModifier.width(1.dp).height(16.dp).background(GlanceTheme.colors.outline)) {}
                     }
                 }
             }

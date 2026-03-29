@@ -25,11 +25,12 @@ public partial class RemoteDesktopView : UserControl
     // Single-finger gesture detection
     private Point _touchDownPos;
     private DateTime _touchDownTime;
-    private CancellationTokenSource? _longPressCts;
     private bool _longPressFired;
     private bool _touchMoved;
+    private bool _isTouchDragging;
 
-    private const double TapThreshold = 15;
+    private const double TapThreshold = 10;
+    private const double DragThreshold = 15;
     private const int LongPressMs = 500;
 
     // ═══════════════ Cursor indicator ═══════════════
@@ -37,7 +38,6 @@ public partial class RemoteDesktopView : UserControl
     private const int CursorFadeMs = 3000;
 
     // ═══════════════ Viewport zoom/pan (local) ═══════════════
-    private readonly MatrixTransform _viewportTransform = new();
     private double _viewportZoom = 1.0;
     private double _viewportOffsetX;
     private double _viewportOffsetY;
@@ -160,27 +160,15 @@ public partial class RemoteDesktopView : UserControl
 
     // ═══════════════ Input mode detection ═══════════════
 
-    /// <summary>
-    /// Returns true if this pointer should be treated as a stylus/pen
-    /// (either native PointerType.Pen or user-toggled stylus mode).
-    /// </summary>
     private bool IsPenInput(PointerEventArgs e) =>
         e.Pointer.Type == PointerType.Pen ||
         (DataContext is RemoteDesktopViewModel vm && vm.StylusMode && e.Pointer.Type == PointerType.Touch);
 
-    /// <summary>
-    /// Returns true if this pointer is a touch gesture (not pen/stylus mode).
-    /// </summary>
     private bool IsTouchInput(PointerEventArgs e) =>
         e.Pointer.Type == PointerType.Touch && !IsPenInput(e);
 
     // ═══════════════ Coordinate mapping ═══════════════
 
-    /// <summary>
-    /// Maps a point in the ViewportBorder coordinate space to remote screen coords.
-    /// Uses TransformToVisual to properly invert the RenderTransform (zoom/pan),
-    /// ensuring accurate coordinates at any zoom level.
-    /// </summary>
     private (int x, int y)? MapToRemoteCoords(Point viewportPoint)
     {
         if (DataContext is not RemoteDesktopViewModel vm) return null;
@@ -202,7 +190,7 @@ public partial class RemoteDesktopView : UserControl
         }
         else
         {
-            // Fallback: manual inversion (should not happen if both are in the visual tree)
+            // Fallback: manual inversion
             imgLocal = new Point(
                 (viewportPoint.X - _viewportOffsetX) / _viewportZoom - img.Bounds.Left,
                 (viewportPoint.Y - _viewportOffsetY) / _viewportZoom - img.Bounds.Top);
@@ -239,17 +227,20 @@ public partial class RemoteDesktopView : UserControl
         return (remoteX, remoteY);
     }
 
-    // ═══════════════ Cursor indicator ═══════════════
-
-    /// <summary>
-    /// Shows the cursor crosshair at the given viewport position.
-    /// </summary>
     private void ShowCursorAt(Point viewportPoint)
     {
         if (DataContext is not RemoteDesktopViewModel vm) return;
 
-        vm.CursorIndicatorX = viewportPoint.X;
-        vm.CursorIndicatorY = viewportPoint.Y;
+        // Since the TransformContainer and ViewportBorder are the same size (filling the Panel),
+        // but the TransformContainer is scaled/panned, we must calculate where the cursor
+        // appears in the scaled coordinate space so it matches physical finger position.
+        
+        // We want the indicator to be exactly where the user is touching.
+        // But the indicator is inside the TransformContainer.
+        // So we need the pointer position relative to the UNTRANSFORMED TransformContainer.
+        
+        vm.CursorIndicatorX = (viewportPoint.X - _viewportOffsetX) / _viewportZoom;
+        vm.CursorIndicatorY = (viewportPoint.Y - _viewportOffsetY) / _viewportZoom;
         vm.IsCursorVisible = true;
 
         // Auto-fade after timeout
@@ -271,15 +262,23 @@ public partial class RemoteDesktopView : UserControl
 
     private void ApplyViewportTransform()
     {
-        var img = this.FindControl<Image>("ScreenImage");
-        if (img is null) return;
-
-        var matrix = Matrix.Identity;
-        matrix *= Matrix.CreateScale(_viewportZoom, _viewportZoom);
-        matrix *= Matrix.CreateTranslation(_viewportOffsetX, _viewportOffsetY);
-
-        _viewportTransform.Matrix = matrix;
-        img.RenderTransform = _viewportTransform;
+        var container = this.FindControl<Panel>("TransformContainer");
+        if (container?.RenderTransform is TransformGroup group)
+        {
+            foreach (var t in group.Children)
+            {
+                if (t is ScaleTransform scale)
+                {
+                    scale.ScaleX = _viewportZoom;
+                    scale.ScaleY = _viewportZoom;
+                }
+                else if (t is TranslateTransform trans)
+                {
+                    trans.X = _viewportOffsetX;
+                    trans.Y = _viewportOffsetY;
+                }
+            }
+        }
     }
 
     public void ResetViewport()
@@ -321,7 +320,6 @@ public partial class RemoteDesktopView : UserControl
 
             ShowCursorAt(pointer.Position);
 
-            // Check barrel button for right-click
             int button = pointer.Properties.PointerUpdateKind == PointerUpdateKind.RightButtonPressed ? 2 : 0;
 
             _ = vm.SendInputAsync(new InputEvent
@@ -334,13 +332,13 @@ public partial class RemoteDesktopView : UserControl
             return;
         }
 
-        // ── Touch (no stylus mode) ──
+        // ── Touch ──
         if (IsTouchInput(e))
         {
             if (_activePointers.Count == 2)
             {
                 _isMultiTouchGesture = true;
-                CancelLongPress();
+                _isTouchDragging = false;
 
                 var pts = GetTwoPointerPositions();
                 if (pts is not null)
@@ -361,33 +359,9 @@ public partial class RemoteDesktopView : UserControl
                 _touchMoved = false;
                 _longPressFired = false;
                 _isMultiTouchGesture = false;
+                _isTouchDragging = false;
 
-                _longPressCts?.Cancel();
-                _longPressCts = new CancellationTokenSource();
-                var cts = _longPressCts;
-                var downPos = _touchDownPos;
-                _ = Task.Delay(LongPressMs, cts.Token).ContinueWith(t =>
-                {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
-                    {
-                        if (!t.IsCanceled && !_touchMoved && _activePointers.Count == 1)
-                        {
-                            _longPressFired = true;
-                            var coords = MapToRemoteCoords(downPos);
-                            if (coords is not null)
-                            {
-                                ShowCursorAt(downPos);
-                                await vm.SendInputAsync(new InputEvent
-                                {
-                                    EventType = InputEventTypes.MouseClick,
-                                    X = coords.Value.x,
-                                    Y = coords.Value.y,
-                                    Button = 2,
-                                });
-                            }
-                        }
-                    });
-                }, TaskScheduler.Default);
+                ShowCursorAt(pointer.Position);
             }
             return;
         }
@@ -400,13 +374,11 @@ public partial class RemoteDesktopView : UserControl
 
             ShowCursorAt(pointer.Position);
 
-            int button = pointer.Properties.PointerUpdateKind switch
-            {
-                PointerUpdateKind.LeftButtonPressed => 0,
-                PointerUpdateKind.MiddleButtonPressed => 1,
-                PointerUpdateKind.RightButtonPressed => 2,
-                _ => 0
-            };
+            int button = 0;
+            if (pointer.Properties.IsLeftButtonPressed) button = 0;
+            else if (pointer.Properties.IsMiddleButtonPressed) button = 1;
+            else if (pointer.Properties.IsRightButtonPressed) button = 2;
+            else if (pointer.Properties.PointerUpdateKind == PointerUpdateKind.RightButtonPressed) button = 2;
 
             _ = vm.SendInputAsync(new InputEvent
             {
@@ -416,6 +388,29 @@ public partial class RemoteDesktopView : UserControl
                 Button = button,
             });
         }
+    }
+
+    private async void OnViewportHolding(object? sender, HoldingRoutedEventArgs e)
+    {
+        if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
+        if (e.HoldingState != HoldingState.Started || _touchMoved || _isMultiTouchGesture) return;
+
+        var pos = e.Position;
+        var coords = MapToRemoteCoords(pos);
+        if (coords is null) return;
+
+        _longPressFired = true;
+        _isTouchDragging = true; 
+
+        ShowCursorAt(pos);
+
+        await vm.SendInputAsync(new InputEvent
+        {
+            EventType = InputEventTypes.MouseDown,
+            X = coords.Value.x,
+            Y = coords.Value.y,
+            Button = 2,
+        });
     }
 
     private void OnViewportPointerMoved(object? sender, PointerEventArgs e)
@@ -436,16 +431,15 @@ public partial class RemoteDesktopView : UserControl
             _lastMouseMoveTime = now;
 
             var coords = MapToRemoteCoords(pos);
-            if (coords is not null)
+            if (coords is null) return;
+
+            ShowCursorAt(pos);
+            _ = vm.SendInputAsync(new InputEvent
             {
-                ShowCursorAt(pos);
-                _ = vm.SendInputAsync(new InputEvent
-                {
-                    EventType = InputEventTypes.MouseMove,
-                    X = coords.Value.x,
-                    Y = coords.Value.y,
-                });
-            }
+                EventType = InputEventTypes.MouseMove,
+                X = coords.Value.x,
+                Y = coords.Value.y,
+            });
             return;
         }
 
@@ -485,12 +479,11 @@ public partial class RemoteDesktopView : UserControl
 
                 if (dist > TapThreshold)
                 {
-                    if (!_touchMoved)
-                    {
-                        _touchMoved = true;
-                        CancelLongPress();
-                    }
+                    _touchMoved = true;
+                }
 
+                if (_touchMoved || _isTouchDragging)
+                {
                     var now = DateTime.UtcNow;
                     if (now - _lastMouseMoveTime < MouseMoveThrottle) return;
                     _lastMouseMoveTime = now;
@@ -499,12 +492,27 @@ public partial class RemoteDesktopView : UserControl
                     if (coords is not null)
                     {
                         ShowCursorAt(pos);
-                        _ = vm.SendInputAsync(new InputEvent
+
+                        if (!_isTouchDragging && !_longPressFired && dist > DragThreshold)
                         {
-                            EventType = InputEventTypes.MouseMove,
-                            X = coords.Value.x,
-                            Y = coords.Value.y,
-                        });
+                            _isTouchDragging = true;
+                            _ = vm.SendInputAsync(new InputEvent
+                            {
+                                EventType = InputEventTypes.MouseDown,
+                                X = coords.Value.x,
+                                Y = coords.Value.y,
+                                Button = 0,
+                            });
+                        }
+                        else
+                        {
+                            _ = vm.SendInputAsync(new InputEvent
+                            {
+                                EventType = InputEventTypes.MouseMove,
+                                X = coords.Value.x,
+                                Y = coords.Value.y,
+                            });
+                        }
                     }
                 }
             }
@@ -539,9 +547,6 @@ public partial class RemoteDesktopView : UserControl
             return;
         }
 
-        var viewport = this.FindControl<Border>("ViewportBorder");
-
-        // ── Pen / S-Pen / Stylus Mode ──
         if (IsPenInput(e))
         {
             _activePointers.Remove(e.Pointer.Id);
@@ -555,11 +560,9 @@ public partial class RemoteDesktopView : UserControl
             return;
         }
 
-        // ── Touch ──
         if (IsTouchInput(e))
         {
             _activePointers.Remove(e.Pointer.Id);
-            CancelLongPress();
 
             if (_isMultiTouchGesture)
             {
@@ -568,15 +571,23 @@ public partial class RemoteDesktopView : UserControl
                 return;
             }
 
-            if (_longPressFired)
+            if (_isTouchDragging || _longPressFired)
+            {
+                int button = _longPressFired ? 2 : 0;
+                _ = vm.SendInputAsync(new InputEvent
+                {
+                    EventType = InputEventTypes.MouseUp,
+                    Button = button,
+                });
+                _isTouchDragging = false;
                 return;
+            }
 
             if (!_touchMoved && _activePointers.Count == 0)
             {
                 var elapsed = (DateTime.UtcNow - _touchDownTime).TotalMilliseconds;
                 if (elapsed < LongPressMs)
                 {
-                    // Single tap: perform a left click directly so touch is always interactive.
                     var coords = MapToRemoteCoords(_touchDownPos);
                     if (coords is not null)
                     {
@@ -594,16 +605,24 @@ public partial class RemoteDesktopView : UserControl
             return;
         }
 
-        // ── Mouse ──
         _activePointers.Remove(e.Pointer.Id);
 
-        int mouseButton = e.GetCurrentPoint(this).Properties.PointerUpdateKind switch
+        int mouseButton = 0;
+        var props = e.GetCurrentPoint(this).Properties;
+
+        if (props.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased) mouseButton = 0;
+        else if (props.PointerUpdateKind == PointerUpdateKind.MiddleButtonReleased) mouseButton = 1;
+        else if (props.PointerUpdateKind == PointerUpdateKind.RightButtonReleased) mouseButton = 2;
+        else
         {
-            PointerUpdateKind.LeftButtonReleased => 0,
-            PointerUpdateKind.MiddleButtonReleased => 1,
-            PointerUpdateKind.RightButtonReleased => 2,
-            _ => 0
-        };
+            mouseButton = e.InitialPressMouseButton switch
+            {
+                Avalonia.Input.MouseButton.Left => 0,
+                Avalonia.Input.MouseButton.Middle => 1,
+                Avalonia.Input.MouseButton.Right => 2,
+                _ => 0
+            };
+        }
 
         _ = vm.SendInputAsync(new InputEvent
         {
@@ -616,7 +635,7 @@ public partial class RemoteDesktopView : UserControl
     {
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
 
-        if (_viewportZoom > 1.01)
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             double zoomDelta = e.Delta.Y > 0 ? WheelZoomFactor : -WheelZoomFactor;
             _viewportZoom = Math.Clamp(_viewportZoom + zoomDelta, MinViewportZoom, MaxViewportZoom);
@@ -640,106 +659,65 @@ public partial class RemoteDesktopView : UserControl
                 DeltaX = (int)(e.Delta.X * 120),
                 DeltaY = (int)(e.Delta.Y * 120),
             });
+            e.Handled = true;
         }
     }
 
     // ═══════════════ Keyboard ═══════════════
 
-    // Map Avalonia keys to Windows virtual-key codes (VK_*).
-    // This provides a stable, host-compatible representation instead of using Avalonia's enum values directly.
     private static readonly Dictionary<Key, int> _keyToVirtualKey = new()
     {
-        // Letters
         { Key.A, 0x41 }, { Key.B, 0x42 }, { Key.C, 0x43 }, { Key.D, 0x44 }, { Key.E, 0x45 },
         { Key.F, 0x46 }, { Key.G, 0x47 }, { Key.H, 0x48 }, { Key.I, 0x49 }, { Key.J, 0x4A },
         { Key.K, 0x4B }, { Key.L, 0x4C }, { Key.M, 0x4D }, { Key.N, 0x4E }, { Key.O, 0x4F },
         { Key.P, 0x50 }, { Key.Q, 0x51 }, { Key.R, 0x52 }, { Key.S, 0x53 }, { Key.T, 0x54 },
         { Key.U, 0x55 }, { Key.V, 0x56 }, { Key.W, 0x57 }, { Key.X, 0x58 }, { Key.Y, 0x59 },
         { Key.Z, 0x5A },
-
-        // Number keys (top row)
         { Key.D0, 0x30 }, { Key.D1, 0x31 }, { Key.D2, 0x32 }, { Key.D3, 0x33 }, { Key.D4, 0x34 },
         { Key.D5, 0x35 }, { Key.D6, 0x36 }, { Key.D7, 0x37 }, { Key.D8, 0x38 }, { Key.D9, 0x39 },
-
-        // Numpad digits
         { Key.NumPad0, 0x60 }, { Key.NumPad1, 0x61 }, { Key.NumPad2, 0x62 }, { Key.NumPad3, 0x63 },
         { Key.NumPad4, 0x64 }, { Key.NumPad5, 0x65 }, { Key.NumPad6, 0x66 }, { Key.NumPad7, 0x67 },
         { Key.NumPad8, 0x68 }, { Key.NumPad9, 0x69 },
-
-        // Function keys
         { Key.F1, 0x70 }, { Key.F2, 0x71 }, { Key.F3, 0x72 }, { Key.F4, 0x73 }, { Key.F5, 0x74 },
         { Key.F6, 0x75 }, { Key.F7, 0x76 }, { Key.F8, 0x77 }, { Key.F9, 0x78 }, { Key.F10, 0x79 },
         { Key.F11, 0x7A }, { Key.F12, 0x7B },
-
-        // Control keys
         { Key.Enter, 0x0D }, { Key.Escape, 0x1B }, { Key.Back, 0x08 }, { Key.Tab, 0x09 },
         { Key.Space, 0x20 },
-
-        // Navigation keys
         { Key.Left, 0x25 }, { Key.Up, 0x26 }, { Key.Right, 0x27 }, { Key.Down, 0x28 },
         { Key.Insert, 0x2D }, { Key.Delete, 0x2E }, { Key.Home, 0x24 }, { Key.End, 0x23 },
         { Key.PageUp, 0x21 }, { Key.PageDown, 0x22 },
-
-        // Modifiers
         { Key.LeftShift, 0xA0 }, { Key.RightShift, 0xA1 },
         { Key.LeftCtrl, 0xA2 }, { Key.RightCtrl, 0xA3 },
         { Key.LeftAlt, 0xA4 }, { Key.RightAlt, 0xA5 },
-
-        // Windows / Meta keys (if needed by host)
         { Key.LWin, 0x5B }, { Key.RWin, 0x5C },
-
-        // Common punctuation (subset)
         { Key.OemPlus, 0xBB }, { Key.OemComma, 0xBC }, { Key.OemMinus, 0xBD }, { Key.OemPeriod, 0xBE },
         { Key.OemQuestion, 0xBF }, { Key.OemTilde, 0xC0 },
         { Key.OemOpenBrackets, 0xDB }, { Key.OemPipe, 0xDC }, { Key.OemCloseBrackets, 0xDD }, { Key.OemQuotes, 0xDE },
     };
 
-    private static int MapKeyToVirtualKey(Key key)
-    {
-        return _keyToVirtualKey.TryGetValue(key, out var vk) ? vk : 0;
-    }
+    private static int MapKeyToVirtualKey(Key key) => _keyToVirtualKey.TryGetValue(key, out var vk) ? vk : 0;
 
     private async void OnViewKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
-
         var keyCode = MapKeyToVirtualKey(e.Key);
-        if (keyCode == 0)
-            return;
-
-        await vm.SendInputAsync(new InputEvent
-        {
-            EventType = InputEventTypes.KeyDown,
-            KeyCode = keyCode,
-        });
-
+        if (keyCode == 0) return;
+        await vm.SendInputAsync(new InputEvent { EventType = InputEventTypes.KeyDown, KeyCode = keyCode });
         e.Handled = true;
     }
 
     private async void OnViewKeyUp(object? sender, KeyEventArgs e)
     {
         if (DataContext is not RemoteDesktopViewModel vm || !vm.IsStreaming) return;
-
         var keyCode = MapKeyToVirtualKey(e.Key);
-        if (keyCode == 0)
-            return;
-
-        await vm.SendInputAsync(new InputEvent
-        {
-            EventType = InputEventTypes.KeyUp,
-            KeyCode = keyCode,
-        });
-
+        if (keyCode == 0) return;
+        await vm.SendInputAsync(new InputEvent { EventType = InputEventTypes.KeyUp, KeyCode = keyCode });
         e.Handled = true;
     }
 
     // ═══════════════ Helpers ═══════════════
 
-    private void CancelLongPress()
-    {
-        _longPressCts?.Cancel();
-        _longPressCts = null;
-    }
+    private void CancelLongPress() => _longPressFired = false;
 
     private void NotifyZoomChanged()
     {

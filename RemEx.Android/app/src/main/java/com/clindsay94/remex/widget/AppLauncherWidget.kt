@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -48,20 +47,16 @@ import org.json.JSONObject
 val SELECTED_APPS_KEY = stringPreferencesKey("selected_apps")
 val APP_PATH_PARAM = ActionParameters.Key<String>("app_path")
 
-private val SMALL = DpSize(110.dp, 80.dp)
-private val MEDIUM = DpSize(180.dp, 140.dp)
-private val LARGE = DpSize(250.dp, 200.dp)
-private val XLARGE = DpSize(320.dp, 280.dp)
-
 data class WidgetAppEntry(
     val name: String,
     val path: String,
-    val icon: Bitmap?
+    val icon: Bitmap?,
+    val order: Int = 0
 )
 
 class AppLauncherWidget : GlanceAppWidget() {
 
-    override val sizeMode = SizeMode.Responsive(setOf(SMALL, MEDIUM, LARGE, XLARGE))
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val launcherJson = WidgetDataCache.getLauncherJson(context)
@@ -92,7 +87,8 @@ class AppLauncherWidget : GlanceAppWidget() {
                 WidgetAppEntry(
                     name = obj.optString("displayName", "App"),
                     path = obj.optString("targetPath", ""),
-                    icon = bitmap
+                    icon = bitmap,
+                    order = obj.optInt("order", 0)
                 )
             }
         } catch (e: Exception) {
@@ -114,7 +110,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
             modifier = GlanceModifier.fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(16.dp)
-                .padding(8.dp),
+                .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -128,19 +124,21 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
         return
     }
 
-    val apps = allApps.filter { it.path in selectedPaths }
-    val availableWidth = size.width - 8.dp
-    val availableHeight = size.height - 8.dp
+    val apps = allApps.filter { it.path in selectedPaths }.sortedBy { it.order }
+    
+    val outerPadding = 8.dp
+    val availableWidth = size.width - (outerPadding * 2)
+    val availableHeight = size.height - (outerPadding * 2)
 
-    // Dynamic icon size based on widget dimensions
     val iconSize = when {
-        size.width >= 320.dp -> 52.dp
-        size.width >= 250.dp -> 48.dp
-        size.width >= 180.dp -> 44.dp
-        else -> 38.dp
+        size.width >= 300.dp -> 56.dp
+        size.width >= 200.dp -> 48.dp
+        else -> 42.dp
     }
-
-    val cellSize = iconSize + 4.dp
+    
+    val itemPadding = 4.dp
+    val cellSize = iconSize + (itemPadding * 2)
+    
     val columns = (availableWidth / cellSize).toInt().coerceAtLeast(1)
     val maxRows = (availableHeight / cellSize).toInt().coerceAtLeast(1)
     val maxItems = columns * maxRows
@@ -150,32 +148,24 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
         modifier = GlanceModifier.fillMaxSize()
             .background(GlanceTheme.colors.surface)
             .cornerRadius(16.dp)
-            .padding(4.dp)
+            .padding(outerPadding)
     ) {
-        if (visibleApps.isEmpty() && selectedPaths.isNotEmpty()) {
-            Box(
-                modifier = GlanceModifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Waiting for data\u2026",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 12.sp
-                    )
-                )
+        if (visibleApps.isEmpty()) {
+            Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Waiting for data\u2026", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
         } else {
             val rows = visibleApps.chunked(columns)
             rows.forEach { rowApps ->
                 Row(
-                    modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp)
+                    modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     rowApps.forEach { app ->
                         Box(
                             modifier = GlanceModifier
                                 .size(cellSize)
-                                .padding(2.dp)
+                                .padding(itemPadding)
                                 .clickable(
                                     actionRunCallback<LaunchAppCallback>(
                                         actionParametersOf(APP_PATH_PARAM to app.path)
@@ -187,8 +177,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
                                 Image(
                                     provider = ImageProvider(app.icon),
                                     contentDescription = app.name,
-                                    modifier = GlanceModifier.size(iconSize)
-                                        .cornerRadius(8.dp),
+                                    modifier = GlanceModifier.size(iconSize).cornerRadius(10.dp),
                                     contentScale = ContentScale.Fit
                                 )
                             } else {
@@ -196,7 +185,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
                                     modifier = GlanceModifier
                                         .size(iconSize)
                                         .background(GlanceTheme.colors.tertiaryContainer)
-                                        .cornerRadius(8.dp),
+                                        .cornerRadius(10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -216,8 +205,6 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
         }
     }
 }
-
-private fun (androidx.compose.ui.unit.Dp).toInt(): Int = this.value.toInt()
 
 class LaunchAppCallback : ActionCallback {
     override suspend fun onAction(

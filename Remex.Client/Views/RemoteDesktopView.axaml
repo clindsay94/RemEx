@@ -33,6 +33,15 @@
         <Style Selector="Button.rd-btn-stop:pointerover">
             <Setter Property="Background" Value="#4A2A2A"/>
         </Style>
+
+        <!-- Animation for the remote cursor crosshair -->
+        <Style Selector="Path.cursor-crosshair">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                </Transitions>
+            </Setter>
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">
@@ -123,7 +132,9 @@
         </Border>
 
         <!-- ═══ VIEWPORT ═══ -->
-        <Border x:Name="ViewportBorder" Grid.Row="2" Background="#0A0A14" ClipToBounds="True">
+        <Border x:Name="ViewportBorder" Grid.Row="2" Background="#0A0A14" ClipToBounds="True"
+                Gestures.IsHoldingEnabled="True"
+                Holding="OnViewportHolding">
             <Panel>
                 <!-- Placeholder shown when not streaming -->
                 <StackPanel IsVisible="{Binding !IsStreaming}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
@@ -142,13 +153,46 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Screen image (visible when streaming) -->
-                <Image x:Name="ScreenImage"
-                       Source="{Binding CurrentFrame}"
-                       Stretch="Uniform"
-                       IsVisible="{Binding IsStreaming}"
-                       RenderTransformOrigin="0%,0%"
-                       Cursor="Cross"/>
+                <!-- TRANSFORM CONTAINER (Shared for Image and Indicators) -->
+                <Panel x:Name="TransformContainer" IsVisible="{Binding IsStreaming}" RenderTransformOrigin="0%,0%">
+                    <Panel.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            <TranslateTransform X="0" Y="0"/>
+                        </TransformGroup>
+                    </Panel.RenderTransform>
+
+                    <!-- Screen image -->
+                    <Image x:Name="ScreenImage"
+                           Source="{Binding CurrentFrame}"
+                           Stretch="Uniform"
+                           RenderTransformOrigin="0%,0%"
+                           Cursor="Cross"/>
+
+                    <!-- Remote Cursor Indicator Crosshair (Stays locked to content) -->
+                    <Canvas IsHitTestVisible="False">
+                        <Path Data="M -15 0 L 15 0 M 0 -15 L 0 15"
+                              Classes="cursor-crosshair"
+                              Stroke="{DynamicResource AccentPrimaryBrush}"
+                              StrokeThickness="1.5"
+                              Opacity="{Binding IsCursorVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1.0|0.0'}"
+                              Canvas.Left="{Binding CursorIndicatorX}"
+                              Canvas.Top="{Binding CursorIndicatorY}"/>
+                        
+                        <!-- Outer Target Circle -->
+                        <Ellipse Width="30" Height="30" 
+                                 Stroke="{DynamicResource AccentPrimaryBrush}" 
+                                 StrokeThickness="1" 
+                                 Opacity="0.4"
+                                 IsHitTestVisible="False"
+                                 Canvas.Left="{Binding CursorIndicatorX}" 
+                                 Canvas.Top="{Binding CursorIndicatorY}">
+                            <Ellipse.RenderTransform>
+                                <TranslateTransform X="-15" Y="-15"/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                    </Canvas>
+                </Panel>
 
                 <!-- Error overlay (shown during streaming when no frames arrive) -->
                 <Border IsVisible="{Binding HasStreamError}"
@@ -161,42 +205,21 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Cursor indicator crosshair (shows where remote cursor is) -->
-                <Canvas IsVisible="{Binding IsCursorVisible}" IsHitTestVisible="False">
-                    <!-- Outer ring -->
-                    <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="#80FF00"
-                             Canvas.Left="{Binding CursorIndicatorX}" Canvas.Top="{Binding CursorIndicatorY}">
-                        <Ellipse.RenderTransform>
-                            <TranslateTransform X="-12" Y="-12"/>
-                        </Ellipse.RenderTransform>
-                    </Ellipse>
-                    <!-- Inner dot -->
-                    <Ellipse Width="4" Height="4" Fill="#80FF00"
-                             Canvas.Left="{Binding CursorIndicatorX}" Canvas.Top="{Binding CursorIndicatorY}">
-                        <Ellipse.RenderTransform>
-                            <TranslateTransform X="-2" Y="-2"/>
-                        </Ellipse.RenderTransform>
-                    </Ellipse>
-                </Canvas>
-
                 <!-- Fullscreen floating buttons -->
                 <StackPanel Orientation="Horizontal" Spacing="8"
                             IsVisible="{Binding IsFullScreen}"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Margin="0,8,8,0">
-                    <!-- Compact pad toggle (fullscreen) -->
                     <Button Content="Pad" Command="{Binding ToggleCompactCursorPadCommand}"
                         Opacity="0.7" CornerRadius="8" Padding="10 6"
                         FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
                         ToolTip.Tip="Toggle compact cursor pad"
                         Background="#CC1A1A2E" Foreground="#C0C0FF"/>
-                    <!-- Stylus mode toggle (fullscreen) -->
                     <Button Content="Pen" Command="{Binding ToggleStylusModeCommand}"
                             Opacity="0.7" CornerRadius="8" Padding="10 6"
                             FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
                             ToolTip.Tip="Toggle Stylus Mode (treat touch as pen)"
                             Background="#CC1A1A2E" Foreground="#C0C0FF"/>
-                    <!-- Exit fullscreen -->
                     <Button Content="Exit" Command="{Binding ToggleFullScreenCommand}"
                             Opacity="0.7"
                             Background="#CC1A1A2E" Foreground="#C0C0FF" CornerRadius="8"

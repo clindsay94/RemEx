@@ -222,7 +222,31 @@ public partial class AppLauncherViewModel : ObservableObject
             return;
 
         Launchers.Move(sourceIndex, targetIndex);
+        await PersistOrderAsync();
+    }
 
+    [RelayCommand]
+    private async Task MoveUpAsync(AppEntry entry)
+    {
+        if (entry == null) return;
+        var index = Launchers.IndexOf(entry);
+        if (index <= 0) return;
+        Launchers.Move(index, index - 1);
+        await PersistOrderAsync();
+    }
+
+    [RelayCommand]
+    private async Task MoveDownAsync(AppEntry entry)
+    {
+        if (entry == null) return;
+        var index = Launchers.IndexOf(entry);
+        if (index < 0 || index >= Launchers.Count - 1) return;
+        Launchers.Move(index, index + 1);
+        await PersistOrderAsync();
+    }
+
+    private async Task PersistOrderAsync()
+    {
         // Update Order property for all
         for (int i = 0; i < Launchers.Count; i++)
         {

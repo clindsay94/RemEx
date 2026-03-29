@@ -127,6 +127,10 @@ class SettingsManager(private val context: Context) {
         preferences[SUBNET_MASK_KEY] ?: "255.255.255.0"
     }
 
+    val accessKeyFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[ACCESS_KEY] ?: ""
+    }
+
     val desktopQualityFlow: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[DESKTOP_QUALITY_KEY] ?: 50
     }

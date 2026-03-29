@@ -27,6 +27,15 @@ public partial class MainWindow : Window
         }
     }
 
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        // Don't close, just hide to keep the app alive in the tray.
+        // The user can exit via the tray menu.
+        e.Cancel = true;
+        Hide();
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         if (_themeService is not null)

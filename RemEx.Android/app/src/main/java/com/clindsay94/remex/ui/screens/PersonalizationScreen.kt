@@ -1,55 +1,36 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapesList
+import com.google.android.material.color.utilities.Hct
+import com.google.android.material.color.utilities.TonalPalette
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -60,18 +41,9 @@ fun PersonalizationScreen(
 
     if (settingsState == null) {
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Personalization", fontWeight = FontWeight.Bold) }
-                )
-            }
+            topBar = { TopAppBar(title = { Text("Personalization", fontWeight = FontWeight.Bold) }) }
         ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
@@ -97,20 +69,9 @@ fun PersonalizationScreen(
     var remoteMouseCardShapePreset by remember { mutableFloatStateOf(settings.remoteMouseCardShapePreset) }
 
     LaunchedEffect(
-        themeMode,
-        palette,
-        themeStyle,
-        seedColor,
-        fontFamily,
-        fontScale,
-        cornerRadius,
-        cardOpacity,
-        pcCardShapePreset,
-        telemetryCardShapePreset,
-        appLauncherCardShapePreset,
-        taskManagerCardShapePreset,
-        remoteDesktopCardShapePreset,
-        remoteControlCardShapePreset,
+        themeMode, palette, themeStyle, seedColor, fontFamily, fontScale, cornerRadius,
+        cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset,
+        taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset,
         remoteMouseCardShapePreset
     ) {
         viewModel.save(
@@ -133,11 +94,7 @@ fun PersonalizationScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Personalization", fontWeight = FontWeight.Bold) }
-            )
-        }
+        topBar = { TopAppBar(title = { Text("Personalization", fontWeight = FontWeight.Bold) }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -145,175 +102,211 @@ fun PersonalizationScreen(
                 .padding(padding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                text = "Material 3 Expressive controls",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                text = "Appearance Studio",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp
             )
 
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Theme Mode", fontWeight = FontWeight.SemiBold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("system", "light", "dark").forEach { option ->
-                            FilterChip(
-                                selected = themeMode == option,
-                                onClick = { themeMode = option },
-                                label = { Text(option.replaceFirstChar { it.uppercase() }) }
-                            )
-                        }
-                    }
+            // ═══ Theme Mode & Style ═══
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionHeader("Theme & Strategy", Icons.Default.Tune)
+                    
+                    Text("Display Mode", style = MaterialTheme.typography.labelMedium)
+                    SingleSelectChips(
+                        options = listOf("system", "light", "dark"),
+                        selected = themeMode,
+                        onSelected = { themeMode = it }
+                    )
+
+                    Text("Dynamic Palette Strategy", style = MaterialTheme.typography.labelMedium)
+                    SingleSelectChips(
+                        options = listOf("tonal_spot", "expressive", "fruit_salad", "rainbow", "vibrant"),
+                        selected = themeStyle,
+                        onSelected = { themeStyle = it }
+                    )
                 }
             }
 
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Palette Style", fontWeight = FontWeight.SemiBold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("tonal_spot", "expressive", "fruit_salad", "rainbow", "vibrant").forEach { option ->
-                            FilterChip(
-                                selected = themeStyle == option,
-                                onClick = { themeStyle = option },
-                                label = { Text(option.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { it.uppercase() } }) }
-                            )
-                        }
-                    }
-
-                    Text("Palette Mode", fontWeight = FontWeight.SemiBold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("default", "custom").forEach { option ->
-                            FilterChip(
-                                selected = palette == option,
-                                onClick = { palette = option },
-                                label = { Text(option.replaceFirstChar { it.uppercase() }) }
-                            )
-                        }
-                    }
+            // ═══ Ultimate Color Studio ═══
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionHeader("Color Studio", Icons.Default.Palette)
+                    
+                    Text("Palette Mode", style = MaterialTheme.typography.labelMedium)
+                    SingleSelectChips(
+                        options = listOf("default", "custom"),
+                        selected = palette,
+                        onSelected = { palette = it }
+                    )
 
                     if (palette == "custom") {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Seed Color", style = MaterialTheme.typography.labelMedium)
+                        val currentHct = remember(seedColor) { 
+                            try { Hct.fromInt(seedColor.toColorInt()) } catch (e: Exception) { Hct.fromInt(0xFF6750A4.toInt()) }
+                        }
 
-                        val colors = listOf(
-                            "#6750A4", "#0061A4", "#006A60", "#7D5260",
-                            "#625B71", "#BA1A1A", "#686000", "#006D31"
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Hue Slider
+                        Text("Hue: ${currentHct.hue.roundToInt()}°", style = MaterialTheme.typography.labelSmall)
+                        HueSlider(
+                            value = currentHct.hue.toFloat(),
+                            onValueChange = { newHue ->
+                                val updated = Hct.from(newHue.toDouble(), currentHct.chroma, currentHct.tone)
+                                seedColor = String.format("#%06X", (0xFFFFFF and updated.toInt()))
+                            }
                         )
 
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            colors.forEach { colorHex ->
-                                val colorValue = Color(colorHex.toColorInt())
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(colorValue, MaterialTheme.shapes.small)
-                                        .padding(4.dp)
-                                        .clickable { seedColor = colorHex }
-                                        .let {
-                                            if (seedColor.equals(colorHex, ignoreCase = true)) {
-                                                it.background(
-                                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                                    MaterialTheme.shapes.small
-                                                )
-                                            } else it
-                                        }
-                                )
-                            }
+                        // Tonal Row
+                        Text("Tonal Range", style = MaterialTheme.typography.labelSmall)
+                        TonalRow(hct = currentHct)
+
+                        // Mini Dashboard Preview
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            MiniCardPreview(
+                                seedColor = seedColor,
+                                shapePreset = telemetryCardShapePreset,
+                                cornerRadius = cornerRadius,
+                                opacity = cardOpacity
+                            )
                         }
 
                         OutlinedTextField(
                             value = seedColor,
-                            onValueChange = { seedColor = it },
-                            label = { Text("Hex Color Code") },
+                            onValueChange = { if (it.length <= 7) seedColor = it },
+                            label = { Text("Manual Hex Code") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                 }
             }
 
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Typography", fontWeight = FontWeight.SemiBold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("default", "roboto", "lato", "montserrat", "poppins", "mono", "cursive").forEach { option ->
-                            FilterChip(
-                                selected = fontFamily == option,
-                                onClick = { fontFamily = option },
-                                label = { Text(option.replaceFirstChar { it.uppercase() }) }
-                            )
-                        }
-                    }
+            // ═══ Individual Card Shapes ═══
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SectionHeader("Expressive Geometry", Icons.Default.Tune)
+                    
+                    Text("Corner Base: ${cornerRadius}dp", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = cornerRadius.toFloat(), onValueChange = { cornerRadius = it.toInt() }, valueRange = 4f..36f)
 
-                    Text("Font Scale: ${"%.2f".format(fontScale)}", fontWeight = FontWeight.SemiBold)
-                    Slider(value = fontScale, onValueChange = { fontScale = it }, valueRange = 0.85f..1.4f)
-                }
-            }
-
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Card General Style", fontWeight = FontWeight.SemiBold)
-                    Text("Corner Radius: ${cornerRadius}dp", style = MaterialTheme.typography.bodySmall)
-                    Slider(value = cornerRadius.toFloat(), onValueChange = { cornerRadius = it.toInt() }, valueRange = 0f..40f)
-
-                    Text("Opacity: ${"%.2f".format(cardOpacity)}", style = MaterialTheme.typography.bodySmall)
-                    Slider(value = cardOpacity, onValueChange = { cardOpacity = it }, valueRange = 0.4f..1.0f)
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Individual Card Shapes", fontWeight = FontWeight.Bold)
-
-                    val cards = listOf(
-                        "PC Status" to { v: Float -> pcCardShapePreset = v } to pcCardShapePreset,
-                        "Telemetry" to { v: Float -> telemetryCardShapePreset = v } to telemetryCardShapePreset,
-                        "App Launcher" to { v: Float -> appLauncherCardShapePreset = v } to appLauncherCardShapePreset,
-                        "Task Manager" to { v: Float -> taskManagerCardShapePreset = v } to taskManagerCardShapePreset,
-                        "Remote Desktop" to { v: Float -> remoteDesktopCardShapePreset = v } to remoteDesktopCardShapePreset,
-                        "Remote Control" to { v: Float -> remoteControlCardShapePreset = v } to remoteControlCardShapePreset,
-                        "Remote Mouse" to { v: Float -> remoteMouseCardShapePreset = v } to remoteMouseCardShapePreset
+                    val shapeConfigs = listOf(
+                        "Telemetry cards" to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
+                        "App Launcher" to appLauncherCardShapePreset to { v: Float -> appLauncherCardShapePreset = v },
+                        "Task Manager" to taskManagerCardShapePreset to { v: Float -> taskManagerCardShapePreset = v },
+                        "PC Connection Orb" to pcCardShapePreset to { v: Float -> pcCardShapePreset = v }
                     )
 
                     val maxShapes = (materialShapesList.size - 1).toFloat()
 
-                    cards.forEach { (pair, current) ->
-                        val (label, setter) = pair
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(label, style = MaterialTheme.typography.labelLarge)
-                        
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Slider(
-                                value = current,
-                                onValueChange = { setter(it) },
-                                valueRange = 0f..maxShapes,
-                                modifier = Modifier.weight(1f)
-                            )
-                            
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(cardShape(current, cornerRadius))
-                                    .background(MaterialTheme.colorScheme.primary)
-                            )
+                    shapeConfigs.forEach { (config, setter) ->
+                        val (label, current) = config
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Slider(value = current, onValueChange = setter, valueRange = 0f..maxShapes, modifier = Modifier.weight(1f))
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(cardShape(current, cornerRadius))
+                                        .background(MaterialTheme.colorScheme.primary)
+                                )
+                            }
                         }
                     }
                 }
             }
+            
+            Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+private fun SingleSelectChips(options: List<String>, selected: String, onSelected: (String) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEach { option ->
+            FilterChip(
+                selected = selected == option,
+                onClick = { onSelected(option) },
+                label = { Text(option.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
+    val gradient = remember {
+        Brush.horizontalGradient(
+            (0..360).map { Color.hsv(it.toFloat(), 1f, 1f) }
+        )
+    }
+    Box(modifier = Modifier.fillMaxWidth().height(32.dp).clip(CircleShape).background(gradient)) {
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = 0f..360f,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Color.Transparent,
+                inactiveTrackColor = Color.Transparent
+            ),
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+private fun TonalRow(hct: Hct) {
+    val tones = listOf(10, 30, 50, 70, 90, 95)
+    val palette = remember(hct) { TonalPalette.fromHueAndChroma(hct.hue, hct.chroma) }
+    
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        tones.forEach { tone ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(Color(palette.tone(tone)))
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiniCardPreview(seedColor: String, shapePreset: Float, cornerRadius: Int, opacity: Float) {
+    val previewColor = remember(seedColor) { try { Color(seedColor.toColorInt()) } catch (e: Exception) { Color(0xFF6750A4.toInt()) } }
+    
+    Box(
+        modifier = Modifier
+            .size(width = 140.dp, height = 100.dp)
+            .clip(cardShape(shapePreset, cornerRadius))
+            .background(previewColor.copy(alpha = opacity))
+            .padding(12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Box(modifier = Modifier.size(16.dp).background(Color.White.copy(alpha = 0.5f), CircleShape))
+                Box(modifier = Modifier.width(32.dp).height(8.dp).background(Color.White.copy(alpha = 0.3f), CircleShape))
+            }
+            Text("PREVIEW", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
+            Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(Color.White.copy(alpha = 0.2f), CircleShape))
         }
     }
 }

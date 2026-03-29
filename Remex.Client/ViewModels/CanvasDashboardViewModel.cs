@@ -688,8 +688,10 @@ public partial class CanvasDashboardViewModel : ObservableObject
         // Also update local storage so they stay in sync even when offline next time
         _layoutService.RequestSave(profile);
 
-        // Refresh home pinned sensors if it's currently showing or cached
-        _shell.NavigateToHomeCommand.Execute(null);
+        // Refresh home pinned sensors if the home view is cached, but do NOT
+        // forcibly navigate — the user may be on a different screen.
+        if (_shell.CurrentView is HomeViewModel home)
+            home.RefreshPinnedSensors();
 
         RefreshSensorActivationItems();
     }

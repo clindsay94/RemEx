@@ -47,7 +47,17 @@ public class WindowsScreenCaptureService : IScreenCaptureService
             using var screenBitmap = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(screenBitmap))
             {
-                g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                try
+                {
+                    // Add CaptureBlt to include layered windows and bypass some DWM single-window MPO exclusions
+                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("CopyFromScreen failed (likely due to MPO or terminal focus). Attempting fallback without CaptureBlt. Error: {Msg}", ex.Message);
+                    // Fallback to standard copy if CaptureBlt caused issues
+                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                }
             }
 
             Bitmap outputBitmap;

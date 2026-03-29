@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using System;
@@ -14,32 +15,12 @@ namespace Remex.Client;
 
 public partial class App : Application
 {
+    private TrayFlyoutWindow? _flyout;
     public static IServiceProvider Services { get; private set; } = null!;
     
-    /// <summary>
-    /// When set by the platform-specific entry point (e.g. Desktop Program.cs),
-    /// overrides the client's default host address to the embedded host's actual port.
-    /// This ensures the client connects to the in-process host even if a service
-    /// is running on the default port.
-    /// </summary>
     public static int? OverrideHostPort { get; set; }
-
-    /// <summary>
-    /// Extension point for platform-specific services (e.g. desktop-only icon extractors)
-    /// </summary>
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
-
-    /// <summary>
-    /// When set by the platform host, allows the client to stop the embedded host
-    /// (e.g. to free the port before installing the Windows Service).
-    /// </summary>
     public static Func<Task>? StopEmbeddedHostAsync { get; set; }
-
-    /// <summary>
-    /// Unique instance ID for the embedded host in this process (if any).
-    /// Set by the Desktop entry point so the remote desktop client can
-    /// detect self-connections and prevent infinite mirror.
-    /// </summary>
     public static string? EmbeddedHostInstanceId { get; set; }
 
     public override void Initialize()
@@ -49,20 +30,24 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        }
+
         var collection = new ServiceCollection();
 
-        // Register Core Services
         collection.AddSingleton<ILauncherStorageService, LauncherStorageService>();
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
 
-        // Register ViewModels
         collection.AddSingleton<ConnectionViewModel>();
         collection.AddTransient<AppLauncherViewModel>();
         collection.AddTransient<AddProgramViewModel>();
         collection.AddTransient<TaskManagerViewModel>();
+        collection.AddSingleton<HomeViewModel>();
         collection.AddSingleton<ShellViewModel>();
 
         RegisterPlatformServices?.Invoke(collection);
@@ -71,68 +56,113 @@ public partial class App : Application
         CommandModeContext.ConfigureServices(collection, configBuilder.Build());
 
         Services = collection.BuildServiceProvider();
-
         CommandModeContext.StartListener(Services);
 
-        // Load persisted profile BEFORE resolving ShellViewModel so it has the correct data.
-        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
-        var profile = Task.Run(async () => await layoutService.LoadAsync()).GetAwaiter().GetResult();
-
-        var viewModel = Services.GetRequiredService<ShellViewModel>();
-
-        // Desktop override takes priority over persisted address.
-        if (OverrideHostPort.HasValue)
-        {
-            var port = OverrideHostPort.Value;
-            viewModel.Connection.HostAddress =
-                $"ws://localhost:{port}{Remex.Core.RemexConstants.WebSocketPath}";
-        }
-        else if (!string.IsNullOrWhiteSpace(profile.HostAddress))
-        {
-            viewModel.Connection.HostAddress = profile.HostAddress;
-        }
-
-        // Auto-connect to the host.
-        _ = viewModel.Connection.AutoConnectAsync();
-
-        // Subscribe to updates to refresh Android widgets
-        if (OperatingSystem.IsAndroid())
-        {
-            viewModel.Connection.TelemetryReceived += (t) => TriggerPlatformWidgetUpdate();
-            viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
-        }
-
-
-        // Inject Material 3 theme on Android
-        if (OperatingSystem.IsAndroid())
-        {
-            var uri = new Uri("avares://Remex.Client/Themes/Material3Android.axaml");
-            var m3Styles = new Avalonia.Markup.Xaml.Styling.StyleInclude(uri) { Source = uri };
-            this.Styles.Add(m3Styles);
-        }
-
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = viewModel,
-            };
-        }
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
-        {
-            singleViewPlatform.MainView = new ShellView
-            {
-                DataContext = viewModel,
-            };
-        }
+        _ = InitializeAppAsync();
 
         base.OnFrameworkInitializationCompleted();
-        }
+    }
 
-        public static Action? RequestPlatformWidgetUpdate { get; set; }
-
-        private void TriggerPlatformWidgetUpdate()
+    private async Task InitializeAppAsync()
+    {
+        try
         {
-        RequestPlatformWidgetUpdate?.Invoke();
+            var layoutService = Services.GetRequiredService<DashboardLayoutService>();
+            var profile = await layoutService.LoadAsync();
+
+            var viewModel = Services.GetRequiredService<ShellViewModel>();
+
+            if (OverrideHostPort.HasValue)
+            {
+                viewModel.Connection.HostAddress = $"ws://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
+            }
+            else if (profile != null && !string.IsNullOrWhiteSpace(profile.HostAddress))
+            {
+                viewModel.Connection.HostAddress = profile.HostAddress;
+            }
+
+            _ = viewModel.Connection.AutoConnectAsync();
+
+            if (OperatingSystem.IsAndroid())
+            {
+                viewModel.Connection.TelemetryReceived += (t) => TriggerPlatformWidgetUpdate();
+                viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
+            }
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                {
+                    if (desktop.MainWindow == null)
+                    {
+                        desktop.MainWindow = new MainWindow { DataContext = viewModel };
+                    }
+                    desktop.MainWindow.Show();
+                }
+                else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+                {
+                    singleViewPlatform.MainView = new ShellView { DataContext = viewModel };
+                }
+            });
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to initialize app: {ex.Message}");
         }
+    }
+
+    private void OnTrayIconClicked(object? sender, EventArgs e)
+    {
+        ToggleLiveGlance();
+    }
+
+    private void OnToggleLiveGlance(object? sender, EventArgs e) => ToggleLiveGlance();
+
+    private void ToggleLiveGlance()
+    {
+        if (_flyout == null)
+        {
+            _flyout = new TrayFlyoutWindow
+            {
+                DataContext = Services.GetRequiredService<HomeViewModel>()
+            };
+        }
+
+        if (_flyout.IsVisible)
+        {
+            _flyout.Hide();
+        }
+        else
+        {
+            _flyout.ShowAtTray();
+        }
+    }
+
+    private void OnShowMainWindow(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            if (desktop.MainWindow == null)
+            {
+                var viewModel = Services.GetRequiredService<ShellViewModel>();
+                desktop.MainWindow = new MainWindow { DataContext = viewModel };
+            }
+            
+            desktop.MainWindow.Show();
+            desktop.MainWindow.Activate();
+            desktop.MainWindow.WindowState = WindowState.Normal;
+        }
+    }
+
+    private void OnExitApp(object? sender, EventArgs e)
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            _flyout?.Close();
+            desktop.Shutdown();
+        }
+    }
+
+    public static Action? RequestPlatformWidgetUpdate { get; set; }
+    private void TriggerPlatformWidgetUpdate() => RequestPlatformWidgetUpdate?.Invoke();
+}

@@ -37,6 +37,10 @@ public class WindowsTelemetryService : ITelemetryService
     private DateTime _lastGadgetLabelUpdate = DateTime.MinValue;
     private readonly TimeSpan GadgetLabelUpdateInterval = TimeSpan.FromSeconds(5);
 
+    // Cached fallback payload to return when WMI/PerformanceCounter stalls
+    private TelemetryPayload? _cachedFallback;
+    private static readonly TimeSpan WmiFallbackTimeout = TimeSpan.FromSeconds(2);
+
     public WindowsTelemetryService(ILogger<WindowsTelemetryService> logger)
     {
         _logger = logger;
@@ -73,9 +77,24 @@ public class WindowsTelemetryService : ITelemetryService
         }
     }
 
-    public Task<TelemetryPayload> GetTelemetryAsync(CancellationToken ct = default)
+    public async Task<TelemetryPayload> GetTelemetryAsync(CancellationToken ct = default)
     {
-        var payload = ReadWmiFallback(); // Baseline fallback
+        // Run WMI/PerformanceCounter reads on a separate thread with a timeout
+        // to prevent thread-pool starvation when WMI is slow/stalled.
+        TelemetryPayload payload;
+        try
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(WmiFallbackTimeout);
+            payload = await Task.Run(ReadWmiFallback, timeoutCts.Token);
+            _cachedFallback = payload;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
+                WmiFallbackTimeout.TotalSeconds);
+            payload = _cachedFallback ?? new TelemetryPayload();
+        }
 
         if (_hwinfoAvailable)
         {
@@ -83,7 +102,7 @@ public class WindowsTelemetryService : ITelemetryService
             {
                 if (TryReadHwInfo(payload, out var updatedPayload))
                 {
-                    return Task.FromResult(updatedPayload);
+                    return updatedPayload;
                 }
             }
             catch (FileNotFoundException)
@@ -99,7 +118,7 @@ public class WindowsTelemetryService : ITelemetryService
             }
         }
 
-        return Task.FromResult(payload);
+        return payload;
     }
 
     private bool TryReadHwInfo(TelemetryPayload fallback, out TelemetryPayload result)

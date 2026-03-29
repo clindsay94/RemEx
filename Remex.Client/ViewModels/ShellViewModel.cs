@@ -155,7 +155,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToHome()
     {
-        _homeViewModel ??= new HomeViewModel(Connection, this);
+        _homeViewModel ??= Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<HomeViewModel>(App.Services);
         _homeViewModel.RefreshPinnedSensors();
         SetTransitionAndNavigate(0, _homeViewModel);
     }

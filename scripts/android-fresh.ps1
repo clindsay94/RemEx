@@ -20,10 +20,8 @@ if (-not (Test-Path $gradlew)) {
 $task = switch ("$Configuration|$($Install.IsPresent)") {
     "Debug|True" { "remexFreshInstallDebug" }
     "Debug|False" { "remexFreshAssembleDebug" }
-    "Release|True" {
-        throw "Install is only supported for Debug. Use -Configuration Release without -Install."
-    }
-    default { "remexFreshAssembleRelease" }
+    "Release|True" { "remexFreshAssembleRelease" }
+    "Release|False" { "remexFreshAssembleRelease" }
 }
 
 $args = @($task)
@@ -43,6 +41,19 @@ try {
     & $gradlew @args
     if ($LASTEXITCODE -ne 0) {
         throw "Gradle task failed with exit code $LASTEXITCODE"
+    }
+
+    if ($Install -and $Configuration -eq "Release") {
+        Write-Host "Installing signed Release APK..." -ForegroundColor Cyan
+        $apkPath = Join-Path $gradleRoot "app\build\outputs\apk\release\app-release.apk"
+        if (Test-Path $apkPath) {
+            & adb install -r $apkPath
+            if ($LASTEXITCODE -ne 0) {
+                throw "ADB installation failed with exit code $LASTEXITCODE"
+            }
+        } else {
+            throw "Release APK not found at $apkPath"
+        }
     }
 }
 finally {
