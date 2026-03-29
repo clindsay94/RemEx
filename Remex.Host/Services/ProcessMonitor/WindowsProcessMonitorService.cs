@@ -108,7 +108,7 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             }
 
             // Cleanup old trackers
-            var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
+            var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k));
             foreach (var k in toRemove) _cpuTrackers.Remove(k);
 
             return results;
