@@ -342,9 +342,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             var scriptPath = FindInstallScript();
             if (scriptPath != null)
             {
+                var sanitizedUser = (user ?? string.Empty).Replace("'", "''");
                 var (_, grantOut) = await RunElevatedAsync(
                     "powershell.exe",
-                    $"-ExecutionPolicy Bypass -NoProfile -Command \"& {{ . '{scriptPath}'; Grant-LogOnAsService '{user}' }}\"");
+                    $"-ExecutionPolicy Bypass -NoProfile -Command \"& {{ . '{scriptPath}'; Grant-LogOnAsService '{sanitizedUser}' }}\"");
                 AppendLog(grantOut);
             }
             else
@@ -487,9 +488,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         var scriptPath = FindInstallScript();
         if (scriptPath != null)
         {
+            var sanitizedUser = (user ?? string.Empty).Replace("'", "''");
             var (_, grantOut) = await RunElevatedAsync(
                 "powershell.exe",
-                $"-ExecutionPolicy Bypass -NoProfile -Command \"& {{ . '{scriptPath}'; Grant-LogOnAsService '{user}' }}\"");
+                $"-ExecutionPolicy Bypass -NoProfile -Command \"& {{ . '{scriptPath}'; Grant-LogOnAsService '{sanitizedUser}' }}\"");
             AppendLog(grantOut);
         }
 
