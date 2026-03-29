@@ -62,34 +62,44 @@ public class WidgetConfigActivity : Activity
             _widgetType = "Sensor";
             title.Text = "Configure Sensor Widget";
             LoadAvailableSensors();
+            UpdateListView();
         }
         else if (providerName.EndsWith("RemoteControlWidgetProvider"))
         {
             _widgetType = "Remote";
             title.Text = "Configure Remote Control";
-            LoadAvailableActions();
+            _ = InitializeRemoteActionsAsync();
         }
         else if (providerName.EndsWith("ResourceWidgetProvider"))
         {
             _widgetType = "Resource";
             title.Text = "Configure Resource Widget";
             _availableItems = new List<string> { "Top 3 CPU Processes", "Top 3 RAM Processes" };
+            UpdateListView();
         }
         else
         {
             global::Android.Util.Log.Debug("RemexWidget", "Unknown provider, defaulting to Sensor list logic");
             _widgetType = "Sensor";
             LoadAvailableSensors();
-        }
-
-        var adapter = new ArrayAdapter<string>(this, global::Android.Resource.Layout.SimpleListItemMultipleChoice, _availableItems);
-        if (_itemsList != null)
-        {
-            _itemsList.Adapter = adapter;
-            _itemsList.ChoiceMode = ChoiceMode.Multiple;
+            UpdateListView();
         }
 
         saveBtn.Click += (s, e) => SaveAndFinish();
+    }
+
+    private async Task InitializeRemoteActionsAsync()
+    {
+        await LoadAvailableActionsAsync();
+        RunOnUiThread(UpdateListView);
+    }
+
+    private void UpdateListView()
+    {
+        if (_itemsList == null) return;
+        var adapter = new ArrayAdapter<string>(this, global::Android.Resource.Layout.SimpleListItemMultipleChoice, _availableItems);
+        _itemsList.Adapter = adapter;
+        _itemsList.ChoiceMode = ChoiceMode.Multiple;
     }
 
     private void LoadAvailableSensors()
@@ -106,7 +116,7 @@ public class WidgetConfigActivity : Activity
         }
     }
 
-    private void LoadAvailableActions()
+    private async Task LoadAvailableActionsAsync()
     {
         _availableItems = new List<string> { "Lock", "Sleep", "Shutdown", "Restart", "WOL" };
         
@@ -114,7 +124,7 @@ public class WidgetConfigActivity : Activity
         if (App.Services != null)
         {
             var launcherStorage = App.Services.GetRequiredService<Remex.Core.Services.ILauncherStorageService>();
-            var launchers = Task.Run(async () => await launcherStorage.LoadEntriesAsync()).GetAwaiter().GetResult();
+            var launchers = await launcherStorage.LoadEntriesAsync();
             foreach (var app in launchers)
             {
                 _availableItems.Add($"Launch: {app.DisplayName}");
