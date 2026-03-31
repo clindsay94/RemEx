@@ -150,6 +150,10 @@ public partial class CanvasDashboardViewModel : ObservableObject
             // But for now, let's just ensure we stay in sync.
 
             RefreshSensorActivationItems();
+            
+            // Final refresh of home pinned sensors after local load.
+            if (_shell.CurrentView is HomeViewModel home)
+                home.RefreshPinnedSensors();
         });
     }
 
@@ -351,6 +355,10 @@ public partial class CanvasDashboardViewModel : ObservableObject
 
         card.IsPinnedToHome = !card.IsPinnedToHome;
         TriggerSave();
+
+        // Refresh home pinned sensors immediately.
+        if (_shell.CurrentView is HomeViewModel home)
+            home.RefreshPinnedSensors();
     }
 
     // ═══════════════ Navigation ═══════════════

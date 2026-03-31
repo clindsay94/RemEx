@@ -19,7 +19,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
-enum class HomeCardType { PC_STATUS, TELEMETRY }
+enum class HomeCardType { PC_STATUS, TELEMETRY, WAKE_ON_LAN }
 enum class TelemetryDisplayMode { VALUE, GAUGE, LINE }
 
 data class TelemetryState(
@@ -67,7 +67,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _homeCards = MutableStateFlow(defaultCards())
     val homeCards: StateFlow<List<HomeCardState>> = _homeCards.asStateFlow()
 
-    private val _enabledCardIds = MutableStateFlow(setOf("pc_status", "sensor:cpu", "sensor:gpu", "sensor:ram"))
+    private val _enabledCardIds = MutableStateFlow(setOf("pc_status", "wake_pc", "sensor:cpu", "sensor:gpu", "sensor:ram"))
     val enabledCardIds: StateFlow<Set<String>> = _enabledCardIds.asStateFlow()
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
@@ -241,30 +241,44 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         val nextOffset = (_homeCards.value.size * 18).toFloat()
-        val card = if (cardId == "pc_status") {
-            HomeCardState(
-                id = "pc_status",
-                title = "PC Status",
-                type = HomeCardType.PC_STATUS,
-                xDp = 12f + nextOffset,
-                yDp = 12f + nextOffset,
-                widthDp = 220f,
-                heightDp = 140f
-            )
-        } else {
-            val sensor = _telemetrySensors.value.firstOrNull { it.id == cardId }
-                ?: return
-            HomeCardState(
-                id = cardId,
-                title = sensor.name,
-                type = HomeCardType.TELEMETRY,
-                sensorId = sensor.id,
-                xDp = 12f + nextOffset,
-                yDp = 12f + nextOffset,
-                widthDp = 170f,
-                heightDp = 150f,
-                displayMode = TelemetryDisplayMode.GAUGE
-            )
+        val card = when (cardId) {
+            "pc_status" -> {
+                HomeCardState(
+                    id = "pc_status",
+                    title = "PC Status",
+                    type = HomeCardType.PC_STATUS,
+                    xDp = 12f + nextOffset,
+                    yDp = 12f + nextOffset,
+                    widthDp = 220f,
+                    heightDp = 140f
+                )
+            }
+            "wake_pc" -> {
+                HomeCardState(
+                    id = "wake_pc",
+                    title = "Wake PC",
+                    type = HomeCardType.WAKE_ON_LAN,
+                    xDp = 12f + nextOffset,
+                    yDp = 12f + nextOffset,
+                    widthDp = 160f,
+                    heightDp = 140f
+                )
+            }
+            else -> {
+                val sensor = _telemetrySensors.value.firstOrNull { it.id == cardId }
+                    ?: return
+                HomeCardState(
+                    id = cardId,
+                    title = sensor.name,
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = sensor.id,
+                    xDp = 12f + nextOffset,
+                    yDp = 12f + nextOffset,
+                    widthDp = 170f,
+                    heightDp = 150f,
+                    displayMode = TelemetryDisplayMode.GAUGE
+                )
+            }
         }
 
         _homeCards.update { it + card }
@@ -340,6 +354,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val obj = array.optJSONObject(i) ?: continue
                 val type = when (obj.optString("type")) {
                     "PC_STATUS" -> HomeCardType.PC_STATUS
+                    "WAKE_ON_LAN" -> HomeCardType.WAKE_ON_LAN
                     else -> HomeCardType.TELEMETRY
                 }
                 val mode = when (obj.optString("displayMode")) {
@@ -456,6 +471,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     xDp = 12f,
                     yDp = 12f,
                     widthDp = 220f,
+                    heightDp = 140f
+                ),
+                HomeCardState(
+                    id = "wake_pc",
+                    title = "Wake PC",
+                    type = HomeCardType.WAKE_ON_LAN,
+                    xDp = 244f,
+                    yDp = 12f,
+                    widthDp = 160f,
                     heightDp = 140f
                 ),
                 HomeCardState(

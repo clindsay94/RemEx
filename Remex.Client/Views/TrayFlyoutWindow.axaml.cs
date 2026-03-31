@@ -58,4 +58,9 @@ public partial class TrayFlyoutWindow : Window
             desktop.MainWindow.WindowState = WindowState.Normal;
         }
     }
+
+    private void OnCloseFlyout(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Hide();
+    }
 }

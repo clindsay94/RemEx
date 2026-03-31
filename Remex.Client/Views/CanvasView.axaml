@@ -265,7 +265,10 @@
 
                                         <Viewbox Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6">
                                             <StackPanel>
-                                                <TextBlock Text="{Binding Sensor.Name, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="📌" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
+                                                    <TextBlock Text="{Binding Sensor.Name, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
                                                     <TextBlock FontSize="18" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                         <TextBlock.Text>

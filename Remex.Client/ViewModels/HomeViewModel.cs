@@ -45,6 +45,9 @@ public partial class HomeViewModel : ObservableObject
     // ═══════════════ Navigation ═══════════════
 
     [RelayCommand]
+    private void NavigateToHome() => _shell.NavigateToHome();
+
+    [RelayCommand]
     private void NavigateToCanvas() => _shell.NavigateToCanvas();
 
     [RelayCommand]

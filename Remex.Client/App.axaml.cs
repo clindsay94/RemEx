@@ -71,6 +71,7 @@ public partial class App : Application
             var profile = await layoutService.LoadAsync();
 
             var viewModel = Services.GetRequiredService<ShellViewModel>();
+            viewModel.NavigateToHome();
 
             if (OverrideHostPort.HasValue)
             {
@@ -120,11 +121,14 @@ public partial class App : Application
 
     private void ToggleLiveGlance()
     {
+        var homeVm = Services.GetRequiredService<HomeViewModel>();
+        homeVm.RefreshPinnedSensors();
+
         if (_flyout == null)
         {
             _flyout = new TrayFlyoutWindow
             {
-                DataContext = Services.GetRequiredService<HomeViewModel>()
+                DataContext = homeVm
             };
         }
 

@@ -56,6 +56,7 @@ private data class RemoteCommandCard(
 )
 
 private val remoteCommandCards = listOf(
+    RemoteCommandCard("wake", "Wake PC", "WakeOnLan", Icons.Default.Sensors, false),
     RemoteCommandCard("lock", "Lock PC", "Lock", Icons.Default.Lock, false),
     RemoteCommandCard("shutdown", "Shutdown", "Shutdown", Icons.Default.PowerSettingsNew, true),
     RemoteCommandCard("restart", "Restart", "Restart", Icons.Default.RestartAlt, true),
@@ -146,7 +147,9 @@ fun RemoteControlScreen(
                         shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius),
                         onTimerTextChanged = { timerInputs[card.id] = it },
                         onPrimaryClick = {
-                            if (card.requiresConfirmation) {
+                            if (card.action == "WakeOnLan") {
+                                viewModel.wakePc()
+                            } else if (card.requiresConfirmation) {
                                 activeConfirmationId = if (activeConfirmationId == card.id) null else card.id
                             } else {
                                 viewModel.sendSystemCommand(card.action)

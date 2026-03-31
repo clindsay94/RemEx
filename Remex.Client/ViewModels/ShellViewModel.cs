@@ -101,9 +101,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
         _ = _canvasViewModel.InitializeAsync();
-
-        // Default to Home on startup.
-        NavigateToHome();
     }
 
     public void Dispose()

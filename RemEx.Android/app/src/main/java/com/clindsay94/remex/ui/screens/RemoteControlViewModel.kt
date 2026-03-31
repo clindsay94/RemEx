@@ -1,20 +1,18 @@
 package com.clindsay94.remex.ui.screens
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.clindsay94.remex.RemexCoreClient
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import org.json.JSONObject
-
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import com.clindsay94.remex.data.SettingsManager
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 class RemoteControlViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -31,6 +29,31 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
 
     private val _commandStatus = MutableStateFlow<String?>(null)
     val commandStatus: StateFlow<String?> = _commandStatus.asStateFlow()
+
+    fun wakePc() {
+        viewModelScope.launch {
+            if (!RemexCoreClient.isLibraryLoaded) {
+                _commandStatus.value = "Native library not loaded"
+                return@launch
+            }
+
+            try {
+                val mac = settingsManager.macAddressFlow.first()
+                val broadcast = settingsManager.broadcastIpFlow.first()
+                if (mac.isNotBlank()) {
+                    val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9)
+                    val response = JSONObject(responseJson)
+                    val success = response.optBoolean("success", false)
+                    val message = response.optString("message", "Wake packet sent")
+                    _commandStatus.value = if (success) "Success: $message" else "Failed: $message"
+                } else {
+                    _commandStatus.value = "Failed: MAC address not configured in settings"
+                }
+            } catch (e: Exception) {
+                _commandStatus.value = "Error: ${e.message ?: "Unknown error"}"
+            }
+        }
+    }
 
     fun sendMouseMove(deltaX: Int, deltaY: Int) {
         sendInput(JSONObject().apply {

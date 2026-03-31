@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -74,7 +75,8 @@ fun DashboardScreen(
 
     val availableCards = remember(telemetrySensors) {
         buildList {
-            add(AvailableCardItem("pc_status", "PC Status", "Wake, connection state"))
+            add(AvailableCardItem("pc_status", "PC Status", "Connection status orb"))
+            add(AvailableCardItem("wake_pc", "Wake PC", "Send WOL magic packet"))
             telemetrySensors.forEach { sensor ->
                 add(
                     AvailableCardItem(
@@ -205,6 +207,12 @@ fun DashboardScreen(
                                     shapePreset = pcCardShapePreset,
                                     cornerRadius = cornerRadius,
                                     onToggle = { viewModel.toggleConnection() },
+                                    onWake = { viewModel.wakePc() }
+                                )
+                            }
+
+                            "WAKE_ON_LAN" -> {
+                                WakeOnLanCard(
                                     onWake = { viewModel.wakePc() }
                                 )
                             }
@@ -468,12 +476,24 @@ private fun ConnectionOrbCard(
                 fontWeight = FontWeight.Black,
                 color = orbColor
             )
+        }
+    }
+}
 
-            if (!isConnected && !isConnecting) {
-                TextButton(onClick = onWake) {
-                    Text("WAKE PC", style = MaterialTheme.typography.labelSmall)
-                }
-            }
+@Composable
+private fun WakeOnLanCard(onWake: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Button(
+            onClick = onWake,
+            modifier = Modifier.padding(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        ) {
+            Icon(Icons.Default.PowerSettingsNew, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("WAKE PC", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -36,11 +36,14 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 
 data class WidgetRemoteCommand(val id: String, val title: String, val action: String)
 
 val WIDGET_REMOTE_COMMANDS = listOf(
+    WidgetRemoteCommand("wake", "Wake PC", "WakeOnLan"),
     WidgetRemoteCommand("lock", "Lock PC", "Lock"),
     WidgetRemoteCommand("shutdown", "Shutdown", "Shutdown"),
     WidgetRemoteCommand("restart", "Restart", "Restart"),
@@ -182,11 +185,20 @@ class RemoteCommandCallback : ActionCallback {
     ) {
         val action = parameters[COMMAND_ACTION_PARAM] ?: return
         if (RemexCoreClient.isLibraryLoaded) {
-            val request = JSONObject().apply {
-                put("action", action)
-                put("parameters", JSONObject())
+            if (action == "WakeOnLan") {
+                val settings = SettingsManager(context)
+                val mac = settings.macAddressFlow.first()
+                val broadcast = settings.broadcastIpFlow.first()
+                if (mac.isNotBlank()) {
+                    RemexCoreClient.WakePc(mac, broadcast, 9)
+                }
+            } else {
+                val request = JSONObject().apply {
+                    put("action", action)
+                    put("parameters", JSONObject())
+                }
+                RemexCoreClient.SendCommand(request.toString())
             }
-            RemexCoreClient.SendCommand(request.toString())
         }
     }
 }
