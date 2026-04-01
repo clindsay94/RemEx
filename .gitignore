@@ -80,11 +80,14 @@ run_*.txt
 hwinfo_reg.txt
 publish/
 RemEx.Android/app/src/main/jniLibs/
-.agent/
+*.agent/*
 .gemini_security/
 .superpowers/
 conductor/ 
-/docs/superpowers/
+*/docs/*
+*/build/*
+*.github/*
+*.vscode/*
 
 # Node.js
 node_modules/
@@ -96,3 +99,4 @@ package.json
 dotnet-install.sh
 /Remex.Client.Android.old
 libgcc.a
+.idea
