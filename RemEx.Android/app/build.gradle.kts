@@ -1,3 +1,5 @@
+import com.android.build.api.variant.VariantOutputConfiguration
+import com.android.build.api.variant.impl.VariantOutputImpl
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
@@ -13,6 +15,42 @@ val androidLocalProperties = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
 
+// ── Version management ──────────────────────────────────────────────────────
+// Source of truth: app/version.properties (tracked in git).
+// - remexFreshAssembleRelease  → builds with current version, no changes.
+// - remexPublishRelease        → bumps versionCode+1, minor+1 (patch→0),
+//                                writes back to version.properties, then builds.
+val versionPropsFile = file("version.properties")
+val versionProps = Properties().apply {
+    if (versionPropsFile.exists()) versionPropsFile.inputStream().use(::load)
+}
+
+var remexVersionCode = versionProps.getProperty("versionCode", "1").toInt()
+var remexVersionName = versionProps.getProperty("versionName", "1.0.0")
+
+val isPublishBuild = gradle.startParameter.taskNames.any {
+    it.contains("remexPublishRelease", ignoreCase = true)
+}
+
+if (isPublishBuild) {
+    remexVersionCode += 1
+    val parts = remexVersionName.split(".").toMutableList()
+    if (parts.size >= 3) {
+        parts[1] = (parts[1].toInt() + 1).toString()
+        parts[2] = "0"
+    }
+    remexVersionName = parts.joinToString(".")
+
+    versionProps.setProperty("versionCode", remexVersionCode.toString())
+    versionProps.setProperty("versionName", remexVersionName)
+    versionPropsFile.writer().use { w ->
+        w.write("versionCode=$remexVersionCode\n")
+        w.write("versionName=$remexVersionName\n")
+    }
+    logger.lifecycle("remexPublishRelease: version bumped to $remexVersionName (versionCode=$remexVersionCode)")
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 android {
     namespace = "com.clindsay94.remex"
     compileSdk = 36
@@ -21,8 +59,8 @@ android {
         applicationId = "com.clindsay94.remex"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = remexVersionCode
+        versionName = remexVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,7 +77,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -86,11 +125,11 @@ android {
 androidComponents {
     onVariants { variant ->
         val mainOutput =
-            variant.outputs.single { it.outputType == com.android.build.api.variant.VariantOutputConfiguration.OutputType.SINGLE }
-        val globalVersionName = android.defaultConfig.versionName ?: "1.0"
+            variant.outputs.single { it.outputType == VariantOutputConfiguration.OutputType.SINGLE }
+        val globalVersionName = "${android.defaultConfig.versionName}"
 
         // Use set on the file name property directly using the newer variant API
-        if (mainOutput is com.android.build.api.variant.impl.VariantOutputImpl) {
+        if (mainOutput is VariantOutputImpl) {
             mainOutput.outputFileName.set("RemEx-V${globalVersionName}-${variant.name}.apk")
         }
     }
@@ -476,6 +515,38 @@ val remexFreshAssembleRelease by tasks.registering {
     dependsOn("assembleRelease")
     dependsOn("bundleRelease")
     dependsOn(verifyRemexCoreInReleaseApk)
+}
+
+val remexPublishRelease by tasks.registering {
+    group = "remex"
+    description =
+        "Bump version (versionCode+1, minor+1, patch→0), clean build release APK + AAB, and verify"
+    dependsOn("clean")
+    dependsOn("assembleRelease")
+    dependsOn("bundleRelease")
+    dependsOn(verifyRemexCoreInReleaseApk)
+
+    doLast {
+        val apkDir = layout.buildDirectory.get().asFile.resolve("outputs/apk/release")
+        val aabDir = layout.buildDirectory.get().asFile.resolve("outputs/bundle/release")
+        val apk = apkDir.listFiles()
+            ?.filter { it.extension.equals("apk", ignoreCase = true) }
+            ?.maxByOrNull { it.lastModified() }
+        val aab = aabDir.listFiles()
+            ?.filter { it.extension.equals("aab", ignoreCase = true) }
+            ?.maxByOrNull { it.lastModified() }
+
+        println()
+        println("═══════════════════════════════════════════════════════")
+        println("  RemEx v$remexVersionName (versionCode=$remexVersionCode)")
+        println("───────────────────────────────────────────────────────")
+        if (apk != null) println("  APK: ${apk.absolutePath}")
+        if (aab != null) println("  AAB: ${aab.absolutePath}")
+        println("───────────────────────────────────────────────────────")
+        println("  Upload the AAB to Google Play Console.")
+        println("  version.properties has been updated — commit the change.")
+        println("═══════════════════════════════════════════════════════")
+    }
 }
 
 tasks.matching { it.name == "assembleDebug" }.configureEach {

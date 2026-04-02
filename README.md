@@ -198,6 +198,15 @@ Or run Gradle tasks directly from `RemEx.Android/`:
 .\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
 ```
 
+### Publish to Google Play Console
+
+```powershell
+# From RemEx.Android/ — auto-bumps versionCode+1 and minor version, builds signed APK + AAB
+.\gradlew.bat remexPublishRelease --rerun-tasks --no-configuration-cache
+```
+
+This reads `app/version.properties`, increments `versionCode` by 1 and the minor version (resetting patch to 0), writes the new values back, and produces a signed AAB ready to upload to the Play Console. Commit the updated `version.properties` after publishing.
+
 The custom `SyncRemexCoreSoTask` and `VerifyRemexCoreInApkTask` Gradle tasks enforce SHA-256 hash matching between the published `.so` and the APK-embedded copy, failing fast on any stale artifact.
 
 ### Install as a Windows Service

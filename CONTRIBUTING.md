@@ -116,9 +116,21 @@ These tasks:
 
 The .NET version is set once in `Directory.Build.props` and applied to all .NET projects automatically.
 
-**Android Native App (`RemEx.Android`):** The Gradle version must be kept in sync manually:
-- `versionCode` — Integer that must strictly increase with each release (compare against all prior releases)
-- `versionName` — Human-readable version string; should match `.NET` version in `Directory.Build.props` (e.g., `"1.1"`)
+**Android Native App (`RemEx.Android`):** Version is managed in `app/version.properties` and read automatically by the Gradle build:
+
+```properties
+versionCode=3
+versionName=1.1.1
+```
+
+Two release workflows are available:
+
+| Command | Version Behavior | Outputs |
+|:--------|:-----------------|:--------|
+| `.\gradlew remexFreshAssembleRelease` | Uses current version as-is | APK + AAB |
+| `.\gradlew remexPublishRelease` | Auto-bumps: versionCode+1, minor+1, patch→0 | APK + AAB (ready for Play Console upload) |
+
+For example, if `version.properties` has `versionCode=3` and `versionName=1.1.1`, running `remexPublishRelease` will build with `versionCode=4` and `versionName=1.2.0`, and write the new values back to `version.properties`. Commit the updated file after publishing.
 
 ### Themes (Avalonia)
 
