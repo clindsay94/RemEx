@@ -33,9 +33,6 @@ public class WindowsTelemetryService : ITelemetryService
     private long _lastBytesReceived;
     private long _lastBytesSent;
     private DateTime _lastNetworkPoll = DateTime.MinValue;
-    private readonly HashSet<string> _hwinfoGadgetLabels = new(StringComparer.OrdinalIgnoreCase);
-    private DateTime _lastGadgetLabelUpdate = DateTime.MinValue;
-    private readonly TimeSpan GadgetLabelUpdateInterval = TimeSpan.FromSeconds(5);
 
     // Cached fallback payload to return when WMI/PerformanceCounter stalls
     private TelemetryPayload? _cachedFallback;
@@ -125,9 +122,6 @@ public class WindowsTelemetryService : ITelemetryService
     {
         result = fallback;
 
-        // Sync user's intended gadget labels every 5s before parsing shared memory
-        UpdateGadgetLabels();
-
         try
         {
             using var mmf = MemoryMappedFile.OpenExisting(HwInfoSharedMemoryName, MemoryMappedFileRights.Read);
@@ -170,12 +164,6 @@ public class WindowsTelemetryService : ITelemetryService
                     
                     if (!string.IsNullOrWhiteSpace(label))
                     {
-                        // Filter: Only include sensors that the user has explicitly enabled in HWInfo Shared Memory gadgets
-                        if (_hwinfoGadgetLabels.Count > 0 && !_hwinfoGadgetLabels.Contains(label))
-                        {
-                            continue;
-                        }
-
                         var value = FormatSensorValue(reading.Value, reading.szUnit, reading.tReading);
                         sensors.Add(new SensorReading
                         {
@@ -210,43 +198,6 @@ public class WindowsTelemetryService : ITelemetryService
         {
             _logger.LogTrace(ex, "HWiNFO parsing failed.");
             return false;
-        }
-    }
-
-    private void UpdateGadgetLabels()
-    {
-        if (DateTime.UtcNow - _lastGadgetLabelUpdate < GadgetLabelUpdateInterval)
-            return;
-
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\HWiNFO64\VSB");
-                if (key != null)
-                {
-                    _hwinfoGadgetLabels.Clear();
-                    foreach (var valueName in key.GetValueNames())
-                    {
-                        if (valueName.StartsWith("Label", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var label = key.GetValue(valueName) as string;
-                            if (!string.IsNullOrWhiteSpace(label))
-                            {
-                                _hwinfoGadgetLabels.Add(label);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogTrace(ex, "Failed to read HWiNFO VSB registry keys for gadget labels.");
-        }
-        finally
-        {
-            _lastGadgetLabelUpdate = DateTime.UtcNow;
         }
     }
 

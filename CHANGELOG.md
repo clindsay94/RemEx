@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.1.1] - 2026-04-02
+
+### Added
+
+- **TCP Command Authentication** — The TCP external network listener on port 8338 now validates an optional `AccessKey` parameter in command requests (matching the WebSocket access key). All Android app TCP commands automatically inject the stored access key.
+- **GitHub Actions CI Workflow** — New `build-native-android.yml` workflow for building the native Kotlin/Compose Android app on every push and PR affecting `RemEx.Android/`.
+
+### Fixed
+
+**Android Native App (`RemEx.Android`)**
+- **Task Manager Card Shape Persistence** — `PersonalizationScreen` was silently resetting `taskManagerCardShapePreset` to zero on every save. Now preserves the stored value across preference changes.
+- **Backup Security** — `AndroidManifest.xml` allowed all app data (including access keys) to be backed up to Google Cloud. Updated `backup_rules.xml` and `data_extraction_rules.xml` to exclude `datastore/settings.preferences_pb`.
+- **Thread Safety in `Theme.kt`** — `morphCache` LinkedHashMap was not synchronized; concurrent Compose recomposition could cause crashes. Wrapped with `Collections.synchronizedMap()` and added synchronized block for compound operations.
+- **Missing `first()` Import** — `TaskManagerViewModel.kt` was missing `import kotlinx.coroutines.flow.first`.
+- **Build Tool Release Candidate** — Updated `buildToolsVersion` from `"37.0.0 rc2"` (pre-release) to `"36.0.0"` (stable).
+- **Stale Build Comment** — Removed misleading "Temporarily swapped to arm64-v8a" emulator screenshot comment.
+
+**Host Service (`Remex.Host`)**
+- **RemoteDesktopHandler Thread Leak** — Background task that consumed the input queue never received a completion signal, leaking a long-running thread on each remote desktop session. Implemented `IDisposable` to call `_inputQueue.CompleteAdding()` on session end.
+- **Non-Volatile `_streaming` Bool** — `RemoteDesktopHandler._streaming` flag was not marked volatile and shared between concurrent tasks. Removed the flag entirely in favor of the existing `CancellationTokenSource`.
+- **Dispose Race Condition** — `ExternalNetworkListenerService.StopListening()` returned without waiting for the background listen task to finish, causing port availability races. Added proper `Task.Wait()` with timeout after cancellation.
+
+**Desktop Client (`Remex.Client`)**
+- **ThemeService Code Duplication** — `SetBaseTheme()` and `ApplyBaseThemeInternal()` had identical theme-switching logic. Extracted to a shared `ApplyBaseThemeCore()` method.
+
+**Android CLI Tooling**
+- **Version Code Mismatch** — Android `versionCode = 1` and `versionName = "1.0"` while the release was v1.1. Updated to `versionCode = 2` and `versionName = "1.1"`. APK built from v1.0 config would block user upgrades.
+
+### Changed
+
+- **Documentation Updates** — Updated README.md and CONTRIBUTING.md to clarify access key injection into TCP commands and Android version code syncing requirements.
+- **Dependency Updates** — Upgraded `material` to stable `1.13.0` (no longer alpha); `androidx-compose-material3` bumped to `1.5.0-alpha16`. Added explanatory comments in `libs.versions.toml` documenting the Expressive APIs used in `Theme.kt`.
+
+---
+
 ## [1.1.1] - 2026-03-25
 
 ### Fixed

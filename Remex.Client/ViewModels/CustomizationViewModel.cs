@@ -27,6 +27,7 @@ public partial class CustomizationViewModel : ObservableObject
         var settings = _layoutService.CurrentProfile.Customization;
         _selectedTheme = Enum.TryParse<AppTheme>(settings.ThemeId, true, out var theme) ? theme : AppTheme.BaseDarkGlass;
         _cornerRadius = settings.CornerRadius;
+        _remoteCardCornerRadius = settings.RemoteCardCornerRadius;
         _glassOpacity = settings.GlassOpacity;
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
@@ -38,6 +39,9 @@ public partial class CustomizationViewModel : ObservableObject
 
     [ObservableProperty]
     private double _cornerRadius;
+
+    [ObservableProperty]
+    private double _remoteCardCornerRadius;
 
     [ObservableProperty]
     private double _glassOpacity;
@@ -53,6 +57,7 @@ public partial class CustomizationViewModel : ObservableObject
 
     partial void OnSelectedThemeChanged(AppTheme value) => ApplyAndSave();
     partial void OnCornerRadiusChanged(double value) => ApplyAndSave();
+    partial void OnRemoteCardCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
     partial void OnGlowStrengthChanged(double value) => ApplyAndSave();
     partial void OnAccentColorChanged(string value) => ApplyAndSave();
@@ -64,6 +69,7 @@ public partial class CustomizationViewModel : ObservableObject
         {
             ThemeId = SelectedTheme.ToString(),
             CornerRadius = CornerRadius,
+            RemoteCardCornerRadius = RemoteCardCornerRadius,
             GlassOpacity = GlassOpacity,
             GlowStrength = GlowStrength,
             AccentColor = AccentColor,
@@ -90,24 +96,28 @@ public partial class CustomizationViewModel : ObservableObject
             {
                 case AppTheme.CyberNOC:
                     CornerRadius = 2;
+                    RemoteCardCornerRadius = 4;
                     AccentColor = "#00F3FF";
                     GlowStrength = 10;
                     GlassOpacity = 0.05;
                     break;
                 case AppTheme.SolarFlare:
                     CornerRadius = 24;
+                    RemoteCardCornerRadius = 48;
                     AccentColor = "#FFB800";
                     GlowStrength = 2;
                     GlassOpacity = 0.8;
                     break;
                 case AppTheme.Monolith:
                     CornerRadius = 8;
+                    RemoteCardCornerRadius = 12;
                     AccentColor = "#0A84FF";
                     GlowStrength = 0;
                     GlassOpacity = 1.0;
                     break;
                 case AppTheme.BaseDarkGlass:
                     CornerRadius = 16;
+                    RemoteCardCornerRadius = 24;
                     AccentColor = "#6C4CFF";
                     GlowStrength = 2;
                     GlassOpacity = 0.1;

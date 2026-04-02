@@ -56,6 +56,8 @@ fun PersonalizationScreen(
     var palette by remember { mutableStateOf(settings.themePalette) }
     var themeStyle by remember { mutableStateOf(settings.themeStyle) }
     var seedColor by remember { mutableStateOf(settings.themeSeedColor) }
+    var themeSeedChroma by remember { mutableFloatStateOf(settings.themeSeedChroma) }
+    var themeContrast by remember { mutableFloatStateOf(settings.themeContrast) }
     var fontFamily by remember { mutableStateOf(settings.fontFamily) }
     var fontScale by remember { mutableFloatStateOf(settings.fontScale) }
     var cornerRadius by remember { mutableIntStateOf(settings.cardCornerRadius) }
@@ -63,15 +65,14 @@ fun PersonalizationScreen(
     var pcCardShapePreset by remember { mutableFloatStateOf(settings.pcCardShapePreset) }
     var telemetryCardShapePreset by remember { mutableFloatStateOf(settings.telemetryCardShapePreset) }
     var appLauncherCardShapePreset by remember { mutableFloatStateOf(settings.appLauncherCardShapePreset) }
-    var taskManagerCardShapePreset by remember { mutableFloatStateOf(settings.taskManagerCardShapePreset) }
     var remoteDesktopCardShapePreset by remember { mutableFloatStateOf(settings.remoteDesktopCardShapePreset) }
     var remoteControlCardShapePreset by remember { mutableFloatStateOf(settings.remoteControlCardShapePreset) }
     var remoteMouseCardShapePreset by remember { mutableFloatStateOf(settings.remoteMouseCardShapePreset) }
 
     LaunchedEffect(
-        themeMode, palette, themeStyle, seedColor, fontFamily, fontScale, cornerRadius,
+        themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius,
         cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset,
-        taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset,
+        remoteDesktopCardShapePreset, remoteControlCardShapePreset,
         remoteMouseCardShapePreset
     ) {
         viewModel.save(
@@ -79,6 +80,8 @@ fun PersonalizationScreen(
             themePalette = palette,
             themeStyle = themeStyle,
             themeSeedColor = seedColor,
+            themeSeedChroma = themeSeedChroma,
+            themeContrast = themeContrast,
             fontFamily = fontFamily,
             fontScale = fontScale,
             cardCornerRadius = cornerRadius,
@@ -86,7 +89,7 @@ fun PersonalizationScreen(
             pcCardShapePreset = pcCardShapePreset,
             telemetryCardShapePreset = telemetryCardShapePreset,
             appLauncherCardShapePreset = appLauncherCardShapePreset,
-            taskManagerCardShapePreset = taskManagerCardShapePreset,
+            taskManagerCardShapePreset = settings.taskManagerCardShapePreset,
             remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
             remoteControlCardShapePreset = remoteControlCardShapePreset,
             remoteMouseCardShapePreset = remoteMouseCardShapePreset
@@ -145,8 +148,13 @@ fun PersonalizationScreen(
                     )
 
                     if (palette == "custom") {
-                        val currentHct = remember(seedColor) { 
-                            try { Hct.fromInt(seedColor.toColorInt()) } catch (e: Exception) { Hct.fromInt(0xFF6750A4.toInt()) }
+                        val currentHct = remember(seedColor, themeSeedChroma) {
+                            try {
+                                val baseHct = Hct.fromInt(seedColor.toColorInt())
+                                Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone)
+                            } catch (e: Exception) {
+                                Hct.fromInt(0xFF6750A4.toInt())
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -159,6 +167,22 @@ fun PersonalizationScreen(
                                 val updated = Hct.from(newHue.toDouble(), currentHct.chroma, currentHct.tone)
                                 seedColor = String.format("#%06X", (0xFFFFFF and updated.toInt()))
                             }
+                        )
+
+                        // Chroma Slider
+                        Text("Vibrancy (Chroma): ${themeSeedChroma.roundToInt()}", style = MaterialTheme.typography.labelSmall)
+                        Slider(
+                            value = themeSeedChroma,
+                            onValueChange = { themeSeedChroma = it },
+                            valueRange = 0f..120f
+                        )
+
+                        // Contrast Slider
+                        Text("Contrast: ${"%.2f".format(themeContrast)}", style = MaterialTheme.typography.labelSmall)
+                        Slider(
+                            value = themeContrast,
+                            onValueChange = { themeContrast = it },
+                            valueRange = -1.0f..1.0f
                         )
 
                         // Tonal Row
@@ -196,10 +220,13 @@ fun PersonalizationScreen(
                     Text("Corner Base: ${cornerRadius}dp", style = MaterialTheme.typography.labelMedium)
                     Slider(value = cornerRadius.toFloat(), onValueChange = { cornerRadius = it.toInt() }, valueRange = 4f..36f)
 
+                    Text("Card Opacity: ${(cardOpacity * 100).roundToInt()}%", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = cardOpacity, onValueChange = { cardOpacity = it }, valueRange = 0.1f..1.0f)
+
                     val shapeConfigs = listOf(
                         "Telemetry cards" to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
                         "App Launcher" to appLauncherCardShapePreset to { v: Float -> appLauncherCardShapePreset = v },
-                        "Task Manager" to taskManagerCardShapePreset to { v: Float -> taskManagerCardShapePreset = v },
+                        "Remote Commands" to remoteControlCardShapePreset to { v: Float -> remoteControlCardShapePreset = v },
                         "PC Connection Orb" to pcCardShapePreset to { v: Float -> pcCardShapePreset = v }
                     )
 

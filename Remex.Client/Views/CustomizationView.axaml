@@ -61,6 +61,14 @@
                     </Grid>
 
                     <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Remote Card Shape" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="200" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding RemoteCardCornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="Glass Opacity" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center"/>
@@ -99,10 +107,10 @@
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="Background Mode" VerticalAlignment="Center"/>
                         <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" HorizontalAlignment="Left" Width="200">
-                            <ComboBoxItem Content="Mica"/>
-                            <ComboBoxItem Content="Acrylic"/>
-                            <ComboBoxItem Content="Custom Gradient"/>
-                            <ComboBoxItem Content="Wallpaper"/>
+                            <x:String>Mica</x:String>
+                            <x:String>Acrylic</x:String>
+                            <x:String>Gradient</x:String>
+                            <x:String>Wallpaper</x:String>
                         </ComboBox>
                     </Grid>
                 </StackPanel>

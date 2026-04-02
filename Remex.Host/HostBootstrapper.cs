@@ -148,7 +148,7 @@ public static class HostBootstrapper
             }
 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
-            var handler = new RemoteDesktopHandler(
+            using var handler = new RemoteDesktopHandler(
                 context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
                 context.RequestServices.GetRequiredService<IScreenCaptureService>(),
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),

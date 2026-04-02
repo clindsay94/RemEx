@@ -2,20 +2,39 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+RemEx is a remote access and command execution tool. We take security seriously and support the latest version with security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 1.1.x   | :white_check_mark: |
+| 1.0.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability in RemEx, please **do not** open a public GitHub issue. Instead, use GitHub's private vulnerability reporting:
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+1. Go to the [Security Advisory](https://github.com/clindsay94/RemEx/security/advisories) page
+2. Click "Report a vulnerability"
+3. Provide a detailed description, steps to reproduce, and potential impact
+
+**What to expect:**
+- **Acknowledgment:** Within 48-72 hours
+- **Investigation:** We'll assess the severity and scope
+- **Timeline:** Critical vulnerabilities will be patched within 30 days; high-severity issues within 60 days
+- **Credit:** You'll be credited in the security advisory (unless you prefer anonymity)
+- **Disclosure:** We follow responsible disclosure—vulnerabilities will not be publicly discussed until a patch is available
+
+Thank you for helping keep RemEx secure.
+
+## Known Security Considerations
+
+### Access Key Transmission
+
+The `AccessKey` used for WebSocket and TCP command authentication is:
+
+- **Transmitted in plaintext** over the WebSocket connection as a query-string parameter (`?key=<value>`).
+- **Stored in plaintext** in the client's `DashboardProfile.json` file on disk.
+- **Stored in plaintext** in the Android app's DataStore preferences.
+
+RemEx is designed for **trusted LAN environments only**. The access key provides a barrier against casual unauthorized access on the local network but is not a substitute for network-level encryption. If your threat model requires protection against network sniffing, use a VPN or tunnel (e.g., WireGuard) between client and host.

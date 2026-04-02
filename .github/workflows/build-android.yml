@@ -1,49 +1,50 @@
-name: Build Android APK
+name: Build Android (Dev/Test)
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'RemEx.Android/**'
+      - '.github/workflows/build-android.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'RemEx.Android/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: RemEx.Android
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Install Android Workload
-      run: dotnet workload install android
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('RemEx.Android/**/*.gradle.kts', 'RemEx.Android/gradle/libs.versions.toml') }}
 
-    - name: Generate Debug Keystore
-      run: |
-        keytool -genkey -v -keystore ${{ github.workspace }}/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+      - name: Build debug APK (Android-only, no .NET native lib)
+        run: ./gradlew assembleDebug -x syncRemexCoreDebugSo -x mergeDebugNativeLibs
+        # Note: This CI build skips the Remex.Core native library sync.
+        # The .NET NativeAOT cross-compilation requires a full .NET + Android NDK
+        # setup that is not configured in this workflow. This build verifies
+        # Kotlin/Compose compilation only.
 
-    - name: Publish Android App
-      run: >
-        dotnet publish Remex.Client.Android/Remex.Client.Android.csproj
-        -c Release
-        -f net10.0-android
-        -p:AndroidPackageFormat=apk
-        -p:AndroidKeyStore=true
-        -p:AndroidSigningKeyStore=${{ github.workspace }}/debug.keystore
-        -p:AndroidSigningKeyAlias=androiddebugkey
-        -p:AndroidSigningKeyPass=android
-        -p:AndroidSigningStorePass=android
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Remex-Android-APK
-        path: |
-          **/*-Signed.apk
+      - name: Run unit tests
+        run: ./gradlew test

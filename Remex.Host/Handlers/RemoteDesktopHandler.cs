@@ -15,20 +15,20 @@ using Remex.Host;
 
 namespace Remex.Host.Handlers;
 
-public sealed class RemoteDesktopHandler
+public sealed class RemoteDesktopHandler : IDisposable
 {
     private readonly ILogger<RemoteDesktopHandler> _logger;
     private readonly IScreenCaptureService _screenCapture;
     private readonly IInputSimulationService _inputSimulation;
     private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
+    private readonly Task _inputProcessingTask;
 
     private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
 
     private int _quality = 50;
     private double _scale = 0.5;
     private int _targetFps = 10;
-    private bool _streaming;
 
 
     public RemoteDesktopHandler(
@@ -43,7 +43,7 @@ public sealed class RemoteDesktopHandler
         _hostCapabilitiesProvider = hostCapabilitiesProvider;
 
         // Start dedicated input processing thread
-        Task.Factory.StartNew(ProcessInputQueue, TaskCreationOptions.LongRunning);
+        _inputProcessingTask = Task.Factory.StartNew(ProcessInputQueue, TaskCreationOptions.LongRunning);
     }
 
     private void ProcessInputQueue()
@@ -96,7 +96,6 @@ public sealed class RemoteDesktopHandler
                         if (message.DesktopConfig is not null)
                             ApplyConfig(message.DesktopConfig);
 
-                        _streaming = true;
                         _logger.LogInformation("Desktop streaming started (quality={Q}, scale={S}, fps={F}).", _quality, _scale, _targetFps);
 
                         // Send screen metadata
@@ -155,7 +154,7 @@ public sealed class RemoteDesktopHandler
         }
         finally
         {
-            _streaming = false;
+            _inputQueue.CompleteAdding();
             _logger.LogInformation("Remote desktop client disconnected.");
         }
     }
@@ -201,7 +200,7 @@ public sealed class RemoteDesktopHandler
         bool errorReported = false;
         int totalFramesSent = 0;
 
-        while (_streaming && webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
             stopwatch.Restart();
 
@@ -317,7 +316,6 @@ public sealed class RemoteDesktopHandler
                 if (message is null)
                 {
                     // Client disconnected
-                    _streaming = false;
                     await streamCts.CancelAsync();
                     break;
                 }
@@ -337,14 +335,13 @@ public sealed class RemoteDesktopHandler
                         break;
 
                     case MessageTypes.DesktopStop:
-                        _streaming = false;
                         await streamCts.CancelAsync();
                         return;
                 }
             }
         }
         catch (OperationCanceledException) { /* normal */ }
-        catch (WebSocketException) { _streaming = false; }
+        catch (WebSocketException) { }
     }
 
     private void DispatchInput(InputEvent input)
@@ -399,5 +396,19 @@ public sealed class RemoteDesktopHandler
         _targetFps = Math.Clamp(config.TargetFps, 1, 360);
 
         _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}", _quality, _scale, _targetFps);
+    }
+
+    public void Dispose()
+    {
+        _inputQueue.CompleteAdding();
+        try
+        {
+            _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
+        }
+        catch (AggregateException)
+        {
+            // Expected if the task faulted or was already completed.
+        }
+        _inputQueue.Dispose();
     }
 }

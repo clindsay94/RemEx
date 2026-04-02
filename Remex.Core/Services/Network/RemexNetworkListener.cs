@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     private readonly ILogger<RemexNetworkListener> _logger;
     private readonly ISystemCommandService _commandService;
     private readonly IWakeOnLanService _wakeOnLanService;
+    private readonly byte[] _accessKeyBytes;
     private TcpListener? _tcpListener;
     private CancellationTokenSource? _cts;
     private Task? _listenTask;
@@ -35,6 +37,8 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         _logger = logger;
         _commandService = commandService;
         _wakeOnLanService = wakeOnLanService;
+        var accessKey = _configuration["Remex:AccessKey"] ?? "";
+        _accessKeyBytes = Encoding.UTF8.GetBytes(accessKey);
     }
 
     public async Task StartListeningAsync(CancellationToken cancellationToken)
@@ -82,13 +86,18 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         {
             try
             {
-                _listenTask.Wait(TimeSpan.FromSeconds(2));
+                _listenTask.Wait(TimeSpan.FromSeconds(5));
             }
-            catch (Exception ex)
+            catch (AggregateException ex)
             {
                 _logger.LogWarning(ex, "Error while waiting for listen task to stop");
             }
+            catch (ObjectDisposedException)
+            {
+                // Task was already disposed
+            }
         }
+        _tcpListener = null;
     }
 
     private async Task AcceptClientsAsync(CancellationToken token)
@@ -151,6 +160,11 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 if (request == null)
                 {
                     response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
+                }
+                else if (!ValidateAccessKey(request))
+                {
+                    _logger.LogWarning("Rejected command '{Action}' from client: invalid or missing access key.", request.Action);
+                    response = new CommandResponse(false, "Unauthorized", "Invalid or missing access key.");
                 }
                 else
                 {
@@ -238,6 +252,23 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             _logger.LogError(ex, $"Error executing command {request.Action}");
             return new CommandResponse(false, "Command Failed", ex.Message);
         }
+    }
+
+    private bool ValidateAccessKey(CommandRequest request)
+    {
+        // If no access key is configured, allow all requests (feature disabled).
+        if (_accessKeyBytes.Length == 0)
+            return true;
+
+        // The client must supply the key in request.Parameters["AccessKey"].
+        if (request.Parameters == null ||
+            !request.Parameters.TryGetValue("AccessKey", out var suppliedKey) ||
+            string.IsNullOrEmpty(suppliedKey))
+            return false;
+
+        return CryptographicOperations.FixedTimeEquals(
+            _accessKeyBytes,
+            Encoding.UTF8.GetBytes(suppliedKey));
     }
 
     public void Dispose()

@@ -464,10 +464,10 @@
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Background Mode" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <ComboBox SelectedItem="{Binding CustomizationVm.CanvasBackgroundType}" HorizontalAlignment="Stretch">
-                                            <ComboBoxItem Content="Mica"/>
-                                            <ComboBoxItem Content="Acrylic"/>
-                                            <ComboBoxItem Content="Custom Gradient"/>
-                                            <ComboBoxItem Content="Wallpaper"/>
+                                            <x:String>Mica</x:String>
+                                            <x:String>Acrylic</x:String>
+                                            <x:String>Gradient</x:String>
+                                            <x:String>Wallpaper</x:String>
                                         </ComboBox>
                                     </StackPanel>
                                 </StackPanel>

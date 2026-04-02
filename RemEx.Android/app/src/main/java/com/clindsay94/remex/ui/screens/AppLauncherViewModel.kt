@@ -12,6 +12,7 @@ import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -68,10 +69,12 @@ class AppLauncherViewModel(
     fun launchApp(app: AppEntry) {
         viewModelScope.launch(Dispatchers.IO) {
             if (remexCoreClient.isLibraryLoaded) {
+                val accessKey = settingsManager.accessKeyFlow.first()
                 val request = JSONObject().apply {
                     put("action", "LaunchApp")
                     put("parameters", JSONObject().apply {
                         put("TargetPath", app.path)
+                        if (accessKey.isNotBlank()) put("AccessKey", accessKey)
                     })
                 }
                 remexCoreClient.SendCommand(request.toString())

@@ -96,16 +96,18 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
             }
 
             try {
+                val accessKey = settingsManager.accessKeyFlow.first()
                 val parameters = JSONObject()
                 if (delaySeconds > 0) {
                     parameters.put("DelaySeconds", delaySeconds.toString())
                 }
+                if (accessKey.isNotBlank()) {
+                    parameters.put("AccessKey", accessKey)
+                }
 
                 val request = JSONObject().apply {
                     put("action", action)
-                    if (parameters.length() > 0) {
-                        put("parameters", parameters)
-                    }
+                    put("parameters", parameters)
                 }
 
                 val responseJson = RemexCoreClient.SendCommand(request.toString())

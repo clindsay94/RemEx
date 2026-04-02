@@ -152,7 +152,9 @@ class MorphPolygonShape(
 }
 
 /** LRU cache for Morph objects to avoid per-recomposition allocation. */
-private val morphCache = LinkedHashMap<Long, Morph>(16, 0.75f, true)
+private val morphCache: MutableMap<Long, Morph> = java.util.Collections.synchronizedMap(
+    LinkedHashMap<Long, Morph>(16, 0.75f, true)
+)
 private const val MORPH_CACHE_MAX = 32
 
 fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
@@ -168,11 +170,13 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
 
     // Cache key combines start and end polygon indices
     val cacheKey = (startIndex.toLong() shl 32) or endIndex.toLong()
-    val morph = morphCache.getOrPut(cacheKey) {
-        if (morphCache.size >= MORPH_CACHE_MAX) {
-            morphCache.remove(morphCache.keys.first())
+    val morph = synchronized(morphCache) {
+        morphCache.getOrPut(cacheKey) {
+            if (morphCache.size >= MORPH_CACHE_MAX) {
+                morphCache.remove(morphCache.keys.first())
+            }
+            Morph(materialShapesList[startIndex], materialShapesList[endIndex])
         }
-        Morph(materialShapesList[startIndex], materialShapesList[endIndex])
     }
 
     return MorphPolygonShape(morph, progress)
@@ -181,17 +185,18 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
 fun colorSchemeFromSeed(
     seedColor: Color,
     darkTheme: Boolean,
-    style: String = "tonal_spot"
+    style: String = "tonal_spot",
+    contrast: Double = 0.0
 ): ColorScheme {
     val hct = Hct.fromInt(seedColor.toArgb())
     val scheme = when (style.lowercase()) {
-        "expressive" -> SchemeExpressive(hct, darkTheme, 0.0)
-        "vibrant" -> SchemeVibrant(hct, darkTheme, 0.0)
-        "neutral" -> SchemeNeutral(hct, darkTheme, 0.0)
-        "monochrome" -> SchemeMonochrome(hct, darkTheme, 0.0)
-        "fruit_salad" -> SchemeFruitSalad(hct, darkTheme, 0.0)
-        "rainbow" -> SchemeRainbow(hct, darkTheme, 0.0)
-        else -> SchemeTonalSpot(hct, darkTheme, 0.0)
+        "expressive" -> SchemeExpressive(hct, darkTheme, contrast)
+        "vibrant" -> SchemeVibrant(hct, darkTheme, contrast)
+        "neutral" -> SchemeNeutral(hct, darkTheme, contrast)
+        "monochrome" -> SchemeMonochrome(hct, darkTheme, contrast)
+        "fruit_salad" -> SchemeFruitSalad(hct, darkTheme, contrast)
+        "rainbow" -> SchemeRainbow(hct, darkTheme, contrast)
+        else -> SchemeTonalSpot(hct, darkTheme, contrast)
     }
     val m3 = MaterialDynamicColorsInstance
 
@@ -266,6 +271,8 @@ fun RemExTheme(
     themePalette: String = "default",
     themeStyle: String = "tonal_spot",
     themeSeedColor: String = "#6750A4",
+    themeSeedChroma: Float = 48.0f,
+    themeContrast: Float = 0.0f,
     fontFamilyKey: String = "default",
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
@@ -277,7 +284,13 @@ fun RemExTheme(
     }
 
     val seedColor = try {
-        Color(android.graphics.Color.parseColor(themeSeedColor))
+        val baseColor = android.graphics.Color.parseColor(themeSeedColor)
+        if (themePalette.equals("custom", ignoreCase = true)) {
+            val baseHct = Hct.fromInt(baseColor)
+            Color(Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone).toInt())
+        } else {
+            Color(baseColor)
+        }
     } catch (_: Exception) {
         Color(0xFF6750A4)
     }
@@ -286,7 +299,8 @@ fun RemExTheme(
         themePalette.equals("custom", ignoreCase = true) -> colorSchemeFromSeed(
             seedColor,
             darkTheme,
-            themeStyle
+            themeStyle,
+            themeContrast.toDouble()
         )
 
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {

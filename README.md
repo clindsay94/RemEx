@@ -75,22 +75,26 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 
 ### 🔐 Access Key Security
 
+All communication layers support optional shared-secret authentication to protect against LAN-local attacks. **Leave empty to disable (backward compatible).**
 
 | Layer | Files Modified | What was added |
 |-------|---------------|----------------|
-| **Host** | HostBootstrapper.cs | `Remex:AccessKey` config read, constant-time validation on both `/ws` and `/ws/desktop` endpoints, returns 401 on mismatch |
+| **Host WebSocket** | HostBootstrapper.cs | `Remex:AccessKey` config read, constant-time validation on `/ws` and `/ws/desktop`, returns 401 on mismatch |
+| **Host TCP Commands** | RemexNetworkListener.cs | `Remex:AccessKey` config read, constant-time validation via `Parameters["AccessKey"]`, rejects with 401 on mismatch |
 | **Host config** | appsettings.json | `Remex.AccessKey` section (empty = disabled) |
 | **Core models** | DashboardProfile.cs | `AccessKey` property for desktop profile persistence |
 | **Core clients** | RemexNativeClient.cs, RemexDesktopClient.cs | `accessKey` parameter + `BuildUri()` helper appending `?key=` |
 | **JNI bridge** | AndroidNativeExports.cs | `AccessKey` in init request, threaded through all desktop endpoints |
 | **Avalonia UI** | SettingsView.axaml, SettingsViewModel.cs, ConnectionViewModel.cs | Password field in Settings, persisted to profile, applied on connect/reconnect |
-| **Android** | SettingsManager.kt, ConnectionViewModel.kt, ConnectionScreen.kt | DataStore persistence, Key icon text field, passed through JNI init JSON |
+| **Android** | SettingsManager.kt, RemoteControlViewModel.kt, TaskManagerViewModel.kt, AppLauncherViewModel.kt, RemoteControlWidget.kt, AppLauncherWidget.kt | DataStore persistence, Key icon text field, passed through JNI init JSON and injected into all TCP command `Parameters` |
 
 **Key design decisions:**
 - Empty access key = authentication disabled (backward compatible)
-- Key sent as `?key=<value>` query parameter on WebSocket URI
+- WebSocket: key sent as `?key=<value>` query parameter on the URI
+- TCP commands: key sent as `Parameters["AccessKey"]` in the JSON request
 - Server uses `CryptographicOperations.FixedTimeEquals` to prevent timing attacks
-- Configurable from all UIs (no JSON file editing required) 
+- Configurable from all UIs (no JSON file editing required)
+- **Important:** If you set an access key, all clients must provide it — the Android app injects it automatically into TCP commands 
 
 
 ### ◈ App Launcher

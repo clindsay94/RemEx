@@ -114,7 +114,11 @@ These tasks:
 
 ### Versioning
 
-The .NET version is set once in `Directory.Build.props` and applied to all .NET projects automatically. The Android Gradle version (`versionName`) should be kept in sync with `Directory.Build.props`.
+The .NET version is set once in `Directory.Build.props` and applied to all .NET projects automatically.
+
+**Android Native App (`RemEx.Android`):** The Gradle version must be kept in sync manually:
+- `versionCode` — Integer that must strictly increase with each release (compare against all prior releases)
+- `versionName` — Human-readable version string; should match `.NET` version in `Directory.Build.props` (e.g., `"1.1"`)
 
 ### Themes (Avalonia)
 

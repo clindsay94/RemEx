@@ -19,6 +19,12 @@ public class ExternalNetworkListenerService : BackgroundService
         await _networkListener.StartListeningAsync(stoppingToken);
     }
 
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _networkListener.StopListening();
+        await base.StopAsync(cancellationToken);
+    }
+
     public override void Dispose()
     {
         _networkListener.StopListening();

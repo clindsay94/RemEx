@@ -6,7 +6,7 @@
         <Style Selector="Button.remote-btn">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RemoteCardCornerRadius}"/>
             <Setter Property="Padding" Value="20 16"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>

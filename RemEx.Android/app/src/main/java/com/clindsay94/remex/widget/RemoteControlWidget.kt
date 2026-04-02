@@ -185,17 +185,20 @@ class RemoteCommandCallback : ActionCallback {
     ) {
         val action = parameters[COMMAND_ACTION_PARAM] ?: return
         if (RemexCoreClient.isLibraryLoaded) {
+            val settings = SettingsManager(context)
             if (action == "WakeOnLan") {
-                val settings = SettingsManager(context)
                 val mac = settings.macAddressFlow.first()
                 val broadcast = settings.broadcastIpFlow.first()
                 if (mac.isNotBlank()) {
                     RemexCoreClient.WakePc(mac, broadcast, 9)
                 }
             } else {
+                val accessKey = settings.accessKeyFlow.first()
                 val request = JSONObject().apply {
                     put("action", action)
-                    put("parameters", JSONObject())
+                    put("parameters", JSONObject().apply {
+                        if (accessKey.isNotBlank()) put("AccessKey", accessKey)
+                    })
                 }
                 RemexCoreClient.SendCommand(request.toString())
             }

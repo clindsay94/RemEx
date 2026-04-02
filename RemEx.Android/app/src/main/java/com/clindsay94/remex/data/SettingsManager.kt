@@ -51,6 +51,8 @@ class SettingsManager(private val context: Context) {
         val REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY =
             floatPreferencesKey("remote_mouse_card_shape_preset_v2")
         val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
+        val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
+        val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
     }
 
     data class ConnectionPreferences(
@@ -74,6 +76,8 @@ class SettingsManager(private val context: Context) {
         val themePalette: String = "default",
         val themeStyle: String = "tonal_spot",
         val themeSeedColor: String = "#6750A4", // Default M3 Purple
+        val themeSeedChroma: Float = 48.0f,
+        val themeContrast: Float = 0.0f,
         val fontFamily: String = "default",
         val fontScale: Float = 1.0f,
         val cardCornerRadius: Int = 20,
@@ -216,6 +220,8 @@ class SettingsManager(private val context: Context) {
                 themePalette = preferences[THEME_PALETTE_KEY] ?: "default",
                 themeStyle = preferences[THEME_STYLE_KEY] ?: "tonal_spot",
                 themeSeedColor = preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4",
+                themeSeedChroma = preferences[THEME_SEED_CHROMA_KEY] ?: 48.0f,
+                themeContrast = preferences[THEME_CONTRAST_KEY] ?: 0.0f,
                 fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
                 fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
                 cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
@@ -300,6 +306,8 @@ class SettingsManager(private val context: Context) {
         themePalette: String,
         themeStyle: String,
         themeSeedColor: String,
+        themeSeedChroma: Float,
+        themeContrast: Float,
         fontFamily: String,
         fontScale: Float,
         cardCornerRadius: Int,
@@ -317,10 +325,12 @@ class SettingsManager(private val context: Context) {
             preferences[THEME_PALETTE_KEY] = themePalette
             preferences[THEME_STYLE_KEY] = themeStyle
             preferences[THEME_SEED_COLOR_KEY] = themeSeedColor
+            preferences[THEME_SEED_CHROMA_KEY] = themeSeedChroma
+            preferences[THEME_CONTRAST_KEY] = themeContrast
             preferences[FONT_FAMILY_KEY] = fontFamily
             preferences[FONT_SCALE_KEY] = fontScale.coerceIn(0.85f, 1.4f)
             preferences[CARD_CORNER_RADIUS_KEY] = cardCornerRadius.coerceIn(4, 36)
-            preferences[CARD_OPACITY_KEY] = cardOpacity.coerceIn(0.4f, 1.0f)
+            preferences[CARD_OPACITY_KEY] = cardOpacity.coerceIn(0.1f, 1.0f)
             preferences[PC_CARD_SHAPE_PRESET_KEY] = pcCardShapePreset
             preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] = telemetryCardShapePreset
             preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] = appLauncherCardShapePreset

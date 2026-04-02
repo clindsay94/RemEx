@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -144,10 +145,12 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
     fun killProcess(pid: Int) {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
+                val accessKey = settingsManager.accessKeyFlow.first()
                 val request = JSONObject().apply {
                     put("action", "KillProcess")
                     put("parameters", JSONObject().apply {
                         put("ProcessId", pid.toString())
+                        if (accessKey.isNotBlank()) put("AccessKey", accessKey)
                     })
                 }
                 val result = RemexCoreClient.SendCommand(request.toString())

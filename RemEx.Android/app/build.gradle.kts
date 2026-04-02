@@ -21,15 +21,16 @@ android {
         applicationId = "com.clindsay94.remex"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            storeFile = androidLocalProperties.getProperty("remex.signing.storeFile")?.let { file(it) }
+            storeFile =
+                androidLocalProperties.getProperty("remex.signing.storeFile")?.let { file(it) }
             storePassword = androidLocalProperties.getProperty("remex.signing.storePassword")
             keyAlias = androidLocalProperties.getProperty("remex.signing.keyAlias")
             keyPassword = androidLocalProperties.getProperty("remex.signing.keyPassword")
@@ -59,7 +60,7 @@ android {
             useLegacyPackaging = false
         }
     }
-    buildToolsVersion = "37.0.0 rc2"
+    buildToolsVersion = "36.0.0"
     ndkVersion = "29.0.14206865"
 
     sourceSets {
@@ -82,6 +83,20 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        val mainOutput =
+            variant.outputs.single { it.outputType == com.android.build.api.variant.VariantOutputConfiguration.OutputType.SINGLE }
+        val globalVersionName = android.defaultConfig.versionName ?: "1.0"
+
+        // Use set on the file name property directly using the newer variant API
+        if (mainOutput is com.android.build.api.variant.impl.VariantOutputImpl) {
+            mainOutput.outputFileName.set("RemEx-V${globalVersionName}-${variant.name}.apk")
+        }
+    }
+}
+
+
 val remexGeneratedDebugJniRoot =
     layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug")
 val remexGeneratedReleaseJniRoot =
@@ -92,6 +107,7 @@ val androidSdkDir = androidLocalProperties.getProperty("sdk.dir")
 val androidNdkDir = File(androidSdkDir, "ndk/$androidNdkVersion")
 val androidNdkDirForMsbuild = androidNdkDir.absolutePath.trimEnd('\\', '/') + File.separator
 val remexAndroidApplicationId = "com.clindsay94.remex"
+
 val remexGeneratedDebugArm64So = File(remexGeneratedDebugJniRoot, "arm64-v8a/libRemexCore.so")
 val remexGeneratedReleaseArm64So = File(remexGeneratedReleaseJniRoot, "arm64-v8a/libRemexCore.so")
 val mergedDebugArm64So = layout.buildDirectory.get().asFile.resolve(
@@ -194,6 +210,7 @@ val publishRemexCoreAndroidRelease by tasks.registering(Exec::class) {
         "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild"
     )
 }
+
 
 abstract class SyncRemexCoreSoTask : DefaultTask() {
     @get:Input

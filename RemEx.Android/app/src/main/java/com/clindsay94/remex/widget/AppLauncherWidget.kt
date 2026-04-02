@@ -41,6 +41,8 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -214,10 +216,13 @@ class LaunchAppCallback : ActionCallback {
     ) {
         val path = parameters[APP_PATH_PARAM] ?: return
         if (RemexCoreClient.isLibraryLoaded) {
+            val settings = SettingsManager(context)
+            val accessKey = settings.accessKeyFlow.first()
             val request = JSONObject().apply {
                 put("action", "LaunchApp")
                 put("parameters", JSONObject().apply {
                     put("TargetPath", path)
+                    if (accessKey.isNotBlank()) put("AccessKey", accessKey)
                 })
             }
             RemexCoreClient.SendCommand(request.toString())

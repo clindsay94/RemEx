@@ -3,9 +3,6 @@
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
 [Rr]eleases/
 x64/
 x86/
@@ -23,6 +20,9 @@ artifacts/
 *.userosscache
 *.sln.docstates
 *.userprefs
+*.trx
+**/launchSettings.json
+.env
 
 # Visual Studio Code
 .vscode/
@@ -64,7 +64,7 @@ coverage.opencover.xml
 local.properties
 proguard/
 .gradle/
-build/
+RemEx.Android/build/
 .externalNativeBuild
 .cxx
 *.keystore
@@ -83,20 +83,23 @@ RemEx.Android/app/src/main/jniLibs/
 *.agent/*
 .gemini_security/
 .superpowers/
-conductor/ 
-*/docs/*
-*/build/*
-*.github/*
-*.vscode/*
-
-# Node.js
-node_modules/
-package-lock.json
-package.json
+conductor/
 
 # Misc
 .gitconfig
 dotnet-install.sh
 /Remex.Client.Android.old
 libgcc.a
-.idea
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Windows
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary build verification
+build/tmp-host-verify/

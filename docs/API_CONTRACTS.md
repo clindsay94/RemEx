@@ -63,7 +63,7 @@ The external TCP listener is used to receive one-shot system power commands, suc
 
 **Endpoint:** TCP Socket on Port `8338` (Configurable via `Remex:CommandPort`)
 
-⚠️ **Security Warning:** The TCP Command Ingress endpoint allows remote execution of power commands (Shutdown, Restart, Force Restart, Restart to UEFI, Lock, and Wake-on-LAN). Ensure this port is protected by a firewall and only accessible from trusted networks.
+⚠️ **Security Warning:** The TCP Command Ingress endpoint allows remote execution of power commands (Shutdown, Restart, Force Restart, Restart to UEFI, Lock, and Wake-on-LAN). Ensure this port is protected by a firewall and only accessible from trusted networks. **If `Remex:AccessKey` is configured on the host, all TCP commands MUST include the access key in `Parameters["AccessKey"]`** or they will be rejected with an `Unauthorized` response.
 
 ### Request Payload: `CommandRequest`
 
@@ -73,6 +73,7 @@ The client must send a UTF-8 encoded JSON string matching the following structur
 {
   "Action": "string",
   "Parameters": {
+    "AccessKey": "string (if Remex:AccessKey is set on the host)",
     "Key": "Value"
   }
 }
@@ -81,18 +82,31 @@ The client must send a UTF-8 encoded JSON string matching the following structur
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `Action` | `string` | The command to execute (Case-insensitive). |
-| `Parameters` | `Dictionary<string, string>?` | Optional parameters for specific commands (like Wake-on-LAN). |
+| `Parameters` | `Dictionary<string, string>?` | Optional parameters for specific commands. |
+| `Parameters["AccessKey"]` | `string` | **Required if `Remex:AccessKey` is configured on the host.** Must match the configured key exactly. Comparison uses constant-time (`CryptographicOperations.FixedTimeEquals`) to prevent timing attacks. |
 
 **Supported Actions:**
+
+All actions require `AccessKey` in `Parameters` **if and only if** `Remex:AccessKey` is configured on the host.
+
 - `SHUTDOWN`: Initiates a system shutdown.
 - `RESTART`: Initiates a system restart.
 - `FORCERESTART`: Forces a system restart without waiting for applications.
 - `RESTARTTOUEFI`: Restarts the system directly into UEFI/BIOS settings.
 - `LOCK`: Locks the current user session.
+- `HIBERNATION`: Hibernates the system.
+- `SLEEP`: Puts the system to sleep.
+- `KILLPROCESS`: Terminates a process.
+  - **Required Parameter:** `"ProcessId"` (Process ID as a string)
+  - **Required Parameter (if key is set):** `"AccessKey"`
+- `LAUNCHAPP`: Launches an application.
+  - **Required Parameter:** `"TargetPath"` (Application path)
+  - **Required Parameter (if key is set):** `"AccessKey"`
 - `WAKEONLAN`: Sends a magic packet to wake a target machine.
   - **Required Parameter:** `"MacAddress"` (e.g., `"00:11:22:33:44:55"`)
   - **Optional Parameter:** `"BroadcastIp"` (Default: `"255.255.255.255"`)
   - **Optional Parameter:** `"Port"` (Default: `"9"`)
+  - **Required Parameter (if key is set):** `"AccessKey"`
 
 ### Response Payload: `CommandResponse`
 
@@ -102,6 +116,19 @@ The server responds with a UTF-8 encoded JSON string indicating the result.
 {
   "Success": true,
   "Message": "string"
+}
+```
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `Success` | `bool` | Whether the command executed successfully. `false` if the request was malformed or the access key was invalid/missing. |
+| `Message` | `string` | Human-readable status or error message. If `Success=false` due to an access key mismatch, the message will be `"Unauthorized"`. |
+
+**Example: Request rejected due to missing/invalid access key:**
+```json
+{
+  "Success": false,
+  "Message": "Unauthorized"
 }
 ```
 

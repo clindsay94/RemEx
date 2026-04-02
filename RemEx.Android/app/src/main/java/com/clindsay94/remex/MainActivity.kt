@@ -28,6 +28,8 @@ class MainActivity : ComponentActivity() {
             val themePalette by settingsManager.themePaletteFlow.collectAsState(initial = "default")
             val themeStyle by settingsManager.personalizationPreferencesFlow.map { it.themeStyle }.collectAsState(initial = "tonal_spot")
             val themeSeedColor by settingsManager.themeSeedColorFlow.collectAsState(initial = "#6750A4")
+            val themeSeedChroma by settingsManager.personalizationPreferencesFlow.map { it.themeSeedChroma }.collectAsState(initial = 48.0f)
+            val themeContrast by settingsManager.personalizationPreferencesFlow.map { it.themeContrast }.collectAsState(initial = 0.0f)
             val fontFamily by settingsManager.fontFamilyFlow.collectAsState(initial = "default")
             val fontScale by settingsManager.fontScaleFlow.collectAsState(initial = 1.0f)
 
@@ -36,6 +38,8 @@ class MainActivity : ComponentActivity() {
                 themePalette = themePalette,
                 themeStyle = themeStyle,
                 themeSeedColor = themeSeedColor,
+                themeSeedChroma = themeSeedChroma,
+                themeContrast = themeContrast,
                 fontFamilyKey = fontFamily
             ) {
                 val density = LocalDensity.current
