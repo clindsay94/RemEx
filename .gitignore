@@ -103,3 +103,4 @@ Thumbs.db
 
 # Temporary build verification
 build/tmp-host-verify/
+*.dm

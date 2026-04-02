@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"P:/Repo/RemEx\" ls-files \"RemEx.Android/local.properties\")"
+    ]
+  }
+}
