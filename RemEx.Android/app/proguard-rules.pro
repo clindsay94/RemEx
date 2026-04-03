@@ -10,3 +10,14 @@
 -keep class java.lang.** { *; }
 -keep class java.net.** { *; }
 -keep class javax.net.** { *; }
+
+# Prevent R8 from stripping App Startup components
+-keep class androidx.startup.** { *; }
+-keep class androidx.work.** { *; }
+-keep class androidx.glance.** { *; }
+-keep class androidx.lifecycle.ProcessLifecycleInitializer { *; }
+
+# Keep all implementations of androidx.startup.Initializer
+-keep class * implements androidx.startup.Initializer {
+    <init>();
+}

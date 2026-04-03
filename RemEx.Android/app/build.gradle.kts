@@ -1,5 +1,3 @@
-import com.android.build.api.variant.VariantOutputConfiguration
-import com.android.build.api.variant.impl.VariantOutputImpl
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
@@ -125,11 +123,11 @@ android {
 androidComponents {
     onVariants { variant ->
         val mainOutput =
-            variant.outputs.single { it.outputType == VariantOutputConfiguration.OutputType.SINGLE }
-        val globalVersionName = "${android.defaultConfig.versionName}"
+            variant.outputs.single { it.outputType == com.android.build.api.variant.VariantOutputConfiguration.OutputType.SINGLE }
+        val globalVersionName = android.defaultConfig.versionName ?: "1.0"
 
         // Use set on the file name property directly using the newer variant API
-        if (mainOutput is VariantOutputImpl) {
+        if (mainOutput is com.android.build.api.variant.impl.VariantOutputImpl) {
             mainOutput.outputFileName.set("RemEx-V${globalVersionName}-${variant.name}.apk")
         }
     }
@@ -526,9 +524,14 @@ val remexPublishRelease by tasks.registering {
     dependsOn("bundleRelease")
     dependsOn(verifyRemexCoreInReleaseApk)
 
+    // Capture variables to be compatible with configuration cache
+    val buildDirFile = layout.buildDirectory.get().asFile
+    val currentVersionName = remexVersionName
+    val currentVersionCode = remexVersionCode
+
     doLast {
-        val apkDir = layout.buildDirectory.get().asFile.resolve("outputs/apk/release")
-        val aabDir = layout.buildDirectory.get().asFile.resolve("outputs/bundle/release")
+        val apkDir = buildDirFile.resolve("outputs/apk/release")
+        val aabDir = buildDirFile.resolve("outputs/bundle/release")
         val apk = apkDir.listFiles()
             ?.filter { it.extension.equals("apk", ignoreCase = true) }
             ?.maxByOrNull { it.lastModified() }
@@ -538,7 +541,7 @@ val remexPublishRelease by tasks.registering {
 
         println()
         println("═══════════════════════════════════════════════════════")
-        println("  RemEx v$remexVersionName (versionCode=$remexVersionCode)")
+        println("  RemEx v$currentVersionName (versionCode=$currentVersionCode)")
         println("───────────────────────────────────────────────────────")
         if (apk != null) println("  APK: ${apk.absolutePath}")
         if (aab != null) println("  AAB: ${aab.absolutePath}")
@@ -580,12 +583,13 @@ val remexUninstallExistingDebugApp by tasks.registering {
     description =
         "Uninstalls existing app package from connected device to avoid signature conflicts"
 
+    val sdkDir = androidSdkDir
     doLast {
         val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
         val adbExecutable = if (isWindows) {
-            File(androidSdkDir, "platform-tools/adb.exe")
+            File(sdkDir, "platform-tools/adb.exe")
         } else {
-            File(androidSdkDir, "platform-tools/adb")
+            File(sdkDir, "platform-tools/adb")
         }
 
         if (!adbExecutable.exists()) {
