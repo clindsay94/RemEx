@@ -5,10 +5,8 @@ Thanks for your interest in contributing! This document covers how to set up the
 ---
 
 ## Prerequisites
-
+- [Android Studio](https://developer.android.com/studio/) or a standalone JDK 17+ and Android SDK with `ANDROID_HOME` set
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- For Avalonia Android builds: `dotnet workload install android`
-- For the native Android app (`RemEx.Android`): Android Studio (or a standalone JDK 17+ and Android SDK with `ANDROID_HOME` set)
 - An IDE that supports .NET — Visual Studio 2022+, Rider, or VS Code with the C# Dev Kit
 
 ---
@@ -22,7 +20,6 @@ Remex.sln                    .NET solution
 ├── Remex.Host/              ASP.NET headless service (Minimal APIs + WebSocket + mDNS)
 ├── Remex.Client/            Shared Avalonia UI — views, viewmodels, controls, services, themes
 ├── Remex.Client.Desktop/    Desktop entry point (Windows / Linux)
-├── Remex.Client.Android/    Avalonia Android entry point + M3 theme overrides
 ├── Remex.Core.Tests/        xUnit tests for Core
 ├── Remex.Host.Tests/        xUnit tests for Host
 ├── RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
@@ -59,12 +56,6 @@ dotnet test Remex.sln
 
 ```bash
 dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-```
-
-### Avalonia Android APK
-
-```bash
-dotnet publish Remex.Client.Android\Remex.Client.Android.csproj -c Release -f net10.0-android
 ```
 
 ### Native Android App (`RemEx.Android`) — Hardened Fresh Rebuild
