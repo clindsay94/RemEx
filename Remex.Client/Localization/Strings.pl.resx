@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Nav_Home" xml:space="preserve"><value>Główna</value></data>
+  <data name="Nav_Sensors" xml:space="preserve"><value>Czujniki</value></data>
+  <data name="Nav_Remote" xml:space="preserve"><value>Zdalne</value></data>
+  <data name="Nav_Launcher" xml:space="preserve"><value>Launcher</value></data>
+  <data name="Nav_Tasks" xml:space="preserve"><value>Zadania</value></data>
+  <data name="Nav_Desktop" xml:space="preserve"><value>Pulpit</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Ustawienia</value></data>
+  <data name="Btn_Connect" xml:space="preserve"><value>Połącz</value></data>
+  <data name="Btn_Disconnect" xml:space="preserve"><value>Rozłącz</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>Anuluj</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>Zapisz</value></data>
+  <data name="Btn_Apply" xml:space="preserve"><value>Zastosuj</value></data>
+  <data name="Btn_Browse" xml:space="preserve"><value>Przeglądaj...</value></data>
+  <data name="Btn_Discover" xml:space="preserve"><value>Odkryj</value></data>
+  <data name="Btn_Refresh" xml:space="preserve"><value>⟳ Odśwież</value></data>
+  <data name="Btn_Start" xml:space="preserve"><value>▶ Start</value></data>
+  <data name="Btn_Stop" xml:space="preserve"><value>⏹ Stop</value></data>
+  <data name="Btn_Submit" xml:space="preserve"><value>Wyślij</value></data>
+  <data name="Remote_Header" xml:space="preserve"><value>⏻  ZDALNE PC</value></data>
+  <data name="Remote_Subheader" xml:space="preserve"><value>STEROWANIE ZASILANIEM &amp; SYSTEMEM</value></data>
+  <data name="Remote_WolSection" xml:space="preserve"><value>WAKE ON LAN</value></data>
+  <data name="Remote_WolDescription" xml:space="preserve"><value>Wyślij magiczny pakiet, aby obudzić docelowy PC.</value></data>
+  <data name="Remote_Graceful" xml:space="preserve"><value>NORMALNE</value></data>
+  <data name="Remote_Forced" xml:space="preserve"><value>WYMUSZONE (NATYCHMIASTOWE)</value></data>
+  <data name="Remote_Lock" xml:space="preserve"><value>🔒  Zablokuj PC</value></data>
+  <data name="Remote_SignOut" xml:space="preserve"><value>🚪  Wyloguj</value></data>
+  <data name="Remote_Shutdown" xml:space="preserve"><value>⏻  Wyłącz</value></data>
+  <data name="Remote_Restart" xml:space="preserve"><value>🔄  Uruchom ponownie</value></data>
+  <data name="Remote_Sleep" xml:space="preserve"><value>💤  Uśpij</value></data>
+  <data name="Remote_Hibernate" xml:space="preserve"><value>❄  Hibernacja</value></data>
+  <data name="Remote_ForceShutdown" xml:space="preserve"><value>⚠  Wymuś wyłączenie</value></data>
+  <data name="Remote_ForceRestart" xml:space="preserve"><value>⚠  Wymuś restart</value></data>
+  <data name="Remote_RebootUefi" xml:space="preserve"><value>🔧  Uruchom do UEFI</value></data>
+  <data name="Remote_WolSend" xml:space="preserve"><value>🔌  Wyślij pakiet Wake-on-LAN</value></data>
+  <data name="Settings_Header" xml:space="preserve"><value>USTAWIENIA</value></data>
+  <data name="Settings_Back" xml:space="preserve"><value>← Centrum Dowodzenia</value></data>
+  <data name="Settings_SaveChanges" xml:space="preserve"><value>Zapisz zmiany</value></data>
+  <data name="Settings_SavedStatus" xml:space="preserve"><value>Ustawienia zapisane!</value></data>
+  <data name="Settings_Connection" xml:space="preserve"><value>POŁĄCZENIE</value></data>
+  <data name="Settings_HostAddress" xml:space="preserve"><value>Adres hosta</value></data>
+  <data name="Settings_AccessKey" xml:space="preserve"><value>Klucz dostępu</value></data>
+  <data name="Settings_SaveReconnect" xml:space="preserve"><value>Zapisz &amp; Połącz ponownie</value></data>
+  <data name="Settings_Layout" xml:space="preserve"><value>UKŁAD</value></data>
+  <data name="Settings_SnapToGrid" xml:space="preserve"><value>Przyciągaj do siatki</value></data>
+  <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Karty przyciągają do najbliższej linii siatki przy upuszczaniu</value></data>
+  <data name="Settings_GridSize" xml:space="preserve"><value>Rozmiar siatki</value></data>
+  <data name="Settings_PinnedSensors" xml:space="preserve"><value>PRZYPIĘTE CZUJNIKI</value></data>
+  <data name="Settings_PinnedSensorsDesc" xml:space="preserve"><value>Wybierz czujniki do wyświetlenia na ekranie głównym</value></data>
+  <data name="Settings_ServiceSection" xml:space="preserve"><value>USŁUGA WINDOWS</value></data>
+  <data name="Settings_ServiceLogin" xml:space="preserve"><value>LOGOWANIE USŁUGI</value></data>
+  <data name="Settings_ServiceDesc" xml:space="preserve"><value>Usługa działa w tle, aby RemEx mógł przyjmować zdalne polecenia bez otwartej aplikacji.</value></data>
+  <data name="Settings_AccountFormat" xml:space="preserve"><value>Konto: {0}</value></data>
+  <data name="Settings_Username" xml:space="preserve"><value>Nazwa użytkownika</value></data>
+  <data name="Settings_Password" xml:space="preserve"><value>Hasło</value></data>
+  <data name="Settings_RestartNote" xml:space="preserve"><value>Zmiana języka zostanie zastosowana po ponownym uruchomieniu RemEx.</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Język</value></data>
+  <data name="Home_Subtitle" xml:space="preserve"><value>CENTRUM DOWODZENIA ZDALNEGO WYKONANIA</value></data>
+  <data name="Home_QuickActions" xml:space="preserve"><value>SZYBKIE AKCJE</value></data>
+  <data name="Home_SensorWorkspace" xml:space="preserve"><value>Obszar czujników</value></data>
+  <data name="Home_PcRemote" xml:space="preserve"><value>Zdalne PC</value></data>
+  <data name="Home_Desktop" xml:space="preserve"><value>Pulpit</value></data>
+  <data name="Home_Launcher" xml:space="preserve"><value>Launcher</value></data>
+  <data name="Home_Tasks" xml:space="preserve"><value>Zadania</value></data>
+  <data name="Home_LiveTelemetry" xml:space="preserve"><value>TELEMETRIA NA ŻYWO</value></data>
+  <data name="Home_NoPinnedSensors" xml:space="preserve"><value>Brak przypiętych czujników</value></data>
+  <data name="Home_NoPinnedSensorsHint" xml:space="preserve"><value>Otwórz obszar czujników, kliknij prawym przyciskiem kartę i przypnij do strony głównej.</value></data>
+  <data name="TaskMgr_Header" xml:space="preserve"><value>▤  MENEDŻER ZADAŃ</value></data>
+  <data name="TaskMgr_Subheader" xml:space="preserve"><value>EKSPLORATOR PROCESÓW</value></data>
+  <data name="TaskMgr_SearchPlaceholder" xml:space="preserve"><value>Szukaj po nazwie lub PID...</value></data>
+  <data name="TaskMgr_KillProcess" xml:space="preserve"><value>Zakończ proces</value></data>
+  <data name="TaskMgr_SortName" xml:space="preserve"><value>Nazwa</value></data>
+  <data name="TaskMgr_SortCpu" xml:space="preserve"><value>CPU %</value></data>
+  <data name="TaskMgr_SortRam" xml:space="preserve"><value>RAM</value></data>
+  <data name="AppLauncher_Header" xml:space="preserve"><value>◈  LAUNCHER APLIKACJI</value></data>
+  <data name="AppLauncher_Subheader" xml:space="preserve"><value>ZDALNE STEROWANIE APLIKACJAMI</value></data>
+  <data name="AppLauncher_AddProgram" xml:space="preserve"><value>+ Dodaj program</value></data>
+  <data name="AppLauncher_NoApps" xml:space="preserve"><value>Brak skonfigurowanych aplikacji.</value></data>
+  <data name="AppLauncher_MoveLeft" xml:space="preserve"><value>Przesuń w lewo</value></data>
+  <data name="AppLauncher_MoveRight" xml:space="preserve"><value>Przesuń w prawo</value></data>
+  <data name="AppLauncher_Remove" xml:space="preserve"><value>Usuń</value></data>
+  <data name="AddProgram_Title" xml:space="preserve"><value>Dodaj program</value></data>
+  <data name="AddProgram_Header" xml:space="preserve"><value>Dodaj nowy program</value></data>
+  <data name="AddProgram_ExePath" xml:space="preserve"><value>Ścieżka do pliku wykonywalnego</value></data>
+  <data name="AddProgram_DisplayName" xml:space="preserve"><value>Nazwa wyświetlana</value></data>
+  <data name="AddProgram_AccentColor" xml:space="preserve"><value>Kolor akcentu (Hex)</value></data>
+  <data name="AddProgram_IconPreview" xml:space="preserve"><value>Podgląd ikony</value></data>
+  <data name="TrayFlyout_Header" xml:space="preserve"><value>SZYBKI PODGLĄD</value></data>
+  <data name="TrayFlyout_Home" xml:space="preserve"><value>GŁÓWNA</value></data>
+  <data name="TrayFlyout_Workspace" xml:space="preserve"><value>OBSZAR ROBOCZY</value></data>
+  <data name="Canvas_Header" xml:space="preserve"><value>OBSZAR CZUJNIKÓW</value></data>
+  <data name="Canvas_Connection" xml:space="preserve"><value>Połączenie</value></data>
+  <data name="Canvas_Actions" xml:space="preserve"><value>Akcje</value></data>
+  <data name="Canvas_Latency" xml:space="preserve"><value>Opóźnienie</value></data>
+  <data name="Canvas_Avg" xml:space="preserve"><value>ŚR</value></data>
+  <data name="Canvas_Max" xml:space="preserve"><value>MAX</value></data>
+  <data name="Canvas_ActiveSensors" xml:space="preserve"><value>AKTYWNE CZUJNIKI</value></data>
+  <data name="Canvas_NewSensors" xml:space="preserve"><value>NOWE CZUJNIKI</value></data>
+  <data name="Canvas_AddCard" xml:space="preserve"><value>+ Dodaj kartę</value></data>
+  <data name="Canvas_Save" xml:space="preserve"><value>Zapisz</value></data>
+  <data name="Canvas_Sync" xml:space="preserve"><value>Synchronizuj</value></data>
+  <data name="Canvas_Sensors" xml:space="preserve"><value>Czujniki ({0})</value></data>
+  <data name="Canvas_Ping" xml:space="preserve"><value>📡 Ping</value></data>
+  <data name="Canvas_CancelConnect" xml:space="preserve"><value>✕ Anuluj</value></data>
+  <data name="Canvas_Disconnect" xml:space="preserve"><value>✕ Rozłącz</value></data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve"><value>Układ zapisany!</value></data>
+  <data name="Canvas_SyncRequested" xml:space="preserve"><value>Synchronizacja zażądana…</value></data>
+  <data name="RemoteDesktop_Header" xml:space="preserve"><value>ZDALNY PULPIT</value></data>
+  <data name="RemoteDesktop_Quality" xml:space="preserve"><value>Jakość:</value></data>
+  <data name="RemoteDesktop_Scale" xml:space="preserve"><value>Skala:</value></data>
+  <data name="RemoteDesktop_Fps" xml:space="preserve"><value>FPS:</value></data>
+  <data name="RemoteDesktop_StreamError" xml:space="preserve"><value>⚠ Błąd strumienia</value></data>
+  <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve"><value>Zdalny pulpit</value></data>
+  <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve"><value>Połącz się i naciśnij Start, aby rozpocząć transmisję.</value></data>
+  <data name="RemoteDesktop_ToggleCursorPad" xml:space="preserve"><value>D-Pad</value></data>
+  <data name="RemoteDesktop_ToggleFullscreen" xml:space="preserve"><value>Pełny</value></data>
+  <data name="RemoteDesktop_Fullscreen" xml:space="preserve"><value>Wyjdź</value></data>
+  <data name="RemoteDesktop_CompactPad" xml:space="preserve"><value>Kompaktowy</value></data>
+  <data name="RemoteDesktop_FullPad" xml:space="preserve"><value>Pełny</value></data>
+  <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve"><value>Rozdzielczość: {0}</value></data>
+  <data name="RemoteDesktop_FpsFormat" xml:space="preserve"><value>FPS: {0:F1}</value></data>
+  <data name="RemoteDesktop_QualityFormat" xml:space="preserve"><value>Q: {0}</value></data>
+  <data name="Custom_Header" xml:space="preserve"><value>🎨  DOSTOSOWANIE</value></data>
+  <data name="Custom_Subheader" xml:space="preserve"><value>MOTYWY &amp; PRESETY SILNIKA</value></data>
+  <data name="Custom_BasePresets" xml:space="preserve"><value>PODSTAWOWE PRESETY</value></data>
+  <data name="Custom_AdvancedTuning" xml:space="preserve"><value>ZAAWANSOWANE DOSTRAJANIE</value></data>
+  <data name="Custom_CornerRadius" xml:space="preserve"><value>Promień narożnika</value></data>
+  <data name="Custom_GlassOpacity" xml:space="preserve"><value>Przezroczystość szkła</value></data>
+  <data name="Custom_GlowStrength" xml:space="preserve"><value>Siła poświaty</value></data>
+  <data name="Custom_AccentColor" xml:space="preserve"><value>Kolor akcentu</value></data>
+  <data name="Custom_BackgroundMode" xml:space="preserve"><value>Tryb tła</value></data>
+  <data name="Custom_Atmosphere" xml:space="preserve"><value>ATMOSFERA KANWY</value></data>
+  <data name="Custom_Reset" xml:space="preserve"><value>Resetuj do domyślnych motywu</value></data>
+  <data name="Custom_Back" xml:space="preserve"><value>← Centrum Dowodzenia</value></data>
+  <data name="Custom_RemoteCardShape" xml:space="preserve"><value>Kształt karty zdalnej</value></data>
+  <data name="Status_Disconnected" xml:space="preserve"><value>Rozłączono</value></data>
+  <data name="Status_Connected" xml:space="preserve"><value>Połączono</value></data>
+  <data name="Status_Connecting" xml:space="preserve"><value>Łączenie…</value></data>
+  <data name="Status_PingSent" xml:space="preserve"><value>Ping wysłany…</value></data>
+  <data name="Status_ServerClosed" xml:space="preserve"><value>Rozłączono (serwer zamknięty)</value></data>
+  <data name="Status_NoHostsFound" xml:space="preserve"><value>Nie znaleziono hostów przez mDNS.</value></data>
+  <data name="Status_SearchingHosts" xml:space="preserve"><value>Szukam hostów…</value></data>
+  <data name="Status_DiscoveryUnavailable" xml:space="preserve"><value>Usługa wykrywania niedostępna.</value></data>
+  <data name="Status_PongNoTimestamp" xml:space="preserve"><value>Pong (brak znacznika czasu)</value></data>
+  <data name="Status_Pong" xml:space="preserve"><value>Pong!</value></data>
+  <data name="Status_NotStreaming" xml:space="preserve"><value>Brak transmisji</value></data>
+  <data name="Status_Streaming" xml:space="preserve"><value>Transmisja</value></data>
+  <data name="Status_SelfConnection" xml:space="preserve"><value>Wykryto samo-połączenie — nie można wyświetlić własnego ekranu</value></data>
+  <data name="Status_ConnectionSaved" xml:space="preserve"><value>Ustawienia połączenia zapisane</value></data>
+  <data name="Status_ZoomFormat" xml:space="preserve"><value>Zoom: {0:F1}×</value></data>
+  <data name="Status_PadCompact" xml:space="preserve"><value>Pad: Kompaktowy</value></data>
+  <data name="Status_PadFull" xml:space="preserve"><value>Pad: Pełny</value></data>
+  <data name="Status_PadCompactTooltip" xml:space="preserve"><value>Kompaktowy pad kursora aktywny</value></data>
+  <data name="Status_PadFullTooltip" xml:space="preserve"><value>Pełnowymiarowy pad kursora aktywny</value></data>
+  <data name="Service_NotInstalled" xml:space="preserve"><value>Nie zainstalowano</value></data>
+  <data name="Service_Running" xml:space="preserve"><value>Działa</value></data>
+  <data name="Service_Stopped" xml:space="preserve"><value>Zatrzymano</value></data>
+  <data name="Service_Pending" xml:space="preserve"><value>Oczekuje…</value></data>
+  <data name="Service_Installed" xml:space="preserve"><value>Zainstalowano</value></data>
+  <data name="Service_Starting" xml:space="preserve"><value>Uruchamianie…</value></data>
+  <data name="Service_Stopping" xml:space="preserve"><value>Zatrzymywanie…</value></data>
+  <data name="Service_Uninstalling" xml:space="preserve"><value>Usługa odinstalowana.</value></data>
+  <data name="Service_PasswordRequired" xml:space="preserve"><value>Hasło jest wymagane.</value></data>
+  <data name="Service_Publishing" xml:space="preserve"><value>Publikowanie Remex.Host…</value></data>
+  <data name="Service_PublishFailed" xml:space="preserve"><value>Publikacja nie powiodła się — sprawdź log.</value></data>
+  <data name="Service_Creating" xml:space="preserve"><value>Tworzenie usługi…</value></data>
+  <data name="Service_CreateFailed" xml:space="preserve"><value>Nie udało się utworzyć usługi — sprawdź log.</value></data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve"><value>Konfigurowanie logowania…</value></data>
+  <data name="Service_ConfigureFailed" xml:space="preserve"><value>Nie udało się skonfigurować poświadczeń — sprawdź log.</value></data>
+  <data name="Service_GrantingRights" xml:space="preserve"><value>Przyznawanie praw logowania…</value></data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve"><value>Zatrzymywanie wbudowanego hosta…</value></data>
+  <data name="Service_StartingService" xml:space="preserve"><value>Uruchamianie usługi…</value></data>
+  <data name="Service_InstalledStarted" xml:space="preserve"><value>Zainstalowano &amp; uruchomiono.</value></data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve"><value>Zainstalowano — uruchomienie mogło się nie powieść, sprawdź log.</value></data>
+  <data name="Service_DeletingService" xml:space="preserve"><value>Usuwanie usługi…</value></data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve"><value>Stosowanie poświadczeń…</value></data>
+  <data name="Service_HostUnavailable" xml:space="preserve"><value>Możliwości hosta niedostępne</value></data>
+  <data name="Service_HostUnavailableHint" xml:space="preserve"><value>Połącz się z hostem, aby sprawdzić możliwości środowiska uruchomieniowego.</value></data>
+  <data name="Wol_EnterMac" xml:space="preserve"><value>⚠ Najpierw podaj adres MAC.</value></data>
+  <data name="Wol_SendingViaHost" xml:space="preserve"><value>Wysyłanie pakietu magic przez hosta…</value></data>
+  <data name="Wol_SendingLocal" xml:space="preserve"><value>Wysyłanie pakietu magic lokalnie…</value></data>
+  <data name="Wol_SentToFormat" xml:space="preserve"><value>✅ Pakiet wysłany do {0}</value></data>
+  <data name="Wol_SuccessFormat" xml:space="preserve"><value>✅ {0}</value></data>
+  <data name="Wol_ErrorFormat" xml:space="preserve"><value>❌ {0}</value></data>
+  <data name="Wol_LockSent" xml:space="preserve"><value>Blokada wysłana</value></data>
+  <data name="Wol_ShutdownSent" xml:space="preserve"><value>Wyłączenie wysłane</value></data>
+  <data name="Wol_ForceShutdownSent" xml:space="preserve"><value>Wymuś wyłączenie wysłane</value></data>
+  <data name="Wol_RestartSent" xml:space="preserve"><value>Restart wysłany</value></data>
+  <data name="Wol_ForceRestartSent" xml:space="preserve"><value>Wymuś restart wysłany</value></data>
+  <data name="Wol_RebootUefiSent" xml:space="preserve"><value>Uruchomienie do UEFI wysłane</value></data>
+  <data name="Wol_SleepSent" xml:space="preserve"><value>Uśpienie wysłane</value></data>
+  <data name="Wol_HibernateSent" xml:space="preserve"><value>Hibernacja wysłana</value></data>
+  <data name="Wol_SignOutSent" xml:space="preserve"><value>Wylogowanie wysłane</value></data>
+</root>

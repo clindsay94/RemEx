@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RemEx</string>
+    <string name="widget_remote_description">Kapatma, yeniden başlatma, kilitleme ve daha fazlası gibi PC uzak komutlarına hızlı erişim.</string>
+    <string name="widget_hardware_description">Bağlı PC\'nizden canlı donanım sensörü okumaları.</string>
+    <string name="widget_launcher_description">Favori PC uygulamalarınızı doğrudan ana ekranınızdan başlatın.</string>
+    <string name="widget_remote_label">RemEx Uzaktan</string>
+    <string name="widget_hardware_label">RemEx Donanım</string>
+    <string name="widget_launcher_label">RemEx Başlatıcı</string>
+</resources>

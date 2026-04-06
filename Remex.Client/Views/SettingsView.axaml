@@ -99,6 +99,27 @@
                     <TextBlock Text="The service runs in the background so RemEx can accept remote commands without the app open. It runs under your Windows account to access the desktop session." FontSize="11" Foreground="#4444AA" FontStyle="Italic" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
+            <!-- ═══ General Section ═══ -->
+            <Border Classes="glass-card" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="GENERAL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                            <TextBlock Text="Language" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0FF"/>
+                            <TextBlock Text="Application language (requires restart)" FontSize="12" Foreground="#8888AA"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" MinWidth="150" VerticalAlignment="Center">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- ═══ Connection Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">

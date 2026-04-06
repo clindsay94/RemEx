@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Navigation -->
+  <data name="Nav_Home" xml:space="preserve"><value>होम</value></data>
+  <data name="Nav_Sensors" xml:space="preserve"><value>सेंसर</value></data>
+  <data name="Nav_Remote" xml:space="preserve"><value>रिमोट</value></data>
+  <data name="Nav_Launcher" xml:space="preserve"><value>लॉन्चर</value></data>
+  <data name="Nav_Tasks" xml:space="preserve"><value>टास्क</value></data>
+  <data name="Nav_Desktop" xml:space="preserve"><value>डेस्कटॉप</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>सेटिंग्स</value></data>
+
+  <!-- Common Buttons -->
+  <data name="Btn_Connect" xml:space="preserve"><value>कनेक्ट</value></data>
+  <data name="Btn_Disconnect" xml:space="preserve"><value>डिसकनेक्ट</value></data>
+  <data name="Btn_Cancel" xml:space="preserve"><value>रद्द करें</value></data>
+  <data name="Btn_Save" xml:space="preserve"><value>सहेजें</value></data>
+  <data name="Btn_Apply" xml:space="preserve"><value>लागू करें</value></data>
+  <data name="Btn_Browse" xml:space="preserve"><value>ब्राउज़...</value></data>
+  <data name="Btn_Discover" xml:space="preserve"><value>खोजें</value></data>
+  <data name="Btn_Refresh" xml:space="preserve"><value>⟳ ताज़ा करें</value></data>
+  <data name="Btn_Start" xml:space="preserve"><value>▶ शुरू करें</value></data>
+  <data name="Btn_Stop" xml:space="preserve"><value>⏹ रोकें</value></data>
+  <data name="Btn_Submit" xml:space="preserve"><value>सबमिट</value></data>
+
+  <!-- Remote View -->
+  <data name="Remote_Header" xml:space="preserve"><value>⏻  पीसी रिमोट</value></data>
+  <data name="Remote_Subheader" xml:space="preserve"><value>पावर &amp; सिस्टम नियंत्रण</value></data>
+  <data name="Remote_WolSection" xml:space="preserve"><value>वेक ऑन लैन</value></data>
+  <data name="Remote_WolDescription" xml:space="preserve"><value>लक्ष्य पीसी को जगाने के लिए मैजिक पैकेट भेजें।</value></data>
+  <data name="Remote_Graceful" xml:space="preserve"><value>सामान्य</value></data>
+  <data name="Remote_Forced" xml:space="preserve"><value>जबरन (तत्काल)</value></data>
+  <data name="Remote_Lock" xml:space="preserve"><value>🔒  पीसी लॉक करें</value></data>
+  <data name="Remote_SignOut" xml:space="preserve"><value>🚪  साइन आउट</value></data>
+  <data name="Remote_Shutdown" xml:space="preserve"><value>⏻  शटडाउन</value></data>
+  <data name="Remote_Restart" xml:space="preserve"><value>🔄  रीस्टार्ट</value></data>
+  <data name="Remote_Sleep" xml:space="preserve"><value>💤  स्लीप</value></data>
+  <data name="Remote_Hibernate" xml:space="preserve"><value>❄  हाइबरनेट</value></data>
+  <data name="Remote_ForceShutdown" xml:space="preserve"><value>⚠  फोर्स शटडाउन</value></data>
+  <data name="Remote_ForceRestart" xml:space="preserve"><value>⚠  फोर्स रीस्टार्ट</value></data>
+  <data name="Remote_RebootUefi" xml:space="preserve"><value>🔧  UEFI में रीबूट</value></data>
+  <data name="Remote_WolSend" xml:space="preserve"><value>🔌  वेक-ऑन-लैन पैकेट भेजें</value></data>
+
+  <!-- Settings -->
+  <data name="Settings_Header" xml:space="preserve"><value>सेटिंग्स</value></data>
+  <data name="Settings_Back" xml:space="preserve"><value>← कमांड सेंटर</value></data>
+  <data name="Settings_SaveChanges" xml:space="preserve"><value>बदलाव सहेजें</value></data>
+  <data name="Settings_SavedStatus" xml:space="preserve"><value>सेटिंग्स सहेजी गईं!</value></data>
+  <data name="Settings_Connection" xml:space="preserve"><value>कनेक्शन</value></data>
+  <data name="Settings_HostAddress" xml:space="preserve"><value>होस्ट पता</value></data>
+  <data name="Settings_AccessKey" xml:space="preserve"><value>एक्सेस कुंजी</value></data>
+  <data name="Settings_SaveReconnect" xml:space="preserve"><value>सहेजें &amp; पुनः कनेक्ट करें</value></data>
+  <data name="Settings_Layout" xml:space="preserve"><value>लेआउट</value></data>
+  <data name="Settings_SnapToGrid" xml:space="preserve"><value>ग्रिड पर स्नैप</value></data>
+  <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>छोड़ने पर कार्ड निकटतम ग्रिड रेखा पर स्नैप होते हैं</value></data>
+  <data name="Settings_GridSize" xml:space="preserve"><value>ग्रिड आकार</value></data>
+  <data name="Settings_PinnedSensors" xml:space="preserve"><value>पिन किए गए सेंसर</value></data>
+  <data name="Settings_PinnedSensorsDesc" xml:space="preserve"><value>होम स्क्रीन पर प्रदर्शित करने के लिए सेंसर चुनें</value></data>
+  <data name="Settings_ServiceSection" xml:space="preserve"><value>विंडोज़ सेवा</value></data>
+  <data name="Settings_ServiceLogin" xml:space="preserve"><value>सेवा लॉगिन</value></data>
+  <data name="Settings_ServiceDesc" xml:space="preserve"><value>सेवा पृष्ठभूमि में चलती है ताकि RemEx ऐप खुले बिना रिमोट कमांड स्वीकार कर सके।</value></data>
+  <data name="Settings_AccountFormat" xml:space="preserve"><value>खाता: {0}</value></data>
+  <data name="Settings_Username" xml:space="preserve"><value>उपयोगकर्ता नाम</value></data>
+  <data name="Settings_Password" xml:space="preserve"><value>पासवर्ड</value></data>
+  <data name="Settings_RestartNote" xml:space="preserve"><value>भाषा परिवर्तन RemEx को पुनः प्रारंभ करने के बाद लागू होगा।</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>भाषा</value></data>
+
+  <!-- Home -->
+  <data name="Home_Subtitle" xml:space="preserve"><value>रिमोट एक्ज़ीक्यूशन कमांड सेंटर</value></data>
+  <data name="Home_QuickActions" xml:space="preserve"><value>त्वरित क्रियाएं</value></data>
+  <data name="Home_SensorWorkspace" xml:space="preserve"><value>सेंसर वर्कस्पेस</value></data>
+  <data name="Home_PcRemote" xml:space="preserve"><value>पीसी रिमोट</value></data>
+  <data name="Home_Desktop" xml:space="preserve"><value>डेस्कटॉप</value></data>
+  <data name="Home_Launcher" xml:space="preserve"><value>लॉन्चर</value></data>
+  <data name="Home_Tasks" xml:space="preserve"><value>टास्क</value></data>
+  <data name="Home_LiveTelemetry" xml:space="preserve"><value>लाइव टेलीमेट्री</value></data>
+  <data name="Home_NoPinnedSensors" xml:space="preserve"><value>अभी तक कोई पिन किए गए सेंसर नहीं</value></data>
+  <data name="Home_NoPinnedSensorsHint" xml:space="preserve"><value>सेंसर वर्कस्पेस खोलें, कार्ड पर राइट-क्लिक करें, और होम पर पिन करें।</value></data>
+
+  <!-- Task Manager -->
+  <data name="TaskMgr_Header" xml:space="preserve"><value>▤  टास्क मैनेजर</value></data>
+  <data name="TaskMgr_Subheader" xml:space="preserve"><value>प्रोसेस एक्सप्लोरर</value></data>
+  <data name="TaskMgr_SearchPlaceholder" xml:space="preserve"><value>नाम या PID से खोजें...</value></data>
+  <data name="TaskMgr_KillProcess" xml:space="preserve"><value>प्रोसेस बंद करें</value></data>
+  <data name="TaskMgr_SortName" xml:space="preserve"><value>नाम</value></data>
+  <data name="TaskMgr_SortCpu" xml:space="preserve"><value>CPU %</value></data>
+  <data name="TaskMgr_SortRam" xml:space="preserve"><value>RAM</value></data>
+
+  <!-- App Launcher -->
+  <data name="AppLauncher_Header" xml:space="preserve"><value>◈  ऐप लॉन्चर</value></data>
+  <data name="AppLauncher_Subheader" xml:space="preserve"><value>रिमोट एप्लिकेशन नियंत्रण</value></data>
+  <data name="AppLauncher_AddProgram" xml:space="preserve"><value>+ प्रोग्राम जोड़ें</value></data>
+  <data name="AppLauncher_NoApps" xml:space="preserve"><value>कोई एप्लिकेशन कॉन्फ़िगर नहीं।</value></data>
+  <data name="AppLauncher_MoveLeft" xml:space="preserve"><value>बाएं ले जाएं</value></data>
+  <data name="AppLauncher_MoveRight" xml:space="preserve"><value>दाएं ले जाएं</value></data>
+  <data name="AppLauncher_Remove" xml:space="preserve"><value>हटाएं</value></data>
+
+  <!-- Add Program -->
+  <data name="AddProgram_Title" xml:space="preserve"><value>प्रोग्राम जोड़ें</value></data>
+  <data name="AddProgram_Header" xml:space="preserve"><value>नया प्रोग्राम जोड़ें</value></data>
+  <data name="AddProgram_ExePath" xml:space="preserve"><value>एक्जीक्यूटेबल पथ</value></data>
+  <data name="AddProgram_DisplayName" xml:space="preserve"><value>प्रदर्शन नाम</value></data>
+  <data name="AddProgram_AccentColor" xml:space="preserve"><value>एक्सेंट रंग (Hex)</value></data>
+  <data name="AddProgram_IconPreview" xml:space="preserve"><value>आइकन पूर्वावलोकन</value></data>
+
+  <!-- Tray Flyout -->
+  <data name="TrayFlyout_Header" xml:space="preserve"><value>लाइव ग्लेंस</value></data>
+  <data name="TrayFlyout_Home" xml:space="preserve"><value>होम</value></data>
+  <data name="TrayFlyout_Workspace" xml:space="preserve"><value>वर्कस्पेस</value></data>
+
+  <!-- Canvas -->
+  <data name="Canvas_Header" xml:space="preserve"><value>सेंसर वर्कस्पेस</value></data>
+  <data name="Canvas_Connection" xml:space="preserve"><value>कनेक्शन</value></data>
+  <data name="Canvas_Actions" xml:space="preserve"><value>क्रियाएं</value></data>
+  <data name="Canvas_Latency" xml:space="preserve"><value>विलंबता</value></data>
+  <data name="Canvas_Avg" xml:space="preserve"><value>औसत</value></data>
+  <data name="Canvas_Max" xml:space="preserve"><value>अधिकतम</value></data>
+  <data name="Canvas_ActiveSensors" xml:space="preserve"><value>सक्रिय सेंसर</value></data>
+  <data name="Canvas_NewSensors" xml:space="preserve"><value>नए सेंसर</value></data>
+  <data name="Canvas_AddCard" xml:space="preserve"><value>+ कार्ड जोड़ें</value></data>
+  <data name="Canvas_Save" xml:space="preserve"><value>सहेजें</value></data>
+  <data name="Canvas_Sync" xml:space="preserve"><value>सिंक</value></data>
+  <data name="Canvas_Sensors" xml:space="preserve"><value>सेंसर ({0})</value></data>
+  <data name="Canvas_Ping" xml:space="preserve"><value>📡 पिंग</value></data>
+  <data name="Canvas_CancelConnect" xml:space="preserve"><value>✕ रद्द करें</value></data>
+  <data name="Canvas_Disconnect" xml:space="preserve"><value>✕ डिसकनेक्ट</value></data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve"><value>लेआउट सहेजा गया!</value></data>
+  <data name="Canvas_SyncRequested" xml:space="preserve"><value>सिंक अनुरोध किया गया…</value></data>
+
+  <!-- Remote Desktop -->
+  <data name="RemoteDesktop_Header" xml:space="preserve"><value>रिमोट डेस्कटॉप</value></data>
+  <data name="RemoteDesktop_Quality" xml:space="preserve"><value>गुणवत्ता:</value></data>
+  <data name="RemoteDesktop_Scale" xml:space="preserve"><value>स्केल:</value></data>
+  <data name="RemoteDesktop_Fps" xml:space="preserve"><value>FPS:</value></data>
+  <data name="RemoteDesktop_StreamError" xml:space="preserve"><value>⚠ स्ट्रीम त्रुटि</value></data>
+  <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve"><value>रिमोट डेस्कटॉप</value></data>
+  <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve"><value>कनेक्ट करें और स्ट्रीमिंग शुरू करने के लिए Start दबाएं।</value></data>
+  <data name="RemoteDesktop_ToggleCursorPad" xml:space="preserve"><value>D-Pad</value></data>
+  <data name="RemoteDesktop_ToggleFullscreen" xml:space="preserve"><value>पूर्ण</value></data>
+  <data name="RemoteDesktop_Fullscreen" xml:space="preserve"><value>बाहर</value></data>
+  <data name="RemoteDesktop_CompactPad" xml:space="preserve"><value>कॉम्पैक्ट</value></data>
+  <data name="RemoteDesktop_FullPad" xml:space="preserve"><value>पूर्ण</value></data>
+  <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve"><value>रिज़ॉल्यूशन: {0}</value></data>
+  <data name="RemoteDesktop_FpsFormat" xml:space="preserve"><value>FPS: {0:F1}</value></data>
+  <data name="RemoteDesktop_QualityFormat" xml:space="preserve"><value>Q: {0}</value></data>
+
+  <!-- Customization -->
+  <data name="Custom_Header" xml:space="preserve"><value>🎨  कस्टमाइज़ेशन</value></data>
+  <data name="Custom_Subheader" xml:space="preserve"><value>थीम और इंजन प्रीसेट</value></data>
+  <data name="Custom_BasePresets" xml:space="preserve"><value>बेस प्रीसेट</value></data>
+  <data name="Custom_AdvancedTuning" xml:space="preserve"><value>उन्नत फाइन-ट्यूनिंग</value></data>
+  <data name="Custom_CornerRadius" xml:space="preserve"><value>कोने की त्रिज्या</value></data>
+  <data name="Custom_GlassOpacity" xml:space="preserve"><value>ग्लास अपारदर्शिता</value></data>
+  <data name="Custom_GlowStrength" xml:space="preserve"><value>ग्लो शक्ति</value></data>
+  <data name="Custom_AccentColor" xml:space="preserve"><value>एक्सेंट रंग</value></data>
+  <data name="Custom_BackgroundMode" xml:space="preserve"><value>पृष्ठभूमि मोड</value></data>
+  <data name="Custom_Atmosphere" xml:space="preserve"><value>कैनवास वातावरण</value></data>
+  <data name="Custom_Reset" xml:space="preserve"><value>थीम डिफ़ॉल्ट पर रीसेट करें</value></data>
+  <data name="Custom_Back" xml:space="preserve"><value>← कमांड सेंटर</value></data>
+  <data name="Custom_RemoteCardShape" xml:space="preserve"><value>रिमोट कार्ड आकार</value></data>
+
+  <!-- Status Messages -->
+  <data name="Status_Disconnected" xml:space="preserve"><value>डिसकनेक्ट</value></data>
+  <data name="Status_Connected" xml:space="preserve"><value>कनेक्ट हो गया</value></data>
+  <data name="Status_Connecting" xml:space="preserve"><value>कनेक्ट हो रहा है…</value></data>
+  <data name="Status_PingSent" xml:space="preserve"><value>पिंग भेजा गया…</value></data>
+  <data name="Status_ServerClosed" xml:space="preserve"><value>डिसकनेक्ट (सर्वर बंद)</value></data>
+  <data name="Status_NoHostsFound" xml:space="preserve"><value>mDNS के माध्यम से कोई होस्ट नहीं मिला।</value></data>
+  <data name="Status_SearchingHosts" xml:space="preserve"><value>होस्ट खोज रहे हैं…</value></data>
+  <data name="Status_DiscoveryUnavailable" xml:space="preserve"><value>डिस्कवरी सेवा उपलब्ध नहीं।</value></data>
+  <data name="Status_PongNoTimestamp" xml:space="preserve"><value>Pong (कोई टाइमस्टैम्प नहीं)</value></data>
+  <data name="Status_Pong" xml:space="preserve"><value>Pong!</value></data>
+  <data name="Status_NotStreaming" xml:space="preserve"><value>स्ट्रीमिंग नहीं हो रही</value></data>
+  <data name="Status_Streaming" xml:space="preserve"><value>स्ट्रीमिंग</value></data>
+  <data name="Status_SelfConnection" xml:space="preserve"><value>स्वयं-कनेक्शन पाया गया — अपनी स्क्रीन मिरर नहीं कर सकते</value></data>
+  <data name="Status_ConnectionSaved" xml:space="preserve"><value>कनेक्शन सेटिंग्स सहेजी गईं</value></data>
+  <data name="Status_ZoomFormat" xml:space="preserve"><value>ज़ूम: {0:F1}×</value></data>
+  <data name="Status_PadCompact" xml:space="preserve"><value>पैड: कॉम्पैक्ट</value></data>
+  <data name="Status_PadFull" xml:space="preserve"><value>पैड: पूर्ण</value></data>
+  <data name="Status_PadCompactTooltip" xml:space="preserve"><value>कॉम्पैक्ट कर्सर पैड सक्षम</value></data>
+  <data name="Status_PadFullTooltip" xml:space="preserve"><value>पूर्ण-आकार कर्सर पैड सक्षम</value></data>
+
+  <!-- Service Status -->
+  <data name="Service_NotInstalled" xml:space="preserve"><value>इंस्टॉल नहीं है</value></data>
+  <data name="Service_Running" xml:space="preserve"><value>चल रहा है</value></data>
+  <data name="Service_Stopped" xml:space="preserve"><value>रुका हुआ</value></data>
+  <data name="Service_Pending" xml:space="preserve"><value>प्रतीक्षारत…</value></data>
+  <data name="Service_Installed" xml:space="preserve"><value>इंस्टॉल है</value></data>
+  <data name="Service_Starting" xml:space="preserve"><value>शुरू हो रहा है…</value></data>
+  <data name="Service_Stopping" xml:space="preserve"><value>रुक रहा है…</value></data>
+  <data name="Service_Uninstalling" xml:space="preserve"><value>सेवा अनइंस्टॉल हो गई।</value></data>
+  <data name="Service_PasswordRequired" xml:space="preserve"><value>पासवर्ड आवश्यक है।</value></data>
+  <data name="Service_Publishing" xml:space="preserve"><value>Remex.Host प्रकाशित हो रहा है…</value></data>
+  <data name="Service_PublishFailed" xml:space="preserve"><value>प्रकाशन विफल — लॉग देखें।</value></data>
+  <data name="Service_Creating" xml:space="preserve"><value>सेवा बना रहे हैं…</value></data>
+  <data name="Service_CreateFailed" xml:space="preserve"><value>सेवा बनाने में विफल — लॉग देखें।</value></data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve"><value>लॉगिन कॉन्फ़िगर हो रहा है…</value></data>
+  <data name="Service_ConfigureFailed" xml:space="preserve"><value>क्रेडेंशियल कॉन्फ़िगर करने में विफल — लॉग देखें।</value></data>
+  <data name="Service_GrantingRights" xml:space="preserve"><value>लॉगऑन अधिकार दे रहे हैं…</value></data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve"><value>एम्बेडेड होस्ट बंद हो रहा है…</value></data>
+  <data name="Service_StartingService" xml:space="preserve"><value>सेवा शुरू हो रही है…</value></data>
+  <data name="Service_InstalledStarted" xml:space="preserve"><value>इंस्टॉल &amp; शुरू हो गया।</value></data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve"><value>इंस्टॉल — शुरू विफल हो सकता है, लॉग देखें।</value></data>
+  <data name="Service_DeletingService" xml:space="preserve"><value>सेवा हटा रहे हैं…</value></data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve"><value>क्रेडेंशियल लागू हो रहे हैं…</value></data>
+  <data name="Service_HostUnavailable" xml:space="preserve"><value>होस्ट क्षमताएं अनुपलब्ध</value></data>
+  <data name="Service_HostUnavailableHint" xml:space="preserve"><value>रनटाइम क्षमताओं की जांच के लिए होस्ट से कनेक्ट करें।</value></data>
+
+  <!-- WoL Status -->
+  <data name="Wol_EnterMac" xml:space="preserve"><value>⚠ पहले MAC पता दर्ज करें।</value></data>
+  <data name="Wol_SendingViaHost" xml:space="preserve"><value>होस्ट के माध्यम से मैजिक पैकेट भेज रहे हैं…</value></data>
+  <data name="Wol_SendingLocal" xml:space="preserve"><value>स्थानीय रूप से मैजिक पैकेट भेज रहे हैं…</value></data>
+  <data name="Wol_SentToFormat" xml:space="preserve"><value>✅ {0} को पैकेट भेजा गया</value></data>
+  <data name="Wol_SuccessFormat" xml:space="preserve"><value>✅ {0}</value></data>
+  <data name="Wol_ErrorFormat" xml:space="preserve"><value>❌ {0}</value></data>
+  <data name="Wol_LockSent" xml:space="preserve"><value>लॉक भेजा गया</value></data>
+  <data name="Wol_ShutdownSent" xml:space="preserve"><value>शटडाउन भेजा गया</value></data>
+  <data name="Wol_ForceShutdownSent" xml:space="preserve"><value>फोर्स शटडाउन भेजा गया</value></data>
+  <data name="Wol_RestartSent" xml:space="preserve"><value>रीस्टार्ट भेजा गया</value></data>
+  <data name="Wol_ForceRestartSent" xml:space="preserve"><value>फोर्स रीस्टार्ट भेजा गया</value></data>
+  <data name="Wol_RebootUefiSent" xml:space="preserve"><value>UEFI रीस्टार्ट भेजा गया</value></data>
+  <data name="Wol_SleepSent" xml:space="preserve"><value>स्लीप भेजा गया</value></data>
+  <data name="Wol_HibernateSent" xml:space="preserve"><value>हाइबरनेट भेजा गया</value></data>
+  <data name="Wol_SignOutSent" xml:space="preserve"><value>साइन आउट भेजा गया</value></data>
+</root>

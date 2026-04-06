@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RemEx</string>
+    <string name="widget_remote_description">Швидкий доступ до команд дистанційного керування ПК: вимкнення, перезавантаження, блокування та інше.</string>
+    <string name="widget_hardware_description">Показники датчиків апаратного забезпечення вашого підключеного ПК у реальному часі.</string>
+    <string name="widget_launcher_description">Запускайте улюблені програми ПК безпосередньо з головного екрана.</string>
+    <string name="widget_remote_label">RemEx Пульт</string>
+    <string name="widget_hardware_label">RemEx Залізо</string>
+    <string name="widget_launcher_label">RemEx Лаунчер</string>
+</resources>

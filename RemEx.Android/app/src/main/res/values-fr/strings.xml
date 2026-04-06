@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RemEx</string>
+    <string name="widget_remote_description">Accès rapide aux commandes distantes du PC : arrêt, redémarrage, verrouillage et plus encore.</string>
+    <string name="widget_hardware_description">Lectures en temps réel des capteurs matériels de votre PC connecté.</string>
+    <string name="widget_launcher_description">Lancez vos applications PC préférées directement depuis votre écran d\'accueil.</string>
+    <string name="widget_remote_label">RemEx Télécommande</string>
+    <string name="widget_hardware_label">RemEx Matériel</string>
+    <string name="widget_launcher_label">RemEx Lanceur</string>
+</resources>

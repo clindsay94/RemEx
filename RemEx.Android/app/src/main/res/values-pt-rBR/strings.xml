@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RemEx</string>
+    <string name="widget_remote_description">Acesso rápido a comandos remotos do PC, como desligar, reiniciar, bloquear e mais.</string>
+    <string name="widget_hardware_description">Leituras em tempo real dos sensores de hardware do seu PC conectado.</string>
+    <string name="widget_launcher_description">Abra seus aplicativos favoritos do PC diretamente da tela inicial.</string>
+    <string name="widget_remote_label">RemEx Remoto</string>
+    <string name="widget_hardware_label">RemEx Hardware</string>
+    <string name="widget_launcher_label">RemEx Launcher</string>
+</resources>

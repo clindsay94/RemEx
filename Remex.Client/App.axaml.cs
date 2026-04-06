@@ -70,6 +70,18 @@ public partial class App : Application
             var layoutService = Services.GetRequiredService<DashboardLayoutService>();
             var profile = await layoutService.LoadAsync();
 
+            if (profile != null && !string.IsNullOrWhiteSpace(profile.Language))
+            {
+                try
+                {
+                    var culture = new System.Globalization.CultureInfo(profile.Language);
+                    Remex.Client.Localization.Strings.Culture = culture;
+                    System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+                    System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+                }
+                catch { }
+            }
+
             var viewModel = Services.GetRequiredService<ShellViewModel>();
             viewModel.NavigateToHome();
 

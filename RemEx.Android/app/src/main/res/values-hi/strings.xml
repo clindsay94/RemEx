@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">RemEx</string>
+    <string name="widget_remote_description">पीसी रिमोट कमांड जैसे शटडाउन, रीस्टार्ट, लॉक और अन्य तक त्वरित पहुँच।</string>
+    <string name="widget_hardware_description">आपके कनेक्टेड पीसी से लाइव हार्डवेयर सेंसर रीडिंग।</string>
+    <string name="widget_launcher_description">अपने होम स्क्रीन से सीधे अपने पसंदीदा पीसी ऐप्स लॉन्च करें।</string>
+    <string name="widget_remote_label">RemEx रिमोट</string>
+    <string name="widget_hardware_label">RemEx हार्डवेयर</string>
+    <string name="widget_launcher_label">RemEx लॉन्चर</string>
+</resources>

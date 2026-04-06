@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -113,6 +116,69 @@ fun PersonalizationScreen(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp
             )
+
+            // ═══ Language Settings ═══
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionHeader("Language", Icons.Default.Language)
+                    
+                    Text("App Language", style = MaterialTheme.typography.labelMedium)
+                    
+                    val currentLocales = AppCompatDelegate.getApplicationLocales()
+                    val currentLangTag = if (currentLocales.isEmpty) "system" else currentLocales[0]?.toLanguageTag() ?: "system"
+                    
+                    val supportedLanguages = listOf(
+                        "system" to "System Default",
+                        "en" to "English",
+                        "es" to "Español",
+                        "fr" to "Français",
+                        "hi" to "हिन्दी",
+                        "in" to "Bahasa Indonesia",
+                        "pl" to "Polski",
+                        "pt-BR" to "Português (BR)",
+                        "tr" to "Türkçe",
+                        "uk" to "Українська"
+                    )
+                    
+                    var expanded by remember { mutableStateOf(false) }
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = supportedLanguages.find { it.first == currentLangTag }?.second ?: "System Default",
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier
+                                .menuAnchor(
+                                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                    enabled = true
+                                )
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            supportedLanguages.forEach { (tag, name) ->
+                                DropdownMenuItem(
+                                    text = { Text(name) },
+                                    onClick = {
+                                        expanded = false
+                                        if (tag == "system") {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                                        } else {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             // ═══ Theme Mode & Style ═══
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {

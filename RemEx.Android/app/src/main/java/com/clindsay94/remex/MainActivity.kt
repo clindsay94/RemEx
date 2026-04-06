@@ -1,7 +1,7 @@
 package com.clindsay94.remex
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
@@ -16,7 +16,7 @@ import com.clindsay94.remex.widget.WidgetDataCache
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.map
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

@@ -67,6 +67,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
             AccessKey = _profile.AccessKey;
+            Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
             UpdateHostCapabilitySummary();
             RefreshSensors();
         });
@@ -155,6 +156,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnAccessKeyChanged(string value)
     {
         _connection.AccessKey = value;
+        Save();
+    }
+
+    partial void OnLanguageChanged(string value)
+    {
+        try 
+        {
+            var culture = new System.Globalization.CultureInfo(value);
+            Remex.Client.Localization.Strings.Culture = culture;
+            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+        }
+        catch { }
         Save();
     }
 
@@ -733,7 +747,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
             HostAddress = HostAddress,
-            AccessKey = AccessKey
+            AccessKey = AccessKey,
+            Language = Language
         };
 
         _profile = updated;
@@ -761,3 +776,4 @@ public partial class SensorPinItem : ObservableObject
 
     partial void OnIsPinnedChanged(bool value) => PinChanged?.Invoke(this, value);
 }
+public record LanguageItem(string DisplayName, string Code);

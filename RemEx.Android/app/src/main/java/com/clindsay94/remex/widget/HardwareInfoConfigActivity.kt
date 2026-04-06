@@ -4,7 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -52,7 +52,7 @@ private val DEFAULT_SENSORS = listOf(
     ConfigSensor("sensor:gpu_temp", "GPU Temperature", "GPU"),
 )
 
-class HardwareInfoConfigActivity : ComponentActivity() {
+class HardwareInfoConfigActivity : AppCompatActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 

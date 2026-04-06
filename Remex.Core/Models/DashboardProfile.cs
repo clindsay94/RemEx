@@ -80,6 +80,9 @@ public record DashboardProfile
     /// <summary>Shared access key for WebSocket authentication. Empty = disabled.</summary>
     public string AccessKey { get; init; } = string.Empty;
 
+    /// <summary>Persisted application language (e.g. "en", "es", "hi").</summary>
+    public string Language { get; init; } = "en";
+
     /// <summary>All card positions and sizes.</summary>
     public List<CardState> Cards { get; init; } = new();
 
