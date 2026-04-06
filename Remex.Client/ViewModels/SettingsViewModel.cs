@@ -37,6 +37,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private string _accessKey = string.Empty;
 
     [ObservableProperty]
+    private string _language = "en";
+
+    public ObservableCollection<LanguageItem> AvailableLanguages { get; } = new()
+    {
+        new("English", "en"),
+        new("Español", "es"),
+        new("हिन्दी", "hi"),
+        new("Bahasa Indonesia", "id"),
+        new("Polski", "pl"),
+        new("Português (BR)", "pt-BR"),
+        new("Türkçe", "tr"),
+        new("Українська", "uk")
+    };
+
+    [ObservableProperty]
     private string _hostRuntimeText = "Host capabilities unavailable";
 
     [ObservableProperty]
