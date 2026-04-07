@@ -123,6 +123,7 @@ fun DashboardScreen(
         x = draggingPointerPx.x - canvasTopLeftPx.x,
         y = draggingPointerPx.y - canvasTopLeftPx.y
     )
+    // Drop target positions must account for the canvas scale
     val dropTargetXDp = draggingCardSize?.let { size ->
         ((dragPointerCanvasPx.x / (density * canvasScaleState.floatValue)) - (size.widthDp / 2f)).coerceAtLeast(0f)
     } ?: 0f
@@ -156,7 +157,7 @@ fun DashboardScreen(
             val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
             (maxRight + 200f).coerceAtLeast(800f)
         }
-        val canvasHeightDp = remember(visibleCards) {
+        val baseCanvasHeightDp = remember(visibleCards) {
             val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
             (maxBottom + 200f).coerceAtLeast(1200f)
         }
