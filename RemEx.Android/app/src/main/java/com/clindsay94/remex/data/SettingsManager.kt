@@ -300,6 +300,10 @@ class SettingsManager(private val context: Context) {
         context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = true }
     }
 
+    suspend fun resetOnboarding() {
+        context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = false }
+    }
+
     suspend fun markSplashShown() {
         context.dataStore.edit { it[SPLASH_SHOWN_KEY] = true }
     }

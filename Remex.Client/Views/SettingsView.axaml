@@ -203,6 +203,17 @@
                 </StackPanel>
             </Border>
 
+            <!-- ═══ Help Section ═══ -->
+            <Border Classes="glass-card" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="HELP" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <Button Content="📖 Replay Tutorial" Command="{Binding ReplayTutorialCommand}"
+                            Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8"
+                            CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"
+                            ToolTip.Tip="Re-watch the getting-started tutorial"/>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

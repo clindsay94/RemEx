@@ -98,6 +98,9 @@ public record DashboardProfile
     /// <summary>Persisted Wake-on-LAN UDP port (default 9).</summary>
     public int WolPort { get; init; } = 9;
 
+    /// <summary>Whether the user has completed the first-run tutorial.</summary>
+    public bool HasCompletedTutorial { get; init; }
+
     /// <summary>Visual aesthetic and theme overrides.</summary>
     public CustomizationSettings Customization { get; init; } = new();
 }

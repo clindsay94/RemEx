@@ -30,6 +30,27 @@ public class BoolToColorConverter : IValueConverter
 }
 
 /// <summary>
+/// Converts an integer index to an opacity. If the value equals the parameter, returns 1.0; otherwise 0.3.
+/// Used for page indicator dots.
+/// </summary>
+public class IndexToOpacityConverter : IValueConverter
+{
+    public static readonly IndexToOpacityConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is int index && parameter is string s && int.TryParse(s, out var target))
+        {
+            return index == target ? 1.0 : 0.3;
+        }
+        return 0.3;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// Converts a double (latency ms) to a bar height for the mini chart.
 /// Clamps to a reasonable pixel range (2–60px).
 /// </summary>

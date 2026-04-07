@@ -694,6 +694,142 @@
                 </Grid>
             </Border>
 
+            <!-- ═══ TUTORIAL OVERLAY (first-run or replay) ═══ -->
+            <Border Grid.RowSpan="2"
+                    IsVisible="{Binding ShowTutorialOverlay}"
+                    Background="#E6141720"
+                    ZIndex="998">
+                <Grid>
+                    <Border Width="520" MaxWidth="540"
+                            Padding="32,28"
+                            Background="{DynamicResource GlassBaseDarkBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="20"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <StackPanel Spacing="16">
+                            <!-- Header with Skip -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="GETTING STARTED" FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentPrimaryBrush}"
+                                           LetterSpacing="3" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Skip ✕"
+                                        Command="{Binding TutorialSkipCommand}"
+                                        Background="Transparent" Foreground="#8888CC"
+                                        FontSize="12" FontWeight="SemiBold"
+                                        Padding="8,4" CornerRadius="6" Cursor="Hand"
+                                        BorderThickness="0"
+                                        ToolTip.Tip="Skip the tutorial — you can replay it from Settings"/>
+                            </Grid>
+
+                            <!-- Page 0: Welcome -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
+                                <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Welcome to RemEx" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="RemEx is your remote PC management command center. Monitor system telemetry, launch applications, manage tasks, and stream your desktop — all from one place."/>
+                            </StackPanel>
+
+                            <!-- Page 1: Host Required -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
+                                <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Connect to a RemEx Host" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="This desktop client connects to a RemEx Host running on a target PC. The host provides telemetry, process control, app launching, and screen capture."/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="If you're running this client on the same machine, the embedded host starts automatically. For a remote PC, install Remex.Host separately — it's self-contained (no extra runtimes needed)."/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
+                                           Text="Download from: github.com/clindsay94/RemEx/releases"/>
+                            </StackPanel>
+
+                            <!-- Page 2: Auto-Discovery -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}">
+                                <TextBlock Text="📡" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Auto-Discovery" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="Click 'Discover' in Settings → Connection to auto-find a running RemEx Host on your local network via mDNS. The host address will be filled in automatically."/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="Both machines must be on the same LAN / Wi-Fi network. If discovery doesn't work, enter the host address manually (e.g. ws://192.168.1.42:5005/ws)."/>
+                            </StackPanel>
+
+                            <!-- Page 3: Finding Your IP -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}">
+                                <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Finding the Host IP" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="If auto-discovery isn't available, find the target PC's local IP:"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                                   Text="Windows: Open CMD → ipconfig → look for 'IPv4 Address'"/>
+                                        <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                                   Text="macOS: System Settings → Network, or: ipconfig getifaddr en0"/>
+                                        <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                                   Text="Linux: ip addr  or  hostname -I"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="Then enter ws://&lt;IP&gt;:5005/ws in Settings → Connection."/>
+                            </StackPanel>
+
+                            <!-- Page 4: You're Ready -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}">
+                                <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="You're All Set!" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="Use the sidebar to navigate between Home, Sensor Workspace, Remote Control, App Launcher, Task Manager, and Remote Desktop."/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="Open Settings (⚙) to customise your theme, layout grid, connection, and pin sensors to the Home screen."/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
+                                           Text="You can replay this tutorial anytime from Settings."/>
+                            </StackPanel>
+
+                            <!-- Page indicator dots -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,4,0,0">
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=0}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=1}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=2}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=3}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=4}"/>
+                            </StackPanel>
+
+                            <!-- Navigation buttons -->
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Button Grid.Column="0" Content="← Back"
+                                        Command="{Binding TutorialPreviousCommand}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=0}"
+                                        Background="#2A2A4A" Foreground="#C0C0FF"
+                                        Padding="16,8" CornerRadius="8" FontSize="13"
+                                        FontWeight="SemiBold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="Next →"
+                                        Command="{Binding TutorialNextCommand}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=4}"
+                                        Background="#4A3AFF" Foreground="White"
+                                        Padding="16,8" CornerRadius="8" FontSize="13"
+                                        FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="Get Started ✓"
+                                        Command="{Binding TutorialFinishCommand}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}"
+                                        Background="#4ADE80" Foreground="#1A1A1A"
+                                        Padding="16,8" CornerRadius="8" FontSize="13"
+                                        FontWeight="Bold" Cursor="Hand"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
             <!-- ═══ BOTTOM NAV BAR (ANDROID M3) ═══ -->
             <Border Grid.Row="2" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
                 <Border.IsVisible>

@@ -245,7 +245,13 @@ fun AppNavigation() {
                 PersonalizationScreen()
             }
             composable(Screen.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(
+                    onReplayTutorial = {
+                        navController.navigate(Screen.Tutorial.route) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
             composable(Screen.Faq.route) {
                 FaqScreen()
