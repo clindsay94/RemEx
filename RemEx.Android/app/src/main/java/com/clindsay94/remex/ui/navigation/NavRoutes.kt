@@ -22,6 +22,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object RemoteDesktop : Screen("remote_desktop", "Remote Desktop", Icons.Default.Computer)
     object Personalization : Screen("personalization", "Personalization", Icons.Default.Palette)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object Tutorial : Screen("tutorial", "Tutorial", Icons.Default.Dashboard)
 }
 
 /** Bottom navigation bar items — App Launcher replaces old Connection/Settings tab. */
