@@ -13,6 +13,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -74,15 +75,11 @@ fun SplashScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            // Tap anywhere to skip
+            // Tap anywhere to skip — uses detectTapGestures for a single
+            // onTap callback instead of a raw event loop (review fix).
             .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        if (event.changes.any { it.pressed }) {
-                            scope.launch { finishSplash() }
-                        }
-                    }
+                detectTapGestures {
+                    scope.launch { finishSplash() }
                 }
             },
         contentAlignment = Alignment.Center

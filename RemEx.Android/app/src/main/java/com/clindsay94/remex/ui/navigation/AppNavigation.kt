@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -40,6 +41,7 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.DashboardScreen
+import com.clindsay94.remex.ui.screens.FaqScreen
 import com.clindsay94.remex.ui.screens.PersonalizationScreen
 import com.clindsay94.remex.ui.screens.RemoteControlScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
@@ -47,6 +49,7 @@ import com.clindsay94.remex.ui.screens.RemoteMouseScreen
 import com.clindsay94.remex.ui.screens.SettingsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
+import com.clindsay94.remex.ui.screens.TutorialScreen
 import kotlinx.coroutines.launch
 
 // Routes that require an active PC connection to be useful
@@ -65,11 +68,12 @@ fun AppNavigation() {
     val settingsManager = remember { SettingsManager(context) }
 
     val splashShown by settingsManager.splashShownFlow.collectAsState(initial = null)
+    val hasCompletedOnboarding by settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
     // While DataStore hasn't loaded yet, show a plain background to avoid a
     // white flash before the correct start destination is chosen.
-    if (splashShown == null) {
+    if (splashShown == null || hasCompletedOnboarding == null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -82,7 +86,9 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showNav = currentRoute != Screen.Splash.route && currentRoute != Screen.RemoteDesktop.route
+    val showNav = currentRoute != Screen.Splash.route
+            && currentRoute != Screen.Tutorial.route
+            && currentRoute != Screen.RemoteDesktop.route
     var showOverflowMenu by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -183,14 +189,32 @@ fun AppNavigation() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (splashShown == true) Screen.Dashboard.route else Screen.Splash.route,
+            startDestination = when {
+                splashShown != true -> Screen.Splash.route
+                hasCompletedOnboarding != true -> Screen.Tutorial.route
+                else -> Screen.Dashboard.route
+            },
             modifier = Modifier.padding(if (showNav) innerPadding else PaddingValues(0.dp))
         ) {
             composable(Screen.Splash.route) {
                 SplashScreen(
                     onFinished = {
-                        navController.navigate(Screen.Dashboard.route) {
+                        val nextRoute = if (hasCompletedOnboarding == true)
+                            Screen.Dashboard.route
+                        else
+                            Screen.Tutorial.route
+                        navController.navigate(nextRoute) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Tutorial.route) {
+                TutorialScreen(
+                    onFinished = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Tutorial.route) { inclusive = true }
                             launchSingleTop = true
                         }
                     }
@@ -221,7 +245,16 @@ fun AppNavigation() {
                 PersonalizationScreen()
             }
             composable(Screen.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(
+                    onReplayTutorial = {
+                        navController.navigate(Screen.Tutorial.route) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Faq.route) {
+                FaqScreen()
             }
         }
     }

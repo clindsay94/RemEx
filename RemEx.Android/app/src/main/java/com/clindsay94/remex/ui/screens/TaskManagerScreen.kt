@@ -116,11 +116,12 @@ fun TaskManagerScreen(
             if (!isConnected && processes.isEmpty()) {
                 DisconnectedFullScreen(
                     screenName = "Task Manager",
-                    onNavigateToConnection = onNavigateToConnection
+                    onNavigateToConnection = onNavigateToConnection,
+                    modifier = Modifier.weight(1f)
                 )
             } else if (processes.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
