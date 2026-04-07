@@ -118,7 +118,8 @@ class SettingsManager(private val context: Context) {
         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 
-    val splashShownFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    // Nullable flow so the UI can distinguish "not yet loaded" (null) from "false".
+    val splashShownFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
         preferences[SPLASH_SHOWN_KEY] ?: false
     }
 

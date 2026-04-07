@@ -2,7 +2,6 @@ package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -32,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -102,8 +102,10 @@ fun DashboardScreen(
     var draggingCardId by remember { mutableStateOf<String?>(null) }
     var draggingPointerPx by remember { mutableStateOf(Offset.Zero) }
 
-    // Pinch-to-zoom: scale factor for the entire canvas
-    var canvasScale by remember { mutableFloatStateOf(1f) }
+    // Pinch-to-zoom: use a State object so pointerInput lambdas can read the
+    // current value without needing it as a restart key (review fix).
+    val canvasScaleState = remember { mutableFloatStateOf(1f) }
+    var canvasScale by canvasScaleState
     val transformableState = rememberTransformableState { zoomChange, _, _ ->
         canvasScale = (canvasScale * zoomChange).coerceIn(0.4f, 3f)
     }
@@ -121,12 +123,11 @@ fun DashboardScreen(
         x = draggingPointerPx.x - canvasTopLeftPx.x,
         y = draggingPointerPx.y - canvasTopLeftPx.y
     )
-    // Drop target positions must account for the canvas scale
     val dropTargetXDp = draggingCardSize?.let { size ->
-        ((dragPointerCanvasPx.x / (density * canvasScale)) - (size.widthDp / 2f)).coerceAtLeast(0f)
+        ((dragPointerCanvasPx.x / (density * canvasScaleState.floatValue)) - (size.widthDp / 2f)).coerceAtLeast(0f)
     } ?: 0f
     val dropTargetYDp = draggingCardSize?.let { size ->
-        ((dragPointerCanvasPx.y / (density * canvasScale)) - (size.heightDp / 2f)).coerceAtLeast(0f)
+        ((dragPointerCanvasPx.y / (density * canvasScaleState.floatValue)) - (size.heightDp / 2f)).coerceAtLeast(0f)
     } ?: 0f
 
     Scaffold(
@@ -149,17 +150,16 @@ fun DashboardScreen(
     ) { paddingValues ->
         val visibleCards = cards.filter { enabledCards.contains(it.id) }
 
-        // Canvas dimensions grow with scale so scrollbars stay accurate
-        val baseCanvasWidthDp = remember(visibleCards) {
+        // Base canvas dimensions — independent of scale.
+        // graphicsLayer handles the visual zoom without relayout.
+        val canvasWidthDp = remember(visibleCards) {
             val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
             (maxRight + 200f).coerceAtLeast(800f)
         }
-        val baseCanvasHeightDp = remember(visibleCards) {
+        val canvasHeightDp = remember(visibleCards) {
             val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
             (maxBottom + 200f).coerceAtLeast(1200f)
         }
-        val canvasWidthDp = baseCanvasWidthDp * canvasScale
-        val canvasHeightDp = baseCanvasHeightDp * canvasScale
 
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
@@ -183,12 +183,17 @@ fun DashboardScreen(
                         .height(canvasHeightDp.dp)
                         .onGloballyPositioned { canvasTopLeftPx = it.positionInRoot() }
                         .background(MaterialTheme.colorScheme.background)
+                        // Use graphicsLayer for zoom to avoid expensive relayout on
+                        // every frame during pinch gestures (review fix).
+                        .graphicsLayer {
+                            scaleX = canvasScaleState.floatValue
+                            scaleY = canvasScaleState.floatValue
+                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
+                        }
                 ) {
                     visibleCards.forEach { card ->
-                        // All position/size values are multiplied by canvasScale so cards
-                        // move and resize proportionally when the user pinches.
-                        val xPx = (card.xDp * density * canvasScale).roundToInt()
-                        val yPx = (card.yDp * density * canvasScale).roundToInt()
+                        val xPx = (card.xDp * density).roundToInt()
+                        val yPx = (card.yDp * density).roundToInt()
                         val cardShapePreset = when {
                             card.id == "pc_status" -> pcCardShapePreset
                             card.id.startsWith("sensor:") -> telemetryCardShapePreset
@@ -198,24 +203,19 @@ fun DashboardScreen(
                         Card(
                             modifier = Modifier
                                 .offset { IntOffset(xPx, yPx) }
-                                .width((card.widthDp * canvasScale).dp)
-                                .height((card.heightDp * canvasScale).dp)
-                                .animateContentSize(
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioLowBouncy,
-                                        stiffness = Spring.StiffnessLow
-                                    )
-                                )
-                                .pointerInput(card.id, canvasScale) {
+                                .width(card.widthDp.dp)
+                                .height(card.heightDp.dp)
+                                // pointerInput uses stable card.id key — reads
+                                // canvasScaleState.floatValue directly (review fix).
+                                .pointerInput(card.id) {
                                     detectDragGestures(
                                         onDrag = { change, dragAmount ->
                                             change.consume()
-                                            // Divide by (density * canvasScale) so a pixel of drag
-                                            // maps to the correct logical-Dp delta at any zoom level.
+                                            val currentScale = canvasScaleState.floatValue
                                             viewModel.moveCard(
                                                 cardId = card.id,
-                                                deltaXDp = dragAmount.x / (density * canvasScale),
-                                                deltaYDp = dragAmount.y / (density * canvasScale)
+                                                deltaXDp = dragAmount.x / (density * currentScale),
+                                                deltaYDp = dragAmount.y / (density * currentScale)
                                             )
                                         },
                                         onDragEnd = { viewModel.saveCardLayout() }
@@ -268,14 +268,15 @@ fun DashboardScreen(
                                         .size(24.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                                        .pointerInput("resize_${card.id}", canvasScale) {
+                                        .pointerInput("resize_${card.id}") {
                                             detectDragGestures(
                                                 onDrag = { change, dragAmount ->
                                                     change.consume()
+                                                    val currentScale = canvasScaleState.floatValue
                                                     viewModel.resizeCard(
                                                         cardId = card.id,
-                                                        deltaWidthDp = dragAmount.x / (density * canvasScale),
-                                                        deltaHeightDp = dragAmount.y / (density * canvasScale)
+                                                        deltaWidthDp = dragAmount.x / (density * currentScale),
+                                                        deltaHeightDp = dragAmount.y / (density * currentScale)
                                                     )
                                                 },
                                                 onDragEnd = { viewModel.saveCardLayout() }
