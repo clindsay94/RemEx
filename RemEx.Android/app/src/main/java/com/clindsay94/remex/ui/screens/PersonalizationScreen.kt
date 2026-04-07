@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tune
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
@@ -71,12 +73,13 @@ fun PersonalizationScreen(
     var remoteDesktopCardShapePreset by remember { mutableFloatStateOf(settings.remoteDesktopCardShapePreset) }
     var remoteControlCardShapePreset by remember { mutableFloatStateOf(settings.remoteControlCardShapePreset) }
     var remoteMouseCardShapePreset by remember { mutableFloatStateOf(settings.remoteMouseCardShapePreset) }
+    var taskManagerCardShapePreset by remember { mutableFloatStateOf(settings.taskManagerCardShapePreset) }
 
     LaunchedEffect(
         themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius,
         cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset,
         remoteDesktopCardShapePreset, remoteControlCardShapePreset,
-        remoteMouseCardShapePreset
+        remoteMouseCardShapePreset, taskManagerCardShapePreset
     ) {
         viewModel.save(
             themeMode = themeMode,
@@ -92,7 +95,7 @@ fun PersonalizationScreen(
             pcCardShapePreset = pcCardShapePreset,
             telemetryCardShapePreset = telemetryCardShapePreset,
             appLauncherCardShapePreset = appLauncherCardShapePreset,
-            taskManagerCardShapePreset = settings.taskManagerCardShapePreset,
+            taskManagerCardShapePreset = taskManagerCardShapePreset,
             remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
             remoteControlCardShapePreset = remoteControlCardShapePreset,
             remoteMouseCardShapePreset = remoteMouseCardShapePreset
@@ -140,8 +143,37 @@ fun PersonalizationScreen(
                         "uk" to "Українська"
                     )
                     
+                    // Language note: the locale switcher correctly applies the new locale
+                    // (Android recreates the Activity), but the app UI currently uses hardcoded
+                    // strings rather than string resources, so only widget labels change visually.
+                    // Full UI localization is planned for a future release.
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                "Changes the system locale for this app. Widget labels update immediately. Full UI translation is coming in a future update.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+
                     var expanded by remember { mutableStateOf(false) }
-                    
+
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = it }
@@ -290,9 +322,11 @@ fun PersonalizationScreen(
                     Slider(value = cardOpacity, onValueChange = { cardOpacity = it }, valueRange = 0.1f..1.0f)
 
                     val shapeConfigs = listOf(
-                        "Telemetry cards" to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
+                        "Telemetry Cards" to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
                         "App Launcher" to appLauncherCardShapePreset to { v: Float -> appLauncherCardShapePreset = v },
                         "Remote Commands" to remoteControlCardShapePreset to { v: Float -> remoteControlCardShapePreset = v },
+                        "Remote Mouse" to remoteMouseCardShapePreset to { v: Float -> remoteMouseCardShapePreset = v },
+                        "Task Manager" to taskManagerCardShapePreset to { v: Float -> taskManagerCardShapePreset = v },
                         "PC Connection Orb" to pcCardShapePreset to { v: Float -> pcCardShapePreset = v }
                     )
 
@@ -300,8 +334,22 @@ fun PersonalizationScreen(
 
                     shapeConfigs.forEach { (config, setter) ->
                         val (label, current) = config
+                        val shapeIndex = current.toInt().coerceIn(0, materialShapeNames.lastIndex)
+                        val shapeName = materialShapeNames[shapeIndex]
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                Text(
+                                    shapeName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 Slider(value = current, onValueChange = setter, valueRange = 0f..maxShapes, modifier = Modifier.weight(1f))
                                 Box(

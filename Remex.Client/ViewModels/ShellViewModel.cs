@@ -70,6 +70,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showWelcomeSplash = true;
 
+    /// <summary>Controls the first-run tutorial overlay visibility.</summary>
+    [ObservableProperty]
+    private bool _showTutorialOverlay;
+
+    /// <summary>Current page index of the tutorial (0-based).</summary>
+    [ObservableProperty]
+    private int _tutorialPageIndex;
+
+    /// <summary>Total number of tutorial pages.</summary>
+    public int TutorialPageCount => 5;
+
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
     private HomeViewModel? _homeViewModel;
@@ -120,7 +131,52 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private async Task DismissWelcomeSplashAsync()
     {
         await Task.Delay(1800).ConfigureAwait(false);
-        Dispatcher.UIThread.Post(() => ShowWelcomeSplash = false);
+        Dispatcher.UIThread.Post(() =>
+        {
+            ShowWelcomeSplash = false;
+            // Show tutorial on first run after the splash fades
+            if (!(_layoutService.CurrentProfile?.HasCompletedTutorial ?? false))
+            {
+                TutorialPageIndex = 0;
+                ShowTutorialOverlay = true;
+            }
+        });
+    }
+
+    [RelayCommand]
+    public void TutorialNext()
+    {
+        if (TutorialPageIndex < TutorialPageCount - 1)
+            TutorialPageIndex++;
+    }
+
+    [RelayCommand]
+    public void TutorialPrevious()
+    {
+        if (TutorialPageIndex > 0)
+            TutorialPageIndex--;
+    }
+
+    [RelayCommand]
+    public void TutorialSkip() => CompleteTutorial();
+
+    [RelayCommand]
+    public void TutorialFinish() => CompleteTutorial();
+
+    [RelayCommand]
+    public void ReplayTutorial()
+    {
+        TutorialPageIndex = 0;
+        ShowTutorialOverlay = true;
+    }
+
+    private void CompleteTutorial()
+    {
+        ShowTutorialOverlay = false;
+        // Persist that the user has completed the tutorial
+        var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+        var updated = current with { HasCompletedTutorial = true };
+        _layoutService.RequestSave(updated);
     }
 
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)

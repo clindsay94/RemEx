@@ -6,6 +6,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -45,14 +50,14 @@ fun ConnectionScreen(
     var qualityInput by remember { mutableFloatStateOf(50f) }
     var targetFpsInput by remember { mutableFloatStateOf(30f) }
     var scaleInput by remember { mutableFloatStateOf(0.6f) }
+    var showHelpSection by remember { mutableStateOf(false) }
 
-    // --- Runtime permission request (Option A: at connect time) ---
-    // Pending connect args: when the user taps "Save & Connect" but permissions aren't granted yet,
-    // we store the args here and launch the permission request. On grant, we call connect().
+    // Pending flags for deferred actions after permission grants
     var pendingConnect by remember { mutableStateOf(false) }
+    var pendingDiscover by remember { mutableStateOf(false) }
 
-    // Build the list of permissions that need to be requested
-    val requiredPermissions = remember {
+    // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES)
+    val connectPermissions = remember {
         buildList {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 add(Manifest.permission.POST_NOTIFICATIONS)
@@ -61,8 +66,15 @@ fun ConnectionScreen(
         }.toTypedArray()
     }
 
-    fun hasAllPermissions(): Boolean {
-        return requiredPermissions.all {
+    fun hasNearbyWifiPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ContextCompat.checkSelfPermission(
+            context, Manifest.permission.NEARBY_WIFI_DEVICES
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun hasAllConnectPermissions(): Boolean {
+        return connectPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
     }
@@ -82,14 +94,25 @@ fun ConnectionScreen(
         )
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
+    // Permission launcher for "Save & Connect" — requests both POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES
+    val connectPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        // Proceed with connect regardless of whether permissions were granted.
-        // The service start is already wrapped in try-catch, so it won't crash.
+    ) { _ ->
         if (pendingConnect) {
             pendingConnect = false
             doConnect()
+        }
+    }
+
+    // Separate permission launcher for "Discover" — only needs NEARBY_WIFI_DEVICES
+    val discoverPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (pendingDiscover) {
+            pendingDiscover = false
+            if (granted) {
+                viewModel.discoverHost()
+            }
         }
     }
 
@@ -104,7 +127,6 @@ fun ConnectionScreen(
             if (broadcastInput.isEmpty()) broadcastInput = cp.broadcastIp
             if (subnetInput.isEmpty()) subnetInput = cp.subnetMask
             if (accessKeyInput.isEmpty()) accessKeyInput = cp.accessKey
-            // Only set once when not modified by user or to initialized default
             if (qualityInput == 50f && dp.quality != 50) qualityInput = dp.quality.toFloat()
             if (targetFpsInput == 30f && dp.targetFps != 30) targetFpsInput = dp.targetFps.toFloat()
             if (scaleInput == 0.6f && dp.scale != 0.6f) scaleInput = dp.scale
@@ -188,24 +210,194 @@ fun ConnectionScreen(
                     }
                 }
 
-                OutlinedButton(
-                    onClick = { viewModel.discoverHost() },
-                    enabled = !isDiscovering,
-                    modifier = Modifier.fillMaxWidth()
+                // --- Auto-discovery (primary action) ---
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 ) {
-                    if (isDiscovering) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Wifi,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Auto-Discover on LAN",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        Text(
+                            "Make sure your PC is running the RemEx Host app and both devices are on the same Wi-Fi network.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Searching…")
-                    } else {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Discover Host on LAN")
+                        Button(
+                            onClick = {
+                                if (!hasNearbyWifiPermission()) {
+                                    pendingDiscover = true
+                                    discoverPermissionLauncher.launch(
+                                        Manifest.permission.NEARBY_WIFI_DEVICES
+                                    )
+                                } else {
+                                    viewModel.discoverHost()
+                                }
+                            },
+                            enabled = !isDiscovering,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            if (isDiscovering) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Searching for RemEx Host…")
+                            } else {
+                                Icon(Icons.Default.Search, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(if (discoveredHost != null) "Found: ${discoveredHost!!.host} — Search Again" else "Discover Automatically")
+                            }
+                        }
+
+                        AnimatedVisibility(visible = discoveredHost != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    "Host found and fields filled in below.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
                     }
                 }
+
+                // --- How to connect help section ---
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize()
+                        .clickable { showHelpSection = !showHelpSection },
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Help,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "How to connect manually",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                if (showHelpSection) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        AnimatedVisibility(visible = showHelpSection) {
+                            Column(
+                                modifier = Modifier.padding(top = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                HelpStep(
+                                    number = "1",
+                                    title = "Install RemEx Host on your PC",
+                                    body = "Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running."
+                                )
+                                HelpStep(
+                                    number = "2",
+                                    title = "Connect to the same Wi-Fi",
+                                    body = "Your phone and PC must be on the same local network. Mobile data will not work."
+                                )
+                                HelpStep(
+                                    number = "3",
+                                    title = "Find your PC's IP address",
+                                    body = null
+                                )
+                                // Platform-specific IP instructions
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        IpInstructionRow(
+                                            platform = "Windows",
+                                            icon = Icons.Default.Computer,
+                                            instruction = "Open Command Prompt and type: ipconfig\nLook for \"IPv4 Address\" under your Wi-Fi adapter."
+                                        )
+                                        HorizontalDivider()
+                                        IpInstructionRow(
+                                            platform = "macOS",
+                                            icon = Icons.Default.Laptop,
+                                            instruction = "Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0"
+                                        )
+                                        HorizontalDivider()
+                                        IpInstructionRow(
+                                            platform = "Linux",
+                                            icon = Icons.Default.Terminal,
+                                            instruction = "Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0)."
+                                        )
+                                    }
+                                }
+                                HelpStep(
+                                    number = "4",
+                                    title = "Enter the IP below and tap Save & Connect",
+                                    body = "The default port is 5005. If you set an access key in the host app, enter it here too."
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // --- Manual host fields ---
+                Text(
+                    text = "Or enter manually",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Start)
+                )
 
                 OutlinedTextField(
                     value = hostInput,
@@ -213,25 +405,41 @@ fun ConnectionScreen(
                     label = { Text("Host IP Address") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    supportingText = { Text("Your PC's local IP — find it via ipconfig (Win) or ip addr (Linux)") }
                 )
 
                 OutlinedTextField(
                     value = portInput,
-                    onValueChange = { portInput = it },
+                    onValueChange = { portInput = it.filter { c -> c.isDigit() } },
                     label = { Text("Port") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    supportingText = { Text("Default: 5005") }
                 )
 
                 OutlinedTextField(
                     value = macInput,
-                    onValueChange = { macInput = it },
+                    onValueChange = { macInput = it.uppercase() },
                     label = { Text("MAC Address (Wake-on-LAN)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        imeAction = ImeAction.Next
+                    ),
+                    placeholder = { Text("AA:BB:CC:DD:EE:FF", style = MaterialTheme.typography.bodySmall) },
+                    supportingText = { Text("Required for Wake-on-LAN — find in Device Manager or ip link") }
                 )
 
                 OutlinedTextField(
@@ -240,7 +448,12 @@ fun ConnectionScreen(
                     label = { Text("Broadcast IP") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Router, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Router, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    supportingText = { Text("Usually 255.255.255.255 — only change if WOL fails") }
                 )
 
                 OutlinedTextField(
@@ -249,7 +462,12 @@ fun ConnectionScreen(
                     label = { Text("Subnet Mask") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    supportingText = { Text("Typically 255.255.255.0 for home networks") }
                 )
 
                 OutlinedTextField(
@@ -259,6 +477,9 @@ fun ConnectionScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        imeAction = ImeAction.Done
+                    ),
                     supportingText = { Text("Leave empty to disable authentication") }
                 )
 
@@ -272,7 +493,7 @@ fun ConnectionScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text("Quality: ${qualityInput.toInt()}%")
@@ -309,15 +530,16 @@ fun ConnectionScreen(
 
                 Button(
                     onClick = {
-                        if (requiredPermissions.isNotEmpty() && !hasAllPermissions()) {
-                            // Request permissions first, then connect on callback
+                        if (connectPermissions.isNotEmpty() && !hasAllConnectPermissions()) {
                             pendingConnect = true
-                            permissionLauncher.launch(requiredPermissions)
+                            connectPermissionLauncher.launch(connectPermissions)
                         } else {
                             doConnect()
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     enabled = !isConnecting && hostInput.isNotEmpty()
                 ) {
                     if (isConnecting) {
@@ -343,6 +565,54 @@ fun ConnectionScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HelpStep(number: String, title: String, body: String?) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    number,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            if (body != null) {
+                Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun IpInstructionRow(platform: String, icon: androidx.compose.ui.graphics.vector.ImageVector, instruction: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp).padding(top = 2.dp)
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(platform, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text(instruction, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

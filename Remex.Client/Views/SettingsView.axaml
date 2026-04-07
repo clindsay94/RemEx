@@ -134,14 +134,18 @@
                     
                     <TextBlock Text="Host Address" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"/>
-                        <Button Grid.Column="1" Content="Discover" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"
+                                 ToolTip.Tip="WebSocket address of the RemEx host (e.g. ws://192.168.1.42:5005/ws). Find your IP with ipconfig (Windows) or ip addr (Linux)."/>
+                        <Button Grid.Column="1" Content="Discover" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"
+                                ToolTip.Tip="Auto-discover RemEx hosts on your local network using mDNS"/>
                     </Grid>
 
                     <TextBlock Text="Access Key" FontSize="13" Foreground="{DynamicResource TextSecondary}" Margin="0,8,0,0"/>
-                    <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="Leave empty to disable"/>
+                    <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="Leave empty to disable"
+                             ToolTip.Tip="Optional authentication key — must match the key set on the host. Leave empty if not configured."/>
 
-                    <Button Content="Save &amp; Reconnect" Command="{Binding SaveAndReconnectCommand}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                    <Button Content="Save &amp; Reconnect" Command="{Binding SaveAndReconnectCommand}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,8,0,0"
+                            ToolTip.Tip="Save connection settings and reconnect to the host"/>
 
                     <TextBlock Text="Changes are saved automatically and persist across restarts." FontSize="11" Foreground="#4444AA" FontStyle="Italic" Margin="0,8,0,0"/>
                 </StackPanel>
@@ -158,7 +162,8 @@
                             <TextBlock Text="Snap to Grid" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0FF"/>
                             <TextBlock Text="Cards snap to the nearest grid line when dropped" FontSize="12" Foreground="#8888AA"/>
                         </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"
+                                     ToolTip.Tip="When enabled, sensor cards snap to the nearest grid line when repositioned"/>
                     </Grid>
 
                     <!-- Grid size slider -->
@@ -195,6 +200,17 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ Help Section ═══ -->
+            <Border Classes="glass-card" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="HELP" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <Button Content="📖 Replay Tutorial" Command="{Binding ReplayTutorialCommand}"
+                            Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8"
+                            CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"
+                            ToolTip.Tip="Re-watch the getting-started tutorial"/>
                 </StackPanel>
             </Border>
 

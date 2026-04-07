@@ -66,14 +66,14 @@ private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 val materialShapesList: List<RoundedPolygon> = listOf(
-    // Geometric
+    // Geometric — clean, always readable
     MaterialShapes.Circle,
     MaterialShapes.Square,
     MaterialShapes.Triangle,
     MaterialShapes.Diamond,
     MaterialShapes.Pentagon,
-    
-    // Expressive / Organic
+
+    // Expressive / Organic — usable interior area
     MaterialShapes.Arch,
     MaterialShapes.SemiCircle,
     MaterialShapes.Pill,
@@ -87,26 +87,28 @@ val materialShapesList: List<RoundedPolygon> = listOf(
     MaterialShapes.PuffyDiamond,
     MaterialShapes.Ghostish,
     MaterialShapes.Oval,
-    
-    // Decorative / Stars / Patterns
+
+    // Decorative — kept only where interior is still usable for data cards
     MaterialShapes.Clover4Leaf,
     MaterialShapes.Clover8Leaf,
-    MaterialShapes.Cookie4Sided,
-    MaterialShapes.Cookie6Sided,
-    MaterialShapes.Cookie7Sided,
-    MaterialShapes.Cookie9Sided,
-    MaterialShapes.Cookie12Sided,
-    MaterialShapes.Sunny,
-    MaterialShapes.VerySunny,
-    MaterialShapes.Burst,
-    MaterialShapes.SoftBurst,
-    MaterialShapes.Boom,
-    MaterialShapes.SoftBoom,
-    MaterialShapes.PixelCircle,
-    MaterialShapes.PixelTriangle,
-    
-    // Directional
-    MaterialShapes.Arrow,
+    MaterialShapes.Sunny,       // gentle star — acceptable
+    MaterialShapes.SoftBurst,   // soft star — usable
+    MaterialShapes.SoftBoom,    // soft balloon — usable
+    MaterialShapes.PixelCircle, // fun but legible
+
+    // Removed: Cookie4/6/7/9/12Sided (scalloped edges clip content),
+    //          VerySunny / Burst / Boom (too many spikes), PixelTriangle (awkward aspect),
+    //          Arrow (directional, terrible for data cards)
+)
+
+/** Human-readable names that correspond 1-to-1 with [materialShapesList]. */
+val materialShapeNames: List<String> = listOf(
+    "Circle", "Square", "Triangle", "Diamond", "Pentagon",
+    "Arch", "Semi-Circle", "Pill", "Slanted", "Fan",
+    "Clam Shell", "Gem", "Heart", "Flower", "Puffy",
+    "Puffy Diamond", "Ghostish", "Oval",
+    "4-Leaf Clover", "8-Leaf Clover", "Sunny",
+    "Soft Burst", "Soft Boom", "Pixel Circle"
 )
 class MorphPolygonShape(
     private val morph: Morph,

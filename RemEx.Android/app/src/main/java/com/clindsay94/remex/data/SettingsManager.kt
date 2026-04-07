@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -26,7 +27,9 @@ class SettingsManager(private val context: Context) {
         val DESKTOP_QUALITY_KEY = intPreferencesKey("desktop_quality")
         val DESKTOP_TARGET_FPS_KEY = intPreferencesKey("desktop_target_fps")
         val DESKTOP_SCALE_KEY = floatPreferencesKey("desktop_scale")
-        val DESKTOP_DIRECT_TOUCH_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("desktop_direct_touch")
+        val DESKTOP_DIRECT_TOUCH_KEY = booleanPreferencesKey("desktop_direct_touch")
+        val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
+        val SPLASH_SHOWN_KEY = booleanPreferencesKey("splash_shown")
 
         val HOME_LAYOUT_JSON_KEY = stringPreferencesKey("home_layout_json")
         val HOME_ENABLED_CARDS_JSON_KEY = stringPreferencesKey("home_enabled_cards_json")
@@ -109,6 +112,18 @@ class SettingsManager(private val context: Context) {
 
     val remoteMouseCardShapePresetFlow: Flow<Float> = context.dataStore.data.map { preferences ->
         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 0f
+    }
+
+    // Typed as Flow<Boolean?> so that collectAsState(initial = null) can distinguish
+    // "DataStore hasn't loaded yet" (null initial) from the actual persisted value.
+    // The flow itself always emits non-null Boolean.
+    val hasCompletedOnboardingFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
+        preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
+    }
+
+    // See hasCompletedOnboardingFlow for the nullable-type rationale.
+    val splashShownFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
+        preferences[SPLASH_SHOWN_KEY] ?: false
     }
 
     val hostFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -281,6 +296,18 @@ class SettingsManager(private val context: Context) {
             preferences[DESKTOP_TARGET_FPS_KEY] = targetFps.coerceIn(1, 120)
             preferences[DESKTOP_SCALE_KEY] = scale.coerceIn(0.25f, 1.0f)
         }
+    }
+
+    suspend fun markOnboardingCompleted() {
+        context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = true }
+    }
+
+    suspend fun resetOnboarding() {
+        context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = false }
+    }
+
+    suspend fun markSplashShown() {
+        context.dataStore.edit { it[SPLASH_SHOWN_KEY] = true }
     }
 
     suspend fun saveRemoteDesktopDirectTouch(enabled: Boolean) {

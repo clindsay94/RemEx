@@ -242,6 +242,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
 
+    [RelayCommand]
+    private void ReplayTutorial()
+    {
+        _shell.CloseSettingsPanel();
+        _shell.ReplayTutorial();
+    }
+
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(ConnectionViewModel.HostCapabilities)
