@@ -41,6 +41,7 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.DashboardScreen
+import com.clindsay94.remex.ui.screens.FaqScreen
 import com.clindsay94.remex.ui.screens.PersonalizationScreen
 import com.clindsay94.remex.ui.screens.RemoteControlScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
@@ -245,6 +246,9 @@ fun AppNavigation() {
             }
             composable(Screen.Settings.route) {
                 SettingsScreen()
+            }
+            composable(Screen.Faq.route) {
+                FaqScreen()
             }
         }
     }

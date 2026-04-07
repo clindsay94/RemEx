@@ -5,6 +5,7 @@ import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
@@ -23,6 +24,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Personalization : Screen("personalization", "Personalization", Icons.Default.Palette)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object Tutorial : Screen("tutorial", "Tutorial", Icons.Default.Dashboard)
+    object Faq : Screen("faq", "FAQ", Icons.Default.HelpOutline)
 }
 
 /** Bottom navigation bar items — App Launcher replaces old Connection/Settings tab. */
@@ -34,8 +36,9 @@ val navItems = listOf(
     Screen.RemoteControl
 )
 
-/** Overflow (3-dot) menu: Remote Mouse + unified Settings only. */
+/** Overflow (3-dot) menu: Remote Mouse, Settings, and FAQ. */
 val secondaryNavItems = listOf(
     Screen.RemoteMouse,
-    Screen.Settings
+    Screen.Settings,
+    Screen.Faq
 )

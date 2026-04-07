@@ -114,7 +114,8 @@ class SettingsManager(private val context: Context) {
         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 0f
     }
 
-    val hasCompletedOnboardingFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    // Nullable flow so the UI can distinguish "not yet loaded" (null) from "false".
+    val hasCompletedOnboardingFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 

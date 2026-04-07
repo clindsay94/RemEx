@@ -20,6 +20,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,8 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.data.SettingsManager
@@ -42,7 +48,9 @@ import kotlinx.coroutines.launch
 private data class TutorialPage(
     val emoji: String,
     val title: String,
-    val body: String
+    val body: String,
+    val linkLabel: String? = null,
+    val linkUrl: String? = null
 )
 
 private val tutorialPages = listOf(
@@ -55,14 +63,33 @@ private val tutorialPages = listOf(
                 "Let's get you connected in a few quick steps."
     ),
     TutorialPage(
+        emoji = "⚙️",
+        title = "Install the Host First",
+        body = "Before you can connect, you need the RemEx host software " +
+                "running on your PC.\n\n" +
+                "Option 1 — RemEx Desktop Client\n" +
+                "Download and run Remex.Client.Desktop on your PC. It bundles " +
+                "the host automatically — just launch it and the host starts " +
+                "in the background.\n\n" +
+                "Option 2 — RemEx Host (standalone)\n" +
+                "Install and run Remex.Host as a standalone service. This is " +
+                "ideal for headless servers or if you only need the host.\n\n" +
+                "Both are self-contained — no extra runtimes needed. Download " +
+                "the latest publish folder from the GitHub releases page, " +
+                "extract, and run.",
+        linkLabel = "Download from GitHub Releases",
+        linkUrl = "https://github.com/clindsay94/RemEx/releases"
+    ),
+    TutorialPage(
         emoji = "📡",
         title = "Auto-Discovery",
         body = "The easiest way to connect is automatic discovery.\n\n" +
-                "Tap 'Discover Automatically' on the Connection screen to find " +
-                "your PC on the same Wi-Fi network. RemEx uses mDNS to detect " +
-                "running hosts.\n\n" +
-                "Make sure the RemEx host is running on your PC and both " +
-                "devices are on the same network."
+                "1. Make sure Remex.Client.Desktop or Remex.Host is running " +
+                "on your PC\n" +
+                "2. Ensure both your phone and PC are on the same Wi-Fi network\n" +
+                "3. Tap 'Discover Automatically' on the Connection screen\n\n" +
+                "RemEx uses mDNS to detect running hosts on your local " +
+                "network. Your PC's IP and port will be filled in automatically."
     ),
     TutorialPage(
         emoji = "🔍",
@@ -76,7 +103,9 @@ private val tutorialPages = listOf(
                 "  System Settings → Network, or run:\n" +
                 "  ipconfig getifaddr en0\n\n" +
                 "Linux:\n" +
-                "  Run ip addr or hostname -I"
+                "  Run ip addr or hostname -I\n\n" +
+                "You can also see the IP address in the Remex.Client.Desktop " +
+                "window under the connection status section."
     ),
     TutorialPage(
         emoji = "🔌",
@@ -87,7 +116,9 @@ private val tutorialPages = listOf(
                 "3. Enter the port (default is 5005)\n" +
                 "4. Tap 'Save & Connect'\n\n" +
                 "RemEx will establish a connection and you'll see your PC's " +
-                "status appear on the dashboard."
+                "status appear on the dashboard.\n\n" +
+                "Remember: Remex.Client.Desktop or Remex.Host must be running " +
+                "on the target PC for the connection to succeed."
     ),
     TutorialPage(
         emoji = "🚀",
@@ -221,6 +252,8 @@ fun TutorialScreen(
 
 @Composable
 private fun TutorialPageContent(page: TutorialPage) {
+    val uriHandler = LocalUriHandler.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -253,5 +286,33 @@ private fun TutorialPageContent(page: TutorialPage) {
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
+
+        if (page.linkLabel != null && page.linkUrl != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val linkColor = MaterialTheme.colorScheme.primary
+            val annotatedString = buildAnnotatedString {
+                pushStringAnnotation(tag = "URL", annotation = page.linkUrl)
+                withStyle(
+                    SpanStyle(
+                        color = linkColor,
+                        fontWeight = FontWeight.SemiBold,
+                        textDecoration = TextDecoration.Underline
+                    )
+                ) {
+                    append(page.linkLabel)
+                }
+                pop()
+            }
+
+            ClickableText(
+                text = annotatedString,
+                style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
+                onClick = { offset ->
+                    annotatedString.getStringAnnotations("URL", offset, offset)
+                        .firstOrNull()?.let { uriHandler.openUri(it.item) }
+                }
+            )
+        }
     }
 }

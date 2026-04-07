@@ -409,7 +409,8 @@ fun ConnectionScreen(
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
-                    )
+                    ),
+                    supportingText = { Text("Your PC's local IP — find it via ipconfig (Win) or ip addr (Linux)") }
                 )
 
                 OutlinedTextField(
@@ -437,7 +438,8 @@ fun ConnectionScreen(
                         capitalization = KeyboardCapitalization.Characters,
                         imeAction = ImeAction.Next
                     ),
-                    placeholder = { Text("AA:BB:CC:DD:EE:FF", style = MaterialTheme.typography.bodySmall) }
+                    placeholder = { Text("AA:BB:CC:DD:EE:FF", style = MaterialTheme.typography.bodySmall) },
+                    supportingText = { Text("Required for Wake-on-LAN — find in Device Manager or ip link") }
                 )
 
                 OutlinedTextField(
@@ -450,7 +452,8 @@ fun ConnectionScreen(
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
-                    )
+                    ),
+                    supportingText = { Text("Usually 255.255.255.255 — only change if WOL fails") }
                 )
 
                 OutlinedTextField(
@@ -463,7 +466,8 @@ fun ConnectionScreen(
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
-                    )
+                    ),
+                    supportingText = { Text("Typically 255.255.255.0 for home networks") }
                 )
 
                 OutlinedTextField(
