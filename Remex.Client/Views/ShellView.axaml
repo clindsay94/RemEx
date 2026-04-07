@@ -121,7 +121,8 @@
                                 <StackPanel Spacing="2" Margin="0,8">
                                     <!-- Home -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
-                                            Command="{Binding NavigateToHomeCommand}">
+                                            Command="{Binding NavigateToHomeCommand}"
+                                            ToolTip.Tip="Home — Overview and pinned sensors">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="{DynamicResource AccentPrimaryBrush}" Opacity="0.7">
@@ -134,7 +135,8 @@
 
                                     <!-- Canvas / Sensors -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}"
-                                            Command="{Binding NavigateToCanvasCommand}">
+                                            Command="{Binding NavigateToCanvasCommand}"
+                                            ToolTip.Tip="Sensor Workspace — Drag-and-drop telemetry cards">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1A22C55E">
@@ -147,7 +149,8 @@
 
                                     <!-- Remote Control -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}"
-                                            Command="{Binding NavigateToRemoteCommand}">
+                                            Command="{Binding NavigateToRemoteCommand}"
+                                            ToolTip.Tip="Remote Control — Power, volume, and Wake-on-LAN">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1AFF6B6B">
@@ -160,7 +163,8 @@
 
                                     <!-- App Launcher -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}"
-                                            Command="{Binding NavigateToAppLauncherCommand}">
+                                            Command="{Binding NavigateToAppLauncherCommand}"
+                                            ToolTip.Tip="App Launcher — Start programs on your PC remotely">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1A00F3FF">
@@ -173,7 +177,8 @@
 
                                     <!-- Task Manager -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}"
-                                            Command="{Binding NavigateToTaskManagerCommand}">
+                                            Command="{Binding NavigateToTaskManagerCommand}"
+                                            ToolTip.Tip="Task Manager — View and kill running processes">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1AFFB800">
@@ -189,7 +194,8 @@
 
                                     <!-- Remote Desktop -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=5}"
-                                            Command="{Binding NavigateToRemoteDesktopCommand}">
+                                            Command="{Binding NavigateToRemoteDesktopCommand}"
+                                            ToolTip.Tip="Remote Desktop — Stream your PC screen in real-time">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1AFF00FF">
@@ -202,7 +208,8 @@
 
                                     <!-- Settings -->
                                     <Button Classes="nav-item"
-                                            Command="{Binding NavigateToSettingsCommand}">
+                                            Command="{Binding NavigateToSettingsCommand}"
+                                            ToolTip.Tip="Settings — Connection, layout, and personalization">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1A9999FF">

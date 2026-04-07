@@ -127,10 +127,12 @@
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                     <Button Classes="action-pill action-pill-accent" Content="Connect" 
                                             Command="{Binding Connection.ConnectCommand}" 
-                                            IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"/>
+                                            IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"
+                                            ToolTip.Tip="Connect to the RemEx host — make sure it's running on your PC"/>
                                     <Button Classes="action-pill action-pill-danger" Content="Cancel" 
                                             Command="{Binding Connection.DisconnectCommand}" 
-                                            IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"/>
+                                            IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
+                                            ToolTip.Tip="Cancel the connection attempt"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -144,35 +146,40 @@
                            Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
                 <WrapPanel Orientation="Horizontal">
                     <Button Classes="action-pill action-pill-accent" Margin="0,0,8,8"
-                            Command="{Binding NavigateToCanvasCommand}">
+                            Command="{Binding NavigateToCanvasCommand}"
+                            ToolTip.Tip="Open the drag-and-drop sensor workspace to monitor PC telemetry">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="▦" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="Sensor Workspace" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToRemoteCommand}">
+                            Command="{Binding NavigateToRemoteCommand}"
+                            ToolTip.Tip="Control your PC remotely — power, volume, and Wake-on-LAN">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="⏻" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="PC Remote" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToRemoteDesktopCommand}">
+                            Command="{Binding NavigateToRemoteDesktopCommand}"
+                            ToolTip.Tip="Stream your PC's desktop to this device in real-time">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="🖳" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="Desktop" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToAppLauncherCommand}">
+                            Command="{Binding NavigateToAppLauncherCommand}"
+                            ToolTip.Tip="Start programs on your PC without being at the keyboard">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="◈" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="Launcher" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToTaskManagerCommand}">
+                            Command="{Binding NavigateToTaskManagerCommand}"
+                            ToolTip.Tip="View running processes and kill tasks on your PC">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="▤" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="Tasks" VerticalAlignment="Center"/>
