@@ -44,10 +44,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.RemexClientManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskManagerScreen(
+    onNavigateToConnection: () -> Unit = {},
     viewModel: TaskManagerViewModel = viewModel()
 ) {
     val processes by viewModel.processes.collectAsState()
@@ -56,6 +58,7 @@ fun TaskManagerScreen(
     val sortDescending by viewModel.sortDescending.collectAsState()
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
+    val isConnected by RemexClientManager.isConnected.collectAsState()
 
     Scaffold(
         topBar = {
@@ -74,6 +77,11 @@ fun TaskManagerScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            NotConnectedBanner(
+                isConnected = isConnected,
+                onNavigateToConnection = onNavigateToConnection
+            )
+
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
@@ -105,11 +113,14 @@ fun TaskManagerScreen(
                 }
             }
 
-            if (processes.isEmpty()) {
+            if (!isConnected && processes.isEmpty()) {
+                DisconnectedFullScreen(
+                    screenName = "Task Manager",
+                    onNavigateToConnection = onNavigateToConnection
+                )
+            } else if (processes.isEmpty()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {

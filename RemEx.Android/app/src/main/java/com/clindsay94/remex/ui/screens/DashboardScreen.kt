@@ -9,6 +9,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.FilterCenterFocus
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -60,7 +63,8 @@ private fun defaultCardSizeFor(id: String): CardSizeDp {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel = viewModel()
+    viewModel: DashboardViewModel = viewModel(),
+    onNavigateToConnection: () -> Unit = {}
 ) {
     val isConnected by viewModel.isConnected.collectAsState()
     val isConnecting by viewModel.isConnecting.collectAsState()
@@ -98,6 +102,12 @@ fun DashboardScreen(
     var draggingCardId by remember { mutableStateOf<String?>(null) }
     var draggingPointerPx by remember { mutableStateOf(Offset.Zero) }
 
+    // Pinch-to-zoom: scale factor for the entire canvas
+    var canvasScale by remember { mutableFloatStateOf(1f) }
+    val transformableState = rememberTransformableState { zoomChange, _, _ ->
+        canvasScale = (canvasScale * zoomChange).coerceIn(0.4f, 3f)
+    }
+
     val draggingCard = availableCards.firstOrNull { it.id == draggingCardId }
     val draggingCardSize = remember(draggingCard?.id, cards) {
         draggingCard?.let { item ->
@@ -111,11 +121,12 @@ fun DashboardScreen(
         x = draggingPointerPx.x - canvasTopLeftPx.x,
         y = draggingPointerPx.y - canvasTopLeftPx.y
     )
+    // Drop target positions must account for the canvas scale
     val dropTargetXDp = draggingCardSize?.let { size ->
-        ((dragPointerCanvasPx.x / density) - (size.widthDp / 2f)).coerceAtLeast(0f)
+        ((dragPointerCanvasPx.x / (density * canvasScale)) - (size.widthDp / 2f)).coerceAtLeast(0f)
     } ?: 0f
     val dropTargetYDp = draggingCardSize?.let { size ->
-        ((dragPointerCanvasPx.y / density) - (size.heightDp / 2f)).coerceAtLeast(0f)
+        ((dragPointerCanvasPx.y / (density * canvasScale)) - (size.heightDp / 2f)).coerceAtLeast(0f)
     } ?: 0f
 
     Scaffold(
@@ -123,6 +134,12 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text("RemEx Home Base", fontWeight = FontWeight.Bold) },
                 actions = {
+                    // Zoom reset — only shown when user has pinched away from 1×
+                    if (canvasScale != 1f) {
+                        IconButton(onClick = { canvasScale = 1f }) {
+                            Icon(Icons.Default.FilterCenterFocus, contentDescription = "Reset zoom")
+                        }
+                    }
                     IconButton(onClick = { showCardDrawer = !showCardDrawer }) {
                         Icon(Icons.Default.Tune, contentDescription = "Customize cards")
                     }
@@ -131,14 +148,19 @@ fun DashboardScreen(
         }
     ) { paddingValues ->
         val visibleCards = cards.filter { enabledCards.contains(it.id) }
-        val canvasWidthDp = remember(visibleCards) {
+
+        // Canvas dimensions grow with scale so scrollbars stay accurate
+        val baseCanvasWidthDp = remember(visibleCards) {
             val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
             (maxRight + 200f).coerceAtLeast(800f)
         }
-        val canvasHeightDp = remember(visibleCards) {
+        val baseCanvasHeightDp = remember(visibleCards) {
             val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
             (maxBottom + 200f).coerceAtLeast(1200f)
         }
+        val canvasWidthDp = baseCanvasWidthDp * canvasScale
+        val canvasHeightDp = baseCanvasHeightDp * canvasScale
+
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
 
@@ -146,118 +168,127 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                // transformable handles pinch gestures without consuming scroll events
+                .transformable(state = transformableState)
         ) {
-          Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .horizontalScroll(hScrollState)
-                .verticalScroll(vScrollState)
-          ) {
             Box(
-              modifier = Modifier
-                .width(canvasWidthDp.dp)
-                .height(canvasHeightDp.dp)
-                .onGloballyPositioned { canvasTopLeftPx = it.positionInRoot() }
-                .background(MaterialTheme.colorScheme.background)
-          ) {
-            visibleCards.forEach { card ->
-                val xPx = (card.xDp * density).roundToInt()
-                val yPx = (card.yDp * density).roundToInt()
-                val cardShapePreset = when {
-                    card.id == "pc_status" -> pcCardShapePreset
-                    card.id.startsWith("sensor:") -> telemetryCardShapePreset
-                    else -> 0f
-                }
-
-                Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .horizontalScroll(hScrollState)
+                    .verticalScroll(vScrollState)
+            ) {
+                Box(
                     modifier = Modifier
-                        .offset { IntOffset(xPx, yPx) }
-                        .width(card.widthDp.dp)
-                        .height(card.heightDp.dp)
-                        .animateContentSize(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        )
-                        .pointerInput(card.id) {
-                            detectDragGestures(
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    viewModel.moveCard(
-                                        cardId = card.id,
-                                        deltaXDp = dragAmount.x / density,
-                                        deltaYDp = dragAmount.y / density
-                                    )
-                                },
-                                onDragEnd = { viewModel.saveCardLayout() }
-                            )
-                        },
-                    shape = cardShape(cardShapePreset, cornerRadius),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardOpacity)
-                    )
+                        .width(canvasWidthDp.dp)
+                        .height(canvasHeightDp.dp)
+                        .onGloballyPositioned { canvasTopLeftPx = it.positionInRoot() }
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
-                        when (card.type.name) {
-                            "PC_STATUS" -> {
-                                ConnectionOrbCard(
-                                    isConnected = isConnected,
-                                    isConnecting = isConnecting,
-                                    shapePreset = pcCardShapePreset,
-                                    cornerRadius = cornerRadius,
-                                    onToggle = { viewModel.toggleConnection() },
-                                    onWake = { viewModel.wakePc() }
-                                )
-                            }
-
-                            "WAKE_ON_LAN" -> {
-                                WakeOnLanCard(
-                                    onWake = { viewModel.wakePc() }
-                                )
-                            }
-
-                            "TELEMETRY" -> {
-                                val sensor = sensorMap[card.sensorId]
-                                val history = telemetryHistory[card.sensorId].orEmpty()
-                                TelemetryCardContent(
-                                    title = card.title,
-                                    sensor = sensor,
-                                    history = history,
-                                    mode = card.displayMode,
-                                    onCycleDisplayMode = { viewModel.cycleTelemetryDisplayMode(card.id) },
-                                    isExpressiveShape = cardShapePreset > 0
-                                )
-                            }
+                    visibleCards.forEach { card ->
+                        // All position/size values are multiplied by canvasScale so cards
+                        // move and resize proportionally when the user pinches.
+                        val xPx = (card.xDp * density * canvasScale).roundToInt()
+                        val yPx = (card.yDp * density * canvasScale).roundToInt()
+                        val cardShapePreset = when {
+                            card.id == "pc_status" -> pcCardShapePreset
+                            card.id.startsWith("sensor:") -> telemetryCardShapePreset
+                            else -> 0f
                         }
 
-                        Box(
+                        Card(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(12.dp)
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                                .pointerInput("resize_${card.id}") {
+                                .offset { IntOffset(xPx, yPx) }
+                                .width((card.widthDp * canvasScale).dp)
+                                .height((card.heightDp * canvasScale).dp)
+                                .animateContentSize(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessLow
+                                    )
+                                )
+                                .pointerInput(card.id, canvasScale) {
                                     detectDragGestures(
                                         onDrag = { change, dragAmount ->
                                             change.consume()
-                                            viewModel.resizeCard(
+                                            // Divide by (density * canvasScale) so a pixel of drag
+                                            // maps to the correct logical-Dp delta at any zoom level.
+                                            viewModel.moveCard(
                                                 cardId = card.id,
-                                                deltaWidthDp = dragAmount.x / density,
-                                                deltaHeightDp = dragAmount.y / density
+                                                deltaXDp = dragAmount.x / (density * canvasScale),
+                                                deltaYDp = dragAmount.y / (density * canvasScale)
                                             )
                                         },
                                         onDragEnd = { viewModel.saveCardLayout() }
                                     )
+                                },
+                            shape = cardShape(cardShapePreset, cornerRadius),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardOpacity)
+                            )
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+                                when (card.type.name) {
+                                    "PC_STATUS" -> {
+                                        ConnectionOrbCard(
+                                            isConnected = isConnected,
+                                            isConnecting = isConnecting,
+                                            shapePreset = pcCardShapePreset,
+                                            cornerRadius = cornerRadius,
+                                            onToggle = { viewModel.toggleConnection() },
+                                            onWake = { viewModel.wakePc() },
+                                            onNavigateToConnection = onNavigateToConnection
+                                        )
+                                    }
+
+                                    "WAKE_ON_LAN" -> {
+                                        WakeOnLanCard(
+                                            onWake = { viewModel.wakePc() }
+                                        )
+                                    }
+
+                                    "TELEMETRY" -> {
+                                        val sensor = sensorMap[card.sensorId]
+                                        val history = telemetryHistory[card.sensorId].orEmpty()
+                                        TelemetryCardContent(
+                                            title = card.title,
+                                            sensor = sensor,
+                                            history = history,
+                                            mode = card.displayMode,
+                                            onCycleDisplayMode = { viewModel.cycleTelemetryDisplayMode(card.id) },
+                                            isExpressiveShape = cardShapePreset > 0
+                                        )
+                                    }
                                 }
-                        )
+
+                                // Resize handle — bottom-right corner
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(12.dp)
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+                                        .pointerInput("resize_${card.id}", canvasScale) {
+                                            detectDragGestures(
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    viewModel.resizeCard(
+                                                        cardId = card.id,
+                                                        deltaWidthDp = dragAmount.x / (density * canvasScale),
+                                                        deltaHeightDp = dragAmount.y / (density * canvasScale)
+                                                    )
+                                                },
+                                                onDragEnd = { viewModel.saveCardLayout() }
+                                            )
+                                        }
+                                )
+                            }
+                        }
                     }
                 }
             }
-          }
-          }
 
+            // Card drawer — slides in from the right
             AnimatedVisibility(
                 visible = showCardDrawer,
                 modifier = Modifier.align(Alignment.CenterEnd)
@@ -312,10 +343,10 @@ fun DashboardScreen(
                                                     val draggingId = draggingCardId
                                                     if (draggingId == availableCard.id && draggingPointerPx.x < drawerLeftPx - 24f) {
                                                         val dragSize = cards.firstOrNull { it.id == draggingId }
-                                                                ?.let { CardSizeDp(it.widthDp, it.heightDp) }
-                                                                ?: defaultCardSizeFor(draggingId)
-                                                        val dropXDp = ((draggingPointerPx.x - canvasTopLeftPx.x) / density - (dragSize.widthDp / 2f)).coerceAtLeast(0f)
-                                                        val dropYDp = ((draggingPointerPx.y - canvasTopLeftPx.y) / density - (dragSize.heightDp / 2f)).coerceAtLeast(0f)
+                                                            ?.let { CardSizeDp(it.widthDp, it.heightDp) }
+                                                            ?: defaultCardSizeFor(draggingId)
+                                                        val dropXDp = ((draggingPointerPx.x - canvasTopLeftPx.x) / (density * canvasScale) - (dragSize.widthDp / 2f)).coerceAtLeast(0f)
+                                                        val dropYDp = ((draggingPointerPx.y - canvasTopLeftPx.y) / (density * canvasScale) - (dragSize.heightDp / 2f)).coerceAtLeast(0f)
                                                         viewModel.placeCardAt(draggingId, dropXDp, dropYDp)
                                                     }
                                                     draggingCardId = null
@@ -349,7 +380,11 @@ fun DashboardScreen(
                                         )
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(availableCard.title, fontWeight = FontWeight.SemiBold)
-                                            Text(availableCard.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(
+                                                availableCard.subtitle,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
                                         }
                                     }
                                 }
@@ -366,21 +401,22 @@ fun DashboardScreen(
                 }
             }
 
+            // Drag-from-drawer ghost preview
             if (draggingCard != null && draggingCardSize != null) {
                 if (canDropOnCanvas) {
                     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)))
                 }
 
-                val previewX = if (canDropOnCanvas) (dropTargetXDp * density).roundToInt()
-                else (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density / 2f)).roundToInt().coerceAtLeast(0)
-                val previewY = if (canDropOnCanvas) (dropTargetYDp * density).roundToInt()
-                else (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density / 2f)).roundToInt().coerceAtLeast(0)
+                val previewX = if (canDropOnCanvas) (dropTargetXDp * density * canvasScale).roundToInt()
+                else (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density * canvasScale / 2f)).roundToInt().coerceAtLeast(0)
+                val previewY = if (canDropOnCanvas) (dropTargetYDp * density * canvasScale).roundToInt()
+                else (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density * canvasScale / 2f)).roundToInt().coerceAtLeast(0)
 
                 Card(
                     modifier = Modifier
                         .offset { IntOffset(previewX, previewY) }
-                        .width(draggingCardSize.widthDp.dp)
-                        .height(draggingCardSize.heightDp.dp),
+                        .width((draggingCardSize.widthDp * canvasScale).dp)
+                        .height((draggingCardSize.heightDp * canvasScale).dp),
                     border = BorderStroke(
                         width = if (canDropOnCanvas) 2.dp else 1.dp,
                         color = if (canDropOnCanvas) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
@@ -391,7 +427,11 @@ fun DashboardScreen(
                     )
                 ) {
                     Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
-                        Text(text = if (canDropOnCanvas) "Drop to place ${draggingCard.title}" else draggingCard.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = if (canDropOnCanvas) "Drop to place ${draggingCard.title}" else draggingCard.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -406,17 +446,16 @@ private fun ConnectionOrbCard(
     shapePreset: Float,
     cornerRadius: Int,
     onToggle: () -> Unit,
-    onWake: () -> Unit
+    onWake: () -> Unit,
+    onNavigateToConnection: () -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // The Morphing Orb
             var currentMorphTarget by remember { mutableFloatStateOf(shapePreset) }
-            
-            // Slower morphing logic during connection
+
             LaunchedEffect(isConnecting) {
                 if (isConnecting) {
                     while (true) {
@@ -460,17 +499,24 @@ private fun ConnectionOrbCard(
                     .size(72.dp)
                     .clip(cardShape(animatedShapePreset, cornerRadius))
                     .background(orbColor.copy(alpha = if (isConnected || isConnecting) glowAlpha else 1f))
-                    .clickable { onToggle() },
+                    .clickable {
+                        when {
+                            // Already connected — toggle (reconnect logic in RemexClientManager)
+                            isConnected -> onToggle()
+                            // Already trying — wait, don't double-trigger
+                            isConnecting -> { /* do nothing */ }
+                            // Offline — send user to the connection screen
+                            else -> onNavigateToConnection()
+                        }
+                    },
                 contentAlignment = Alignment.Center
-            ) {
-                // CircularProgressIndicator removed for cleaner look
-            }
+            ) { /* orb interior intentionally empty */ }
 
             Text(
                 text = when {
                     isConnected -> "HOST ONLINE"
                     isConnecting -> "CONNECTING..."
-                    else -> "OFFLINE"
+                    else -> "TAP TO CONNECT"
                 },
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Black,
@@ -508,16 +554,30 @@ private fun TelemetryCardContent(
     isExpressiveShape: Boolean = false
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        // Give extra padding for organic/expressive shapes so content doesn't clip into the shape edges
         val paddingFactor = if (isExpressiveShape) 0.22f else 0.12f
         val dynamicPadding = (minOf(maxWidth, maxHeight) * paddingFactor).coerceAtLeast(16.dp)
-        
+
         Column(
-            modifier = Modifier.fillMaxSize().padding(dynamicPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(dynamicPadding),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
                 IconButton(onClick = onCycleDisplayMode, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.Tune, contentDescription = "Change display mode", modifier = Modifier.size(16.dp))
                 }
@@ -527,22 +587,45 @@ private fun TelemetryCardContent(
 
             when (mode) {
                 TelemetryDisplayMode.VALUE -> {
-                    Text(valueText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                    Text(
+                        valueText,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black
+                    )
                 }
+
                 TelemetryDisplayMode.GAUGE -> {
                     val percent = (sensor?.value ?: 0.0).toFloat().coerceIn(0f, 100f) / 100f
                     val animatedProgress by animateFloatAsState(
                         targetValue = percent,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
                         label = "gauge_bounce"
                     )
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                        CircularProgressIndicator(progress = { animatedProgress }, modifier = Modifier.size(64.dp), strokeWidth = 6.dp, strokeCap = StrokeCap.Round)
-                        Text("${(percent * 100).roundToInt()}%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        CircularProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier.size(64.dp),
+                            strokeWidth = 6.dp,
+                            strokeCap = StrokeCap.Round
+                        )
+                        Text(
+                            "${(percent * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
+
                 TelemetryDisplayMode.LINE -> {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Sparkline(history = history)
                     }
                     Text(valueText, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
@@ -555,7 +638,11 @@ private fun TelemetryCardContent(
 @Composable
 private fun Sparkline(history: List<Float>) {
     if (history.size < 2) {
-        Text(text = "Collecting data...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = "Collecting data...",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         return
     }
     val high = history.maxOrNull() ?: 1f

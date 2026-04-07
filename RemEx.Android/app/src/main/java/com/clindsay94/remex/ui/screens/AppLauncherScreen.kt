@@ -51,6 +51,7 @@ import com.clindsay94.remex.ui.theme.cardShape
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppLauncherScreen(
+    onNavigateToConnection: () -> Unit = {},
     viewModel: AppLauncherViewModel = run {
         val context = LocalContext.current
         val settingsManager = remember(context) { SettingsManager(context) }
@@ -66,24 +67,35 @@ fun AppLauncherScreen(
     val apps by viewModel.apps.collectAsState()
     val shapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
+    val isConnected by RemexClientManager.isConnected.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("App Launcher", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.refreshApps() }) {
+                    IconButton(onClick = { viewModel.refreshApps() }, enabled = isConnected) {
                         Icon(Default.Refresh, contentDescription = "Refresh")
                     }
                 }
             )
         }
     ) { padding ->
-        if (apps.isEmpty()) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            NotConnectedBanner(
+                isConnected = isConnected,
+                onNavigateToConnection = onNavigateToConnection
+            )
+
+            if (!isConnected && apps.isEmpty()) {
+                DisconnectedFullScreen(
+                    screenName = "App Launcher",
+                    onNavigateToConnection = onNavigateToConnection,
+                    modifier = Modifier.weight(1f)
+                )
+            } else if (apps.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -105,12 +117,10 @@ fun AppLauncherScreen(
                     }
                 }
             }
-        } else {
+            } else {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 100.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -122,6 +132,7 @@ fun AppLauncherScreen(
                         onClick = { viewModel.launchApp(app) }
                     )
                 }
+            }
             }
         }
     }
