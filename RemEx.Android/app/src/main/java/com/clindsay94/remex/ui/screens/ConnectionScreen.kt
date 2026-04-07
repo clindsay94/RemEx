@@ -107,10 +107,12 @@ fun ConnectionScreen(
     // Separate permission launcher for "Discover" — only needs NEARBY_WIFI_DEVICES
     val discoverPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ ->
+    ) { granted ->
         if (pendingDiscover) {
             pendingDiscover = false
-            viewModel.discoverHost()
+            if (granted) {
+                viewModel.discoverHost()
+            }
         }
     }
 
