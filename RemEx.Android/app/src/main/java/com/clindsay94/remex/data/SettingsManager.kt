@@ -114,12 +114,14 @@ class SettingsManager(private val context: Context) {
         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 0f
     }
 
-    // Nullable flow so the UI can distinguish "not yet loaded" (null) from "false".
+    // Typed as Flow<Boolean?> so that collectAsState(initial = null) can distinguish
+    // "DataStore hasn't loaded yet" (null initial) from the actual persisted value.
+    // The flow itself always emits non-null Boolean.
     val hasCompletedOnboardingFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 
-    // Nullable flow so the UI can distinguish "not yet loaded" (null) from "false".
+    // See hasCompletedOnboardingFlow for the nullable-type rationale.
     val splashShownFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
         preferences[SPLASH_SHOWN_KEY] ?: false
     }
