@@ -81,6 +81,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Total number of tutorial pages.</summary>
     public int TutorialPageCount => 5;
 
+    /// <summary>
+    /// When true, a dismissible banner is shown at the top of the content area informing
+    /// the user that a host connection is required for the current feature.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showConnectionBanner;
+
+    /// <summary>Message shown in the connection banner.</summary>
+    [ObservableProperty]
+    private string _connectionBannerMessage = string.Empty;
+
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
     private HomeViewModel? _homeViewModel;
@@ -108,6 +119,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         {
             Customization = _layoutService.CurrentProfile.Customization;
         }
+
+        // Auto-hide the connection banner when the host connects
+        Connection.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && Connection.IsConnected)
+                ShowConnectionBanner = false;
+        };
 
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
@@ -170,6 +188,22 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         ShowTutorialOverlay = true;
     }
 
+    [RelayCommand]
+    public void DismissConnectionBanner() => ShowConnectionBanner = false;
+
+    /// <summary>
+    /// Shows the connection banner if the host is not connected.
+    /// Returns true if disconnected (caller may still navigate for preview).
+    /// </summary>
+    private void NotifyIfDisconnected(string featureName)
+    {
+        if (!Connection.IsConnected)
+        {
+            ConnectionBannerMessage = $"{featureName} requires a connected RemEx host. Open Settings to configure your connection.";
+            ShowConnectionBanner = true;
+        }
+    }
+
     private void CompleteTutorial()
     {
         ShowTutorialOverlay = false;
@@ -216,12 +250,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToCanvas()
     {
+        NotifyIfDisconnected("Sensor Workspace");
         SetTransitionAndNavigate(1, _canvasViewModel!);
     }
 
     [RelayCommand]
     public void NavigateToRemote()
     {
+        NotifyIfDisconnected("Remote Control");
         _remoteViewModel ??= new RemoteViewModel(
             Connection, this,
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(App.Services),
@@ -232,6 +268,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToAppLauncher()
     {
+        NotifyIfDisconnected("App Launcher");
         if (_appLauncherViewModel is null)
         {
             _appLauncherViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppLauncherViewModel>(App.Services);
@@ -242,6 +279,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToTaskManager()
     {
+        NotifyIfDisconnected("Task Manager");
         _taskManagerViewModel ??= new TaskManagerViewModel(Connection);
         SetTransitionAndNavigate(4, _taskManagerViewModel);
     }

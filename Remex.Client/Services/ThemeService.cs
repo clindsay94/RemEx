@@ -33,6 +33,15 @@ public class ThemeService
             SetResourceOverrideInternal("GlassOpacity", settings.GlassOpacity);
             SetResourceOverrideInternal("GlowStrength", settings.GlowStrength);
 
+            // Scale card background alpha with GlassOpacity so the slider has a visible effect
+            // across all background modes (not just Acrylic). Max base alpha is 0x26 (≈15%).
+            var baseAlpha = (byte)Math.Clamp(settings.GlassOpacity * 0x26, 1, 0x40);
+            var hoverAlpha = (byte)Math.Clamp(settings.GlassOpacity * 0x33, 1, 0x55);
+            SetResourceOverrideInternal("CardBackground", Color.FromArgb(baseAlpha, 255, 255, 255));
+            SetResourceOverrideInternal("CardBackgroundHover", Color.FromArgb(hoverAlpha, 255, 255, 255));
+            SetResourceOverrideInternal("CardBackgroundBrush", new SolidColorBrush(Color.FromArgb(baseAlpha, 255, 255, 255)));
+            SetResourceOverrideInternal("CardBackgroundHoverBrush", new SolidColorBrush(Color.FromArgb(hoverAlpha, 255, 255, 255)));
+
             if (Color.TryParse(settings.AccentColor, out var accentColor))
             {
                 SetResourceOverrideInternal("AccentPrimary", accentColor);

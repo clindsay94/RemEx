@@ -192,9 +192,10 @@
                                     <!-- Separator -->
                                     <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,8" Opacity="0.3"/>
 
-                                    <!-- Remote Desktop -->
+                                    <!-- Remote Desktop — Android only; desktop IS the host -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=5}"
                                             Command="{Binding NavigateToRemoteDesktopCommand}"
+                                            IsVisible="{Binding IsAndroid}"
                                             ToolTip.Tip="Remote Desktop — Stream your PC screen in real-time">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
@@ -244,31 +245,66 @@
 
                 <!-- ═══ PAGE CONTENT ═══ -->
                 <SplitView.Content>
-                    <TransitioningContentControl Content="{Binding CurrentView}" Name="PageHost">
-                        <TransitioningContentControl.DataTemplates>
-                            <DataTemplate DataType="vm:HomeViewModel">
-                                <views:HomeView />
-                            </DataTemplate>
-                            <DataTemplate DataType="vm:CanvasDashboardViewModel">
-                                <views:CanvasView />
-                            </DataTemplate>
-                            <DataTemplate DataType="vm:RemoteViewModel">
-                                <views:RemoteView />
-                            </DataTemplate>
-                            <DataTemplate DataType="vm:AppLauncherViewModel">
-                                <views:AppLauncherView />
-                            </DataTemplate>
-                            <DataTemplate DataType="vm:TaskManagerViewModel">
-                                <views:TaskManagerView />
-                            </DataTemplate>
-                            <DataTemplate DataType="vm:RemoteDesktopViewModel">
-                                <views:RemoteDesktopView />
-                            </DataTemplate>
-                        </TransitioningContentControl.DataTemplates>
-                        <TransitioningContentControl.PageTransition>
-                            <CrossFade Duration="0:0:0.3"/>
-                        </TransitioningContentControl.PageTransition>
-                    </TransitioningContentControl>
+                    <Grid RowDefinitions="Auto,*">
+                        <!-- ═══ CONNECTION BANNER ═══ -->
+                        <Border Grid.Row="0"
+                                IsVisible="{Binding ShowConnectionBanner}"
+                                Background="#CC1A1A0A"
+                                BorderBrush="#806B4CFF"
+                                BorderThickness="0,0,0,1"
+                                Padding="16,10">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                                </Transitions>
+                            </Border.Transitions>
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                <TextBlock Grid.Column="0" Text="⚠" FontSize="16"
+                                           Foreground="#FFB800" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ConnectionBannerMessage}"
+                                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                <Button Grid.Column="2"
+                                        Content="Open Settings"
+                                        Command="{Binding NavigateToSettingsCommand}"
+                                        Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
+                                        Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                        Margin="12,0,6,0" Cursor="Hand"/>
+                                <Button Grid.Column="3"
+                                        Content="✕"
+                                        Command="{Binding DismissConnectionBannerCommand}"
+                                        Background="Transparent" Foreground="{DynamicResource TextMutedBrush}"
+                                        Padding="6,4" CornerRadius="6" FontSize="12" Cursor="Hand"
+                                        BorderThickness="0"/>
+                            </Grid>
+                        </Border>
+
+                        <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentView}" Name="PageHost">
+                            <TransitioningContentControl.DataTemplates>
+                                <DataTemplate DataType="vm:HomeViewModel">
+                                    <views:HomeView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:CanvasDashboardViewModel">
+                                    <views:CanvasView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:RemoteViewModel">
+                                    <views:RemoteView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:AppLauncherViewModel">
+                                    <views:AppLauncherView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:TaskManagerViewModel">
+                                    <views:TaskManagerView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:RemoteDesktopViewModel">
+                                    <views:RemoteDesktopView />
+                                </DataTemplate>
+                            </TransitioningContentControl.DataTemplates>
+                            <TransitioningContentControl.PageTransition>
+                                <CrossFade Duration="0:0:0.3"/>
+                            </TransitioningContentControl.PageTransition>
+                        </TransitioningContentControl>
+                    </Grid>
                 </SplitView.Content>
             </SplitView>
 
@@ -363,6 +399,29 @@
                                             Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
                                             Padding="12,7" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
                                             HorizontalAlignment="Stretch" Cursor="Hand" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ LANGUAGE ═══ -->
+                            <Border Classes="glass-card" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="LANGUAGE" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Application Language" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <ComboBox ItemsSource="{Binding SettingsVm.AvailableLanguages}"
+                                                  SelectedValue="{Binding SettingsVm.Language}"
+                                                  SelectedValueBinding="{Binding Code}"
+                                                  HorizontalAlignment="Stretch">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayName}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBlock Text="Takes effect on next launch." FontSize="10" 
+                                                   Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
 
@@ -495,6 +554,34 @@
                                             <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding SettingsVm.GridSize}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SettingsVm.GridSize, StringFormat={}{0} px}" 
                                                        Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ═══ STREAM SETTINGS (desktop only — configure what the host broadcasts) ═══ -->
+                            <Border Classes="glass-card" Padding="16" IsVisible="{Binding IsDesktop}">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="STREAM SETTINGS" FontSize="11" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                                    <TextBlock Text="Configure the quality of the screen stream that the host broadcasts to connected clients (phone, tablet)."
+                                               FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" FontStyle="Italic"/>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="JPEG Quality" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Minimum="10" Maximum="100" Value="{Binding SettingsVm.StreamQuality}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SettingsVm.StreamQuality, StringFormat={}{0}%}"
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" Width="36"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Target FPS" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Minimum="5" Maximum="60" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding SettingsVm.StreamFps}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SettingsVm.StreamFps, StringFormat={}{0} fps}"
+                                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" Width="45"/>
                                         </Grid>
                                     </StackPanel>
                                 </StackPanel>
@@ -724,7 +811,7 @@
                             </Grid>
 
                             <!-- Page 0: Welcome -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=0}">
                                 <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Welcome to RemEx" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
@@ -733,7 +820,7 @@
                             </StackPanel>
 
                             <!-- Page 1: Host Required -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}">
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=1}">
                                 <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Connect to a RemEx Host" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
@@ -746,7 +833,7 @@
                             </StackPanel>
 
                             <!-- Page 2: Auto-Discovery -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}">
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=2}">
                                 <TextBlock Text="📡" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Auto-Discovery" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
@@ -757,7 +844,7 @@
                             </StackPanel>
 
                             <!-- Page 3: Finding Your IP -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}">
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=3}">
                                 <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Finding the Host IP" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
@@ -778,7 +865,7 @@
                             </StackPanel>
 
                             <!-- Page 4: You're Ready -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}">
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}">
                                 <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="You're All Set!" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
@@ -808,19 +895,19 @@
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <Button Grid.Column="0" Content="← Back"
                                         Command="{Binding TutorialPreviousCommand}"
-                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=0}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}"
                                         Background="#2A2A4A" Foreground="#C0C0FF"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="SemiBold" Cursor="Hand"/>
                                 <Button Grid.Column="2" Content="Next →"
                                         Command="{Binding TutorialNextCommand}"
-                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=4}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=4}"
                                         Background="#4A3AFF" Foreground="White"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="Bold" Cursor="Hand"/>
                                 <Button Grid.Column="2" Content="Get Started ✓"
                                         Command="{Binding TutorialFinishCommand}"
-                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}"
                                         Background="#4ADE80" Foreground="#1A1A1A"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="Bold" Cursor="Hand"/>

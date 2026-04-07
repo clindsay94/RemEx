@@ -51,6 +51,44 @@ public class IndexToOpacityConverter : IValueConverter
 }
 
 /// <summary>
+/// Converts an integer to a boolean: true when the value equals the integer parsed from
+/// the string ConverterParameter. Fixes the type-mismatch bug where ObjectConverters.Equal
+/// compares int to string and always returns false.
+/// </summary>
+public class IntEqualConverter : IValueConverter
+{
+    public static readonly IntEqualConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is int index && parameter is string s && int.TryParse(s, out var target))
+            return index == target;
+        return false;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// Inverse of <see cref="IntEqualConverter"/>: true when the value does NOT equal the parameter.
+/// </summary>
+public class IntNotEqualConverter : IValueConverter
+{
+    public static readonly IntNotEqualConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is int index && parameter is string s && int.TryParse(s, out var target))
+            return index != target;
+        return true;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// Converts a double (latency ms) to a bar height for the mini chart.
 /// Clamps to a reasonable pixel range (2–60px).
 /// </summary>

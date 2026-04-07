@@ -57,6 +57,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _hostCapabilityText = "Connect to a host to inspect runtime capabilities.";
 
+    /// <summary>Host JPEG compression quality (10–100) for the screen stream.</summary>
+    [ObservableProperty]
+    private int _streamQuality = 75;
+
+    /// <summary>Host target frames-per-second for the screen stream.</summary>
+    [ObservableProperty]
+    private int _streamFps = 30;
+
+    partial void OnStreamQualityChanged(int value) => Save();
+    partial void OnStreamFpsChanged(int value) => Save();
+
     /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
     public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();
 
@@ -83,6 +94,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             HostAddress = _profile.HostAddress;
             AccessKey = _profile.AccessKey;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
+            StreamQuality = _profile.StreamQuality;
+            StreamFps = _profile.StreamFps;
             UpdateHostCapabilitySummary();
             RefreshSensors();
         });
@@ -770,7 +783,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             GridSize = GridSize,
             HostAddress = HostAddress,
             AccessKey = AccessKey,
-            Language = Language
+            Language = Language,
+            StreamQuality = StreamQuality,
+            StreamFps = StreamFps
         };
 
         _profile = updated;

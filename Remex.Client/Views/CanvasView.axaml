@@ -17,7 +17,7 @@
         <!-- ═══ DraggableCard chrome ═══ -->
         <Style Selector="ctrl|DraggableCard">
             <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
-            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="ClipToBounds" Value="False"/>

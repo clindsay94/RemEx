@@ -101,6 +101,12 @@ public record DashboardProfile
     /// <summary>Whether the user has completed the first-run tutorial.</summary>
     public bool HasCompletedTutorial { get; init; }
 
+    /// <summary>Host screen capture JPEG quality (10–100). Applies to the stream sent to mobile clients.</summary>
+    public int StreamQuality { get; init; } = 75;
+
+    /// <summary>Host screen capture target frames per second (5–60).</summary>
+    public int StreamFps { get; init; } = 30;
+
     /// <summary>Visual aesthetic and theme overrides.</summary>
     public CustomizationSettings Customization { get; init; } = new();
 }
