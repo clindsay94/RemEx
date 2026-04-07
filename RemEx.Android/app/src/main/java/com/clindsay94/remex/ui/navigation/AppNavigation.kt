@@ -1,6 +1,9 @@
 package com.clindsay94.remex.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -19,7 +22,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,7 +31,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -66,6 +67,17 @@ fun AppNavigation() {
     val splashShown by settingsManager.splashShownFlow.collectAsState(initial = null)
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
+    // While DataStore hasn't loaded yet, show a plain background to avoid a
+    // white flash before the correct start destination is chosen.
+    if (splashShown == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        )
+        return
+    }
+
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -76,8 +88,13 @@ fun AppNavigation() {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Wait until DataStore has answered whether splash has been shown
-    if (splashShown == null) return
+    fun navigateToConnection() {
+        navController.navigate(Screen.Connection.route) {
+            popUpTo(navController.graph.startDestinationId) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     fun navigateTo(route: String) {
         if (!isConnected && route in connectionRequiredRoutes) {
@@ -88,11 +105,7 @@ fun AppNavigation() {
                     withDismissAction = true
                 )
                 if (result == SnackbarResult.ActionPerformed) {
-                    navController.navigate(Screen.Connection.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    navigateToConnection()
                 }
             }
             // Still navigate to the screen so they can preview it
@@ -184,22 +197,22 @@ fun AppNavigation() {
                 )
             }
             composable(Screen.Dashboard.route) {
-                DashboardScreen()
+                DashboardScreen(onNavigateToConnection = { navigateToConnection() })
             }
             composable(Screen.Connection.route) {
                 ConnectionScreen()
             }
             composable(Screen.RemoteControl.route) {
-                RemoteControlScreen()
+                RemoteControlScreen(onNavigateToConnection = { navigateToConnection() })
             }
             composable(Screen.RemoteMouse.route) {
-                RemoteMouseScreen()
+                RemoteMouseScreen(onNavigateToConnection = { navigateToConnection() })
             }
             composable(Screen.AppLauncher.route) {
-                AppLauncherScreen()
+                AppLauncherScreen(onNavigateToConnection = { navigateToConnection() })
             }
             composable(Screen.TaskManager.route) {
-                TaskManagerScreen()
+                TaskManagerScreen(onNavigateToConnection = { navigateToConnection() })
             }
             composable(Screen.RemoteDesktop.route) {
                 RemoteDesktopScreen()

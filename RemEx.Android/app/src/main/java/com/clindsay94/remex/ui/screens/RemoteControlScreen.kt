@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.RemexClientManager
 
 private data class RemoteCommandCard(
     val id: String,
@@ -72,11 +73,13 @@ private val remoteCommandCards = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlScreen(
+    onNavigateToConnection: () -> Unit = {},
     viewModel: RemoteControlViewModel = viewModel()
 ) {
     val commandStatus by viewModel.commandStatus.collectAsState()
     val shapePreset by viewModel.remoteControlCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
+    val isConnected by RemexClientManager.isConnected.collectAsState()
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
 
@@ -90,10 +93,20 @@ fun RemoteControlScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
+            NotConnectedBanner(
+                isConnected = isConnected,
+                onNavigateToConnection = onNavigateToConnection
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             Text(
                 text = "System Commands",
                 style = MaterialTheme.typography.headlineSmall,
@@ -167,6 +180,7 @@ fun RemoteControlScreen(
                     )
                 }
             }
+            } // end inner Column
         }
     }
 }

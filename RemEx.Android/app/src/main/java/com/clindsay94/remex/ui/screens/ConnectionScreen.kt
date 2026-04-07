@@ -19,6 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -400,25 +403,39 @@ fun ConnectionScreen(
                     label = { Text("Host IP Address") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    )
                 )
 
                 OutlinedTextField(
                     value = portInput,
-                    onValueChange = { portInput = it },
+                    onValueChange = { portInput = it.filter { c -> c.isDigit() } },
                     label = { Text("Port") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    supportingText = { Text("Default: 5005") }
                 )
 
                 OutlinedTextField(
                     value = macInput,
-                    onValueChange = { macInput = it },
+                    onValueChange = { macInput = it.uppercase() },
                     label = { Text("MAC Address (Wake-on-LAN)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        imeAction = ImeAction.Next
+                    ),
+                    placeholder = { Text("AA:BB:CC:DD:EE:FF", style = MaterialTheme.typography.bodySmall) }
                 )
 
                 OutlinedTextField(
@@ -427,7 +444,11 @@ fun ConnectionScreen(
                     label = { Text("Broadcast IP") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Router, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Router, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    )
                 )
 
                 OutlinedTextField(
@@ -436,7 +457,11 @@ fun ConnectionScreen(
                     label = { Text("Subnet Mask") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    )
                 )
 
                 OutlinedTextField(
@@ -446,6 +471,9 @@ fun ConnectionScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        imeAction = ImeAction.Done
+                    ),
                     supportingText = { Text("Leave empty to disable authentication") }
                 )
 

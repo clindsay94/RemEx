@@ -43,16 +43,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.RemexClientManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteMouseScreen(
+    onNavigateToConnection: () -> Unit = {},
     viewModel: RemoteControlViewModel = viewModel()
 ) {
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
     val shapePreset by viewModel.remoteMouseCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
+    val isConnected by RemexClientManager.isConnected.collectAsState()
 
     Scaffold(
         topBar = {
@@ -64,10 +67,20 @@ fun RemoteMouseScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(padding),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
+            NotConnectedBanner(
+                isConnected = isConnected,
+                onNavigateToConnection = onNavigateToConnection
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             BasicTextField(
                 value = textValue,
                 onValueChange = {
@@ -160,6 +173,7 @@ fun RemoteMouseScreen(
                     Icon(Icons.Default.Keyboard, contentDescription = "Keyboard")
                 }
             }
+            } // end inner Column
         }
     }
 }
