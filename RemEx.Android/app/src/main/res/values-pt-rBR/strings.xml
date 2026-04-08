@@ -7,262 +7,247 @@
     <string name="widget_hardware_label">RemEx Hardware</string>
     <string name="widget_launcher_label">RemEx Launcher</string>
 
-    <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
-    <string name="splash_tagline">Remote Execution</string>
+    <string name="splash_tagline">Execução Remota</string>
 
-    <!-- ═══ Navigation ═══ -->
-    <string name="snackbar_no_pc_connected">No PC connected</string>
-    <string name="snackbar_setup_connection">Set up connection</string>
-    <string name="nav_more_label">More</string>
-    <string name="cd_settings_fab">Settings</string>
+    <string name="snackbar_no_pc_connected">Nenhum PC conectado</string>
+    <string name="snackbar_setup_connection">Configurar conexão</string>
+    <string name="nav_more_label">Mais</string>
+    <string name="cd_settings_fab">Configurações</string>
 
-    <!-- ═══ Common Components ═══ -->
-    <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
-    <string name="button_connect">Connect</string>
-    <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
-    <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
-    <string name="button_setup_connection">Set up connection</string>
+    <string name="banner_no_pc_connected">Nenhum PC conectado — os recursos estão indisponíveis</string>
+    <string name="button_connect">Conectar</string>
+    <string name="disconnected_requires_connection">%1$s requer um PC conectado.</string>
+    <string name="disconnected_connect_wifi">Conecte-se ao seu PC via Wi-Fi para usar este recurso.</string>
+    <string name="button_setup_connection">Configurar conexão</string>
 
-    <!-- ═══ Shared Buttons ═══ -->
-    <string name="button_cancel">Cancel</string>
-    <string name="button_confirm">Confirm</string>
-    <string name="button_dismiss">Dismiss</string>
-    <string name="button_done">Done</string>
-    <string name="cd_refresh">Refresh</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="button_confirm">Confirmar</string>
+    <string name="button_dismiss">Descartar</string>
+    <string name="button_done">Concluído</string>
+    <string name="cd_refresh">Atualizar</string>
 
-    <!-- ═══ Tutorial Screen ═══ -->
-    <string name="tutorial_skip">Skip</string>
-    <string name="tutorial_get_started">Get Started</string>
-    <string name="tutorial_next">Next</string>
+    <string name="tutorial_skip">Pular</string>
+    <string name="tutorial_get_started">Começar</string>
+    <string name="tutorial_next">Próximo</string>
 
-    <string name="tutorial_page1_title">Welcome to RemEx</string>
-    <string name="tutorial_page1_body">RemEx is your remote PC management command center. Control your computer, launch apps, monitor performance, and even view your desktop — all from your phone.\n\nLet\'s get you connected in a few quick steps.</string>
+    <string name="tutorial_page1_title">Bem-vindo ao RemEx</string>
+    <string name="tutorial_page1_body">O RemEx é o seu centro de comando para gerenciamento remoto de PC. Controle seu computador, inicie aplicativos, monitore o desempenho e até visualize sua área de trabalho — tudo pelo celular.\n\nVamos conectá-lo em alguns passos rápidos.</string>
 
-    <string name="tutorial_page2_title">Install the Host First</string>
-    <string name="tutorial_page2_body">Before you can connect, you need the RemEx host software running on your PC.\n\nOption 1 — RemEx Desktop Client\nDownload and run Remex.Client.Desktop on your PC. It bundles the host automatically — just launch it and the host starts in the background.\n\nOption 2 — RemEx Host (standalone)\nInstall and run Remex.Host as a standalone service. This is ideal for headless servers or if you only need the host.\n\nBoth are self-contained — no extra runtimes needed. Download the latest publish folder from the GitHub releases page, extract, and run.</string>
-    <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
+    <string name="tutorial_page2_title">Instale o Host Primeiro</string>
+    <string name="tutorial_page2_body">Antes de se conectar, você precisa do software host do RemEx rodando no seu PC.\n\nOpção 1 — Cliente Desktop RemEx\nBaixe e execute o Remex.Client.Desktop no seu PC. Ele inclui o host automaticamente — basta iniciá-lo e o host começará a rodar em segundo plano.\n\nOpção 2 — RemEx Host (autônomo)\nInstale e execute o Remex.Host como um serviço autônomo. Isso é ideal para servidores sem monitor ou se você precisar apenas do host.\n\nAmbos são independentes — sem necessidade de runtimes extras. Baixe a pasta de publicação mais recente na página de lançamentos do GitHub, extraia e execute.</string>
+    <string name="tutorial_page2_link_label">Baixar dos Lançamentos do GitHub</string>
 
-    <string name="tutorial_page3_title">Auto-Discovery</string>
-    <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure Remex.Client.Desktop or Remex.Host is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. Tap \'Discover Automatically\' on the Connection screen\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
+    <string name="tutorial_page3_title">Descoberta Automática</string>
+    <string name="tutorial_page3_body">A maneira mais fácil de conectar é pela descoberta automática.\n\n1. Certifique-se de que o Remex.Client.Desktop ou o Remex.Host esteja rodando no seu PC\n2. Verifique se o seu celular e o PC estão na mesma rede Wi-Fi\n3. Toque em \'Descobrir Automaticamente\' na tela de Conexão\n\nO RemEx usa mDNS para detectar hosts ativos na sua rede local. O IP e a porta do seu PC serão preenchidos automaticamente.</string>
 
-    <string name="tutorial_page4_title">Finding Your IP Address</string>
-    <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nmacOS:\n  System Settings → Network, or run:\n  ipconfig getifaddr en0\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the Remex.Client.Desktop window under the connection status section.</string>
+    <string name="tutorial_page4_title">Encontrando seu Endereço IP</string>
+    <string name="tutorial_page4_body">Se a descoberta automática não funcionar, você pode conectar manualmente. Primeiro, encontre o endereço IP local do seu PC:\n\nWindows:\n  Abra o Prompt de Comando → digite ipconfig\n  Procure por \'Endereço IPv4\' (ex: 192.168.1.42)\n\nmacOS:\n  Ajustes do Sistema → Rede, ou execute:\n  ipconfig getifaddr en0\n\nLinux:\n  Execute ip addr ou hostname -I\n\nVocê também pode ver o endereço IP na janela do Remex.Client.Desktop na seção de status da conexão.</string>
 
-    <string name="tutorial_page5_title">Manual Connection</string>
-    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (Settings → Connection)\n2. Enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n\nRemEx will establish a connection and you\'ll see your PC\'s status appear on the dashboard.\n\nRemember: Remex.Client.Desktop or Remex.Host must be running on the target PC for the connection to succeed.</string>
+    <string name="tutorial_page5_title">Conexão Manual</string>
+    <string name="tutorial_page5_body">Assim que tiver o seu endereço IP:\n\n1. Vá para a tela de Conexão (Configurações → Conexão)\n2. Insira o endereço IP do seu PC\n3. Insira a porta (o padrão é 5005)\n4. Toque em \'Salvar e Conectar\'\n\nO RemEx estabelecerá uma conexão e você verá o status do seu PC aparecer no painel.\n\nLembre-se: O Remex.Client.Desktop ou o Remex.Host deve estar rodando no PC de destino para que a conexão funcione.</string>
 
-    <string name="tutorial_page6_title">You\'re All Set!</string>
-    <string name="tutorial_page6_body">You\'re ready to take control.\n\nFrom the dashboard you can monitor system stats, launch apps, manage tasks, and stream your desktop remotely.\n\nHead to Personalization to customize your theme, card shapes, fonts, and colors.\n\nCheck out the FAQ in Settings if you run into any issues. Enjoy RemEx!</string>
+    <string name="tutorial_page6_title">Está Tudo Pronto!</string>
+    <string name="tutorial_page6_body">Você está pronto para assumir o controle.\n\nNo painel, você pode monitorar estatísticas do sistema, iniciar apps, gerenciar tarefas e transmitir sua área de trabalho remotamente.\n\nVá em Personalização para customizar seu tema, formatos de cards, fontes e cores.\n\nConfira as Perguntas Frequentes (FAQ) nas Configurações se tiver qualquer problema. Aproveite o RemEx!</string>
 
-    <!-- ═══ Task Manager Screen ═══ -->
-    <string name="screen_task_manager_title">Task Manager</string>
-    <string name="task_manager_search_hint">Search process name or PID</string>
-    <string name="sort_name">Name</string>
+    <string name="screen_task_manager_title">Gerenciador de Tarefas</string>
+    <string name="task_manager_search_hint">Buscar nome do processo ou PID</string>
+    <string name="sort_name">Nome</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
-    <string name="task_manager_fetching">Fetching processes…</string>
-    <string name="task_manager_header_name">Name</string>
+    <string name="task_manager_fetching">Buscando processos…</string>
+    <string name="task_manager_header_name">Nome</string>
     <string name="task_manager_header_cpu">CPU</string>
     <string name="task_manager_header_ram">RAM</string>
-    <string name="task_manager_kill_title">Kill Process?</string>
-    <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
-    <string name="button_kill">Kill</string>
+    <string name="task_manager_kill_title">Finalizar Processo?</string>
+    <string name="task_manager_kill_message">Tem certeza que deseja encerrar %1$s (PID: %2$d)?</string>
+    <string name="button_kill">Finalizar</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="cd_kill_process">Kill</string>
+    <string name="cd_kill_process">Finalizar</string>
 
-    <!-- ═══ Remote Mouse Screen ═══ -->
-    <string name="screen_remote_mouse_title">Remote Mouse</string>
+    <string name="screen_remote_mouse_title">Mouse Remoto</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
-    <string name="remote_mouse_left_click">Left Click</string>
-    <string name="remote_mouse_right_click">Right Click</string>
-    <string name="cd_scroll_up">Scroll Up</string>
-    <string name="cd_scroll_down">Scroll Down</string>
-    <string name="cd_keyboard">Keyboard</string>
+    <string name="remote_mouse_left_click">Clique Esquerdo</string>
+    <string name="remote_mouse_right_click">Clique Direito</string>
+    <string name="cd_scroll_up">Rolar para Cima</string>
+    <string name="cd_scroll_down">Rolar para Baixo</string>
+    <string name="cd_keyboard">Teclado</string>
 
-    <!-- ═══ Settings Screen ═══ -->
-    <string name="screen_settings_title">Settings</string>
-    <string name="settings_tab_connection">Connection</string>
-    <string name="settings_tab_personalization">Personalization</string>
-    <string name="settings_tab_help">Help</string>
-    <string name="settings_help_title">Help &amp; About</string>
-    <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
-    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
-    <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
+    <string name="screen_settings_title">Configurações</string>
+    <string name="settings_tab_connection">Conexão</string>
+    <string name="settings_tab_personalization">Personalização</string>
+    <string name="settings_tab_help">Ajuda</string>
+    <string name="settings_help_title">Ajuda e Sobre</string>
+    <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
+    <string name="settings_replay_tutorial_body">Assista novamente ao guia de introdução que cobre a configuração, descoberta automática, como encontrar seu IP e conectar ao PC.</string>
+    <string name="settings_faq_hint">Tem uma dúvida? Verifique as Perguntas Frequentes (FAQ) disponíveis no menu (⋮ → FAQ).</string>
 
-    <!-- ═══ App Launcher Screen ═══ -->
-    <string name="screen_app_launcher_title">App Launcher</string>
-    <string name="app_launcher_no_apps">No apps found</string>
-    <string name="button_fetch_from_host">Fetch from Host</string>
+    <string name="screen_app_launcher_title">Lançador de Apps</string>
+    <string name="app_launcher_no_apps">Nenhum app encontrado</string>
+    <string name="button_fetch_from_host">Buscar do Host</string>
 
-    <!-- ═══ Remote Control Screen ═══ -->
-    <string name="screen_remote_control_title">Remote Control</string>
-    <string name="remote_control_section_header">System Commands</string>
-    <string name="remote_control_description">Critical actions require confirmation. Optional delay sets shutdown -t seconds.</string>
-    <string name="remote_control_confirm_choice">Confirm choice</string>
-    <string name="remote_control_timer_label">Timer (seconds)</string>
-    <string name="button_select">Select</string>
-    <string name="button_run">Run</string>
-    <string name="rc_wake_pc">Wake PC</string>
-    <string name="rc_lock_pc">Lock PC</string>
-    <string name="rc_shutdown">Shutdown</string>
-    <string name="rc_restart">Restart</string>
-    <string name="rc_reboot_uefi">Reboot to UEFI</string>
-    <string name="rc_force_shutdown">Force Shutdown</string>
-    <string name="rc_force_restart">Force Restart</string>
-    <string name="rc_sleep">Sleep</string>
-    <string name="rc_hibernate">Hibernate</string>
-    <string name="rc_monitor_off">Turn Off Monitor</string>
-    <string name="rc_logoff">Log Off</string>
+    <string name="screen_remote_control_title">Controle Remoto</string>
+    <string name="remote_control_section_header">Comandos do Sistema</string>
+    <string name="remote_control_description">Ações críticas exigem confirmação. O atraso opcional define os segundos de shutdown -t.</string>
+    <string name="remote_control_confirm_choice">Confirmar escolha</string>
+    <string name="remote_control_timer_label">Temporizador (segundos)</string>
+    <string name="button_select">Selecionar</string>
+    <string name="button_run">Executar</string>
+    <string name="rc_wake_pc">Ligar PC (Wake PC)</string>
+    <string name="rc_lock_pc">Bloquear PC</string>
+    <string name="rc_shutdown">Desligar</string>
+    <string name="rc_restart">Reiniciar</string>
+    <string name="rc_reboot_uefi">Reiniciar para o UEFI</string>
+    <string name="rc_force_shutdown">Forçar Desligamento</string>
+    <string name="rc_force_restart">Forçar Reinicialização</string>
+    <string name="rc_sleep">Suspender</string>
+    <string name="rc_hibernate">Hibernar</string>
+    <string name="rc_monitor_off">Desligar Monitor</string>
+    <string name="rc_logoff">Fazer Logoff</string>
 
-    <!-- ═══ Remote Desktop Screen ═══ -->
-    <string name="screen_remote_desktop_title">Remote Desktop</string>
-    <string name="cd_show_keyboard">Show Keyboard</string>
-    <string name="cd_reset_input">Reset Input</string>
-    <string name="cd_settings">Settings</string>
-    <string name="cd_toggle_fullscreen">Toggle fullscreen</string>
-    <string name="cd_stop">Stop</string>
-    <string name="cd_remote_desktop_frame">Remote Desktop Frame</string>
-    <string name="remote_desktop_unavailable">Remote desktop unavailable</string>
-    <string name="remote_desktop_waiting">Waiting for frames…</string>
-    <string name="remote_desktop_stopped">Stream Stopped</string>
-    <string name="button_start_streaming">Start Streaming</string>
-    <string name="cd_exit_fullscreen">Exit Fullscreen</string>
-    <string name="cd_zoom_in">Zoom In</string>
-    <string name="cd_zoom_out">Zoom Out</string>
-    <string name="remote_desktop_config_title">Stream Configuration</string>
-    <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
-    <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
-    <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
+    <string name="screen_remote_desktop_title">Área de Trabalho Remota</string>
+    <string name="cd_show_keyboard">Mostrar Teclado</string>
+    <string name="cd_reset_input">Resetar Entrada</string>
+    <string name="cd_settings">Configurações</string>
+    <string name="cd_toggle_fullscreen">Alternar tela cheia</string>
+    <string name="cd_stop">Parar</string>
+    <string name="cd_remote_desktop_frame">Quadro da Área de Trabalho Remota</string>
+    <string name="remote_desktop_unavailable">Área de trabalho remota indisponível</string>
+    <string name="remote_desktop_waiting">Aguardando quadros…</string>
+    <string name="remote_desktop_stopped">Transmissão Interrompida</string>
+    <string name="button_start_streaming">Iniciar Transmissão</string>
+    <string name="cd_exit_fullscreen">Sair da Tela Cheia</string>
+    <string name="cd_zoom_in">Aproximar (Zoom In)</string>
+    <string name="cd_zoom_out">Afastar (Zoom Out)</string>
+    <string name="remote_desktop_config_title">Configuração da Transmissão</string>
+    <string name="remote_desktop_quality_label">Qualidade: %1$d%%</string>
+    <string name="remote_desktop_fps_label">FPS Alvo: %1$d</string>
+    <string name="remote_desktop_controls_hint">Caneta = Absoluto • 2 Dedos = Rolar • Pressão Longa = Clique Direito</string>
 
-    <!-- ═══ Dashboard Screen ═══ -->
-    <string name="screen_dashboard_title">RemEx Home Base</string>
-    <string name="cd_reset_zoom">Reset zoom</string>
-    <string name="cd_customize_cards">Customize cards</string>
-    <string name="dashboard_pc_status">PC Status</string>
-    <string name="dashboard_pc_status_subtitle">Connection status orb</string>
-    <string name="dashboard_wake_pc">Wake PC</string>
-    <string name="dashboard_wake_pc_subtitle">Send WOL magic packet</string>
-    <string name="dashboard_telemetry_fallback">Telemetry</string>
-    <string name="dashboard_card_drawer_title">Card Drawer</string>
-    <string name="dashboard_card_drawer_hint">Check to place card, uncheck to remove, or drag a card out onto canvas.</string>
-    <string name="dashboard_drop_to_place">Drop to place %1$s</string>
+    <string name="screen_dashboard_title">Base RemEx</string>
+    <string name="cd_reset_zoom">Resetar zoom</string>
+    <string name="cd_customize_cards">Customizar cards</string>
+    <string name="dashboard_pc_status">Status do PC</string>
+    <string name="dashboard_pc_status_subtitle">Orbe de status da conexão</string>
+    <string name="dashboard_wake_pc">Ligar PC (Wake PC)</string>
+    <string name="dashboard_wake_pc_subtitle">Enviar pacote mágico WOL</string>
+    <string name="dashboard_telemetry_fallback">Telemetria</string>
+    <string name="dashboard_card_drawer_title">Gaveta de Cards</string>
+    <string name="dashboard_card_drawer_hint">Marque para colocar o card, desmarque para remover, ou arraste um card para a tela.</string>
+    <string name="dashboard_drop_to_place">Solte para colocar %1$s</string>
     <string name="dashboard_host_online">HOST ONLINE</string>
-    <string name="dashboard_connecting">CONNECTING…</string>
-    <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
-    <string name="dashboard_wake_pc_button">WAKE PC</string>
+    <string name="dashboard_connecting">CONECTANDO…</string>
+    <string name="dashboard_tap_to_connect">TOQUE PARA CONECTAR</string>
+    <string name="dashboard_wake_pc_button">LIGAR PC</string>
     <string name="dashboard_no_value">--</string>
-    <string name="dashboard_collecting_data">Collecting data…</string>
-    <string name="cd_change_display_mode">Change display mode</string>
+    <string name="dashboard_collecting_data">Coletando dados…</string>
+    <string name="cd_change_display_mode">Alterar modo de exibição</string>
 
-    <!-- ═══ Connection Screen ═══ -->
-    <string name="screen_connection_title">Connection</string>
-    <string name="connection_host_settings">Host Settings</string>
-    <string name="cd_dismiss_error">Dismiss</string>
-    <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
-    <string name="connection_auto_discover_hint">Make sure your PC is running the RemEx Host app and both devices are on the same Wi-Fi network.</string>
-    <string name="connection_searching">Searching for RemEx Host…</string>
-    <string name="connection_found_host">Found: %1$s — Search Again</string>
-    <string name="connection_discover_button">Discover Automatically</string>
-    <string name="connection_host_found">Host found and fields filled in below.</string>
-    <string name="connection_help_title">How to connect manually</string>
-    <string name="connection_help_step1_title">Install RemEx Host on your PC</string>
-    <string name="connection_help_step1_body">Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running.</string>
-    <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
-    <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
-    <string name="connection_help_step3_title">Find your PC\'s IP address</string>
-    <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; Connect</string>
-    <string name="connection_help_step4_body">The default port is 5005. If you set an access key in the host app, enter it here too.</string>
+    <string name="screen_connection_title">Conexão</string>
+    <string name="connection_host_settings">Configurações do Host</string>
+    <string name="cd_dismiss_error">Descartar</string>
+    <string name="connection_auto_discover_title">Autodescoberta na LAN</string>
+    <string name="connection_auto_discover_hint">Certifique-se de que o seu PC esteja rodando o app RemEx Host e ambos os dispositivos estejam na mesma rede Wi-Fi.</string>
+    <string name="connection_searching">Buscando por RemEx Host…</string>
+    <string name="connection_found_host">Encontrado: %1$s — Buscar Novamente</string>
+    <string name="connection_discover_button">Descobrir Automaticamente</string>
+    <string name="connection_host_found">Host encontrado e campos preenchidos abaixo.</string>
+    <string name="connection_help_title">Como conectar manualmente</string>
+    <string name="connection_help_step1_title">Instale o RemEx Host no seu PC</string>
+    <string name="connection_help_step1_body">Baixe e execute o instalador do RemEx Host no PC que você deseja controlar. Ele aparecerá na sua bandeja do sistema (perto do relógio) quando estiver rodando.</string>
+    <string name="connection_help_step2_title">Conecte ao mesmo Wi-Fi</string>
+    <string name="connection_help_step2_body">Seu celular e o PC devem estar na mesma rede local. Dados móveis (4G/5G) não funcionarão.</string>
+    <string name="connection_help_step3_title">Encontre o endereço IP do seu PC</string>
+    <string name="connection_help_step4_title">Insira o IP abaixo e toque em Salvar e Conectar</string>
+    <string name="connection_help_step4_body">A porta padrão é 5005. Se você definiu uma chave de acesso no app do host, insira-a aqui também.</string>
     <string name="connection_platform_windows">Windows</string>
-    <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for "IPv4 Address" under your Wi-Fi adapter.</string>
+    <string name="connection_ip_windows">Abra o Prompt de Comando e digite: ipconfig\nProcure por \"Endereço IPv4\" sob o seu adaptador Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0</string>
+    <string name="connection_ip_macos">Vá em Ajustes do Sistema → Rede → seu Wi-Fi → Detalhes.\nOu abra o Terminal e digite: ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
-    <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
-    <string name="connection_or_enter_manually">Or enter manually</string>
-    <string name="connection_label_host">Host IP Address</string>
-    <string name="connection_hint_host">Your PC\'s local IP — find it via ipconfig (Win) or ip addr (Linux)</string>
-    <string name="connection_label_port">Port</string>
-    <string name="connection_hint_port">Default: 5005</string>
-    <string name="connection_label_mac">MAC Address (Wake-on-LAN)</string>
+    <string name="connection_ip_linux">Abra um terminal e digite: ip addr\nProcure pelo endereço inet na sua interface de rede (ex: wlan0 ou eth0).</string>
+    <string name="connection_or_enter_manually">Ou insira manualmente</string>
+    <string name="connection_label_host">Endereço IP do Host</string>
+    <string name="connection_hint_host">IP local do seu PC — encontre via ipconfig (Win) ou ip addr (Linux)</string>
+    <string name="connection_label_port">Porta</string>
+    <string name="connection_hint_port">Padrão: 5005</string>
+    <string name="connection_label_mac">Endereço MAC (Wake-on-LAN)</string>
     <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
-    <string name="connection_hint_mac">Required for Wake-on-LAN — find in Device Manager or ip link</string>
-    <string name="connection_label_broadcast">Broadcast IP</string>
-    <string name="connection_hint_broadcast">Usually 255.255.255.255 — only change if WOL fails</string>
-    <string name="connection_label_subnet">Subnet Mask</string>
-    <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
-    <string name="connection_label_access_key">Access Key</string>
-    <string name="connection_hint_access_key">Leave empty to disable authentication</string>
-    <string name="connection_desktop_defaults_title">Remote Desktop Defaults</string>
-    <string name="connection_quality_label">Quality: %1$d%%</string>
-    <string name="connection_fps_label">Target FPS: %1$d (max 120)</string>
-    <string name="connection_scale_label">Scale: %1$s</string>
-    <string name="button_save_connect">Save &amp; Connect</string>
+    <string name="connection_hint_mac">Necessário para ligar o PC remotamente — encontre no Gerenciador de Dispositivos ou ip link</string>
+    <string name="connection_label_broadcast">IP de Broadcast</string>
+    <string name="connection_hint_broadcast">Geralmente 255.255.255.255 — altere apenas se o WOL falhar</string>
+    <string name="connection_label_subnet">Máscara de Sub-rede</string>
+    <string name="connection_hint_subnet">Tipicamente 255.255.255.0 para redes domésticas</string>
+    <string name="connection_label_access_key">Chave de Acesso</string>
+    <string name="connection_hint_access_key">Deixe vazio para desativar a autenticação</string>
+    <string name="connection_desktop_defaults_title">Padrões da Área de Trabalho Remota</string>
+    <string name="connection_quality_label">Qualidade: %1$d%%</string>
+    <string name="connection_fps_label">FPS Alvo: %1$d (máx 120)</string>
+    <string name="connection_scale_label">Escala: %1$s</string>
+    <string name="button_save_connect">Salvar e Conectar</string>
     <string name="connection_status_label">Status: %1$s</string>
 
-    <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
-    <string name="faq_header">Frequently Asked Questions</string>
-    <string name="cd_collapse">Collapse</string>
-    <string name="cd_expand">Expand</string>
-    <string name="faq_github_button">Open GitHub Releases</string>
+    <string name="faq_header">Perguntas Frequentes</string>
+    <string name="cd_collapse">Recolher</string>
+    <string name="cd_expand">Expandir</string>
+    <string name="faq_github_button">Abrir Lançamentos no GitHub</string>
 
-    <string name="faq_q1">What do I need to run on my PC?</string>
-    <string name="faq_a1">You need either Remex.Client.Desktop or Remex.Host running on your PC.\n\n• Remex.Client.Desktop — The full desktop app that bundles the host automatically. Just launch it and the host starts in the background on port 5005.\n\n• Remex.Host — A standalone headless service, ideal for servers or background-only use.\n\nBoth are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</string>
+    <string name="faq_q1">O que eu preciso rodar no meu PC?</string>
+    <string name="faq_a1">Você precisa rodar ou o Remex.Client.Desktop ou o Remex.Host no seu PC.\n\n• Remex.Client.Desktop — O app desktop completo que inclui o host automaticamente. Basta iniciá-lo e o host começa a rodar em segundo plano na porta 5005.\n\n• Remex.Host — Um serviço autônomo sem interface, ideal para servidores ou uso apenas em segundo plano.\n\nAmbos são independentes (todos os runtimes incluídos) — basta extrair a pasta de publicação e rodar. Baixe na página de lançamentos do GitHub.</string>
 
-    <string name="faq_q2">How do I find my PC\'s IP address?</string>
-    <string name="faq_a2">Windows:\nOpen Command Prompt and type \'ipconfig\'. Look for the \'IPv4 Address\' line under your active network adapter (e.g. 192.168.1.42).\n\nmacOS:\nGo to System Settings → Network and look at the connected interface, or open Terminal and run: ipconfig getifaddr en0\n\nLinux:\nOpen a terminal and run: ip addr  or  hostname -I\n\nYou can also see the IP directly in the Remex.Client.Desktop window.</string>
+    <string name="faq_q2">Como encontro o endereço IP do meu PC?</string>
+    <string name="faq_a2">Windows:\nAbra o Prompt de Comando e digite \'ipconfig\'. Procure pela linha \'Endereço IPv4\' sob o seu adaptador de rede ativo (ex: 192.168.1.42).\n\nmacOS:\nVá em Ajustes do Sistema → Rede e veja a interface conectada, ou abra o Terminal e execute: ipconfig getifaddr en0\n\nLinux:\nAbra um terminal e execute: ip addr ou hostname -I\n\nVocê também pode ver o IP diretamente na janela do Remex.Client.Desktop.</string>
 
-    <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
-    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. RemEx will prompt for this when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
+    <string name="faq_q3">A autodescoberta não encontra meu PC. O que devo verificar?</string>
+    <string name="faq_a3">1. Certifique-se de que o Remex.Client.Desktop ou o Remex.Host está realmente rodando no seu PC.\n2. Ambos os dispositivos devem estar na mesma rede Wi-Fi / LAN.\n3. No Android 13+, a permissão NEARBY_WIFI_DEVICES deve ser concedida. O RemEx solicitará isso quando você tocar em \'Descobrir Automaticamente\'.\n4. Alguns roteadores têm o \'Isolamento de AP\' ou \'Isolamento de Cliente\' ativado, o que bloqueia a comunicação entre dispositivos. Verifique as configurações do seu roteador.\n5. Redes Wi-Fi corporativas ou de visitantes geralmente bloqueiam o tráfego mDNS. Tente usar uma rede pessoal ou doméstica.</string>
 
-    <string name="faq_q4">What is the default port?</string>
-    <string name="faq_a4">The default port is 5005. If Remex.Client.Desktop finds port 5005 in use, it will fall back to 5006. You can see the active port in the desktop client\'s window.\n\nIf you changed the port on the host side, make sure to enter the matching port in the Connection screen on this app.</string>
+    <string name="faq_q4">Qual é a porta padrão?</string>
+    <string name="faq_a4">A porta padrão é 5005. Se o Remex.Client.Desktop encontrar a porta 5005 em uso, ele usará a 5006 como alternativa. Você pode ver a porta ativa na janela do cliente desktop.\n\nSe você alterou a porta no lado do host, certifique-se de inserir a porta correspondente na tela de Conexão deste app.</string>
 
-    <string name="faq_q5">What is the Access Key for?</string>
-    <string name="faq_a5">The Access Key is an optional authentication token. If you set an access key on the host (in Remex.Host settings), you must enter the same key here to connect.\n\nIf you haven\'t configured one on the host, leave this field empty.</string>
+    <string name="faq_q5">Para que serve a Chave de Acesso?</string>
+    <string name="faq_a5">A Chave de Acesso é um token de autenticação opcional. Se você definir uma chave no host (nas configurações do Remex.Host), você deve inserir a mesma chave aqui para se conectar.\n\nSe você não configurou uma no host, deixe este campo vazio.</string>
 
-    <string name="faq_q6">Can I connect over the internet (not just LAN)?</string>
-    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. If you do this, always enable the Access Key for authentication. A VPN is the recommended approach for remote access.</string>
+    <string name="faq_q6">Posso conectar pela internet (fora da rede local)?</string>
+    <string name="faq_a6">O RemEx foi projetado para uso em rede local (LAN). Para conectar pela internet, você precisaria configurar o redirecionamento de portas (port forwarding) no seu roteador para a porta 5005 (ou a porta que você usar) e utilizar seu endereço IP público.\n\nImportante: Expor a porta para a internet é um risco de segurança. Se fizer isso, sempre ative a Chave de Acesso para autenticação. Uma VPN é a abordagem recomendada para acesso remoto.</string>
 
-    <string name="faq_q7">Remote Desktop is laggy or not working. What can I do?</string>
-    <string name="faq_a7">• Lower the Quality slider in Connection → Remote Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• Make sure your PC supports the screen capture backend: DXGI on Windows, X11/Wayland on Linux.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
+    <string name="faq_q7">A Área de Trabalho Remota está lenta ou não funciona. O que posso fazer?</string>
+    <string name="faq_a7">• Diminua o controle deslizante de Qualidade em Conexão → Padrões da Área de Trabalho Remota.\n• Reduza o FPS Alvo (15–20 FPS é suficiente para a maioria dos usos).\n• Diminua a Escala para reduzir a resolução transmitida.\n• Certifique-se de que seu PC suporta o backend de captura de tela: DXGI no Windows, X11/Wayland no Linux.\n• Verifique se você está em uma rede Wi-Fi local rápida (preferencialmente 5 GHz).</string>
 
-    <string name="faq_q8">What is Wake-on-LAN (WOL)?</string>
-    <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a "magic packet" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Enter your PC\'s MAC address in the Connection screen.\n4. Use the \'Wake PC\' card on the dashboard or the Remote Control screen.</string>
+    <string name="faq_q8">O que é Wake-on-LAN (WOL)?</string>
+    <string name="faq_a8">O Wake-on-LAN permite que você ligue seu PC remotamente enviando um \"pacote mágico\" pela rede.\n\nPara usar:\n1. Ative o WOL nas configurações de BIOS/UEFI do seu PC.\n2. Ative o WOL nas propriedades do seu adaptador de rede (Windows: Gerenciador de Dispositivos → Adaptadores de Rede → Gerenciamento de Energia).\n3. Insira o endereço MAC do seu PC na tela de Conexão.\n4. Use o card \'Ligar PC\' no painel ou na tela de Controle Remoto.</string>
 
-    <string name="faq_q9">How do I customize the app\'s appearance?</string>
-    <string name="faq_a9">Go to the Personalization screen (tap the gear FAB on the dashboard or navigate via the overflow menu → Settings).\n\nYou can change:\n• Theme palette and color seed\n• Card corner radius and shape presets\n• Font family and scale\n• Card opacity\n• Dark/light/system theme mode</string>
+    <string name="faq_q9">Como eu customizo a aparência do app?</string>
+    <string name="faq_a9">Vá para a tela de Personalização (toque no botão flutuante de engrenagem no painel ou navegue via menu → Configurações).\n\nVocê pode alterar:\n• Paleta do tema e cor base\n• Arredondamento dos cantos dos cards e formas predefinidas\n• Família da fonte e escala\n• Opacidade dos cards\n• Modo de tema escuro/claro/sistema</string>
 
-    <string name="faq_q10">Can I re-watch the tutorial?</string>
-    <string name="faq_a10">Yes! Go to Settings from the overflow menu (⋮ → Settings). There you\'ll find an option to replay the tutorial at any time.</string>
+    <string name="faq_q10">Posso assistir ao tutorial novamente?</string>
+    <string name="faq_a10">Sim! Vá em Configurações no menu (⋮ → Configurações). Lá você encontrará uma opção para repetir o tutorial a qualquer momento.</string>
 
-    <!-- ═══ Personalization Screen ═══ -->
-    <string name="screen_personalization_title">Personalization</string>
-    <string name="personalization_appearance_studio">Appearance Studio</string>
-    <string name="personalization_section_language">Language</string>
-    <string name="personalization_app_language">App Language</string>
-    <string name="personalization_language_note">Changes the display language for this app. Some text may remain in English until translations are complete.</string>
-    <string name="personalization_system_default">System Default</string>
-    <string name="personalization_section_theme">Theme &amp; Strategy</string>
-    <string name="personalization_display_mode">Display Mode</string>
-    <string name="personalization_palette_strategy">Dynamic Palette Strategy</string>
-    <string name="personalization_section_color">Color Studio</string>
-    <string name="personalization_palette_mode">Palette Mode</string>
-    <string name="personalization_hue_label">Hue: %1$d°</string>
-    <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
-    <string name="personalization_contrast_label">Contrast: %1$s</string>
-    <string name="personalization_tonal_range">Tonal Range</string>
-    <string name="personalization_manual_hex">Manual Hex Code</string>
-    <string name="personalization_section_geometry">Expressive Geometry</string>
-    <string name="personalization_corner_base">Corner Base: %1$ddp</string>
-    <string name="personalization_card_opacity">Card Opacity: %1$d%%</string>
-    <string name="personalization_shape_telemetry">Telemetry Cards</string>
-    <string name="personalization_shape_app_launcher">App Launcher</string>
-    <string name="personalization_shape_remote_commands">Remote Commands</string>
-    <string name="personalization_shape_remote_mouse">Remote Mouse</string>
-    <string name="personalization_shape_task_manager">Task Manager</string>
-    <string name="personalization_shape_pc_orb">PC Connection Orb</string>
-    <string name="personalization_preview">PREVIEW</string>
+    <string name="screen_personalization_title">Personalização</string>
+    <string name="personalization_appearance_studio">Estúdio de Aparência</string>
+    <string name="personalization_section_language">Idioma</string>
+    <string name="personalization_app_language">Idioma do App</string>
+    <string name="personalization_language_note">Altera o idioma de exibição deste app. Alguns textos podem permanecer em inglês até que as traduções sejam concluídas.</string>
+    <string name="personalization_system_default">Padrão do Sistema</string>
+    <string name="personalization_section_theme">Tema e Estratégia</string>
+    <string name="personalization_display_mode">Modo de Exibição</string>
+    <string name="personalization_palette_strategy">Estratégia de Paleta Dinâmica</string>
+    <string name="personalization_section_color">Estúdio de Cores</string>
+    <string name="personalization_palette_mode">Modo de Paleta</string>
+    <string name="personalization_hue_label">Matiz (Hue): %1$d°</string>
+    <string name="personalization_chroma_label">Vibração (Chroma): %1$d</string>
+    <string name="personalization_contrast_label">Contraste: %1$s</string>
+    <string name="personalization_tonal_range">Gama Tonal</string>
+    <string name="personalization_manual_hex">Código Hex Manual</string>
+    <string name="personalization_section_geometry">Geometria Expressiva</string>
+    <string name="personalization_corner_base">Base do Canto: %1$ddp</string>
+    <string name="personalization_card_opacity">Opacidade do Card: %1$d%%</string>
+    <string name="personalization_shape_telemetry">Cards de Telemetria</string>
+    <string name="personalization_shape_app_launcher">Lançador de Apps</string>
+    <string name="personalization_shape_remote_commands">Comandos Remotos</string>
+    <string name="personalization_shape_remote_mouse">Mouse Remoto</string>
+    <string name="personalization_shape_task_manager">Gerenciador de Tarefas</string>
+    <string name="personalization_shape_pc_orb">Orbe de Conexão do PC</string>
+    <string name="personalization_preview">PRÉVIA</string>
 </resources>

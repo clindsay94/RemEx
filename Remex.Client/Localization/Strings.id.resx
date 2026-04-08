@@ -1,384 +1,391 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <root>
-  <data name="Nav_Home" xml:space="preserve"><value>Beranda</value></data>
-  <data name="Nav_Sensors" xml:space="preserve"><value>Sensor</value></data>
-  <data name="Nav_Remote" xml:space="preserve"><value>Jarak Jauh</value></data>
-  <data name="Nav_Launcher" xml:space="preserve"><value>Peluncur</value></data>
-  <data name="Nav_Tasks" xml:space="preserve"><value>Tugas</value></data>
-  <data name="Nav_Desktop" xml:space="preserve"><value>Desktop</value></data>
-  <data name="Nav_Settings" xml:space="preserve"><value>Pengaturan</value></data>
-  <data name="Btn_Connect" xml:space="preserve"><value>Hubungkan</value></data>
-  <data name="Btn_Disconnect" xml:space="preserve"><value>Putuskan</value></data>
-  <data name="Btn_Cancel" xml:space="preserve"><value>Batal</value></data>
-  <data name="Btn_Save" xml:space="preserve"><value>Simpan</value></data>
-  <data name="Btn_Apply" xml:space="preserve"><value>Terapkan</value></data>
-  <data name="Btn_Browse" xml:space="preserve"><value>Jelajahi...</value></data>
-  <data name="Btn_Discover" xml:space="preserve"><value>Temukan</value></data>
-  <data name="Btn_Refresh" xml:space="preserve"><value>⟳ Segarkan</value></data>
-  <data name="Btn_Start" xml:space="preserve"><value>▶ Mulai</value></data>
-  <data name="Btn_Stop" xml:space="preserve"><value>⏹ Hentikan</value></data>
-  <data name="Btn_Submit" xml:space="preserve"><value>Kirim</value></data>
-  <data name="Remote_Header" xml:space="preserve"><value>⏻  PC JARAK JAUH</value></data>
-  <data name="Remote_Subheader" xml:space="preserve"><value>KONTROL DAYA &amp; SISTEM</value></data>
-  <data name="Remote_WolSection" xml:space="preserve"><value>WAKE ON LAN</value></data>
-  <data name="Remote_WolDescription" xml:space="preserve"><value>Kirim paket ajaib untuk membangunkan PC target.</value></data>
-  <data name="Remote_Graceful" xml:space="preserve"><value>NORMAL</value></data>
-  <data name="Remote_Forced" xml:space="preserve"><value>PAKSA (LANGSUNG)</value></data>
-  <data name="Remote_Lock" xml:space="preserve"><value>🔒  Kunci PC</value></data>
-  <data name="Remote_SignOut" xml:space="preserve"><value>🚪  Keluar</value></data>
-  <data name="Remote_Shutdown" xml:space="preserve"><value>⏻  Matikan</value></data>
-  <data name="Remote_Restart" xml:space="preserve"><value>🔄  Restart</value></data>
-  <data name="Remote_Sleep" xml:space="preserve"><value>💤  Tidur</value></data>
-  <data name="Remote_Hibernate" xml:space="preserve"><value>❄  Hibernasi</value></data>
-  <data name="Remote_ForceShutdown" xml:space="preserve"><value>⚠  Paksa Matikan</value></data>
-  <data name="Remote_ForceRestart" xml:space="preserve"><value>⚠  Paksa Restart</value></data>
-  <data name="Remote_RebootUefi" xml:space="preserve"><value>🔧  Reboot ke UEFI</value></data>
-  <data name="Remote_WolSend" xml:space="preserve"><value>🔌  Kirim Paket Wake-on-LAN</value></data>
-  <data name="Settings_Header" xml:space="preserve"><value>PENGATURAN</value></data>
-  <data name="Settings_Back" xml:space="preserve"><value>← Pusat Komando</value></data>
-  <data name="Settings_SaveChanges" xml:space="preserve"><value>Simpan Perubahan</value></data>
-  <data name="Settings_SavedStatus" xml:space="preserve"><value>Pengaturan Disimpan!</value></data>
-  <data name="Settings_Connection" xml:space="preserve"><value>KONEKSI</value></data>
-  <data name="Settings_HostAddress" xml:space="preserve"><value>Alamat Host</value></data>
-  <data name="Settings_AccessKey" xml:space="preserve"><value>Kunci Akses</value></data>
-  <data name="Settings_SaveReconnect" xml:space="preserve"><value>Simpan &amp; Hubungkan Ulang</value></data>
-  <data name="Settings_Layout" xml:space="preserve"><value>TATA LETAK</value></data>
-  <data name="Settings_SnapToGrid" xml:space="preserve"><value>Kunci ke Grid</value></data>
-  <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Kartu mengunci ke garis grid terdekat saat dilepas</value></data>
-  <data name="Settings_GridSize" xml:space="preserve"><value>Ukuran Grid</value></data>
-  <data name="Settings_PinnedSensors" xml:space="preserve"><value>SENSOR DISEMATKAN</value></data>
-  <data name="Settings_PinnedSensorsDesc" xml:space="preserve"><value>Pilih sensor untuk ditampilkan di layar beranda</value></data>
-  <data name="Settings_ServiceSection" xml:space="preserve"><value>LAYANAN WINDOWS</value></data>
-  <data name="Settings_ServiceLogin" xml:space="preserve"><value>LOGIN LAYANAN</value></data>
-  <data name="Settings_ServiceDesc" xml:space="preserve"><value>Layanan berjalan di latar belakang agar RemEx dapat menerima perintah jarak jauh tanpa membuka aplikasi.</value></data>
-  <data name="Settings_AccountFormat" xml:space="preserve"><value>Akun: {0}</value></data>
-  <data name="Settings_Username" xml:space="preserve"><value>Nama pengguna</value></data>
-  <data name="Settings_Password" xml:space="preserve"><value>Kata sandi</value></data>
-  <data name="Settings_RestartNote" xml:space="preserve"><value>Perubahan bahasa akan berlaku setelah memulai ulang RemEx.</value></data>
-  <data name="Settings_Language" xml:space="preserve"><value>Bahasa</value></data>
-  <data name="Home_Subtitle" xml:space="preserve"><value>PUSAT KOMANDO EKSEKUSI JARAK JAUH</value></data>
-  <data name="Home_QuickActions" xml:space="preserve"><value>AKSI CEPAT</value></data>
-  <data name="Home_SensorWorkspace" xml:space="preserve"><value>Ruang Kerja Sensor</value></data>
-  <data name="Home_PcRemote" xml:space="preserve"><value>PC Jarak Jauh</value></data>
-  <data name="Home_Desktop" xml:space="preserve"><value>Desktop</value></data>
-  <data name="Home_Launcher" xml:space="preserve"><value>Peluncur</value></data>
-  <data name="Home_Tasks" xml:space="preserve"><value>Tugas</value></data>
-  <data name="Home_LiveTelemetry" xml:space="preserve"><value>TELEMETRI LANGSUNG</value></data>
-  <data name="Home_NoPinnedSensors" xml:space="preserve"><value>Belum ada sensor yang disematkan</value></data>
-  <data name="Home_NoPinnedSensorsHint" xml:space="preserve"><value>Buka Ruang Kerja Sensor, klik kanan kartu, dan sematkan ke Beranda.</value></data>
-  <data name="TaskMgr_Header" xml:space="preserve"><value>▤  PENGELOLA TUGAS</value></data>
-  <data name="TaskMgr_Subheader" xml:space="preserve"><value>PENJELAJAH PROSES</value></data>
-  <data name="TaskMgr_SearchPlaceholder" xml:space="preserve"><value>Cari berdasarkan nama atau PID...</value></data>
-  <data name="TaskMgr_KillProcess" xml:space="preserve"><value>Hentikan Proses</value></data>
-  <data name="TaskMgr_SortName" xml:space="preserve"><value>Nama</value></data>
-  <data name="TaskMgr_SortCpu" xml:space="preserve"><value>CPU %</value></data>
-  <data name="TaskMgr_SortRam" xml:space="preserve"><value>RAM</value></data>
-  <data name="AppLauncher_Header" xml:space="preserve"><value>◈  PELUNCUR APLIKASI</value></data>
-  <data name="AppLauncher_Subheader" xml:space="preserve"><value>KONTROL APLIKASI JARAK JAUH</value></data>
-  <data name="AppLauncher_AddProgram" xml:space="preserve"><value>+ Tambah Program</value></data>
-  <data name="AppLauncher_NoApps" xml:space="preserve"><value>Tidak ada aplikasi yang dikonfigurasi.</value></data>
-  <data name="AppLauncher_MoveLeft" xml:space="preserve"><value>Pindah Kiri</value></data>
-  <data name="AppLauncher_MoveRight" xml:space="preserve"><value>Pindah Kanan</value></data>
-  <data name="AppLauncher_Remove" xml:space="preserve"><value>Hapus</value></data>
-  <data name="AddProgram_Title" xml:space="preserve"><value>Tambah Program</value></data>
-  <data name="AddProgram_Header" xml:space="preserve"><value>Tambah Program Baru</value></data>
-  <data name="AddProgram_ExePath" xml:space="preserve"><value>Jalur File Eksekusi</value></data>
-  <data name="AddProgram_DisplayName" xml:space="preserve"><value>Nama Tampilan</value></data>
-  <data name="AddProgram_AccentColor" xml:space="preserve"><value>Warna Aksen (Hex)</value></data>
-  <data name="AddProgram_IconPreview" xml:space="preserve"><value>Pratinjau Ikon</value></data>
-  <data name="TrayFlyout_Header" xml:space="preserve"><value>KILASAN LANGSUNG</value></data>
-  <data name="TrayFlyout_Home" xml:space="preserve"><value>BERANDA</value></data>
-  <data name="TrayFlyout_Workspace" xml:space="preserve"><value>RUANG KERJA</value></data>
-  <data name="Canvas_Header" xml:space="preserve"><value>RUANG KERJA SENSOR</value></data>
-  <data name="Canvas_Connection" xml:space="preserve"><value>Koneksi</value></data>
-  <data name="Canvas_Actions" xml:space="preserve"><value>Aksi</value></data>
-  <data name="Canvas_Latency" xml:space="preserve"><value>Latensi</value></data>
-  <data name="Canvas_Avg" xml:space="preserve"><value>RATA</value></data>
-  <data name="Canvas_Max" xml:space="preserve"><value>MAX</value></data>
-  <data name="Canvas_ActiveSensors" xml:space="preserve"><value>SENSOR AKTIF</value></data>
-  <data name="Canvas_NewSensors" xml:space="preserve"><value>SENSOR BARU</value></data>
-  <data name="Canvas_AddCard" xml:space="preserve"><value>+ Tambah Kartu</value></data>
-  <data name="Canvas_Save" xml:space="preserve"><value>Simpan</value></data>
-  <data name="Canvas_Sync" xml:space="preserve"><value>Sinkronisasi</value></data>
-  <data name="Canvas_Sensors" xml:space="preserve"><value>Sensor ({0})</value></data>
-  <data name="Canvas_Ping" xml:space="preserve"><value>📡 Ping</value></data>
-  <data name="Canvas_CancelConnect" xml:space="preserve"><value>✕ Batal</value></data>
-  <data name="Canvas_Disconnect" xml:space="preserve"><value>✕ Putuskan</value></data>
-  <data name="Canvas_LayoutSaved" xml:space="preserve"><value>Tata Letak Disimpan!</value></data>
-  <data name="Canvas_SyncRequested" xml:space="preserve"><value>Sinkronisasi diminta…</value></data>
-  <data name="RemoteDesktop_Header" xml:space="preserve"><value>DESKTOP JARAK JAUH</value></data>
-  <data name="RemoteDesktop_Quality" xml:space="preserve"><value>Kualitas:</value></data>
-  <data name="RemoteDesktop_Scale" xml:space="preserve"><value>Skala:</value></data>
-  <data name="RemoteDesktop_Fps" xml:space="preserve"><value>FPS:</value></data>
-  <data name="RemoteDesktop_StreamError" xml:space="preserve"><value>⚠ Kesalahan Stream</value></data>
-  <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve"><value>Desktop Jarak Jauh</value></data>
-  <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve"><value>Hubungkan dan tekan Mulai untuk memulai streaming.</value></data>
-  <data name="RemoteDesktop_ToggleCursorPad" xml:space="preserve"><value>D-Pad</value></data>
-  <data name="RemoteDesktop_ToggleFullscreen" xml:space="preserve"><value>Penuh</value></data>
-  <data name="RemoteDesktop_Fullscreen" xml:space="preserve"><value>Keluar</value></data>
-  <data name="RemoteDesktop_CompactPad" xml:space="preserve"><value>Kompak</value></data>
-  <data name="RemoteDesktop_FullPad" xml:space="preserve"><value>Penuh</value></data>
-  <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve"><value>Resolusi: {0}</value></data>
-  <data name="RemoteDesktop_FpsFormat" xml:space="preserve"><value>FPS: {0:F1}</value></data>
-  <data name="RemoteDesktop_QualityFormat" xml:space="preserve"><value>Q: {0}</value></data>
-  <data name="Custom_Header" xml:space="preserve"><value>🎨  KUSTOMISASI</value></data>
-  <data name="Custom_Subheader" xml:space="preserve"><value>TEMA &amp; PRESET MESIN</value></data>
-  <data name="Custom_BasePresets" xml:space="preserve"><value>PRESET DASAR</value></data>
-  <data name="Custom_AdvancedTuning" xml:space="preserve"><value>PENYETELAN LANJUTAN</value></data>
-  <data name="Custom_CornerRadius" xml:space="preserve"><value>Radius Sudut</value></data>
-  <data name="Custom_GlassOpacity" xml:space="preserve"><value>Opasitas Kaca</value></data>
-  <data name="Custom_GlowStrength" xml:space="preserve"><value>Kekuatan Cahaya</value></data>
-  <data name="Custom_AccentColor" xml:space="preserve"><value>Warna Aksen</value></data>
-  <data name="Custom_BackgroundMode" xml:space="preserve"><value>Mode Latar Belakang</value></data>
-  <data name="Custom_Atmosphere" xml:space="preserve"><value>ATMOSFER KANVAS</value></data>
-  <data name="Custom_Reset" xml:space="preserve"><value>Atur Ulang ke Default Tema</value></data>
-  <data name="Custom_Back" xml:space="preserve"><value>← Pusat Komando</value></data>
-  <data name="Custom_RemoteCardShape" xml:space="preserve"><value>Bentuk Kartu Jarak Jauh</value></data>
-  <data name="Status_Disconnected" xml:space="preserve"><value>Terputus</value></data>
-  <data name="Status_Connected" xml:space="preserve"><value>Terhubung</value></data>
-  <data name="Status_Connecting" xml:space="preserve"><value>Menghubungkan…</value></data>
-  <data name="Status_PingSent" xml:space="preserve"><value>Ping dikirim…</value></data>
-  <data name="Status_ServerClosed" xml:space="preserve"><value>Terputus (server ditutup)</value></data>
-  <data name="Status_NoHostsFound" xml:space="preserve"><value>Tidak ada host ditemukan via mDNS.</value></data>
-  <data name="Status_SearchingHosts" xml:space="preserve"><value>Mencari host…</value></data>
-  <data name="Status_DiscoveryUnavailable" xml:space="preserve"><value>Layanan penemuan tidak tersedia.</value></data>
-  <data name="Status_PongNoTimestamp" xml:space="preserve"><value>Pong (tanpa stempel waktu)</value></data>
-  <data name="Status_Pong" xml:space="preserve"><value>Pong!</value></data>
-  <data name="Status_NotStreaming" xml:space="preserve"><value>Tidak streaming</value></data>
-  <data name="Status_Streaming" xml:space="preserve"><value>Streaming</value></data>
-  <data name="Status_SelfConnection" xml:space="preserve"><value>Koneksi diri terdeteksi — tidak dapat mencerminkan layar sendiri</value></data>
-  <data name="Status_ConnectionSaved" xml:space="preserve"><value>Pengaturan koneksi disimpan</value></data>
-  <data name="Status_ZoomFormat" xml:space="preserve"><value>Zoom: {0:F1}×</value></data>
-  <data name="Status_PadCompact" xml:space="preserve"><value>Pad: Kompak</value></data>
-  <data name="Status_PadFull" xml:space="preserve"><value>Pad: Penuh</value></data>
-  <data name="Status_PadCompactTooltip" xml:space="preserve"><value>Pad kursor kompak aktif</value></data>
-  <data name="Status_PadFullTooltip" xml:space="preserve"><value>Pad kursor ukuran penuh aktif</value></data>
-  <data name="Service_NotInstalled" xml:space="preserve"><value>Belum Terinstal</value></data>
-  <data name="Service_Running" xml:space="preserve"><value>Berjalan</value></data>
-  <data name="Service_Stopped" xml:space="preserve"><value>Dihentikan</value></data>
-  <data name="Service_Pending" xml:space="preserve"><value>Menunggu…</value></data>
-  <data name="Service_Installed" xml:space="preserve"><value>Terinstal</value></data>
-  <data name="Service_Starting" xml:space="preserve"><value>Memulai…</value></data>
-  <data name="Service_Stopping" xml:space="preserve"><value>Menghentikan…</value></data>
-  <data name="Service_Uninstalling" xml:space="preserve"><value>Layanan dihapus.</value></data>
-  <data name="Service_PasswordRequired" xml:space="preserve"><value>Kata sandi diperlukan.</value></data>
-  <data name="Service_Publishing" xml:space="preserve"><value>Menerbitkan Remex.Host…</value></data>
-  <data name="Service_PublishFailed" xml:space="preserve"><value>Penerbitan gagal — lihat log.</value></data>
-  <data name="Service_Creating" xml:space="preserve"><value>Membuat layanan…</value></data>
-  <data name="Service_CreateFailed" xml:space="preserve"><value>Gagal membuat layanan — lihat log.</value></data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve"><value>Mengonfigurasi login…</value></data>
-  <data name="Service_ConfigureFailed" xml:space="preserve"><value>Gagal mengonfigurasi kredensial — lihat log.</value></data>
-  <data name="Service_GrantingRights" xml:space="preserve"><value>Memberikan hak masuk…</value></data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve"><value>Menghentikan host tertanam…</value></data>
-  <data name="Service_StartingService" xml:space="preserve"><value>Memulai layanan…</value></data>
-  <data name="Service_InstalledStarted" xml:space="preserve"><value>Terinstal &amp; dimulai.</value></data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve"><value>Terinstal — mulai mungkin gagal, lihat log.</value></data>
-  <data name="Service_DeletingService" xml:space="preserve"><value>Menghapus layanan…</value></data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve"><value>Menerapkan kredensial…</value></data>
-  <data name="Service_HostUnavailable" xml:space="preserve"><value>Kemampuan host tidak tersedia</value></data>
-  <data name="Service_HostUnavailableHint" xml:space="preserve"><value>Hubungkan ke host untuk memeriksa kemampuan runtime.</value></data>
-  <data name="Wol_EnterMac" xml:space="preserve"><value>⚠ Masukkan alamat MAC terlebih dahulu.</value></data>
-  <data name="Wol_SendingViaHost" xml:space="preserve"><value>Mengirim paket ajaib melalui host…</value></data>
-  <data name="Wol_SendingLocal" xml:space="preserve"><value>Mengirim paket ajaib secara lokal…</value></data>
-  <data name="Wol_SentToFormat" xml:space="preserve"><value>✅ Paket dikirim ke {0}</value></data>
-  <data name="Wol_SuccessFormat" xml:space="preserve"><value>✅ {0}</value></data>
-  <data name="Wol_ErrorFormat" xml:space="preserve"><value>❌ {0}</value></data>
-  <data name="Wol_LockSent" xml:space="preserve"><value>Kunci dikirim</value></data>
-  <data name="Wol_ShutdownSent" xml:space="preserve"><value>Matikan dikirim</value></data>
-  <data name="Wol_ForceShutdownSent" xml:space="preserve"><value>Paksa matikan dikirim</value></data>
-  <data name="Wol_RestartSent" xml:space="preserve"><value>Restart dikirim</value></data>
-  <data name="Wol_ForceRestartSent" xml:space="preserve"><value>Paksa restart dikirim</value></data>
-  <data name="Wol_RebootUefiSent" xml:space="preserve"><value>Reboot ke UEFI dikirim</value></data>
-  <data name="Wol_SleepSent" xml:space="preserve"><value>Tidur dikirim</value></data>
-  <data name="Wol_HibernateSent" xml:space="preserve"><value>Hibernasi dikirim</value></data>
-  <data name="Wol_SignOutSent" xml:space="preserve"><value>Keluar dikirim</value></data>
-  <!-- Tutorial -->
-  <data name="Tutorial_Header" xml:space="preserve"><value>GETTING STARTED</value></data>
-  <data name="Tutorial_Skip" xml:space="preserve"><value>Skip ✕</value></data>
-  <data name="Tutorial_Back" xml:space="preserve"><value>← Back</value></data>
-  <data name="Tutorial_Next" xml:space="preserve"><value>Next →</value></data>
-  <data name="Tutorial_Finish" xml:space="preserve"><value>Get Started ✓</value></data>
+<data name="Nav_Home" xml:space="preserve"><value>Beranda</value></data>
+<data name="Nav_Sensors" xml:space="preserve"><value>Sensor</value></data>
+<data name="Nav_Remote" xml:space="preserve"><value>Jarak Jauh</value></data>
+<data name="Nav_Launcher" xml:space="preserve"><value>Peluncur</value></data>
+<data name="Nav_Tasks" xml:space="preserve"><value>Tugas</value></data>
+<data name="Nav_Desktop" xml:space="preserve"><value>Desktop</value></data>
+<data name="Nav_Settings" xml:space="preserve"><value>Pengaturan</value></data>
+<data name="Btn_Connect" xml:space="preserve"><value>Hubungkan</value></data>
+<data name="Btn_Disconnect" xml:space="preserve"><value>Putuskan</value></data>
+<data name="Btn_Cancel" xml:space="preserve"><value>Batal</value></data>
+<data name="Btn_Save" xml:space="preserve"><value>Simpan</value></data>
+<data name="Btn_Apply" xml:space="preserve"><value>Terapkan</value></data>
+<data name="Btn_Browse" xml:space="preserve"><value>Jelajahi...</value></data>
+<data name="Btn_Discover" xml:space="preserve"><value>Temukan</value></data>
+<data name="Btn_Refresh" xml:space="preserve"><value>⟳ Segarkan</value></data>
+<data name="Btn_Start" xml:space="preserve"><value>▶ Mulai</value></data>
+<data name="Btn_Stop" xml:space="preserve"><value>⏹ Hentikan</value></data>
+<data name="Btn_Submit" xml:space="preserve"><value>Kirim</value></data>
+<data name="Remote_Header" xml:space="preserve"><value>⏻ PC JARAK JAUH</value></data>
+<data name="Remote_Subheader" xml:space="preserve"><value>KONTROL DAYA &amp; SISTEM</value></data>
+<data name="Remote_WolSection" xml:space="preserve"><value>WAKE ON LAN</value></data>
+<data name="Remote_WolDescription" xml:space="preserve"><value>Kirim paket ajaib untuk membangunkan PC target.</value></data>
+<data name="Remote_Graceful" xml:space="preserve"><value>NORMAL</value></data>
+<data name="Remote_Forced" xml:space="preserve"><value>PAKSA (LANGSUNG)</value></data>
+<data name="Remote_Lock" xml:space="preserve"><value>🔒 Kunci PC</value></data>
+<data name="Remote_SignOut" xml:space="preserve"><value>🚪 Keluar</value></data>
+<data name="Remote_Shutdown" xml:space="preserve"><value>⏻ Matikan</value></data>
+<data name="Remote_Restart" xml:space="preserve"><value>🔄 Restart</value></data>
+<data name="Remote_Sleep" xml:space="preserve"><value>💤 Tidur</value></data>
+<data name="Remote_Hibernate" xml:space="preserve"><value>❄ Hibernasi</value></data>
+<data name="Remote_ForceShutdown" xml:space="preserve"><value>⚠ Paksa Matikan</value></data>
+<data name="Remote_ForceRestart" xml:space="preserve"><value>⚠ Paksa Restart</value></data>
+<data name="Remote_RebootUefi" xml:space="preserve"><value>🔧 Reboot ke UEFI</value></data>
+<data name="Remote_WolSend" xml:space="preserve"><value>🔌 Kirim Paket Wake-on-LAN</value></data>
+<data name="Settings_Header" xml:space="preserve"><value>PENGATURAN</value></data>
+<data name="Settings_Back" xml:space="preserve"><value>← Pusat Komando</value></data>
+<data name="Settings_SaveChanges" xml:space="preserve"><value>Simpan Perubahan</value></data>
+<data name="Settings_SavedStatus" xml:space="preserve"><value>Pengaturan Disimpan!</value></data>
+<data name="Settings_Connection" xml:space="preserve"><value>KONEKSI</value></data>
+<data name="Settings_HostAddress" xml:space="preserve"><value>Alamat Host</value></data>
+<data name="Settings_AccessKey" xml:space="preserve"><value>Kunci Akses</value></data>
+<data name="Settings_SaveReconnect" xml:space="preserve"><value>Simpan &amp; Hubungkan Ulang</value></data>
+<data name="Settings_Layout" xml:space="preserve"><value>TATA LETAK</value></data>
+<data name="Settings_SnapToGrid" xml:space="preserve"><value>Kunci ke Grid</value></data>
+<data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Kartu mengunci ke garis grid terdekat saat dilepas</value></data>
+<data name="Settings_GridSize" xml:space="preserve"><value>Ukuran Grid</value></data>
+<data name="Settings_PinnedSensors" xml:space="preserve"><value>SENSOR DISEMATKAN</value></data>
+<data name="Settings_PinnedSensorsDesc" xml:space="preserve"><value>Pilih sensor untuk ditampilkan di layar beranda</value></data>
+<data name="Settings_ServiceSection" xml:space="preserve"><value>LAYANAN WINDOWS</value></data>
+<data name="Settings_ServiceLogin" xml:space="preserve"><value>LOGIN LAYANAN</value></data>
+<data name="Settings_ServiceDesc" xml:space="preserve"><value>Layanan berjalan di latar belakang agar RemEx dapat menerima perintah jarak jauh tanpa membuka aplikasi.</value></data>
+<data name="Settings_AccountFormat" xml:space="preserve"><value>Akun: {0}</value></data>
+<data name="Settings_Username" xml:space="preserve"><value>Nama pengguna</value></data>
+<data name="Settings_Password" xml:space="preserve"><value>Kata sandi</value></data>
+<data name="Settings_RestartNote" xml:space="preserve"><value>Perubahan bahasa akan berlaku setelah memulai ulang RemEx.</value></data>
+<data name="Settings_Language" xml:space="preserve"><value>Bahasa</value></data>
+<data name="Home_Subtitle" xml:space="preserve"><value>PUSAT KOMANDO EKSEKUSI JARAK JAUH</value></data>
+<data name="Home_QuickActions" xml:space="preserve"><value>AKSI CEPAT</value></data>
+<data name="Home_SensorWorkspace" xml:space="preserve"><value>Ruang Kerja Sensor</value></data>
+<data name="Home_PcRemote" xml:space="preserve"><value>PC Jarak Jauh</value></data>
+<data name="Home_Desktop" xml:space="preserve"><value>Desktop</value></data>
+<data name="Home_Launcher" xml:space="preserve"><value>Peluncur</value></data>
+<data name="Home_Tasks" xml:space="preserve"><value>Tugas</value></data>
+<data name="Home_LiveTelemetry" xml:space="preserve"><value>TELEMETRI LANGSUNG</value></data>
+<data name="Home_NoPinnedSensors" xml:space="preserve"><value>Belum ada sensor yang disematkan</value></data>
+<data name="Home_NoPinnedSensorsHint" xml:space="preserve"><value>Buka Ruang Kerja Sensor, klik kanan kartu, dan sematkan ke Beranda.</value></data>
+<data name="TaskMgr_Header" xml:space="preserve"><value>▤ PENGELOLA TUGAS</value></data>
+<data name="TaskMgr_Subheader" xml:space="preserve"><value>PENJELAJAH PROSES</value></data>
+<data name="TaskMgr_SearchPlaceholder" xml:space="preserve"><value>Cari berdasarkan nama atau PID...</value></data>
+<data name="TaskMgr_KillProcess" xml:space="preserve"><value>Hentikan Proses</value></data>
+<data name="TaskMgr_SortName" xml:space="preserve"><value>Nama</value></data>
+<data name="TaskMgr_SortCpu" xml:space="preserve"><value>CPU %</value></data>
+<data name="TaskMgr_SortRam" xml:space="preserve"><value>RAM</value></data>
+<data name="AppLauncher_Header" xml:space="preserve"><value>◈ PELUNCUR APLIKASI</value></data>
+<data name="AppLauncher_Subheader" xml:space="preserve"><value>KONTROL APLIKASI JARAK JAUH</value></data>
+<data name="AppLauncher_AddProgram" xml:space="preserve"><value>+ Tambah Program</value></data>
+<data name="AppLauncher_NoApps" xml:space="preserve"><value>Tidak ada aplikasi yang dikonfigurasi.</value></data>
+<data name="AppLauncher_MoveLeft" xml:space="preserve"><value>Pindah Kiri</value></data>
+<data name="AppLauncher_MoveRight" xml:space="preserve"><value>Pindah Kanan</value></data>
+<data name="AppLauncher_Remove" xml:space="preserve"><value>Hapus</value></data>
+<data name="AddProgram_Title" xml:space="preserve"><value>Tambah Program</value></data>
+<data name="AddProgram_Header" xml:space="preserve"><value>Tambah Program Baru</value></data>
+<data name="AddProgram_ExePath" xml:space="preserve"><value>Jalur File Eksekusi</value></data>
+<data name="AddProgram_DisplayName" xml:space="preserve"><value>Nama Tampilan</value></data>
+<data name="AddProgram_AccentColor" xml:space="preserve"><value>Warna Aksen (Hex)</value></data>
+<data name="AddProgram_IconPreview" xml:space="preserve"><value>Pratinjau Ikon</value></data>
+<data name="TrayFlyout_Header" xml:space="preserve"><value>KILASAN LANGSUNG</value></data>
+<data name="TrayFlyout_Home" xml:space="preserve"><value>BERANDA</value></data>
+<data name="TrayFlyout_Workspace" xml:space="preserve"><value>RUANG KERJA</value></data>
+<data name="Canvas_Header" xml:space="preserve"><value>RUANG KERJA SENSOR</value></data>
+<data name="Canvas_Connection" xml:space="preserve"><value>Koneksi</value></data>
+<data name="Canvas_Actions" xml:space="preserve"><value>Aksi</value></data>
+<data name="Canvas_Latency" xml:space="preserve"><value>Latensi</value></data>
+<data name="Canvas_Avg" xml:space="preserve"><value>RATA</value></data>
+<data name="Canvas_Max" xml:space="preserve"><value>MAX</value></data>
+<data name="Canvas_ActiveSensors" xml:space="preserve"><value>SENSOR AKTIF</value></data>
+<data name="Canvas_NewSensors" xml:space="preserve"><value>SENSOR BARU</value></data>
+<data name="Canvas_AddCard" xml:space="preserve"><value>+ Tambah Kartu</value></data>
+<data name="Canvas_Save" xml:space="preserve"><value>Simpan</value></data>
+<data name="Canvas_Sync" xml:space="preserve"><value>Sinkronisasi</value></data>
+<data name="Canvas_Sensors" xml:space="preserve"><value>Sensor ({0})</value></data>
+<data name="Canvas_Ping" xml:space="preserve"><value>📡 Ping</value></data>
+<data name="Canvas_CancelConnect" xml:space="preserve"><value>✕ Batal</value></data>
+<data name="Canvas_Disconnect" xml:space="preserve"><value>✕ Putuskan</value></data>
+<data name="Canvas_LayoutSaved" xml:space="preserve"><value>Tata Letak Disimpan!</value></data>
+<data name="Canvas_SyncRequested" xml:space="preserve"><value>Sinkronisasi diminta…</value></data>
+<data name="RemoteDesktop_Header" xml:space="preserve"><value>DESKTOP JARAK JAUH</value></data>
+<data name="RemoteDesktop_Quality" xml:space="preserve"><value>Kualitas:</value></data>
+<data name="RemoteDesktop_Scale" xml:space="preserve"><value>Skala:</value></data>
+<data name="RemoteDesktop_Fps" xml:space="preserve"><value>FPS:</value></data>
+<data name="RemoteDesktop_StreamError" xml:space="preserve"><value>⚠ Kesalahan Stream</value></data>
+<data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve"><value>Desktop Jarak Jauh</value></data>
+<data name="RemoteDesktop_PlaceholderHint" xml:space="preserve"><value>Hubungkan dan tekan Mulai untuk memulai streaming.</value></data>
+<data name="RemoteDesktop_ToggleCursorPad" xml:space="preserve"><value>D-Pad</value></data>
+<data name="RemoteDesktop_ToggleFullscreen" xml:space="preserve"><value>Penuh</value></data>
+<data name="RemoteDesktop_Fullscreen" xml:space="preserve"><value>Keluar</value></data>
+<data name="RemoteDesktop_CompactPad" xml:space="preserve"><value>Kompak</value></data>
+<data name="RemoteDesktop_FullPad" xml:space="preserve"><value>Penuh</value></data>
+<data name="RemoteDesktop_ResolutionFormat" xml:space="preserve"><value>Resolusi: {0}</value></data>
+<data name="RemoteDesktop_FpsFormat" xml:space="preserve"><value>FPS: {0:F1}</value></data>
+<data name="RemoteDesktop_QualityFormat" xml:space="preserve"><value>Q: {0}</value></data>
+<data name="Custom_Header" xml:space="preserve"><value>🎨 KUSTOMISASI</value></data>
+<data name="Custom_Subheader" xml:space="preserve"><value>TEMA &amp; PRESET MESIN</value></data>
+<data name="Custom_BasePresets" xml:space="preserve"><value>PRESET DASAR</value></data>
+<data name="Custom_AdvancedTuning" xml:space="preserve"><value>PENYETELAN LANJUTAN</value></data>
+<data name="Custom_CornerRadius" xml:space="preserve"><value>Radius Sudut</value></data>
+<data name="Custom_GlassOpacity" xml:space="preserve"><value>Opasitas Kaca</value></data>
+<data name="Custom_GlowStrength" xml:space="preserve"><value>Kekuatan Cahaya</value></data>
+<data name="Custom_AccentColor" xml:space="preserve"><value>Warna Aksen</value></data>
+<data name="Custom_BackgroundMode" xml:space="preserve"><value>Mode Latar Belakang</value></data>
+<data name="Custom_Atmosphere" xml:space="preserve"><value>ATMOSFER KANVAS</value></data>
+<data name="Custom_Reset" xml:space="preserve"><value>Atur Ulang ke Default Tema</value></data>
+<data name="Custom_Back" xml:space="preserve"><value>← Pusat Komando</value></data>
+<data name="Custom_RemoteCardShape" xml:space="preserve"><value>Bentuk Kartu Jarak Jauh</value></data>
+<data name="Status_Disconnected" xml:space="preserve"><value>Terputus</value></data>
+<data name="Status_Connected" xml:space="preserve"><value>Terhubung</value></data>
+<data name="Status_Connecting" xml:space="preserve"><value>Menghubungkan…</value></data>
+<data name="Status_PingSent" xml:space="preserve"><value>Ping dikirim…</value></data>
+<data name="Status_ServerClosed" xml:space="preserve"><value>Terputus (server ditutup)</value></data>
+<data name="Status_NoHostsFound" xml:space="preserve"><value>Tidak ada host ditemukan via mDNS.</value></data>
+<data name="Status_SearchingHosts" xml:space="preserve"><value>Mencari host…</value></data>
+<data name="Status_DiscoveryUnavailable" xml:space="preserve"><value>Layanan penemuan tidak tersedia.</value></data>
+<data name="Status_PongNoTimestamp" xml:space="preserve"><value>Pong (tanpa stempel waktu)</value></data>
+<data name="Status_Pong" xml:space="preserve"><value>Pong!</value></data>
+<data name="Status_NotStreaming" xml:space="preserve"><value>Tidak streaming</value></data>
+<data name="Status_Streaming" xml:space="preserve"><value>Streaming</value></data>
+<data name="Status_SelfConnection" xml:space="preserve"><value>Koneksi diri terdeteksi — tidak dapat mencerminkan layar sendiri</value></data>
+<data name="Status_ConnectionSaved" xml:space="preserve"><value>Pengaturan koneksi disimpan</value></data>
+<data name="Status_ZoomFormat" xml:space="preserve"><value>Zoom: {0:F1}×</value></data>
+<data name="Status_PadCompact" xml:space="preserve"><value>Pad: Kompak</value></data>
+<data name="Status_PadFull" xml:space="preserve"><value>Pad: Penuh</value></data>
+<data name="Status_PadCompactTooltip" xml:space="preserve"><value>Pad kursor kompak aktif</value></data>
+<data name="Status_PadFullTooltip" xml:space="preserve"><value>Pad kursor ukuran penuh aktif</value></data>
+<data name="Service_NotInstalled" xml:space="preserve"><value>Belum Terinstal</value></data>
+<data name="Service_Running" xml:space="preserve"><value>Berjalan</value></data>
+<data name="Service_Stopped" xml:space="preserve"><value>Dihentikan</value></data>
+<data name="Service_Pending" xml:space="preserve"><value>Menunggu…</value></data>
+<data name="Service_Installed" xml:space="preserve"><value>Terinstal</value></data>
+<data name="Service_Starting" xml:space="preserve"><value>Memulai…</value></data>
+<data name="Service_Stopping" xml:space="preserve"><value>Menghentikan…</value></data>
+<data name="Service_Uninstalling" xml:space="preserve"><value>Layanan dihapus.</value></data>
+<data name="Service_PasswordRequired" xml:space="preserve"><value>Kata sandi diperlukan.</value></data>
+<data name="Service_Publishing" xml:space="preserve"><value>Menerbitkan Remex.Host…</value></data>
+<data name="Service_PublishFailed" xml:space="preserve"><value>Penerbitan gagal — lihat log.</value></data>
+<data name="Service_Creating" xml:space="preserve"><value>Membuat layanan…</value></data>
+<data name="Service_CreateFailed" xml:space="preserve"><value>Gagal membuat layanan — lihat log.</value></data>
+<data name="Service_ConfiguringLogin" xml:space="preserve"><value>Mengonfigurasi login…</value></data>
+<data name="Service_ConfigureFailed" xml:space="preserve"><value>Gagal mengonfigurasi kredensial — lihat log.</value></data>
+<data name="Service_GrantingRights" xml:space="preserve"><value>Memberikan hak masuk…</value></data>
+<data name="Service_StoppingEmbedded" xml:space="preserve"><value>Menghentikan host tertanam…</value></data>
+<data name="Service_StartingService" xml:space="preserve"><value>Memulai layanan…</value></data>
+<data name="Service_InstalledStarted" xml:space="preserve"><value>Terinstal &amp; dimulai.</value></data>
+<data name="Service_InstalledStartFailed" xml:space="preserve"><value>Terinstal — mulai mungkin gagal, lihat log.</value></data>
+<data name="Service_DeletingService" xml:space="preserve"><value>Menghapus layanan…</value></data>
+<data name="Service_ApplyingCredentials" xml:space="preserve"><value>Menerapkan kredensial…</value></data>
+<data name="Service_HostUnavailable" xml:space="preserve"><value>Kemampuan host tidak tersedia</value></data>
+<data name="Service_HostUnavailableHint" xml:space="preserve"><value>Hubungkan ke host untuk memeriksa kemampuan runtime.</value></data>
+<data name="Wol_EnterMac" xml:space="preserve"><value>⚠ Masukkan alamat MAC terlebih dahulu.</value></data>
+<data name="Wol_SendingViaHost" xml:space="preserve"><value>Mengirim paket ajaib melalui host…</value></data>
+<data name="Wol_SendingLocal" xml:space="preserve"><value>Mengirim paket ajaib secara lokal…</value></data>
+<data name="Wol_SentToFormat" xml:space="preserve"><value>✅ Paket dikirim ke {0}</value></data>
+<data name="Wol_SuccessFormat" xml:space="preserve"><value>✅ {0}</value></data>
+<data name="Wol_ErrorFormat" xml:space="preserve"><value>❌ {0}</value></data>
+<data name="Wol_LockSent" xml:space="preserve"><value>Kunci dikirim</value></data>
+<data name="Wol_ShutdownSent" xml:space="preserve"><value>Matikan dikirim</value></data>
+<data name="Wol_ForceShutdownSent" xml:space="preserve"><value>Paksa matikan dikirim</value></data>
+<data name="Wol_RestartSent" xml:space="preserve"><value>Restart dikirim</value></data>
+<data name="Wol_ForceRestartSent" xml:space="preserve"><value>Paksa restart dikirim</value></data>
+<data name="Wol_RebootUefiSent" xml:space="preserve"><value>Reboot ke UEFI dikirim</value></data>
+<data name="Wol_SleepSent" xml:space="preserve"><value>Tidur dikirim</value></data>
+<data name="Wol_HibernateSent" xml:space="preserve"><value>Hibernasi dikirim</value></data>
+<data name="Wol_SignOutSent" xml:space="preserve"><value>Keluar dikirim</value></data>
+<!-- Tutorial -->
+<data name="Tutorial_Header" xml:space="preserve"><value>MEMULAI</value></data>
+<data name="Tutorial_Skip" xml:space="preserve"><value>Lewati ✕</value></data>
+<data name="Tutorial_Back" xml:space="preserve"><value>← Kembali</value></data>
+<data name="Tutorial_Next" xml:space="preserve"><value>Berikutnya →</value></data>
+<data name="Tutorial_Finish" xml:space="preserve"><value>Mulai ✓</value></data>
 
-  <data name="Tutorial_P0_Title" xml:space="preserve"><value>Welcome to RemEx</value></data>
-  <data name="Tutorial_P0_Body" xml:space="preserve"><value>RemEx turns your PC into a remote command center. Monitor hardware sensors, launch apps, manage processes, and stream your desktop — all controllable from your Android device.
 
-Your PC runs the RemEx Host, which your phone connects to over your local network.</value></data>
+<data name="Tutorial_P0_Title" xml:space="preserve"><value>Selamat Datang di RemEx</value></data>
+<data name="Tutorial_P0_Body" xml:space="preserve"><value>RemEx mengubah PC Anda menjadi pusat komando jarak jauh. Pantau sensor perangkat keras, luncurkan aplikasi, kelola proses, dan streaming desktop Anda — semuanya dapat dikendalikan dari perangkat Android Anda.
 
-  <data name="Tutorial_P1_Title" xml:space="preserve"><value>How It Works</value></data>
-  <data name="Tutorial_P1_Body1" xml:space="preserve"><value>This desktop app includes an embedded RemEx Host that starts automatically. Your Android phone connects to it — not the other way around.</value></data>
-  <data name="Tutorial_P1_Body2" xml:space="preserve"><value>For always-on access (even when you're not logged in), you can install the host as a Windows service or Linux daemon. This lets your phone connect anytime.</value></data>
+PC Anda menjalankan RemEx Host, yang dihubungkan oleh ponsel Anda melalui jaringan lokal.</value></data>
 
-  <data name="Tutorial_P2_Title" xml:space="preserve"><value>Run as a Windows Service</value></data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve"><value>To keep RemEx running 24/7 without being logged in, install it as a Windows service:</value></data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve"><value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value></data>
-  <data name="Tutorial_P2_Note" xml:space="preserve"><value>The service runs under your user account so it can access your desktop session for screen capture and app launching.</value></data>
+<data name="Tutorial_P1_Title" xml:space="preserve"><value>Cara Kerjanya</value></data>
+<data name="Tutorial_P1_Body1" xml:space="preserve"><value>Aplikasi desktop ini mencakup RemEx Host tertanam yang mulai secara otomatis. Ponsel Android Anda terhubung kepadanya — bukan sebaliknya.</value></data>
+<data name="Tutorial_P1_Body2" xml:space="preserve"><value>Untuk akses selalu aktif (bahkan saat Anda belum login), Anda dapat menginstal host sebagai layanan Windows atau daemon Linux. Ini memungkinkan ponsel Anda terhubung kapan saja.</value></data>
 
-  <data name="Tutorial_P3_Title" xml:space="preserve"><value>Linux Service Setup</value></data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve"><value>On Linux, RemEx Host can run as a systemd service for automatic startup.</value></data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve"><value>sudo cp remex-host.service /etc/systemd/system/
+<data name="Tutorial_P2_Title" xml:space="preserve"><value>Jalankan sebagai Layanan Windows</value></data>
+<data name="Tutorial_P2_Body1" xml:space="preserve"><value>Untuk menjaga RemEx berjalan 24/7 tanpa perlu login, instal sebagai layanan Windows:</value></data>
+<data name="Tutorial_P2_Steps" xml:space="preserve"><value>1. Buka Pengaturan (⚙) → gulir ke 'Layanan Windows'
+2. Atur nama pengguna dan kata sandi Windows Anda
+3. Klik 'Instal sebagai Layanan'
+4. Layanan mulai secara otomatis saat boot</value></data>
+<data name="Tutorial_P2_Note" xml:space="preserve"><value>Layanan berjalan di bawah akun pengguna Anda sehingga dapat mengakses sesi desktop Anda untuk tangkapan layar dan peluncuran aplikasi.</value></data>
+
+<data name="Tutorial_P3_Title" xml:space="preserve"><value>Pengaturan Layanan Linux</value></data>
+<data name="Tutorial_P3_Body1" xml:space="preserve"><value>Di Linux, RemEx Host dapat berjalan sebagai layanan systemd untuk startup otomatis.</value></data>
+<data name="Tutorial_P3_Steps" xml:space="preserve"><value>sudo cp remex-host.service /etc/systemd/system/
 sudo systemctl enable remex-host
 sudo systemctl start remex-host</value></data>
-  <data name="Tutorial_P3_Link" xml:space="preserve"><value>For detailed instructions, see docs/linux-service-setup.md on GitHub</value></data>
+<data name="Tutorial_P3_Link" xml:space="preserve"><value>Untuk instruksi rinci, lihat docs/linux-service-setup.md di GitHub</value></data>
 
-  <data name="Tutorial_P4_Title" xml:space="preserve"><value>HWInfo Integration (Recommended)</value></data>
-  <data name="Tutorial_P4_Body1" xml:space="preserve"><value>For detailed hardware monitoring (300+ sensors), install HWiNFO64 — it's free for personal use.</value></data>
-  <data name="Tutorial_P4_Steps" xml:space="preserve"><value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value></data>
-  <data name="Tutorial_P4_Warning" xml:space="preserve"><value>⚠ HWInfo's Shared Memory auto-disables after 12 hours (free version). Re-enable it periodically, or consider the Pro license.</value></data>
+<data name="Tutorial_P4_Title" xml:space="preserve"><value>Integrasi HWInfo (Disarankan)</value></data>
+<data name="Tutorial_P4_Body1" xml:space="preserve"><value>Untuk pemantauan perangkat keras terperinci (300+ sensor), instal HWiNFO64 — gratis untuk penggunaan pribadi.</value></data>
+<data name="Tutorial_P4_Steps" xml:space="preserve"><value>1. Unduh dari hwinfo.com
+2. Jalankan HWInfo → Pengaturan (⚙) → Pengaturan Utama
+3. Centang 'Shared Memory Support' → OK
+4. HWInfo harus berjalan agar RemEx dapat membaca sensornya</value></data>
+<data name="Tutorial_P4_Warning" xml:space="preserve"><value>⚠ Memori Bersama (Shared Memory) HWInfo otomatis dinonaktifkan setelah 12 jam (versi gratis). Aktifkan kembali secara berkala, atau pertimbangkan lisensi Pro.</value></data>
 
-  <data name="Tutorial_P5_Title" xml:space="preserve"><value>Sensor Monitoring</value></data>
-  <data name="Tutorial_P5_Body1" xml:space="preserve"><value>RemEx supports two telemetry sources:</value></data>
-  <data name="Tutorial_P5_HWInfo" xml:space="preserve"><value>🟢 HWInfo: 300+ sensors — CPU temps, GPU clocks, fan speeds, voltages, power draw. Requires HWInfo running.</value></data>
-  <data name="Tutorial_P5_BuiltIn" xml:space="preserve"><value>🪟 Built-in: Basic sensors — CPU usage, RAM, disk I/O, network rates. Always available, no extra software.</value></data>
-  <data name="Tutorial_P5_Body2" xml:space="preserve"><value>Pin your favorite sensors to the Home screen from Settings → Pinned Sensors.</value></data>
+<data name="Tutorial_P5_Title" xml:space="preserve"><value>Pemantauan Sensor</value></data>
+<data name="Tutorial_P5_Body1" xml:space="preserve"><value>RemEx mendukung dua sumber telemetri:</value></data>
+<data name="Tutorial_P5_HWInfo" xml:space="preserve"><value>🟢 HWInfo: 300+ sensor — suhu CPU, clock GPU, kecepatan kipas, voltase, konsumsi daya. Membutuhkan HWInfo berjalan.</value></data>
+<data name="Tutorial_P5_BuiltIn" xml:space="preserve"><value>🪟 Bawaan: Sensor dasar — penggunaan CPU, RAM, I/O disk, kecepatan jaringan. Selalu tersedia, tanpa perangkat lunak tambahan.</value></data>
+<data name="Tutorial_P5_Body2" xml:space="preserve"><value>Sematkan sensor favorit Anda ke layar Beranda dari Pengaturan → Sensor Disematkan.</value></data>
 
-  <data name="Tutorial_P6_Title" xml:space="preserve"><value>App Launcher Setup</value></data>
-  <data name="Tutorial_P6_Body1" xml:space="preserve"><value>The App Launcher lets you start programs on your PC from your phone. Apps must be configured here first.</value></data>
-  <data name="Tutorial_P6_Steps" xml:space="preserve"><value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value></data>
-  <data name="Tutorial_P6_Note" xml:space="preserve"><value>This works even with the standalone Remex.Host service — configure apps in the desktop client at least once.</value></data>
+<data name="Tutorial_P6_Title" xml:space="preserve"><value>Pengaturan Peluncur Aplikasi</value></data>
+<data name="Tutorial_P6_Body1" xml:space="preserve"><value>Peluncur Aplikasi memungkinkan Anda memulai program di PC dari ponsel Anda. Aplikasi harus dikonfigurasi di sini terlebih dahulu.</value></data>
+<data name="Tutorial_P6_Steps" xml:space="preserve"><value>1. Navigasi ke halaman Peluncur (bilah sisi)
+2. Klik '+ Tambah Program'
+3. Jelajahi ke .exe atau pintasan
+4. Luncurkan dari aplikasi Android Anda!</value></data>
+<data name="Tutorial_P6_Note" xml:space="preserve"><value>Ini berfungsi bahkan dengan layanan mandiri Remex.Host — konfigurasikan aplikasi di klien desktop setidaknya satu kali.</value></data>
 
-  <data name="Tutorial_P7_Title" xml:space="preserve"><value>Connecting Your Phone</value></data>
-  <data name="Tutorial_P7_Body1" xml:space="preserve"><value>Your Android app finds this PC automatically using mDNS. Both devices must be on the same Wi-Fi / LAN.</value></data>
-  <data name="Tutorial_P7_Body2" xml:space="preserve"><value>If auto-discovery doesn't work, find your PC's IP manually:</value></data>
-  <data name="Tutorial_P7_IpSteps" xml:space="preserve"><value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value></data>
-  <data name="Tutorial_P7_Body3" xml:space="preserve"><value>Enter ws://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value></data>
+<data name="Tutorial_P7_Title" xml:space="preserve"><value>Menghubungkan Ponsel Anda</value></data>
+<data name="Tutorial_P7_Body1" xml:space="preserve"><value>Aplikasi Android Anda menemukan PC ini secara otomatis menggunakan mDNS. Kedua perangkat harus berada di Wi-Fi / LAN yang sama.</value></data>
+<data name="Tutorial_P7_Body2" xml:space="preserve"><value>Jika penemuan otomatis tidak berfungsi, temukan IP PC Anda secara manual:</value></data>
+<data name="Tutorial_P7_IpSteps" xml:space="preserve"><value>Windows: CMD → ipconfig → 'IPv4 Address'
+Linux: ip addr atau hostname -I</value></data>
+<data name="Tutorial_P7_Body3" xml:space="preserve"><value>Masukkan ws://&lt;IP&gt;:5005/ws di pengaturan koneksi aplikasi Android.</value></data>
 
-  <data name="Tutorial_P8_Title" xml:space="preserve"><value>You're All Set!</value></data>
-  <data name="Tutorial_P8_Body1" xml:space="preserve"><value>Use the sidebar to navigate between Home, Sensors, Remote Control, App Launcher, Task Manager, and Remote Desktop.</value></data>
-  <data name="Tutorial_P8_Body2" xml:space="preserve"><value>Open Settings (⚙) to customise your theme, connection, stream quality, and pin sensors to Home.</value></data>
-  <data name="Tutorial_P8_Replay" xml:space="preserve"><value>You can replay this tutorial anytime from Settings.</value></data>
+<data name="Tutorial_P8_Title" xml:space="preserve"><value>Anda Sudah Siap!</value></data>
+<data name="Tutorial_P8_Body1" xml:space="preserve"><value>Gunakan bilah sisi untuk menavigasi antara Beranda, Sensor, Jarak Jauh, Peluncur Aplikasi, Pengelola Tugas, dan Desktop Jarak Jauh.</value></data>
+<data name="Tutorial_P8_Body2" xml:space="preserve"><value>Buka Pengaturan (⚙) untuk menyesuaikan tema, koneksi, kualitas streaming, dan menyematkan sensor ke Beranda.</value></data>
+<data name="Tutorial_P8_Replay" xml:space="preserve"><value>Anda dapat memutar ulang panduan ini kapan saja dari Pengaturan.</value></data>
 
-  <!-- Phase 4: Live Localization - New Keys (English placeholder) -->
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve"><value>Leave empty to disable</value></data>
-  <data name="Shell_Atmosphere" xml:space="preserve"><value>ATMOSPHERE</value></data>
-  <data name="Shell_AutoSaveNote" xml:space="preserve"><value>Auto-saved on change. Persists across restarts.</value></data>
-  <data name="Shell_FineTuning" xml:space="preserve"><value>FINE TUNING</value></data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve"><value>Host Binary Path</value></data>
-  <data name="Shell_HostPathHint" xml:space="preserve"><value>Path to Remex.Host.exe (leave empty for auto-detection)</value></data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve"><value>Path to Remex.Host.exe. Leave empty for auto-detection (same folder, sibling folders, etc.)</value></data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve"><value>Auto-detect (or set custom path)</value></data>
-  <data name="Shell_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-  <data name="Shell_Initializing" xml:space="preserve"><value>Initializing dashboard...</value></data>
-  <data name="Shell_JpegQuality" xml:space="preserve"><value>JPEG Quality</value></data>
-  <data name="Shell_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
-  <data name="Shell_PasswordWatermark" xml:space="preserve"><value>Windows password</value></data>
-  <data name="Shell_SettingsSubtitle" xml:space="preserve"><value>Configuration &amp; Customization</value></data>
-  <data name="Shell_SettingsTitle" xml:space="preserve"><value>⚙ Settings</value></data>
-  <data name="Shell_StreamSettings" xml:space="preserve"><value>STREAM SETTINGS</value></data>
-  <data name="Shell_StreamSettingsDesc" xml:space="preserve"><value>Configure the quality of the screen stream that the host broadcasts to connected clients (phone, tablet).</value></data>
-  <data name="Shell_Subtitle" xml:space="preserve"><value>Remote Execution Command Center</value></data>
-  <data name="Shell_TargetFps" xml:space="preserve"><value>Target FPS</value></data>
-  <data name="Shell_Theme" xml:space="preserve"><value>THEME</value></data>
-  <data name="Shell_UsernameWatermark" xml:space="preserve"><value>.\Username</value></data>
-  <data name="Shell_Welcome" xml:space="preserve"><value>WELCOME</value></data>
-  <data name="Nav_DesktopTooltip" xml:space="preserve"><value>Remote Desktop — Stream your PC screen in real-time</value></data>
-  <data name="Nav_HomeTooltip" xml:space="preserve"><value>Home — Overview and pinned sensors</value></data>
-  <data name="Nav_Launch" xml:space="preserve"><value>Launch</value></data>
-  <data name="Nav_LauncherTooltip" xml:space="preserve"><value>App Launcher — Start programs on your PC remotely</value></data>
-  <data name="Nav_RemoteTooltip" xml:space="preserve"><value>Remote Control — Power, volume, and Wake-on-LAN</value></data>
-  <data name="Nav_SensorsTooltip" xml:space="preserve"><value>Sensor Workspace — Drag-and-drop telemetry cards</value></data>
-  <data name="Nav_SettingsTooltip" xml:space="preserve"><value>Settings — Connection, layout, and personalization</value></data>
-  <data name="Nav_TasksTooltip" xml:space="preserve"><value>Task Manager — View and kill running processes</value></data>
-  <data name="Home_CancelTooltip" xml:space="preserve"><value>Cancel the connection attempt</value></data>
-  <data name="Home_ConnectTooltip" xml:space="preserve"><value>Connect to the RemEx host — make sure it's running on your PC</value></data>
-  <data name="Home_DesktopTooltip" xml:space="preserve"><value>Stream your PC's desktop to this device in real-time</value></data>
-  <data name="Home_LauncherTooltip" xml:space="preserve"><value>Start programs on your PC without being at the keyboard</value></data>
-  <data name="Home_PcRemoteTooltip" xml:space="preserve"><value>Control your PC remotely — power, volume, and Wake-on-LAN</value></data>
-  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve"><value>Open the drag-and-drop sensor workspace to monitor PC telemetry</value></data>
-  <data name="Home_TasksTooltip" xml:space="preserve"><value>View running processes and kill tasks on your PC</value></data>
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve"><value>Optional authentication key — must match the key set on the host. Leave empty if not configured.</value></data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve"><value>Leave empty to disable</value></data>
-  <data name="Settings_AutoSaveHint" xml:space="preserve"><value>Changes are saved automatically and persist across restarts.</value></data>
-  <data name="Settings_ConfigureLogin" xml:space="preserve"><value>⚙ Configure Login</value></data>
-  <data name="Settings_DiscoverTooltip" xml:space="preserve"><value>Auto-discover RemEx hosts on your local network using mDNS</value></data>
-  <data name="Settings_General" xml:space="preserve"><value>GENERAL</value></data>
-  <data name="Settings_Help" xml:space="preserve"><value>HELP</value></data>
-  <data name="Settings_HostAddressTooltip" xml:space="preserve"><value>WebSocket address of the RemEx host (e.g. ws://192.168.1.42:5005/ws). Find your IP with ipconfig (Windows) or ip addr (Linux).</value></data>
-  <data name="Settings_HwInfoTooltip" xml:space="preserve"><value>HWInfo (optional, recommended) monitors 300+ hardware sensors including per-core CPU temps, GPU stats, fan speeds, and voltages. Without HWInfo, RemEx uses built-in Windows Performance Counters (basic CPU/RAM/Disk/Network). Download HWInfo at hwinfo.com → Settings → enable 'Shared Memory Support'. Note: HWInfo's shared memory auto-disables after 12 hours — re-enable it in HWInfo settings.</value></data>
-  <data name="Settings_Install" xml:space="preserve"><value>📦 Install</value></data>
-  <data name="Settings_LanguageHeader" xml:space="preserve"><value>LANGUAGE</value></data>
-  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve"><value>Open the Sensor Workspace first to discover sensors.</value></data>
-  <data name="Settings_PasswordWatermark" xml:space="preserve"><value>Windows password for this account</value></data>
-  <data name="Settings_Refresh" xml:space="preserve"><value>⟳ Refresh</value></data>
-  <data name="Settings_ReplayTutorial" xml:space="preserve"><value>📖 Replay Tutorial</value></data>
-  <data name="Settings_ReplayTutorialTooltip" xml:space="preserve"><value>Re-watch the getting-started tutorial</value></data>
-  <data name="Settings_SaveReconnectTooltip" xml:space="preserve"><value>Save connection settings and reconnect to the host</value></data>
-  <data name="Settings_SnapToGridTooltip" xml:space="preserve"><value>When enabled, sensor cards snap to the nearest grid line when repositioned</value></data>
-  <data name="Settings_Uninstall" xml:space="preserve"><value>🗑 Uninstall</value></data>
-  <data name="Settings_UsernameHint" xml:space="preserve"><value>Use .\Username for local accounts. GLADOS-V3\Connor will become .\Connor automatically.</value></data>
-  <data name="Settings_UsernameWatermark" xml:space="preserve"><value>.\Username or MACHINE\Username</value></data>
-  <data name="Service_BtnInstall" xml:space="preserve"><value>📦 Install</value></data>
-  <data name="Service_BtnLogin" xml:space="preserve"><value>⚙ Login</value></data>
-  <data name="Service_BtnRemove" xml:space="preserve"><value>🗑 Remove</value></data>
-  <data name="Remote_WolBroadcastWatermark" xml:space="preserve"><value>Broadcast IP (255.255.255.255)</value></data>
-  <data name="Remote_WolMacWatermark" xml:space="preserve"><value>MAC Address (AA:BB:CC:DD:EE:FF)</value></data>
-  <data name="Remote_WolPortWatermark" xml:space="preserve"><value>Port</value></data>
-  <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve"><value>Exit Fullscreen</value></data>
-  <data name="RemoteDesktop_Host" xml:space="preserve"><value>Host:</value></data>
-  <data name="RemoteDesktop_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-  <data name="RemoteDesktop_Pad" xml:space="preserve"><value>Pad</value></data>
-  <data name="RemoteDesktop_PenModeHint" xml:space="preserve"><value>Pen Mode: tap = instant click, drag = click-and-drag</value></data>
-  <data name="RemoteDesktop_ResetZoom" xml:space="preserve"><value>🔍 Reset Zoom</value></data>
-  <data name="RemoteDesktop_StylusHint" xml:space="preserve"><value>S-Pen / Stylus: press = click, barrel button = right-click</value></data>
-  <data name="RemoteDesktop_StylusModeTip" xml:space="preserve"><value>Stylus Mode (treat touch as pen)</value></data>
-  <data name="RemoteDesktop_SwitchPadModeTip" xml:space="preserve"><value>Switch between full and compact cursor pad</value></data>
-  <data name="RemoteDesktop_ToggleCompactPadTip" xml:space="preserve"><value>Toggle compact cursor pad</value></data>
-  <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve"><value>Toggle Cursor Pad</value></data>
-  <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve"><value>Toggle Fullscreen</value></data>
-  <data name="RemoteDesktop_TogglePen" xml:space="preserve"><value>Pen</value></data>
-  <data name="RemoteDesktop_ToggleStylusModeTip" xml:space="preserve"><value>Toggle Stylus Mode (treat touch as pen)</value></data>
-  <data name="RemoteDesktop_TouchHint" xml:space="preserve"><value>Touch: tap = click, drag = move, long-press = right-click, pinch = zoom</value></data>
-  <data name="Canvas_GraphType" xml:space="preserve"><value>📊 Graph Type</value></data>
-  <data name="Canvas_LockPC" xml:space="preserve"><value>🔒 Lock PC</value></data>
-  <data name="Canvas_RebootUefi" xml:space="preserve"><value>🔧 Reboot to UEFI</value></data>
-  <data name="Canvas_TogglePinToHome" xml:space="preserve"><value>📌 Toggle Pin to Home</value></data>
-  <data name="AppLauncher_AddNewApp" xml:space="preserve"><value>ADD NEW APPLICATION</value></data>
-  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve"><value>Display Name (e.g. Chrome)</value></data>
-  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve"><value>Target Path (e.g. C:\Program Files\...)</value></data>
-  <data name="TaskMgr_CpuLabel" xml:space="preserve"><value>CPU</value></data>
-  <data name="TaskMgr_MemLabel" xml:space="preserve"><value>MEM</value></data>
-  <data name="Tutorial_P1_Diagram" xml:space="preserve"><value>📱 Android App  →  connects to  →  🖥️ PC Host (this machine)</value></data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve"><value>For detailed instructions, configuration options, and troubleshooting, see the full guide:</value></data>
-  <data name="Tutorial_SkipTooltip" xml:space="preserve"><value>Skip the tutorial — you can replay it from Settings</value></data>
-  <!-- Phase 4: misc-views keys -->
-  <data name="AddProgram_WatermarkColor" xml:space="preserve"><value>#RRGGBB</value></data>
-  <data name="AddProgram_WatermarkName" xml:space="preserve"><value>My App</value></data>
-  <data name="AddProgram_WatermarkPath" xml:space="preserve"><value>C:\Path\To\App.exe</value></data>
-  <data name="Btn_Ping" xml:space="preserve"><value>Ping</value></data>
-  <data name="Dashboard_Connect" xml:space="preserve"><value>⚡ Connect</value></data>
-  <data name="Dashboard_Disconnect" xml:space="preserve"><value>✕ Disconnect</value></data>
-  <data name="Dashboard_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-  <data name="Dashboard_MenuGraph" xml:space="preserve"><value>📊 Graph</value></data>
-  <data name="Dashboard_MenuSize" xml:space="preserve"><value>📐 Size</value></data>
-  <data name="Dashboard_MenuTheme" xml:space="preserve"><value>🎨 Theme</value></data>
-  <data name="Dashboard_Ping" xml:space="preserve"><value>📡 Ping</value></data>
-  <data name="Dashboard_Samples" xml:space="preserve"><value>SAMPLES</value></data>
-  <data name="Dashboard_SystemTelemetry" xml:space="preserve"><value>System Telemetry</value></data>
-  <data name="Dashboard_Uptime" xml:space="preserve"><value>UPTIME</value></data>
-  <data name="Main_HostWatermark" xml:space="preserve"><value>ws://host:5005/ws</value></data>
-  <data name="Main_Latency" xml:space="preserve"><value>Latency:</value></data>
-  <data name="Main_Status" xml:space="preserve"><value>Status:</value></data>
-  <data name="Main_Title" xml:space="preserve"><value>Remex — Ping / Pong</value></data>
-  <data name="TrayFlyout_Title" xml:space="preserve"><value>Live Glance</value></data>
-  <data name="Service_Checking" xml:space="preserve"><value>Checking…</value></data>
-  <data name="Service_LocatingHost" xml:space="preserve"><value>Locating Remex.Host…</value></data>
-  <data name="Service_HostNotFound" xml:space="preserve"><value>Remex.Host.exe not found.</value></data>
-  <data name="Service_StartedMsg" xml:space="preserve"><value>Started.</value></data>
-  <data name="Service_StartFailed" xml:space="preserve"><value>Start failed — see log.</value></data>
-  <data name="Service_StoppedMsg" xml:space="preserve"><value>Stopped.</value></data>
-  <data name="Service_StopFailed" xml:space="preserve"><value>Stop failed — see log.</value></data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve"><value>Credentials updated — restart the service for changes to take effect.</value></data>
-  <data name="Service_CredentialsFailed" xml:space="preserve"><value>Failed — see log.</value></data>
-  <data name="Service_UninstallFailed" xml:space="preserve"><value>Uninstall may have failed — see log.</value></data>
-  <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Connection cancelled</value></data>
-  <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Connection timed out</value></data>
+<!-- Phase 4: Live Localization - New Keys (English placeholder) -->
+
+
+<data name="Shell_AccessKeyWatermark" xml:space="preserve"><value>Kosongkan untuk menonaktifkan</value></data>
+<data name="Shell_Atmosphere" xml:space="preserve"><value>ATMOSFER</value></data>
+<data name="Shell_AutoSaveNote" xml:space="preserve"><value>Tersimpan otomatis saat ada perubahan. Bertahan setelah restart.</value></data>
+<data name="Shell_FineTuning" xml:space="preserve"><value>PENYETELAN HALUS</value></data>
+<data name="Shell_HostBinaryPath" xml:space="preserve"><value>Jalur Biner Host</value></data>
+<data name="Shell_HostPathHint" xml:space="preserve"><value>Jalur ke Remex.Host.exe (kosongkan untuk deteksi otomatis)</value></data>
+<data name="Shell_HostPathTooltip" xml:space="preserve"><value>Jalur ke Remex.Host.exe. Kosongkan untuk deteksi otomatis (folder yang sama, folder saudara, dll.)</value></data>
+<data name="Shell_HostPathWatermark" xml:space="preserve"><value>Deteksi otomatis (atau tetapkan jalur kustom)</value></data>
+<data name="Shell_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
+<data name="Shell_Initializing" xml:space="preserve"><value>Menginisialisasi dasbor...</value></data>
+<data name="Shell_JpegQuality" xml:space="preserve"><value>Kualitas JPEG</value></data>
+<data name="Shell_OpenSettings" xml:space="preserve"><value>Buka Pengaturan</value></data>
+<data name="Shell_PasswordWatermark" xml:space="preserve"><value>Kata sandi Windows</value></data>
+<data name="Shell_SettingsSubtitle" xml:space="preserve"><value>Konfigurasi &amp; Kustomisasi</value></data>
+<data name="Shell_SettingsTitle" xml:space="preserve"><value>⚙ Pengaturan</value></data>
+<data name="Shell_StreamSettings" xml:space="preserve"><value>PENGATURAN STREAM</value></data>
+<data name="Shell_StreamSettingsDesc" xml:space="preserve"><value>Konfigurasikan kualitas stream layar yang disiarkan host ke klien yang terhubung (ponsel, tablet).</value></data>
+<data name="Shell_Subtitle" xml:space="preserve"><value>Pusat Komando Eksekusi Jarak Jauh</value></data>
+<data name="Shell_TargetFps" xml:space="preserve"><value>Target FPS</value></data>
+<data name="Shell_Theme" xml:space="preserve"><value>TEMA</value></data>
+<data name="Shell_UsernameWatermark" xml:space="preserve"><value>.\Nama pengguna</value></data>
+<data name="Shell_Welcome" xml:space="preserve"><value>SELAMAT DATANG</value></data>
+<data name="Nav_DesktopTooltip" xml:space="preserve"><value>Desktop Jarak Jauh — Streaming layar PC Anda secara real-time</value></data>
+<data name="Nav_HomeTooltip" xml:space="preserve"><value>Beranda — Ringkasan dan sensor disematkan</value></data>
+<data name="Nav_Launch" xml:space="preserve"><value>Luncurkan</value></data>
+<data name="Nav_LauncherTooltip" xml:space="preserve"><value>Peluncur Aplikasi — Mulai program di PC Anda dari jarak jauh</value></data>
+<data name="Nav_RemoteTooltip" xml:space="preserve"><value>Kontrol Jarak Jauh — Daya, volume, dan Wake-on-LAN</value></data>
+<data name="Nav_SensorsTooltip" xml:space="preserve"><value>Ruang Kerja Sensor — Kartu telemetri seret dan lepas</value></data>
+<data name="Nav_SettingsTooltip" xml:space="preserve"><value>Pengaturan — Koneksi, tata letak, dan personalisasi</value></data>
+<data name="Nav_TasksTooltip" xml:space="preserve"><value>Pengelola Tugas — Lihat dan hentikan proses yang berjalan</value></data>
+<data name="Home_CancelTooltip" xml:space="preserve"><value>Batalkan upaya koneksi</value></data>
+<data name="Home_ConnectTooltip" xml:space="preserve"><value>Hubungkan ke host RemEx — pastikan aplikasi ini berjalan di PC Anda</value></data>
+<data name="Home_DesktopTooltip" xml:space="preserve"><value>Streaming desktop PC Anda ke perangkat ini secara real-time</value></data>
+<data name="Home_LauncherTooltip" xml:space="preserve"><value>Mulai program di PC Anda tanpa harus berada di depan keyboard</value></data>
+<data name="Home_PcRemoteTooltip" xml:space="preserve"><value>Kendalikan PC Anda dari jarak jauh — daya, volume, dan Wake-on-LAN</value></data>
+<data name="Home_SensorWorkspaceTooltip" xml:space="preserve"><value>Buka ruang kerja sensor seret dan lepas untuk memantau telemetri PC</value></data>
+<data name="Home_TasksTooltip" xml:space="preserve"><value>Lihat proses yang berjalan dan hentikan tugas di PC Anda</value></data>
+<data name="Settings_AccessKeyTooltip" xml:space="preserve"><value>Kunci autentikasi opsional — harus cocok dengan kunci yang diatur pada host. Biarkan kosong jika tidak dikonfigurasi.</value></data>
+<data name="Settings_AccessKeyWatermark" xml:space="preserve"><value>Kosongkan untuk menonaktifkan</value></data>
+<data name="Settings_AutoSaveHint" xml:space="preserve"><value>Perubahan disimpan secara otomatis dan bertahan setelah restart.</value></data>
+<data name="Settings_ConfigureLogin" xml:space="preserve"><value>⚙ Konfigurasi Login</value></data>
+<data name="Settings_DiscoverTooltip" xml:space="preserve"><value>Temukan otomatis host RemEx di jaringan lokal Anda menggunakan mDNS</value></data>
+<data name="Settings_General" xml:space="preserve"><value>UMUM</value></data>
+<data name="Settings_Help" xml:space="preserve"><value>BANTUAN</value></data>
+<data name="Settings_HostAddressTooltip" xml:space="preserve"><value>Alamat WebSocket host RemEx (misal ws://192.168.1.42:5005/ws). Temukan IP Anda dengan ipconfig (Windows) atau ip addr (Linux).</value></data>
+<data name="Settings_HwInfoTooltip" xml:space="preserve"><value>HWInfo (opsional, disarankan) memantau 300+ sensor perangkat keras termasuk suhu CPU per core, statistik GPU, kecepatan kipas, dan voltase. Tanpa HWInfo, RemEx menggunakan Windows Performance Counters bawaan (dasar CPU/RAM/Disk/Jaringan). Unduh HWInfo di hwinfo.com → Pengaturan → aktifkan 'Shared Memory Support'. Catatan: Memori bersama HWInfo otomatis dinonaktifkan setelah 12 jam — aktifkan kembali di pengaturan HWInfo.</value></data>
+<data name="Settings_Install" xml:space="preserve"><value>📦 Instal</value></data>
+<data name="Settings_LanguageHeader" xml:space="preserve"><value>BAHASA</value></data>
+<data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve"><value>Buka Ruang Kerja Sensor terlebih dahulu untuk menemukan sensor.</value></data>
+<data name="Settings_PasswordWatermark" xml:space="preserve"><value>Kata sandi Windows untuk akun ini</value></data>
+<data name="Settings_Refresh" xml:space="preserve"><value>⟳ Segarkan</value></data>
+<data name="Settings_ReplayTutorial" xml:space="preserve"><value>📖 Putar Ulang Panduan</value></data>
+<data name="Settings_ReplayTutorialTooltip" xml:space="preserve"><value>Tonton ulang panduan memulai</value></data>
+<data name="Settings_SaveReconnectTooltip" xml:space="preserve"><value>Simpan pengaturan koneksi dan hubungkan ulang ke host</value></data>
+<data name="Settings_SnapToGridTooltip" xml:space="preserve"><value>Saat diaktifkan, kartu sensor akan mengunci ke garis grid terdekat saat dipindahkan</value></data>
+<data name="Settings_Uninstall" xml:space="preserve"><value>🗑 Copot Pemasangan</value></data>
+<data name="Settings_UsernameHint" xml:space="preserve"><value>Gunakan .\Nama pengguna untuk akun lokal. GLADOS-V3\Connor akan menjadi .\Connor secara otomatis.</value></data>
+<data name="Settings_UsernameWatermark" xml:space="preserve"><value>.\Nama pengguna atau MESIN\Nama pengguna</value></data>
+<data name="Service_BtnInstall" xml:space="preserve"><value>📦 Instal</value></data>
+<data name="Service_BtnLogin" xml:space="preserve"><value>⚙ Login</value></data>
+<data name="Service_BtnRemove" xml:space="preserve"><value>🗑 Hapus</value></data>
+<data name="Remote_WolBroadcastWatermark" xml:space="preserve"><value>IP Siaran (255.255.255.255)</value></data>
+<data name="Remote_WolMacWatermark" xml:space="preserve"><value>Alamat MAC (AA:BB:CC:DD:EE:FF)</value></data>
+<data name="Remote_WolPortWatermark" xml:space="preserve"><value>Port</value></data>
+<data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve"><value>Keluar Layar Penuh</value></data>
+<data name="RemoteDesktop_Host" xml:space="preserve"><value>Host:</value></data>
+<data name="RemoteDesktop_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
+<data name="RemoteDesktop_Pad" xml:space="preserve"><value>Pad</value></data>
+<data name="RemoteDesktop_PenModeHint" xml:space="preserve"><value>Mode Pena: ketuk = klik instan, seret = klik dan seret</value></data>
+<data name="RemoteDesktop_ResetZoom" xml:space="preserve"><value>🔍 Atur Ulang Zoom</value></data>
+<data name="RemoteDesktop_StylusHint" xml:space="preserve"><value>S-Pen / Stylus: tekan = klik, tombol laras = klik kanan</value></data>
+<data name="RemoteDesktop_StylusModeTip" xml:space="preserve"><value>Mode Stylus (anggap sentuhan sebagai pena)</value></data>
+<data name="RemoteDesktop_SwitchPadModeTip" xml:space="preserve"><value>Beralih antara pad kursor penuh dan kompak</value></data>
+<data name="RemoteDesktop_ToggleCompactPadTip" xml:space="preserve"><value>Alihkan pad kursor kompak</value></data>
+<data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve"><value>Alihkan Pad Kursor</value></data>
+<data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve"><value>Alihkan Layar Penuh</value></data>
+<data name="RemoteDesktop_TogglePen" xml:space="preserve"><value>Pena</value></data>
+<data name="RemoteDesktop_ToggleStylusModeTip" xml:space="preserve"><value>Alihkan Mode Stylus (anggap sentuhan sebagai pena)</value></data>
+<data name="RemoteDesktop_TouchHint" xml:space="preserve"><value>Sentuh: ketuk = klik, seret = pindah, tekan lama = klik kanan, cubit = zoom</value></data>
+<data name="Canvas_GraphType" xml:space="preserve"><value>📊 Jenis Grafik</value></data>
+<data name="Canvas_LockPC" xml:space="preserve"><value>🔒 Kunci PC</value></data>
+<data name="Canvas_RebootUefi" xml:space="preserve"><value>🔧 Reboot ke UEFI</value></data>
+<data name="Canvas_TogglePinToHome" xml:space="preserve"><value>📌 Alihkan Sematkan ke Beranda</value></data>
+<data name="AppLauncher_AddNewApp" xml:space="preserve"><value>TAMBAH APLIKASI BARU</value></data>
+<data name="AppLauncher_DisplayNameWatermark" xml:space="preserve"><value>Nama Tampilan (misal Chrome)</value></data>
+<data name="AppLauncher_TargetPathWatermark" xml:space="preserve"><value>Jalur Target (misal C:\Program Files...)</value></data>
+<data name="TaskMgr_CpuLabel" xml:space="preserve"><value>CPU</value></data>
+<data name="TaskMgr_MemLabel" xml:space="preserve"><value>MEM</value></data>
+<data name="Tutorial_P1_Diagram" xml:space="preserve"><value>📱 Aplikasi Android → terhubung ke → 🖥️ Host PC (mesin ini)</value></data>
+<data name="Tutorial_P3_Body2" xml:space="preserve"><value>Untuk instruksi rinci, opsi konfigurasi, dan pemecahan masalah, lihat panduan lengkap:</value></data>
+<data name="Tutorial_SkipTooltip" xml:space="preserve"><value>Lewati panduan — Anda dapat memutar ulangnya dari Pengaturan</value></data>
+
+<!-- Phase 4: misc-views keys -->
+
+
+<data name="AddProgram_WatermarkColor" xml:space="preserve"><value>#RRGGBB</value></data>
+<data name="AddProgram_WatermarkName" xml:space="preserve"><value>Aplikasi Saya</value></data>
+<data name="AddProgram_WatermarkPath" xml:space="preserve"><value>C:\Path\To\App.exe</value></data>
+<data name="Btn_Ping" xml:space="preserve"><value>Ping</value></data>
+<data name="Dashboard_Connect" xml:space="preserve"><value>⚡ Hubungkan</value></data>
+<data name="Dashboard_Disconnect" xml:space="preserve"><value>✕ Putuskan</value></data>
+<data name="Dashboard_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
+<data name="Dashboard_MenuGraph" xml:space="preserve"><value>📊 Grafik</value></data>
+<data name="Dashboard_MenuSize" xml:space="preserve"><value>📐 Ukuran</value></data>
+<data name="Dashboard_MenuTheme" xml:space="preserve"><value>🎨 Tema</value></data>
+<data name="Dashboard_Ping" xml:space="preserve"><value>📡 Ping</value></data>
+<data name="Dashboard_Samples" xml:space="preserve"><value>SAMPEL</value></data>
+<data name="Dashboard_SystemTelemetry" xml:space="preserve"><value>Telemetri Sistem</value></data>
+<data name="Dashboard_Uptime" xml:space="preserve"><value>WAKTU AKTIF</value></data>
+<data name="Main_HostWatermark" xml:space="preserve"><value>ws://host:5005/ws</value></data>
+<data name="Main_Latency" xml:space="preserve"><value>Latensi:</value></data>
+<data name="Main_Status" xml:space="preserve"><value>Status:</value></data>
+<data name="Main_Title" xml:space="preserve"><value>Remex — Ping / Pong</value></data>
+<data name="TrayFlyout_Title" xml:space="preserve"><value>Kilasan Langsung</value></data>
+<data name="Service_Checking" xml:space="preserve"><value>Memeriksa…</value></data>
+<data name="Service_LocatingHost" xml:space="preserve"><value>Menemukan Remex.Host…</value></data>
+<data name="Service_HostNotFound" xml:space="preserve"><value>Remex.Host.exe tidak ditemukan.</value></data>
+<data name="Service_StartedMsg" xml:space="preserve"><value>Dimulai.</value></data>
+<data name="Service_StartFailed" xml:space="preserve"><value>Gagal memulai — lihat log.</value></data>
+<data name="Service_StoppedMsg" xml:space="preserve"><value>Dihentikan.</value></data>
+<data name="Service_StopFailed" xml:space="preserve"><value>Gagal menghentikan — lihat log.</value></data>
+<data name="Service_CredentialsUpdated" xml:space="preserve"><value>Kredensial diperbarui — restart layanan agar perubahan diterapkan.</value></data>
+<data name="Service_CredentialsFailed" xml:space="preserve"><value>Gagal — lihat log.</value></data>
+<data name="Service_UninstallFailed" xml:space="preserve"><value>Copot pemasangan mungkin gagal — lihat log.</value></data>
+<data name="Status_ConnectionCancelled" xml:space="preserve"><value>Koneksi dibatalkan</value></data>
+<data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Koneksi habis waktu</value></data>
 </root>

@@ -192,193 +192,209 @@
   <data name="Wol_SleepSent" xml:space="preserve"><value>Suspensión enviada</value></data>
   <data name="Wol_HibernateSent" xml:space="preserve"><value>Hibernación enviada</value></data>
   <data name="Wol_SignOutSent" xml:space="preserve"><value>Cierre de sesión enviado</value></data>
-  <!-- Tutorial -->
-  <data name="Tutorial_Header" xml:space="preserve"><value>GETTING STARTED</value></data>
-  <data name="Tutorial_Skip" xml:space="preserve"><value>Skip ✕</value></data>
-  <data name="Tutorial_Back" xml:space="preserve"><value>← Back</value></data>
-  <data name="Tutorial_Next" xml:space="preserve"><value>Next →</value></data>
-  <data name="Tutorial_Finish" xml:space="preserve"><value>Get Started ✓</value></data>
+<data name="Tutorial_Header" xml:space="preserve"><value>GUÍA DE INICIO</value></data>
+  <data name="Tutorial_Skip" xml:space="preserve"><value>Omitir ✕</value></data>
+  <data name="Tutorial_Back" xml:space="preserve"><value>← Atrás</value></data>
+  <data name="Tutorial_Next" xml:space="preserve"><value>Siguiente →</value></data>
+  <data name="Tutorial_Finish" xml:space="preserve"><value>Comenzar ✓</value></data>
 
-  <data name="Tutorial_P0_Title" xml:space="preserve"><value>Welcome to RemEx</value></data>
-  <data name="Tutorial_P0_Body" xml:space="preserve"><value>RemEx turns your PC into a remote command center. Monitor hardware sensors, launch apps, manage processes, and stream your desktop — all controllable from your Android device.
+  <data name="Tutorial_P0_Title" xml:space="preserve"><value>Bienvenido a RemEx</value></data>
+  <data name="Tutorial_P0_Body" xml:space="preserve"><value>RemEx convierte tu PC en un centro de mando remoto.
+Monitorea sensores de hardware, lanza aplicaciones, gestiona procesos y transmite tu escritorio, todo controlable desde tu dispositivo Android.
+Tu PC ejecuta el Host de RemEx, al cual tu teléfono se conecta a través de tu red local.</value></data>
 
-Your PC runs the RemEx Host, which your phone connects to over your local network.</value></data>
+  <data name="Tutorial_P1_Title" xml:space="preserve"><value>Cómo Funciona</value></data>
+  <data name="Tutorial_P1_Body1" xml:space="preserve"><value>Esta aplicación de escritorio incluye un Host de RemEx integrado que se inicia automáticamente.
+Tu teléfono Android se conecta a él, no al revés.</value></data>
+  <data name="Tutorial_P1_Body2" xml:space="preserve"><value>Para acceso permanente (incluso sin haber iniciado sesión), puedes instalar el host como un servicio de Windows o un demonio de Linux.
+Esto permite que tu teléfono se conecte en cualquier momento.</value></data>
 
-  <data name="Tutorial_P1_Title" xml:space="preserve"><value>How It Works</value></data>
-  <data name="Tutorial_P1_Body1" xml:space="preserve"><value>This desktop app includes an embedded RemEx Host that starts automatically. Your Android phone connects to it — not the other way around.</value></data>
-  <data name="Tutorial_P1_Body2" xml:space="preserve"><value>For always-on access (even when you're not logged in), you can install the host as a Windows service or Linux daemon. This lets your phone connect anytime.</value></data>
+  <data name="Tutorial_P2_Title" xml:space="preserve"><value>Ejecutar como Servicio de Windows</value></data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve"><value>Para mantener RemEx funcionando 24/7 sin haber iniciado sesión, instálalo como un servicio de Windows:</value></data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve"><value>1. Abre Configuración (⚙) → baja hasta 'SERVICIO WINDOWS'
+2. Configura tu usuario y contraseña de Windows
+3. Haz clic en 'Instalar como Servicio'
+4. El servicio se iniciará automáticamente al arrancar</value></data>
+  <data name="Tutorial_P2_Note" xml:space="preserve"><value>El servicio se ejecuta bajo tu cuenta de usuario para que pueda acceder a tu sesión de escritorio para la captura de pantalla y el lanzamiento de apps.</value></data>
 
-  <data name="Tutorial_P2_Title" xml:space="preserve"><value>Run as a Windows Service</value></data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve"><value>To keep RemEx running 24/7 without being logged in, install it as a Windows service:</value></data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve"><value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value></data>
-  <data name="Tutorial_P2_Note" xml:space="preserve"><value>The service runs under your user account so it can access your desktop session for screen capture and app launching.</value></data>
-
-  <data name="Tutorial_P3_Title" xml:space="preserve"><value>Linux Service Setup</value></data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve"><value>On Linux, RemEx Host can run as a systemd service for automatic startup.</value></data>
+  <data name="Tutorial_P3_Title" xml:space="preserve"><value>Configuración del Servicio Linux</value></data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve"><value>En Linux, el Host de RemEx puede ejecutarse como un servicio de systemd para el inicio automático.</value></data>
   <data name="Tutorial_P3_Steps" xml:space="preserve"><value>sudo cp remex-host.service /etc/systemd/system/
 sudo systemctl enable remex-host
 sudo systemctl start remex-host</value></data>
-  <data name="Tutorial_P3_Link" xml:space="preserve"><value>For detailed instructions, see docs/linux-service-setup.md on GitHub</value></data>
+  <data name="Tutorial_P3_Link" xml:space="preserve"><value>Para instrucciones detalladas, consulta docs/linux-service-setup.md en GitHub</value></data>
 
-  <data name="Tutorial_P4_Title" xml:space="preserve"><value>HWInfo Integration (Recommended)</value></data>
-  <data name="Tutorial_P4_Body1" xml:space="preserve"><value>For detailed hardware monitoring (300+ sensors), install HWiNFO64 — it's free for personal use.</value></data>
-  <data name="Tutorial_P4_Steps" xml:space="preserve"><value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value></data>
-  <data name="Tutorial_P4_Warning" xml:space="preserve"><value>⚠ HWInfo's Shared Memory auto-disables after 12 hours (free version). Re-enable it periodically, or consider the Pro license.</value></data>
+  <data name="Tutorial_P4_Title" xml:space="preserve"><value>Integración con HWiNFO (Recomendado)</value></data>
+  <data name="Tutorial_P4_Body1" xml:space="preserve"><value>Para un monitoreo detallado del hardware (más de 300 sensores), instala HWiNFO64; es gratuito para uso personal.</value></data>
+  <data name="Tutorial_P4_Steps" xml:space="preserve"><value>1. Descárgalo desde hwinfo.com
+2. Ejecuta HWiNFO → Configuración (⚙) → Main Settings
+3. Marca 'Shared Memory Support' → OK
+4. HWiNFO debe estar ejecutándose para que RemEx lea sus sensores</value></data>
+  <data name="Tutorial_P4_Warning" xml:space="preserve"><value>⚠ La memoria compartida de HWiNFO se desactiva automáticamente después de 12 horas (versión gratuita).
+Reactívala periódicamente o considera la licencia Pro.</value></data>
 
-  <data name="Tutorial_P5_Title" xml:space="preserve"><value>Sensor Monitoring</value></data>
-  <data name="Tutorial_P5_Body1" xml:space="preserve"><value>RemEx supports two telemetry sources:</value></data>
-  <data name="Tutorial_P5_HWInfo" xml:space="preserve"><value>🟢 HWInfo: 300+ sensors — CPU temps, GPU clocks, fan speeds, voltages, power draw. Requires HWInfo running.</value></data>
-  <data name="Tutorial_P5_BuiltIn" xml:space="preserve"><value>🪟 Built-in: Basic sensors — CPU usage, RAM, disk I/O, network rates. Always available, no extra software.</value></data>
-  <data name="Tutorial_P5_Body2" xml:space="preserve"><value>Pin your favorite sensors to the Home screen from Settings → Pinned Sensors.</value></data>
+  <data name="Tutorial_P5_Title" xml:space="preserve"><value>Monitoreo de Sensores</value></data>
+  <data name="Tutorial_P5_Body1" xml:space="preserve"><value>RemEx admite dos fuentes de telemetría:</value></data>
+  <data name="Tutorial_P5_HWInfo" xml:space="preserve"><value>🟢 HWiNFO: más de 300 sensores: temperaturas de CPU, relojes de GPU, velocidades de ventilador, voltajes, consumo de energía.
+Requiere que HWiNFO esté ejecutándose.</value></data>
+  <data name="Tutorial_P5_BuiltIn" xml:space="preserve"><value>🪟 Integrados: Sensores básicos: uso de CPU, RAM, E/S de disco, tasas de red.
+Siempre disponibles, sin software adicional.</value></data>
+  <data name="Tutorial_P5_Body2" xml:space="preserve"><value>Fija tus sensores favoritos a la pantalla de Inicio desde Configuración → SENSORES FIJADOS.</value></data>
 
-  <data name="Tutorial_P6_Title" xml:space="preserve"><value>App Launcher Setup</value></data>
-  <data name="Tutorial_P6_Body1" xml:space="preserve"><value>The App Launcher lets you start programs on your PC from your phone. Apps must be configured here first.</value></data>
-  <data name="Tutorial_P6_Steps" xml:space="preserve"><value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value></data>
-  <data name="Tutorial_P6_Note" xml:space="preserve"><value>This works even with the standalone Remex.Host service — configure apps in the desktop client at least once.</value></data>
+  <data name="Tutorial_P6_Title" xml:space="preserve"><value>Configuración del Lanzador de Apps</value></data>
+  <data name="Tutorial_P6_Body1" xml:space="preserve"><value>El Lanzador de Apps te permite iniciar programas en tu PC desde tu teléfono.
+Las apps deben configurarse aquí primero.</value></data>
+  <data name="Tutorial_P6_Steps" xml:space="preserve"><value>1. Navega a la página del Lanzador (barra lateral)
+2. Haz clic en '+ Agregar Programa'
+3. Busca el .exe o acceso directo
+4. ¡Lánzalo desde tu app de Android!</value></data>
+  <data name="Tutorial_P6_Note" xml:space="preserve"><value>Esto funciona incluso con el servicio independiente Remex.Host; configura las apps en el cliente de escritorio al menos una vez.</value></data>
 
-  <data name="Tutorial_P7_Title" xml:space="preserve"><value>Connecting Your Phone</value></data>
-  <data name="Tutorial_P7_Body1" xml:space="preserve"><value>Your Android app finds this PC automatically using mDNS. Both devices must be on the same Wi-Fi / LAN.</value></data>
-  <data name="Tutorial_P7_Body2" xml:space="preserve"><value>If auto-discovery doesn't work, find your PC's IP manually:</value></data>
-  <data name="Tutorial_P7_IpSteps" xml:space="preserve"><value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value></data>
-  <data name="Tutorial_P7_Body3" xml:space="preserve"><value>Enter ws://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value></data>
+  <data name="Tutorial_P7_Title" xml:space="preserve"><value>Conectando tu Teléfono</value></data>
+  <data name="Tutorial_P7_Body1" xml:space="preserve"><value>Tu app de Android encuentra este PC automáticamente usando mDNS.
+Ambos dispositivos deben estar en la misma red Wi-Fi / LAN.</value></data>
+  <data name="Tutorial_P7_Body2" xml:space="preserve"><value>Si el descubrimiento automático no funciona, busca la IP de tu PC manualmente:</value></data>
+  <data name="Tutorial_P7_IpSteps" xml:space="preserve"><value>Windows: CMD → ipconfig → 'Dirección IPv4'
+Linux: ip addr  o  hostname -I</value></data>
+  <data name="Tutorial_P7_Body3" xml:space="preserve"><value>Ingresa ws://&lt;IP&gt;:5005/ws en los ajustes de conexión de la app de Android.</value></data>
 
-  <data name="Tutorial_P8_Title" xml:space="preserve"><value>You're All Set!</value></data>
-  <data name="Tutorial_P8_Body1" xml:space="preserve"><value>Use the sidebar to navigate between Home, Sensors, Remote Control, App Launcher, Task Manager, and Remote Desktop.</value></data>
-  <data name="Tutorial_P8_Body2" xml:space="preserve"><value>Open Settings (⚙) to customise your theme, connection, stream quality, and pin sensors to Home.</value></data>
-  <data name="Tutorial_P8_Replay" xml:space="preserve"><value>You can replay this tutorial anytime from Settings.</value></data>
+  <data name="Tutorial_P8_Title" xml:space="preserve"><value>¡Todo Listo!</value></data>
+  <data name="Tutorial_P8_Body1" xml:space="preserve"><value>Usa la barra lateral para navegar entre Inicio, Sensores, Control Remoto, Lanzador de Apps, Administrador de Tareas y Escritorio Remoto.</value></data>
+  <data name="Tutorial_P8_Body2" xml:space="preserve"><value>Abre Configuración (⚙) para personalizar tu tema, conexión, calidad de transmisión y fijar sensores al Inicio.</value></data>
+  <data name="Tutorial_P8_Replay" xml:space="preserve"><value>Puedes repetir este tutorial en cualquier momento desde Configuración.</value></data>
 
-  <!-- Phase 4: Live Localization - New Keys (English placeholder) -->
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve"><value>Leave empty to disable</value></data>
-  <data name="Shell_Atmosphere" xml:space="preserve"><value>ATMOSPHERE</value></data>
-  <data name="Shell_AutoSaveNote" xml:space="preserve"><value>Auto-saved on change. Persists across restarts.</value></data>
-  <data name="Shell_FineTuning" xml:space="preserve"><value>FINE TUNING</value></data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve"><value>Host Binary Path</value></data>
-  <data name="Shell_HostPathHint" xml:space="preserve"><value>Path to Remex.Host.exe (leave empty for auto-detection)</value></data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve"><value>Path to Remex.Host.exe. Leave empty for auto-detection (same folder, sibling folders, etc.)</value></data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve"><value>Auto-detect (or set custom path)</value></data>
+  <data name="Shell_AccessKeyWatermark" xml:space="preserve"><value>Dejar vacío para desactivar</value></data>
+  <data name="Shell_Atmosphere" xml:space="preserve"><value>ATMÓSFERA</value></data>
+  <data name="Shell_AutoSaveNote" xml:space="preserve"><value>Se guarda automáticamente al cambiar.
+Persiste tras reiniciar.</value></data>
+  <data name="Shell_FineTuning" xml:space="preserve"><value>AJUSTE FINO</value></data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve"><value>Ruta del Binario del Host</value></data>
+  <data name="Shell_HostPathHint" xml:space="preserve"><value>Ruta a Remex.Host.exe (dejar vacío para detección automática)</value></data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve"><value>Ruta a Remex.Host.exe.
+Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, etc.)</value></data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve"><value>Autodetectar (o establecer ruta personalizada)</value></data>
   <data name="Shell_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-  <data name="Shell_Initializing" xml:space="preserve"><value>Initializing dashboard...</value></data>
-  <data name="Shell_JpegQuality" xml:space="preserve"><value>JPEG Quality</value></data>
-  <data name="Shell_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
-  <data name="Shell_PasswordWatermark" xml:space="preserve"><value>Windows password</value></data>
-  <data name="Shell_SettingsSubtitle" xml:space="preserve"><value>Configuration &amp; Customization</value></data>
-  <data name="Shell_SettingsTitle" xml:space="preserve"><value>⚙ Settings</value></data>
-  <data name="Shell_StreamSettings" xml:space="preserve"><value>STREAM SETTINGS</value></data>
-  <data name="Shell_StreamSettingsDesc" xml:space="preserve"><value>Configure the quality of the screen stream that the host broadcasts to connected clients (phone, tablet).</value></data>
-  <data name="Shell_Subtitle" xml:space="preserve"><value>Remote Execution Command Center</value></data>
-  <data name="Shell_TargetFps" xml:space="preserve"><value>Target FPS</value></data>
-  <data name="Shell_Theme" xml:space="preserve"><value>THEME</value></data>
-  <data name="Shell_UsernameWatermark" xml:space="preserve"><value>.\Username</value></data>
-  <data name="Shell_Welcome" xml:space="preserve"><value>WELCOME</value></data>
-  <data name="Nav_DesktopTooltip" xml:space="preserve"><value>Remote Desktop — Stream your PC screen in real-time</value></data>
-  <data name="Nav_HomeTooltip" xml:space="preserve"><value>Home — Overview and pinned sensors</value></data>
-  <data name="Nav_Launch" xml:space="preserve"><value>Launch</value></data>
-  <data name="Nav_LauncherTooltip" xml:space="preserve"><value>App Launcher — Start programs on your PC remotely</value></data>
-  <data name="Nav_RemoteTooltip" xml:space="preserve"><value>Remote Control — Power, volume, and Wake-on-LAN</value></data>
-  <data name="Nav_SensorsTooltip" xml:space="preserve"><value>Sensor Workspace — Drag-and-drop telemetry cards</value></data>
-  <data name="Nav_SettingsTooltip" xml:space="preserve"><value>Settings — Connection, layout, and personalization</value></data>
-  <data name="Nav_TasksTooltip" xml:space="preserve"><value>Task Manager — View and kill running processes</value></data>
-  <data name="Home_CancelTooltip" xml:space="preserve"><value>Cancel the connection attempt</value></data>
-  <data name="Home_ConnectTooltip" xml:space="preserve"><value>Connect to the RemEx host — make sure it's running on your PC</value></data>
-  <data name="Home_DesktopTooltip" xml:space="preserve"><value>Stream your PC's desktop to this device in real-time</value></data>
-  <data name="Home_LauncherTooltip" xml:space="preserve"><value>Start programs on your PC without being at the keyboard</value></data>
-  <data name="Home_PcRemoteTooltip" xml:space="preserve"><value>Control your PC remotely — power, volume, and Wake-on-LAN</value></data>
-  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve"><value>Open the drag-and-drop sensor workspace to monitor PC telemetry</value></data>
-  <data name="Home_TasksTooltip" xml:space="preserve"><value>View running processes and kill tasks on your PC</value></data>
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve"><value>Optional authentication key — must match the key set on the host. Leave empty if not configured.</value></data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve"><value>Leave empty to disable</value></data>
-  <data name="Settings_AutoSaveHint" xml:space="preserve"><value>Changes are saved automatically and persist across restarts.</value></data>
-  <data name="Settings_ConfigureLogin" xml:space="preserve"><value>⚙ Configure Login</value></data>
-  <data name="Settings_DiscoverTooltip" xml:space="preserve"><value>Auto-discover RemEx hosts on your local network using mDNS</value></data>
+  <data name="Shell_Initializing" xml:space="preserve"><value>Inicializando panel...</value></data>
+  <data name="Shell_JpegQuality" xml:space="preserve"><value>Calidad JPEG</value></data>
+  <data name="Shell_OpenSettings" xml:space="preserve"><value>Abrir Configuración</value></data>
+  <data name="Shell_PasswordWatermark" xml:space="preserve"><value>Contraseña de Windows</value></data>
+  <data name="Shell_SettingsSubtitle" xml:space="preserve"><value>Configuración &amp;
+Personalización</value></data>
+  <data name="Shell_SettingsTitle" xml:space="preserve"><value>⚙ Configuración</value></data>
+  <data name="Shell_StreamSettings" xml:space="preserve"><value>AJUSTES DE TRANSMISIÓN</value></data>
+  <data name="Shell_StreamSettingsDesc" xml:space="preserve"><value>Configura la calidad de la transmisión de pantalla que el host emite a los clientes conectados (teléfono, tablet).</value></data>
+  <data name="Shell_Subtitle" xml:space="preserve"><value>Centro de Mando de Ejecución Remota</value></data>
+  <data name="Shell_TargetFps" xml:space="preserve"><value>FPS Objetivo</value></data>
+  <data name="Shell_Theme" xml:space="preserve"><value>TEMA</value></data>
+  <data name="Shell_UsernameWatermark" xml:space="preserve"><value>.\Usuario</value></data>
+  <data name="Shell_Welcome" xml:space="preserve"><value>BIENVENIDO</value></data>
+  <data name="Nav_DesktopTooltip" xml:space="preserve"><value>Escritorio Remoto — Transmite la pantalla de tu PC en tiempo real</value></data>
+  <data name="Nav_HomeTooltip" xml:space="preserve"><value>Inicio — Resumen y sensores fijados</value></data>
+  <data name="Nav_Launch" xml:space="preserve"><value>Lanzar</value></data>
+  <data name="Nav_LauncherTooltip" xml:space="preserve"><value>Lanzador de Apps — Inicia programas en tu PC remotamente</value></data>
+  <data name="Nav_RemoteTooltip" xml:space="preserve"><value>Control Remoto — Energía, volumen y
+Wake-on-LAN</value></data>
+  <data name="Nav_SensorsTooltip" xml:space="preserve"><value>Área de Sensores — Tarjetas de telemetría de arrastrar y soltar</value></data>
+  <data name="Nav_SettingsTooltip" xml:space="preserve"><value>Configuración — Conexión, diseño y personalización</value></data>
+  <data name="Nav_TasksTooltip" xml:space="preserve"><value>Administrador de Tareas — Ver y terminar procesos en ejecución</value></data>
+  <data name="Home_CancelTooltip" xml:space="preserve"><value>Cancelar el intento de conexión</value></data>
+  <data name="Home_ConnectTooltip" xml:space="preserve"><value>Conectar al host de RemEx — asegúrate de que se esté ejecutando en tu PC</value></data>
+  <data name="Home_DesktopTooltip" xml:space="preserve"><value>Transmite el escritorio de tu PC a este dispositivo en tiempo real</value></data>
+  <data name="Home_LauncherTooltip" xml:space="preserve"><value>Inicia programas en tu PC sin estar frente al teclado</value></data>
+  <data name="Home_PcRemoteTooltip" xml:space="preserve"><value>Controla tu PC remotamente — energía, volumen y Wake-on-LAN</value></data>
+  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve"><value>Abre el área de sensores de arrastrar y soltar para monitorear
+la telemetría del PC</value></data>
+  <data name="Home_TasksTooltip" xml:space="preserve"><value>Mira los procesos en ejecución y termina tareas en tu PC</value></data>
+  <data name="Settings_AccessKeyTooltip" xml:space="preserve"><value>Clave de autenticación opcional — debe coincidir con la establecida en el host.
+Dejar vacío si no está configurada.</value></data>
+  <data name="Settings_AccessKeyWatermark" xml:space="preserve"><value>Dejar vacío para desactivar</value></data>
+  <data name="Settings_AutoSaveHint" xml:space="preserve"><value>Los cambios se guardan automáticamente y persisten tras reiniciar.</value></data>
+  <data name="Settings_ConfigureLogin" xml:space="preserve"><value>⚙ Configurar Inicio de Sesión</value></data>
+  <data name="Settings_DiscoverTooltip" xml:space="preserve"><value>Autodescubrimiento de hosts RemEx en tu red local usando mDNS</value></data>
   <data name="Settings_General" xml:space="preserve"><value>GENERAL</value></data>
-  <data name="Settings_Help" xml:space="preserve"><value>HELP</value></data>
-  <data name="Settings_HostAddressTooltip" xml:space="preserve"><value>WebSocket address of the RemEx host (e.g. ws://192.168.1.42:5005/ws). Find your IP with ipconfig (Windows) or ip addr (Linux).</value></data>
-  <data name="Settings_HwInfoTooltip" xml:space="preserve"><value>HWInfo (optional, recommended) monitors 300+ hardware sensors including per-core CPU temps, GPU stats, fan speeds, and voltages. Without HWInfo, RemEx uses built-in Windows Performance Counters (basic CPU/RAM/Disk/Network). Download HWInfo at hwinfo.com → Settings → enable 'Shared Memory Support'. Note: HWInfo's shared memory auto-disables after 12 hours — re-enable it in HWInfo settings.</value></data>
-  <data name="Settings_Install" xml:space="preserve"><value>📦 Install</value></data>
-  <data name="Settings_LanguageHeader" xml:space="preserve"><value>LANGUAGE</value></data>
-  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve"><value>Open the Sensor Workspace first to discover sensors.</value></data>
-  <data name="Settings_PasswordWatermark" xml:space="preserve"><value>Windows password for this account</value></data>
-  <data name="Settings_Refresh" xml:space="preserve"><value>⟳ Refresh</value></data>
-  <data name="Settings_ReplayTutorial" xml:space="preserve"><value>📖 Replay Tutorial</value></data>
-  <data name="Settings_ReplayTutorialTooltip" xml:space="preserve"><value>Re-watch the getting-started tutorial</value></data>
-  <data name="Settings_SaveReconnectTooltip" xml:space="preserve"><value>Save connection settings and reconnect to the host</value></data>
-  <data name="Settings_SnapToGridTooltip" xml:space="preserve"><value>When enabled, sensor cards snap to the nearest grid line when repositioned</value></data>
-  <data name="Settings_Uninstall" xml:space="preserve"><value>🗑 Uninstall</value></data>
-  <data name="Settings_UsernameHint" xml:space="preserve"><value>Use .\Username for local accounts. GLADOS-V3\Connor will become .\Connor automatically.</value></data>
-  <data name="Settings_UsernameWatermark" xml:space="preserve"><value>.\Username or MACHINE\Username</value></data>
-  <data name="Service_BtnInstall" xml:space="preserve"><value>📦 Install</value></data>
-  <data name="Service_BtnLogin" xml:space="preserve"><value>⚙ Login</value></data>
-  <data name="Service_BtnRemove" xml:space="preserve"><value>🗑 Remove</value></data>
-  <data name="Remote_WolBroadcastWatermark" xml:space="preserve"><value>Broadcast IP (255.255.255.255)</value></data>
-  <data name="Remote_WolMacWatermark" xml:space="preserve"><value>MAC Address (AA:BB:CC:DD:EE:FF)</value></data>
-  <data name="Remote_WolPortWatermark" xml:space="preserve"><value>Port</value></data>
-  <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve"><value>Exit Fullscreen</value></data>
+  <data name="Settings_Help" xml:space="preserve"><value>AYUDA</value></data>
+  <data name="Settings_HostAddressTooltip" xml:space="preserve"><value>Dirección WebSocket del host RemEx (ej. ws://192.168.1.42:5005/ws).
+Busca tu IP con ipconfig (Windows) o ip addr (Linux).</value></data>
+  <data name="Settings_HwInfoTooltip" xml:space="preserve"><value>HWiNFO (opcional, recomendado) monitorea más de 300 sensores incluyendo temperaturas de CPU, estadísticas de GPU, ventiladores y voltajes.
+Sin HWiNFO, RemEx usa contadores de rendimiento de Windows integrados (básicos: CPU/RAM/Disco/Red).
+Descarga HWiNFO en hwinfo.com → Ajustes → activa 'Shared Memory Support'.
+Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala en sus ajustes.</value></data>
+  <data name="Settings_Install" xml:space="preserve"><value>📦 Instalar</value></data>
+  <data name="Settings_LanguageHeader" xml:space="preserve"><value>IDIOMA</value></data>
+  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve"><value>Abre primero el Área de Sensores para descubrir sensores.</value></data>
+  <data name="Settings_PasswordWatermark" xml:space="preserve"><value>Contraseña de Windows para esta cuenta</value></data>
+  <data name="Settings_Refresh" xml:space="preserve"><value>⟳ Actualizar</value></data>
+  <data name="Settings_ReplayTutorial" xml:space="preserve"><value>📖 Repetir Tutorial</value></data>
+  <data name="Settings_ReplayTutorialTooltip" xml:space="preserve"><value>Ver de nuevo el tutorial de inicio</value></data>
+  <data name="Settings_SaveReconnectTooltip" xml:space="preserve"><value>Guardar ajustes de conexión y reconectar al host</value></data>
+  <data name="Settings_SnapToGridTooltip" xml:space="preserve"><value>Al estar activado, las tarjetas se ajustan a la cuadrícula al reposicionarlas</value></data>
+  <data name="Settings_Uninstall" xml:space="preserve"><value>🗑 Desinstalar</value></data>
+  <data name="Settings_UsernameHint" xml:space="preserve"><value>Usa .\Usuario para cuentas locales.
+GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value></data>
+  <data name="Settings_UsernameWatermark" xml:space="preserve"><value>.\Usuario o EQUIPO\Usuario</value></data>
+  <data name="Service_BtnInstall" xml:space="preserve"><value>📦 Instalar</value></data>
+  <data name="Service_BtnLogin" xml:space="preserve"><value>⚙ Sesión</value></data>
+  <data name="Service_BtnRemove" xml:space="preserve"><value>🗑 Eliminar</value></data>
+  <data name="Remote_WolBroadcastWatermark" xml:space="preserve"><value>IP de Broadcast (255.255.255.255)</value></data>
+  <data name="Remote_WolMacWatermark" xml:space="preserve"><value>Dirección MAC (AA:BB:CC:DD:EE:FF)</value></data>
+  <data name="Remote_WolPortWatermark" xml:space="preserve"><value>Puerto</value></data>
+  <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve"><value>Salir de Pantalla Completa</value></data>
   <data name="RemoteDesktop_Host" xml:space="preserve"><value>Host:</value></data>
   <data name="RemoteDesktop_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
   <data name="RemoteDesktop_Pad" xml:space="preserve"><value>Pad</value></data>
-  <data name="RemoteDesktop_PenModeHint" xml:space="preserve"><value>Pen Mode: tap = instant click, drag = click-and-drag</value></data>
-  <data name="RemoteDesktop_ResetZoom" xml:space="preserve"><value>🔍 Reset Zoom</value></data>
-  <data name="RemoteDesktop_StylusHint" xml:space="preserve"><value>S-Pen / Stylus: press = click, barrel button = right-click</value></data>
-  <data name="RemoteDesktop_StylusModeTip" xml:space="preserve"><value>Stylus Mode (treat touch as pen)</value></data>
-  <data name="RemoteDesktop_SwitchPadModeTip" xml:space="preserve"><value>Switch between full and compact cursor pad</value></data>
-  <data name="RemoteDesktop_ToggleCompactPadTip" xml:space="preserve"><value>Toggle compact cursor pad</value></data>
-  <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve"><value>Toggle Cursor Pad</value></data>
-  <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve"><value>Toggle Fullscreen</value></data>
-  <data name="RemoteDesktop_TogglePen" xml:space="preserve"><value>Pen</value></data>
-  <data name="RemoteDesktop_ToggleStylusModeTip" xml:space="preserve"><value>Toggle Stylus Mode (treat touch as pen)</value></data>
-  <data name="RemoteDesktop_TouchHint" xml:space="preserve"><value>Touch: tap = click, drag = move, long-press = right-click, pinch = zoom</value></data>
-  <data name="Canvas_GraphType" xml:space="preserve"><value>📊 Graph Type</value></data>
-  <data name="Canvas_LockPC" xml:space="preserve"><value>🔒 Lock PC</value></data>
-  <data name="Canvas_RebootUefi" xml:space="preserve"><value>🔧 Reboot to UEFI</value></data>
-  <data name="Canvas_TogglePinToHome" xml:space="preserve"><value>📌 Toggle Pin to Home</value></data>
-  <data name="AppLauncher_AddNewApp" xml:space="preserve"><value>ADD NEW APPLICATION</value></data>
-  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve"><value>Display Name (e.g. Chrome)</value></data>
-  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve"><value>Target Path (e.g. C:\Program Files\...)</value></data>
+  <data name="RemoteDesktop_PenModeHint" xml:space="preserve"><value>Modo Lápiz: toque = clic instantáneo, arrastre = clic y arrastre</value></data>
+  <data name="RemoteDesktop_ResetZoom" xml:space="preserve"><value>🔍 Restablecer Zoom</value></data>
+  <data name="RemoteDesktop_StylusHint" xml:space="preserve"><value>S-Pen / Lápiz: presión = clic, botón lateral = clic derecho</value></data>
+  <data name="RemoteDesktop_StylusModeTip" xml:space="preserve"><value>Modo Lápiz (tratar toque como lápiz)</value></data>
+  <data name="RemoteDesktop_SwitchPadModeTip" xml:space="preserve"><value>Cambiar entre pad de cursor completo y compacto</value></data>
+  <data name="RemoteDesktop_ToggleCompactPadTip" xml:space="preserve"><value>Alternar pad de cursor compacto</value></data>
+  <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve"><value>Alternar Pad de Cursor</value></data>
+  <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve"><value>Alternar Pantalla Completa</value></data>
+  <data name="RemoteDesktop_TogglePen" xml:space="preserve"><value>Lápiz</value></data>
+  <data name="RemoteDesktop_ToggleStylusModeTip" xml:space="preserve"><value>Alternar Modo Lápiz (tratar toque como lápiz)</value></data>
+  <data name="RemoteDesktop_TouchHint" xml:space="preserve"><value>Táctil: toque = clic, arrastre = mover, presión larga = clic derecho, pellizco = zoom</value></data>
+  <data name="Canvas_GraphType" xml:space="preserve"><value>📊 Tipo de Gráfico</value></data>
+  <data name="Canvas_LockPC" xml:space="preserve"><value>🔒 Bloquear PC</value></data>
+  <data name="Canvas_RebootUefi" xml:space="preserve"><value>🔧 Reiniciar a UEFI</value></data>
+  <data name="Canvas_TogglePinToHome" xml:space="preserve"><value>📌 Alternar Fijar al Inicio</value></data>
+  <data name="AppLauncher_AddNewApp" xml:space="preserve"><value>AGREGAR NUEVA APLICACIÓN</value></data>
+  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve"><value>Nombre para Mostrar (ej.
+Chrome)</value></data>
+  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve"><value>Ruta de Destino (ej. C:\Archivos de programa\...)</value></data>
   <data name="TaskMgr_CpuLabel" xml:space="preserve"><value>CPU</value></data>
   <data name="TaskMgr_MemLabel" xml:space="preserve"><value>MEM</value></data>
-  <data name="Tutorial_P1_Diagram" xml:space="preserve"><value>📱 Android App  →  connects to  →  🖥️ PC Host (this machine)</value></data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve"><value>For detailed instructions, configuration options, and troubleshooting, see the full guide:</value></data>
-  <data name="Tutorial_SkipTooltip" xml:space="preserve"><value>Skip the tutorial — you can replay it from Settings</value></data>
-  <!-- Phase 4: misc-views keys -->
+  <data name="Tutorial_P1_Diagram" xml:space="preserve"><value>📱 App Android  →  se conecta a  →  🖥️ PC Host (este equipo)</value></data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve"><value>Para instrucciones detalladas, opciones de configuración y solución de problemas, consulta la guía completa:</value></data>
+  <data name="Tutorial_SkipTooltip" xml:space="preserve"><value>Omitir el tutorial — puedes repetirlo desde Configuración</value></data>
   <data name="AddProgram_WatermarkColor" xml:space="preserve"><value>#RRGGBB</value></data>
-  <data name="AddProgram_WatermarkName" xml:space="preserve"><value>My App</value></data>
-  <data name="AddProgram_WatermarkPath" xml:space="preserve"><value>C:\Path\To\App.exe</value></data>
+  <data name="AddProgram_WatermarkName" xml:space="preserve"><value>Mi App</value></data>
+  <data name="AddProgram_WatermarkPath" xml:space="preserve"><value>C:\Ruta\Hacia\App.exe</value></data>
   <data name="Btn_Ping" xml:space="preserve"><value>Ping</value></data>
-  <data name="Dashboard_Connect" xml:space="preserve"><value>⚡ Connect</value></data>
-  <data name="Dashboard_Disconnect" xml:space="preserve"><value>✕ Disconnect</value></data>
+  <data name="Dashboard_Connect" xml:space="preserve"><value>⚡ Conectar</value></data>
+  <data name="Dashboard_Disconnect" xml:space="preserve"><value>✕ Desconectar</value></data>
   <data name="Dashboard_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-  <data name="Dashboard_MenuGraph" xml:space="preserve"><value>📊 Graph</value></data>
-  <data name="Dashboard_MenuSize" xml:space="preserve"><value>📐 Size</value></data>
-  <data name="Dashboard_MenuTheme" xml:space="preserve"><value>🎨 Theme</value></data>
+  <data name="Dashboard_MenuGraph" xml:space="preserve"><value>📊 Gráfico</value></data>
+  <data name="Dashboard_MenuSize" xml:space="preserve"><value>📐 Tamaño</value></data>
+  <data name="Dashboard_MenuTheme" xml:space="preserve"><value>🎨 Tema</value></data>
   <data name="Dashboard_Ping" xml:space="preserve"><value>📡 Ping</value></data>
-  <data name="Dashboard_Samples" xml:space="preserve"><value>SAMPLES</value></data>
-  <data name="Dashboard_SystemTelemetry" xml:space="preserve"><value>System Telemetry</value></data>
-  <data name="Dashboard_Uptime" xml:space="preserve"><value>UPTIME</value></data>
+  <data name="Dashboard_Samples" xml:space="preserve"><value>MUESTRAS</value></data>
+  <data name="Dashboard_SystemTelemetry" xml:space="preserve"><value>Telemetría del Sistema</value></data>
+  <data name="Dashboard_Uptime" xml:space="preserve"><value>TIEMPO DE ACTIVIDAD</value></data>
   <data name="Main_HostWatermark" xml:space="preserve"><value>ws://host:5005/ws</value></data>
-  <data name="Main_Latency" xml:space="preserve"><value>Latency:</value></data>
-  <data name="Main_Status" xml:space="preserve"><value>Status:</value></data>
+  <data name="Main_Latency" xml:space="preserve"><value>Latencia:</value></data>
+  <data name="Main_Status" xml:space="preserve"><value>Estado:</value></data>
   <data name="Main_Title" xml:space="preserve"><value>Remex — Ping / Pong</value></data>
-  <data name="TrayFlyout_Title" xml:space="preserve"><value>Live Glance</value></data>
-  <data name="Service_Checking" xml:space="preserve"><value>Checking…</value></data>
-  <data name="Service_LocatingHost" xml:space="preserve"><value>Locating Remex.Host…</value></data>
-  <data name="Service_HostNotFound" xml:space="preserve"><value>Remex.Host.exe not found.</value></data>
-  <data name="Service_StartedMsg" xml:space="preserve"><value>Started.</value></data>
-  <data name="Service_StartFailed" xml:space="preserve"><value>Start failed — see log.</value></data>
-  <data name="Service_StoppedMsg" xml:space="preserve"><value>Stopped.</value></data>
-  <data name="Service_StopFailed" xml:space="preserve"><value>Stop failed — see log.</value></data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve"><value>Credentials updated — restart the service for changes to take effect.</value></data>
-  <data name="Service_CredentialsFailed" xml:space="preserve"><value>Failed — see log.</value></data>
-  <data name="Service_UninstallFailed" xml:space="preserve"><value>Uninstall may have failed — see log.</value></data>
-  <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Connection cancelled</value></data>
-  <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Connection timed out</value></data>
+  <data name="TrayFlyout_Title" xml:space="preserve"><value>Vistazo en Vivo</value></data>
+  <data name="Service_Checking" xml:space="preserve"><value>Comprobando…</value></data>
+  <data name="Service_LocatingHost" xml:space="preserve"><value>Localizando Remex.Host…</value></data>
+  <data name="Service_HostNotFound" xml:space="preserve"><value>No se encontró Remex.Host.exe.</value></data>
+  <data name="Service_StartedMsg" xml:space="preserve"><value>Iniciado.</value></data>
+  <data name="Service_StartFailed" xml:space="preserve"><value>Error al iniciar — ver registro.</value></data>
+  <data name="Service_StoppedMsg" xml:space="preserve"><value>Detenido.</value></data>
+  <data name="Service_StopFailed" xml:space="preserve"><value>Error al detener — ver registro.</value></data>
+  <data name="Service_CredentialsUpdated" xml:space="preserve"><value>Credenciales actualizadas — reinicia el servicio para aplicar los cambios.</value></data>
+  <data name="Service_CredentialsFailed" xml:space="preserve"><value>Fallido — ver registro.</value></data>
+  <data name="Service_UninstallFailed" xml:space="preserve"><value>La desinstalación pudo haber fallado — ver registro.</value></data>
+  <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Conexión cancelada</value></data>
+  <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Tiempo de espera de conexión agotado</value></data>
 </root>

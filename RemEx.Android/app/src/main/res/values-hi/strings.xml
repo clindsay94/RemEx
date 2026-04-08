@@ -7,262 +7,247 @@
     <string name="widget_hardware_label">RemEx हार्डवेयर</string>
     <string name="widget_launcher_label">RemEx लॉन्चर</string>
 
-    <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
-    <string name="splash_tagline">Remote Execution</string>
+    <string name="splash_tagline">रिमोट एक्जीक्यूशन</string>
 
-    <!-- ═══ Navigation ═══ -->
-    <string name="snackbar_no_pc_connected">No PC connected</string>
-    <string name="snackbar_setup_connection">Set up connection</string>
-    <string name="nav_more_label">More</string>
-    <string name="cd_settings_fab">Settings</string>
+    <string name="snackbar_no_pc_connected">कोई पीसी कनेक्ट नहीं है</string>
+    <string name="snackbar_setup_connection">कनेक्शन सेट करें</string>
+    <string name="nav_more_label">अधिक</string>
+    <string name="cd_settings_fab">सेटिंग्स</string>
 
-    <!-- ═══ Common Components ═══ -->
-    <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
-    <string name="button_connect">Connect</string>
-    <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
-    <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
-    <string name="button_setup_connection">Set up connection</string>
+    <string name="banner_no_pc_connected">कोई पीसी कनेक्ट नहीं है — सुविधाएं अनुपलब्ध हैं</string>
+    <string name="button_connect">कनेक्ट करें</string>
+    <string name="disconnected_requires_connection">%1$s के लिए एक कनेक्टेड पीसी की आवश्यकता है।</string>
+    <string name="disconnected_connect_wifi">इस सुविधा का उपयोग करने के लिए अपने पीसी से वाई-फाई पर कनेक्ट करें।</string>
+    <string name="button_setup_connection">कनेक्शन सेट करें</string>
 
-    <!-- ═══ Shared Buttons ═══ -->
-    <string name="button_cancel">Cancel</string>
-    <string name="button_confirm">Confirm</string>
-    <string name="button_dismiss">Dismiss</string>
-    <string name="button_done">Done</string>
-    <string name="cd_refresh">Refresh</string>
+    <string name="button_cancel">रद्द करें</string>
+    <string name="button_confirm">पुष्टि करें</string>
+    <string name="button_dismiss">हटाएं</string>
+    <string name="button_done">हो गया</string>
+    <string name="cd_refresh">रिफ्रेश करें</string>
 
-    <!-- ═══ Tutorial Screen ═══ -->
-    <string name="tutorial_skip">Skip</string>
-    <string name="tutorial_get_started">Get Started</string>
-    <string name="tutorial_next">Next</string>
+    <string name="tutorial_skip">छोड़ें</string>
+    <string name="tutorial_get_started">शुरू करें</string>
+    <string name="tutorial_next">आगे</string>
 
-    <string name="tutorial_page1_title">Welcome to RemEx</string>
-    <string name="tutorial_page1_body">RemEx is your remote PC management command center. Control your computer, launch apps, monitor performance, and even view your desktop — all from your phone.\n\nLet\'s get you connected in a few quick steps.</string>
+    <string name="tutorial_page1_title">RemEx में आपका स्वागत है</string>
+    <string name="tutorial_page1_body">RemEx आपका रिमोट पीसी प्रबंधन कमांड सेंटर है। अपने फोन से कंप्यूटर को नियंत्रित करें, ऐप्स लॉन्च करें, प्रदर्शन की निगरानी करें और अपना डेस्कटॉप भी देखें।\n\nआइए आपको कुछ त्वरित चरणों में कनेक्ट करते हैं।</string>
 
-    <string name="tutorial_page2_title">Install the Host First</string>
-    <string name="tutorial_page2_body">Before you can connect, you need the RemEx host software running on your PC.\n\nOption 1 — RemEx Desktop Client\nDownload and run Remex.Client.Desktop on your PC. It bundles the host automatically — just launch it and the host starts in the background.\n\nOption 2 — RemEx Host (standalone)\nInstall and run Remex.Host as a standalone service. This is ideal for headless servers or if you only need the host.\n\nBoth are self-contained — no extra runtimes needed. Download the latest publish folder from the GitHub releases page, extract, and run.</string>
-    <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
+    <string name="tutorial_page2_title">पहले होस्ट इंस्टॉल करें</string>
+    <string name="tutorial_page2_body">कनेक्ट करने से पहले, आपको अपने पीसी पर RemEx होस्ट सॉफ्टवेयर चलाना होगा।\n\nविकल्प 1 — RemEx डेस्कटॉप क्लाइंट\nअपने पीसी पर Remex.Client.Desktop डाउनलोड करें और चलाएं। यह होस्ट को स्वचालित रूप से बंडल करता है — बस इसे लॉन्च करें और होस्ट बैकग्राउंड में शुरू हो जाता है।\n\nविकल्प 2 — RemEx होस्ट (स्टैंडअलोन)\nRemex.Host को स्टैंडअलोन सेवा के रूप में इंस्टॉल करें और चलाएं। यह हेडलेस सर्वर के लिए या यदि आपको केवल होस्ट की आवश्यकता है, तो आदर्श है।\n\nदोनों आत्मनिर्भर हैं — किसी अतिरिक्त रनटाइम की आवश्यकता नहीं है। GitHub रिलीज़ पेज से नवीनतम पब्लिश फ़ोल्डर डाउनलोड करें, निकालें और चलाएं।</string>
+    <string name="tutorial_page2_link_label">GitHub रिलीज़ से डाउनलोड करें</string>
 
-    <string name="tutorial_page3_title">Auto-Discovery</string>
-    <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure Remex.Client.Desktop or Remex.Host is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. Tap \'Discover Automatically\' on the Connection screen\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
+    <string name="tutorial_page3_title">ऑटो-डिस्कवरी</string>
+    <string name="tutorial_page3_body">कनेक्ट करने का सबसे आसान तरीका स्वचालित खोज है।\n\n1. सुनिश्चित करें कि आपके पीसी पर Remex.Client.Desktop या Remex.Host चल रहा है\n2. सुनिश्चित करें कि आपका फोन और पीसी दोनों एक ही वाई-फाई नेटवर्क पर हैं\n3. कनेक्शन स्क्रीन पर \'स्वचालित रूप से खोजें\' पर टैप करें\n\nRemEx आपके स्थानीय नेटवर्क पर चल रहे होस्ट का पता लगाने के लिए mDNS का उपयोग करता है। आपके पीसी का आईपी और पोर्ट स्वचालित रूप से भर दिया जाएगा।</string>
 
-    <string name="tutorial_page4_title">Finding Your IP Address</string>
-    <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nmacOS:\n  System Settings → Network, or run:\n  ipconfig getifaddr en0\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the Remex.Client.Desktop window under the connection status section.</string>
+    <string name="tutorial_page4_title">अपना आईपी पता ढूँढना</string>
+    <string name="tutorial_page4_body">यदि ऑटो-डिस्कवरी काम नहीं करती है, तो आप मैन्युअल रूप से कनेक्ट कर सकते हैं। सबसे पहले, अपने पीसी का स्थानीय आईपी पता ढूँढें:\n\nWindows:\n  कमांड प्रॉम्प्ट खोलें → ipconfig टाइप करें\n  \'IPv4 Address\' देखें (जैसे 192.168.1.42)\n\nmacOS:\n  सिस्टम सेटिंग्स → नेटवर्क, या चलाएं:\n  ipconfig getifaddr en0\n\nLinux:\n  ip addr या hostname -I चलाएं\n\nआप कनेक्शन स्थिति अनुभाग के तहत Remex.Client.Desktop विंडो में आईपी पता भी देख सकते हैं।</string>
 
-    <string name="tutorial_page5_title">Manual Connection</string>
-    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (Settings → Connection)\n2. Enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n\nRemEx will establish a connection and you\'ll see your PC\'s status appear on the dashboard.\n\nRemember: Remex.Client.Desktop or Remex.Host must be running on the target PC for the connection to succeed.</string>
+    <string name="tutorial_page5_title">मैन्युअल कनेक्शन</string>
+    <string name="tutorial_page5_body">एक बार जब आपके पास आईपी पता हो जाए:\n\n1. कनेक्शन स्क्रीन पर जाएं (सेटिंग्स → कनेक्शन)\n2. अपने पीसी का आईपी पता दर्ज करें\n3. पोर्ट दर्ज करें (डिफ़ॉल्ट 5005 है)\n4. \'सेव और कनेक्ट\' पर टैप करें\n\nRemEx कनेक्शन स्थापित करेगा और आप डैशबोर्ड पर अपने पीसी की स्थिति देखेंगे।\n\nयाद रखें: कनेक्शन सफल होने के लिए लक्षित पीसी पर Remex.Client.Desktop या Remex.Host चल रहा होना चाहिए।</string>
 
-    <string name="tutorial_page6_title">You\'re All Set!</string>
-    <string name="tutorial_page6_body">You\'re ready to take control.\n\nFrom the dashboard you can monitor system stats, launch apps, manage tasks, and stream your desktop remotely.\n\nHead to Personalization to customize your theme, card shapes, fonts, and colors.\n\nCheck out the FAQ in Settings if you run into any issues. Enjoy RemEx!</string>
+    <string name="tutorial_page6_title">आप पूरी तरह तैयार हैं!</string>
+    <string name="tutorial_page6_body">अब आप नियंत्रण लेने के लिए तैयार हैं।\n\nडैशबोर्ड से आप सिस्टम आंकड़ों की निगरानी कर सकते हैं, ऐप्स लॉन्च कर सकते हैं, कार्यों का प्रबंधन कर सकते हैं और अपने डेस्कटॉप को रिमोट स्ट्रीम कर सकते हैं।\n\nअपने थीम, कार्ड आकार, फोंट और रंगों को कस्टमाइज़ करने के लिए पर्सनलाइजेशन पर जाएं।\n\nयदि आपको कोई समस्या आती है तो सेटिंग्स में एफएक्यू देखें। RemEx का आनंद लें!</string>
 
-    <!-- ═══ Task Manager Screen ═══ -->
-    <string name="screen_task_manager_title">Task Manager</string>
-    <string name="task_manager_search_hint">Search process name or PID</string>
-    <string name="sort_name">Name</string>
+    <string name="screen_task_manager_title">टास्क मैनेजर</string>
+    <string name="task_manager_search_hint">प्रोसेस नाम या PID खोजें</string>
+    <string name="sort_name">नाम</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
-    <string name="task_manager_fetching">Fetching processes…</string>
-    <string name="task_manager_header_name">Name</string>
+    <string name="task_manager_fetching">प्रोसेस प्राप्त की जा रही हैं…</string>
+    <string name="task_manager_header_name">नाम</string>
     <string name="task_manager_header_cpu">CPU</string>
     <string name="task_manager_header_ram">RAM</string>
-    <string name="task_manager_kill_title">Kill Process?</string>
-    <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
-    <string name="button_kill">Kill</string>
+    <string name="task_manager_kill_title">प्रोसेस बंद करें?</string>
+    <string name="task_manager_kill_message">क्या आप वाकई %1$s (PID: %2$d) को समाप्त करना चाहते हैं?</string>
+    <string name="button_kill">बंद करें</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="cd_kill_process">Kill</string>
+    <string name="cd_kill_process">बंद करें</string>
 
-    <!-- ═══ Remote Mouse Screen ═══ -->
-    <string name="screen_remote_mouse_title">Remote Mouse</string>
-    <string name="remote_mouse_trackpad_label">Trackpad</string>
-    <string name="remote_mouse_left_click">Left Click</string>
-    <string name="remote_mouse_right_click">Right Click</string>
-    <string name="cd_scroll_up">Scroll Up</string>
-    <string name="cd_scroll_down">Scroll Down</string>
-    <string name="cd_keyboard">Keyboard</string>
+    <string name="screen_remote_mouse_title">रिमोट माउस</string>
+    <string name="remote_mouse_trackpad_label">ट्रैकपैड</string>
+    <string name="remote_mouse_left_click">लेफ्ट क्लिक</string>
+    <string name="remote_mouse_right_click">राइट क्लिक</string>
+    <string name="cd_scroll_up">ऊपर स्क्रॉल करें</string>
+    <string name="cd_scroll_down">नीचे स्क्रॉल करें</string>
+    <string name="cd_keyboard">कीबोर्ड</string>
 
-    <!-- ═══ Settings Screen ═══ -->
-    <string name="screen_settings_title">Settings</string>
-    <string name="settings_tab_connection">Connection</string>
-    <string name="settings_tab_personalization">Personalization</string>
-    <string name="settings_tab_help">Help</string>
-    <string name="settings_help_title">Help &amp; About</string>
-    <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
-    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
-    <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
+    <string name="screen_settings_title">सेटिंग्स</string>
+    <string name="settings_tab_connection">कनेक्शन</string>
+    <string name="settings_tab_personalization">पर्सनलाइजेशन</string>
+    <string name="settings_tab_help">सहायता</string>
+    <string name="settings_help_title">सहायता और विवरण</string>
+    <string name="settings_replay_tutorial">📖 ट्यूटोरियल फिर से देखें</string>
+    <string name="settings_replay_tutorial_body">शुरुआती गाइड को फिर से देखें जिसमें सेटअप, ऑटो-डिस्कवरी, आईपी ढूँढना और पीसी से कनेक्ट करना शामिल है।</string>
+    <string name="settings_faq_hint">कोई सवाल है? ओवरफ्लो मेनू (⋮ → FAQ) से उपलब्ध FAQ देखें।</string>
 
-    <!-- ═══ App Launcher Screen ═══ -->
-    <string name="screen_app_launcher_title">App Launcher</string>
-    <string name="app_launcher_no_apps">No apps found</string>
-    <string name="button_fetch_from_host">Fetch from Host</string>
+    <string name="screen_app_launcher_title">ऐप लॉन्चर</string>
+    <string name="app_launcher_no_apps">कोई ऐप नहीं मिला</string>
+    <string name="button_fetch_from_host">होस्ट से प्राप्त करें</string>
 
-    <!-- ═══ Remote Control Screen ═══ -->
-    <string name="screen_remote_control_title">Remote Control</string>
-    <string name="remote_control_section_header">System Commands</string>
-    <string name="remote_control_description">Critical actions require confirmation. Optional delay sets shutdown -t seconds.</string>
-    <string name="remote_control_confirm_choice">Confirm choice</string>
-    <string name="remote_control_timer_label">Timer (seconds)</string>
-    <string name="button_select">Select</string>
-    <string name="button_run">Run</string>
-    <string name="rc_wake_pc">Wake PC</string>
-    <string name="rc_lock_pc">Lock PC</string>
-    <string name="rc_shutdown">Shutdown</string>
-    <string name="rc_restart">Restart</string>
-    <string name="rc_reboot_uefi">Reboot to UEFI</string>
-    <string name="rc_force_shutdown">Force Shutdown</string>
-    <string name="rc_force_restart">Force Restart</string>
-    <string name="rc_sleep">Sleep</string>
-    <string name="rc_hibernate">Hibernate</string>
-    <string name="rc_monitor_off">Turn Off Monitor</string>
-    <string name="rc_logoff">Log Off</string>
+    <string name="screen_remote_control_title">रिमोट कंट्रोल</string>
+    <string name="remote_control_section_header">सिस्टम कमांड</string>
+    <string name="remote_control_description">महत्वपूर्ण कार्यों के लिए पुष्टि की आवश्यकता होती है। वैकल्पिक देरी shutdown -t सेकंड सेट करती है।</string>
+    <string name="remote_control_confirm_choice">विकल्प की पुष्टि करें</string>
+    <string name="remote_control_timer_label">टाइमर (सेकंड)</string>
+    <string name="button_select">चुनें</string>
+    <string name="button_run">चलाएं</string>
+    <string name="rc_wake_pc">पीसी को जगाएं</string>
+    <string name="rc_lock_pc">पीसी लॉक करें</string>
+    <string name="rc_shutdown">शटडाउन</string>
+    <string name="rc_restart">रीस्टार्ट</string>
+    <string name="rc_reboot_uefi">UEFI में रीबूट करें</string>
+    <string name="rc_force_shutdown">जबरन शटडाउन</string>
+    <string name="rc_force_restart">जबरन रीस्टार्ट</string>
+    <string name="rc_sleep">स्लीप</string>
+    <string name="rc_hibernate">हाइबरनेट</string>
+    <string name="rc_monitor_off">मॉनिटर बंद करें</string>
+    <string name="rc_logoff">लॉग ऑफ</string>
 
-    <!-- ═══ Remote Desktop Screen ═══ -->
-    <string name="screen_remote_desktop_title">Remote Desktop</string>
-    <string name="cd_show_keyboard">Show Keyboard</string>
-    <string name="cd_reset_input">Reset Input</string>
-    <string name="cd_settings">Settings</string>
-    <string name="cd_toggle_fullscreen">Toggle fullscreen</string>
-    <string name="cd_stop">Stop</string>
-    <string name="cd_remote_desktop_frame">Remote Desktop Frame</string>
-    <string name="remote_desktop_unavailable">Remote desktop unavailable</string>
-    <string name="remote_desktop_waiting">Waiting for frames…</string>
-    <string name="remote_desktop_stopped">Stream Stopped</string>
-    <string name="button_start_streaming">Start Streaming</string>
-    <string name="cd_exit_fullscreen">Exit Fullscreen</string>
-    <string name="cd_zoom_in">Zoom In</string>
-    <string name="cd_zoom_out">Zoom Out</string>
-    <string name="remote_desktop_config_title">Stream Configuration</string>
-    <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
-    <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
-    <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
+    <string name="screen_remote_desktop_title">रिमोट डेस्कटॉप</string>
+    <string name="cd_show_keyboard">कीबोर्ड दिखाएं</string>
+    <string name="cd_reset_input">इनपुट रीसेट करें</string>
+    <string name="cd_settings">सेटिंग्स</string>
+    <string name="cd_toggle_fullscreen">फुलस्क्रीन टॉगल करें</string>
+    <string name="cd_stop">रोकें</string>
+    <string name="cd_remote_desktop_frame">रिमोट डेस्कटॉप फ्रेम</string>
+    <string name="remote_desktop_unavailable">रिमोट डेस्कटॉप अनुपलब्ध है</string>
+    <string name="remote_desktop_waiting">फ्रेम्स की प्रतीक्षा की जा रही है…</string>
+    <string name="remote_desktop_stopped">स्ट्रीम रुक गई</string>
+    <string name="button_start_streaming">स्ट्रीमिंग शुरू करें</string>
+    <string name="cd_exit_fullscreen">फुलस्क्रीन से बाहर निकलें</string>
+    <string name="cd_zoom_in">ज़ूम इन</string>
+    <string name="cd_zoom_out">ज़ूम आउट</string>
+    <string name="remote_desktop_config_title">स्ट्रीम कॉन्फ़िगरेशन</string>
+    <string name="remote_desktop_quality_label">गुणवत्ता: %1$d%%</string>
+    <string name="remote_desktop_fps_label">लक्ष्य FPS: %1$d</string>
+    <string name="remote_desktop_controls_hint">पेन = एब्सोल्यूट • 2 उंगलियां = स्क्रॉल • लॉन्ग प्रेस = राइट क्लिक</string>
 
-    <!-- ═══ Dashboard Screen ═══ -->
-    <string name="screen_dashboard_title">RemEx Home Base</string>
-    <string name="cd_reset_zoom">Reset zoom</string>
-    <string name="cd_customize_cards">Customize cards</string>
-    <string name="dashboard_pc_status">PC Status</string>
-    <string name="dashboard_pc_status_subtitle">Connection status orb</string>
-    <string name="dashboard_wake_pc">Wake PC</string>
-    <string name="dashboard_wake_pc_subtitle">Send WOL magic packet</string>
-    <string name="dashboard_telemetry_fallback">Telemetry</string>
-    <string name="dashboard_card_drawer_title">Card Drawer</string>
-    <string name="dashboard_card_drawer_hint">Check to place card, uncheck to remove, or drag a card out onto canvas.</string>
-    <string name="dashboard_drop_to_place">Drop to place %1$s</string>
-    <string name="dashboard_host_online">HOST ONLINE</string>
-    <string name="dashboard_connecting">CONNECTING…</string>
-    <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
-    <string name="dashboard_wake_pc_button">WAKE PC</string>
+    <string name="screen_dashboard_title">RemEx होम बेस</string>
+    <string name="cd_reset_zoom">ज़ूम रीसेट करें</string>
+    <string name="cd_customize_cards">कार्ड्स कस्टमाइज़ करें</string>
+    <string name="dashboard_pc_status">पीसी स्थिति</string>
+    <string name="dashboard_pc_status_subtitle">कनेक्शन स्थिति ऑर्ब</string>
+    <string name="dashboard_wake_pc">पीसी जगाएं</string>
+    <string name="dashboard_wake_pc_subtitle">WOL मैजिक पैकेट भेजें</string>
+    <string name="dashboard_telemetry_fallback">टेलीमेट्री</string>
+    <string name="dashboard_card_drawer_title">कार्ड दराज</string>
+    <string name="dashboard_card_drawer_hint">कार्ड रखने के लिए चेक करें, हटाने के लिए अनचेक करें, या कार्ड को कैनवास पर खींचें।</string>
+    <string name="dashboard_drop_to_place">%1$s रखने के लिए छोड़ें</string>
+    <string name="dashboard_host_online">होस्ट ऑनलाइन</string>
+    <string name="dashboard_connecting">कनेक्ट हो रहा है…</string>
+    <string name="dashboard_tap_to_connect">कनेक्ट करने के लिए टैप करें</string>
+    <string name="dashboard_wake_pc_button">पीसी जगाएं</string>
     <string name="dashboard_no_value">--</string>
-    <string name="dashboard_collecting_data">Collecting data…</string>
-    <string name="cd_change_display_mode">Change display mode</string>
+    <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
+    <string name="cd_change_display_mode">डिस्प्ले मोड बदलें</string>
 
-    <!-- ═══ Connection Screen ═══ -->
-    <string name="screen_connection_title">Connection</string>
-    <string name="connection_host_settings">Host Settings</string>
-    <string name="cd_dismiss_error">Dismiss</string>
-    <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
-    <string name="connection_auto_discover_hint">Make sure your PC is running the RemEx Host app and both devices are on the same Wi-Fi network.</string>
-    <string name="connection_searching">Searching for RemEx Host…</string>
-    <string name="connection_found_host">Found: %1$s — Search Again</string>
-    <string name="connection_discover_button">Discover Automatically</string>
-    <string name="connection_host_found">Host found and fields filled in below.</string>
-    <string name="connection_help_title">How to connect manually</string>
-    <string name="connection_help_step1_title">Install RemEx Host on your PC</string>
-    <string name="connection_help_step1_body">Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running.</string>
-    <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
-    <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
-    <string name="connection_help_step3_title">Find your PC\'s IP address</string>
-    <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; Connect</string>
-    <string name="connection_help_step4_body">The default port is 5005. If you set an access key in the host app, enter it here too.</string>
+    <string name="screen_connection_title">कनेक्शन</string>
+    <string name="connection_host_settings">होस्ट सेटिंग्स</string>
+    <string name="cd_dismiss_error">हटाएं</string>
+    <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
+    <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपका पीसी RemEx होस्ट ऐप चला रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
+    <string name="connection_searching">RemEx होस्ट खोजा जा रहा है…</string>
+    <string name="connection_found_host">मिला: %1$s — फिर से खोजें</string>
+    <string name="connection_discover_button">स्वचालित रूप से खोजें</string>
+    <string name="connection_host_found">होस्ट मिल गया और नीचे फ़ील्ड भर दी गई हैं।</string>
+    <string name="connection_help_title">मैन्युअल रूप से कैसे कनेक्ट करें</string>
+    <string name="connection_help_step1_title">अपने पीसी पर RemEx होस्ट इंस्टॉल करें</string>
+    <string name="connection_help_step1_body">जिस पीसी को आप नियंत्रित करना चाहते हैं उस पर RemEx होस्ट इंस्टॉलर डाउनलोड करें और चलाएं। चलते समय यह आपके सिस्टम ट्रे में दिखाई देगा।</string>
+    <string name="connection_help_step2_title">एक ही वाई-फाई से कनेक्ट करें</string>
+    <string name="connection_help_step2_body">आपका फोन और पीसी एक ही स्थानीय नेटवर्क पर होने चाहिए। मोबाइल डेटा काम नहीं करेगा।</string>
+    <string name="connection_help_step3_title">अपने पीसी का आईपी पता ढूँढें</string>
+    <string name="connection_help_step4_title">नीचे आईपी दर्ज करें और सेव और कनेक्ट पर टैप करें</string>
+    <string name="connection_help_step4_body">डिफ़ॉल्ट पोर्ट 5005 है। यदि आपने होस्ट ऐप में एक्सेस की (access key) सेट की है, तो उसे यहाँ भी दर्ज करें।</string>
     <string name="connection_platform_windows">Windows</string>
-    <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for "IPv4 Address" under your Wi-Fi adapter.</string>
+    <string name="connection_ip_windows">कमांड प्रॉम्प्ट खोलें और टाइप करें: ipconfig\nअपने वाई-फाई एडॉप्टर के तहत "IPv4 Address" देखें।</string>
     <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0</string>
+    <string name="connection_ip_macos">सिस्टम सेटिंग्स → नेटवर्क → आपका वाई-फाई → विवरण पर जाएं।\nया टर्मिनल खोलें और टाइप करें: ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
-    <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
-    <string name="connection_or_enter_manually">Or enter manually</string>
-    <string name="connection_label_host">Host IP Address</string>
-    <string name="connection_hint_host">Your PC\'s local IP — find it via ipconfig (Win) or ip addr (Linux)</string>
-    <string name="connection_label_port">Port</string>
-    <string name="connection_hint_port">Default: 5005</string>
-    <string name="connection_label_mac">MAC Address (Wake-on-LAN)</string>
+    <string name="connection_ip_linux">एक टर्मिनल खोलें और टाइप करें: ip addr\nअपने नेटवर्क इंटरफ़ेस (जैसे wlan0 या eth0) पर inet एड्रेस देखें।</string>
+    <string name="connection_or_enter_manually">या मैन्युअल रूप से दर्ज करें</string>
+    <string name="connection_label_host">होस्ट आईपी पता</string>
+    <string name="connection_hint_host">आपके पीसी का स्थानीय आईपी — इसे ipconfig (Win) या ip addr (Linux) के माध्यम से ढूँढें</string>
+    <string name="connection_label_port">पोर्ट</string>
+    <string name="connection_hint_port">डिफ़ॉल्ट: 5005</string>
+    <string name="connection_label_mac">MAC पता (Wake-on-LAN)</string>
     <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
-    <string name="connection_hint_mac">Required for Wake-on-LAN — find in Device Manager or ip link</string>
-    <string name="connection_label_broadcast">Broadcast IP</string>
-    <string name="connection_hint_broadcast">Usually 255.255.255.255 — only change if WOL fails</string>
-    <string name="connection_label_subnet">Subnet Mask</string>
-    <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
-    <string name="connection_label_access_key">Access Key</string>
-    <string name="connection_hint_access_key">Leave empty to disable authentication</string>
-    <string name="connection_desktop_defaults_title">Remote Desktop Defaults</string>
-    <string name="connection_quality_label">Quality: %1$d%%</string>
-    <string name="connection_fps_label">Target FPS: %1$d (max 120)</string>
-    <string name="connection_scale_label">Scale: %1$s</string>
-    <string name="button_save_connect">Save &amp; Connect</string>
-    <string name="connection_status_label">Status: %1$s</string>
+    <string name="connection_hint_mac">Wake-on-LAN के लिए आवश्यक — डिवाइस मैनेजर या ip link में ढूँढें</string>
+    <string name="connection_label_broadcast">ब्रॉडकास्ट आईपी</string>
+    <string name="connection_hint_broadcast">आमतौर पर 255.255.255.255 — केवल तभी बदलें जब WOL विफल हो जाए</string>
+    <string name="connection_label_subnet">सबनेट मास्क</string>
+    <string name="connection_hint_subnet">घरेलू नेटवर्क के लिए आमतौर पर 255.255.255.0</string>
+    <string name="connection_label_access_key">एक्सेस की (Access Key)</string>
+    <string name="connection_hint_access_key">प्रमाणीकरण अक्षम करने के लिए खाली छोड़ दें</string>
+    <string name="connection_desktop_defaults_title">रिमोट डेस्कटॉप डिफ़ॉल्ट</string>
+    <string name="connection_quality_label">गुणवत्ता: %1$d%%</string>
+    <string name="connection_fps_label">लक्ष्य FPS: %1$d (अधिकतम 120)</string>
+    <string name="connection_scale_label">स्केल: %1$s</string>
+    <string name="button_save_connect">सेव और कनेक्ट</string>
+    <string name="connection_status_label">स्थिति: %1$s</string>
 
-    <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
-    <string name="faq_header">Frequently Asked Questions</string>
-    <string name="cd_collapse">Collapse</string>
-    <string name="cd_expand">Expand</string>
-    <string name="faq_github_button">Open GitHub Releases</string>
+    <string name="faq_header">अक्सर पूछे जाने वाले प्रश्न</string>
+    <string name="cd_collapse">छोटा करें</string>
+    <string name="cd_expand">विस्तार करें</string>
+    <string name="faq_github_button">GitHub रिलीज़ खोलें</string>
 
-    <string name="faq_q1">What do I need to run on my PC?</string>
-    <string name="faq_a1">You need either Remex.Client.Desktop or Remex.Host running on your PC.\n\n• Remex.Client.Desktop — The full desktop app that bundles the host automatically. Just launch it and the host starts in the background on port 5005.\n\n• Remex.Host — A standalone headless service, ideal for servers or background-only use.\n\nBoth are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</string>
+    <string name="faq_q1">मुझे अपने पीसी पर क्या चलाने की ज़रूरत है?</string>
+    <string name="faq_a1">आपको अपने पीसी पर Remex.Client.Desktop या Remex.Host चलाने की आवश्यकता है।\n\n• Remex.Client.Desktop — पूर्ण डेस्कटॉप ऐप जो होस्ट को स्वचालित रूप से बंडल करता है। बस इसे लॉन्च करें और होस्ट पोर्ट 5005 पर बैकग्राउंड में शुरू हो जाता है।\n\n• Remex.Host — एक स्टैंडअलोन हेडलेस सेवा, सर्वर या केवल बैकग्राउंड उपयोग के लिए आदर्श।\n\nदोनों आत्मनिर्भर हैं (सभी रनटाइम शामिल हैं) — बस पब्लिश फ़ोल्डर निकालें और चलाएं। GitHub रिलीज़ पेज से डाउनलोड करें।</string>
 
-    <string name="faq_q2">How do I find my PC\'s IP address?</string>
-    <string name="faq_a2">Windows:\nOpen Command Prompt and type \'ipconfig\'. Look for the \'IPv4 Address\' line under your active network adapter (e.g. 192.168.1.42).\n\nmacOS:\nGo to System Settings → Network and look at the connected interface, or open Terminal and run: ipconfig getifaddr en0\n\nLinux:\nOpen a terminal and run: ip addr  or  hostname -I\n\nYou can also see the IP directly in the Remex.Client.Desktop window.</string>
+    <string name="faq_q2">मैं अपने पीसी का आईपी पता कैसे ढूँढूँ?</string>
+    <string name="faq_a2">Windows:\nकमांड प्रॉम्प्ट खोलें और \'ipconfig\' टाइप करें। अपने सक्रिय नेटवर्क एडॉप्टर के तहत \'IPv4 Address\' लाइन देखें (जैसे 192.168.1.42)।\n\nmacOS:\nसिस्टम सेटिंग्स → नेटवर्क पर जाएं और कनेक्टेड इंटरफ़ेस देखें, या टर्मिनल खोलें और चलाएं: ipconfig getifaddr en0\n\nLinux:\nटर्मिनल खोलें और चलाएं: ip addr या hostname -I\n\nआप आईपी सीधे Remex.Client.Desktop विंडो में भी देख सकते हैं।</string>
 
-    <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
-    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. RemEx will prompt for this when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
+    <string name="faq_q3">ऑटो-डिस्कवरी को मेरा पीसी नहीं मिल रहा है। मुझे क्या जांचना चाहिए?</string>
+    <string name="faq_a3">1. सुनिश्चित करें कि आपके पीसी पर Remex.Client.Desktop या Remex.Host वास्तव में चल रहा है।\n2. दोनों डिवाइस एक ही वाई-फाई / LAN नेटवर्क पर होने चाहिए।\n3. Android 13+ पर, NEARBY_WIFI_DEVICES अनुमति दी जानी चाहिए। जब आप \'स्वचालित रूप से खोजें\' पर टैप करेंगे तो RemEx इसके लिए संकेत देगा।\n4. कुछ राउटर में \'AP Isolation\' या \'Client Isolation\' सक्षम होता है, जो डिवाइस-टू-डिवाइस संचार को रोकता है। अपनी राउटर सेटिंग्स जांचें।\n5. कॉर्पोरेट या गेस्ट वाई-फाई नेटवर्क अक्सर mDNS ट्रैफ़िक को ब्लॉक कर देते हैं। इसके बजाय व्यक्तिगत या घरेलू नेटवर्क का उपयोग करने का प्रयास करें।</string>
 
-    <string name="faq_q4">What is the default port?</string>
-    <string name="faq_a4">The default port is 5005. If Remex.Client.Desktop finds port 5005 in use, it will fall back to 5006. You can see the active port in the desktop client\'s window.\n\nIf you changed the port on the host side, make sure to enter the matching port in the Connection screen on this app.</string>
+    <string name="faq_q4">डिफ़ॉल्ट पोर्ट क्या है?</string>
+    <string name="faq_a4">डिफ़ॉल्ट पोर्ट 5005 है। यदि Remex.Client.Desktop को पोर्ट 5005 उपयोग में मिलता है, तो यह 5006 पर वापस आ जाएगा। आप डेस्कटॉप क्लाइंट की विंडो में सक्रिय पोर्ट देख सकते हैं।\n\nयदि आपने होस्ट की ओर से पोर्ट बदल दिया है, तो इस ऐप की कनेक्शन स्क्रीन में मिलान वाला पोर्ट दर्ज करना सुनिश्चित करें।</string>
 
-    <string name="faq_q5">What is the Access Key for?</string>
-    <string name="faq_a5">The Access Key is an optional authentication token. If you set an access key on the host (in Remex.Host settings), you must enter the same key here to connect.\n\nIf you haven\'t configured one on the host, leave this field empty.</string>
+    <string name="faq_q5">एक्सेस की (Access Key) किस लिए है?</string>
+    <string name="faq_a5">एक्सेस की एक वैकल्पिक प्रमाणीकरण टोकन है। यदि आप होस्ट पर एक्सेस की सेट करते हैं (Remex.Host सेटिंग्स में), तो आपको कनेक्ट करने के लिए यहाँ वही की दर्ज करनी होगी।\n\nयदि आपने होस्ट पर कॉन्फ़िगर नहीं किया है, तो इस फ़ील्ड को खाली छोड़ दें।</string>
 
-    <string name="faq_q6">Can I connect over the internet (not just LAN)?</string>
-    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. If you do this, always enable the Access Key for authentication. A VPN is the recommended approach for remote access.</string>
+    <string name="faq_q6">क्या मैं इंटरनेट पर कनेक्ट कर सकता हूँ (केवल LAN पर नहीं)?</string>
+    <string name="faq_a6">RemEx स्थानीय नेटवर्क (LAN) उपयोग के लिए डिज़ाइन किया गया है। इंटरनेट पर कनेक्ट करने के लिए आपको पोर्ट 5005 (या जो भी पोर्ट आप उपयोग करते हैं) के लिए अपने राउटर पर पोर्ट फॉरवर्डिंग सेट करना होगा और अपने सार्वजनिक आईपी पते का उपयोग करना होगा।\n\nमहत्वपूर्ण: पोर्ट को इंटरनेट पर एक्सपोज़ करना सुरक्षा जोखिम है। यदि आप ऐसा करते हैं, तो प्रमाणीकरण के लिए हमेशा एक्सेस की सक्षम करें। रिमोट एक्सेस के लिए वीपीएन (VPN) अनुशंसित तरीका है।</string>
 
-    <string name="faq_q7">Remote Desktop is laggy or not working. What can I do?</string>
-    <string name="faq_a7">• Lower the Quality slider in Connection → Remote Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• Make sure your PC supports the screen capture backend: DXGI on Windows, X11/Wayland on Linux.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
+    <string name="faq_q7">रिमोट डेस्कटॉप लैग कर रहा है या काम नहीं कर रहा है। मैं क्या कर सकता हूँ?</string>
+    <string name="faq_a7">• कनेक्शन → रिमोट डेस्कटॉप डिफ़ॉल्ट में क्वालिटी स्लाइडर को कम करें।\n• लक्ष्य FPS कम करें (अधिकांश उपयोग के मामलों के लिए 15–20 FPS पर्याप्त है)।\n• स्ट्रीम किए जा रहे रिज़ॉल्यूशन को कम करने के लिए स्केल कम करें।\n• सुनिश्चित करें कि आपका पीसी स्क्रीन कैप्चर बैकएंड का समर्थन करता है: विंडोज पर DXGI, लिनक्स पर X11/Wayland।\n• जांचें कि आप तेज़, स्थानीय वाई-फाई नेटवर्क (5 GHz बेहतर) पर हैं।</string>
 
-    <string name="faq_q8">What is Wake-on-LAN (WOL)?</string>
-    <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a "magic packet" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Enter your PC\'s MAC address in the Connection screen.\n4. Use the \'Wake PC\' card on the dashboard or the Remote Control screen.</string>
+    <string name="faq_q8">वेक-ऑन-लैन (WOL) क्या है?</string>
+    <string name="faq_a8">वेक-ऑन-लैन आपको नेटवर्क पर "मैजिक पैकेट" भेजकर अपने पीसी को रिमोट से पावर ऑन करने देता है।\n\nइसका उपयोग करने के लिए:\n1. अपने पीसी की BIOS/UEFI सेटिंग्स में WOL सक्षम करें।\n2. अपने नेटवर्क एडॉप्टर के गुणों में WOL सक्षम करें (Windows: डिवाइस मैनेजर → नेटवर्क एडॉप्टर → पावर मैनेजमेंट)।\n3. कनेक्शन स्क्रीन में अपने पीसी का MAC पता दर्ज करें।\n4. डैशबोर्ड या रिमोट कंट्रोल स्क्रीन पर \'Wake PC\' कार्ड का उपयोग करें।</string>
 
-    <string name="faq_q9">How do I customize the app\'s appearance?</string>
-    <string name="faq_a9">Go to the Personalization screen (tap the gear FAB on the dashboard or navigate via the overflow menu → Settings).\n\nYou can change:\n• Theme palette and color seed\n• Card corner radius and shape presets\n• Font family and scale\n• Card opacity\n• Dark/light/system theme mode</string>
+    <string name="faq_q9">मैं ऐप की उपस्थिति को कैसे कस्टमाइज़ करूँ?</string>
+    <string name="faq_a9">पर्सनलाइजेशन स्क्रीन पर जाएं (डैशबोर्ड पर गियर FAB टैप करें या ओवरफ्लो मेनू → सेटिंग्स के माध्यम से नेविगेट करें)।\n\nआप बदल सकते हैं:\n• थीम पैलेट और कलर सीड\n• कार्ड कॉर्नर रेडियस और शेप प्रीसेट\n• फ़ॉन्ट फैमिली और स्केल\n• कार्ड अपारदर्शिता (Opacity)\n• डार्क/लाइट/सिस्टम थीम मोड</string>
 
-    <string name="faq_q10">Can I re-watch the tutorial?</string>
-    <string name="faq_a10">Yes! Go to Settings from the overflow menu (⋮ → Settings). There you\'ll find an option to replay the tutorial at any time.</string>
+    <string name="faq_q10">क्या मैं ट्यूटोरियल फिर से देख सकता हूँ?</string>
+    <string name="faq_a10">हाँ! ओवरफ्लो मेनू से सेटिंग्स पर जाएं (⋮ → सेटिंग्स)। वहाँ आपको किसी भी समय ट्यूटोरियल को फिर से चलाने का विकल्प मिलेगा।</string>
 
-    <!-- ═══ Personalization Screen ═══ -->
-    <string name="screen_personalization_title">Personalization</string>
-    <string name="personalization_appearance_studio">Appearance Studio</string>
-    <string name="personalization_section_language">Language</string>
-    <string name="personalization_app_language">App Language</string>
-    <string name="personalization_language_note">Changes the display language for this app. Some text may remain in English until translations are complete.</string>
-    <string name="personalization_system_default">System Default</string>
-    <string name="personalization_section_theme">Theme &amp; Strategy</string>
-    <string name="personalization_display_mode">Display Mode</string>
-    <string name="personalization_palette_strategy">Dynamic Palette Strategy</string>
-    <string name="personalization_section_color">Color Studio</string>
-    <string name="personalization_palette_mode">Palette Mode</string>
-    <string name="personalization_hue_label">Hue: %1$d°</string>
-    <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
-    <string name="personalization_contrast_label">Contrast: %1$s</string>
-    <string name="personalization_tonal_range">Tonal Range</string>
-    <string name="personalization_manual_hex">Manual Hex Code</string>
-    <string name="personalization_section_geometry">Expressive Geometry</string>
-    <string name="personalization_corner_base">Corner Base: %1$ddp</string>
-    <string name="personalization_card_opacity">Card Opacity: %1$d%%</string>
-    <string name="personalization_shape_telemetry">Telemetry Cards</string>
-    <string name="personalization_shape_app_launcher">App Launcher</string>
-    <string name="personalization_shape_remote_commands">Remote Commands</string>
-    <string name="personalization_shape_remote_mouse">Remote Mouse</string>
-    <string name="personalization_shape_task_manager">Task Manager</string>
-    <string name="personalization_shape_pc_orb">PC Connection Orb</string>
-    <string name="personalization_preview">PREVIEW</string>
+    <string name="screen_personalization_title">पर्सनलाइजेशन</string>
+    <string name="personalization_appearance_studio">अपीयरेंस स्टूडियो</string>
+    <string name="personalization_section_language">भाषा</string>
+    <string name="personalization_app_language">ऐप की भाषा</string>
+    <string name="personalization_language_note">इस ऐप के लिए प्रदर्शन भाषा बदलता है। अनुवाद पूरा होने तक कुछ टेक्स्ट अंग्रेजी में रह सकते हैं।</string>
+    <string name="personalization_system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="personalization_section_theme">थीम और रणनीति</string>
+    <string name="personalization_display_mode">डिस्प्ले मोड</string>
+    <string name="personalization_palette_strategy">डायनेमिक पैलेट रणनीति</string>
+    <string name="personalization_section_color">कलर स्टूडियो</string>
+    <string name="personalization_palette_mode">पैलेट मोड</string>
+    <string name="personalization_hue_label">ह्यू (Hue): %1$d°</string>
+    <string name="personalization_chroma_label">वाइब्रेंसी (Chroma): %1$d</string>
+    <string name="personalization_contrast_label">कंट्रास्ट: %1$s</string>
+    <string name="personalization_tonal_range">टोनल रेंज</string>
+    <string name="personalization_manual_hex">मैन्युअल हेक्स कोड</string>
+    <string name="personalization_section_geometry">एक्सप्रेसिव ज्योमेट्री</string>
+    <string name="personalization_corner_base">कॉर्नर बेस: %1$ddp</string>
+    <string name="personalization_card_opacity">कार्ड अपारदर्शिता: %1$d%%</string>
+    <string name="personalization_shape_telemetry">टेलीमेट्री कार्ड्स</string>
+    <string name="personalization_shape_app_launcher">ऐप लॉन्चर</string>
+    <string name="personalization_shape_remote_commands">रिमोट कमांड्स</string>
+    <string name="personalization_shape_remote_mouse">रिमोट माउस</string>
+    <string name="personalization_shape_task_manager">टास्क मैनेजर</string>
+    <string name="personalization_shape_pc_orb">पीसी कनेक्शन ऑर्ब</string>
+    <string name="personalization_preview">पूर्वावलोकन</string>
 </resources>

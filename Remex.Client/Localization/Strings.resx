@@ -317,7 +317,7 @@ sudo systemctl start remex-host</value></data>
   <data name="Tutorial_P7_Body2" xml:space="preserve"><value>If auto-discovery doesn't work, find your PC's IP manually:</value></data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve"><value>Windows: CMD → ipconfig → 'IPv4 Address'
 Linux: ip addr  or  hostname -I</value></data>
-  <data name="Tutorial_P7_Body3" xml:space="preserve"><value>Enter ws://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value></data>
+  <data name="Tutorial_P7_Body3" xml:space="preserve"><value>Then enter ws://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value></data>
 
   <data name="Tutorial_P8_Title" xml:space="preserve"><value>You're All Set!</value></data>
   <data name="Tutorial_P8_Body1" xml:space="preserve"><value>Use the sidebar to navigate between Home, Sensors, Remote Control, App Launcher, Task Manager, and Remote Desktop.</value></data>
