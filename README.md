@@ -25,12 +25,13 @@ RemEx ships two distinct client experiences sharing the same host backend:
 
 | Client | Stack | Target |
 | :--- | :--- | :--- |
-| **Desktop / Avalonia Android** | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
+| **Desktop / Avalonia Android** (`RemEx.Client.Desktop` | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
 | **Native Android** (`RemEx.Android`) | Kotlin · Jetpack Compose · Material 3 · JNI → .NET NativeAOT | Android (arm64-v8a) |
 | **Host** (`Remex.Host`) | ASP.NET Core Minimal API · WebSocket · mDNS | Windows Service · Linux daemon |
 
 To get started quickly, the desktop client is the recommended entry point — simply download the publish folder from releases and run the remex.client.desktop.exe that is found in the folder. For Android, the app is available on the Play Store if you're part of the testing track, or you can build and install the APK locally with the instructions below. Send an email if you'd like to be added to the Play Store testing track for easier access to new versions. I anticipate the Play Store release will be in production in the next month or so, and will be available publicly once it makes it through the testing and review process. I have included a signed APK in the releases though, so you don't have to bother with building it or using Google Play, but you have to enable installation from unknown sources on your Android device to use it. I did get verified on Google Play so the app shouldn't have any issues installing on Certified Google Play devices, and the signature should be valid for updates when the app is eventually published publicly. If you build it yourself and want it signed, you'll have to get your own key and update the Gradle signing config.
 
+Download Release -> Extract Anywhere -> Open `Remex.Client.Desktop.exe` -> Tutorial -> Configure Desired Apps for App Launcher and Telemetry 
 
 The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled version of `Remex.Core` — and calls it through a Kotlin JNI bridge (`RemexCoreClient`). This gives all WebSocket, mDNS, and command logic identical behavior on Android without a separate runtime.
 
@@ -59,7 +60,8 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 
 ### 📡 Real-Time Telemetry
 
-- **HWiNFO** (Windows) / **lmsensors** (Linux) sensor data streamed over WebSocket
+- **[HWInfo](https://hwinfo.com/download/)** (Windows) / **lmsensors** (Linux) sensor data streamed over WebSocket
+    - HWInfo is free to use, but there's some configuring you have to do, namely enabling the Shared Memory, which has a 12 hour limit before you have to re-enable it.  
 - **Source identification** — each sensor reading is tagged with its source (`HWInfo`, `WindowsPerf`, or `Linux`); source badges shown in the sensor list
 - **Smart deduplication** — when HWInfo is active, overlapping Windows Performance Counter sensors are automatically hidden at the category level
 - **Free-form canvas** — drag, resize, and arrange sensor cards on a 4 000 × 4 000 workspace
