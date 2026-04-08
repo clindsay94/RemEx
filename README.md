@@ -1,22 +1,43 @@
-<div align="center">
-
 # RemEx ⚡
 
-**Remote Execution Command Center**
+## Remote Execution Command Center
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-11.3-7B2BFC?logo=data:image/svg+xml;base64,&logoColor=white)](https://avaloniaui.net/)
-[![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)](#)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)](#)
+![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.7.0-FF6B6B)](#)
+![Version](https://img.shields.io/badge/Version-1.7.0-FF6B6B)
 
 A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · App launcher · Process manager\
 Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full **native Android** app (Kotlin + Jetpack Compose) powered by a .NET NativeAOT JNI core.
 
-</div>
-# IMPORTANT NOTE: I haven't made an installer, in the [Releases](https://github.com/clindsay94/remex/releases) page, you will download a folder that contains all of the necessary files to run the desktop client, but you have to open the `Remex.Client.Desktop.exe` file in that folder to run it. Or for the host, you can open the `Remex.Host.exe` file. I am planning on making an installer in the future, but for now, you can just create a shortcut to the .exe file and put it wherever you want. The desktop client will automatically detect if the host is running and connect to it, so you don't have to worry about starting the host first. Just run the desktop client and follow the tutorial to get started. It's also the only item in there that has an actual icon. 
+---
+
+## 🚀 Quick Install & Run
+
+### Windows & Linux Desktop Client
+
+Since there is no installer yet, follow these steps to run the desktop client:
+
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `Remex-vX.X.X-.7z` file.
+2. **Extract the .7z file** to a permanent location on your computer (e.g., `C:\Program Files\RemEx` or `~/Applications/RemEx`).
+3. Open the extracted folder and run **`Remex.Client.Desktop.exe`** (on Windows) or **`Remex.Client.Desktop`** (on Linux). This is the main application and is the only file with an icon.
+4. **(Optional)** For easy access, right-click the executable and select **"Create shortcut"** (Windows) or your Linux distribution's equivalent, then move the shortcut to your desktop.
+
+The desktop client will automatically start and manage the host service in the background. Just follow the first-run tutorial to get connected!
+
+### Native Android App
+
+The recommended way to install the Android app is through the **Google Play Store** once it becomes publicly available. In the meantime, you can sideload the APK:
+
+1. Go to the **Releases** page and download the latest `Remex-vX.X.X.apk` file to your Android device.
+2. You may need to enable "Install from unknown sources" in your device's settings.
+3. Open the downloaded `.apk` file to install the application.
+
+You can also join my Play Store testing track for easier access to new versions and updates. Just send me an email, and I'll add you to the list.
+
 ---
 
 ## Clients
@@ -28,10 +49,6 @@ RemEx ships two distinct client experiences sharing the same host backend:
 | **Desktop / Avalonia Android** (`RemEx.Client.Desktop`) | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
 | **Native Android** (`RemEx.Android`) | Kotlin · Jetpack Compose · Material 3 · JNI → .NET NativeAOT | Android (arm64-v8a) |
 | **Host** (`Remex.Host`) | ASP.NET Core Minimal API · WebSocket · mDNS | Windows Service · Linux daemon |
-
-To get started quickly, the desktop client is the recommended entry point — simply download the publish folder from releases and run the remex.client.desktop.exe that is found in the folder. For Android, the app is available on the Play Store if you're part of the testing track, or you can build and install the APK locally with the instructions below. Send an email if you'd like to be added to the Play Store testing track for easier access to new versions. I anticipate the Play Store release will be in production in the next month or so, and will be available publicly once it makes it through the testing and review process. I have included a signed APK in the releases though, so you don't have to bother with building it or using Google Play, but you have to enable installation from unknown sources on your Android device to use it. I did get verified on Google Play so the app shouldn't have any issues installing on Certified Google Play devices, and the signature should be valid for updates when the app is eventually published publicly. If you build it yourself and want it signed, you'll have to get your own key and update the Gradle signing config.
-
-Download Release -> Extract Anywhere -> Open `Remex.Client.Desktop.exe` -> Tutorial -> Configure Desired Apps for App Launcher and Telemetry 
 
 The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled version of `Remex.Core` — and calls it through a Kotlin JNI bridge (`RemexCoreClient`). This gives all WebSocket, mDNS, and command logic identical behavior on Android without a separate runtime.
 
@@ -91,7 +108,7 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 All communication layers support optional shared-secret authentication to protect against LAN-local attacks. **Leave empty to disable (backward compatible).**
 
 | Layer | Files Modified | What was added |
-|-------|---------------|----------------|
+| ----- | --------------- | --------------- |
 | **Host WebSocket** | HostBootstrapper.cs | `Remex:AccessKey` config read, constant-time validation on `/ws` and `/ws/desktop`, returns 401 on mismatch |
 | **Host TCP Commands** | RemexNetworkListener.cs | `Remex:AccessKey` config read, constant-time validation via `Parameters["AccessKey"]`, rejects with 401 on mismatch |
 | **Host config** | appsettings.json | `Remex.AccessKey` section (empty = disabled) |
@@ -102,13 +119,13 @@ All communication layers support optional shared-secret authentication to protec
 | **Android** | SettingsManager.kt, RemoteControlViewModel.kt, TaskManagerViewModel.kt, AppLauncherViewModel.kt, RemoteControlWidget.kt, AppLauncherWidget.kt | DataStore persistence, Key icon text field, passed through JNI init JSON and injected into all TCP command `Parameters` |
 
 **Key design decisions:**
+
 - Empty access key = authentication disabled (backward compatible)
 - WebSocket: key sent as `?key=<value>` query parameter on the URI
 - TCP commands: key sent as `Parameters["AccessKey"]` in the JSON request
 - Server uses `CryptographicOperations.FixedTimeEquals` to prevent timing attacks
 - Configurable from all UIs (no JSON file editing required)
-- **Important:** If you set an access key, all clients must provide it — the Android app injects it automatically into TCP commands 
-
+- **Important:** If you set an access key, all clients must provide it — the Android app injects it automatically into TCP commands
 
 ### ◈ App Launcher
 
@@ -139,7 +156,7 @@ Remex.Host.Tests/        xUnit tests — Host endpoints and handlers
 scripts/                 Utility scripts — Windows Service installer, android-fresh pipeline
 ```
 
-**Communication Protocols**
+### Communication Protocols
 
 | Protocol | Purpose | Default Port |
 | :--- | :--- | :--- |
@@ -188,7 +205,6 @@ dotnet test Remex.sln
 ```bash
 dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
-
 
 ### Building the Native Android App — Hardened Fresh Build (Recommended)
 
