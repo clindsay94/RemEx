@@ -206,7 +206,23 @@ public sealed class RemoteDesktopHandler : IDisposable
 
             try
             {
-                var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct: ct);
+                // Offload to thread pool so a blocking GDI call (e.g. GDI fallback during
+                // Windows Terminal focus) can't stall the async stream loop indefinitely.
+                // With DXGI as primary path this is a no-op cost; safety net for GDI fallback.
+                using var captureCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                captureCts.CancelAfter(TimeSpan.FromSeconds(3));
+                byte[] jpegBytes;
+                try
+                {
+                    var captureTask = Task.Run(() => _screenCapture.CaptureScreenAsync(_quality, _scale, captureCts.Token), captureCts.Token);
+                    jpegBytes = await captureTask;
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    _logger.LogWarning("Frame capture timed out after 3s — GDI may be blocking on an MPO window. Skipping frame.");
+                    consecutiveFailures++;
+                    continue;
+                }
                 if (jpegBytes.Length > 0)
                 {
                     consecutiveFailures = 0;

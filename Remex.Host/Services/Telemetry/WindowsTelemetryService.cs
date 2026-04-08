@@ -170,7 +170,8 @@ public class WindowsTelemetryService : ITelemetryService
                             Name = label,
                             Value = value,
                             Unit = NormalizeUnit(reading.szUnit, reading.Value),
-                            Category = DetermineCategory(label)
+                            Category = DetermineCategory(label),
+                            Source = "HWInfo"
                         });
                     }
                 }
@@ -180,10 +181,19 @@ public class WindowsTelemetryService : ITelemetryService
                 }
             }
 
-            // Merge HWiNFO sensors into the fallback payload (don't replace it).
+            // When HWiNFO data is available, filter out WindowsPerf sensors that overlap
+            // with HWiNFO data by category. If HWiNFO provides ANY sensor in a category,
+            // all WindowsPerf sensors in that same category are removed.
             if (sensors.Count > 0)
             {
-                fallback.Sensors.AddRange(sensors);
+                var hwinfoCategories = sensors.Select(s => s.Category).ToHashSet();
+
+                var filteredFallback = fallback.Sensors
+                    .Where(s => s.Source != "WindowsPerf" || !hwinfoCategories.Contains(s.Category))
+                    .ToList();
+
+                filteredFallback.AddRange(sensors);
+                fallback = fallback with { Sensors = filteredFallback };
             }
 
             result = fallback;
@@ -256,7 +266,7 @@ public class WindowsTelemetryService : ITelemetryService
         try
         {
             var cpuValue = _cpuCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU" });
+            sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf" });
         }
         catch (Exception ex)
         {
@@ -271,9 +281,9 @@ public class WindowsTelemetryService : ITelemetryService
             if (GlobalMemoryStatusEx(ref memStatus))
             {
                 var usedMemBytes = memStatus.ullTotalPhys - memStatus.ullAvailPhys;
-                sensors.Add(new SensorReading { Name = "Physical Memory Used", Value = usedMemBytes / 1e6, Unit = "MB", Category = "Memory" });
-                sensors.Add(new SensorReading { Name = "Physical Memory Available", Value = memStatus.ullAvailPhys / 1e6, Unit = "MB", Category = "Memory" });
-                sensors.Add(new SensorReading { Name = "Physical Memory Load", Value = memStatus.dwMemoryLoad, Unit = "%", Category = "Memory" });
+                sensors.Add(new SensorReading { Name = "Physical Memory Used", Value = usedMemBytes / 1e6, Unit = "MB", Category = "Memory", Source = "WindowsPerf" });
+                sensors.Add(new SensorReading { Name = "Physical Memory Available", Value = memStatus.ullAvailPhys / 1e6, Unit = "MB", Category = "Memory", Source = "WindowsPerf" });
+                sensors.Add(new SensorReading { Name = "Physical Memory Load", Value = memStatus.dwMemoryLoad, Unit = "%", Category = "Memory", Source = "WindowsPerf" });
             }
         }
         catch (Exception ex)
@@ -286,8 +296,8 @@ public class WindowsTelemetryService : ITelemetryService
         {
             var diskRead = _diskReadCounter?.NextValue() ?? 0;
             var diskWrite = _diskWriteCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk" });
-            sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk" });
+            sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+            sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
         }
         catch (Exception ex)
         {
@@ -307,8 +317,8 @@ public class WindowsTelemetryService : ITelemetryService
                 {
                     var netDown = ((stats.BytesReceived - _lastBytesReceived) / 1024.0 / 1024.0) / elapsedSeconds;
                     var netUp = ((stats.BytesSent - _lastBytesSent) / 1024.0 / 1024.0) / elapsedSeconds;
-                    sensors.Add(new SensorReading { Name = "Current DL Rate", Value = netDown >= 0 ? netDown : 0, Unit = "MB/s", Category = "Network" });
-                    sensors.Add(new SensorReading { Name = "Current UP Rate", Value = netUp >= 0 ? netUp : 0, Unit = "MB/s", Category = "Network" });
+                    sensors.Add(new SensorReading { Name = "Current DL Rate", Value = netDown >= 0 ? netDown : 0, Unit = "MB/s", Category = "Network", Source = "WindowsPerf" });
+                    sensors.Add(new SensorReading { Name = "Current UP Rate", Value = netUp >= 0 ? netUp : 0, Unit = "MB/s", Category = "Network", Source = "WindowsPerf" });
                 }
 
                 _lastBytesReceived = stats.BytesReceived;

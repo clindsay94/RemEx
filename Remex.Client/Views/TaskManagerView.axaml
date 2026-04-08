@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Remex.Client.ViewModels"
              xmlns:models="using:Remex.Core.Models"
+             xmlns:local="clr-namespace:Remex.Client.Converters"
              x:Class="Remex.Client.Views.TaskManagerView"
              x:DataType="vm:TaskManagerViewModel">
 
@@ -33,13 +34,13 @@
 
             <!-- Header -->
             <StackPanel Spacing="4">
-                <TextBlock Text="▤  TASK MANAGER" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <TextBlock Text="PROCESS EXPLORER" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Text="{local:Localize TaskMgr_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{local:Localize TaskMgr_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
             <!-- Search and Sort Controls -->
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
-                <TextBox Text="{Binding SearchText}" Watermark="Search by name or PID..." 
+                <TextBox Text="{Binding SearchText}" Watermark="{local:Localize TaskMgr_SearchPlaceholder}" 
                          Background="{DynamicResource GlassBaseDarkBrush}" 
                          Foreground="{DynamicResource TextPrimaryBrush}" 
                          BorderBrush="{DynamicResource CardBorderBrush}"
@@ -47,11 +48,11 @@
                          VerticalAlignment="Center"/>
 
                 <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name"
-                        Content="Name" Classes="sort-btn" VerticalAlignment="Center"/>
+                        Content="{local:Localize TaskMgr_SortName}" Classes="sort-btn" VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu"
-                        Content="CPU %" Classes="sort-btn" VerticalAlignment="Center"/>
+                        Content="{local:Localize TaskMgr_SortCpu}" Classes="sort-btn" VerticalAlignment="Center"/>
                 <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory"
-                        Content="RAM" Classes="sort-btn" VerticalAlignment="Center"/>
+                        Content="{local:Localize TaskMgr_SortRam}" Classes="sort-btn" VerticalAlignment="Center"/>
             </Grid>
 
             <!-- Unified List Container (M3 Surface) -->
@@ -64,7 +65,7 @@
                             <Border Background="Transparent" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
                                 <Border.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Kill Process"
+                                        <MenuItem Header="{local:Localize TaskMgr_KillProcess}"
                                                   Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}"
                                                   CommandParameter="{Binding}" 
                                                   Foreground="#FF6B6B" />
@@ -86,11 +87,11 @@
                                     <!-- Metrics -->
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24" VerticalAlignment="Center" Margin="16,0,0,0">
                                         <StackPanel Width="60">
-                                            <TextBlock Text="CPU" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{local:Localize TaskMgr_CpuLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
                                             <TextBlock Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right"/>
                                         </StackPanel>
                                         <StackPanel Width="80">
-                                            <TextBlock Text="MEM" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{local:Localize TaskMgr_MemLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
                                             <!-- Simple bytes to MB conversion for display -->
                                             <TextBlock Text="{Binding MemoryUsage, StringFormat='{}{0:N0} B'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
                                         </StackPanel>

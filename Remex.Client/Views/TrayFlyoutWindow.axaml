@@ -3,10 +3,11 @@
         xmlns:vm="using:Remex.Client.ViewModels"
         xmlns:conv="using:Remex.Client.Converters"
         xmlns:ctrl="using:Remex.Client.Controls"
+        xmlns:local="clr-namespace:Remex.Client.Converters"
         x:Class="Remex.Client.Views.TrayFlyoutWindow"
         x:DataType="vm:HomeViewModel"
         Width="340" Height="480"
-        Title="Live Glance"
+        Title="{local:Localize TrayFlyout_Title}"
         CanResize="False"
         Focusable="False"
         ShowInTaskbar="False"
@@ -29,7 +30,7 @@
             <!-- Header -->
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="2">
-                    <TextBlock Text="LIVE GLANCE" FontSize="11" FontWeight="Black" 
+                    <TextBlock Text="{local:Localize TrayFlyout_Header}" FontSize="11" FontWeight="Black" 
                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                     <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" 
                                Foreground="{DynamicResource TextMutedBrush}"/>
@@ -92,8 +93,8 @@
             <!-- Actions -->
             <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="HOME" Classes="glass-button" FontSize="10" FontWeight="Bold" Command="{Binding NavigateToHomeCommand}" Click="OnOpenMainApp"/>
-                    <Button Content="WORKSPACE" Classes="glass-button" FontSize="10" FontWeight="Bold" Command="{Binding NavigateToCanvasCommand}" Click="OnOpenMainApp"/>
+                    <Button Content="{local:Localize TrayFlyout_Home}" Classes="glass-button" FontSize="10" FontWeight="Bold" Command="{Binding NavigateToHomeCommand}" Click="OnOpenMainApp"/>
+                    <Button Content="{local:Localize TrayFlyout_Workspace}" Classes="glass-button" FontSize="10" FontWeight="Bold" Command="{Binding NavigateToCanvasCommand}" Click="OnOpenMainApp"/>
                 </StackPanel>
                 <Button Grid.Column="1" Content="✕" Classes="glass-button" FontSize="12" Click="OnCloseFlyout" Padding="8,4"/>
             </Grid>

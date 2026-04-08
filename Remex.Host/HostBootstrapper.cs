@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Remex.Core;
@@ -78,6 +79,16 @@ public static class HostBootstrapper
         builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
         var app = builder.Build();
+
+        // Session 0 detection: warn when running as a non-interactive Windows service
+        if (OperatingSystem.IsWindows() && Process.GetCurrentProcess().SessionId == 0)
+        {
+            var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Remex.Host");
+            logger.LogWarning(
+                "⚠ Remex.Host is running in Session 0 (non-interactive). " +
+                "Screen capture and app launching will NOT work in this session. " +
+                "Configure the service to 'Log on as' your Windows user account.");
+        }
 
         // Read the access key from configuration (supports appsettings.json, env vars, CLI args).
         // Env var: Remex__AccessKey   CLI: --Remex:AccessKey=<value>

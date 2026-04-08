@@ -3,7 +3,8 @@
   xmlns:vm="using:Remex.Client.ViewModels"
   xmlns:sys="clr-namespace:System;assembly=System.Runtime"
   xmlns:conv="using:Remex.Client.Converters"
-  xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.DashboardView" x:DataType="vm:DashboardViewModel">
+  xmlns:ctrl="using:Remex.Client.Controls"
+  xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.DashboardView" x:DataType="vm:DashboardViewModel">
 
   <UserControl.Styles>
     <!-- ===== Base card style ===== -->
@@ -145,7 +146,7 @@
 
       <!-- Header -->
       <TextBlock Text="REMEX" FontSize="24" FontWeight="Black" Foreground="#E0E0FF" Margin="8 0 0 4"/>
-      <TextBlock Text="Remote Execution Command Center" FontSize="13" Foreground="#6666AA" Margin="8 0 0 20"/>
+      <TextBlock Text="{local:Localize Home_Subtitle}" FontSize="13" Foreground="#6666AA" Margin="8 0 0 20"/>
 
       <!-- Card grid -->
       <WrapPanel Orientation="Horizontal">
@@ -153,7 +154,7 @@
         <!-- ═══════════════ CONNECTION STATUS (Small) ═══════════════ -->
         <Border Classes="card card-small loaded">
           <StackPanel>
-            <TextBlock Classes="card-title" Text="Connection"/>
+            <TextBlock Classes="card-title" Text="{local:Localize Canvas_Connection}"/>
 
             <StackPanel Orientation="Horizontal" Margin="0 4 0 12">
               <Ellipse Classes="status-dot">
@@ -164,19 +165,19 @@
               <TextBlock Classes="stat-value" FontSize="18" Text="{Binding Connection.StatusText}"/>
             </StackPanel>
 
-            <TextBox Classes="host-input" Text="{Binding Connection.HostAddress}" IsEnabled="{Binding !Connection.IsConnected}" Watermark="ws://host:port/ws"/>
+            <TextBox Classes="host-input" Text="{Binding Connection.HostAddress}" IsEnabled="{Binding !Connection.IsConnected}" Watermark="{local:Localize Dashboard_HostWatermark}"/>
           </StackPanel>
         </Border>
 
         <!-- ═══════════════ QUICK ACTIONS (Small) ═══════════════ -->
         <Border Classes="card card-small loaded">
           <StackPanel>
-            <TextBlock Classes="card-title" Text="Actions"/>
+            <TextBlock Classes="card-title" Text="{local:Localize Canvas_Actions}"/>
 
             <StackPanel Spacing="8" Margin="0 8 0 0">
-              <Button Classes="dash-btn dash-btn-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" HorizontalAlignment="Stretch"/>
-              <Button Classes="dash-btn" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}" HorizontalAlignment="Stretch"/>
-              <Button Classes="dash-btn dash-btn-danger" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn dash-btn-accent" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn" Content="{local:Localize Dashboard_Ping}" Command="{Binding Connection.SendPingCommand}" HorizontalAlignment="Stretch"/>
+              <Button Classes="dash-btn dash-btn-danger" Content="{local:Localize Dashboard_Disconnect}" Command="{Binding Connection.DisconnectCommand}" HorizontalAlignment="Stretch"/>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -184,7 +185,7 @@
         <!-- ═══════════════ LATENCY MONITOR (Medium) ═══════════════ -->
         <Border Classes="card card-medium loaded">
           <StackPanel>
-            <TextBlock Classes="card-title" Text="Latency"/>
+            <TextBlock Classes="card-title" Text="{local:Localize Canvas_Latency}"/>
 
             <!-- Current value -->
             <TextBlock Classes="stat-value" Text="{Binding Connection.LatencyText}"/>
@@ -192,15 +193,15 @@
             <!-- Avg / Max row -->
             <StackPanel Orientation="Horizontal" Spacing="24" Margin="0 8 0 0">
               <StackPanel>
-                <TextBlock Classes="stat-label" Text="AVG"/>
+                <TextBlock Classes="stat-label" Text="{local:Localize Canvas_Avg}"/>
                 <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
               </StackPanel>
               <StackPanel>
-                <TextBlock Classes="stat-label" Text="MAX"/>
+                <TextBlock Classes="stat-label" Text="{local:Localize Canvas_Max}"/>
                 <TextBlock Foreground="#FF6B6B" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
               </StackPanel>
               <StackPanel>
-                <TextBlock Classes="stat-label" Text="SAMPLES"/>
+                <TextBlock Classes="stat-label" Text="{local:Localize Dashboard_Samples}"/>
                 <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.LatencyHistory.Count}"/>
               </StackPanel>
             </StackPanel>
@@ -226,7 +227,7 @@
         <!-- ═══════════════ SYSTEM INFO (Large) ═══════════════ -->
         <Border Classes="card card-large loaded">
           <StackPanel>
-            <TextBlock Classes="card-title" Text="System Telemetry"/>
+            <TextBlock Classes="card-title" Text="{local:Localize Dashboard_SystemTelemetry}"/>
 
             <!-- Dynamic TabControl mapped to CategorizedSensors -->
             <TabControl ItemsSource="{Binding CategorizedSensors}" Background="Transparent" Padding="0,8,0,0" Margin="0,-4,0,0">
@@ -255,14 +256,14 @@
                             <Border.ContextMenu>
                               <ContextMenu>
                                 <!-- Size submenu -->
-                                <MenuItem Header="📐 Size">
+                                <MenuItem Header="{local:Localize Dashboard_MenuSize}">
                                   <MenuItem Header="Small (130×68)" Command="{Binding SetSizeCommand}" CommandParameter="Small"/>
                                   <MenuItem Header="Medium (200×100)" Command="{Binding SetSizeCommand}" CommandParameter="Medium"/>
                                   <MenuItem Header="Large (280×140)" Command="{Binding SetSizeCommand}" CommandParameter="Large"/>
                                 </MenuItem>
 
                                 <!-- Theme Presets submenu -->
-                                <MenuItem Header="🎨 Theme">
+                                <MenuItem Header="{local:Localize Dashboard_MenuTheme}">
                                   <MenuItem Header="Default" Command="{Binding ApplyThemeCommand}" CommandParameter="Default"/>
                                   <MenuItem Header="Magenta &amp; Cyan" Command="{Binding ApplyThemeCommand}" CommandParameter="Magenta &amp; Cyan"/>
                                   <MenuItem Header="Smoke &amp; Gold" Command="{Binding ApplyThemeCommand}" CommandParameter="Smoke &amp; Gold"/>
@@ -274,7 +275,7 @@
                                 </MenuItem>
 
                                 <!-- Graph Type submenu -->
-                                <MenuItem Header="📊 Graph">
+                                <MenuItem Header="{local:Localize Dashboard_MenuGraph}">
                                   <MenuItem Header="Auto (smart)" Command="{Binding SetGraphTypeCommand}" CommandParameter="Auto"/>
                                   <MenuItem Header="Bar ▮▮▮" Command="{Binding SetGraphTypeCommand}" CommandParameter="Bar"/>
                                   <MenuItem Header="Line ╱╲╱" Command="{Binding SetGraphTypeCommand}" CommandParameter="Line"/>
@@ -308,7 +309,7 @@
             </TabControl>
 
             <StackPanel Margin="0 4 0 0" Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="stat-label" Text="UPTIME" VerticalAlignment="Center"/>
+              <TextBlock Classes="stat-label" Text="{local:Localize Dashboard_Uptime}" VerticalAlignment="Center"/>
               <TextBlock Classes="stat-value" FontSize="14" Foreground="#8888AA" Text="{Binding Connection.Telemetry.UptimeText, FallbackValue=—}" VerticalAlignment="Center"/>
             </StackPanel>
           </StackPanel>

@@ -2,7 +2,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:conv="using:Remex.Client.Converters"
-    xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.HomeView" x:DataType="vm:HomeViewModel">
+    xmlns:ctrl="using:Remex.Client.Controls"
+    xmlns:local="clr-namespace:Remex.Client.Converters"
+    x:Class="Remex.Client.Views.HomeView" x:DataType="vm:HomeViewModel">
 
     <UserControl.Styles>
         <!-- Quick-action pill buttons -->
@@ -81,7 +83,7 @@
                                 <TextBlock Text="REM" FontSize="42" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <TextBlock Text="EX" FontSize="42" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                             </StackPanel>
-                            <TextBlock Text="REMOTE EXECUTION COMMAND CENTER" FontSize="11" FontWeight="Bold" 
+                            <TextBlock Text="{local:Localize Home_Subtitle}" FontSize="11" FontWeight="Bold" 
                                        Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4" Opacity="0.7"/>
                         </StackPanel>
 
@@ -125,14 +127,14 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                    <Button Classes="action-pill action-pill-accent" Content="Connect" 
+                                    <Button Classes="action-pill action-pill-accent" Content="{local:Localize Btn_Connect}" 
                                             Command="{Binding Connection.ConnectCommand}" 
                                             IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"
-                                            ToolTip.Tip="Connect to the RemEx host — make sure it's running on your PC"/>
-                                    <Button Classes="action-pill action-pill-danger" Content="Cancel" 
+                                            ToolTip.Tip="{local:Localize Home_ConnectTooltip}"/>
+                                    <Button Classes="action-pill action-pill-danger" Content="{local:Localize Btn_Cancel}" 
                                             Command="{Binding Connection.DisconnectCommand}" 
                                             IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
-                                            ToolTip.Tip="Cancel the connection attempt"/>
+                                            ToolTip.Tip="{local:Localize Home_CancelTooltip}"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -142,47 +144,47 @@
 
             <!-- ═══ QUICK ACTIONS ROW ═══ -->
             <StackPanel Spacing="6">
-                <TextBlock Text="QUICK ACTIONS" FontSize="10" FontWeight="Bold" 
+                <TextBlock Text="{local:Localize Home_QuickActions}" FontSize="10" FontWeight="Bold" 
                            Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
                 <WrapPanel Orientation="Horizontal">
                     <Button Classes="action-pill action-pill-accent" Margin="0,0,8,8"
                             Command="{Binding NavigateToCanvasCommand}"
-                            ToolTip.Tip="Open the drag-and-drop sensor workspace to monitor PC telemetry">
+                            ToolTip.Tip="{local:Localize Home_SensorWorkspaceTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="▦" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="Sensor Workspace" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_SensorWorkspace}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
                             Command="{Binding NavigateToRemoteCommand}"
-                            ToolTip.Tip="Control your PC remotely — power, volume, and Wake-on-LAN">
+                            ToolTip.Tip="{local:Localize Home_PcRemoteTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="⏻" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="PC Remote" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_PcRemote}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
                             Command="{Binding NavigateToRemoteDesktopCommand}"
-                            ToolTip.Tip="Stream your PC's desktop to this device in real-time">
+                            ToolTip.Tip="{local:Localize Home_DesktopTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="🖳" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="Desktop" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_Desktop}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
                             Command="{Binding NavigateToAppLauncherCommand}"
-                            ToolTip.Tip="Start programs on your PC without being at the keyboard">
+                            ToolTip.Tip="{local:Localize Home_LauncherTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="◈" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="Launcher" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_Launcher}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
                             Command="{Binding NavigateToTaskManagerCommand}"
-                            ToolTip.Tip="View running processes and kill tasks on your PC">
+                            ToolTip.Tip="{local:Localize Home_TasksTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="▤" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="Tasks" VerticalAlignment="Center"/>
+                            <TextBlock Text="{local:Localize Home_Tasks}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </WrapPanel>
@@ -190,7 +192,7 @@
 
             <!-- ═══ PINNED SENSORS ═══ -->
             <StackPanel Spacing="10" IsVisible="{Binding PinnedSensors.Count}">
-                <TextBlock Text="LIVE TELEMETRY" FontSize="10" FontWeight="Bold" 
+                <TextBlock Text="{local:Localize Home_LiveTelemetry}" FontSize="10" FontWeight="Bold" 
                            Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
 
                 <ItemsControl ItemsSource="{Binding PinnedSensors}">
@@ -236,9 +238,9 @@
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                     <TextBlock Text="▦" FontSize="32" HorizontalAlignment="Center" 
                                Foreground="{DynamicResource TextMutedBrush}"/>
-                    <TextBlock Text="No pinned sensors yet" FontSize="14" FontWeight="SemiBold" 
+                    <TextBlock Text="{local:Localize Home_NoPinnedSensors}" FontSize="14" FontWeight="SemiBold" 
                                HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    <TextBlock Text="Open the Sensor Workspace, right-click a card, and pin it to Home." 
+                    <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" 
                                FontSize="12" Foreground="{DynamicResource TextMutedBrush}" 
                                HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
                 </StackPanel>

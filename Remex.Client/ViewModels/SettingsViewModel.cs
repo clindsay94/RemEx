@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
@@ -93,7 +98,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
             AccessKey = _profile.AccessKey;
+            HostPath = _profile.HostPath;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
+            Services.LocalizationService.Instance.SetCulture(Language);
             StreamQuality = _profile.StreamQuality;
             StreamFps = _profile.StreamFps;
             UpdateHostCapabilitySummary();
@@ -131,7 +138,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             var name = card.Sensor!.Name;
             var isPinned = _profile.PinnedSensorIds.Contains(name);
-            var item = new SensorPinItem(name, isPinned);
+            var source = card.Sensor.RawReading?.Source ?? "Unknown";
+            var item = new SensorPinItem(name, isPinned, source);
             item.PinChanged += OnSensorPinChanged;
             AvailableSensors.Add(item);
         }
@@ -189,14 +197,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnLanguageChanged(string value)
     {
-        try 
-        {
-            var culture = new System.Globalization.CultureInfo(value);
-            Remex.Client.Localization.Strings.Culture = culture;
-            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
-            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
-        }
-        catch { }
+        Services.LocalizationService.Instance.SetCulture(value);
         Save();
     }
 
@@ -312,6 +313,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _serviceLog = string.Empty;
 
+    /// <summary>User-configurable path to the Remex.Host.exe binary or its directory.</summary>
+    [ObservableProperty]
+    private string _hostPath = string.Empty;
+
+    partial void OnHostPathChanged(string value) => Save();
+
     [RelayCommand]
     private void ConfigureLogin()
     {
@@ -325,6 +332,44 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     // ─────────── Install ───────────
+
+    [RelayCommand]
+    private async Task BrowseHostPathAsync()
+    {
+        try
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var topLevel = desktop.MainWindow;
+                if (topLevel == null) return;
+
+                var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Select Remex.Host.exe",
+                    AllowMultiple = false,
+                    FileTypeFilter = new List<FilePickerFileType>
+                    {
+                        new("Executable") { Patterns = new[] { "Remex.Host.exe" } },
+                        FilePickerFileTypes.All
+                    }
+                });
+
+                if (files.Count > 0)
+                {
+                    var path = files[0].TryGetLocalPath();
+                    if (!string.IsNullOrWhiteSpace(path))
+                    {
+                        HostPath = path;
+                        AppendLog($"Host path set to: {path}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"Browse error: {ex.Message}");
+        }
+    }
 
     [RelayCommand]
     private async Task InstallServiceAsync()
@@ -342,24 +387,23 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
-            // Step 1: Publish
-            ServiceStatusText = "Publishing Remex.Host…";
-            AppendLog("Publishing Remex.Host…");
-            var (pubOk, pubOut) = await PublishHostAsync();
-            AppendLog(pubOut);
-            if (!pubOk)
+            // Step 1: Locate the host binary
+            ServiceStatusText = "Locating Remex.Host…";
+            AppendLog("Searching for Remex.Host.exe…");
+            var exePath = FindHostExePath();
+            if (exePath == null)
             {
-                ServiceStatusText = "Publish failed — see log.";
+                ServiceStatusText = "Remex.Host.exe not found.";
+                AppendLog("ERROR: Remex.Host.exe not found. Set the host path in Settings or place Remex.Host.exe next to this application.");
                 return;
             }
+            AppendLog($"Found host binary: {exePath}");
 
-            var publishDir = GetPublishDir();
-            var exePath = Path.Combine(publishDir, "Remex.Host.exe");
-            if (!File.Exists(exePath))
+            // Step 1b: Version verification (warn only, don't block)
+            var versionWarning = VerifyHostVersion(exePath);
+            if (versionWarning != null)
             {
-                ServiceStatusText = $"Remex.Host.exe not found in {publishDir}";
-                AppendLog($"ERROR: {exePath} not found after publish.");
-                return;
+                AppendLog($"WARN: {versionWarning}");
             }
 
             // Step 2: Create the service
@@ -694,62 +738,68 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task<(bool Success, string Output)> PublishHostAsync()
+    /// <summary>
+    /// Resolves the full path to the published Remex.Host.exe binary.
+    /// Tries multiple strategies in order of priority:
+    /// 1. User-configured custom path (if set in profile)
+    /// 2. Adjacent to the running desktop client executable
+    /// 3. Sibling "Remex.Host" subfolder beside the client
+    /// 4. Sibling folder at parent level (e.g., ..\Remex.Host\)
+    /// 5. Dev-time publish output (..\..\..\..\publish\Remex.Host)
+    /// </summary>
+    private string? FindHostExePath()
+    {
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+        // Strategy 1: User-configured custom path
+        var customPath = _profile.HostPath;
+        if (!string.IsNullOrWhiteSpace(customPath))
+        {
+            if (File.Exists(customPath) && customPath.EndsWith("Remex.Host.exe", StringComparison.OrdinalIgnoreCase))
+                return customPath;
+            var exeInCustom = Path.Combine(customPath, "Remex.Host.exe");
+            if (File.Exists(exeInCustom)) return exeInCustom;
+        }
+
+        // Strategy 2: Same directory as running client (flat publish, e.g. P:\PublishedRemex)
+        var adjacent = Path.Combine(basePath, "Remex.Host.exe");
+        if (File.Exists(adjacent)) return adjacent;
+
+        // Strategy 3: Sibling subfolder
+        var siblingSubfolder = Path.Combine(basePath, "Remex.Host", "Remex.Host.exe");
+        if (File.Exists(siblingSubfolder)) return siblingSubfolder;
+
+        // Strategy 4: Parent-level sibling
+        var parentSibling = Path.GetFullPath(Path.Combine(basePath, "..", "Remex.Host", "Remex.Host.exe"));
+        if (File.Exists(parentSibling)) return parentSibling;
+
+        // Strategy 5: Dev-time publish output
+        var devPublish = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "publish", "Remex.Host", "Remex.Host.exe"));
+        if (File.Exists(devPublish)) return devPublish;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Compares the host binary's file version against the client assembly version.
+    /// Returns a warning string if they differ, or null if they match.
+    /// </summary>
+    private static string? VerifyHostVersion(string exePath)
     {
         try
         {
-            var projectDir = FindProjectDir();
-            if (projectDir == null)
-                return (false, "Could not locate Remex.Host project directory.");
+            var hostVersion = FileVersionInfo.GetVersionInfo(exePath);
+            var clientAssembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var clientVersion = clientAssembly.GetName().Version?.ToString() ?? "unknown";
 
-            var publishDir = GetPublishDir();
-            var proc = new Process
+            if (hostVersion.FileVersion != null && hostVersion.FileVersion != clientVersion)
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "dotnet",
-                    Arguments = $"publish \"{projectDir}\" -c Release -o \"{publishDir}\" --self-contained false",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            proc.Start();
-            var stdout = await proc.StandardOutput.ReadToEndAsync();
-            var stderr = await proc.StandardError.ReadToEndAsync();
-            await proc.WaitForExitAsync();
-
-            var output = $"{stdout}\n{stderr}".Trim();
-            return (proc.ExitCode == 0, output);
+                return $"Version mismatch: Host is {hostVersion.FileVersion}, Client is {clientVersion}. " +
+                       "Consider updating the host binary.";
+            }
+            return null; // versions match
         }
-        catch (Exception ex)
-        {
-            return (false, $"Publish exception: {ex.Message}");
-        }
-    }
-
-    private static string GetPublishDir()
-    {
-        var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var repoRoot = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", ".."));
-        var candidate = Path.Combine(repoRoot, "publish", "Remex.Host");
-        if (Directory.Exists(Path.GetDirectoryName(candidate)!) || Directory.Exists(repoRoot))
-            return candidate;
-        return Path.Combine(basePath, "publish", "Remex.Host");
-    }
-
-    private static string? FindProjectDir()
-    {
-        var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var repoRoot = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", ".."));
-        var candidate = Path.Combine(repoRoot, "Remex.Host");
-        if (File.Exists(Path.Combine(candidate, "Remex.Host.csproj")))
-            return candidate;
-        candidate = Path.Combine(basePath, "..", "Remex.Host");
-        if (File.Exists(Path.Combine(candidate, "Remex.Host.csproj")))
-            return candidate;
-        return null;
+        catch { return null; }
     }
 
     private static string? FindInstallScript()
@@ -783,6 +833,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             GridSize = GridSize,
             HostAddress = HostAddress,
             AccessKey = AccessKey,
+            HostPath = HostPath,
             Language = Language,
             StreamQuality = StreamQuality,
             StreamFps = StreamFps
@@ -800,15 +851,19 @@ public partial class SensorPinItem : ObservableObject
 {
     public string SensorName { get; }
 
+    /// <summary>Telemetry data source: "HWInfo", "WindowsPerf", "Linux", or "Unknown".</summary>
+    public string Source { get; }
+
     [ObservableProperty]
     private bool _isPinned;
 
     public event System.EventHandler<bool>? PinChanged;
 
-    public SensorPinItem(string sensorName, bool isPinned)
+    public SensorPinItem(string sensorName, bool isPinned, string source = "Unknown")
     {
         SensorName = sensorName;
         _isPinned = isPinned;
+        Source = source;
     }
 
     partial void OnIsPinnedChanged(bool value) => PinChanged?.Invoke(this, value);

@@ -33,14 +33,30 @@ param(
     [string]$Username,
 
     [Parameter()]
-    [SecureString]$Password
+    [SecureString]$Password,
+
+    [Parameter()]
+    [string]$HostPath = ""
 )
 
 $ServiceName   = "RemexHost"
 $DisplayName   = "Remex Host"
 $Description   = "Remex remote execution and telemetry host service."
 $ProjectDir    = Join-Path $PSScriptRoot "..\Remex.Host"
-$PublishDir    = Join-Path $PSScriptRoot "..\publish\Remex.Host"
+
+# Resolve host binary location with multiple strategies
+$PublishDir = if ($HostPath -and (Test-Path $HostPath)) {
+    if (Test-Path $HostPath -PathType Leaf) { Split-Path $HostPath -Parent } else { $HostPath }
+} elseif ($env:REMEX_HOST_PATH -and (Test-Path $env:REMEX_HOST_PATH)) {
+    if (Test-Path $env:REMEX_HOST_PATH -PathType Leaf) { Split-Path $env:REMEX_HOST_PATH -Parent } else { $env:REMEX_HOST_PATH }
+} elseif (Test-Path (Join-Path $PSScriptRoot "Remex.Host.exe")) {
+    $PSScriptRoot
+} elseif (Test-Path (Join-Path $PSScriptRoot "..\Remex.Host\Remex.Host.exe")) {
+    Join-Path $PSScriptRoot "..\Remex.Host"
+} else {
+    # Original dev-time fallback
+    Join-Path $PSScriptRoot "..\publish\Remex.Host"
+}
 
 function Publish-Host {
     Write-Host "Publishing Remex.Host..." -ForegroundColor Cyan

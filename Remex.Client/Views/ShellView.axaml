@@ -122,70 +122,70 @@
                                     <!-- Home -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
                                             Command="{Binding NavigateToHomeCommand}"
-                                            ToolTip.Tip="Home — Overview and pinned sensors">
+                                            ToolTip.Tip="{conv:Localize Nav_HomeTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="{DynamicResource AccentPrimaryBrush}" Opacity="0.7">
                                                 <TextBlock Text="H" FontSize="13" FontWeight="Black" 
                                                            Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Home" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
 
                                     <!-- Canvas / Sensors -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}"
                                             Command="{Binding NavigateToCanvasCommand}"
-                                            ToolTip.Tip="Sensor Workspace — Drag-and-drop telemetry cards">
+                                            ToolTip.Tip="{conv:Localize Nav_SensorsTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1A22C55E">
                                                 <TextBlock Text="S" FontSize="13" FontWeight="Black" 
                                                            Foreground="#22C55E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Sensors" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
 
                                     <!-- Remote Control -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}"
                                             Command="{Binding NavigateToRemoteCommand}"
-                                            ToolTip.Tip="Remote Control — Power, volume, and Wake-on-LAN">
+                                            ToolTip.Tip="{conv:Localize Nav_RemoteTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1AFF6B6B">
                                                 <TextBlock Text="R" FontSize="13" FontWeight="Black" 
                                                            Foreground="#FF6B6B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Remote" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Remote}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
 
                                     <!-- App Launcher -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}"
                                             Command="{Binding NavigateToAppLauncherCommand}"
-                                            ToolTip.Tip="App Launcher — Start programs on your PC remotely">
+                                            ToolTip.Tip="{conv:Localize Nav_LauncherTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1A00F3FF">
                                                 <TextBlock Text="L" FontSize="13" FontWeight="Black" 
                                                            Foreground="#00F3FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Launcher" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
 
                                     <!-- Task Manager -->
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}"
                                             Command="{Binding NavigateToTaskManagerCommand}"
-                                            ToolTip.Tip="Task Manager — View and kill running processes">
+                                            ToolTip.Tip="{conv:Localize Nav_TasksTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1AFFB800">
                                                 <TextBlock Text="T" FontSize="13" FontWeight="Black" 
                                                            Foreground="#FFB800" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Tasks" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Tasks}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
 
@@ -196,28 +196,28 @@
                                     <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=5}"
                                             Command="{Binding NavigateToRemoteDesktopCommand}"
                                             IsVisible="{Binding IsAndroid}"
-                                            ToolTip.Tip="Remote Desktop — Stream your PC screen in real-time">
+                                            ToolTip.Tip="{conv:Localize Nav_DesktopTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1AFF00FF">
                                                 <TextBlock Text="D" FontSize="13" FontWeight="Black" 
                                                            Foreground="#FF00FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Desktop" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Desktop}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
 
                                     <!-- Settings -->
                                     <Button Classes="nav-item"
                                             Command="{Binding NavigateToSettingsCommand}"
-                                            ToolTip.Tip="Settings — Connection, layout, and personalization">
+                                            ToolTip.Tip="{conv:Localize Nav_SettingsTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="14">
                                             <Border Width="24" Height="24" CornerRadius="6" 
                                                     Background="#1A9999FF">
                                                 <TextBlock Text="⚙" FontSize="13" 
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </Border>
-                                            <TextBlock Text="Settings" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            <TextBlock Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -265,7 +265,7 @@
                                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                                            VerticalAlignment="Center" TextWrapping="Wrap"/>
                                 <Button Grid.Column="2"
-                                        Content="Open Settings"
+                                        Content="{conv:Localize Shell_OpenSettings}"
                                         Command="{Binding NavigateToSettingsCommand}"
                                         Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
                                         Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
@@ -350,9 +350,9 @@
                             BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="⚙ Settings" FontSize="20" FontWeight="Black"
+                                <TextBlock Text="{conv:Localize Shell_SettingsTitle}" FontSize="20" FontWeight="Black"
                                            />
-                                <TextBlock Text="Configuration &amp; Customization" FontSize="11"
+                                <TextBlock Text="{conv:Localize Shell_SettingsSubtitle}" FontSize="11"
                                            Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
                             </StackPanel>
                             <Button Grid.Column="1" Content="✕" 
@@ -370,31 +370,31 @@
                             <!-- ═══ CONNECTION ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="CONNECTION" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Settings_Connection}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Host Address" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Settings_HostAddress}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBox Text="{Binding SettingsVm.HostAddress}" 
                                                  Background="{DynamicResource GlassBaseDarkBrush}" 
 
                                                  BorderBrush="{DynamicResource CardBorderBrush}" 
                                                  CornerRadius="8" Padding="10,8" FontSize="12" 
                                                  FontFamily="Consolas, monospace" 
-                                                 Watermark="ws://host:port/ws"/>
+                                                 Watermark="{conv:Localize Shell_HostWatermark}"/>
                                     </StackPanel>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Access Key" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Settings_AccessKey}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBox PasswordChar="●" Text="{Binding SettingsVm.AccessKey}" 
                                                  Background="{DynamicResource GlassBaseDarkBrush}" 
                                                  BorderBrush="{DynamicResource CardBorderBrush}" 
                                                  CornerRadius="8" Padding="10,8" FontSize="12" 
                                                  FontFamily="Consolas, monospace" 
-                                                 Watermark="Leave empty to disable"/>
+                                                 Watermark="{conv:Localize Shell_AccessKeyWatermark}"/>
                                     </StackPanel>
-                                    <TextBlock Text="Auto-saved on change. Persists across restarts." 
+                                    <TextBlock Text="{conv:Localize Shell_AutoSaveNote}" 
                                                FontSize="10" Foreground="{DynamicResource TextMutedBrush}" 
                                                FontStyle="Italic" Margin="0,4,0,0"/>
-                                    <Button Content="Save &amp; Reconnect"
+                                    <Button Content="{conv:Localize Settings_SaveReconnect}"
                                             Command="{Binding SettingsVm.SaveAndReconnectCommand}"
                                             Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
                                             Padding="12,7" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
@@ -405,10 +405,10 @@
                             <!-- ═══ LANGUAGE ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="LANGUAGE" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Settings_LanguageHeader}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Application Language" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Settings_Language}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <ComboBox ItemsSource="{Binding SettingsVm.AvailableLanguages}"
                                                   SelectedValue="{Binding SettingsVm.Language}"
                                                   SelectedValueBinding="{Binding Code}"
@@ -419,8 +419,7 @@
                                                 </DataTemplate>
                                             </ComboBox.ItemTemplate>
                                         </ComboBox>
-                                        <TextBlock Text="Takes effect on next launch." FontSize="10" 
-                                                   Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic"/>
+
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -428,7 +427,7 @@
                             <!-- ═══ THEMES ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="12">
-                                    <TextBlock Text="THEME" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Shell_Theme}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <UniformGrid Columns="2" Rows="2">
                                         <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" 
@@ -478,11 +477,11 @@
                             <!-- ═══ FINE TUNING ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="14">
-                                    <TextBlock Text="FINE TUNING" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Shell_FineTuning}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Corner Radius" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Custom_CornerRadius}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto">
                                             <Slider Minimum="0" Maximum="32" Value="{Binding CustomizationVm.CornerRadius}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding CustomizationVm.CornerRadius, StringFormat={}{0:F0}px}" 
@@ -490,7 +489,7 @@
                                         </Grid>
                                     </StackPanel>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Glass Opacity" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Custom_GlassOpacity}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto">
                                             <Slider Minimum="0.01" Maximum="1.0" Value="{Binding CustomizationVm.GlassOpacity}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding CustomizationVm.GlassOpacity, StringFormat={}{0:P0}}" 
@@ -498,7 +497,7 @@
                                         </Grid>
                                     </StackPanel>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Glow Strength" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Custom_GlowStrength}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto">
                                             <Slider Minimum="0" Maximum="30" Value="{Binding CustomizationVm.GlowStrength}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding CustomizationVm.GlowStrength, StringFormat={}{0:F0}}" 
@@ -508,7 +507,7 @@
 
                                     <!-- Accent Colors -->
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Accent Color" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Custom_AccentColor}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
                                             <Button Classes="accent-swatch" Background="#6C4CFF" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#6C4CFF"/>
                                             <Button Classes="accent-swatch" Background="#00F3FF" Command="{Binding CustomizationVm.SetAccentCommand}" CommandParameter="#00F3FF"/>
@@ -525,10 +524,10 @@
                             <!-- ═══ ATMOSPHERE ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="ATMOSPHERE" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Shell_Atmosphere}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Background Mode" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Custom_BackgroundMode}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <ComboBox SelectedItem="{Binding CustomizationVm.CanvasBackgroundType}" HorizontalAlignment="Stretch">
                                             <x:String>Mica</x:String>
                                             <x:String>Acrylic</x:String>
@@ -542,14 +541,14 @@
                             <!-- ═══ LAYOUT ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="LAYOUT" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Settings_Layout}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Text="Snap to Grid" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{conv:Localize Settings_SnapToGrid}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding SettingsVm.IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                                     </Grid>
                                     <StackPanel Spacing="4" IsEnabled="{Binding SettingsVm.IsSnapToGridEnabled}">
-                                        <TextBlock Text="Grid Size" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Settings_GridSize}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto">
                                             <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding SettingsVm.GridSize}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SettingsVm.GridSize, StringFormat={}{0} px}" 
@@ -562,13 +561,13 @@
                             <!-- ═══ STREAM SETTINGS (desktop only — configure what the host broadcasts) ═══ -->
                             <Border Classes="glass-card" Padding="16" IsVisible="{Binding IsDesktop}">
                                 <StackPanel Spacing="14">
-                                    <TextBlock Text="STREAM SETTINGS" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Shell_StreamSettings}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                                    <TextBlock Text="Configure the quality of the screen stream that the host broadcasts to connected clients (phone, tablet)."
+                                    <TextBlock Text="{conv:Localize Shell_StreamSettingsDesc}"
                                                FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" FontStyle="Italic"/>
 
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="JPEG Quality" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Shell_JpegQuality}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto">
                                             <Slider Minimum="10" Maximum="100" Value="{Binding SettingsVm.StreamQuality}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SettingsVm.StreamQuality, StringFormat={}{0}%}"
@@ -577,9 +576,9 @@
                                     </StackPanel>
 
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Target FPS" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{conv:Localize Shell_TargetFps}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto">
-                                            <Slider Minimum="5" Maximum="60" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding SettingsVm.StreamFps}" VerticalAlignment="Center"/>
+                                            <Slider Minimum="5" Maximum="120" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding SettingsVm.StreamFps}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SettingsVm.StreamFps, StringFormat={}{0} fps}"
                                                        Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" Width="45"/>
                                         </Grid>
@@ -590,7 +589,7 @@
                             <!-- ═══ WINDOWS SERVICE (desktop only) ═══ -->
                             <Border Classes="glass-card" Padding="16" IsVisible="{Binding SettingsVm.IsWindowsServiceSectionVisible}">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="WINDOWS SERVICE" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Settings_ServiceSection}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -605,31 +604,52 @@
                                                    FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </StackPanel>
 
+                                    <!-- Host binary path configuration -->
+                                    <TextBlock Text="{conv:Localize Shell_HostBinaryPath}" FontSize="12" 
+                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                                        <TextBox Grid.Column="0" Text="{Binding SettingsVm.HostPath}" 
+                                                 Watermark="{conv:Localize Shell_HostPathWatermark}"
+                                                 FontSize="12" FontFamily="Consolas, monospace"
+                                                 Background="{DynamicResource GlassBaseDarkBrush}" 
+                                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                                 BorderBrush="{DynamicResource CardBorderBrush}"
+                                                 CornerRadius="6" Padding="8,6"
+                                                 ToolTip.Tip="{conv:Localize Shell_HostPathTooltip}"/>
+                                        <Button Grid.Column="1" Content="{conv:Localize Btn_Browse}" Margin="6,0,0,0"
+                                                Command="{Binding SettingsVm.BrowseHostPathCommand}"
+                                                Background="{DynamicResource CardBackgroundBrush}" 
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
+                                                Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"/>
+                                    </Grid>
+                                    <TextBlock Text="{conv:Localize Shell_HostPathHint}" 
+                                               FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,6"/>
+
                                     <WrapPanel Orientation="Horizontal" IsEnabled="{Binding !SettingsVm.IsServiceBusy}">
-                                        <Button Content="⚙ Login" 
+                                        <Button Content="{conv:Localize Service_BtnLogin}" 
                                                 Command="{Binding SettingsVm.ConfigureLoginCommand}" 
                                                 Background="{DynamicResource CardBackgroundBrush}" 
                                                 Foreground="{DynamicResource TextSecondaryBrush}" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
                                                 IsVisible="{Binding !SettingsVm.IsServiceInstalled}"/>
-                                        <Button Content="📦 Install" 
+                                        <Button Content="{conv:Localize Service_BtnInstall}" 
                                                 Command="{Binding SettingsVm.InstallServiceCommand}" 
                                                 Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
                                                 IsVisible="{Binding !SettingsVm.IsServiceInstalled}"/>
-                                        <Button Content="▶ Start" 
+                                        <Button Content="{conv:Localize Btn_Start}" 
                                                 Command="{Binding SettingsVm.StartServiceCommand}" 
                                                 Background="#22C55E" Foreground="#1A1A1A" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
                                                 IsVisible="{Binding SettingsVm.IsServiceInstalled}" 
                                                 IsEnabled="{Binding !SettingsVm.IsServiceRunning}"/>
-                                        <Button Content="⏹ Stop" 
+                                        <Button Content="{conv:Localize Btn_Stop}" 
                                                 Command="{Binding SettingsVm.StopServiceCommand}" 
                                                 Background="#F59E0B" Foreground="#1A1A1A" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
                                                 IsVisible="{Binding SettingsVm.IsServiceInstalled}" 
                                                 IsEnabled="{Binding SettingsVm.IsServiceRunning}"/>
-                                        <Button Content="🗑 Remove" 
+                                        <Button Content="{conv:Localize Service_BtnRemove}" 
                                                 Command="{Binding SettingsVm.UninstallServiceCommand}" 
                                                 Background="#3A1A1A" Foreground="#FF6B6B" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
@@ -642,21 +662,21 @@
                                             CornerRadius="8" Padding="12" 
                                             BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                         <StackPanel Spacing="8">
-                                            <TextBlock Text="Username" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock Text="{conv:Localize Settings_Username}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                             <TextBox Text="{Binding SettingsVm.ServiceUsername}" 
                                                      Background="{DynamicResource GlassBaseDarkBrush}" 
                                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                                      BorderBrush="{DynamicResource CardBorderBrush}" 
                                                      CornerRadius="6" Padding="8,6" FontSize="12" FontFamily="Consolas, monospace" 
-                                                     Watermark=".\Username"/>
-                                            <TextBlock Text="Password" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                     Watermark="{conv:Localize Shell_UsernameWatermark}"/>
+                                            <TextBlock Text="{conv:Localize Settings_Password}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                             <TextBox PasswordChar="●" Text="{Binding SettingsVm.ServicePassword}" 
                                                      Background="{DynamicResource GlassBaseDarkBrush}" 
                                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                                      BorderBrush="{DynamicResource CardBorderBrush}" 
                                                      CornerRadius="6" Padding="8,6" FontSize="12" 
-                                                     Watermark="Windows password"/>
-                                            <Button Content="Apply" 
+                                                     Watermark="{conv:Localize Shell_PasswordWatermark}"/>
+                                            <Button Content="{conv:Localize Btn_Apply}" 
                                                     Command="{Binding SettingsVm.ApplyLoginCommand}" 
                                                     Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" 
                                                     Padding="12,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" 
@@ -681,9 +701,9 @@
                             <!-- ═══ PINNED SENSORS ═══ -->
                             <Border Classes="glass-card" Padding="16">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="PINNED SENSORS" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{conv:Localize Settings_PinnedSensors}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                                    <TextBlock Text="Pin sensors from the Sensor Workspace to show on Home." 
+                                    <TextBlock Text="{conv:Localize Settings_PinnedSensorsDesc}" 
                                                FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic"
                                                IsVisible="{Binding !SettingsVm.AvailableSensors.Count}"/>
                                     <ItemsControl ItemsSource="{Binding SettingsVm.AvailableSensors}">
@@ -700,7 +720,7 @@
                             </Border>
 
                             <!-- Reset -->
-                            <Button Content="Reset to Defaults" 
+                            <Button Content="{conv:Localize Custom_Reset}" 
                                     Command="{Binding CustomizationVm.ResetToDefaultCommand}" 
                                     HorizontalAlignment="Center" 
                                     Foreground="{DynamicResource TextMutedBrush}" FontSize="11" 
@@ -756,7 +776,7 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
-                            <TextBlock Text="WELCOME" FontSize="12" FontWeight="Bold"
+                            <TextBlock Text="{conv:Localize Shell_Welcome}" FontSize="12" FontWeight="Bold"
                                        Foreground="{DynamicResource AccentPrimaryBrush}"
                                        LetterSpacing="5"
                                        HorizontalAlignment="Center"/>
@@ -764,7 +784,7 @@
                                 <TextBlock Text="REM" FontSize="44" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <TextBlock Text="EX" FontSize="44" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                             </StackPanel>
-                            <TextBlock Text="Remote Execution Command Center"
+                            <TextBlock Text="{conv:Localize Shell_Subtitle}"
                                        FontSize="13"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        HorizontalAlignment="Center"/>
@@ -772,7 +792,7 @@
                                          Width="280"
                                          Height="6"
                                          Margin="0,10,0,0"/>
-                            <TextBlock Text="Initializing dashboard..."
+                            <TextBlock Text="{conv:Localize Shell_Initializing}"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextMutedBrush}"
                                        HorizontalAlignment="Center"/>
@@ -798,87 +818,156 @@
                         <StackPanel Spacing="16">
                             <!-- Header with Skip -->
                             <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="GETTING STARTED" FontSize="11" FontWeight="Bold"
+                                <TextBlock Text="{conv:Localize Tutorial_Header}" FontSize="11" FontWeight="Bold"
                                            Foreground="{DynamicResource AccentPrimaryBrush}"
                                            LetterSpacing="3" VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Content="Skip ✕"
+                                <Button Grid.Column="1" Content="{conv:Localize Tutorial_Skip}"
                                         Command="{Binding TutorialSkipCommand}"
                                         Background="Transparent" Foreground="#8888CC"
                                         FontSize="12" FontWeight="SemiBold"
                                         Padding="8,4" CornerRadius="6" Cursor="Hand"
                                         BorderThickness="0"
-                                        ToolTip.Tip="Skip the tutorial — you can replay it from Settings"/>
+                                        ToolTip.Tip="{conv:Localize Tutorial_SkipTooltip}"/>
                             </Grid>
 
                             <!-- Page 0: Welcome -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=0}">
                                 <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Welcome to RemEx" FontSize="22" FontWeight="Black"
+                                <TextBlock Text="{conv:Localize Tutorial_P0_Title}" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="RemEx is your remote PC management command center. Monitor system telemetry, launch applications, manage tasks, and stream your desktop — all from one place."/>
+                                           Text="{conv:Localize Tutorial_P0_Body}"/>
                             </StackPanel>
 
-                            <!-- Page 1: Host Required -->
+                            <!-- Page 1: How It Works -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=1}">
-                                <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Connect to a RemEx Host" FontSize="22" FontWeight="Black"
+                                <TextBlock Text="🔗" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P1_Title}" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="This desktop client connects to a RemEx Host running on a target PC. The host provides telemetry, process control, app launching, and screen capture."/>
+                                           Text="{conv:Localize Tutorial_P1_Body1}"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="If you're running this client on the same machine, the embedded host starts automatically. For a remote PC, install Remex.Host separately — it's self-contained (no extra runtimes needed)."/>
-                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
-                                           Text="Download from: github.com/clindsay94/RemEx/releases"/>
+                                           Text="{conv:Localize Tutorial_P1_Body2}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap" TextAlignment="Center"
+                                               Text="{conv:Localize Tutorial_P1_Diagram}"/>
+                                </Border>
                             </StackPanel>
 
-                            <!-- Page 2: Auto-Discovery -->
+                            <!-- Page 2: Service Setup (Windows) -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=2}">
-                                <TextBlock Text="📡" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Auto-Discovery" FontSize="22" FontWeight="Black"
+                                <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P2_Title}" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="Click 'Discover' in Settings → Connection to auto-find a running RemEx Host on your local network via mDNS. The host address will be filled in automatically."/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="Both machines must be on the same LAN / Wi-Fi network. If discovery doesn't work, enter the host address manually (e.g. ws://192.168.1.42:5005/ws)."/>
+                                           Text="{conv:Localize Tutorial_P2_Body1}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                               Text="{conv:Localize Tutorial_P2_Steps}"/>
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P2_Note}"/>
                             </StackPanel>
 
-                            <!-- Page 3: Finding Your IP -->
+                            <!-- Page 3: Service Setup (Linux) -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=3}">
-                                <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Finding the Host IP" FontSize="22" FontWeight="Black"
+                                <TextBlock Text="🐧" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P3_Title}" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="If auto-discovery isn't available, find the target PC's local IP:"/>
+                                           Text="{conv:Localize Tutorial_P3_Body1}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                               Text="{conv:Localize Tutorial_P3_Steps}"/>
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P3_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P3_Link}"/>
+                            </StackPanel>
+
+                            <!-- Page 4: HWInfo Setup -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}">
+                                <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P4_Title}" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P4_Body1}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                               Text="{conv:Localize Tutorial_P4_Steps}"/>
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FFAA44" FontStyle="Italic" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P4_Warning}"/>
+                            </StackPanel>
+
+                            <!-- Page 5: Sensors Overview -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=5}">
+                                <TextBlock Text="📡" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P5_Title}" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P5_Body1}"/>
                                 <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
                                     <StackPanel Spacing="8">
                                         <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
-                                                   Text="Windows: Open CMD → ipconfig → look for 'IPv4 Address'"/>
+                                                   Text="{conv:Localize Tutorial_P5_HWInfo}"/>
                                         <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
-                                                   Text="macOS: System Settings → Network, or: ipconfig getifaddr en0"/>
-                                        <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
-                                                   Text="Linux: ip addr  or  hostname -I"/>
+                                                   Text="{conv:Localize Tutorial_P5_BuiltIn}"/>
                                     </StackPanel>
                                 </Border>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="Then enter ws://&lt;IP&gt;:5005/ws in Settings → Connection."/>
+                                           Text="{conv:Localize Tutorial_P5_Body2}"/>
                             </StackPanel>
 
-                            <!-- Page 4: You're Ready -->
-                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}">
+                            <!-- Page 6: App Launcher -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=6}">
                                 <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="You're All Set!" FontSize="22" FontWeight="Black"
+                                <TextBlock Text="{conv:Localize Tutorial_P6_Title}" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="Use the sidebar to navigate between Home, Sensor Workspace, Remote Control, App Launcher, Task Manager, and Remote Desktop."/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="Open Settings (⚙) to customise your theme, layout grid, connection, and pin sensors to the Home screen."/>
+                                           Text="{conv:Localize Tutorial_P6_Body1}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                               Text="{conv:Localize Tutorial_P6_Steps}"/>
+                                </Border>
                                 <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
-                                           Text="You can replay this tutorial anytime from Settings."/>
+                                           Text="{conv:Localize Tutorial_P6_Note}"/>
+                            </StackPanel>
+
+                            <!-- Page 7: Network & Discovery -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=7}">
+                                <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P7_Title}" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P7_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P7_Body2}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                               Text="{conv:Localize Tutorial_P7_IpSteps}"/>
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P7_Body3}"/>
+                            </StackPanel>
+
+                            <!-- Page 8: You're All Set -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=8}">
+                                <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P8_Title}" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P8_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P8_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P8_Replay}"/>
                             </StackPanel>
 
                             <!-- Page indicator dots -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,4,0,0">
+                                <!-- Pages 0-8 -->
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=0}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
@@ -889,23 +978,31 @@
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=3}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=4}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=5}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=6}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=7}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=8}"/>
                             </StackPanel>
 
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
-                                <Button Grid.Column="0" Content="← Back"
+                                <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}"
                                         Command="{Binding TutorialPreviousCommand}"
                                         IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}"
                                         Background="#2A2A4A" Foreground="#C0C0FF"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="SemiBold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="Next →"
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}"
                                         Command="{Binding TutorialNextCommand}"
-                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=4}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=8}"
                                         Background="#4A3AFF" Foreground="White"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="Bold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="Get Started ✓"
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}"
                                         Command="{Binding TutorialFinishCommand}"
                                         IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}"
                                         Background="#4ADE80" Foreground="#1A1A1A"
@@ -934,7 +1031,7 @@
                                 <Border Classes="nav-pill" />
                                 <PathIcon Data="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" Width="24" Height="24" HorizontalAlignment="Center" />
                             </Panel>
-                            <TextBlock Text="Home" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{conv:Localize Nav_Home}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -946,7 +1043,7 @@
                                 <Border Classes="nav-pill" />
                                 <PathIcon Data="M19.03 7.39l1.42-1.42c-4.3-4.29-11.41-4.29-15.71 0l1.42 1.42c3.52-3.51 9.34-3.51 12.87 0zM12 17c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" Width="24" Height="24" HorizontalAlignment="Center" />
                             </Panel>
-                            <TextBlock Text="Sensors" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{conv:Localize Nav_Sensors}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -958,7 +1055,7 @@
                                 <Border Classes="nav-pill" />
                                 <PathIcon Data="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" Width="24" Height="24" HorizontalAlignment="Center" />
                             </Panel>
-                            <TextBlock Text="Remote" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{conv:Localize Nav_Remote}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -970,7 +1067,7 @@
                                 <Border Classes="nav-pill" />
                                 <PathIcon Data="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" Width="24" Height="24" HorizontalAlignment="Center" />
                             </Panel>
-                            <TextBlock Text="Launch" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{conv:Localize Nav_Launch}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -982,7 +1079,7 @@
                                 <Border Classes="nav-pill" />
                                 <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" Width="24" Height="24" HorizontalAlignment="Center" />
                             </Panel>
-                            <TextBlock Text="Tasks" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{conv:Localize Nav_Tasks}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </UniformGrid>

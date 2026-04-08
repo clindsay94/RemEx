@@ -6,6 +6,89 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.7.0] - 2026-04-08
+
+> **"Polish Overhaul"** — 4-phase quality pass across the desktop client, host, and tooling.
+
+### Added
+
+**Phase 1 — Service Installation Robustness + Session 0 Handling**
+
+- **Multi-strategy host binary resolution** — `FindHostExePath()` tries 5 strategies in order: user-configured path, adjacent directory, sibling subfolder, parent-level sibling, dev-time publish output. Replaces the broken `GetPublishDir()` which only worked during development.
+- **Host version verification** — `VerifyHostVersion()` compares `FileVersionInfo` of the found host binary against the running client assembly version and warns on mismatch.
+- **Host Binary Path UI** — new text input + Browse button in the Windows Service section of Settings. Persisted to `DashboardProfile.HostPath`.
+- **Session 0 detection** — warns when the desktop client is running in a non-interactive Windows Service session (Session 0), where screen capture and app launching may not work as expected.
+- **`install-service.ps1` improvements** — multi-strategy path resolution matching the client, plus `-HostPath` parameter for explicit override.
+
+**Phase 2 — Sensor UX Improvements + Remote Desktop Bug Fix**
+
+- **`SensorReading.Source` property** — new `Source` field on `SensorReading` in `TelemetryPayload.cs`, tagged as `"HWInfo"`, `"WindowsPerf"`, or `"Linux"` at the telemetry service level.
+- **Sensor source badges** — `SensorPinItem` carries `Source` info; Settings panel sensor list shows source indicators.
+- **HWInfo info tooltip** — hover info near the PINNED SENSORS header explaining HWInfo setup, sensor counts, and the 12-hour shared memory timeout.
+- **Scrollable sensor list** — `ItemsControl` for pinned sensors wrapped in a `ScrollViewer` with `MaxHeight="350"` for large sensor collections.
+- **DXGI Desktop Duplication** (`DxgiDesktopCapture.cs`) — new GPU-accelerated screen capture implementation using the Windows Desktop Duplication API for lower latency and CPU usage.
+- **`DashboardLayoutService` exposed** — `ShellViewModel.LayoutService` public property allows child VMs to read persisted stream settings.
+
+**Phase 3 — Desktop Tutorial Overhaul**
+
+- **9-page interactive tutorial** — replaced the generic 5-page walkthrough with a comprehensive host-centric guide:
+  - Page 0: Welcome to RemEx
+  - Page 1: How It Works (architecture: PC = host, Android = client)
+  - Page 2: Windows Service Setup (install, configure login, auto-start)
+  - Page 3: Linux Service Setup (systemd commands, link to full guide)
+  - Page 4: HWInfo Integration (download, shared memory setup, 12-hour warning)
+  - Page 5: Sensor Monitoring (HWInfo 300+ sensors vs built-in basics)
+  - Page 6: App Launcher Setup (configure on desktop, use from mobile)
+  - Page 7: Network & Discovery (mDNS, manual IP lookup, connection URI)
+  - Page 8: You're All Set (feature overview, replay from Settings)
+- **Tutorial localization keys** — 40+ new `.resx` keys for all tutorial content across all 8 locale files.
+- **Skip tooltip** — tutorial skip button now shows "Skip the tutorial — you can replay it from Settings".
+
+**Phase 4 — Live Localization**
+
+- **`LocalizationService`** (`Remex.Client/Services/LocalizationService.cs`) — `INotifyPropertyChanged` singleton wrapping `Strings.ResourceManager` with a string indexer. On culture change, raises `PropertyChanged` for `""` and `"Item[]"` to refresh all XAML bindings live.
+- **`LocalizeExtension`** (`Remex.Client/Converters/LocalizeExtension.cs`) — XAML markup extension enabling `{local:Localize KEY}` syntax. Creates one-way bindings to the `LocalizationService` singleton.
+- **110 new resource keys** added to `Strings.resx` and all 7 locale `.resx` files covering tooltips, watermarks, section headers, and hint text across all views.
+- **`Strings.Designer.cs`** — 110 new strongly-typed static properties.
+
+### Changed
+
+**Phase 1**
+
+- `SettingsViewModel.cs` — rewrote `InstallServiceAsync()` to use `FindHostExePath()` instead of attempting `dotnet publish` from source.
+- `DashboardProfile.cs` — added `HostPath` property for persisted custom host binary path.
+- `scripts/install-service.ps1` — replaced hardcoded `$PublishDir` with multi-strategy resolution and `-HostPath` parameter.
+
+**Phase 2**
+
+- `RemoteDesktopViewModel.cs` — stream properties (`Quality`, `TargetFps`) now sync from `DashboardProfile` via `ShellViewModel.LayoutService` on construction. Settings panel sliders actually control the stream.
+- `ShellViewModel.cs` — exposed `LayoutService` as a public property for child VM access.
+- `WindowsTelemetryService.cs` — all `SensorReading` constructors include `Source = "WindowsPerf"` or `Source = "HWInfo"`; category-level deduplication removes Windows fallback sensors when HWInfo covers the same category.
+- `LinuxTelemetryService.cs` — all `SensorReading` constructors include `Source = "Linux"`.
+- `WindowsScreenCaptureService.cs` — updated to support DXGI desktop duplication alongside existing GDI capture.
+- `RemoteDesktopHandler.cs` — updated to handle new capture service capabilities.
+- `HostBootstrapper.cs` — registered new DXGI capture service.
+- `ShellView.axaml` — FPS slider `Maximum` raised from 60 to 120.
+- `SettingsView.axaml` — added `ScrollViewer` around sensor list, source badges, and HWInfo tooltip.
+
+**Phase 3**
+
+- `ShellView.axaml` — tutorial section (lines 784–918) completely rewritten with 9 pages of structured content, 9 page indicator dots, and updated navigation button conditions.
+- `ShellViewModel.cs` — `TutorialPageCount` changed from 5 to 9.
+
+**Phase 4**
+
+- **13 AXAML views fully localized** — replaced 316+ hardcoded English strings with `{local:Localize KEY}` bindings:
+  `ShellView` (112), `SettingsView` (45), `RemoteDesktopView` (23), `RemoteView` (20), `CanvasView` (20), `HomeView` (19), `DashboardView` (17), `CustomizationView` (14), `AddProgramWindow` (13), `AppLauncherView` (12), `TaskManagerView` (9), `MainView` (8), `TrayFlyoutWindow` (4)
+- `SettingsViewModel.cs` — `OnLanguageChanged()` calls `LocalizationService.Instance.SetCulture()` for instant live switching; `InitializeAsync()` sets initial culture from saved preference.
+- Removed "Takes effect on next launch" restart note from `SettingsView.axaml` and `ShellView.axaml` — language changes are now live.
+
+### Fixed
+
+- **Stream settings bug** (Phase 2) — Settings panel Quality/FPS/Scale sliders were completely disconnected from the actual remote desktop stream. `RemoteDesktopViewModel` had independent properties that ignored `DashboardProfile` values. Now synced on construction.
+
+---
+
 ## [1.1.1] - 2026-04-02
 
 ### Added

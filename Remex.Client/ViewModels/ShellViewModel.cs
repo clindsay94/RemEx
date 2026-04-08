@@ -22,6 +22,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private static readonly Random _rng = new();
     private bool _welcomeSplashStarted;
 
+    /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
+    public DashboardLayoutService LayoutService => _layoutService;
+
     /// <summary>Helper property for Android-specific UI logic.</summary>
     public bool IsAndroid => OperatingSystem.IsAndroid();
 
@@ -79,7 +82,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private int _tutorialPageIndex;
 
     /// <summary>Total number of tutorial pages.</summary>
-    public int TutorialPageCount => 5;
+    public int TutorialPageCount => 9;
 
     /// <summary>
     /// When true, a dismissible banner is shown at the top of the content area informing

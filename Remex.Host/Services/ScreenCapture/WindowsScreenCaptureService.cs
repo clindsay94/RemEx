@@ -13,9 +13,10 @@ using Remex.Core.Services;
 namespace Remex.Host.Services.ScreenCapture;
 
 [SupportedOSPlatform("windows")]
-public class WindowsScreenCaptureService : IScreenCaptureService
+public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 {
     private readonly ILogger<WindowsScreenCaptureService> _logger;
+    private readonly DxgiDesktopCapture _dxgi;
     private bool _session0Warned;
 
     public WindowsScreenCaptureService(ILogger<WindowsScreenCaptureService> logger)
@@ -30,6 +31,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService
                 "Running in Session 0 (non-interactive). Screen capture will NOT work. " +
                 "Run the Remex Desktop app interactively, or configure the service to log on as a user.");
         }
+
+        // Initialize DXGI Desktop Duplication. Falls back gracefully to GDI if unavailable.
+        _dxgi = new DxgiDesktopCapture(logger);
+        if (_dxgi.IsAvailable)
+            _logger.LogInformation("DXGI Desktop Duplication initialized ({W}x{H}). MPO/overlay planes will be captured correctly.", _dxgi.Width, _dxgi.Height);
+        else
+            _logger.LogWarning("DXGI Desktop Duplication unavailable — falling back to GDI CopyFromScreen. Windows Terminal focus bug may occur.");
     }
 
     public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
@@ -37,6 +45,21 @@ public class WindowsScreenCaptureService : IScreenCaptureService
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
 
+        ct.ThrowIfCancellationRequested();
+
+        // ── Primary path: DXGI Desktop Duplication ──────────────────────────────
+        // Correctly captures GPU-composited content including hardware overlay planes
+        // (MPO) used by Windows Terminal, Chrome GPU compositing, and DirectX apps —
+        // which GDI BitBlt/CopyFromScreen cannot capture.
+        if (_dxgi.IsAvailable)
+        {
+            var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder());
+            if (dxgiFrame is { Length: > 0 })
+                return Task.FromResult(dxgiFrame);
+        }
+
+        // ── Fallback path: GDI CopyFromScreen ───────────────────────────────────
+        // Cannot capture MPO planes but works for standard windows when DXGI is unavailable.
         try
         {
             int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -106,8 +129,12 @@ public class WindowsScreenCaptureService : IScreenCaptureService
 
     public (int Width, int Height) GetScreenSize()
     {
+        if (_dxgi.IsAvailable && _dxgi.Width > 0 && _dxgi.Height > 0)
+            return (_dxgi.Width, _dxgi.Height);
         return (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
     }
+
+    public void Dispose() => _dxgi.Dispose();
 
     private static ImageCodecInfo GetJpegEncoder()
     {

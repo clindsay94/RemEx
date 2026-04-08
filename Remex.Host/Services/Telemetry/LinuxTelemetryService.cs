@@ -37,10 +37,10 @@ public class LinuxTelemetryService : ITelemetryService
 
         var sensors = new System.Collections.Generic.List<SensorReading>
         {
-            new() { Name = "Total CPU Usage", Value = cpuResult, Unit = "%", Category = "CPU" },
-            new() { Name = "Physical Memory Used", Value = ramResult.used, Unit = "GB", Category = "Memory" },
-            new() { Name = "Physical Memory Available", Value = ramResult.total - ramResult.used, Unit = "GB", Category = "Memory" },
-            new() { Name = "Physical Memory Load", Value = (ramResult.used / ramResult.total) * 100.0, Unit = "%", Category = "Memory" }
+            new() { Name = "Total CPU Usage", Value = cpuResult, Unit = "%", Category = "CPU", Source = "Linux" },
+            new() { Name = "Physical Memory Used", Value = ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux" },
+            new() { Name = "Physical Memory Available", Value = ramResult.total - ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux" },
+            new() { Name = "Physical Memory Load", Value = (ramResult.used / ramResult.total) * 100.0, Unit = "%", Category = "Memory", Source = "Linux" }
         };
 
         return new TelemetryPayload

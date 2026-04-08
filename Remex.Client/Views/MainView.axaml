@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Remex.Client.ViewModels"
+             xmlns:local="clr-namespace:Remex.Client.Converters"
              x:Class="Remex.Client.Views.MainView"
              x:DataType="vm:ConnectionViewModel">
 
@@ -13,24 +14,24 @@
                     VerticalAlignment="Center">
 
             <!-- Title -->
-            <TextBlock Text="Remex — Ping / Pong"
+            <TextBlock Text="{local:Localize Main_Title}"
                        FontSize="24" FontWeight="Bold"
                        HorizontalAlignment="Center" />
 
             <!-- Host address -->
             <TextBox Text="{Binding HostAddress}"
-                     Watermark="ws://host:5005/ws"
+                     Watermark="{local:Localize Main_HostWatermark}"
                      IsEnabled="{Binding !IsConnected}" />
 
             <!-- Action buttons -->
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
-                <Button Content="Connect"
+                <Button Content="{local:Localize Btn_Connect}"
                         Command="{Binding ConnectCommand}"
                         Classes="accent" />
-                <Button Content="Ping"
+                <Button Content="{local:Localize Btn_Ping}"
                         Command="{Binding SendPingCommand}" />
-                <Button Content="Disconnect"
+                <Button Content="{local:Localize Btn_Disconnect}"
                         Command="{Binding DisconnectCommand}" />
             </StackPanel>
 
@@ -39,11 +40,11 @@
                     CornerRadius="8" Padding="16">
                 <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Status:" FontWeight="SemiBold" />
+                        <TextBlock Text="{local:Localize Main_Status}" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding StatusText}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Latency:" FontWeight="SemiBold" />
+                        <TextBlock Text="{local:Localize Main_Latency}" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding LatencyText}" />
                     </StackPanel>
                 </StackPanel>

@@ -2,20 +2,21 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:models="using:Remex.Client.Models"
+    xmlns:local="clr-namespace:Remex.Client.Converters"
     x:Class="Remex.Client.Views.CustomizationView" x:DataType="vm:CustomizationViewModel">
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24">
 
             <!-- ═══ Header ═══ -->
-            <Button Content="← Command Center" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="{local:Localize Custom_Back}" Command="{Binding NavigateBackCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" FontSize="13" FontWeight="SemiBold" Padding="0" BorderThickness="0" Cursor="Hand"/>
             <StackPanel Spacing="4">
-                <TextBlock Text="🎨  CUSTOMIZATION" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <TextBlock Text="THEMES &amp; ENGINE PRESETS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Text="{local:Localize Custom_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{local:Localize Custom_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
             <!-- ═══ Section 1: Presets ═══ -->
-            <TextBlock Text="BASE PRESETS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="4">
                 <!-- Base Dark Glass -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
@@ -50,10 +51,10 @@
             <!-- ═══ Section 2: Advanced Overrides ═══ -->
             <Border Classes="glass-card" Padding="24">
                 <StackPanel Spacing="20">
-                    <TextBlock Text="ADVANCED FINE-TUNING" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Custom_AdvancedTuning}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                     
                     <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="Corner Radius" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -61,7 +62,7 @@
                     </Grid>
 
                     <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="Remote Card Shape" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Custom_RemoteCardShape}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="200" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding RemoteCardCornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -69,7 +70,7 @@
                     </Grid>
 
                     <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="Glass Opacity" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -77,7 +78,7 @@
                     </Grid>
 
                     <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="Glow Strength" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding GlowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -87,7 +88,7 @@
                     <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
                     <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="Accent Color" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Custom_AccentColor}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                             <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF"/>
                             <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF"/>
@@ -103,9 +104,9 @@
             <!-- ═══ Section 3: Atmosphere ═══ -->
             <Border Classes="glass-card" Padding="24">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="CANVAS ATMOSPHERE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Custom_Atmosphere}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                     <Grid ColumnDefinitions="*,2*">
-                        <TextBlock Text="Background Mode" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Custom_BackgroundMode}" VerticalAlignment="Center"/>
                         <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" HorizontalAlignment="Left" Width="200">
                             <x:String>Mica</x:String>
                             <x:String>Acrylic</x:String>
@@ -116,7 +117,7 @@
                 </StackPanel>
             </Border>
 
-            <Button Content="Reset to Theme Defaults" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
+            <Button Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
 
         </StackPanel>
     </ScrollViewer>

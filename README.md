@@ -9,7 +9,7 @@
 [![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.1.0-FF6B6B)](#)
+[![Version](https://img.shields.io/badge/Version-1.7.0-FF6B6B)](#)
 
 A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · App launcher · Process manager\
@@ -41,6 +41,8 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 - **Theme engine** — swap between BaseDarkGlass, CyberNOC, Monolith, and SolarFlare at runtime; override accent color, corner radius, glass opacity, and glow strength
 - **DashboardBackground** — choose from solid, gradient, or animated canvas backgrounds
 - **Home screen** — NOC-style overview with connection status, quick-action pills, and pinned live sensor cards
+- **Live localization** — switch UI language at runtime without restarting; 8 locales supported (en, es, hi, id, pl, pt-BR, tr, uk). All 13 AXAML views are fully localized via a `LocalizationService` singleton and `{local:Localize KEY}` markup extension
+- **Interactive tutorial** — 9-page first-run walkthrough covering architecture overview, Windows service installation, Linux systemd setup, HWInfo configuration, sensor monitoring, app launcher setup, and network discovery
 
 ### 📱 Native Android App (Kotlin / Compose)
 
@@ -54,14 +56,19 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 ### 📡 Real-Time Telemetry
 
 - **HWiNFO** (Windows) / **lmsensors** (Linux) sensor data streamed over WebSocket
+- **Source identification** — each sensor reading is tagged with its source (`HWInfo`, `WindowsPerf`, or `Linux`); source badges shown in the sensor list
+- **Smart deduplication** — when HWInfo is active, overlapping Windows Performance Counter sensors are automatically hidden at the category level
 - **Free-form canvas** — drag, resize, and arrange sensor cards on a 4 000 × 4 000 workspace
 - **Sparkline graphs** — bar, line, area, and gauge visualizations per sensor (with brush/pen caching for performance)
 - **Pin to Home** — pin any sensor to the landing page for at-a-glance monitoring
+- **Scrollable sensor list** — Settings panel sensor list wraps in a `ScrollViewer` for large sensor counts, with HWInfo info tooltip
 - **mDNS service discovery** — the host advertises itself via mDNS so clients can auto-detect it on the local network without entering an IP
 
 ### 🖳 Remote Desktop
 
-- Live screen streaming over a dedicated WebSocket (`/ws/desktop`) with configurable JPEG quality, downscale factor, and target FPS
+- Live screen streaming over a dedicated WebSocket (`/ws/desktop`) with configurable JPEG quality, downscale factor, and target FPS (up to 120)
+- **DXGI desktop duplication** — GPU-accelerated screen capture on Windows using the Desktop Duplication API for low-latency, high-efficiency frame capture
+- **Settings-synced stream config** — Quality, FPS, and scale sliders in Settings now directly control the active stream (previously disconnected)
 - Touch & stylus input forwarding (mouse clicks, keyboard, S-Pen drag)
 - Fullscreen immersive mode with virtual cursor pad
 - Zoom/pan viewport for detail inspection
@@ -217,9 +224,12 @@ The host can run as a Windows Service that starts automatically at boot — no l
 .\scripts\install-service.ps1 -Action Install    # Install and start
 .\scripts\install-service.ps1 -Action Status     # Check status
 .\scripts\install-service.ps1 -Action Uninstall  # Remove
+.\scripts\install-service.ps1 -HostPath "C:\MyPath\Remex.Host.exe"  # Custom path
 ```
 
-> When the service is running, the desktop client detects the occupied port and connects to the existing host instead of starting its own. The service manager UI is accessible from the Settings panel.
+The desktop client uses multi-strategy host binary resolution: user-configured path → adjacent directory → sibling subfolder → parent-level sibling → dev-time publish output. You can set a custom host path in **Settings → Windows Service → Host Binary Path** with a file browser.
+
+> When the service is running, the desktop client detects the occupied port and connects to the existing host instead of starting its own. The service manager UI is accessible from the Settings panel. Session 0 detection warns when running in a non-interactive service context.
 
 ---
 

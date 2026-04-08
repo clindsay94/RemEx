@@ -2,6 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:conv="using:Remex.Client.Converters"
+    xmlns:local="clr-namespace:Remex.Client.Converters"
     xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
 
     <UserControl.Styles>
@@ -142,19 +143,19 @@
         <!-- ═══ Toolbar ═══ -->
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDark}" Padding="12 8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                <Button Classes="back-btn" Content="SENSOR WORKSPACE" IsHitTestVisible="False" Background="Transparent"/>
-                <TextBlock Grid.Column="1" Text="SENSOR WORKSPACE" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Classes="back-btn" Content="{local:Localize Canvas_Header}" IsHitTestVisible="False" Background="Transparent"/>
+                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <Button Grid.Column="3" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="💾" FontSize="14"/>
-                        <TextBlock Text="Save" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Save}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="4" Classes="back-btn" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="🔄" FontSize="14"/>
-                        <TextBlock Text="Sync" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="5" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}">
@@ -191,14 +192,14 @@
                             <ctrl:DraggableCard Width="{Binding Width}" Height="{Binding Height}">
                                 <ctrl:DraggableCard.ContextMenu>
                                     <ContextMenu IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
-                                        <MenuItem Header="📊 Graph Type">
+                                        <MenuItem Header="{local:Localize Canvas_GraphType}">
                                             <MenuItem Header="Auto (smart)" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto"/>
                                             <MenuItem Header="Bar ▮▮▮" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar"/>
                                             <MenuItem Header="Line ╱╲╱" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
                                             <MenuItem Header="Area ▓▓▓" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
                                             <MenuItem Header="Gauge ━━━" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
                                             <Separator/>
-                                            <MenuItem Header="📌 Toggle Pin to Home" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).TogglePinToHomeCommand}" CommandParameter="{Binding}"/>
+                                            <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).TogglePinToHomeCommand}" CommandParameter="{Binding}"/>
                                         </MenuItem>
                                     </ContextMenu>
                                 </ctrl:DraggableCard.ContextMenu>
@@ -206,7 +207,7 @@
                                 <Grid>
                                     <!-- ═══ CONNECTION ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
-                                        <TextBlock Text="Connection" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{local:Localize Canvas_Connection}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <Ellipse Width="10" Height="10">
                                                 <Ellipse.Fill>
@@ -220,26 +221,26 @@
 
                                     <!-- ═══ ACTIONS ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
-                                        <TextBlock Text="Actions" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                        <Button Classes="card-action card-action-accent" Content="⚡ Connect" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
-                                        <Button Classes="card-action" Content="✕ Cancel" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="White"/>
-                                        <Button Classes="card-action" Content="📡 Ping" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <Button Classes="card-action" Content="🔒 Lock PC" Command="{Binding Connection.LockCommand}"/>
-                                        <Button Classes="card-action" Content="🔧 Reboot to UEFI" Command="{Binding Connection.RestartToUefiCommand}"/>
-                                        <Button Classes="card-action" Content="✕ Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White"/>
+                                        <TextBlock Text="{local:Localize Canvas_Actions}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <Button Classes="card-action card-action-accent" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
+                                        <Button Classes="card-action" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="White"/>
+                                        <Button Classes="card-action" Content="{local:Localize Canvas_Ping}" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <Button Classes="card-action" Content="{local:Localize Canvas_LockPC}" Command="{Binding Connection.LockCommand}"/>
+                                        <Button Classes="card-action" Content="{local:Localize Canvas_RebootUefi}" Command="{Binding Connection.RestartToUefiCommand}"/>
+                                        <Button Classes="card-action" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White"/>
                                     </StackPanel>
 
                                     <!-- ═══ LATENCY ═══ -->
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsLatency}}">
-                                        <TextBlock Text="Latency" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{local:Localize Canvas_Latency}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                         <TextBlock Text="{Binding Connection.LatencyText}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,8,0,0">
                                             <StackPanel>
-                                                <TextBlock Text="AVG" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <TextBlock Text="{local:Localize Canvas_Avg}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                                                 <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
                                             </StackPanel>
                                             <StackPanel>
-                                                <TextBlock Text="MAX" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <TextBlock Text="{local:Localize Canvas_Max}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                                                 <TextBlock Foreground="{DynamicResource SystemError}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
                                             </StackPanel>
                                         </StackPanel>
@@ -294,7 +295,7 @@
             <Border Grid.Column="1" Background="{DynamicResource GlassBaseMediumBrush}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" Padding="12">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
-                        <TextBlock Text="ACTIVE SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                        <TextBlock Text="{local:Localize Canvas_ActiveSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                         <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
                             <ItemsControl ItemsSource="{Binding SensorActivationItems}">
@@ -313,7 +314,7 @@
                             </ItemsControl>
                         </Border>
 
-                        <TextBlock Text="NEW SENSORS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
+                        <TextBlock Text="{local:Localize Canvas_NewSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <ScrollViewer>
@@ -334,7 +335,7 @@
                                                 </TextBlock>
                                                 <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
-                                            <Button Classes="stage-btn" Content="+ Add Card" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
+                                            <Button Classes="stage-btn" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>

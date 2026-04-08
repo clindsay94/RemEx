@@ -73,6 +73,7 @@ fun RemoteDesktopScreen(
     
     var isStylusActive by remember { mutableStateOf(false) }
     var inputResetTrigger by remember { mutableIntStateOf(0) }
+    var cursorVisible by remember { mutableStateOf(false) }
 
     // Throttle movement events to 30Hz (33ms) to prevent socket overflow
     var lastMoveEventTime by remember { mutableLongStateOf(0L) }
@@ -173,6 +174,7 @@ fun RemoteDesktopScreen(
                         awaitPointerEventScope {
                             var isMouseDown = false
                             var hasMovedSignificantly = false
+                            var pressedButton = 0
                             var startTime = 0L
                             var lastDownPos = Offset.Zero
 
@@ -187,7 +189,7 @@ fun RemoteDesktopScreen(
                                     PointerEventType.Move -> {
                                         val now = System.currentTimeMillis()
                                         val hostPos = mapLocalToHost(change.position)
-                                        
+
                                         // Movement Throttle (30Hz)
                                         if (now - lastMoveEventTime >= 33) {
                                             if (isStylus) {
@@ -203,6 +205,7 @@ fun RemoteDesktopScreen(
                                             hasMovedSignificantly = true
                                         }
 
+                                        cursorVisible = true
                                         cursorX = change.position.x
                                         cursorY = change.position.y
                                     }
@@ -212,13 +215,17 @@ fun RemoteDesktopScreen(
                                         lastDownPos = change.position
                                         hasMovedSignificantly = false
                                         isMouseDown = true
+                                        cursorVisible = true
                                         cursorX = change.position.x
                                         cursorY = change.position.y
 
                                         if (isStylus) {
                                             val hostPos = mapLocalToHost(change.position)
-                                            viewModel.sendMouseDown(0, hostPos.x.toInt(), hostPos.y.toInt())
+                                            // S-Pen barrel button (side button) = right mouse button
+                                            pressedButton = if (change.buttons.isSecondaryPressed) 2 else 0
+                                            viewModel.sendMouseDown(pressedButton, hostPos.x.toInt(), hostPos.y.toInt())
                                         } else {
+                                            pressedButton = 0
                                             viewModel.sendMouseDown(0)
                                         }
                                     }
@@ -226,7 +233,9 @@ fun RemoteDesktopScreen(
                                     PointerEventType.Release -> {
                                         if (isMouseDown) {
                                             val duration = System.currentTimeMillis() - startTime
-                                            if (!hasMovedSignificantly && duration > 600) {
+                                            // Long press with no movement and left button pressed = right-click gesture
+                                            // (Barrel button already sent right-click on press; skip long-press check for it)
+                                            if (!hasMovedSignificantly && duration > 600 && pressedButton == 0) {
                                                 viewModel.sendMouseUp(0)
                                                 if (isStylus) {
                                                     val hostPos = mapLocalToHost(change.position)
@@ -236,25 +245,27 @@ fun RemoteDesktopScreen(
                                                 }
                                                 viewModel.sendMouseUp(2)
                                             } else {
-                                                viewModel.sendMouseUp(0)
+                                                viewModel.sendMouseUp(pressedButton)
                                             }
                                         }
                                         isMouseDown = false
+                                        pressedButton = 0
                                     }
 
                                     PointerEventType.Exit -> {
                                         if (isMouseDown) {
-                                            viewModel.sendMouseUp(0)
+                                            viewModel.sendMouseUp(pressedButton)
                                             viewModel.sendMouseUp(2)
                                         }
                                         isMouseDown = false
+                                        pressedButton = 0
                                     }
                                 }
                             }
                             } finally {
                                 // Scope cancelled (streaming stopped or input reset) — release any held buttons
                                 if (isMouseDown) {
-                                    viewModel.sendMouseUp(0)
+                                    viewModel.sendMouseUp(pressedButton)
                                     viewModel.sendMouseUp(2)
                                 }
                             }
@@ -319,7 +330,7 @@ fun RemoteDesktopScreen(
                         contentScale = ContentScale.Fit
                     )
 
-                    if (isStreaming) {
+                    if (isStreaming && cursorVisible) {
                         val cursorSizeDp = if (isStylusActive) 6.dp else 12.dp
                         Box(
                             modifier = Modifier

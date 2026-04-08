@@ -17,4 +17,10 @@ public record SensorReading
     public double Value { get; init; }
     public string Unit { get; init; } = string.Empty;
     public string Category { get; init; } = "Other";
+
+    /// <summary>
+    /// Telemetry data source: "HWInfo", "WindowsPerf", or "Linux".
+    /// Used to display source badges and to deduplicate overlapping sensors.
+    /// </summary>
+    public string Source { get; init; } = "Unknown";
 }

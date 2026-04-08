@@ -132,6 +132,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.ErrorReceived += OnErrorReceived;
         _desktopService.Disconnected += OnDisconnected;
         Connection.PropertyChanged += OnConnectionPropertyChanged;
+
+        // Sync stream defaults from persisted Settings panel values.
+        // Without this, the Quality/FPS sliders in Settings have no effect on the actual stream.
+        var profile = shell.LayoutService.CurrentProfile;
+        if (profile != null)
+        {
+            Quality = profile.StreamQuality;
+            TargetFps = profile.StreamFps;
+        }
     }
 
     // ═══════════════ Commands ═══════════════
