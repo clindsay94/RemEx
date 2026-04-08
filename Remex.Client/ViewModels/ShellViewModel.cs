@@ -151,17 +151,24 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     private async Task DismissWelcomeSplashAsync()
     {
-        await Task.Delay(1800).ConfigureAwait(false);
+        // Safety fallback — normally BootSequenceControl fires SequenceCompleted
+        await Task.Delay(6000).ConfigureAwait(false);
         Dispatcher.UIThread.Post(() =>
         {
-            ShowWelcomeSplash = false;
-            // Show tutorial on first run after the splash fades
-            if (!(_layoutService.CurrentProfile?.HasCompletedTutorial ?? false))
-            {
-                TutorialPageIndex = 0;
-                ShowTutorialOverlay = true;
-            }
+            if (ShowWelcomeSplash)
+                OnBootSequenceCompleted();
         });
+    }
+
+    public void OnBootSequenceCompleted()
+    {
+        ShowWelcomeSplash = false;
+        // Show tutorial on first run after the splash fades
+        if (!(_layoutService.CurrentProfile?.HasCompletedTutorial ?? false))
+        {
+            TutorialPageIndex = 0;
+            ShowTutorialOverlay = true;
+        }
     }
 
     [RelayCommand]

@@ -107,3 +107,5 @@ build/tmp-host-verify/
 *.lscache
 *.lscache
 Remex.Client.Desktop/Remex.Client.Desktop.csproj.lscache
+/.claude/agents
+/.claude/agent-memory

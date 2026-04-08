@@ -69,13 +69,12 @@ fun AppNavigation() {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
 
-    val splashShown by settingsManager.splashShownFlow.collectAsState(initial = null)
-    val hasCompletedOnboarding by settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
+        val hasCompletedOnboarding by settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
     // While DataStore hasn't loaded yet, show a plain background to avoid a
     // white flash before the correct start destination is chosen.
-    if (splashShown == null || hasCompletedOnboarding == null) {
+    if (hasCompletedOnboarding == null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -194,11 +193,7 @@ fun AppNavigation() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = when {
-                splashShown != true -> Screen.Splash.route
-                hasCompletedOnboarding != true -> Screen.Tutorial.route
-                else -> Screen.Dashboard.route
-            },
+            startDestination = Screen.Splash.route,
             modifier = Modifier.padding(if (showNav) innerPadding else PaddingValues(0.dp))
         ) {
             composable(Screen.Splash.route) {

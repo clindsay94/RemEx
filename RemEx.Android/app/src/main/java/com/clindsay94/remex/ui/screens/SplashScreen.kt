@@ -1,7 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -9,264 +11,426 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
-import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.random.Random
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
+import kotlin.math.PI
 
-private class ShapeActor(
-    val color: Color,
-    val initialSize: Float,
-) {
-    val pos = Animatable(Offset.Zero, Offset.VectorConverter)
-    val rotation = Animatable(Random.nextFloat() * 360f)
-    val morphProgress = Animatable(0f)
-    val currentSize = Animatable(initialSize)
-
-    var shapeIndex by mutableStateOf(0)
-    var targetShapeIndex by mutableStateOf(0)
-
-    var velX = Random.nextFloat() * 10f - 5f
-    var velY = Random.nextFloat() * 10f - 5f
-    var rotVel = Random.nextFloat() * 5f - 2.5f
-}
+private data class Particle(
+    var x: Float,
+    var y: Float,
+    var vx: Float,
+    var vy: Float,
+    var alpha: Float,
+    var lifetime: Float,
+    var maxLifetime: Float
+)
 
 @Composable
-fun SplashScreen(
-    onFinished: () -> Unit
-) {
+fun SplashScreen(onFinished: () -> Unit) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
-
-    val alphaAnim = remember { Animatable(0f) }
-    val settleProgress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.secondary
-    val tertiary = MaterialTheme.colorScheme.tertiary
-    val error = MaterialTheme.colorScheme.error
+    val background = MaterialTheme.colorScheme.background
+    val substrateColor = Color(0xFF050508)
+    val neonColor = primary.copy(alpha = 1f) // Theme-aware: uses Material primary color
 
-    // Shared flag so tap-to-skip and the normal animation path don't both call onFinished
-    var finishing by remember { mutableStateOf(false) }
+    var isSkipping by remember { mutableStateOf(false) }
+    val skipAlpha = remember { Animatable(1f) }
 
-    suspend fun finishSplash() {
-        if (finishing) return
-        finishing = true
-        settingsManager.markSplashShown()
-        alphaAnim.animateTo(0f, tween(600))
+    // Particle system state (12 ember particles)
+    val particles = remember {
+        val rng = java.util.Random(42L)
+        List(12) {
+            Particle(
+                x = rng.nextFloat(),         // normalized 0..1, resolved in canvas
+                y = 0.4f + rng.nextFloat() * 0.6f,
+                vx = (rng.nextFloat() - 0.5f) * 0.016f,
+                vy = -(0.02f + rng.nextFloat() * 0.02f),
+                alpha = rng.nextFloat() * 0.7f,
+                lifetime = rng.nextFloat() * 2.0f,
+                maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+            )
+        }.toMutableList()
+    }
+    var particleFrame by remember { mutableStateOf(0) }
+
+    suspend fun skipSplash() {
+        if (isSkipping) return
+        isSkipping = true
+        skipAlpha.animateTo(0f, tween(300, easing = LinearEasing))
         onFinished()
     }
 
-    BoxWithConstraints(
+    // Progress 0.0 to 1.0 (Scanline moving down)
+    val scanProgress = remember { Animatable(-0.2f) }
+    val waveProgress = remember { Animatable(-0.2f) }
+    
+    // Handshake states
+    val logoScale = remember { Animatable(1f) }
+    val logoElevation = remember { Animatable(10f) }
+    val fillScreenScale = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        // Particle update loop (~60fps until waveProgress > 0.5)
+        scope.launch {
+            val rng = java.util.Random(99L)
+            while (waveProgress.value < 0.5f && !isSkipping) {
+                val dt = 0.016f
+                for (p in particles) {
+                    p.lifetime += dt
+                    p.x += p.vx
+                    p.y += p.vy * dt
+                    val t = p.lifetime / p.maxLifetime
+                    p.alpha = when {
+                        t < 0.2f -> (t / 0.2f) * 0.7f
+                        t < 0.8f -> 0.7f
+                        else -> (1f - (t - 0.8f) / 0.2f) * 0.7f
+                    }
+                    if (p.lifetime >= p.maxLifetime) {
+                        p.x = rng.nextFloat()
+                        p.y = 0.4f + rng.nextFloat() * 0.6f
+                        p.vx = (rng.nextFloat() - 0.5f) * 0.016f
+                        p.vy = -(0.02f + rng.nextFloat() * 0.02f)
+                        p.lifetime = 0f
+                        p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+                    }
+                }
+                particleFrame++
+                delay(16L)
+            }
+        }
+
+        // Phase 2: Scanline
+        scope.launch {
+            scanProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
+        }
+        
+        // Phase 3: Materialization wave (delayed by 200ms)
+        delay(800)
+        if (!isSkipping) {
+            waveProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
+            
+            if (!isSkipping) {
+                // Phase 4: Handshake
+                // Scale down
+                scope.launch {
+                    logoElevation.animateTo(20f, tween(300, easing = FastOutSlowInEasing))
+                }
+                logoScale.animateTo(0.9f, tween(300, easing = FastOutSlowInEasing))
+                
+                if (!isSkipping) {
+                    // Snap & Expand
+                    scope.launch {
+                        logoElevation.animateTo(0f, tween(150))
+                    }
+                    logoScale.animateTo(1.1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+                    
+                    if (!isSkipping) {
+                        fillScreenScale.animateTo(1f, tween(500, easing = FastOutSlowInEasing))
+                        onFinished()
+                    }
+                }
+            }
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            // Tap anywhere to skip — uses detectTapGestures for a single
-            // onTap callback instead of a raw event loop (review fix).
+            .background(substrateColor)
             .pointerInput(Unit) {
                 detectTapGestures {
-                    scope.launch { finishSplash() }
+                    scope.launch { skipSplash() }
                 }
-            },
+            }
+            .alpha(skipAlpha.value),
         contentAlignment = Alignment.Center
     ) {
-        val widthPx = with(density) { maxWidth.toPx() }
-        val heightPx = with(density) { maxHeight.toPx() }
-        val center = Offset(widthPx / 2f, heightPx / 2f)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
 
-        val actors = remember(widthPx, heightPx) {
-            List(12) { _ ->
-                ShapeActor(
-                    color = listOf(primary, secondary, tertiary, error).random().copy(alpha = 0.85f),
-                    initialSize = Random.nextFloat() * 80f + 80f
-                ).apply {
-                    pos.updateBounds(Offset(0f, 0f), Offset(widthPx, heightPx))
-                    scope.launch {
-                        pos.snapTo(Offset(Random.nextFloat() * widthPx, Random.nextFloat() * heightPx))
-                    }
-                    shapeIndex = (0 until materialShapesList.size).random()
-                    targetShapeIndex = (0 until materialShapesList.size).random()
-                }
+            // 1. The Dark Substrate (Micro-grid)
+            val gridSize = 10.dp.toPx()
+            val gridColor = Color.White.copy(alpha = 0.05f)
+            for (x in 0..width.toInt() step gridSize.toInt()) {
+                drawLine(gridColor, Offset(x.toFloat(), 0f), Offset(x.toFloat(), height), 1f)
             }
-        }
-
-        LaunchedEffect(widthPx, heightPx) {
-            alphaAnim.animateTo(1f, tween(800))
-
-            // Bounce actors for 2.5s (reduced from 4s)
-            val startTime = System.currentTimeMillis()
-            while (System.currentTimeMillis() - startTime < 2500 && !finishing) {
-                actors.forEach { actor ->
-                    var newX = actor.pos.value.x + actor.velX
-                    var newY = actor.pos.value.y + actor.velY
-
-                    if (newX < 0 || newX > widthPx) {
-                        actor.velX *= -1
-                        newX = newX.coerceIn(0f, widthPx)
-                    }
-                    if (newY < 0 || newY > heightPx) {
-                        actor.velY *= -1
-                        newY = newY.coerceIn(0f, heightPx)
-                    }
-
-                    actor.pos.snapTo(Offset(newX, newY))
-                    actor.rotation.snapTo(actor.rotation.value + actor.rotVel)
-
-                    if (Random.nextFloat() < 0.03f && !actor.morphProgress.isRunning) {
-                        scope.launch {
-                            actor.targetShapeIndex = (0 until materialShapesList.size).random()
-                            actor.morphProgress.animateTo(1f, tween(600, easing = FastOutSlowInEasing))
-                            actor.shapeIndex = actor.targetShapeIndex
-                            actor.morphProgress.snapTo(0f)
-                        }
-                    }
-                }
-                delay(16)
+            for (y in 0..height.toInt() step gridSize.toInt()) {
+                drawLine(gridColor, Offset(0f, y.toFloat()), Offset(width, y.toFloat()), 1f)
             }
 
-            if (!finishing) {
-                // Settle with spring
-                settleProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
+            val scanY = height * scanProgress.value
+            val waveY = height * waveProgress.value
+
+            // 1b. Radial grid: 4 concentric circles + 8 radial lines (revealed by scanline)
+            val radialColor = neonColor.copy(alpha = 0.03f)
+            val maxRadius = minOf(width, height) * 0.45f
+            val radialFractions = listOf(0.25f, 0.45f, 0.65f, 0.85f)
+            for (rf in radialFractions) {
+                val rad = rf * maxRadius
+                // Only draw ring if its center region is above scanY
+                if (center.y - rad < scanY) {
+                    drawCircle(
+                        color = radialColor,
+                        radius = rad,
+                        center = center,
+                        style = Stroke(width = 1f)
                     )
+                }
+            }
+            // 8 radial lines at 45° increments
+            for (i in 0 until 8) {
+                val angle = i * (PI / 4).toFloat()
+                val ex = center.x + maxRadius * cos(angle)
+                val ey = center.y + maxRadius * sin(angle)
+                // Draw if the far endpoint region is above scanY
+                if (minOf(center.y, ey) < scanY) {
+                    drawLine(
+                        color = radialColor,
+                        start = center,
+                        end = Offset(ex, ey),
+                        strokeWidth = 1f
+                    )
+                }
+            }
+
+            // 1c. Particle embers (only while waveProgress is early)
+            if (waveProgress.value < 0.5f) {
+                @Suppress("UNUSED_EXPRESSION")
+                particleFrame // read state so recomposition triggers on update
+                for (p in particles) {
+                    if (p.alpha > 0.02f) {
+                        drawCircle(
+                            color = neonColor.copy(alpha = p.alpha),
+                            radius = 1.5.dp.toPx(),
+                            center = Offset(p.x * width, p.y * height)
+                        )
+                    }
+                }
+            }
+
+            val baseLogoSize = 140.dp.toPx()
+            val logoSize = baseLogoSize * logoScale.value
+            val half = logoSize / 2f
+            val logoRectX = center.x - half
+            val logoRectY = center.y - half
+
+            // Closure to draw Wireframe
+            val drawWireframe = {
+                // Monitor Frame
+                drawRoundRect(
+                    color = neonColor,
+                    topLeft = Offset(center.x - logoSize * 0.6f, center.y - logoSize * 0.4f),
+                    size = Size(logoSize * 1.2f, logoSize * 0.7f),
+                    cornerRadius = CornerRadius(logoSize * 0.1f),
+                    style = Stroke(width = 3.dp.toPx())
                 )
-                delay(1000)
-                finishSplash()
-            }
-        }
-
-        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize().alpha(alphaAnim.value)) {
-            actors.forEach { actor ->
-                val currentPos = if (settleProgress.value > 0.01f) {
-                    Offset(
-                        x = lerp(actor.pos.value.x, center.x, settleProgress.value),
-                        y = lerp(actor.pos.value.y, center.y, settleProgress.value)
-                    )
-                } else {
-                    actor.pos.value
-                }
-
-                val currentSize = if (settleProgress.value > 0.01f) {
-                    lerp(actor.currentSize.value, 220.dp.toPx(), settleProgress.value)
-                } else {
-                    actor.currentSize.value
-                }
-
-                val currentRotation = if (settleProgress.value > 0.01f) {
-                    lerp(actor.rotation.value, 0f, settleProgress.value)
-                } else {
-                    actor.rotation.value
-                }
-
-                val startPoly = materialShapesList[actor.shapeIndex]
-                val endPoly = materialShapesList[actor.targetShapeIndex]
-
-                drawIntoCanvas { canvas ->
-                    val nativeCanvas = canvas.nativeCanvas
-                    val checkpoint = nativeCanvas.save()
-
-                    nativeCanvas.translate(currentPos.x, currentPos.y)
-                    nativeCanvas.rotate(currentRotation)
-                    nativeCanvas.scale(currentSize, currentSize)
-
-                    val composePath = androidx.compose.ui.graphics.Path()
-                    val morphObj = androidx.graphics.shapes.Morph(startPoly, endPoly)
-                    morphObj.asComposePath(actor.morphProgress.value, composePath)
-
-                    canvas.drawPath(composePath, androidx.compose.ui.graphics.Paint().apply {
-                        color = actor.color
-                        alpha = if (settleProgress.value > 0.6f) (1f - settleProgress.value) * 2.5f.coerceIn(0f, 1f) else 1f
-                    })
-
-                    nativeCanvas.restoreToCount(checkpoint)
-                }
+                // Monitor Stand
+                drawLine(
+                    color = neonColor,
+                    start = Offset(center.x, center.y + logoSize * 0.3f),
+                    end = Offset(center.x, center.y + logoSize * 0.5f),
+                    strokeWidth = 6.dp.toPx()
+                )
+                drawLine(
+                    color = neonColor,
+                    start = Offset(center.x - logoSize * 0.2f, center.y + logoSize * 0.5f),
+                    end = Offset(center.x + logoSize * 0.2f, center.y + logoSize * 0.5f),
+                    strokeWidth = 4.dp.toPx()
+                )
+                // Phone
+                drawRoundRect(
+                    color = neonColor,
+                    topLeft = Offset(center.x + logoSize * 0.3f, center.y + logoSize * 0.1f),
+                    size = Size(logoSize * 0.35f, logoSize * 0.6f),
+                    cornerRadius = CornerRadius(logoSize * 0.08f),
+                    style = Stroke(width = 2.dp.toPx())
+                )
             }
 
-            if (settleProgress.value > 0.1f) {
-                drawIntoCanvas { canvas ->
-                    val poly = materialShapesList.first()
-                    val composePath = androidx.compose.ui.graphics.Path()
-                    val morph = androidx.graphics.shapes.Morph(poly, poly)
-                    morph.asComposePath(0f, composePath)
+            // Closure to draw Solid Material logo
+            val drawSolid = {
+                val elevationOffset = logoElevation.value.dp.toPx()
+                
+                // Monitor Shadow
+                drawRoundRect(
+                    color = Color.Black.copy(alpha = 0.4f),
+                    topLeft = Offset(center.x - logoSize * 0.6f, center.y - logoSize * 0.4f + elevationOffset),
+                    size = Size(logoSize * 1.2f, logoSize * 0.7f),
+                    cornerRadius = CornerRadius(logoSize * 0.1f)
+                )
+                // Phone Shadow
+                drawRoundRect(
+                    color = Color.Black.copy(alpha = 0.4f),
+                    topLeft = Offset(center.x + logoSize * 0.3f, center.y + logoSize * 0.1f + elevationOffset),
+                    size = Size(logoSize * 0.35f, logoSize * 0.6f),
+                    cornerRadius = CornerRadius(logoSize * 0.08f)
+                )
 
-                    val checkpoint = canvas.nativeCanvas.save()
-                    canvas.nativeCanvas.translate(center.x, center.y)
+                // Monitor Frame Solid
+                drawRoundRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(primary, secondary),
+                        start = Offset(center.x - logoSize * 0.6f, center.y - logoSize * 0.4f),
+                        end = Offset(center.x + logoSize * 0.6f, center.y + logoSize * 0.3f)
+                    ),
+                    topLeft = Offset(center.x - logoSize * 0.6f, center.y - logoSize * 0.4f),
+                    size = Size(logoSize * 1.2f, logoSize * 0.7f),
+                    cornerRadius = CornerRadius(logoSize * 0.1f)
+                )
+                // Monitor Screen Inner (Background color)
+                drawRoundRect(
+                    color = substrateColor,
+                    topLeft = Offset(center.x - logoSize * 0.55f, center.y - logoSize * 0.35f),
+                    size = Size(logoSize * 1.1f, logoSize * 0.6f),
+                    cornerRadius = CornerRadius(logoSize * 0.05f)
+                )
 
-                    val s = 260.dp.toPx() * settleProgress.value
-                    canvas.nativeCanvas.scale(s, s)
+                // Monitor Stand Solid
+                drawLine(
+                    color = secondary,
+                    start = Offset(center.x, center.y + logoSize * 0.3f),
+                    end = Offset(center.x, center.y + logoSize * 0.5f),
+                    strokeWidth = 6.dp.toPx()
+                )
+                drawLine(
+                    color = secondary,
+                    start = Offset(center.x - logoSize * 0.2f, center.y + logoSize * 0.5f),
+                    end = Offset(center.x + logoSize * 0.2f, center.y + logoSize * 0.5f),
+                    strokeWidth = 4.dp.toPx()
+                )
 
-                    canvas.drawPath(composePath, androidx.compose.ui.graphics.Paint().apply {
-                        color = primary
-                        alpha = settleProgress.value
-                    })
-                    canvas.nativeCanvas.restoreToCount(checkpoint)
+                // Phone Solid
+                drawRoundRect(
+                    color = primary,
+                    topLeft = Offset(center.x + logoSize * 0.3f, center.y + logoSize * 0.1f),
+                    size = Size(logoSize * 0.35f, logoSize * 0.6f),
+                    cornerRadius = CornerRadius(logoSize * 0.08f)
+                )
+                // Phone Screen Inner
+                drawRoundRect(
+                    color = background,
+                    topLeft = Offset(center.x + logoSize * 0.33f, center.y + logoSize * 0.13f),
+                    size = Size(logoSize * 0.29f, logoSize * 0.54f),
+                    cornerRadius = CornerRadius(logoSize * 0.04f)
+                )
+            }
+
+            // Zone 1: Below scanY -> Substrate (nothing drawn)
+            // Zone 2: Between waveY and scanY -> Wireframe
+            if (scanY > logoRectY && waveY < logoRectY + logoSize) {
+                clipRect(top = waveY, bottom = scanY) {
+                    drawWireframe()
                 }
             }
-        }
 
-        // Branding text
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.alpha(settleProgress.value * alphaAnim.value)
-        ) {
-            Text(
-                text = stringResource(R.string.splash_app_name),
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 4.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = stringResource(R.string.splash_tagline),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Light,
-                letterSpacing = 2.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
+            // Zone 3: Above waveY -> Solid
+            if (waveY > logoRectY) {
+                clipRect(top = 0f, bottom = waveY) {
+                    drawSolid()
+
+                    // Connection trace arcs: monitor corners + phone corner → phone center
+                    val traceColor = neonColor.copy(alpha = 0.20f)
+                    val strokeW = 1.5.dp.toPx()
+                    val dashIntervals = floatArrayOf(8f, 8f)
+                    val tracePaint = androidx.compose.ui.graphics.Paint().also {
+                        it.color = traceColor
+                        it.style = androidx.compose.ui.graphics.PaintingStyle.Stroke
+                        it.strokeWidth = strokeW
+                        it.pathEffect = PathEffect.dashPathEffect(dashIntervals, 0f)
+                    }
+                    // Three anchor points: monitor top-left, monitor top-right, phone top
+                    val monitorTopLeft = Offset(center.x - logoSize * 0.6f, center.y - logoSize * 0.4f)
+                    val monitorTopRight = Offset(center.x + logoSize * 0.6f, center.y - logoSize * 0.4f)
+                    val phoneTop = Offset(center.x + logoSize * 0.475f, center.y + logoSize * 0.1f)
+                    val phoneCenter = Offset(center.x + logoSize * 0.475f, center.y + logoSize * 0.4f)
+
+                    val traceAnchors = listOf(monitorTopLeft, monitorTopRight, phoneTop)
+                    drawContext.canvas.nativeCanvas.let { } // ensure canvas context
+                    for (anchor in traceAnchors) {
+                        val path = androidx.compose.ui.graphics.Path()
+                        path.moveTo(anchor.x, anchor.y)
+                        // Quadratic bezier toward phone center
+                        val ctrlX = (anchor.x + phoneCenter.x) / 2f
+                        val ctrlY = anchor.y
+                        path.quadraticBezierTo(ctrlX, ctrlY, phoneCenter.x, phoneCenter.y)
+                        drawContext.canvas.drawPath(path, tracePaint)
+                    }
+                }
+            }
+
+            // Draw Scanline (Phase 2)
+            if (scanY > 0f && scanY < height) {
+                drawLine(
+                    color = neonColor,
+                    start = Offset(0f, scanY),
+                    end = Offset(width, scanY),
+                    strokeWidth = 3.dp.toPx()
+                )
+                // Glow trail
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, neonColor.copy(alpha = 0.4f)),
+                        startY = scanY - 160.dp.toPx(),
+                        endY = scanY
+                    ),
+                    topLeft = Offset(0f, scanY - 160.dp.toPx()),
+                    size = Size(width, 160.dp.toPx())
+                )
+            }
+
+            // Draw Material Wave line (Phase 3)
+            if (waveY > 0f && waveY < height) {
+                // Refractive / Glass edge
+                drawLine(
+                    color = Color.White.copy(alpha = 0.8f),
+                    start = Offset(0f, waveY),
+                    end = Offset(width, waveY),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, primary.copy(alpha = 0.3f)),
+                        startY = waveY - 120.dp.toPx(),
+                        endY = waveY
+                    ),
+                    topLeft = Offset(0f, waveY - 120.dp.toPx()),
+                    size = Size(width, 120.dp.toPx())
+                )
+            }
+
+            // Phase 4: Explode to fill screen
+            if (fillScreenScale.value > 0f) {
+                val maxRadius = hypot(center.x, center.y) * 1.5f
+                val currentRadius = logoSize * 0.25f + (maxRadius * fillScreenScale.value)
+                drawCircle(
+                    color = background,
+                    radius = currentRadius,
+                    center = center
+                )
+            }
         }
     }
-}
-
-private fun lerp(start: Float, stop: Float, fraction: Float): Float {
-    return start + fraction * (stop - start)
-}
-
-private fun androidx.graphics.shapes.Morph.asComposePath(
-    progress: Float,
-    targetPath: androidx.compose.ui.graphics.Path
-): androidx.compose.ui.graphics.Path {
-    targetPath.reset()
-    var first = true
-    this.forEachCubic(progress) { bezier ->
-        if (first) {
-            targetPath.moveTo(bezier.anchor0X, bezier.anchor0Y)
-            first = false
-        }
-        targetPath.cubicTo(
-            bezier.control0X, bezier.control0Y,
-            bezier.control1X, bezier.control1Y,
-            bezier.anchor1X, bezier.anchor1Y
-        )
-    }
-    targetPath.close()
-    return targetPath
 }

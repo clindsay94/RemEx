@@ -24,6 +24,14 @@ public partial class ShellView : UserControl
 
         if (DataContext is ShellViewModel vm)
             vm.BeginWelcomeSplash();
+
+        var bootSplash = this.FindControl<Controls.BootSequenceControl>("BootSplash");
+        if (bootSplash != null)
+            bootSplash.SequenceCompleted += () =>
+            {
+                if (DataContext is ShellViewModel vm2)
+                    vm2.OnBootSequenceCompleted();
+            };
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
