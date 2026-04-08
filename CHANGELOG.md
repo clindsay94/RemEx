@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.8.0] - 2026-04-08
+
+> **"Boot Sequence & Installer"** — cinematic startup experience and Windows installer packaging.
+
+### Added
+
+- **Windows Installer (Inno Setup)** — `installer/RemEx.iss` and `installer/build-installer.ps1` produce a self-contained `RemEx-vX.X.X-Setup.exe`. The wizard offers Client-only vs Client+Service installation modes, configures Windows Service startup (Automatic or Manual), captures service credentials, creates optional desktop shortcuts, and handles service cleanup on uninstall. Minimum Windows 10, 64-bit only.
+- **`BootSequenceControl`** (`Remex.Client/Controls/BootSequenceControl.cs`) — Full-screen 5-second cinematic Avalonia boot animation with particles, orbit rings, and a node-graph materialization effect. Fires a completion event to hand off to the shell on finish.
+- **Android SplashScreen rewrite** (`RemEx.Android/.../SplashScreen.kt`) — Canvas-based animated splash with particles, a scanline sweep, and a wireframe→solid logo materialization. Tap anywhere to skip.
+
+### Changed
+
+- `ShellView.axaml` / `ShellViewModel.cs` — integrated `BootSequenceControl`; shell content is shown only after the boot animation completes.
+- `AppNavigation.kt` — always routes to `SplashScreen` on launch; splash transitions into the connection flow after the animation ends.
+- `Directory.Build.props` — version bumped `1.7.0` → `1.8.0`.
+- `app/version.properties` — `versionCode=9`, `versionName=1.8.0`.
+
+---
+
 ## [1.7.0] - 2026-04-08
 
 > **"Polish Overhaul"** — 4-phase quality pass across the desktop client, host, and tooling.

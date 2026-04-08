@@ -23,7 +23,8 @@ Remex.sln                    .NET solution
 ├── Remex.Core.Tests/        xUnit tests for Core
 ├── Remex.Host.Tests/        xUnit tests for Host
 ├── RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
-└── scripts/                 Utility scripts (Windows Service installer, android-fresh pipeline)
+├── scripts/                 Utility scripts (Windows Service installer, android-fresh pipeline)
+└── installer/               Inno Setup script + build-installer.ps1 for Windows packaging
 ```
 
 ---
@@ -57,6 +58,17 @@ dotnet test Remex.sln
 ```bash
 dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
+
+### Windows Installer (Inno Setup)
+
+Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php) installed. The script publishes the desktop binary first, then compiles the installer:
+
+```powershell
+# From repo root
+.\installer\build-installer.ps1 -Version 1.8.0
+```
+
+Output: `installer/Output/RemEx-v1.8.0-Setup.exe`
 
 ### Native Android App (`RemEx.Android`) — Hardened Fresh Rebuild
 
@@ -110,8 +122,8 @@ The .NET version is set once in `Directory.Build.props` and applied to all .NET 
 **Android Native App (`RemEx.Android`):** Version is managed in `app/version.properties` and read automatically by the Gradle build:
 
 ```properties
-versionCode=3
-versionName=1.1.1
+versionCode=9
+versionName=1.8.0
 ```
 
 Two release workflows are available:

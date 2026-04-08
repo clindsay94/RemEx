@@ -7,7 +7,7 @@
 ![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-![Version](https://img.shields.io/badge/Version-1.7.0-FF6B6B)
+![Version](https://img.shields.io/badge/Version-1.8.0-FF6B6B)
 
 A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · App launcher · Process manager\
@@ -17,16 +17,22 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 
 ## 🚀 Quick Install & Run
 
-### Windows & Linux Desktop Client
+### Windows Desktop Client (Installer)
 
-Since there is no installer yet, follow these steps to run the desktop client:
-
-1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `Remex-vX.X.X-.7z` file.
-2. **Extract the .7z file** to a permanent location on your computer (e.g., `C:\Program Files\RemEx` or `~/Applications/RemEx`).
-3. Open the extracted folder and run **`Remex.Client.Desktop.exe`** (on Windows) or **`Remex.Client.Desktop`** (on Linux). This is the main application and is the only file with an icon.
-4. **(Optional)** For easy access, right-click the executable and select **"Create shortcut"** (Windows) or your Linux distribution's equivalent, then move the shortcut to your desktop.
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-vX.X.X-Setup.exe`.
+2. Run the installer and follow the wizard:
+   - Choose **Client only** or **Client + Windows Service** (service starts automatically at boot).
+   - Optionally create a desktop shortcut.
+3. Launch **RemEx** from the Start Menu or desktop shortcut.
 
 The desktop client will automatically start and manage the host service in the background. Just follow the first-run tutorial to get connected!
+
+### Linux Desktop Client (Manual)
+
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `Remex-vX.X.X-linux-x64.7z`.
+2. **Extract the archive** to a permanent location (e.g., `~/Applications/RemEx`).
+3. Run **`Remex.Client.Desktop`** from the extracted folder.
+4. **(Optional)** Create a `.desktop` launcher entry or symlink for easy access.
 
 ### Native Android App
 
@@ -58,6 +64,7 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 
 ### 🖥️ Glassmorphic Dashboard (Avalonia)
 
+- **Cinematic boot sequence** — `BootSequenceControl` plays a full-screen 5-second animated intro (particles, orbit rings, node-graph materialization) on startup before the shell loads
 - **Dark glass design system** — layered translucent cards, fluid hover states, dynamic gradient theming
 - **Sidebar navigation** — collapsible `SplitView` with compact icon mode (64 px) and expanded label mode (220 px)
 - **Theme engine** — swap between BaseDarkGlass, CyberNOC, Monolith, and SolarFlare at runtime; override accent color, corner radius, glass opacity, and glow strength
@@ -73,7 +80,7 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 - **Personalization screen** — choose font family (system, Roboto, Montserrat, Nunito), theme seed color, and card shape preset (Rounded, Cut, Mixed)
 - **Dashboard** — drag-and-drop card placement with animated previews and per-type shape support
 - **Home-screen widgets** — Sensor, Resource Monitor, Remote Control, and general Remex widgets configurable from a dedicated `WidgetConfigActivity`
-- **Splash screen** with smooth transition into the connection flow
+- **Animated splash screen** — Canvas-based animation with particles, a scanline sweep, and a wireframe→solid logo materialization; tap to skip
 
 ### 📡 Real-Time Telemetry
 
@@ -154,6 +161,7 @@ RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI �
 Remex.Core.Tests/        xUnit tests — Core models and serialization
 Remex.Host.Tests/        xUnit tests — Host endpoints and handlers
 scripts/                 Utility scripts — Windows Service installer, android-fresh pipeline
+installer/               Inno Setup script + build automation for Windows installer
 ```
 
 ### Communication Protocols
