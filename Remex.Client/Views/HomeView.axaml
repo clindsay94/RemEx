@@ -164,14 +164,6 @@
                         </StackPanel>
                     </Button>
                     <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToRemoteDesktopCommand}"
-                            ToolTip.Tip="{local:Localize Home_DesktopTooltip}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="🖳" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="{local:Localize Home_Desktop}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Classes="action-pill" Margin="0,0,8,8"
                             Command="{Binding NavigateToAppLauncherCommand}"
                             ToolTip.Tip="{local:Localize Home_LauncherTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
