@@ -27,6 +27,10 @@ RemEx ships two distinct client experiences sharing the same host backend:
 | :--- | :--- | :--- |
 | **Desktop / Avalonia Android** | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
 | **Native Android** (`RemEx.Android`) | Kotlin · Jetpack Compose · Material 3 · JNI → .NET NativeAOT | Android (arm64-v8a) |
+| **Host** (`Remex.Host`) | ASP.NET Core Minimal API · WebSocket · mDNS | Windows Service · Linux daemon |
+
+To get started quickly, the desktop client is the recommended entry point — simply download the publish folder from releases and run the remex.client.desktop.exe that is found in the folder. For Android, the app is available on the Play Store if you're part of the testing track, or you can build and install the APK locally with the instructions below. Send an email if you'd like to be added to the Play Store testing track for easier access to new versions. I anticipate the Play Store release will be in production in the next month or so, and will be available publicly once it makes it through the testing and review process. I have included a signed APK in the releases though, so you don't have to bother with building it or using Google Play, but you have to enable installation from unknown sources on your Android device to use it. I did get verified on Google Play so the app shouldn't have any issues installing on Certified Google Play devices, and the signature should be valid for updates when the app is eventually published publicly. If you build it yourself and want it signed, you'll have to get your own key and update the Gradle signing config.
+
 
 The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled version of `Remex.Core` — and calls it through a Kotlin JNI bridge (`RemexCoreClient`). This gives all WebSocket, mDNS, and command logic identical behavior on Android without a separate runtime.
 
@@ -148,7 +152,7 @@ Full API documentation: [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md)
 
 ---
 
-## Getting Started
+## Getting Started With Building for Contributing
 
 ### Prerequisites
 
@@ -184,7 +188,7 @@ dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r wi
 ```
 
 
-### Native Android App — Hardened Fresh Build (Recommended)
+### Building the Native Android App — Hardened Fresh Build (Recommended)
 
 The native `RemEx.Android` Gradle project embeds `libRemexCore.so` built from `Remex.Core`. Use the hardened pipeline to guarantee a fresh native library and verified APK every time:
 
@@ -205,7 +209,7 @@ Or run Gradle tasks directly from `RemEx.Android/`:
 .\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
 ```
 
-### Publish to Google Play Console
+### Publish with Auto-Versioning
 
 ```powershell
 # From RemEx.Android/ — auto-bumps versionCode+1 and minor version, builds signed APK + AAB
