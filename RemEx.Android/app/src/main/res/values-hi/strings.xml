@@ -250,4 +250,8 @@
     <string name="personalization_shape_task_manager">टास्क मैनेजर</string>
     <string name="personalization_shape_pc_orb">पीसी कनेक्शन ऑर्ब</string>
     <string name="personalization_preview">पूर्वावलोकन</string>
+    <string name="remote_desktop_direct_touch_label">डायरेक्ट टच मोड</string>
+    <string name="remote_desktop_direct_touch_desc">टच पोजीशन सीधे स्क्रीन कोऑर्डिनेट्स पर मैप होती हैं</string>
+    <string name="remote_desktop_pointer_speed_label">कर्सर स्पीड: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">टैप = क्लिक • लॉन्ग प्रेस = राइट क्लिक • 2 उंगलियाँ = स्क्रॉल • पेन = एब्सोल्यूट</string>
 </resources>

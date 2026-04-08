@@ -250,4 +250,8 @@
     <string name="personalization_shape_task_manager">Menedżer zadań</string>
     <string name="personalization_shape_pc_orb">Orb połączenia PC</string>
     <string name="personalization_preview">PODGLĄD</string>
+    <string name="remote_desktop_direct_touch_label">Tryb bezpośredniego dotyku</string>
+    <string name="remote_desktop_direct_touch_desc">Pozycje dotyku mapują się bezpośrednio na współrzędne ekranu</string>
+    <string name="remote_desktop_pointer_speed_label">Szybkość kursora: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Dotknięcie = Kliknięcie • Przytrzymanie = Prawy klik • 2 palce = Przewijanie • Rysik = Absolutny</string>
 </resources>

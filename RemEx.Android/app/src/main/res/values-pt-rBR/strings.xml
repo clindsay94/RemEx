@@ -250,4 +250,8 @@
     <string name="personalization_shape_task_manager">Gerenciador de Tarefas</string>
     <string name="personalization_shape_pc_orb">Orbe de Conexão do PC</string>
     <string name="personalization_preview">PRÉVIA</string>
+    <string name="remote_desktop_direct_touch_label">Modo toque direto</string>
+    <string name="remote_desktop_direct_touch_desc">Posições de toque mapeiam diretamente para coordenadas da tela</string>
+    <string name="remote_desktop_pointer_speed_label">Velocidade do cursor: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Toque = Clique • Pressionar = Clique direito • 2 dedos = Rolar • Caneta = Absoluto</string>
 </resources>

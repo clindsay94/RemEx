@@ -135,6 +135,10 @@
     <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
     <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
+    <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
+    <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
+    <string name="remote_desktop_pointer_speed_label">Cursor Speed: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Tap = Click • Long Press = Right Click • 2 Fingers = Scroll • Pen = Absolute</string>
 
     <!-- ═══ Dashboard Screen ═══ -->
     <string name="screen_dashboard_title">RemEx Home Base</string>

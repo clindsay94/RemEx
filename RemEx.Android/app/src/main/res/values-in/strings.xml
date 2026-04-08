@@ -250,4 +250,8 @@
     <string name="personalization_shape_task_manager">Manajer Tugas</string>
     <string name="personalization_shape_pc_orb">Orb Koneksi PC</string>
     <string name="personalization_preview">PRATINJAU</string>
+    <string name="remote_desktop_direct_touch_label">Mode sentuhan langsung</string>
+    <string name="remote_desktop_direct_touch_desc">Posisi sentuhan dipetakan langsung ke koordinat layar</string>
+    <string name="remote_desktop_pointer_speed_label">Kecepatan kursor: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Ketuk = Klik • Tekan lama = Klik kanan • 2 jari = Gulir • Pena = Absolut</string>
 </resources>

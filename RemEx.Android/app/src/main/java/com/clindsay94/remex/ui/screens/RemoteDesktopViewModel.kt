@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -67,6 +68,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     val savedDesktopDefaults = settingsManager.remoteDesktopPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.RemoteDesktopPreferences())
+
+    val directTouch: StateFlow<Boolean> = settingsManager.remoteDesktopPreferencesFlow
+        .map { it.directTouch }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val pointerSpeed: StateFlow<Float> = settingsManager.remoteDesktopPreferencesFlow
+        .map { it.pointerSpeed }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
     /** Tracks reconnection attempts to avoid stacking. */
     private var reconnectJob: Job? = null
@@ -242,6 +251,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun updatePointerSpeed(speed: Float) {
+        viewModelScope.launch {
+            settingsManager.saveRemoteDesktopPointerSpeed(speed.coerceIn(0.25f, 3.0f))
+        }
+    }
+
     fun startStreaming() {
         if (!RemexCoreClient.isLibraryLoaded) {
             _desktopError.value = "Native library not loaded"
@@ -343,6 +358,25 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("button", button)
             put("x", x)
             put("y", y)
+        })
+    }
+
+    fun sendText(text: String) {
+        if (text.isEmpty()) return
+        sendInput(JSONObject().apply {
+            put("eventType", "typeText")
+            put("text", text)
+        })
+    }
+
+    fun sendKeyPress(keyCode: Int) {
+        sendInput(JSONObject().apply {
+            put("eventType", "keyDown")
+            put("keyCode", keyCode)
+        })
+        sendInput(JSONObject().apply {
+            put("eventType", "keyUp")
+            put("keyCode", keyCode)
         })
     }
 

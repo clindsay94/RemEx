@@ -385,10 +385,19 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private static byte[] EncodeToJpeg(IntPtr pixelData, int rowPitch, int width, int height,
         int quality, double scale, ImageCodecInfo jpegEncoder)
     {
-        // System.Drawing Bitmap wraps the DXGI-mapped BGRA memory (no pixel copy needed).
-        // DXGI_FORMAT_B8G8R8A8_UNORM bytes are laid out as BGRA — matches Format32bppArgb
-        // on little-endian Windows (despite the name, GDI+ stores BGRA in memory).
+        // Wrap the DXGI-mapped BGRA memory as a read-only Bitmap (D3D11_MAP_READ).
+        // We must NOT draw into this bitmap — the staging texture is mapped read-only.
         using var src = new Bitmap(width, height, rowPitch, PixelFormat.Format32bppArgb, pixelData);
+
+        // Copy to a writable bitmap so we can draw the cursor overlay safely.
+        // This also decouples us from the mapped GPU memory lifetime.
+        using var writable = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(writable))
+        {
+            g.DrawImage(src, 0, 0, width, height);
+        }
+
+        DrawCursorOnBitmap(writable);
 
         Bitmap output;
         if (scale < 1.0)
@@ -398,11 +407,11 @@ internal sealed class DxgiDesktopCapture : IDisposable
             output = new Bitmap(sw, sh);
             using var g = Graphics.FromImage(output);
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-            g.DrawImage(src, 0, 0, sw, sh);
+            g.DrawImage(writable, 0, 0, sw, sh);
         }
         else
         {
-            output = src;
+            output = writable;
         }
 
         try
@@ -415,7 +424,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
         finally
         {
-            if (!ReferenceEquals(output, src))
+            // Only dispose the scaled copy; writable is handled by its own using statement
+            if (!ReferenceEquals(output, writable))
                 output.Dispose();
         }
     }
@@ -438,6 +448,76 @@ internal sealed class DxgiDesktopCapture : IDisposable
         catch (Exception ex)
         {
             _logger.LogWarning("DXGI reinitialize failed: {Msg}. Capture will fall back to GDI.", ex.Message);
+        }
+    }
+
+    // ── Cursor drawing ────────────────────────────────────────────────────────
+
+    private const int CURSOR_SHOWING = 0x00000001;
+    private const uint DI_NORMAL = 0x0003;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X, Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CURSORINFO
+    {
+        public int cbSize;
+        public int flags;
+        public IntPtr hCursor;
+        public POINT ptScreenPos;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ICONINFO
+    {
+        public bool fIcon;
+        public int xHotspot, yHotspot;
+        public IntPtr hbmMask, hbmColor;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorInfo(ref CURSORINFO pci);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetIconInfo(IntPtr hIcon, out ICONINFO piconinfo);
+
+    [DllImport("user32.dll")]
+    private static extern bool DrawIconEx(
+        IntPtr hdc, int xLeft, int yTop, IntPtr hIcon,
+        int cxWidth, int cyWidth, uint istepIfAniCur,
+        IntPtr hbrFlickerFreeDraw, uint diFlags);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
+
+    /// <summary>
+    /// Draws the system cursor at its current position onto a Bitmap.
+    /// </summary>
+    private static void DrawCursorOnBitmap(Bitmap bitmap)
+    {
+        var ci = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
+        if (!GetCursorInfo(ref ci) || (ci.flags & CURSOR_SHOWING) == 0)
+            return;
+
+        if (GetIconInfo(ci.hCursor, out var iconInfo))
+        {
+            int drawX = ci.ptScreenPos.X - iconInfo.xHotspot;
+            int drawY = ci.ptScreenPos.Y - iconInfo.yHotspot;
+
+            if (iconInfo.hbmMask != IntPtr.Zero) DeleteObject(iconInfo.hbmMask);
+            if (iconInfo.hbmColor != IntPtr.Zero) DeleteObject(iconInfo.hbmColor);
+
+            using var g = Graphics.FromImage(bitmap);
+            IntPtr hdc = g.GetHdc();
+            try
+            {
+                DrawIconEx(hdc, drawX, drawY, ci.hCursor, 0, 0, 0, IntPtr.Zero, DI_NORMAL);
+            }
+            finally
+            {
+                g.ReleaseHdc(hdc);
+            }
         }
     }
 

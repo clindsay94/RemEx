@@ -250,4 +250,8 @@
     <string name="personalization_shape_task_manager">Диспетчер завдань</string>
     <string name="personalization_shape_pc_orb">Сфера статусу ПК</string>
     <string name="personalization_preview">ПЕРЕГЛЯД</string>
+    <string name="remote_desktop_direct_touch_label">Режим прямого дотику</string>
+    <string name="remote_desktop_direct_touch_desc">Позиції дотику відповідають координатам екрану</string>
+    <string name="remote_desktop_pointer_speed_label">Швидкість курсора: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Натисніть = Клік • Утримуйте = Правий клік • 2 пальці = Прокрутка • Перо = Абсолютний</string>
 </resources>

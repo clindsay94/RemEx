@@ -16,7 +16,7 @@ Real-time hardware telemetry · Remote desktop · App launcher · Process manage
 Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full **native Android** app (Kotlin + Jetpack Compose) powered by a .NET NativeAOT JNI core.
 
 </div>
-
+# IMPORTANT NOTE: I haven't made an installer, in the [Releases](https://github.com/clindsay94/remex/releases) page, you will download a folder that contains all of the necessary files to run the desktop client, but you have to open the `Remex.Client.Desktop.exe` file in that folder to run it. Or for the host, you can open the `Remex.Host.exe` file. I am planning on making an installer in the future, but for now, you can just create a shortcut to the .exe file and put it wherever you want. The desktop client will automatically detect if the host is running and connect to it, so you don't have to worry about starting the host first. Just run the desktop client and follow the tutorial to get started. It's also the only item in there that has an actual icon. 
 ---
 
 ## Clients
@@ -25,7 +25,7 @@ RemEx ships two distinct client experiences sharing the same host backend:
 
 | Client | Stack | Target |
 | :--- | :--- | :--- |
-| **Desktop / Avalonia Android** (`RemEx.Client.Desktop` | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
+| **Desktop / Avalonia Android** (`RemEx.Client.Desktop`) | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
 | **Native Android** (`RemEx.Android`) | Kotlin · Jetpack Compose · Material 3 · JNI → .NET NativeAOT | Android (arm64-v8a) |
 | **Host** (`Remex.Host`) | ASP.NET Core Minimal API · WebSocket · mDNS | Windows Service · Linux daemon |
 
@@ -61,7 +61,7 @@ The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled versio
 ### 📡 Real-Time Telemetry
 
 - **[HWInfo](https://hwinfo.com/download/)** (Windows) / **lmsensors** (Linux) sensor data streamed over WebSocket
-    - HWInfo is free to use, but there's some configuring you have to do, namely enabling the Shared Memory, which has a 12 hour limit before you have to re-enable it.  
+    -- HWInfo is free to use, but there's some configuring you have to do, namely enabling the Shared Memory, which has a 12 hour limit before you have to re-enable it.  
 - **Source identification** — each sensor reading is tagged with its source (`HWInfo`, `WindowsPerf`, or `Linux`); source badges shown in the sensor list
 - **Smart deduplication** — when HWInfo is active, overlapping Windows Performance Counter sensors are automatically hidden at the category level
 - **Free-form canvas** — drag, resize, and arrange sensor cards on a 4 000 × 4 000 workspace

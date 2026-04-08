@@ -81,6 +81,9 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                     // Fallback to standard copy if CaptureBlt caused issues
                     g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
                 }
+
+                // Draw the system cursor onto the captured bitmap
+                DrawCursorOnBitmap(g);
             }
 
             Bitmap outputBitmap;
@@ -153,6 +156,85 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int nIndex);
+
+    // ── Cursor drawing P/Invoke ───────────────────────────────────────────────
+
+    private const int CURSOR_SHOWING = 0x00000001;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CURSORINFO
+    {
+        public int cbSize;
+        public int flags;
+        public IntPtr hCursor;
+        public POINT ptScreenPos;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ICONINFO
+    {
+        public bool fIcon;
+        public int xHotspot;
+        public int yHotspot;
+        public IntPtr hbmMask;
+        public IntPtr hbmColor;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorInfo(ref CURSORINFO pci);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetIconInfo(IntPtr hIcon, out ICONINFO piconinfo);
+
+    [DllImport("user32.dll")]
+    private static extern bool DrawIconEx(
+        IntPtr hdc, int xLeft, int yTop, IntPtr hIcon,
+        int cxWidth, int cyWidth, uint istepIfAniCur,
+        IntPtr hbrFlickerFreeDraw, uint diFlags);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
+
+    private const uint DI_NORMAL = 0x0003;
+
+    /// <summary>
+    /// Draws the system cursor at its current position onto the given Graphics surface.
+    /// Uses GetCursorInfo + DrawIconEx for reliable cursor rendering including animated cursors.
+    /// </summary>
+    private static void DrawCursorOnBitmap(Graphics g)
+    {
+        var ci = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
+        if (!GetCursorInfo(ref ci) || (ci.flags & CURSOR_SHOWING) == 0)
+            return;
+
+        // Get hotspot offset so the cursor is drawn at the correct position
+        if (GetIconInfo(ci.hCursor, out var iconInfo))
+        {
+            int drawX = ci.ptScreenPos.X - iconInfo.xHotspot;
+            int drawY = ci.ptScreenPos.Y - iconInfo.yHotspot;
+
+            // Clean up GDI bitmap handles from GetIconInfo
+            if (iconInfo.hbmMask != IntPtr.Zero) DeleteObject(iconInfo.hbmMask);
+            if (iconInfo.hbmColor != IntPtr.Zero) DeleteObject(iconInfo.hbmColor);
+
+            IntPtr hdc = g.GetHdc();
+            try
+            {
+                DrawIconEx(hdc, drawX, drawY, ci.hCursor, 0, 0, 0, IntPtr.Zero, DI_NORMAL);
+            }
+            finally
+            {
+                g.ReleaseHdc(hdc);
+            }
+        }
+    }
 
     #endregion
 }

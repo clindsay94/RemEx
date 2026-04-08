@@ -28,6 +28,7 @@ class SettingsManager(private val context: Context) {
         val DESKTOP_TARGET_FPS_KEY = intPreferencesKey("desktop_target_fps")
         val DESKTOP_SCALE_KEY = floatPreferencesKey("desktop_scale")
         val DESKTOP_DIRECT_TOUCH_KEY = booleanPreferencesKey("desktop_direct_touch")
+        val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
         val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
         val SPLASH_SHOWN_KEY = booleanPreferencesKey("splash_shown")
 
@@ -71,7 +72,8 @@ class SettingsManager(private val context: Context) {
         val quality: Int = 50,
         val targetFps: Int = 30,
         val scale: Float = 0.6f,
-        val directTouch: Boolean = false
+        val directTouch: Boolean = false,
+        val pointerSpeed: Float = 1.0f
     )
 
     data class PersonalizationPreferences(
@@ -224,7 +226,8 @@ class SettingsManager(private val context: Context) {
                 quality = preferences[DESKTOP_QUALITY_KEY] ?: 50,
                 targetFps = preferences[DESKTOP_TARGET_FPS_KEY] ?: 30,
                 scale = preferences[DESKTOP_SCALE_KEY] ?: 0.6f,
-                directTouch = preferences[DESKTOP_DIRECT_TOUCH_KEY] ?: false
+                directTouch = preferences[DESKTOP_DIRECT_TOUCH_KEY] ?: false,
+                pointerSpeed = preferences[DESKTOP_POINTER_SPEED_KEY] ?: 1.0f
             )
         }
 
@@ -313,6 +316,12 @@ class SettingsManager(private val context: Context) {
     suspend fun saveRemoteDesktopDirectTouch(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[DESKTOP_DIRECT_TOUCH_KEY] = enabled
+        }
+    }
+
+    suspend fun saveRemoteDesktopPointerSpeed(speed: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[DESKTOP_POINTER_SPEED_KEY] = speed.coerceIn(0.25f, 3.0f)
         }
     }
 

@@ -250,4 +250,8 @@
     <string name="personalization_shape_task_manager">Görev Yöneticisi</string>
     <string name="personalization_shape_pc_orb">PC Bağlantı Simgesi</string>
     <string name="personalization_preview">ÖNİZLEME</string>
+    <string name="remote_desktop_direct_touch_label">Doğrudan dokunma modu</string>
+    <string name="remote_desktop_direct_touch_desc">Dokunma konumları doğrudan ekran koordinatlarına eşlenir</string>
+    <string name="remote_desktop_pointer_speed_label">İmleç hızı: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Dokun = Tıkla • Uzun bas = Sağ tıkla • 2 parmak = Kaydır • Kalem = Mutlak</string>
 </resources>
