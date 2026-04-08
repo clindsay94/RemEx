@@ -42,94 +42,51 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.launch
 
 private data class TutorialPage(
     val emoji: String,
-    val title: String,
-    val body: String,
-    val linkLabel: String? = null,
+    val titleRes: Int,
+    val bodyRes: Int,
+    val linkLabelRes: Int? = null,
     val linkUrl: String? = null
 )
 
 private val tutorialPages = listOf(
     TutorialPage(
         emoji = "🖥️",
-        title = "Welcome to RemEx",
-        body = "RemEx is your remote PC management command center. " +
-                "Control your computer, launch apps, monitor performance, " +
-                "and even view your desktop — all from your phone.\n\n" +
-                "Let's get you connected in a few quick steps."
+        titleRes = R.string.tutorial_page1_title,
+        bodyRes = R.string.tutorial_page1_body
     ),
     TutorialPage(
         emoji = "⚙️",
-        title = "Install the Host First",
-        body = "Before you can connect, you need the RemEx host software " +
-                "running on your PC.\n\n" +
-                "Option 1 — RemEx Desktop Client\n" +
-                "Download and run Remex.Client.Desktop on your PC. It bundles " +
-                "the host automatically — just launch it and the host starts " +
-                "in the background.\n\n" +
-                "Option 2 — RemEx Host (standalone)\n" +
-                "Install and run Remex.Host as a standalone service. This is " +
-                "ideal for headless servers or if you only need the host.\n\n" +
-                "Both are self-contained — no extra runtimes needed. Download " +
-                "the latest publish folder from the GitHub releases page, " +
-                "extract, and run.",
-        linkLabel = "Download from GitHub Releases",
+        titleRes = R.string.tutorial_page2_title,
+        bodyRes = R.string.tutorial_page2_body,
+        linkLabelRes = R.string.tutorial_page2_link_label,
         linkUrl = "https://github.com/clindsay94/RemEx/releases"
     ),
     TutorialPage(
         emoji = "📡",
-        title = "Auto-Discovery",
-        body = "The easiest way to connect is automatic discovery.\n\n" +
-                "1. Make sure Remex.Client.Desktop or Remex.Host is running " +
-                "on your PC\n" +
-                "2. Ensure both your phone and PC are on the same Wi-Fi network\n" +
-                "3. Tap 'Discover Automatically' on the Connection screen\n\n" +
-                "RemEx uses mDNS to detect running hosts on your local " +
-                "network. Your PC's IP and port will be filled in automatically."
+        titleRes = R.string.tutorial_page3_title,
+        bodyRes = R.string.tutorial_page3_body
     ),
     TutorialPage(
         emoji = "🔍",
-        title = "Finding Your IP Address",
-        body = "If auto-discovery doesn't work, you can connect manually. " +
-                "First, find your PC's local IP address:\n\n" +
-                "Windows:\n" +
-                "  Open Command Prompt → type ipconfig\n" +
-                "  Look for 'IPv4 Address' (e.g. 192.168.1.42)\n\n" +
-                "macOS:\n" +
-                "  System Settings → Network, or run:\n" +
-                "  ipconfig getifaddr en0\n\n" +
-                "Linux:\n" +
-                "  Run ip addr or hostname -I\n\n" +
-                "You can also see the IP address in the Remex.Client.Desktop " +
-                "window under the connection status section."
+        titleRes = R.string.tutorial_page4_title,
+        bodyRes = R.string.tutorial_page4_body
     ),
     TutorialPage(
         emoji = "🔌",
-        title = "Manual Connection",
-        body = "Once you have your IP address:\n\n" +
-                "1. Go to the Connection screen (Settings → Connection)\n" +
-                "2. Enter your PC's IP address\n" +
-                "3. Enter the port (default is 5005)\n" +
-                "4. Tap 'Save & Connect'\n\n" +
-                "RemEx will establish a connection and you'll see your PC's " +
-                "status appear on the dashboard.\n\n" +
-                "Remember: Remex.Client.Desktop or Remex.Host must be running " +
-                "on the target PC for the connection to succeed."
+        titleRes = R.string.tutorial_page5_title,
+        bodyRes = R.string.tutorial_page5_body
     ),
     TutorialPage(
         emoji = "🚀",
-        title = "You're All Set!",
-        body = "You're ready to take control.\n\n" +
-                "From the dashboard you can monitor system stats, launch apps, " +
-                "manage tasks, and stream your desktop remotely.\n\n" +
-                "Head to Personalization to customize your theme, card shapes, " +
-                "fonts, and colors.\n\n" +
-                "Check out the FAQ in Settings if you run into any issues. " +
-                "Enjoy RemEx!"
+        titleRes = R.string.tutorial_page6_title,
+        bodyRes = R.string.tutorial_page6_body
     )
 )
 
@@ -163,8 +120,8 @@ fun TutorialScreen(
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(onClick = { completeTutorial() }) {
-                Text(
-                    text = "Skip",
+                    Text(
+                        text = stringResource(R.string.tutorial_skip),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -231,7 +188,7 @@ fun TutorialScreen(
                         onClick = { completeTutorial() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Get Started")
+                        Text(stringResource(R.string.tutorial_get_started))
                     }
                 } else {
                     Button(
@@ -242,7 +199,7 @@ fun TutorialScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Next")
+                        Text(stringResource(R.string.tutorial_next))
                     }
                 }
             }
@@ -270,7 +227,7 @@ private fun TutorialPageContent(page: TutorialPage) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = page.title,
+            text = stringResource(page.titleRes),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -280,17 +237,18 @@ private fun TutorialPageContent(page: TutorialPage) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = page.body,
+            text = stringResource(page.bodyRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
 
-        if (page.linkLabel != null && page.linkUrl != null) {
+        if (page.linkLabelRes != null && page.linkUrl != null) {
             Spacer(modifier = Modifier.height(16.dp))
 
             val linkColor = MaterialTheme.colorScheme.primary
+            val linkLabel = stringResource(page.linkLabelRes)
             val annotatedString = buildAnnotatedString {
                 pushStringAnnotation(tag = "URL", annotation = page.linkUrl)
                 withStyle(
@@ -300,7 +258,7 @@ private fun TutorialPageContent(page: TutorialPage) {
                         textDecoration = TextDecoration.Underline
                     )
                 ) {
-                    append(page.linkLabel)
+                    append(linkLabel)
                 }
                 pop()
             }

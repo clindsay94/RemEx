@@ -43,9 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 
 private data class RemoteCommandCard(
@@ -86,7 +88,7 @@ fun RemoteControlScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Remote Control", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(R.string.screen_remote_control_title), fontWeight = FontWeight.Bold) }
             )
         }
     ) { paddingValues ->
@@ -108,13 +110,13 @@ fun RemoteControlScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
             Text(
-                text = "System Commands",
+                text = stringResource(R.string.remote_control_section_header),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Critical actions require confirmation. Optional delay sets shutdown -t seconds.",
+                text = stringResource(R.string.remote_control_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -141,7 +143,7 @@ fun RemoteControlScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                         TextButton(onClick = { viewModel.clearCommandStatus() }) {
-                            Text("Dismiss")
+                            Text(stringResource(R.string.button_dismiss))
                         }
                     }
                 }
@@ -196,6 +198,21 @@ private fun CommandCard(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
+    val localizedTitle = when (card.id) {
+        "wake" -> stringResource(R.string.rc_wake_pc)
+        "lock" -> stringResource(R.string.rc_lock_pc)
+        "shutdown" -> stringResource(R.string.rc_shutdown)
+        "restart" -> stringResource(R.string.rc_restart)
+        "uefi" -> stringResource(R.string.rc_reboot_uefi)
+        "force_shutdown" -> stringResource(R.string.rc_force_shutdown)
+        "force_restart" -> stringResource(R.string.rc_force_restart)
+        "sleep" -> stringResource(R.string.rc_sleep)
+        "hibernate" -> stringResource(R.string.rc_hibernate)
+        "monitor_off" -> stringResource(R.string.rc_monitor_off)
+        "logoff" -> stringResource(R.string.rc_logoff)
+        else -> card.title
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -212,11 +229,11 @@ private fun CommandCard(
         ) {
             Icon(
                 imageVector = card.icon,
-                contentDescription = card.title,
+                contentDescription = localizedTitle,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = if (isAwaitingConfirmation) "Confirm choice" else card.title,
+                text = if (isAwaitingConfirmation) stringResource(R.string.remote_control_confirm_choice) else localizedTitle,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -225,7 +242,7 @@ private fun CommandCard(
                 OutlinedTextField(
                     value = timerText,
                     onValueChange = { value -> onTimerTextChanged(value.filter(Char::isDigit).take(6)) },
-                    label = { Text("Timer (seconds)") },
+                    label = { Text(stringResource(R.string.remote_control_timer_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -235,15 +252,15 @@ private fun CommandCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(onClick = onConfirm, modifier = Modifier.weight(1f)) {
-                        Text("Confirm")
+                        Text(stringResource(R.string.button_confirm))
                     }
                     TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.button_cancel))
                     }
                 }
             } else {
                 Button(onClick = onPrimaryClick, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (card.requiresConfirmation) "Select" else "Run")
+                    Text(if (card.requiresConfirmation) stringResource(R.string.button_select) else stringResource(R.string.button_run))
                 }
             }
         }

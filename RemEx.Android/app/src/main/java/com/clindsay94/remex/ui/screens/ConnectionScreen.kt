@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -25,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,7 +147,7 @@ fun ConnectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Connection", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(R.string.screen_connection_title), fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -170,7 +173,7 @@ fun ConnectionScreen(
                 )
 
                 Text(
-                    text = "Host Settings",
+                    text = stringResource(R.string.connection_host_settings),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -202,7 +205,7 @@ fun ConnectionScreen(
                             IconButton(onClick = { viewModel.clearError() }) {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Dismiss",
+                                    contentDescription = stringResource(R.string.button_dismiss),
                                     tint = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
@@ -229,14 +232,14 @@ fun ConnectionScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "Auto-Discover on LAN",
+                                stringResource(R.string.connection_auto_discover_title),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                         Text(
-                            "Make sure your PC is running the RemEx Host app and both devices are on the same Wi-Fi network.",
+                            stringResource(R.string.connection_auto_discover_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -264,11 +267,11 @@ fun ConnectionScreen(
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Searching for RemEx Host…")
+                                Text(stringResource(R.string.connection_searching))
                             } else {
                                 Icon(Icons.Default.Search, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (discoveredHost != null) "Found: ${discoveredHost!!.host} — Search Again" else "Discover Automatically")
+                                Text(if (discoveredHost != null) stringResource(R.string.connection_found_host, discoveredHost!!.host) else stringResource(R.string.connection_discover_button))
                             }
                         }
 
@@ -284,7 +287,7 @@ fun ConnectionScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    "Host found and fields filled in below.",
+                                    stringResource(R.string.connection_host_found),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
@@ -314,12 +317,12 @@ fun ConnectionScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Help,
+                                    Icons.AutoMirrored.Filled.Help,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "How to connect manually",
+                                    stringResource(R.string.connection_help_title),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -339,17 +342,17 @@ fun ConnectionScreen(
                             ) {
                                 HelpStep(
                                     number = "1",
-                                    title = "Install RemEx Host on your PC",
-                                    body = "Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running."
+                                    title = stringResource(R.string.connection_help_step1_title),
+                                    body = stringResource(R.string.connection_help_step1_body)
                                 )
                                 HelpStep(
                                     number = "2",
-                                    title = "Connect to the same Wi-Fi",
-                                    body = "Your phone and PC must be on the same local network. Mobile data will not work."
+                                    title = stringResource(R.string.connection_help_step2_title),
+                                    body = stringResource(R.string.connection_help_step2_body)
                                 )
                                 HelpStep(
                                     number = "3",
-                                    title = "Find your PC's IP address",
+                                    title = stringResource(R.string.connection_help_step3_title),
                                     body = null
                                 )
                                 // Platform-specific IP instructions
@@ -363,28 +366,28 @@ fun ConnectionScreen(
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         IpInstructionRow(
-                                            platform = "Windows",
+                                            platform = stringResource(R.string.connection_platform_windows),
                                             icon = Icons.Default.Computer,
-                                            instruction = "Open Command Prompt and type: ipconfig\nLook for \"IPv4 Address\" under your Wi-Fi adapter."
+                                            instruction = stringResource(R.string.connection_ip_windows)
                                         )
                                         HorizontalDivider()
                                         IpInstructionRow(
-                                            platform = "macOS",
+                                            platform = stringResource(R.string.connection_platform_macos),
                                             icon = Icons.Default.Laptop,
-                                            instruction = "Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0"
+                                            instruction = stringResource(R.string.connection_ip_macos)
                                         )
                                         HorizontalDivider()
                                         IpInstructionRow(
-                                            platform = "Linux",
+                                            platform = stringResource(R.string.connection_platform_linux),
                                             icon = Icons.Default.Terminal,
-                                            instruction = "Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0)."
+                                            instruction = stringResource(R.string.connection_ip_linux)
                                         )
                                     }
                                 }
                                 HelpStep(
                                     number = "4",
-                                    title = "Enter the IP below and tap Save & Connect",
-                                    body = "The default port is 5005. If you set an access key in the host app, enter it here too."
+                                    title = stringResource(R.string.connection_help_step4_title),
+                                    body = stringResource(R.string.connection_help_step4_body)
                                 )
                             }
                         }
@@ -393,7 +396,7 @@ fun ConnectionScreen(
 
                 // --- Manual host fields ---
                 Text(
-                    text = "Or enter manually",
+                    text = stringResource(R.string.connection_or_enter_manually),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.Start)
@@ -402,7 +405,7 @@ fun ConnectionScreen(
                 OutlinedTextField(
                     value = hostInput,
                     onValueChange = { hostInput = it },
-                    label = { Text("Host IP Address") },
+                    label = { Text(stringResource(R.string.connection_label_host)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) },
@@ -410,13 +413,13 @@ fun ConnectionScreen(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
                     ),
-                    supportingText = { Text("Your PC's local IP — find it via ipconfig (Win) or ip addr (Linux)") }
+                    supportingText = { Text(stringResource(R.string.connection_hint_host)) }
                 )
 
                 OutlinedTextField(
                     value = portInput,
                     onValueChange = { portInput = it.filter { c -> c.isDigit() } },
-                    label = { Text("Port") },
+                    label = { Text(stringResource(R.string.connection_label_port)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
@@ -424,13 +427,13 @@ fun ConnectionScreen(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next
                     ),
-                    supportingText = { Text("Default: 5005") }
+                    supportingText = { Text(stringResource(R.string.connection_hint_port)) }
                 )
 
                 OutlinedTextField(
                     value = macInput,
                     onValueChange = { macInput = it.uppercase() },
-                    label = { Text("MAC Address (Wake-on-LAN)") },
+                    label = { Text(stringResource(R.string.connection_label_mac)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
@@ -438,14 +441,14 @@ fun ConnectionScreen(
                         capitalization = KeyboardCapitalization.Characters,
                         imeAction = ImeAction.Next
                     ),
-                    placeholder = { Text("AA:BB:CC:DD:EE:FF", style = MaterialTheme.typography.bodySmall) },
-                    supportingText = { Text("Required for Wake-on-LAN — find in Device Manager or ip link") }
+                    placeholder = { Text(stringResource(R.string.connection_placeholder_mac), style = MaterialTheme.typography.bodySmall) },
+                    supportingText = { Text(stringResource(R.string.connection_hint_mac)) }
                 )
 
                 OutlinedTextField(
                     value = broadcastInput,
                     onValueChange = { broadcastInput = it },
-                    label = { Text("Broadcast IP") },
+                    label = { Text(stringResource(R.string.connection_label_broadcast)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Router, contentDescription = null) },
@@ -453,13 +456,13 @@ fun ConnectionScreen(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
                     ),
-                    supportingText = { Text("Usually 255.255.255.255 — only change if WOL fails") }
+                    supportingText = { Text(stringResource(R.string.connection_hint_broadcast)) }
                 )
 
                 OutlinedTextField(
                     value = subnetInput,
                     onValueChange = { subnetInput = it },
-                    label = { Text("Subnet Mask") },
+                    label = { Text(stringResource(R.string.connection_label_subnet)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) },
@@ -467,20 +470,20 @@ fun ConnectionScreen(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
                     ),
-                    supportingText = { Text("Typically 255.255.255.0 for home networks") }
+                    supportingText = { Text(stringResource(R.string.connection_hint_subnet)) }
                 )
 
                 OutlinedTextField(
                     value = accessKeyInput,
                     onValueChange = { accessKeyInput = it },
-                    label = { Text("Access Key") },
+                    label = { Text(stringResource(R.string.connection_label_access_key)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         imeAction = ImeAction.Done
                     ),
-                    supportingText = { Text("Leave empty to disable authentication") }
+                    supportingText = { Text(stringResource(R.string.connection_hint_access_key)) }
                 )
 
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -489,14 +492,14 @@ fun ConnectionScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Remote Desktop Defaults",
+                            text = stringResource(R.string.connection_desktop_defaults_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text("Quality: ${qualityInput.toInt()}%")
+                        Text(stringResource(R.string.connection_quality_label, qualityInput.toInt()))
                         Slider(
                             value = qualityInput,
                             onValueChange = { qualityInput = it },
@@ -506,7 +509,7 @@ fun ConnectionScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text("Target FPS: ${targetFpsInput.toInt()} (max 120)")
+                        Text(stringResource(R.string.connection_fps_label, targetFpsInput.toInt()))
                         Slider(
                             value = targetFpsInput,
                             onValueChange = { targetFpsInput = it },
@@ -516,7 +519,7 @@ fun ConnectionScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text("Scale: ${"%.2f".format(scaleInput)}")
+                        Text(stringResource(R.string.connection_scale_label, "%.2f".format(scaleInput)))
                         Slider(
                             value = scaleInput,
                             onValueChange = { scaleInput = it },
@@ -549,12 +552,12 @@ fun ConnectionScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Save & Connect")
+                        Text(stringResource(R.string.button_save_connect))
                     }
                 }
 
                 Text(
-                    text = "Status: $status",
+                    text = stringResource(R.string.connection_status_label, status),
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (status == "Connected") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )

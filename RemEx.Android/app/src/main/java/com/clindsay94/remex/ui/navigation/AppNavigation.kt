@@ -47,6 +47,8 @@ import com.clindsay94.remex.ui.screens.RemoteControlScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
 import com.clindsay94.remex.ui.screens.RemoteMouseScreen
 import com.clindsay94.remex.ui.screens.SettingsScreen
+import androidx.compose.ui.res.stringResource
+import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
@@ -94,6 +96,9 @@ fun AppNavigation() {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val noConnectedMsg = stringResource(R.string.snackbar_no_pc_connected)
+    val setupConnectionLabel = stringResource(R.string.snackbar_setup_connection)
+
     fun navigateToConnection() {
         navController.navigate(Screen.Connection.route) {
             popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -106,8 +111,8 @@ fun AppNavigation() {
         if (!isConnected && route in connectionRequiredRoutes) {
             scope.launch {
                 val result = snackbarHostState.showSnackbar(
-                    message = "No PC connected",
-                    actionLabel = "Set up connection",
+                    message = noConnectedMsg,
+                    actionLabel = setupConnectionLabel,
                     withDismissAction = true
                 )
                 if (result == SnackbarResult.ActionPerformed) {
@@ -150,7 +155,7 @@ fun AppNavigation() {
                     // Overflow "More" item for secondary destinations
                     NavigationBarItem(
                         icon = {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.nav_more_label))
                             DropdownMenu(
                                 expanded = showOverflowMenu,
                                 onDismissRequest = { showOverflowMenu = false }
@@ -167,7 +172,7 @@ fun AppNavigation() {
                                 }
                             }
                         },
-                        label = { Text("More", style = MaterialTheme.typography.labelSmall) },
+                        label = { Text(stringResource(R.string.nav_more_label), style = MaterialTheme.typography.labelSmall) },
                         selected = secondaryNavItems.any { it.route == currentRoute },
                         alwaysShowLabel = false,
                         onClick = { showOverflowMenu = !showOverflowMenu }
@@ -182,7 +187,7 @@ fun AppNavigation() {
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                 ) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_settings_fab))
                 }
             }
         }

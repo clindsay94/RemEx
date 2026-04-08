@@ -41,9 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,10 +65,10 @@ fun TaskManagerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Task Manager", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.screen_task_manager_title), fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = { viewModel.refreshProcesses() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                     }
                 }
             )
@@ -85,7 +87,7 @@ fun TaskManagerScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
-                label = { Text("Search process name or PID") },
+                label = { Text(stringResource(R.string.task_manager_search_hint)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -99,23 +101,23 @@ fun TaskManagerScreen(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SortChip("Name", sortField == ProcessSortField.NAME, sortDescending) {
+                SortChip(stringResource(R.string.sort_name), sortField == ProcessSortField.NAME, sortDescending) {
                     viewModel.updateSortField(ProcessSortField.NAME)
                 }
-                SortChip("CPU", sortField == ProcessSortField.CPU, sortDescending) {
+                SortChip(stringResource(R.string.sort_cpu), sortField == ProcessSortField.CPU, sortDescending) {
                     viewModel.updateSortField(ProcessSortField.CPU)
                 }
-                SortChip("RAM", sortField == ProcessSortField.RAM, sortDescending) {
+                SortChip(stringResource(R.string.sort_ram), sortField == ProcessSortField.RAM, sortDescending) {
                     viewModel.updateSortField(ProcessSortField.RAM)
                 }
-                SortChip("PID", sortField == ProcessSortField.PID, sortDescending) {
+                SortChip(stringResource(R.string.sort_pid), sortField == ProcessSortField.PID, sortDescending) {
                     viewModel.updateSortField(ProcessSortField.PID)
                 }
             }
 
             if (!isConnected && processes.isEmpty()) {
                 DisconnectedFullScreen(
-                    screenName = "Task Manager",
+                    screenName = stringResource(R.string.screen_task_manager_title),
                     onNavigateToConnection = onNavigateToConnection,
                     modifier = Modifier.weight(1f)
                 )
@@ -127,7 +129,7 @@ fun TaskManagerScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Fetching processes...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.task_manager_fetching), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -172,9 +174,9 @@ private fun ProcessHeader() {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-        Text("CPU", modifier = Modifier.width(60.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-        Text("RAM", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.task_manager_header_name), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.task_manager_header_cpu), modifier = Modifier.width(60.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.task_manager_header_ram), modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.width(48.dp))
     }
 }
@@ -186,16 +188,16 @@ private fun ProcessItem(process: ProcessInfo, onKill: () -> Unit) {
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = { showConfirm = false },
-            title = { Text("Kill Process?") },
-            text = { Text("Are you sure you want to terminate ${process.name} (PID: ${process.id})?") },
+            title = { Text(stringResource(R.string.task_manager_kill_title)) },
+            text = { Text(stringResource(R.string.task_manager_kill_message, process.name, process.id)) },
             confirmButton = {
                 TextButton(onClick = { onKill(); showConfirm = false }) {
-                    Text("Kill", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.button_kill), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -216,7 +218,7 @@ private fun ProcessItem(process: ProcessInfo, onKill: () -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "PID: ${process.id}",
+                text = stringResource(R.string.task_manager_pid_label, process.id),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -227,7 +229,7 @@ private fun ProcessItem(process: ProcessInfo, onKill: () -> Unit) {
         IconButton(onClick = { showConfirm = true }, modifier = Modifier.size(32.dp)) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Kill",
+                contentDescription = stringResource(R.string.cd_kill_process),
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(20.dp)
             )

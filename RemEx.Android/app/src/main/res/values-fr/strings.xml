@@ -6,4 +6,263 @@
     <string name="widget_remote_label">RemEx Télécommande</string>
     <string name="widget_hardware_label">RemEx Matériel</string>
     <string name="widget_launcher_label">RemEx Lanceur</string>
+
+    <!-- ═══ Splash Screen ═══ -->
+    <string name="splash_app_name">RemEx</string>
+    <string name="splash_tagline">Remote Execution</string>
+
+    <!-- ═══ Navigation ═══ -->
+    <string name="snackbar_no_pc_connected">No PC connected</string>
+    <string name="snackbar_setup_connection">Set up connection</string>
+    <string name="nav_more_label">More</string>
+    <string name="cd_settings_fab">Settings</string>
+
+    <!-- ═══ Common Components ═══ -->
+    <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
+    <string name="button_connect">Connect</string>
+    <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
+    <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
+    <string name="button_setup_connection">Set up connection</string>
+
+    <!-- ═══ Shared Buttons ═══ -->
+    <string name="button_cancel">Cancel</string>
+    <string name="button_confirm">Confirm</string>
+    <string name="button_dismiss">Dismiss</string>
+    <string name="button_done">Done</string>
+    <string name="cd_refresh">Refresh</string>
+
+    <!-- ═══ Tutorial Screen ═══ -->
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_get_started">Get Started</string>
+    <string name="tutorial_next">Next</string>
+
+    <string name="tutorial_page1_title">Welcome to RemEx</string>
+    <string name="tutorial_page1_body">RemEx is your remote PC management command center. Control your computer, launch apps, monitor performance, and even view your desktop — all from your phone.\n\nLet\'s get you connected in a few quick steps.</string>
+
+    <string name="tutorial_page2_title">Install the Host First</string>
+    <string name="tutorial_page2_body">Before you can connect, you need the RemEx host software running on your PC.\n\nOption 1 — RemEx Desktop Client\nDownload and run Remex.Client.Desktop on your PC. It bundles the host automatically — just launch it and the host starts in the background.\n\nOption 2 — RemEx Host (standalone)\nInstall and run Remex.Host as a standalone service. This is ideal for headless servers or if you only need the host.\n\nBoth are self-contained — no extra runtimes needed. Download the latest publish folder from the GitHub releases page, extract, and run.</string>
+    <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
+
+    <string name="tutorial_page3_title">Auto-Discovery</string>
+    <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure Remex.Client.Desktop or Remex.Host is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. Tap \'Discover Automatically\' on the Connection screen\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
+
+    <string name="tutorial_page4_title">Finding Your IP Address</string>
+    <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nmacOS:\n  System Settings → Network, or run:\n  ipconfig getifaddr en0\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the Remex.Client.Desktop window under the connection status section.</string>
+
+    <string name="tutorial_page5_title">Manual Connection</string>
+    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (Settings → Connection)\n2. Enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n\nRemEx will establish a connection and you\'ll see your PC\'s status appear on the dashboard.\n\nRemember: Remex.Client.Desktop or Remex.Host must be running on the target PC for the connection to succeed.</string>
+
+    <string name="tutorial_page6_title">You\'re All Set!</string>
+    <string name="tutorial_page6_body">You\'re ready to take control.\n\nFrom the dashboard you can monitor system stats, launch apps, manage tasks, and stream your desktop remotely.\n\nHead to Personalization to customize your theme, card shapes, fonts, and colors.\n\nCheck out the FAQ in Settings if you run into any issues. Enjoy RemEx!</string>
+
+    <!-- ═══ Task Manager Screen ═══ -->
+    <string name="screen_task_manager_title">Task Manager</string>
+    <string name="task_manager_search_hint">Search process name or PID</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_cpu">CPU</string>
+    <string name="sort_ram">RAM</string>
+    <string name="sort_pid">PID</string>
+    <string name="task_manager_fetching">Fetching processes…</string>
+    <string name="task_manager_header_name">Name</string>
+    <string name="task_manager_header_cpu">CPU</string>
+    <string name="task_manager_header_ram">RAM</string>
+    <string name="task_manager_kill_title">Kill Process?</string>
+    <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
+    <string name="button_kill">Kill</string>
+    <string name="task_manager_pid_label">PID: %1$d</string>
+    <string name="cd_kill_process">Kill</string>
+
+    <!-- ═══ Remote Mouse Screen ═══ -->
+    <string name="screen_remote_mouse_title">Remote Mouse</string>
+    <string name="remote_mouse_trackpad_label">Trackpad</string>
+    <string name="remote_mouse_left_click">Left Click</string>
+    <string name="remote_mouse_right_click">Right Click</string>
+    <string name="cd_scroll_up">Scroll Up</string>
+    <string name="cd_scroll_down">Scroll Down</string>
+    <string name="cd_keyboard">Keyboard</string>
+
+    <!-- ═══ Settings Screen ═══ -->
+    <string name="screen_settings_title">Settings</string>
+    <string name="settings_tab_connection">Connection</string>
+    <string name="settings_tab_personalization">Personalization</string>
+    <string name="settings_tab_help">Help</string>
+    <string name="settings_help_title">Help &amp; About</string>
+    <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
+    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
+    <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
+
+    <!-- ═══ App Launcher Screen ═══ -->
+    <string name="screen_app_launcher_title">App Launcher</string>
+    <string name="app_launcher_no_apps">No apps found</string>
+    <string name="button_fetch_from_host">Fetch from Host</string>
+
+    <!-- ═══ Remote Control Screen ═══ -->
+    <string name="screen_remote_control_title">Remote Control</string>
+    <string name="remote_control_section_header">System Commands</string>
+    <string name="remote_control_description">Critical actions require confirmation. Optional delay sets shutdown -t seconds.</string>
+    <string name="remote_control_confirm_choice">Confirm choice</string>
+    <string name="remote_control_timer_label">Timer (seconds)</string>
+    <string name="button_select">Select</string>
+    <string name="button_run">Run</string>
+    <string name="rc_wake_pc">Wake PC</string>
+    <string name="rc_lock_pc">Lock PC</string>
+    <string name="rc_shutdown">Shutdown</string>
+    <string name="rc_restart">Restart</string>
+    <string name="rc_reboot_uefi">Reboot to UEFI</string>
+    <string name="rc_force_shutdown">Force Shutdown</string>
+    <string name="rc_force_restart">Force Restart</string>
+    <string name="rc_sleep">Sleep</string>
+    <string name="rc_hibernate">Hibernate</string>
+    <string name="rc_monitor_off">Turn Off Monitor</string>
+    <string name="rc_logoff">Log Off</string>
+
+    <!-- ═══ Remote Desktop Screen ═══ -->
+    <string name="screen_remote_desktop_title">Remote Desktop</string>
+    <string name="cd_show_keyboard">Show Keyboard</string>
+    <string name="cd_reset_input">Reset Input</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_toggle_fullscreen">Toggle fullscreen</string>
+    <string name="cd_stop">Stop</string>
+    <string name="cd_remote_desktop_frame">Remote Desktop Frame</string>
+    <string name="remote_desktop_unavailable">Remote desktop unavailable</string>
+    <string name="remote_desktop_waiting">Waiting for frames…</string>
+    <string name="remote_desktop_stopped">Stream Stopped</string>
+    <string name="button_start_streaming">Start Streaming</string>
+    <string name="cd_exit_fullscreen">Exit Fullscreen</string>
+    <string name="cd_zoom_in">Zoom In</string>
+    <string name="cd_zoom_out">Zoom Out</string>
+    <string name="remote_desktop_config_title">Stream Configuration</string>
+    <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
+    <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
+    <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
+
+    <!-- ═══ Dashboard Screen ═══ -->
+    <string name="screen_dashboard_title">RemEx Home Base</string>
+    <string name="cd_reset_zoom">Reset zoom</string>
+    <string name="cd_customize_cards">Customize cards</string>
+    <string name="dashboard_pc_status">PC Status</string>
+    <string name="dashboard_pc_status_subtitle">Connection status orb</string>
+    <string name="dashboard_wake_pc">Wake PC</string>
+    <string name="dashboard_wake_pc_subtitle">Send WOL magic packet</string>
+    <string name="dashboard_telemetry_fallback">Telemetry</string>
+    <string name="dashboard_card_drawer_title">Card Drawer</string>
+    <string name="dashboard_card_drawer_hint">Check to place card, uncheck to remove, or drag a card out onto canvas.</string>
+    <string name="dashboard_drop_to_place">Drop to place %1$s</string>
+    <string name="dashboard_host_online">HOST ONLINE</string>
+    <string name="dashboard_connecting">CONNECTING…</string>
+    <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
+    <string name="dashboard_wake_pc_button">WAKE PC</string>
+    <string name="dashboard_no_value">--</string>
+    <string name="dashboard_collecting_data">Collecting data…</string>
+    <string name="cd_change_display_mode">Change display mode</string>
+
+    <!-- ═══ Connection Screen ═══ -->
+    <string name="screen_connection_title">Connection</string>
+    <string name="connection_host_settings">Host Settings</string>
+    <string name="cd_dismiss_error">Dismiss</string>
+    <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
+    <string name="connection_auto_discover_hint">Make sure your PC is running the RemEx Host app and both devices are on the same Wi-Fi network.</string>
+    <string name="connection_searching">Searching for RemEx Host…</string>
+    <string name="connection_found_host">Found: %1$s — Search Again</string>
+    <string name="connection_discover_button">Discover Automatically</string>
+    <string name="connection_host_found">Host found and fields filled in below.</string>
+    <string name="connection_help_title">How to connect manually</string>
+    <string name="connection_help_step1_title">Install RemEx Host on your PC</string>
+    <string name="connection_help_step1_body">Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running.</string>
+    <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
+    <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
+    <string name="connection_help_step3_title">Find your PC\'s IP address</string>
+    <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; Connect</string>
+    <string name="connection_help_step4_body">The default port is 5005. If you set an access key in the host app, enter it here too.</string>
+    <string name="connection_platform_windows">Windows</string>
+    <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for "IPv4 Address" under your Wi-Fi adapter.</string>
+    <string name="connection_platform_macos">macOS</string>
+    <string name="connection_ip_macos">Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0</string>
+    <string name="connection_platform_linux">Linux</string>
+    <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
+    <string name="connection_or_enter_manually">Or enter manually</string>
+    <string name="connection_label_host">Host IP Address</string>
+    <string name="connection_hint_host">Your PC\'s local IP — find it via ipconfig (Win) or ip addr (Linux)</string>
+    <string name="connection_label_port">Port</string>
+    <string name="connection_hint_port">Default: 5005</string>
+    <string name="connection_label_mac">MAC Address (Wake-on-LAN)</string>
+    <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
+    <string name="connection_hint_mac">Required for Wake-on-LAN — find in Device Manager or ip link</string>
+    <string name="connection_label_broadcast">Broadcast IP</string>
+    <string name="connection_hint_broadcast">Usually 255.255.255.255 — only change if WOL fails</string>
+    <string name="connection_label_subnet">Subnet Mask</string>
+    <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
+    <string name="connection_label_access_key">Access Key</string>
+    <string name="connection_hint_access_key">Leave empty to disable authentication</string>
+    <string name="connection_desktop_defaults_title">Remote Desktop Defaults</string>
+    <string name="connection_quality_label">Quality: %1$d%%</string>
+    <string name="connection_fps_label">Target FPS: %1$d (max 120)</string>
+    <string name="connection_scale_label">Scale: %1$s</string>
+    <string name="button_save_connect">Save &amp; Connect</string>
+    <string name="connection_status_label">Status: %1$s</string>
+
+    <!-- ═══ FAQ Screen ═══ -->
+    <string name="screen_faq_title">FAQ</string>
+    <string name="faq_header">Frequently Asked Questions</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
+    <string name="faq_github_button">Open GitHub Releases</string>
+
+    <string name="faq_q1">What do I need to run on my PC?</string>
+    <string name="faq_a1">You need either Remex.Client.Desktop or Remex.Host running on your PC.\n\n• Remex.Client.Desktop — The full desktop app that bundles the host automatically. Just launch it and the host starts in the background on port 5005.\n\n• Remex.Host — A standalone headless service, ideal for servers or background-only use.\n\nBoth are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</string>
+
+    <string name="faq_q2">How do I find my PC\'s IP address?</string>
+    <string name="faq_a2">Windows:\nOpen Command Prompt and type \'ipconfig\'. Look for the \'IPv4 Address\' line under your active network adapter (e.g. 192.168.1.42).\n\nmacOS:\nGo to System Settings → Network and look at the connected interface, or open Terminal and run: ipconfig getifaddr en0\n\nLinux:\nOpen a terminal and run: ip addr  or  hostname -I\n\nYou can also see the IP directly in the Remex.Client.Desktop window.</string>
+
+    <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
+    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. RemEx will prompt for this when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
+
+    <string name="faq_q4">What is the default port?</string>
+    <string name="faq_a4">The default port is 5005. If Remex.Client.Desktop finds port 5005 in use, it will fall back to 5006. You can see the active port in the desktop client\'s window.\n\nIf you changed the port on the host side, make sure to enter the matching port in the Connection screen on this app.</string>
+
+    <string name="faq_q5">What is the Access Key for?</string>
+    <string name="faq_a5">The Access Key is an optional authentication token. If you set an access key on the host (in Remex.Host settings), you must enter the same key here to connect.\n\nIf you haven\'t configured one on the host, leave this field empty.</string>
+
+    <string name="faq_q6">Can I connect over the internet (not just LAN)?</string>
+    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. If you do this, always enable the Access Key for authentication. A VPN is the recommended approach for remote access.</string>
+
+    <string name="faq_q7">Remote Desktop is laggy or not working. What can I do?</string>
+    <string name="faq_a7">• Lower the Quality slider in Connection → Remote Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• Make sure your PC supports the screen capture backend: DXGI on Windows, X11/Wayland on Linux.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
+
+    <string name="faq_q8">What is Wake-on-LAN (WOL)?</string>
+    <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a "magic packet" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Enter your PC\'s MAC address in the Connection screen.\n4. Use the \'Wake PC\' card on the dashboard or the Remote Control screen.</string>
+
+    <string name="faq_q9">How do I customize the app\'s appearance?</string>
+    <string name="faq_a9">Go to the Personalization screen (tap the gear FAB on the dashboard or navigate via the overflow menu → Settings).\n\nYou can change:\n• Theme palette and color seed\n• Card corner radius and shape presets\n• Font family and scale\n• Card opacity\n• Dark/light/system theme mode</string>
+
+    <string name="faq_q10">Can I re-watch the tutorial?</string>
+    <string name="faq_a10">Yes! Go to Settings from the overflow menu (⋮ → Settings). There you\'ll find an option to replay the tutorial at any time.</string>
+
+    <!-- ═══ Personalization Screen ═══ -->
+    <string name="screen_personalization_title">Personalization</string>
+    <string name="personalization_appearance_studio">Appearance Studio</string>
+    <string name="personalization_section_language">Language</string>
+    <string name="personalization_app_language">App Language</string>
+    <string name="personalization_language_note">Changes the display language for this app. Some text may remain in English until translations are complete.</string>
+    <string name="personalization_system_default">System Default</string>
+    <string name="personalization_section_theme">Theme &amp; Strategy</string>
+    <string name="personalization_display_mode">Display Mode</string>
+    <string name="personalization_palette_strategy">Dynamic Palette Strategy</string>
+    <string name="personalization_section_color">Color Studio</string>
+    <string name="personalization_palette_mode">Palette Mode</string>
+    <string name="personalization_hue_label">Hue: %1$d°</string>
+    <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
+    <string name="personalization_contrast_label">Contrast: %1$s</string>
+    <string name="personalization_tonal_range">Tonal Range</string>
+    <string name="personalization_manual_hex">Manual Hex Code</string>
+    <string name="personalization_section_geometry">Expressive Geometry</string>
+    <string name="personalization_corner_base">Corner Base: %1$ddp</string>
+    <string name="personalization_card_opacity">Card Opacity: %1$d%%</string>
+    <string name="personalization_shape_telemetry">Telemetry Cards</string>
+    <string name="personalization_shape_app_launcher">App Launcher</string>
+    <string name="personalization_shape_remote_commands">Remote Commands</string>
+    <string name="personalization_shape_remote_mouse">Remote Mouse</string>
+    <string name="personalization_shape_task_manager">Task Manager</string>
+    <string name="personalization_shape_pc_orb">PC Connection Orb</string>
+    <string name="personalization_preview">PREVIEW</string>
 </resources>

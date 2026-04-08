@@ -39,10 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
@@ -72,10 +74,10 @@ fun AppLauncherScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("App Launcher", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.screen_app_launcher_title), fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = { viewModel.refreshApps() }, enabled = isConnected) {
-                        Icon(Default.Refresh, contentDescription = "Refresh")
+                        Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                     }
                 }
             )
@@ -89,7 +91,7 @@ fun AppLauncherScreen(
 
             if (!isConnected && apps.isEmpty()) {
                 DisconnectedFullScreen(
-                    screenName = "App Launcher",
+                    screenName = stringResource(R.string.screen_app_launcher_title),
                     onNavigateToConnection = onNavigateToConnection,
                     modifier = Modifier.weight(1f)
                 )
@@ -106,14 +108,14 @@ fun AppLauncherScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Text(
-                        "No apps found",
+                        stringResource(R.string.app_launcher_no_apps),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Button(
                         onClick = { viewModel.refreshApps() },
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        Text("Fetch from Host")
+                        Text(stringResource(R.string.button_fetch_from_host))
                     }
                 }
             }

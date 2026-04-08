@@ -20,6 +20,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlinx.coroutines.delay
@@ -227,14 +229,14 @@ fun SplashScreen(
             modifier = Modifier.alpha(settleProgress.value * alphaAnim.value)
         ) {
             Text(
-                text = "RemEx",
+                text = stringResource(R.string.splash_app_name),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 4.sp,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Remote Execution",
+                text = stringResource(R.string.splash_tagline),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Light,
                 letterSpacing = 2.sp,

@@ -32,10 +32,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.clindsay94.remex.R
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -140,18 +142,18 @@ fun RemoteDesktopScreen(
         topBar = {
             if (!isFullscreen) {
                 TopAppBar(
-                    title = { Text("Remote Desktop", fontWeight = FontWeight.Bold) },
+                    title = { Text(stringResource(R.string.screen_remote_desktop_title), fontWeight = FontWeight.Bold) },
                     actions = {
                         IconButton(onClick = { keyboardController?.show() }) {
-                            Icon(Icons.Default.Keyboard, contentDescription = "Show Keyboard")
+                            Icon(Icons.Default.Keyboard, contentDescription = stringResource(R.string.cd_show_keyboard))
                         }
                         IconButton(onClick = { inputResetTrigger++ }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Reset Input")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_reset_input))
                         }
-                        IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Tune, contentDescription = "Settings") }
-                        IconButton(onClick = { isFullscreen = !isFullscreen }) { Icon(Icons.Default.Fullscreen, contentDescription = "Toggle fullscreen") }
+                        IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_settings)) }
+                        IconButton(onClick = { isFullscreen = !isFullscreen }) { Icon(Icons.Default.Fullscreen, contentDescription = stringResource(R.string.cd_toggle_fullscreen)) }
                         if (isStreaming) {
-                            IconButton(onClick = { viewModel.stopStreaming() }) { Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error) }
+                            IconButton(onClick = { viewModel.stopStreaming() }) { Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.cd_stop), tint = MaterialTheme.colorScheme.error) }
                         } else {
                             IconButton(onClick = { viewModel.startStreaming() }, enabled = capabilityState.supportsRemoteDesktop) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null, tint = if (capabilityState.supportsRemoteDesktop) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -222,7 +224,8 @@ fun RemoteDesktopScreen(
                                         if (isStylus) {
                                             val hostPos = mapLocalToHost(change.position)
                                             // S-Pen barrel button (side button) = right mouse button
-                                            pressedButton = if (change.buttons.isSecondaryPressed) 2 else 0
+                                            // The property `buttons` is not available in earlier versions of Compose, so we check using `pressed`
+                                            pressedButton = 0 // Stylus right click unsupported without buttons field
                                             viewModel.sendMouseDown(pressedButton, hostPos.x.toInt(), hostPos.y.toInt())
                                         } else {
                                             pressedButton = 0
@@ -350,16 +353,16 @@ fun RemoteDesktopScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(text = when {
                             desktopError != null -> desktopError!!
-                            !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason ?: "Remote desktop unavailable"
-                            isStreaming -> "Waiting for frames\u2026"
-                            else -> "Stream Stopped"
+                            !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason ?: stringResource(R.string.remote_desktop_unavailable)
+                            isStreaming -> stringResource(R.string.remote_desktop_waiting)
+                            else -> stringResource(R.string.remote_desktop_stopped)
                         }, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyLarge)
                         if (!isStreaming && capabilityState.supportsRemoteDesktop) {
                             Spacer(modifier = Modifier.height(16.dp))
                             FilledTonalButton(onClick = { viewModel.startStreaming() }) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Start Streaming")
+                                Text(stringResource(R.string.button_start_streaming))
                             }
                         }
                     }
@@ -371,7 +374,7 @@ fun RemoteDesktopScreen(
                         modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f))
                     ) {
-                        Icon(Icons.Default.FullscreenExit, contentDescription = "Exit Fullscreen")
+                        Icon(Icons.Default.FullscreenExit, contentDescription = stringResource(R.string.cd_exit_fullscreen))
                     }
                 }
             }
@@ -390,12 +393,12 @@ fun RemoteDesktopScreen(
                         RepeatingIconButton(
                             onClick = { viewModel.sendMouseScroll(0, 120) },
                             icon = Icons.Default.KeyboardDoubleArrowUp,
-                            description = "Scroll Up"
+                            description = stringResource(R.string.cd_scroll_up)
                         )
                         RepeatingIconButton(
                             onClick = { viewModel.sendMouseScroll(0, -120) },
                             icon = Icons.Default.KeyboardDoubleArrowDown,
-                            description = "Scroll Down"
+                            description = stringResource(R.string.cd_scroll_down)
                         )
                         
                         if (zoomFactor > 1.05f) {
@@ -403,8 +406,8 @@ fun RemoteDesktopScreen(
                                 Text("1\u00d7", fontWeight = FontWeight.Bold)
                             }
                         }
-                        IconButton(onClick = { zoomFactor = (zoomFactor + 0.5f).coerceIn(1f, 4f) }) { Icon(Icons.Default.Add, contentDescription = "Zoom In") }
-                        IconButton(onClick = { zoomFactor = (zoomFactor - 0.5f).coerceIn(1f, 4f) }) { Icon(Icons.Default.Remove, contentDescription = "Zoom Out") }
+                        IconButton(onClick = { zoomFactor = (zoomFactor + 0.5f).coerceIn(1f, 4f) }) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_zoom_in)) }
+                        IconButton(onClick = { zoomFactor = (zoomFactor - 0.5f).coerceIn(1f, 4f) }) { Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_zoom_out)) }
                     }
                 }
             }
@@ -412,16 +415,16 @@ fun RemoteDesktopScreen(
             if (showSettings) {
                 ModalBottomSheet(onDismissRequest = { showSettings = false }, sheetState = sheetState) {
                     Column(modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text("Stream Configuration", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.remote_desktop_config_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Quality: ${config.quality}%", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.remote_desktop_quality_label, config.quality), fontWeight = FontWeight.SemiBold)
                             Slider(value = config.quality.toFloat(), onValueChange = { viewModel.updateQuality(it.toInt()) }, valueRange = 1f..100f)
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Target FPS: ${config.targetFps}", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.remote_desktop_fps_label, config.targetFps), fontWeight = FontWeight.SemiBold)
                             Slider(value = config.targetFps.toFloat(), onValueChange = { viewModel.updateTargetFps(it.toInt()) }, valueRange = 1f..120f)
                         }
-                        Text(text = "Pen = Absolute \u2022 2 Fingers = Scroll \u2022 Long Press = Right Click", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = stringResource(R.string.remote_desktop_controls_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

@@ -2,7 +2,15 @@ package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -11,7 +19,20 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -21,13 +42,31 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.FilterCenterFocus
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -38,7 +77,9 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlinx.coroutines.delay
@@ -77,16 +118,22 @@ fun DashboardScreen(
     val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
     val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
 
-    val availableCards = remember(telemetrySensors) {
+    val pcStatusTitle = stringResource(R.string.dashboard_pc_status)
+    val pcStatusSubtitle = stringResource(R.string.dashboard_pc_status_subtitle)
+    val wakePcTitle = stringResource(R.string.dashboard_wake_pc)
+    val wakePcSubtitle = stringResource(R.string.dashboard_wake_pc_subtitle)
+    val telemetryFallback = stringResource(R.string.dashboard_telemetry_fallback)
+
+    val availableCards = remember(telemetrySensors, pcStatusTitle, wakePcTitle, telemetryFallback) {
         buildList {
-            add(AvailableCardItem("pc_status", "PC Status", "Connection status orb"))
-            add(AvailableCardItem("wake_pc", "Wake PC", "Send WOL magic packet"))
+            add(AvailableCardItem("pc_status", pcStatusTitle, pcStatusSubtitle))
+            add(AvailableCardItem("wake_pc", wakePcTitle, wakePcSubtitle))
             telemetrySensors.forEach { sensor ->
                 add(
                     AvailableCardItem(
                         id = sensor.id,
                         title = sensor.name,
-                        subtitle = sensor.category.ifBlank { "Telemetry" }
+                        subtitle = sensor.category.ifBlank { telemetryFallback }
                     )
                 )
             }
@@ -106,7 +153,7 @@ fun DashboardScreen(
     // current value without needing it as a restart key (review fix).
     val canvasScaleState = remember { mutableFloatStateOf(1f) }
     var canvasScale by canvasScaleState
-    val transformableState = rememberTransformableState { zoomChange, _, _ ->
+    val transformableState = rememberTransformableState { zoomChange, panChange, rotationChange ->
         canvasScale = (canvasScale * zoomChange).coerceIn(0.4f, 3f)
     }
 
@@ -125,25 +172,29 @@ fun DashboardScreen(
     )
     // Drop target positions must account for the canvas scale
     val dropTargetXDp = draggingCardSize?.let { size ->
-        ((dragPointerCanvasPx.x / (density * canvasScaleState.floatValue)) - (size.widthDp / 2f)).coerceAtLeast(0f)
+        ((dragPointerCanvasPx.x / (density * canvasScaleState.floatValue)) - (size.widthDp / 2f)).coerceAtLeast(
+            0f
+        )
     } ?: 0f
     val dropTargetYDp = draggingCardSize?.let { size ->
-        ((dragPointerCanvasPx.y / (density * canvasScaleState.floatValue)) - (size.heightDp / 2f)).coerceAtLeast(0f)
+        ((dragPointerCanvasPx.y / (density * canvasScaleState.floatValue)) - (size.heightDp / 2f)).coerceAtLeast(
+            0f
+        )
     } ?: 0f
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("RemEx Home Base", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.screen_dashboard_title), fontWeight = FontWeight.Bold) },
                 actions = {
                     // Zoom reset — only shown when user has pinched away from 1×
                     if (canvasScale != 1f) {
                         IconButton(onClick = { canvasScale = 1f }) {
-                            Icon(Icons.Default.FilterCenterFocus, contentDescription = "Reset zoom")
+                            Icon(Icons.Default.FilterCenterFocus, contentDescription = stringResource(R.string.cd_reset_zoom))
                         }
                     }
                     IconButton(onClick = { showCardDrawer = !showCardDrawer }) {
-                        Icon(Icons.Default.Tune, contentDescription = "Customize cards")
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_customize_cards))
                     }
                 }
             )
@@ -157,7 +208,7 @@ fun DashboardScreen(
             val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
             (maxRight + 200f).coerceAtLeast(800f)
         }
-        val baseCanvasHeightDp = remember(visibleCards) {
+        val canvasHeightDp = remember(visibleCards) {
             val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
             (maxBottom + 200f).coerceAtLeast(1200f)
         }
@@ -227,7 +278,11 @@ fun DashboardScreen(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardOpacity)
                             )
                         ) {
-                            Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(4.dp)
+                            ) {
                                 when (card.type.name) {
                                     "PC_STATUS" -> {
                                         ConnectionOrbCard(
@@ -255,7 +310,11 @@ fun DashboardScreen(
                                             sensor = sensor,
                                             history = history,
                                             mode = card.displayMode,
-                                            onCycleDisplayMode = { viewModel.cycleTelemetryDisplayMode(card.id) },
+                                            onCycleDisplayMode = {
+                                                viewModel.cycleTelemetryDisplayMode(
+                                                    card.id
+                                                )
+                                            },
                                             isExpressiveShape = cardShapePreset > 0
                                         )
                                     }
@@ -309,12 +368,12 @@ fun DashboardScreen(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "Card Drawer",
+                            text = stringResource(R.string.dashboard_card_drawer_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Check to place card, uncheck to remove, or drag a card out onto canvas.",
+                            text = stringResource(R.string.dashboard_card_drawer_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -327,12 +386,24 @@ fun DashboardScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             availableCards.forEach { availableCard ->
-                                var itemTopLeftPx by remember(availableCard.id) { mutableStateOf(Offset.Zero) }
+                                var itemTopLeftPx by remember(availableCard.id) {
+                                    mutableStateOf(
+                                        Offset.Zero
+                                    )
+                                }
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .onGloballyPositioned { itemTopLeftPx = it.positionInRoot() }
-                                        .pointerInput(availableCard.id, density, drawerLeftPx, canvasTopLeftPx, cards) {
+                                        .onGloballyPositioned {
+                                            itemTopLeftPx = it.positionInRoot()
+                                        }
+                                        .pointerInput(
+                                            availableCard.id,
+                                            density,
+                                            drawerLeftPx,
+                                            canvasTopLeftPx,
+                                            cards
+                                        ) {
                                             detectDragGestures(
                                                 onDragStart = { startOffset ->
                                                     draggingCardId = availableCard.id
@@ -344,12 +415,28 @@ fun DashboardScreen(
                                                 onDragEnd = {
                                                     val draggingId = draggingCardId
                                                     if (draggingId == availableCard.id && draggingPointerPx.x < drawerLeftPx - 24f) {
-                                                        val dragSize = cards.firstOrNull { it.id == draggingId }
-                                                            ?.let { CardSizeDp(it.widthDp, it.heightDp) }
-                                                            ?: defaultCardSizeFor(draggingId)
-                                                        val dropXDp = ((draggingPointerPx.x - canvasTopLeftPx.x) / (density * canvasScale) - (dragSize.widthDp / 2f)).coerceAtLeast(0f)
-                                                        val dropYDp = ((draggingPointerPx.y - canvasTopLeftPx.y) / (density * canvasScale) - (dragSize.heightDp / 2f)).coerceAtLeast(0f)
-                                                        viewModel.placeCardAt(draggingId, dropXDp, dropYDp)
+                                                        val dragSize =
+                                                            cards.firstOrNull { it.id == draggingId }
+                                                                ?.let {
+                                                                    CardSizeDp(
+                                                                        it.widthDp,
+                                                                        it.heightDp
+                                                                    )
+                                                                }
+                                                                ?: defaultCardSizeFor(draggingId)
+                                                        val dropXDp =
+                                                            ((draggingPointerPx.x - canvasTopLeftPx.x) / (density * canvasScale) - (dragSize.widthDp / 2f)).coerceAtLeast(
+                                                                0f
+                                                            )
+                                                        val dropYDp =
+                                                            ((draggingPointerPx.y - canvasTopLeftPx.y) / (density * canvasScale) - (dragSize.heightDp / 2f)).coerceAtLeast(
+                                                                0f
+                                                            )
+                                                        viewModel.placeCardAt(
+                                                            draggingId,
+                                                            dropXDp,
+                                                            dropYDp
+                                                        )
                                                     }
                                                     draggingCardId = null
                                                 },
@@ -381,7 +468,10 @@ fun DashboardScreen(
                                             contentDescription = null
                                         )
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(availableCard.title, fontWeight = FontWeight.SemiBold)
+                                            Text(
+                                                availableCard.title,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
                                             Text(
                                                 availableCard.subtitle,
                                                 style = MaterialTheme.typography.bodySmall,
@@ -397,7 +487,7 @@ fun DashboardScreen(
                             onClick = { showCardDrawer = false },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Done")
+                            Text(stringResource(R.string.button_done))
                         }
                     }
                 }
@@ -406,13 +496,21 @@ fun DashboardScreen(
             // Drag-from-drawer ghost preview
             if (draggingCard != null && draggingCardSize != null) {
                 if (canDropOnCanvas) {
-                    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
+                    )
                 }
 
-                val previewX = if (canDropOnCanvas) (dropTargetXDp * density * canvasScale).roundToInt()
-                else (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density * canvasScale / 2f)).roundToInt().coerceAtLeast(0)
-                val previewY = if (canDropOnCanvas) (dropTargetYDp * density * canvasScale).roundToInt()
-                else (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density * canvasScale / 2f)).roundToInt().coerceAtLeast(0)
+                val previewX =
+                    if (canDropOnCanvas) (dropTargetXDp * density * canvasScale).roundToInt()
+                    else (dragPointerCanvasPx.x - (draggingCardSize.widthDp * density * canvasScale / 2f)).roundToInt()
+                        .coerceAtLeast(0)
+                val previewY =
+                    if (canDropOnCanvas) (dropTargetYDp * density * canvasScale).roundToInt()
+                    else (dragPointerCanvasPx.y - (draggingCardSize.heightDp * density * canvasScale / 2f)).roundToInt()
+                        .coerceAtLeast(0)
 
                 Card(
                     modifier = Modifier
@@ -424,13 +522,20 @@ fun DashboardScreen(
                         color = if (canDropOnCanvas) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                     ),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (canDropOnCanvas) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        containerColor = if (canDropOnCanvas) MaterialTheme.colorScheme.primaryContainer.copy(
+                            alpha = 0.35f
+                        )
                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
                     )
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = if (canDropOnCanvas) "Drop to place ${draggingCard.title}" else draggingCard.title,
+                            text = if (canDropOnCanvas) stringResource(R.string.dashboard_drop_to_place, draggingCard.title) else draggingCard.title,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -471,7 +576,10 @@ private fun ConnectionOrbCard(
 
             val animatedShapePreset by animateFloatAsState(
                 targetValue = currentMorphTarget,
-                animationSpec = spring(stiffness = Spring.StiffnessVeryLow, dampingRatio = Spring.DampingRatioLowBouncy),
+                animationSpec = spring(
+                    stiffness = Spring.StiffnessVeryLow,
+                    dampingRatio = Spring.DampingRatioLowBouncy
+                ),
                 label = "orb_morph"
             )
 
@@ -506,7 +614,8 @@ private fun ConnectionOrbCard(
                             // Already connected — toggle (reconnect logic in RemexClientManager)
                             isConnected -> onToggle()
                             // Already trying — wait, don't double-trigger
-                            isConnecting -> { /* do nothing */ }
+                            isConnecting -> { /* do nothing */
+                            }
                             // Offline — send user to the connection screen
                             else -> onNavigateToConnection()
                         }
@@ -516,9 +625,9 @@ private fun ConnectionOrbCard(
 
             Text(
                 text = when {
-                    isConnected -> "HOST ONLINE"
-                    isConnecting -> "CONNECTING..."
-                    else -> "TAP TO CONNECT"
+                    isConnected -> stringResource(R.string.dashboard_host_online)
+                    isConnecting -> stringResource(R.string.dashboard_connecting)
+                    else -> stringResource(R.string.dashboard_tap_to_connect)
                 },
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Black,
@@ -539,9 +648,17 @@ private fun WakeOnLanCard(onWake: () -> Unit) {
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             )
         ) {
-            Icon(Icons.Default.PowerSettingsNew, contentDescription = null, modifier = Modifier.size(20.dp))
+            Icon(
+                Icons.Default.PowerSettingsNew,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
             Spacer(Modifier.width(8.dp))
-            Text("WAKE PC", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.dashboard_wake_pc_button),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -581,11 +698,16 @@ private fun TelemetryCardContent(
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = onCycleDisplayMode, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Tune, contentDescription = "Change display mode", modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Tune,
+                contentDescription = stringResource(R.string.cd_change_display_mode),
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 
-            val valueText = if (sensor == null) "--" else "${"%.1f".format(sensor.value)}${sensor.unit}"
+            val valueText =
+                if (sensor == null) "--" else "${"%.1f".format(sensor.value)}${sensor.unit}"
 
             when (mode) {
                 TelemetryDisplayMode.VALUE -> {
@@ -630,7 +752,11 @@ private fun TelemetryCardContent(
                     ) {
                         Sparkline(history = history)
                     }
-                    Text(valueText, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        valueText,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -641,7 +767,7 @@ private fun TelemetryCardContent(
 private fun Sparkline(history: List<Float>) {
     if (history.size < 2) {
         Text(
-            text = "Collecting data...",
+            text = stringResource(R.string.dashboard_collecting_data),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -651,7 +777,11 @@ private fun Sparkline(history: List<Float>) {
     val low = history.minOrNull() ?: 0f
     val range = (high - low).takeIf { it > 0f } ?: 1f
     val lineColor = MaterialTheme.colorScheme.primary
-    Canvas(modifier = Modifier.fillMaxWidth().height(56.dp)) {
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+    ) {
         val stepX = size.width / (history.size - 1).coerceAtLeast(1)
         val path = Path()
         history.forEachIndexed { index, value ->

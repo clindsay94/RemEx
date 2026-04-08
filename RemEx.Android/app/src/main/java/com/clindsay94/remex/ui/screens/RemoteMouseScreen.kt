@@ -28,6 +28,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.clindsay94.remex.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +62,7 @@ fun RemoteMouseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Remote Mouse", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(R.string.screen_remote_mouse_title), fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -119,7 +121,7 @@ fun RemoteMouseScreen(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                         Text(
-                            "Trackpad",
+                            stringResource(R.string.remote_mouse_trackpad_label),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
@@ -142,7 +144,7 @@ fun RemoteMouseScreen(
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 ) {
-                    Text("Left Click", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.remote_mouse_left_click), fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = { viewModel.sendMouseClick(2) },
@@ -155,7 +157,7 @@ fun RemoteMouseScreen(
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 ) {
-                    Text("Right Click", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.remote_mouse_right_click), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -164,13 +166,13 @@ fun RemoteMouseScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 IconButton(onClick = { viewModel.sendScroll(-100) }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = "Scroll Up")
+                    Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = stringResource(R.string.cd_scroll_up))
                 }
                 IconButton(onClick = { viewModel.sendScroll(100) }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = "Scroll Down")
+                    Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = stringResource(R.string.cd_scroll_down))
                 }
                 IconButton(onClick = { focusRequester.requestFocus() }) {
-                    Icon(Icons.Default.Keyboard, contentDescription = "Keyboard")
+                    Icon(Icons.Default.Keyboard, contentDescription = stringResource(R.string.cd_keyboard))
                 }
             }
             } // end inner Column

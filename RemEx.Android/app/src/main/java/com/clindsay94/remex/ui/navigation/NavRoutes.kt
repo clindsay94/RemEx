@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Computer
@@ -24,7 +25,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Personalization : Screen("personalization", "Personalization", Icons.Default.Palette)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object Tutorial : Screen("tutorial", "Tutorial", Icons.Default.Dashboard)
-    object Faq : Screen("faq", "FAQ", Icons.Default.HelpOutline)
+    object Faq : Screen("faq", "FAQ", Icons.AutoMirrored.Filled.HelpOutline)
 }
 
 /** Bottom navigation bar items — App Launcher replaces old Connection/Settings tab. */

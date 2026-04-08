@@ -26,10 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList
@@ -46,7 +48,7 @@ fun PersonalizationScreen(
 
     if (settingsState == null) {
         Scaffold(
-            topBar = { TopAppBar(title = { Text("Personalization", fontWeight = FontWeight.Bold) }) }
+            topBar = { TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title), fontWeight = FontWeight.Bold) }) }
         ) { padding ->
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -103,7 +105,7 @@ fun PersonalizationScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Personalization", fontWeight = FontWeight.Bold) }) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title), fontWeight = FontWeight.Bold) }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -114,7 +116,7 @@ fun PersonalizationScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                text = "Appearance Studio",
+                text = stringResource(R.string.personalization_appearance_studio),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp
@@ -123,15 +125,15 @@ fun PersonalizationScreen(
             // ═══ Language Settings ═══
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("Language", Icons.Default.Language)
+                    SectionHeader(stringResource(R.string.personalization_section_language), Icons.Default.Language)
                     
-                    Text("App Language", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.personalization_app_language), style = MaterialTheme.typography.labelMedium)
                     
                     val currentLocales = AppCompatDelegate.getApplicationLocales()
                     val currentLangTag = if (currentLocales.isEmpty) "system" else currentLocales[0]?.toLanguageTag() ?: "system"
                     
                     val supportedLanguages = listOf(
-                        "system" to "System Default",
+                        "system" to stringResource(R.string.personalization_system_default),
                         "en" to "English",
                         "es" to "Español",
                         "fr" to "Français",
@@ -143,10 +145,6 @@ fun PersonalizationScreen(
                         "uk" to "Українська"
                     )
                     
-                    // Language note: the locale switcher correctly applies the new locale
-                    // (Android recreates the Activity), but the app UI currently uses hardcoded
-                    // strings rather than string resources, so only widget labels change visually.
-                    // Full UI localization is planned for a future release.
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
@@ -165,7 +163,7 @@ fun PersonalizationScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                "Changes the system locale for this app. Widget labels update immediately. Full UI translation is coming in a future update.",
+                                stringResource(R.string.personalization_language_note),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
@@ -179,7 +177,7 @@ fun PersonalizationScreen(
                         onExpandedChange = { expanded = it }
                     ) {
                         OutlinedTextField(
-                            value = supportedLanguages.find { it.first == currentLangTag }?.second ?: "System Default",
+                            value = supportedLanguages.find { it.first == currentLangTag }?.second ?: stringResource(R.string.personalization_system_default),
                             onValueChange = {},
                             readOnly = true,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -215,16 +213,16 @@ fun PersonalizationScreen(
             // ═══ Theme Mode & Style ═══
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("Theme & Strategy", Icons.Default.Tune)
+                    SectionHeader(stringResource(R.string.personalization_section_theme), Icons.Default.Tune)
                     
-                    Text("Display Mode", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.personalization_display_mode), style = MaterialTheme.typography.labelMedium)
                     SingleSelectChips(
                         options = listOf("system", "light", "dark"),
                         selected = themeMode,
                         onSelected = { themeMode = it }
                     )
 
-                    Text("Dynamic Palette Strategy", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.personalization_palette_strategy), style = MaterialTheme.typography.labelMedium)
                     SingleSelectChips(
                         options = listOf("tonal_spot", "expressive", "fruit_salad", "rainbow", "vibrant"),
                         selected = themeStyle,
@@ -236,9 +234,9 @@ fun PersonalizationScreen(
             // ═══ Ultimate Color Studio ═══
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("Color Studio", Icons.Default.Palette)
+                    SectionHeader(stringResource(R.string.personalization_section_color), Icons.Default.Palette)
                     
-                    Text("Palette Mode", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.personalization_palette_mode), style = MaterialTheme.typography.labelMedium)
                     SingleSelectChips(
                         options = listOf("default", "custom"),
                         selected = palette,
@@ -258,7 +256,7 @@ fun PersonalizationScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         // Hue Slider
-                        Text("Hue: ${currentHct.hue.roundToInt()}°", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.personalization_hue_label, currentHct.hue.roundToInt()), style = MaterialTheme.typography.labelSmall)
                         HueSlider(
                             value = currentHct.hue.toFloat(),
                             onValueChange = { newHue ->
@@ -268,7 +266,7 @@ fun PersonalizationScreen(
                         )
 
                         // Chroma Slider
-                        Text("Vibrancy (Chroma): ${themeSeedChroma.roundToInt()}", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.personalization_chroma_label, themeSeedChroma.roundToInt()), style = MaterialTheme.typography.labelSmall)
                         Slider(
                             value = themeSeedChroma,
                             onValueChange = { themeSeedChroma = it },
@@ -276,7 +274,7 @@ fun PersonalizationScreen(
                         )
 
                         // Contrast Slider
-                        Text("Contrast: ${"%.2f".format(themeContrast)}", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.personalization_contrast_label, "%.2f".format(themeContrast)), style = MaterialTheme.typography.labelSmall)
                         Slider(
                             value = themeContrast,
                             onValueChange = { themeContrast = it },
@@ -284,7 +282,7 @@ fun PersonalizationScreen(
                         )
 
                         // Tonal Row
-                        Text("Tonal Range", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.personalization_tonal_range), style = MaterialTheme.typography.labelSmall)
                         TonalRow(hct = currentHct)
 
                         // Mini Dashboard Preview
@@ -301,7 +299,7 @@ fun PersonalizationScreen(
                         OutlinedTextField(
                             value = seedColor,
                             onValueChange = { if (it.length <= 7) seedColor = it },
-                            label = { Text("Manual Hex Code") },
+                            label = { Text(stringResource(R.string.personalization_manual_hex)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
@@ -313,21 +311,21 @@ fun PersonalizationScreen(
             // ═══ Individual Card Shapes ═══
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SectionHeader("Expressive Geometry", Icons.Default.Tune)
+                    SectionHeader(stringResource(R.string.personalization_section_geometry), Icons.Default.Tune)
                     
-                    Text("Corner Base: ${cornerRadius}dp", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.personalization_corner_base, cornerRadius), style = MaterialTheme.typography.labelMedium)
                     Slider(value = cornerRadius.toFloat(), onValueChange = { cornerRadius = it.toInt() }, valueRange = 4f..36f)
 
-                    Text("Card Opacity: ${(cardOpacity * 100).roundToInt()}%", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.personalization_card_opacity, (cardOpacity * 100).roundToInt()), style = MaterialTheme.typography.labelMedium)
                     Slider(value = cardOpacity, onValueChange = { cardOpacity = it }, valueRange = 0.1f..1.0f)
 
                     val shapeConfigs = listOf(
-                        "Telemetry Cards" to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
-                        "App Launcher" to appLauncherCardShapePreset to { v: Float -> appLauncherCardShapePreset = v },
-                        "Remote Commands" to remoteControlCardShapePreset to { v: Float -> remoteControlCardShapePreset = v },
-                        "Remote Mouse" to remoteMouseCardShapePreset to { v: Float -> remoteMouseCardShapePreset = v },
-                        "Task Manager" to taskManagerCardShapePreset to { v: Float -> taskManagerCardShapePreset = v },
-                        "PC Connection Orb" to pcCardShapePreset to { v: Float -> pcCardShapePreset = v }
+                        stringResource(R.string.personalization_shape_telemetry) to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
+                        stringResource(R.string.personalization_shape_app_launcher) to appLauncherCardShapePreset to { v: Float -> appLauncherCardShapePreset = v },
+                        stringResource(R.string.personalization_shape_remote_commands) to remoteControlCardShapePreset to { v: Float -> remoteControlCardShapePreset = v },
+                        stringResource(R.string.personalization_shape_remote_mouse) to remoteMouseCardShapePreset to { v: Float -> remoteMouseCardShapePreset = v },
+                        stringResource(R.string.personalization_shape_task_manager) to taskManagerCardShapePreset to { v: Float -> taskManagerCardShapePreset = v },
+                        stringResource(R.string.personalization_shape_pc_orb) to pcCardShapePreset to { v: Float -> pcCardShapePreset = v }
                     )
 
                     val maxShapes = (materialShapesList.size - 1).toFloat()
@@ -446,7 +444,7 @@ private fun MiniCardPreview(seedColor: String, shapePreset: Float, cornerRadius:
                 Box(modifier = Modifier.size(16.dp).background(Color.White.copy(alpha = 0.5f), CircleShape))
                 Box(modifier = Modifier.width(32.dp).height(8.dp).background(Color.White.copy(alpha = 0.3f), CircleShape))
             }
-            Text("PREVIEW", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.personalization_preview), style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
             Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(Color.White.copy(alpha = 0.2f), CircleShape))
         }
     }

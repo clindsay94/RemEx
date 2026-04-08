@@ -26,8 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clindsay94.remex.R
 
 /**
  * A slim warning banner that slides in at the top of a screen when the PC is not connected.
@@ -67,7 +69,7 @@ fun NotConnectedBanner(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "No PC connected — features are unavailable",
+                    text = stringResource(R.string.banner_no_pc_connected),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.weight(1f)
@@ -78,7 +80,7 @@ fun NotConnectedBanner(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 ) {
-                    Text("Connect", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.button_connect), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -109,7 +111,7 @@ fun DisconnectedFullScreen(
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            "$screenName requires a connected PC.",
+            stringResource(R.string.disconnected_requires_connection, screenName),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -117,14 +119,14 @@ fun DisconnectedFullScreen(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Connect to your PC over Wi-Fi to use this feature.",
+            stringResource(R.string.disconnected_connect_wifi),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(24.dp))
         Button(onClick = onNavigateToConnection) {
-            Text("Set up connection")
+            Text(stringResource(R.string.button_setup_connection))
         }
     }
 }

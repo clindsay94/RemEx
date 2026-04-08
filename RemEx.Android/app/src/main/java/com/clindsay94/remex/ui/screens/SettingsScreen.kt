@@ -22,8 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.launch
 
@@ -36,14 +38,18 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onReplayTutorial: (() -> Unit)? = null
 ) {
-    val tabs = listOf("Connection", "Personalization", "Help")
+    val tabs = listOf(
+        stringResource(R.string.settings_tab_connection),
+        stringResource(R.string.settings_tab_personalization),
+        stringResource(R.string.settings_tab_help)
+    )
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(R.string.screen_settings_title), fontWeight = FontWeight.Bold) }
             )
         }
     ) { padding ->
@@ -95,7 +101,7 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Help & About",
+            text = stringResource(R.string.settings_help_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -114,19 +120,18 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?) {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("📖  Replay Tutorial")
+                Text(stringResource(R.string.settings_replay_tutorial))
             }
 
             Text(
-                text = "Re-watch the getting-started walkthrough that covers setup, " +
-                        "auto-discovery, finding your IP, and connecting to your PC.",
+                text = stringResource(R.string.settings_replay_tutorial_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Text(
-            text = "Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).",
+            text = stringResource(R.string.settings_faq_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
