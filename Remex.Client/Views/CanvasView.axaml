@@ -298,6 +298,7 @@
                         <TextBlock Text="{local:Localize Canvas_ActiveSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                         <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
+                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding SensorActivationItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:SensorActivationItem">
@@ -312,6 +313,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            </ScrollViewer>
                         </Border>
 
                         <TextBlock Text="{local:Localize Canvas_NewSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>

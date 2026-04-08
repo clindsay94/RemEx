@@ -242,6 +242,18 @@ namespace Remex.Client.Localization {
         public static string Service_ApplyingCredentials => ResourceManager.GetString("Service_ApplyingCredentials", resourceCulture)!;
         public static string Service_HostUnavailable => ResourceManager.GetString("Service_HostUnavailable", resourceCulture)!;
         public static string Service_HostUnavailableHint => ResourceManager.GetString("Service_HostUnavailableHint", resourceCulture)!;
+        public static string Service_Checking => ResourceManager.GetString("Service_Checking", resourceCulture)!;
+        public static string Service_LocatingHost => ResourceManager.GetString("Service_LocatingHost", resourceCulture)!;
+        public static string Service_HostNotFound => ResourceManager.GetString("Service_HostNotFound", resourceCulture)!;
+        public static string Service_StartedMsg => ResourceManager.GetString("Service_StartedMsg", resourceCulture)!;
+        public static string Service_StartFailed => ResourceManager.GetString("Service_StartFailed", resourceCulture)!;
+        public static string Service_StoppedMsg => ResourceManager.GetString("Service_StoppedMsg", resourceCulture)!;
+        public static string Service_StopFailed => ResourceManager.GetString("Service_StopFailed", resourceCulture)!;
+        public static string Service_CredentialsUpdated => ResourceManager.GetString("Service_CredentialsUpdated", resourceCulture)!;
+        public static string Service_CredentialsFailed => ResourceManager.GetString("Service_CredentialsFailed", resourceCulture)!;
+        public static string Service_UninstallFailed => ResourceManager.GetString("Service_UninstallFailed", resourceCulture)!;
+        public static string Status_ConnectionCancelled => ResourceManager.GetString("Status_ConnectionCancelled", resourceCulture)!;
+        public static string Status_ConnectionTimedOut => ResourceManager.GetString("Status_ConnectionTimedOut", resourceCulture)!;
 
         // WoL Status
         public static string Wol_EnterMac => ResourceManager.GetString("Wol_EnterMac", resourceCulture)!;

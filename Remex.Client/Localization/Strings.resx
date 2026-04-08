@@ -230,6 +230,18 @@
   <data name="Service_ApplyingCredentials" xml:space="preserve"><value>Applying credentials…</value></data>
   <data name="Service_HostUnavailable" xml:space="preserve"><value>Host capabilities unavailable</value></data>
   <data name="Service_HostUnavailableHint" xml:space="preserve"><value>Connect to a host to inspect runtime capabilities.</value></data>
+  <data name="Service_Checking" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Service_LocatingHost" xml:space="preserve"><value>Locating Remex.Host…</value></data>
+  <data name="Service_HostNotFound" xml:space="preserve"><value>Remex.Host.exe not found.</value></data>
+  <data name="Service_StartedMsg" xml:space="preserve"><value>Started.</value></data>
+  <data name="Service_StartFailed" xml:space="preserve"><value>Start failed — see log.</value></data>
+  <data name="Service_StoppedMsg" xml:space="preserve"><value>Stopped.</value></data>
+  <data name="Service_StopFailed" xml:space="preserve"><value>Stop failed — see log.</value></data>
+  <data name="Service_CredentialsUpdated" xml:space="preserve"><value>Credentials updated — restart the service for changes to take effect.</value></data>
+  <data name="Service_CredentialsFailed" xml:space="preserve"><value>Failed — see log.</value></data>
+  <data name="Service_UninstallFailed" xml:space="preserve"><value>Uninstall may have failed — see log.</value></data>
+  <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Connection cancelled</value></data>
+  <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Connection timed out</value></data>
 
   <!-- WoL Status -->
   <data name="Wol_EnterMac" xml:space="preserve"><value>⚠ Enter a MAC address first.</value></data>

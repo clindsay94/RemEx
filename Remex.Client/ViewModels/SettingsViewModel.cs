@@ -57,10 +57,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     };
 
     [ObservableProperty]
-    private string _hostRuntimeText = "Host capabilities unavailable";
+    private string _hostRuntimeText = LocalizationService.Instance["Service_HostUnavailable"];
 
     [ObservableProperty]
-    private string _hostCapabilityText = "Connect to a host to inspect runtime capabilities.";
+    private string _hostCapabilityText = LocalizationService.Instance["Service_HostUnavailableHint"];
 
     /// <summary>Host JPEG compression quality (10–100) for the screen stream.</summary>
     [ObservableProperty]
@@ -85,6 +85,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _connection = connection;
         _shell = shell;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // Refresh host info defaults if not connected
+            if (_connection.HostCapabilities == null)
+            {
+                HostRuntimeText = LocalizationService.Instance["Service_HostUnavailable"];
+                HostCapabilityText = LocalizationService.Instance["Service_HostUnavailableHint"];
+            }
+        });
     }
 
     /// <summary>Loads current values from the persisted profile.</summary>
@@ -116,6 +130,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         foreach (var item in AvailableSensors)
             item.PinChanged -= OnSensorPinChanged;
     }
@@ -287,7 +302,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private const string ServiceName = "RemexHost";
 
     [ObservableProperty]
-    private string _serviceStatusText = "Checking…";
+    private string _serviceStatusText = LocalizationService.Instance["Service_Checking"];
 
     [ObservableProperty]
     private bool _isWindowsServiceSectionVisible;
@@ -377,7 +392,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (!OperatingSystem.IsWindows()) return;
         if (string.IsNullOrWhiteSpace(ServicePassword))
         {
-            ServiceStatusText = "Password is required.";
+            ServiceStatusText = LocalizationService.Instance["Service_PasswordRequired"];
             return;
         }
 
@@ -388,12 +403,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         try
         {
             // Step 1: Locate the host binary
-            ServiceStatusText = "Locating Remex.Host…";
+            ServiceStatusText = LocalizationService.Instance["Service_LocatingHost"];
             AppendLog("Searching for Remex.Host.exe…");
             var exePath = FindHostExePath();
             if (exePath == null)
             {
-                ServiceStatusText = "Remex.Host.exe not found.";
+                ServiceStatusText = LocalizationService.Instance["Service_HostNotFound"];
                 AppendLog("ERROR: Remex.Host.exe not found. Set the host path in Settings or place Remex.Host.exe next to this application.");
                 return;
             }
@@ -407,7 +422,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             }
 
             // Step 2: Create the service
-            ServiceStatusText = "Creating service…";
+            ServiceStatusText = LocalizationService.Instance["Service_Creating"];
             AppendLog($"sc.exe create {ServiceName} as {user}");
             var binPath = $"\"{exePath}\"";
             var (createOk, createOut) = await RunElevatedAsync(
@@ -415,23 +430,23 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             AppendLog(createOut);
             if (!createOk && !createOut.Contains("already exists", StringComparison.OrdinalIgnoreCase))
             {
-                ServiceStatusText = "Failed to create service — see log.";
+                ServiceStatusText = LocalizationService.Instance["Service_CreateFailed"];
                 return;
             }
 
             // Step 3: Configure login credentials
-            ServiceStatusText = "Configuring login…";
+            ServiceStatusText = LocalizationService.Instance["Service_ConfiguringLogin"];
             var (cfgOk, cfgOut) = await RunElevatedAsync(
                 "sc.exe", $"config {ServiceName} obj= \"{user}\" password= \"{ServicePassword}\"");
             AppendLog(cfgOut);
             if (!cfgOk)
             {
-                ServiceStatusText = "Failed to configure credentials — see log.";
+                ServiceStatusText = LocalizationService.Instance["Service_ConfigureFailed"];
                 return;
             }
 
             // Step 4: Grant LogonAsService right via the install script helper
-            ServiceStatusText = "Granting logon rights…";
+            ServiceStatusText = LocalizationService.Instance["Service_GrantingRights"];
             var scriptPath = FindInstallScript();
             if (scriptPath != null)
             {
@@ -453,19 +468,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             // Step 6: Stop embedded host so the service can bind to the port
             if (App.StopEmbeddedHostAsync != null)
             {
-                ServiceStatusText = "Stopping embedded host…";
+                ServiceStatusText = LocalizationService.Instance["Service_StoppingEmbedded"];
                 AppendLog("Stopping embedded host to free port for service.");
                 await App.StopEmbeddedHostAsync();
             }
 
             // Step 7: Start
-            ServiceStatusText = "Starting service…";
+            ServiceStatusText = LocalizationService.Instance["Service_StartingService"];
             var (startOk, startOut) = await RunElevatedAsync("sc.exe", $"start {ServiceName}");
             AppendLog(startOut);
 
             if (startOk)
             {
-                ServiceStatusText = "Installed & started.";
+                ServiceStatusText = LocalizationService.Instance["Service_InstalledStarted"];
                 // Point the client at the service and reconnect.
                 var serviceAddr = $"ws://localhost:{Remex.Core.RemexConstants.DefaultPort}{Remex.Core.RemexConstants.WebSocketPath}";
                 _connection.HostAddress = serviceAddr;
@@ -474,7 +489,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             }
             else
             {
-                ServiceStatusText = "Installed — start may have failed, see log.";
+                ServiceStatusText = LocalizationService.Instance["Service_InstalledStartFailed"];
             }
         }
         catch (Exception ex)
@@ -502,17 +517,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             if (IsServiceRunning)
             {
-                ServiceStatusText = "Stopping service…";
+                ServiceStatusText = LocalizationService.Instance["Service_Stopping"];
                 var (_, stopOut) = await RunElevatedAsync("sc.exe", $"stop {ServiceName}");
                 AppendLog(stopOut);
                 await Task.Delay(2000);
             }
 
-            ServiceStatusText = "Deleting service…";
+            ServiceStatusText = LocalizationService.Instance["Service_DeletingService"];
             AppendLog($"sc.exe delete {ServiceName}");
             var (ok, output) = await RunElevatedAsync("sc.exe", $"delete {ServiceName}");
             AppendLog(output);
-            ServiceStatusText = ok ? "Service uninstalled." : "Uninstall may have failed — see log.";
+            ServiceStatusText = ok ? LocalizationService.Instance["Service_Uninstalling"] : LocalizationService.Instance["Service_UninstallFailed"];
         }
         catch (Exception ex)
         {
@@ -533,11 +548,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (!OperatingSystem.IsWindows()) return;
         IsServiceBusy = true;
-        ServiceStatusText = "Starting…";
+        ServiceStatusText = LocalizationService.Instance["Service_Starting"];
 
         var (ok, output) = await RunElevatedAsync("sc.exe", $"start {ServiceName}");
         AppendLog(output);
-        ServiceStatusText = ok ? "Started." : "Start failed — see log.";
+        ServiceStatusText = ok ? LocalizationService.Instance["Service_StartedMsg"] : LocalizationService.Instance["Service_StartFailed"];
 
         await RefreshServiceStatusAsync();
         IsServiceBusy = false;
@@ -548,11 +563,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (!OperatingSystem.IsWindows()) return;
         IsServiceBusy = true;
-        ServiceStatusText = "Stopping…";
+        ServiceStatusText = LocalizationService.Instance["Service_Stopping"];
 
         var (ok, output) = await RunElevatedAsync("sc.exe", $"stop {ServiceName}");
         AppendLog(output);
-        ServiceStatusText = ok ? "Stopped." : "Stop failed — see log.";
+        ServiceStatusText = ok ? LocalizationService.Instance["Service_StoppedMsg"] : LocalizationService.Instance["Service_StopFailed"];
 
         await RefreshServiceStatusAsync();
         IsServiceBusy = false;
@@ -566,13 +581,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (!OperatingSystem.IsWindows() || !IsServiceInstalled) return;
         if (string.IsNullOrWhiteSpace(ServicePassword))
         {
-            ServiceStatusText = "Password is required.";
+            ServiceStatusText = LocalizationService.Instance["Service_PasswordRequired"];
             return;
         }
 
         IsServiceBusy = true;
         var user = NormalizeUsername(ServiceUsername);
-        ServiceStatusText = "Applying credentials…";
+        ServiceStatusText = LocalizationService.Instance["Service_ApplyingCredentials"];
 
         var (ok, output) = await RunElevatedAsync(
             "sc.exe", $"config {ServiceName} obj= \"{user}\" password= \"{ServicePassword}\"");
@@ -590,7 +605,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         ServicePassword = string.Empty;
         IsCredentialPanelOpen = false;
-        ServiceStatusText = ok ? "Credentials updated — restart the service for changes to take effect." : "Failed — see log.";
+        ServiceStatusText = ok ? LocalizationService.Instance["Service_CredentialsUpdated"] : LocalizationService.Instance["Service_CredentialsFailed"];
         await RefreshServiceStatusAsync();
         IsServiceBusy = false;
     }
@@ -632,7 +647,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             {
                 IsServiceInstalled = false;
                 IsServiceRunning = false;
-                ServiceStatusText = "Not Installed";
+                ServiceStatusText = LocalizationService.Instance["Service_NotInstalled"];
             }
             else
             {
@@ -641,21 +656,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 if (output.Contains("RUNNING"))
                 {
                     IsServiceRunning = true;
-                    ServiceStatusText = "Running";
+                    ServiceStatusText = LocalizationService.Instance["Service_Running"];
                 }
                 else if (output.Contains("STOPPED"))
                 {
                     IsServiceRunning = false;
-                    ServiceStatusText = "Stopped";
+                    ServiceStatusText = LocalizationService.Instance["Service_Stopped"];
                 }
                 else if (output.Contains("PENDING"))
                 {
-                    ServiceStatusText = "Pending…";
+                    ServiceStatusText = LocalizationService.Instance["Service_Pending"];
                 }
                 else
                 {
                     IsServiceRunning = false;
-                    ServiceStatusText = "Installed";
+                    ServiceStatusText = LocalizationService.Instance["Service_Installed"];
                 }
 
                 var qcOut = await RunLocalAsync("sc.exe", $"qc {ServiceName}");

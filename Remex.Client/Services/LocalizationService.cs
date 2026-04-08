@@ -32,17 +32,24 @@ public sealed class LocalizationService : INotifyPropertyChanged
     /// </summary>
     public void SetCulture(string cultureCode)
     {
+        CultureInfo newCulture;
         try
         {
-            _culture = new CultureInfo(cultureCode);
-            Localization.Strings.Culture = _culture;
-            Thread.CurrentThread.CurrentUICulture = _culture;
-            CultureInfo.DefaultThreadCurrentUICulture = _culture;
-
-            // Notify ALL bindings to refresh
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+            newCulture = new CultureInfo(cultureCode);
         }
-        catch { }
+        catch (CultureNotFoundException)
+        {
+            newCulture = new CultureInfo("en");
+        }
+
+        _culture = newCulture;
+        Localization.Strings.Culture = newCulture;
+        Thread.CurrentThread.CurrentUICulture = newCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = newCulture;
+
+        // Notify ALL bindings to refresh (use all three standard names for max compatibility)
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
 }

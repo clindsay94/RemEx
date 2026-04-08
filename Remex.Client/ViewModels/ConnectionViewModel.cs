@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.WebSockets;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Remex.Client.Services;
 using Remex.Core;
 using Remex.Core.Messages;
 using Remex.Core.Models;
@@ -37,7 +39,7 @@ public partial class ConnectionViewModel : ObservableObject
     private string _accessKey = string.Empty;
 
     [ObservableProperty]
-    private string _statusText = "Disconnected";
+    private string _statusText = LocalizationService.Instance["Status_Disconnected"];
 
     [ObservableProperty]
     private string _latencyText = "—";
@@ -65,6 +67,21 @@ public partial class ConnectionViewModel : ObservableObject
     {
         _discoveryService = discoveryService;
         _layoutService = layoutService;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Refresh idle status when language changes
+        if (!IsConnecting && !IsAutoReconnecting)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                StatusText = IsConnected
+                    ? LocalizationService.Instance["Status_Connected"]
+                    : LocalizationService.Instance["Status_Disconnected"];
+            });
+        }
     }
 
     [RelayCommand]
@@ -72,11 +89,11 @@ public partial class ConnectionViewModel : ObservableObject
     {
         if (_discoveryService == null)
         {
-            StatusText = "Discovery service not available.";
+            StatusText = LocalizationService.Instance["Status_DiscoveryUnavailable"];
             return;
         }
 
-        StatusText = "Searching for hosts…";
+        StatusText = LocalizationService.Instance["Status_SearchingHosts"];
         var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
 
         if (foundHosts.Any())
@@ -96,7 +113,7 @@ public partial class ConnectionViewModel : ObservableObject
         }
         else
         {
-            StatusText = "No hosts found via mDNS.";
+            StatusText = LocalizationService.Instance["Status_NoHostsFound"];
         }
     }
 
@@ -289,7 +306,7 @@ public partial class ConnectionViewModel : ObservableObject
 
         try
         {
-            StatusText = "Connecting…";
+            StatusText = LocalizationService.Instance["Status_Connecting"];
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 
             var uri = BuildWebSocketUri(HostAddress, AccessKey);
@@ -297,7 +314,7 @@ public partial class ConnectionViewModel : ObservableObject
 
             IsConnected = true;
             IsConnecting = false;
-            StatusText = "Connected";
+            StatusText = LocalizationService.Instance["Status_Connected"];
             LatencyText = "—";
 
             // Start background receive loop.
@@ -306,8 +323,8 @@ public partial class ConnectionViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             StatusText = linkedCts.Token.IsCancellationRequested && !timeoutCts.Token.IsCancellationRequested 
-                ? "Connection cancelled" 
-                : "Connection timed out";
+                ? LocalizationService.Instance["Status_ConnectionCancelled"] 
+                : LocalizationService.Instance["Status_ConnectionTimedOut"];
             Cleanup();
         }
         catch (Exception ex)
@@ -343,7 +360,7 @@ public partial class ConnectionViewModel : ObservableObject
         }
 
         Cleanup();
-        StatusText = IsConnecting ? "Connection cancelled" : "Disconnected";
+        StatusText = IsConnecting ? LocalizationService.Instance["Status_ConnectionCancelled"] : LocalizationService.Instance["Status_Disconnected"];
         LatencyText = "—";
     }
 
@@ -360,7 +377,7 @@ public partial class ConnectionViewModel : ObservableObject
                 Timestamp = Stopwatch.GetTimestamp(),
             };
             await MessageSerializer.SendAsync(_webSocket, ping);
-            StatusText = "Ping sent…";
+            StatusText = LocalizationService.Instance["Status_PingSent"];
         }
         catch (Exception ex)
         {
@@ -414,8 +431,8 @@ public partial class ConnectionViewModel : ObservableObject
                     case MessageTypes.Pong:
                         Dispatcher.UIThread.Post(() =>
                         {
-                            LatencyText = "Pong (no timestamp)";
-                            StatusText = "Pong!";
+                            LatencyText = LocalizationService.Instance["Status_PongNoTimestamp"];
+                            StatusText = LocalizationService.Instance["Status_Pong"];
                         });
                         break;
                         
@@ -475,7 +492,7 @@ public partial class ConnectionViewModel : ObservableObject
             Dispatcher.UIThread.Post(() =>
             {
                 Cleanup();
-                StatusText = "Disconnected (server closed)";
+                StatusText = LocalizationService.Instance["Status_ServerClosed"];
                 LatencyText = "—";
             });
 
@@ -516,7 +533,7 @@ public partial class ConnectionViewModel : ObservableObject
 
                 try
                 {
-                    Dispatcher.UIThread.Post(() => StatusText = "Connecting…");
+                Dispatcher.UIThread.Post(() => StatusText = LocalizationService.Instance["Status_Connecting"]);
                     var ws = new ClientWebSocket();
                     ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 
@@ -533,7 +550,7 @@ public partial class ConnectionViewModel : ObservableObject
                     {
                         IsConnected = true;
                         IsAutoReconnecting = false;
-                        StatusText = "Connected";
+                        StatusText = LocalizationService.Instance["Status_Connected"];
                         LatencyText = "—";
                     });
 

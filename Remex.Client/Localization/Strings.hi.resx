@@ -398,4 +398,16 @@ Linux: ip addr  or  hostname -I</value></data>
   <data name="Main_Status" xml:space="preserve"><value>Status:</value></data>
   <data name="Main_Title" xml:space="preserve"><value>Remex — Ping / Pong</value></data>
   <data name="TrayFlyout_Title" xml:space="preserve"><value>Live Glance</value></data>
+  <data name="Service_Checking" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Service_LocatingHost" xml:space="preserve"><value>Locating Remex.Host…</value></data>
+  <data name="Service_HostNotFound" xml:space="preserve"><value>Remex.Host.exe not found.</value></data>
+  <data name="Service_StartedMsg" xml:space="preserve"><value>Started.</value></data>
+  <data name="Service_StartFailed" xml:space="preserve"><value>Start failed — see log.</value></data>
+  <data name="Service_StoppedMsg" xml:space="preserve"><value>Stopped.</value></data>
+  <data name="Service_StopFailed" xml:space="preserve"><value>Stop failed — see log.</value></data>
+  <data name="Service_CredentialsUpdated" xml:space="preserve"><value>Credentials updated — restart the service for changes to take effect.</value></data>
+  <data name="Service_CredentialsFailed" xml:space="preserve"><value>Failed — see log.</value></data>
+  <data name="Service_UninstallFailed" xml:space="preserve"><value>Uninstall may have failed — see log.</value></data>
+  <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Connection cancelled</value></data>
+  <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Connection timed out</value></data>
 </root>
