@@ -136,10 +136,10 @@
                                                 Command="{Binding Connection.DisconnectCommand}"
                                                 IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
                                                 ToolTip.Tip="{local:Localize Home_CancelTooltip}"/>
-                                        <Button Classes="action-pill" Content="QR Code"
+                                        <Button Classes="action-pill" Content="{local:Localize Home_QrCodeButton}"
                                                 Command="{Binding Connection.GenerateQrCodeCommand}"
                                                 Padding="16,8"
-                                                ToolTip.Tip="Show QR code for Android app pairing"/>
+                                                ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
                                     </StackPanel>
                                 </Grid>
 
