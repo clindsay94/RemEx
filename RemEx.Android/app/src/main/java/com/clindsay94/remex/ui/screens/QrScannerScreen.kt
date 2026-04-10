@@ -103,33 +103,39 @@ fun QrScannerScreen(
                             imageAnalysis.setAnalyzer(
                                 ContextCompat.getMainExecutor(ctx)
                             ) { imageProxy ->
-                                val mediaImage = imageProxy.image
-                                if (mediaImage != null && !scannedOnce.value) {
-                                    val image = InputImage.fromMediaImage(
-                                        mediaImage,
-                                        imageProxy.imageInfo.rotationDegrees
-                                    )
-                                    barcodeScanner.process(image)
-                                        .addOnSuccessListener { barcodes ->
-                                            for (barcode in barcodes) {
-                                                val raw = barcode.rawValue ?: continue
-                                                try {
-                                                    val json = JSONObject(raw)
-                                                    val host = json.getString("host")
-                                                    val port = json.getInt("port")
-                                                    val key = json.optString("key", "")
-                                                    if (!scannedOnce.value) {
-                                                        scannedOnce.value = true
-                                                        onScanned(host, port, key)
+                                var closeImageProxy = true
+                                try {
+                                    val mediaImage = imageProxy.image
+                                    if (mediaImage != null && !scannedOnce.value) {
+                                        val image = InputImage.fromMediaImage(
+                                            mediaImage,
+                                            imageProxy.imageInfo.rotationDegrees
+                                        )
+                                        closeImageProxy = false
+                                        barcodeScanner.process(image)
+                                            .addOnSuccessListener { barcodes ->
+                                                for (barcode in barcodes) {
+                                                    val raw = barcode.rawValue ?: continue
+                                                    try {
+                                                        val json = JSONObject(raw)
+                                                        val host = json.getString("host")
+                                                        val port = json.getInt("port")
+                                                        val key = json.optString("key", "")
+                                                        if (!scannedOnce.value) {
+                                                            scannedOnce.value = true
+                                                            onScanned(host, port, key)
+                                                        }
+                                                    } catch (_: Exception) {
+                                                        // Not a RemEx QR code — keep scanning
                                                     }
-                                                } catch (_: Exception) {
-                                                    // Not a RemEx QR code — keep scanning
                                                 }
                                             }
-                                        }
-                                        .addOnCompleteListener { imageProxy.close() }
-                                } else {
-                                    imageProxy.close()
+                                            .addOnCompleteListener { imageProxy.close() }
+                                    }
+                                } finally {
+                                    if (closeImageProxy) {
+                                        imageProxy.close()
+                                    }
                                 }
                             }
 
