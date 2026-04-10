@@ -289,7 +289,7 @@ fun ConnectionScreen(
                                 contentDescription = null
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Scan QR Code")
+                            Text(stringResource(R.string.connection_scan_qr_code))
                         }
 
                         AnimatedVisibility(visible = discoveredHost != null) {
