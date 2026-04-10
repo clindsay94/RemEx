@@ -366,8 +366,12 @@ Linux: ip addr  or  hostname -I</value></data>
   <data name="Home_DesktopTooltip" xml:space="preserve"><value>Stream your PC's desktop to this device in real-time</value></data>
   <data name="Home_LauncherTooltip" xml:space="preserve"><value>Start programs on your PC without being at the keyboard</value></data>
   <data name="Home_PcRemoteTooltip" xml:space="preserve"><value>Control your PC remotely — power, volume, and Wake-on-LAN</value></data>
+  <data name="Home_QrCodeButton" xml:space="preserve"><value>QR Code</value></data>
+  <data name="Home_QrCodeScanHint" xml:space="preserve"><value>Scan with RemEx Android app</value></data>
+  <data name="Home_QrCodeTooltip" xml:space="preserve"><value>Generate a QR code to connect the RemEx Android app</value></data>
   <data name="Home_SensorWorkspaceTooltip" xml:space="preserve"><value>Open the drag-and-drop sensor workspace to monitor PC telemetry</value></data>
   <data name="Home_TasksTooltip" xml:space="preserve"><value>View running processes and kill tasks on your PC</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
 
   <!-- Settings (Phase 4) -->
   <data name="Settings_AccessKeyTooltip" xml:space="preserve"><value>Optional authentication key — must match the key set on the host. Leave empty if not configured.</value></data>

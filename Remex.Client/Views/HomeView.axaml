@@ -147,7 +147,7 @@
                                 <Border IsVisible="{Binding Connection.ShowQrCode}"
                                         HorizontalAlignment="Center">
                                     <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                        <TextBlock Text="Scan with RemEx Android app"
+                                        <TextBlock Text="{local:Localize Home_QrCodeScanHint}"
                                                    FontSize="11" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                    HorizontalAlignment="Center"/>

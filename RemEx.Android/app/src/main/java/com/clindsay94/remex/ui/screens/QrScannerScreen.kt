@@ -19,14 +19,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.clindsay94.remex.R
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import org.json.JSONObject
+import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,15 +61,33 @@ fun QrScannerScreen(
         }
     }
 
+    val barcodeScanner = remember {
+        BarcodeScanning.getClient(
+            BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build()
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { barcodeScanner.close() }
+    }
+
+    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    DisposableEffect(Unit) {
+        onDispose { analysisExecutor.shutdown() }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Scan QR Code") },
+                title = { Text(stringResource(R.string.qr_scanner_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 }
@@ -83,11 +104,6 @@ fun QrScannerScreen(
                     factory = { ctx ->
                         val previewView = PreviewView(ctx)
                         val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                        val barcodeScanner = BarcodeScanning.getClient(
-                            BarcodeScannerOptions.Builder()
-                                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                                .build()
-                        )
 
                         cameraProviderFuture.addListener({
                             val cameraProvider = cameraProviderFuture.get()
@@ -100,9 +116,7 @@ fun QrScannerScreen(
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                 .build()
 
-                            imageAnalysis.setAnalyzer(
-                                ContextCompat.getMainExecutor(ctx)
-                            ) { imageProxy ->
+                            imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
                                 var closeImageProxy = true
                                 try {
                                     val mediaImage = imageProxy.image
@@ -170,7 +184,7 @@ fun QrScannerScreen(
                         modifier = Modifier.padding(horizontal = 32.dp)
                     ) {
                         Text(
-                            text = "Point camera at the QR code shown on your PC",
+                            text = stringResource(R.string.qr_scanner_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
                         )
@@ -191,12 +205,12 @@ fun QrScannerScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "Camera permission is required to scan QR codes",
+                        stringResource(R.string.qr_scanner_permission_required),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                        Text("Grant Permission")
+                        Text(stringResource(R.string.qr_scanner_grant_permission))
                     }
                 }
             }

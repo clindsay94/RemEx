@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -624,7 +625,7 @@ public partial class ConnectionViewModel : ObservableObject
             var host = uri.Host;
             var port = uri.Port > 0 ? uri.Port : RemexConstants.DefaultPort;
 
-            var payload = $"{{\"host\":\"{host}\",\"port\":{port},\"key\":\"{AccessKey}\"}}";
+            var payload = JsonSerializer.Serialize(new { host, port, key = AccessKey });
 
             using var qrGenerator = new QRCodeGenerator();
             using var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);

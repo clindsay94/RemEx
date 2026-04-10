@@ -170,6 +170,7 @@
     <string name="connection_found_host">Found: %1$s — Search Again</string>
     <string name="connection_discover_button">Discover Automatically</string>
     <string name="connection_host_found">Host found and fields filled in below.</string>
+    <string name="connection_scan_qr_code">Scan QR Code</string>
     <string name="connection_help_title">How to connect manually</string>
     <string name="connection_help_step1_title">Install RemEx Host on your PC</string>
     <string name="connection_help_step1_body">Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running.</string>
@@ -204,6 +205,13 @@
     <string name="connection_scale_label">Scale: %1$s</string>
     <string name="button_save_connect">Save &amp; Connect</string>
     <string name="connection_status_label">Status: %1$s</string>
+
+    <!-- ═══ QR Scanner Screen ═══ -->
+    <string name="qr_scanner_title">Scan QR Code</string>
+    <string name="cd_back">Back</string>
+    <string name="qr_scanner_hint">Point camera at the QR code shown on your PC</string>
+    <string name="qr_scanner_permission_required">Camera permission is required to scan QR codes</string>
+    <string name="qr_scanner_grant_permission">Grant Permission</string>
 
     <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
