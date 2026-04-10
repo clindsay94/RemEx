@@ -23,6 +23,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,8 @@ import com.clindsay94.remex.ui.screens.RemoteMouseScreen
 import com.clindsay94.remex.ui.screens.SettingsScreen
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.screens.ConnectionViewModel
+import com.clindsay94.remex.ui.screens.QrScannerScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
@@ -68,6 +71,8 @@ private val connectionRequiredRoutes = setOf(
 fun AppNavigation() {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
+    // Activity-scoped so ConnectionScreen and QrScannerScreen share the same instance
+    val connectionViewModel: ConnectionViewModel = viewModel()
 
         val hasCompletedOnboarding by settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
     val isConnected by RemexClientManager.isConnected.collectAsState()
@@ -90,6 +95,7 @@ fun AppNavigation() {
     val showNav = currentRoute != Screen.Splash.route
             && currentRoute != Screen.Tutorial.route
             && currentRoute != Screen.RemoteDesktop.route
+            && currentRoute != Screen.QrScanner.route
     var showOverflowMenu by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -224,7 +230,21 @@ fun AppNavigation() {
                 DashboardScreen(onNavigateToConnection = { navigateToConnection() })
             }
             composable(Screen.Connection.route) {
-                ConnectionScreen()
+                ConnectionScreen(
+                    viewModel = connectionViewModel,
+                    onNavigateToQrScanner = {
+                        navController.navigate(Screen.QrScanner.route)
+                    }
+                )
+            }
+            composable(Screen.QrScanner.route) {
+                QrScannerScreen(
+                    onScanned = { host, port, key ->
+                        connectionViewModel.applyQrResultAndConnect(host, port, key)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(Screen.RemoteControl.route) {
                 RemoteControlScreen(onNavigateToConnection = { navigateToConnection() })

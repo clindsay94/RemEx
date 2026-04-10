@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,6 +27,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object Tutorial : Screen("tutorial", "Tutorial", Icons.Default.Dashboard)
     object Faq : Screen("faq", "FAQ", Icons.AutoMirrored.Filled.HelpOutline)
+    object QrScanner : Screen("qr_scanner", "Scan QR Code", Icons.Default.QrCodeScanner)
 }
 
 /** Bottom navigation bar items — App Launcher replaces old Connection/Settings tab. */

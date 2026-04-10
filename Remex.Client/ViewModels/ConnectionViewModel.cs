@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QRCoder;
 using Remex.Client.Services;
 using Remex.Core;
 using Remex.Core.Messages;
@@ -46,6 +48,12 @@ public partial class ConnectionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isAutoReconnecting;
+
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _qrCodeImage;
+
+    [ObservableProperty]
+    private bool _showQrCode;
 
     [ObservableProperty]
     private bool _isConnecting;
@@ -605,6 +613,43 @@ public partial class ConnectionViewModel : ObservableObject
 
         IsConnected = false;
         HostCapabilities = null;
+    }
+
+    [RelayCommand]
+    private void GenerateQrCode()
+    {
+        try
+        {
+            var uri = new Uri(HostAddress);
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : RemexConstants.DefaultPort;
+
+            var payload = $"{{\"host\":\"{host}\",\"port\":{port},\"key\":\"{AccessKey}\"}}";
+
+            using var qrGenerator = new QRCodeGenerator();
+            using var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new PngByteQRCode(qrCodeData);
+            var pngBytes = qrCode.GetGraphic(10);
+
+            using var ms = new MemoryStream(pngBytes);
+            var oldBitmap = QrCodeImage;
+            QrCodeImage = new Avalonia.Media.Imaging.Bitmap(ms);
+            oldBitmap?.Dispose();
+            ShowQrCode = true;
+        }
+        catch
+        {
+            ShowQrCode = false;
+        }
+    }
+
+    [RelayCommand]
+    private void CloseQrCode()
+    {
+        ShowQrCode = false;
+        var old = QrCodeImage;
+        QrCodeImage = null;
+        old?.Dispose();
     }
 
     /// <summary>

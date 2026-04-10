@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +33,8 @@ import com.clindsay94.remex.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConnectionScreen(
-    viewModel: ConnectionViewModel = viewModel()
+    viewModel: ConnectionViewModel = viewModel(),
+    onNavigateToQrScanner: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val connectionPrefs by viewModel.connectionPreferences.collectAsState()
@@ -273,6 +275,21 @@ fun ConnectionScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(if (discoveredHost != null) stringResource(R.string.connection_found_host, discoveredHost!!.host) else stringResource(R.string.connection_discover_button))
                             }
+                        }
+
+                        OutlinedButton(
+                            onClick = onNavigateToQrScanner,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.QrCodeScanner,
+                                contentDescription = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Scan QR Code")
                         }
 
                         AnimatedVisibility(visible = discoveredHost != null) {
