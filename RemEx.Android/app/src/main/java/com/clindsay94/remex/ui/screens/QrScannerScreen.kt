@@ -69,14 +69,13 @@ fun QrScannerScreen(
         )
     }
 
-    DisposableEffect(Unit) {
-        onDispose { barcodeScanner.close() }
-    }
-
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
 
     DisposableEffect(Unit) {
-        onDispose { analysisExecutor.shutdown() }
+        onDispose {
+            analysisExecutor.shutdown()
+            barcodeScanner.close()
+        }
     }
 
     Scaffold(
