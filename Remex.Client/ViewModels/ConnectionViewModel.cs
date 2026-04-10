@@ -637,8 +637,10 @@ public partial class ConnectionViewModel : ObservableObject
             oldBitmap?.Dispose();
             ShowQrCode = true;
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"Failed to generate QR code: {ex}");
+            StatusText = $"Failed to generate QR code: {ex.Message}";
             ShowQrCode = false;
         }
     }
