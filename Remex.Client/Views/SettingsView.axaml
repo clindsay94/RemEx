@@ -52,7 +52,7 @@
                                </Ellipse>
                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="16" FontWeight="Bold" Foreground="#E0E0FF"/>
                            </StackPanel>
-                           <TextBlock Text="{Binding ServiceUsername, StringFormat=Account: {0}}" FontSize="11" Foreground="#6666AA" IsVisible="{Binding IsServiceInstalled}"/>
+                            <TextBlock Text="{Binding ServiceAccountDisplay}" FontSize="11" Foreground="#6666AA" IsVisible="{Binding IsServiceInstalled}"/>
                        </StackPanel>
                        <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                    </Grid>

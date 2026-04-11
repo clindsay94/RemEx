@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,24 +53,24 @@ import com.clindsay94.remex.RemexClientManager
 
 private data class RemoteCommandCard(
     val id: String,
-    val title: String,
+    @StringRes val titleRes: Int,
     val action: String,
     val icon: ImageVector,
     val requiresConfirmation: Boolean
 )
 
 private val remoteCommandCards = listOf(
-    RemoteCommandCard("wake", "Wake PC", "WakeOnLan", Icons.Default.Sensors, false),
-    RemoteCommandCard("lock", "Lock PC", "Lock", Icons.Default.Lock, false),
-    RemoteCommandCard("shutdown", "Shutdown", "Shutdown", Icons.Default.PowerSettingsNew, true),
-    RemoteCommandCard("restart", "Restart", "Restart", Icons.Default.RestartAlt, true),
-    RemoteCommandCard("uefi", "Reboot to UEFI", "RestartToUefi", Icons.Default.Refresh, true),
-    RemoteCommandCard("force_shutdown", "Force Shutdown", "ForceShutdown", Icons.Default.PowerOff, true),
-    RemoteCommandCard("force_restart", "Force Restart", "ForceRestart", Icons.Default.Sensors, true),
-    RemoteCommandCard("sleep", "Sleep", "Sleep", Icons.Default.Bedtime, false),
-    RemoteCommandCard("hibernate", "Hibernate", "Hibernate", Icons.Default.Bedtime, false),
-    RemoteCommandCard("monitor_off", "Turn Off Monitor", "MonitorOff", Icons.Default.Monitor, false),
-    RemoteCommandCard("logoff", "Log Off", "SignOut", Icons.AutoMirrored.Filled.Logout, false)
+    RemoteCommandCard("wake", R.string.rc_wake_pc, "WakeOnLan", Icons.Default.Sensors, false),
+    RemoteCommandCard("lock", R.string.rc_lock_pc, "Lock", Icons.Default.Lock, false),
+    RemoteCommandCard("shutdown", R.string.rc_shutdown, "Shutdown", Icons.Default.PowerSettingsNew, true),
+    RemoteCommandCard("restart", R.string.rc_restart, "Restart", Icons.Default.RestartAlt, true),
+    RemoteCommandCard("uefi", R.string.rc_reboot_uefi, "RestartToUefi", Icons.Default.Refresh, true),
+    RemoteCommandCard("force_shutdown", R.string.rc_force_shutdown, "ForceShutdown", Icons.Default.PowerOff, true),
+    RemoteCommandCard("force_restart", R.string.rc_force_restart, "ForceRestart", Icons.Default.Sensors, true),
+    RemoteCommandCard("sleep", R.string.rc_sleep, "Sleep", Icons.Default.Bedtime, false),
+    RemoteCommandCard("hibernate", R.string.rc_hibernate, "Hibernate", Icons.Default.Bedtime, false),
+    RemoteCommandCard("monitor_off", R.string.rc_monitor_off, "MonitorOff", Icons.Default.Monitor, false),
+    RemoteCommandCard("logoff", R.string.rc_logoff, "SignOut", Icons.AutoMirrored.Filled.Logout, false)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -198,20 +199,7 @@ private fun CommandCard(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val localizedTitle = when (card.id) {
-        "wake" -> stringResource(R.string.rc_wake_pc)
-        "lock" -> stringResource(R.string.rc_lock_pc)
-        "shutdown" -> stringResource(R.string.rc_shutdown)
-        "restart" -> stringResource(R.string.rc_restart)
-        "uefi" -> stringResource(R.string.rc_reboot_uefi)
-        "force_shutdown" -> stringResource(R.string.rc_force_shutdown)
-        "force_restart" -> stringResource(R.string.rc_force_restart)
-        "sleep" -> stringResource(R.string.rc_sleep)
-        "hibernate" -> stringResource(R.string.rc_hibernate)
-        "monitor_off" -> stringResource(R.string.rc_monitor_off)
-        "logoff" -> stringResource(R.string.rc_logoff)
-        else -> card.title
-    }
+    val localizedTitle = stringResource(card.titleRes)
 
     Card(
         modifier = Modifier

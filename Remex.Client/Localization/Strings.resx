@@ -179,6 +179,11 @@
   <data name="Custom_Reset" xml:space="preserve"><value>Reset to Theme Defaults</value></data>
   <data name="Custom_Back" xml:space="preserve"><value>← Command Center</value></data>
   <data name="Custom_RemoteCardShape" xml:space="preserve"><value>Remote Card Shape</value></data>
+  <data name="Custom_PresetStandardGlass" xml:space="preserve"><value>Standard Glass</value></data>
+  <data name="Custom_PresetCyberNOC" xml:space="preserve"><value>Cyber-NOC</value></data>
+  <data name="Custom_PresetSolarFlare" xml:space="preserve"><value>Solar-Flare</value></data>
+  <data name="Custom_PresetMonolith" xml:space="preserve"><value>Monolith</value></data>
+  <data name="Settings_AccountFormat" xml:space="preserve"><value>Account: {0}</value></data>
 
   <!-- Status Messages -->
   <data name="Main_Title" xml:space="preserve"><value>Remex — Ping / Pong</value></data>

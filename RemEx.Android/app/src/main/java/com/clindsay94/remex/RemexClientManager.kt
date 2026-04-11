@@ -68,7 +68,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     val settings = settingsManager!!
                     val host = settings.hostFlow.first()
                     // Auto-connect if a valid host is configured
-                    if (host.isNotBlank() && host != "192.168.1.100") {
+                    if (host.isNotBlank()) {
                         Log.i("RemexManager", "Heartbeat triggering auto-connect to $host")
                         connect()
                     }

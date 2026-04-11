@@ -22,28 +22,28 @@
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
-                        <TextBlock Text="Standard Glass" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Custom_PresetStandardGlass}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
                 <!-- Cyber-NOC -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectCyberNOC">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
-                        <TextBlock Text="Cyber-NOC" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Custom_PresetCyberNOC}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
                 <!-- Solar-Flare -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectSolarFlare">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
-                        <TextBlock Text="Solar-Flare" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Custom_PresetSolarFlare}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
                 <!-- Monolith -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectMonolith">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
-                        <TextBlock Text="Monolith" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{local:Localize Custom_PresetMonolith}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
                 </Border>
             </UniformGrid>

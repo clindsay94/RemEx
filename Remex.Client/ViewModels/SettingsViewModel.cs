@@ -332,6 +332,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _serviceUsername = $".\\{Environment.UserName}";
 
+    public string ServiceAccountDisplay => string.Format(
+        LocalizationService.Instance["Settings_AccountFormat"],
+        ServiceUsername);
+
+    partial void OnServiceUsernameChanged(string value)
+    {
+        OnPropertyChanged(nameof(ServiceAccountDisplay));
+    }
+
     [ObservableProperty]
     private string _servicePassword = string.Empty;
 

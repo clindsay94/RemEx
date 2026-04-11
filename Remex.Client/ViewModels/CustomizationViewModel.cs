@@ -48,13 +48,9 @@ public partial class CustomizationViewModel : ObservableObject
             AvailableBackgroundTypes.Add("Mica");
             AvailableBackgroundTypes.Add("Acrylic");
         }
-        else
-        {
-            // For Linux, we stick to software-rendered atmospheres for now
-            // since desktop-compositor blur is highly variable across environments.
-        }
         AvailableBackgroundTypes.Add("Gradient");
         AvailableBackgroundTypes.Add("Wallpaper");
+        AvailableBackgroundTypes.Add("Solid");
 
         // Fallback if current type is not available (e.g. switching from Windows to Linux)
         if (!AvailableBackgroundTypes.Contains(CanvasBackgroundType))

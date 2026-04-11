@@ -57,10 +57,13 @@ class SettingsManager(private val context: Context) {
         val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
         val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
         val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
+
+        /** Sentinel value indicating the host address has not been configured by the user. */
+        const val DEFAULT_HOST_PLACEHOLDER = ""
     }
 
     data class ConnectionPreferences(
-        val host: String = "192.168.1.100",
+        val host: String = DEFAULT_HOST_PLACEHOLDER,
         val port: Int = 5005,
         val macAddress: String = "",
         val broadcastIp: String = "255.255.255.255",
@@ -129,7 +132,7 @@ class SettingsManager(private val context: Context) {
     }
 
     val hostFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[HOST_KEY] ?: "192.168.1.100"
+        preferences[HOST_KEY] ?: DEFAULT_HOST_PLACEHOLDER
     }
 
     val portFlow: Flow<Int> = context.dataStore.data.map { preferences ->
@@ -211,7 +214,7 @@ class SettingsManager(private val context: Context) {
     val connectionPreferencesFlow: Flow<ConnectionPreferences> =
         context.dataStore.data.map { preferences ->
             ConnectionPreferences(
-                host = preferences[HOST_KEY] ?: "192.168.1.100",
+                host = preferences[HOST_KEY] ?: DEFAULT_HOST_PLACEHOLDER,
                 port = preferences[PORT_KEY] ?: 5005,
                 macAddress = preferences[MAC_KEY] ?: "",
                 broadcastIp = preferences[BROADCAST_IP_KEY] ?: "255.255.255.255",
