@@ -98,6 +98,7 @@ public static class HostBootstrapper
             }
         }
         builder.WebHost.UseUrls($"http://0.0.0.0:{actualPort}");
+        builder.Configuration["Host:Port"] = actualPort.ToString();
 
         var app = builder.Build();
 

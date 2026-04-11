@@ -412,11 +412,16 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
 
     #endregion
 
+    private bool _disposed;
+
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _cpuCounter?.Dispose();
         _ramCounter?.Dispose();
         _diskReadCounter?.Dispose();
         _diskWriteCounter?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

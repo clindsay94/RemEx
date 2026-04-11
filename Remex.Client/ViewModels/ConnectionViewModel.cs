@@ -20,7 +20,7 @@ using Remex.Core.Services.Network;
 
 namespace Remex.Client.ViewModels;
 
-public partial class ConnectionViewModel : ObservableObject
+public partial class ConnectionViewModel : ObservableObject, IDisposable
 {
     private const int MaxLatencyPoints = 30;
     private const int MaxReconnectDelaySeconds = 30;
@@ -694,5 +694,13 @@ public partial class ConnectionViewModel : ObservableObject
 
         var separator = hostAddress.Contains('?') ? "&" : "?";
         return new Uri($"{hostAddress}{separator}key={Uri.EscapeDataString(accessKey)}");
+    }
+
+    public void Dispose()
+    {
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+        _receiveCts?.Dispose();
+        _reconnectCts?.Dispose();
+        _webSocket?.Dispose();
     }
 }

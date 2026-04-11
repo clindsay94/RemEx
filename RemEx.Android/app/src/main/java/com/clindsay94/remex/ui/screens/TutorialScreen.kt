@@ -529,12 +529,19 @@ private fun DrawScope.drawIllustration(
                 size = Size(termW, termH),
                 cornerRadius = CornerRadius(8f)
             )
-            // Title bar
+            // Title bar — use clipRect so bottom stays squared-off
+            val titleH = termH * 0.15f
             drawRoundRect(
                 color = primary.copy(alpha = 0.3f),
                 topLeft = Offset(termLeft, termTop),
-                size = Size(termW, termH * 0.15f),
-                cornerRadius = CornerRadius(8f, 8f, 0f, 0f)
+                size = Size(termW, titleH + 8f),
+                cornerRadius = CornerRadius(8f)
+            )
+            // Over-draw bottom strip to square it off
+            drawRect(
+                color = primary.copy(alpha = 0.3f),
+                topLeft = Offset(termLeft, termTop + titleH - 2f),
+                size = Size(termW, 2f)
             )
             // Blinking cursor
             val cursorAlpha = if (pulse > 0.5f) 0.8f else 0.2f

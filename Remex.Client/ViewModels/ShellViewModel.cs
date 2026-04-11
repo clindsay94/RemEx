@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,6 +20,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
+    private readonly PropertyChangedEventHandler _onConnectionChanged;
     private static readonly Random _rng = new();
     private bool _welcomeSplashStarted;
 
@@ -124,11 +126,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         }
 
         // Auto-hide the connection banner when the host connects
-        Connection.PropertyChanged += (_, e) =>
+        _onConnectionChanged = (_, e) =>
         {
             if (e.PropertyName == nameof(ConnectionViewModel.IsConnected) && Connection.IsConnected)
                 ShowConnectionBanner = false;
         };
+        Connection.PropertyChanged += _onConnectionChanged;
 
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
@@ -138,6 +141,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _themeService.CustomizationApplied -= _onCustomizationApplied;
+        Connection.PropertyChanged -= _onConnectionChanged;
     }
 
     public void BeginWelcomeSplash()

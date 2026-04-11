@@ -167,9 +167,13 @@ fun AppGridItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (app.iconBase64 != null) {
-                    val imageBytes = Base64.decode(app.iconBase64, Base64.DEFAULT)
                     val bitmap = remember(app.iconBase64) {
-                        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                        try {
+                            val imageBytes = Base64.decode(app.iconBase64, Base64.DEFAULT)
+                            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                        } catch (_: Exception) {
+                            null
+                        }
                     }
                     if (bitmap != null) {
                         Image(

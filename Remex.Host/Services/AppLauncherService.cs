@@ -75,8 +75,14 @@ public class AppLauncherService : IAppLauncherService
                 throw new Exception($"WTSQueryUserToken failed (Error: {Marshal.GetLastWin32Error()}).");
             }
 
-            // Sanitize targetPath to prevent command injection
-            string sanitizedPath = targetPath.Replace("\"", "");
+            // Sanitize targetPath: remove shell metacharacters, not just quotes
+            string sanitizedPath = targetPath
+                .Replace("\"", "")
+                .Replace("&", "")
+                .Replace("|", "")
+                .Replace(";", "")
+                .Replace("`", "")
+                .Replace("$(", "(");
             string? appDir = System.IO.Path.GetDirectoryName(sanitizedPath);
             string commandLine = $"cmd.exe /c start \"\" /D \"{appDir}\" \"{sanitizedPath}\"";
 

@@ -233,6 +233,10 @@
   <data name="Service_StartingService" xml:space="preserve"><value>Starting service…</value></data>
   <data name="Service_InstalledStarted" xml:space="preserve"><value>Installed &amp; started.</value></data>
   <data name="Service_InstalledStartFailed" xml:space="preserve"><value>Installed — start may have failed, see log.</value></data>
+  <data name="Service_InstallingLinux" xml:space="preserve"><value>Installing systemd service…</value></data>
+  <data name="Service_InstallFailed" xml:space="preserve"><value>Service installation failed.</value></data>
+  <data name="Service_RemovingLinux" xml:space="preserve"><value>Removing systemd service…</value></data>
+  <data name="RemoteDesktop_ZoomFormat" xml:space="preserve"><value>Zoom: {0}×</value></data>
   <data name="Service_DeletingService" xml:space="preserve"><value>Deleting service…</value></data>
   <data name="Service_ApplyingCredentials" xml:space="preserve"><value>Applying credentials…</value></data>
   <data name="Service_HostUnavailable" xml:space="preserve"><value>Host capabilities unavailable</value></data>

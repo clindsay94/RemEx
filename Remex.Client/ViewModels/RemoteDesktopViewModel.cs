@@ -317,7 +317,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     public void UpdateViewportZoom(double zoom)
     {
         IsViewportZoomed = zoom > 1.01;
-        ViewportZoomText = $"Zoom: {zoom:F1}×";
+        ViewportZoomText = string.Format(LocalizationService.Instance["RemoteDesktop_ZoomFormat"], $"{zoom:F1}");
     }
 
     // ═══════════════ Input Forwarding ═══════════════

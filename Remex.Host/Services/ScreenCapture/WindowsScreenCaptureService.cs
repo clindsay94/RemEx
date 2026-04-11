@@ -139,12 +139,15 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     public void Dispose() => _dxgi.Dispose();
 
+    private static ImageCodecInfo? _cachedJpegEncoder;
+
     private static ImageCodecInfo GetJpegEncoder()
     {
+        if (_cachedJpegEncoder != null) return _cachedJpegEncoder;
         foreach (var codec in ImageCodecInfo.GetImageEncoders())
         {
             if (codec.MimeType == "image/jpeg")
-                return codec;
+                return _cachedJpegEncoder = codec;
         }
         throw new InvalidOperationException("JPEG encoder not found.");
     }

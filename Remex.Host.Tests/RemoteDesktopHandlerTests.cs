@@ -5,6 +5,7 @@ using Remex.Core;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Host.Services;
 using System.Collections.Generic;
 
 namespace Remex.Host.Tests;
@@ -64,6 +65,15 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         public void TypeText(string text) => ReceivedEvents.Add($"type:{text}");
     }
 
+    private class MockHostCapabilitiesProvider : IHostCapabilitiesProvider
+    {
+        public HostCapabilities GetCurrent() => new()
+        {
+            Platform = "test",
+            SupportsRemoteDesktop = true,
+        };
+    }
+
     private WebApplicationFactory<Program> GetFactory()
     {
         return _factory.WithWebHostBuilder(builder =>
@@ -74,6 +84,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<IInputSimulationService, MockInputSimulationService>();
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
                 services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
+                services.AddSingleton<IHostCapabilitiesProvider, MockHostCapabilitiesProvider>();
                 services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
                 {
                     opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;

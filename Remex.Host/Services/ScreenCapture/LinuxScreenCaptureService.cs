@@ -110,7 +110,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var pngFile = tmpFile + ".png";
             try
             {
-                var grimResult = await RunProcessAsync(tool, $"-o \"\" \"{pngFile}\"", ct);
+                var grimResult = await RunProcessAsync(tool, $"\"{pngFile}\"", ct);
                 if (grimResult != 0 || !File.Exists(pngFile))
                     return grimResult;
 
@@ -135,8 +135,21 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (toolName == "scrot")
         {
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
-            var args = $"-z -q {quality} -t {(int)(scale * 100)} \"{tmpFile}\"";
-            return await RunProcessAsync(tool, args, ct, env);
+            // scrot -z suppresses cursor, -q sets JPEG quality. 
+            // Capture at full resolution and let ffmpeg handle scaling if needed.
+            var args = $"-z -q {quality} \"{tmpFile}\"";
+            var result = await RunProcessAsync(tool, args, ct, env);
+            if (result != 0 || scale >= 0.99) return result;
+
+            // Post-process with ffmpeg to scale down if needed
+            var scaledFile = tmpFile + ".scaled.jpg";
+            var ffmpegArgs = $"-i \"{tmpFile}\" -vf scale={captureWidth}:{captureHeight} -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+            var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
+            if (scaleResult == 0 && File.Exists(scaledFile))
+            {
+                File.Move(scaledFile, tmpFile, overwrite: true);
+            }
+            return scaleResult;
         }
 
         // import (ImageMagick) fallback

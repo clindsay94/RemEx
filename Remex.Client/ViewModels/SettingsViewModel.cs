@@ -243,7 +243,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         Save();
         await _layoutService.FlushAsync();
-        SavedStatus = "Settings Saved!";
+        SavedStatus = LocalizationService.Instance["Settings_SavedStatus"];
         
         // Clear status after 3 seconds
         _ = Task.Delay(3000).ContinueWith(_ => SavedStatus = string.Empty);
@@ -311,8 +311,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public bool IsWindows => OperatingSystem.IsWindows();
     public bool IsLinux => OperatingSystem.IsLinux();
 
-    public bool ShowInstallButton => IsWindows && !IsServiceInstalled;
-    public bool ShowStartStopButtons => IsWindows && IsServiceInstalled;
+    public bool ShowInstallButton => !IsServiceInstalled;
+    public bool ShowStartStopButtons => IsServiceInstalled;
 
     [ObservableProperty]
     private bool _isServiceSectionVisible;
@@ -534,11 +534,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         IsServiceBusy = true;
         try
         {
-            ServiceStatusText = "Locating Remex.Host binary…";
+            ServiceStatusText = LocalizationService.Instance["Service_LocatingHost"];
             var hostBinary = FindHostExePath();
             if (string.IsNullOrEmpty(hostBinary))
             {
-                ServiceStatusText = "Error: Remex.Host binary not found.";
+                ServiceStatusText = LocalizationService.Instance["Service_HostNotFound"];
                 return;
             }
 
@@ -565,22 +565,24 @@ WantedBy=multi-user.target";
 
             AppendLog("Generated systemd service unit file.");
 
-            ServiceStatusText = "Installing systemd service (requires sudo)…";
+            ServiceStatusText = LocalizationService.Instance["Service_InstallingLinux"];
             
-            // On Linux, we use pkexec or sudo to move the file and enable the service
-            var installCmd = $"pkexec sh -c \"mv '{tempFile}' '{servicePath}' && systemctl daemon-reload && systemctl enable {serviceName} && systemctl start {serviceName}\"";
-            
-            AppendLog($"Executing: {installCmd}");
-            
-            var process = Process.Start(new ProcessStartInfo
+            // Use pkexec for privilege elevation with safe argument passing
+            using var process = new Process
             {
-                FileName = "sh",
-                Arguments = $"-c \"{installCmd}\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            });
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pkexec",
+                    ArgumentList = { "sh", "-c", $"mv '{tempFile}' '{servicePath}' && systemctl daemon-reload && systemctl enable {serviceName} && systemctl start {serviceName}" },
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+            
+            AppendLog(LocalizationService.Instance["Service_InstallingLinux"]);
+            process.Start();
 
             if (process != null)
             {
@@ -590,19 +592,19 @@ WantedBy=multi-user.target";
 
                 if (process.ExitCode == 0)
                 {
-                    ServiceStatusText = "Service installed and started.";
-                    AppendLog("systemd service installed successfully.");
+                    ServiceStatusText = LocalizationService.Instance["Service_InstalledStarted"];
+                    AppendLog(LocalizationService.Instance["Service_InstalledStarted"]);
                 }
                 else
                 {
-                    ServiceStatusText = "Installation failed.";
-                    AppendLog($"Error: {stderr}");
+                    ServiceStatusText = LocalizationService.Instance["Service_InstallFailed"];
+                    AppendLog(stderr);
                 }
             }
         }
         catch (Exception ex)
         {
-            ServiceStatusText = $"Error: {ex.Message}";
+            ServiceStatusText = LocalizationService.Instance["Service_InstallFailed"];
             AppendLog($"EXCEPTION: {ex.Message}");
         }
         finally
@@ -667,20 +669,23 @@ WantedBy=multi-user.target";
             var serviceName = "remex-host";
             var servicePath = $"/etc/systemd/system/{serviceName}.service";
 
-            ServiceStatusText = "Removing systemd service (requires sudo)…";
-            var uninstallCmd = $"pkexec sh -c \"systemctl stop {serviceName} && systemctl disable {serviceName} && rm '{servicePath}' && systemctl daemon-reload\"";
+            ServiceStatusText = LocalizationService.Instance["Service_RemovingLinux"];
 
-            AppendLog($"Executing: {uninstallCmd}");
-
-            var process = Process.Start(new ProcessStartInfo
+            using var process = new Process
             {
-                FileName = "sh",
-                Arguments = $"-c \"{uninstallCmd}\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            });
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pkexec",
+                    ArgumentList = { "sh", "-c", $"systemctl stop {serviceName} && systemctl disable {serviceName} && rm '{servicePath}' && systemctl daemon-reload" },
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            AppendLog(LocalizationService.Instance["Service_RemovingLinux"]);
+            process.Start();
 
             if (process != null)
             {
@@ -689,19 +694,19 @@ WantedBy=multi-user.target";
 
                 if (process.ExitCode == 0)
                 {
-                    ServiceStatusText = "Service removed.";
-                    AppendLog("systemd service uninstalled successfully.");
+                    ServiceStatusText = LocalizationService.Instance["Service_Uninstalling"];
+                    AppendLog(LocalizationService.Instance["Service_Uninstalling"]);
                 }
                 else
                 {
-                    ServiceStatusText = "Uninstallation failed.";
-                    AppendLog($"Error: {stderr}");
+                    ServiceStatusText = LocalizationService.Instance["Service_UninstallFailed"];
+                    AppendLog(stderr);
                 }
             }
         }
         catch (Exception ex)
         {
-            ServiceStatusText = $"Error: {ex.Message}";
+            ServiceStatusText = LocalizationService.Instance["Service_UninstallFailed"];
             AppendLog($"EXCEPTION: {ex.Message}");
         }
         finally
@@ -716,13 +721,21 @@ WantedBy=multi-user.target";
     [RelayCommand]
     private async Task StartServiceAsync()
     {
-        if (!OperatingSystem.IsWindows()) return;
         IsServiceBusy = true;
         ServiceStatusText = LocalizationService.Instance["Service_Starting"];
 
-        var (ok, output) = await RunElevatedAsync("sc.exe", $"start {ServiceName}");
-        AppendLog(output);
-        ServiceStatusText = ok ? LocalizationService.Instance["Service_StartedMsg"] : LocalizationService.Instance["Service_StartFailed"];
+        if (OperatingSystem.IsWindows())
+        {
+            var (ok, output) = await RunElevatedAsync("sc.exe", $"start {ServiceName}");
+            AppendLog(output);
+            ServiceStatusText = ok ? LocalizationService.Instance["Service_StartedMsg"] : LocalizationService.Instance["Service_StartFailed"];
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            var (ok, output) = await RunLinuxElevatedAsync($"systemctl start remex-host");
+            AppendLog(output);
+            ServiceStatusText = ok ? LocalizationService.Instance["Service_StartedMsg"] : LocalizationService.Instance["Service_StartFailed"];
+        }
 
         await RefreshServiceStatusAsync();
         IsServiceBusy = false;
@@ -731,13 +744,21 @@ WantedBy=multi-user.target";
     [RelayCommand]
     private async Task StopServiceAsync()
     {
-        if (!OperatingSystem.IsWindows()) return;
         IsServiceBusy = true;
         ServiceStatusText = LocalizationService.Instance["Service_Stopping"];
 
-        var (ok, output) = await RunElevatedAsync("sc.exe", $"stop {ServiceName}");
-        AppendLog(output);
-        ServiceStatusText = ok ? LocalizationService.Instance["Service_StoppedMsg"] : LocalizationService.Instance["Service_StopFailed"];
+        if (OperatingSystem.IsWindows())
+        {
+            var (ok, output) = await RunElevatedAsync("sc.exe", $"stop {ServiceName}");
+            AppendLog(output);
+            ServiceStatusText = ok ? LocalizationService.Instance["Service_StoppedMsg"] : LocalizationService.Instance["Service_StopFailed"];
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            var (ok, output) = await RunLinuxElevatedAsync($"systemctl stop remex-host");
+            AppendLog(output);
+            ServiceStatusText = ok ? LocalizationService.Instance["Service_StoppedMsg"] : LocalizationService.Instance["Service_StopFailed"];
+        }
 
         await RefreshServiceStatusAsync();
         IsServiceBusy = false;
@@ -828,7 +849,7 @@ WantedBy=multi-user.target";
                     ServiceStatusText = LocalizationService.Instance["Service_NotInstalled"];
                 }
             }
-            catch { IsServiceInstalled = false; ServiceStatusText = "Unknown (Error)"; }
+            catch { IsServiceInstalled = false; ServiceStatusText = LocalizationService.Instance["Service_Checking"]; }
             return;
         }
 
@@ -943,6 +964,38 @@ WantedBy=multi-user.target";
         finally
         {
             try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Runs a command with elevated privileges on Linux via pkexec.
+    /// </summary>
+    private static async Task<(bool Success, string Output)> RunLinuxElevatedAsync(string command)
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pkexec",
+                    ArgumentList = { "sh", "-c", command },
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            var stdout = await process.StandardOutput.ReadToEndAsync();
+            var stderr = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            var output = string.IsNullOrWhiteSpace(stderr) ? stdout : $"{stdout}\n{stderr}";
+            return (process.ExitCode == 0, string.IsNullOrWhiteSpace(output) ? "(no output)" : output.Trim());
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Error: {ex.Message}");
         }
     }
 

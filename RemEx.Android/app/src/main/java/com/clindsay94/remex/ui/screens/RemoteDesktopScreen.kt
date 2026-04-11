@@ -642,7 +642,7 @@ fun RemoteDesktopScreen(
                         Icon(imageVector = Icons.Default.Monitor, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(text = when {
-                            desktopError != null -> desktopError!!
+                            desktopError != null -> desktopError ?: ""
                             !capabilityState.supportsRemoteDesktop -> capabilityState.unavailableReason ?: stringResource(R.string.remote_desktop_unavailable)
                             isStreaming -> stringResource(R.string.remote_desktop_waiting)
                             else -> stringResource(R.string.remote_desktop_stopped)
