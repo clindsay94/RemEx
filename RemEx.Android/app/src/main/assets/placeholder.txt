@@ -1,0 +1,1 @@
+This file ensures the assets directory is not empty for the Gradle merger.
