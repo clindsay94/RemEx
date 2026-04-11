@@ -113,11 +113,11 @@ public partial class ConnectionViewModel : ObservableObject
             if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
             {
                 HostAddress = firstHost;
-                StatusText = $"Found host: {firstHost}";
+                StatusText = string.Format(LocalizationService.Instance["Status_FoundHostFormat"], firstHost);
             }
             else
             {
-                StatusText = $"Found {foundHosts.Count} hosts. (Selectable discovery not yet implemented)";
+                StatusText = string.Format(LocalizationService.Instance["Status_FoundMultipleHostsFormat"], foundHosts.Count);
             }
         }
         else
@@ -213,15 +213,15 @@ public partial class ConnectionViewModel : ObservableObject
         {
             if (HostCapabilities is null)
             {
-                return IsConnected ? "Connected to host" : "Host not connected";
+                return IsConnected ? LocalizationService.Instance["Status_ConnectedToHost"] : LocalizationService.Instance["Status_HostNotConnected"];
             }
 
             var runtimeLabel = HostCapabilities.RuntimeMode switch
             {
-                "interactive" => "Interactive host",
-                "service" => "Service host",
-                "headless" => "Headless host",
-                _ => "Host"
+                "interactive" => LocalizationService.Instance["Status_InteractiveHost"],
+                "service" => LocalizationService.Instance["Status_ServiceHost"],
+                "headless" => LocalizationService.Instance["Status_HeadlessHost"],
+                _ => LocalizationService.Instance["Status_Host"]
             };
 
             return $"{runtimeLabel} on {HostCapabilities.Platform}";
@@ -230,9 +230,9 @@ public partial class ConnectionViewModel : ObservableObject
 
     public string RemoteDesktopAvailabilitySummary =>
         SupportsRemoteDesktop
-            ? "Remote desktop available"
+            ? LocalizationService.Instance["Status_RemoteDesktopAvailable"]
             : HostCapabilities?.RemoteDesktopUnavailableReason
-                ?? "Remote desktop unavailable";
+                ?? LocalizationService.Instance["Status_RemoteDesktopUnavailable"];
 
     private TelemetryPayload? _telemetry;
     public TelemetryPayload? Telemetry
@@ -261,7 +261,7 @@ public partial class ConnectionViewModel : ObservableObject
     public async Task<(bool Success, string Message)> SendCommandAsync(string action, System.Collections.Generic.Dictionary<string, string>? parameters = null)
     {
         if (_webSocket?.State != WebSocketState.Open)
-            return (false, "Not connected.");
+            return (false, LocalizationService.Instance["Status_NotConnected"]);
 
         var tcs = new System.Threading.Tasks.TaskCompletionSource<RemexMessage>();
         _pendingCommandResponse = tcs;
@@ -281,11 +281,11 @@ public partial class ConnectionViewModel : ObservableObject
             cts.Token.Register(() => tcs.TrySetCanceled());
 
             var response = await tcs.Task;
-            return (response.CommandSuccess ?? false, response.CommandMessage ?? "No message");
+            return (response.CommandSuccess ?? false, response.CommandMessage ?? LocalizationService.Instance["Status_NoMessage"]);
         }
         catch (OperationCanceledException)
         {
-            return (false, "Command timed out.");
+            return (false, LocalizationService.Instance["Status_CommandTimedOut"]);
         }
         catch (Exception ex)
         {
@@ -338,7 +338,7 @@ public partial class ConnectionViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Error: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message);
             Cleanup();
         }
         finally
@@ -390,7 +390,7 @@ public partial class ConnectionViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Send error: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["Status_SendErrorFormat"], ex.Message);
         }
     }
 
@@ -432,7 +432,7 @@ public partial class ConnectionViewModel : ObservableObject
                         Dispatcher.UIThread.Post(() =>
                         {
                             LatencyText = $"{ms:F1} ms";
-                            StatusText = $"Pong! {ms:F1} ms";
+                            StatusText = string.Format(LocalizationService.Instance["Status_PongFormat"], ms);
                             PushLatency(ms);
                         });
                         break;
@@ -491,7 +491,7 @@ public partial class ConnectionViewModel : ObservableObject
         {
             Dispatcher.UIThread.Post(() =>
             {
-                StatusText = $"Receive error: {ex.Message}";
+                StatusText = string.Format(LocalizationService.Instance["Status_ReceiveErrorFormat"], ex.Message);
             });
         }
 
@@ -536,7 +536,7 @@ public partial class ConnectionViewModel : ObservableObject
         {
             while (!ct.IsCancellationRequested && !IsConnected)
             {
-                Dispatcher.UIThread.Post(() => StatusText = $"Reconnecting in {delay}s…");
+                Dispatcher.UIThread.Post(() => StatusText = string.Format(LocalizationService.Instance["Status_ReconnectingFormat"], delay));
                 await Task.Delay(TimeSpan.FromSeconds(delay), ct);
                 if (ct.IsCancellationRequested) break;
 
@@ -625,6 +625,15 @@ public partial class ConnectionViewModel : ObservableObject
             var host = uri.Host;
             var port = uri.Port > 0 ? uri.Port : RemexConstants.DefaultPort;
 
+            // If the configured host is loopback, substitute the machine's LAN IPv4
+            // address so the QR code is scannable from a phone on the same network.
+            if (host == "localhost" || host == "127.0.0.1" || host == "::1")
+            {
+                var lanIp = GetLocalIpv4Address();
+                if (lanIp is not null)
+                    host = lanIp;
+            }
+
             var payload = JsonSerializer.Serialize(new { host, port, key = AccessKey });
 
             using var qrGenerator = new QRCodeGenerator();
@@ -641,7 +650,7 @@ public partial class ConnectionViewModel : ObservableObject
         catch (Exception ex)
         {
             Debug.WriteLine($"Failed to generate QR code: {ex}");
-            StatusText = $"Failed to generate QR code: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["Status_QrCodeFailed"], ex.Message);
             ShowQrCode = false;
         }
     }
@@ -653,6 +662,26 @@ public partial class ConnectionViewModel : ObservableObject
         var old = QrCodeImage;
         QrCodeImage = null;
         old?.Dispose();
+    }
+
+    /// <summary>
+    /// Returns the machine's preferred outbound LAN IPv4 address by connecting a
+    /// UDP socket (no data sent) so the OS selects the correct local interface.
+    /// </summary>
+    private static string? GetLocalIpv4Address()
+    {
+        try
+        {
+            using var socket = new System.Net.Sockets.Socket(
+                System.Net.Sockets.AddressFamily.InterNetwork,
+                System.Net.Sockets.SocketType.Dgram, 0);
+            socket.Connect("8.8.8.8", 65530);
+            return (socket.LocalEndPoint as System.Net.IPEndPoint)?.Address.ToString();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

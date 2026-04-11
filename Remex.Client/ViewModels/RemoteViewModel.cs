@@ -76,7 +76,7 @@ public partial class RemoteViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(WolMacAddress))
         {
-            WolStatusText = "⚠ Enter a MAC address first.";
+            WolStatusText = LocalizationService.Instance["Wol_EnterMac"];
             return;
         }
 
@@ -84,7 +84,7 @@ public partial class RemoteViewModel : ObservableObject
         {
             if (Connection.IsConnected)
             {
-                WolStatusText = "Sending magic packet via host…";
+                WolStatusText = LocalizationService.Instance["Wol_SendingViaHost"];
                 var (ok, msg) = await Connection.SendCommandAsync("WakeOnLan",
                     new System.Collections.Generic.Dictionary<string, string>
                     {
@@ -92,18 +92,20 @@ public partial class RemoteViewModel : ObservableObject
                         { "BroadcastIp", WolBroadcastIp },
                         { "Port", WolPort.ToString() },
                     });
-                WolStatusText = ok ? $"✅ {msg}" : $"❌ {msg}";
+                WolStatusText = ok
+                    ? string.Format(LocalizationService.Instance["Wol_SuccessFormat"], msg)
+                    : string.Format(LocalizationService.Instance["Wol_ErrorFormat"], msg);
             }
             else
             {
-                WolStatusText = "Sending magic packet locally…";
+                WolStatusText = LocalizationService.Instance["Wol_SendingLocal"];
                 await _wolService.WakeAsync(WolMacAddress, WolBroadcastIp, WolPort);
-                WolStatusText = $"✅ Packet sent to {WolMacAddress}";
+                WolStatusText = string.Format(LocalizationService.Instance["Wol_SentToFormat"], WolMacAddress);
             }
         }
         catch (Exception ex)
         {
-            WolStatusText = $"❌ Failed: {ex.Message}";
+            WolStatusText = string.Format(LocalizationService.Instance["Wol_ErrorFormat"], ex.Message);
         }
     }
 
@@ -111,61 +113,63 @@ public partial class RemoteViewModel : ObservableObject
     [RelayCommand]
     private async Task LockPcAsync()
     {
-        await ExecuteRemoteCommandAsync("Lock", "Lock sent");
+        await ExecuteRemoteCommandAsync("Lock", LocalizationService.Instance["Wol_LockSent"]);
     }
 
     [RelayCommand]
     private async Task ShutdownPcAsync()
     {
-        await ExecuteRemoteCommandAsync("Shutdown", "Shutdown sent");
+        await ExecuteRemoteCommandAsync("Shutdown", LocalizationService.Instance["Wol_ShutdownSent"]);
     }
 
     [RelayCommand]
     private async Task ForceShutdownPcAsync()
     {
-        await ExecuteRemoteCommandAsync("ForceShutdown", "Force shutdown sent");
+        await ExecuteRemoteCommandAsync("ForceShutdown", LocalizationService.Instance["Wol_ForceShutdownSent"]);
     }
 
     [RelayCommand]
     private async Task RestartPcAsync()
     {
-        await ExecuteRemoteCommandAsync("Restart", "Restart sent");
+        await ExecuteRemoteCommandAsync("Restart", LocalizationService.Instance["Wol_RestartSent"]);
     }
 
     [RelayCommand]
     private async Task ForceRestartAsync()
     {
-        await ExecuteRemoteCommandAsync("ForceRestart", "Force restart sent");
+        await ExecuteRemoteCommandAsync("ForceRestart", LocalizationService.Instance["Wol_ForceRestartSent"]);
     }
 
     [RelayCommand]
     private async Task RestartToUefiAsync()
     {
-        await ExecuteRemoteCommandAsync("RestartToUefi", "Restart to UEFI sent");
+        await ExecuteRemoteCommandAsync("RestartToUefi", LocalizationService.Instance["Wol_RebootUefiSent"]);
     }
 
     [RelayCommand]
     private async Task SleepPcAsync()
     {
-        await ExecuteRemoteCommandAsync("Sleep", "Sleep sent");
+        await ExecuteRemoteCommandAsync("Sleep", LocalizationService.Instance["Wol_SleepSent"]);
     }
 
     [RelayCommand]
     private async Task HibernatePcAsync()
     {
-        await ExecuteRemoteCommandAsync("Hibernate", "Hibernate sent");
+        await ExecuteRemoteCommandAsync("Hibernate", LocalizationService.Instance["Wol_HibernateSent"]);
     }
 
     [RelayCommand]
     private async Task SignOutPcAsync()
     {
-        await ExecuteRemoteCommandAsync("SignOut", "Sign out sent");
+        await ExecuteRemoteCommandAsync("SignOut", LocalizationService.Instance["Wol_SignOutSent"]);
     }
 
     private async Task ExecuteRemoteCommandAsync(string action, string successMessage)
     {
         var (ok, msg) = await Connection.SendCommandAsync(action);
-        WolStatusText = ok ? $"✅ {successMessage}" : $"❌ {msg}";
+        WolStatusText = ok
+            ? string.Format(LocalizationService.Instance["Wol_SuccessFormat"], successMessage)
+            : string.Format(LocalizationService.Instance["Wol_ErrorFormat"], msg);
     }
 
     [RelayCommand]

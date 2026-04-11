@@ -55,6 +55,31 @@
     <string name="tutorial_page6_title">You\'re All Set!</string>
     <string name="tutorial_page6_body">You\'re ready to take control.\n\nFrom the dashboard you can monitor system stats, launch apps, manage tasks, and stream your desktop remotely.\n\nHead to Personalization to customize your theme, card shapes, fonts, and colors.\n\nCheck out the FAQ in Settings if you run into any issues. Enjoy RemEx!</string>
 
+    <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
+    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
+    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
+
+    <!-- ═══ Connection Status Strings ═══ -->
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting to %1$s:%2$d…</string>
+    <string name="status_error">Error: %1$s</string>
+    <string name="status_awaiting_metadata">Awaiting host metadata</string>
+    <string name="status_metadata_unavailable">Host metadata unavailable</string>
+    <string name="status_native_lib_not_loaded">Native library not loaded</string>
+    <string name="error_no_host_found">No RemEx host found on the network</string>
+    <string name="error_discovery_failed">Discovery failed: %1$s</string>
+    <string name="capability_desktop_available">desktop available</string>
+    <string name="capability_desktop_unavailable">desktop unavailable</string>
+
+    <!-- ═══ Foreground Service Strings ═══ -->
+    <string name="notification_channel_name">RemEx Connection</string>
+    <string name="notification_channel_description">Keeps the connection to your PC alive</string>
+    <string name="notification_title_connected">Connected to PC</string>
+    <string name="notification_title_connecting">Connecting…</string>
+    <string name="notification_text_connected">RemEx is running in the background</string>
+    <string name="notification_text_connecting">Maintaining connection</string>
+
     <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">Task Manager</string>
     <string name="task_manager_search_hint">Search process name or PID</string>

@@ -254,4 +254,10 @@
     <string name="remote_desktop_direct_touch_desc">टच पोजीशन सीधे स्क्रीन कोऑर्डिनेट्स पर मैप होती हैं</string>
     <string name="remote_desktop_pointer_speed_label">कर्सर स्पीड: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">टैप = क्लिक • लॉन्ग प्रेस = राइट क्लिक • 2 उंगलियाँ = स्क्रॉल • पेन = एब्सोल्यूट</string>
+    <string name="connection_scan_qr_code">QR कोड स्कैन करें</string>
+    <string name="qr_scanner_title">QR कोड स्कैन करें</string>
+    <string name="cd_back">वापस</string>
+    <string name="qr_scanner_hint">अपने PC पर दिखाए गए QR कोड पर कैमरा पॉइंट करें</string>
+    <string name="qr_scanner_permission_required">QR कोड स्कैन करने के लिए कैमरा अनुमति आवश्यक है</string>
+    <string name="qr_scanner_grant_permission">अनुमति दें</string>
 </resources>

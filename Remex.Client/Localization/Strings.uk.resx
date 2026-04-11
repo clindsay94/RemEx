@@ -388,4 +388,7 @@ Linux: ip addr або hostname -I</value></data>
 <data name="Service_UninstallFailed" xml:space="preserve"><value>Можливо, видалення не вдалося — див. журнал.</value></data>
 <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Підключення скасовано</value></data>
 <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Час очікування підключення минув</value></data>
+<data name="Home_QrCodeButton" xml:space="preserve"><value>QR-код</value></data>
+<data name="Home_QrCodeScanHint" xml:space="preserve"><value>Скануйте додатком RemEx Android</value></data>
+<data name="Home_QrCodeTooltip" xml:space="preserve"><value>Згенеруйте QR-код для підключення додатка RemEx Android</value></data>
 </root>

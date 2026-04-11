@@ -11,6 +11,12 @@
 -keep class java.net.** { *; }
 -keep class javax.net.** { *; }
 
+# ML Kit keep rules
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_barcode.** { *; }
+-keep class com.google.android.gms.internal.mlkit_common.** { *; }
+-keep class com.google.android.datatransport.** { *; }
+
 # Prevent R8 from stripping App Startup components
 -keep class androidx.startup.** { *; }
 -keep class androidx.work.** { *; }

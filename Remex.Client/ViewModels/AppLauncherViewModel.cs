@@ -8,16 +8,18 @@ using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
 using Remex.Core.Services;
+using Remex.Client.Services;
 using Remex.Core.Messages;
 
 namespace Remex.Client.ViewModels;
 
-public partial class AppLauncherViewModel : ObservableObject
+public partial class AppLauncherViewModel : ObservableObject, IDisposable
 {
     private const string DefaultHexColor = "#4A3AFF";
 
     private readonly ShellViewModel _shell;
     private readonly ILauncherStorageService _storageService;
+    private readonly Action<System.Collections.Generic.List<AppEntry>> _launcherEntriesHandler;
 
     public ConnectionViewModel Connection { get; }
 
@@ -30,13 +32,14 @@ public partial class AppLauncherViewModel : ObservableObject
         _shell = shell;
         _storageService = storageService;
 
-        Connection.LauncherEntriesReceived += entries =>
+        _launcherEntriesHandler = entries =>
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 Launchers = new ObservableCollection<AppEntry>(NormalizeEntries(entries));
             });
         };
+        Connection.LauncherEntriesReceived += _launcherEntriesHandler;
 
         _ = LoadLaunchersAsync();
     }
@@ -71,7 +74,7 @@ public partial class AppLauncherViewModel : ObservableObject
 
             if (string.IsNullOrWhiteSpace(displayName))
             {
-                displayName = "Unnamed App";
+                displayName = LocalizationService.Instance["AppLauncher_UnnamedApp"];
             }
         }
 
@@ -267,4 +270,9 @@ public partial class AppLauncherViewModel : ObservableObject
     }
 
     public Action? OnOpenAddProgramDialogRequested { get; set; }
+
+    public void Dispose()
+    {
+        Connection.LauncherEntriesReceived -= _launcherEntriesHandler;
+    }
 }

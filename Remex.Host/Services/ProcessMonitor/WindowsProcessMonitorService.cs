@@ -14,6 +14,7 @@ public class WindowsProcessMonitorService : IProcessMonitorService
 {
     private readonly ILogger<WindowsProcessMonitorService> _logger;
     private readonly Dictionary<int, ProcessCpuTracker> _cpuTrackers = new();
+    private readonly object _lock = new();
     private DateTime _lastScanTime = DateTime.UtcNow;
 
     public WindowsProcessMonitorService(ILogger<WindowsProcessMonitorService> logger)
@@ -25,6 +26,8 @@ public class WindowsProcessMonitorService : IProcessMonitorService
     {
         return Task.Run(() =>
         {
+            lock (_lock)
+            {
             var results = new List<ProcessInfo>();
             var activePids = new HashSet<int>();
             var now = DateTime.UtcNow;
@@ -108,10 +111,11 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             }
 
             // Cleanup old trackers
-            var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k));
+            var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
             foreach (var k in toRemove) _cpuTrackers.Remove(k);
 
             return results;
+            }
         });
     }
 

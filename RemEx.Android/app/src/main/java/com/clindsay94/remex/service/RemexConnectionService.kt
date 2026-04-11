@@ -88,10 +88,10 @@ class RemexConnectionService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "RemEx Connection",
+            getString(R.string.notification_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Keeps the connection to your PC alive"
+            description = getString(R.string.notification_channel_description)
             setShowBadge(false)
         }
         val nm = getSystemService(NotificationManager::class.java)
@@ -106,8 +106,8 @@ class RemexConnectionService : Service() {
             this, 0, tapIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = if (isConnected) "Connected to PC" else "Connecting…"
-        val text = if (isConnected) "RemEx is running in the background" else "Maintaining connection"
+        val title = if (isConnected) getString(R.string.notification_title_connected) else getString(R.string.notification_title_connecting)
+        val text = if (isConnected) getString(R.string.notification_text_connected) else getString(R.string.notification_text_connecting)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

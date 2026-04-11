@@ -15,7 +15,7 @@ namespace Remex.Client.ViewModels;
 /// ViewModel for the Canvas workspace. Manages placed cards, the staging
 /// drawer for new sensors, snap-to-grid logic, and persistence triggers.
 /// </summary>
-public partial class CanvasDashboardViewModel : ObservableObject
+public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ShellViewModel _shell;
@@ -76,34 +76,45 @@ public partial class CanvasDashboardViewModel : ObservableObject
         _shell = shell;
 
         // Listen for telemetry updates to create/update sensor cards.
-        Connection.PropertyChanged += (s, e) =>
+        Connection.PropertyChanged += OnConnectionPropertyChanged;
+
+        Connection.LayoutProfileReceived += OnLayoutProfileReceived;
+
+        Cards.CollectionChanged += OnCardsCollectionChanged;
+
+        StagedCards.CollectionChanged += OnStagedCardsCollectionChanged;
+    }
+
+    private void OnConnectionPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Connection.Telemetry) && Connection.Telemetry != null)
         {
-            if (e.PropertyName == nameof(Connection.Telemetry) && Connection.Telemetry != null)
+            ProcessTelemetry(Connection.Telemetry);
+        }
+    }
+
+    private async void OnLayoutProfileReceived(DashboardProfile profile)
+    {
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (!_isInitialized)
             {
-                ProcessTelemetry(Connection.Telemetry);
+                _pendingSyncProfile = profile;
+                return;
             }
-        };
+            ApplyProfile(profile);
+        });
+    }
 
-        Connection.LayoutProfileReceived += async profile =>
-        {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                if (!_isInitialized)
-                {
-                    _pendingSyncProfile = profile;
-                    return;
-                }
-                ApplyProfile(profile);
-            });
-        };
+    private void OnCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        RefreshSensorActivationItems();
+    }
 
-        Cards.CollectionChanged += (_, _) => RefreshSensorActivationItems();
-
-        StagedCards.CollectionChanged += (_, _) =>
-        {
-            HasStagedCards = StagedCards.Count > 0;
-            RefreshSensorActivationItems();
-        };
+    private void OnStagedCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        HasStagedCards = StagedCards.Count > 0;
+        RefreshSensorActivationItems();
     }
 
     /// <summary>
@@ -712,6 +723,14 @@ public partial class CanvasDashboardViewModel : ObservableObject
             home.RefreshPinnedSensors();
 
         RefreshSensorActivationItems();
+    }
+
+    public void Dispose()
+    {
+        Connection.PropertyChanged -= OnConnectionPropertyChanged;
+        Connection.LayoutProfileReceived -= OnLayoutProfileReceived;
+        Cards.CollectionChanged -= OnCardsCollectionChanged;
+        StagedCards.CollectionChanged -= OnStagedCardsCollectionChanged;
     }
 }
 

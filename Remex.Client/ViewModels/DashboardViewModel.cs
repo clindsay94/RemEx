@@ -1,4 +1,6 @@
+using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -8,7 +10,7 @@ namespace Remex.Client.ViewModels;
 /// Top-level ViewModel for the dashboard. Owns the connection logic and
 /// exposes card-oriented data for the UI.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject
+public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     /// <summary>
     /// The shared connection/ping-pong ViewModel — all cards bind into this.
@@ -22,13 +24,15 @@ public partial class DashboardViewModel : ObservableObject
 
     public DashboardViewModel()
     {
-        Connection.PropertyChanged += (s, e) =>
+        Connection.PropertyChanged += OnConnectionPropertyChanged;
+    }
+
+    private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Connection.Telemetry) && Connection.Telemetry != null)
         {
-            if (e.PropertyName == nameof(Connection.Telemetry) && Connection.Telemetry != null)
-            {
-                ProcessTelemetry(Connection.Telemetry);
-            }
-        };
+            ProcessTelemetry(Connection.Telemetry);
+        }
     }
 
     private void ProcessTelemetry(Remex.Core.Messages.TelemetryPayload payload)
@@ -61,5 +65,10 @@ public partial class DashboardViewModel : ObservableObject
                 sensorVm.Update(reading);
             }
         });
+    }
+
+    public void Dispose()
+    {
+        Connection.PropertyChanged -= OnConnectionPropertyChanged;
     }
 }

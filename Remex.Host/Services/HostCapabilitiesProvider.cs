@@ -88,6 +88,39 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             return isInteractiveSession;
         }
 
+        if (OperatingSystem.IsLinux())
+        {
+            // Require a display server (X11 or Wayland) to be available
+            var hasDisplay = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
+            var hasWayland = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+            if (!hasDisplay && !hasWayland)
+                return false;
+
+            // Check for at least one capture tool and one input tool
+            var hasCaptool = HasExecutable("scrot") || HasExecutable("grim") || HasExecutable("ffmpeg") || HasExecutable("gnome-screenshot");
+            var hasInputTool = HasExecutable("xdotool") || HasExecutable("ydotool");
+            return hasCaptool && hasInputTool;
+        }
+
         return true;
+    }
+
+    private static bool HasExecutable(string name)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("which", name)
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc is null) return false;
+            proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(2000);
+            return proc.ExitCode == 0;
+        }
+        catch { return false; }
     }
 }

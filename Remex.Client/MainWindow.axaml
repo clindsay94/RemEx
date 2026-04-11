@@ -7,8 +7,8 @@
     ExtendClientAreaToDecorationsHint="True"
     ExtendClientAreaChromeHints="PreferSystemChrome"
     ExtendClientAreaTitleBarHeightHint="32"
-    TransparencyLevelHint="Mica, AcrylicBlur, Blur"
-    Background="Transparent"
+    TransparencyLevelHint="None"
+    Background="#0A0A10"
     WindowStartupLocation="CenterScreen">
     <views:ShellView />
 </Window>

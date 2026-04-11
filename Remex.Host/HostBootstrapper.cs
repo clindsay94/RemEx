@@ -76,7 +76,28 @@ public static class HostBootstrapper
         builder.Services.AddHostedService<IpcHostServer>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
-        builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+        // Try the requested port first; if it's unavailable, probe fallback ports.
+        int actualPort = port;
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            int testPort = port + attempt;
+            try
+            {
+                using var testSocket = new System.Net.Sockets.Socket(
+                    System.Net.Sockets.AddressFamily.InterNetwork,
+                    System.Net.Sockets.SocketType.Stream,
+                    System.Net.Sockets.ProtocolType.Tcp);
+                testSocket.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, testPort));
+                testSocket.Close();
+                actualPort = testPort;
+                break;
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                // Port in use, try next
+            }
+        }
+        builder.WebHost.UseUrls($"http://0.0.0.0:{actualPort}");
 
         var app = builder.Build();
 

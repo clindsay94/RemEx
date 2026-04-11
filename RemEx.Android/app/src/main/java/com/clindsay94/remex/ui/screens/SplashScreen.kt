@@ -42,6 +42,18 @@ private data class Particle(
     var maxLifetime: Float
 )
 
+private data class FloatingShape(
+    var x: Float,
+    var y: Float,
+    var vx: Float,
+    var vy: Float,
+    var rotation: Float,
+    var rotationSpeed: Float,
+    var size: Float,
+    var alpha: Float,
+    val sides: Int // 3=triangle, 4=diamond, 6=hexagon
+)
+
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
     val context = LocalContext.current
@@ -74,6 +86,25 @@ fun SplashScreen(onFinished: () -> Unit) {
         }.toMutableList()
     }
     var particleFrame by remember { mutableStateOf(0) }
+
+    // Floating geometric shapes for ambient depth layer
+    val floatingShapes = remember {
+        val rng = java.util.Random(77L)
+        val shapeTypes = intArrayOf(3, 4, 6)
+        List(8) {
+            FloatingShape(
+                x = rng.nextFloat(),
+                y = rng.nextFloat(),
+                vx = (rng.nextFloat() - 0.5f) * 0.003f,
+                vy = (rng.nextFloat() - 0.5f) * 0.002f,
+                rotation = rng.nextFloat() * 360f,
+                rotationSpeed = (rng.nextFloat() - 0.5f) * 1.5f,
+                size = 0.03f + rng.nextFloat() * 0.04f,
+                alpha = 0.03f + rng.nextFloat() * 0.05f,
+                sides = shapeTypes[rng.nextInt(shapeTypes.size)]
+            )
+        }.toMutableList()
+    }
 
     suspend fun skipSplash() {
         if (isSkipping) return
@@ -115,6 +146,17 @@ fun SplashScreen(onFinished: () -> Unit) {
                         p.lifetime = 0f
                         p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
                     }
+                }
+                // Update floating shapes
+                for (s in floatingShapes) {
+                    s.x += s.vx
+                    s.y += s.vy
+                    s.rotation += s.rotationSpeed
+                    // Wrap around screen edges
+                    if (s.x < -0.1f) s.x = 1.1f
+                    if (s.x > 1.1f) s.x = -0.1f
+                    if (s.y < -0.1f) s.y = 1.1f
+                    if (s.y > 1.1f) s.y = -0.1f
                 }
                 particleFrame++
                 delay(16L)
@@ -179,6 +221,28 @@ fun SplashScreen(onFinished: () -> Unit) {
             }
             for (y in 0..height.toInt() step gridSize.toInt()) {
                 drawLine(gridColor, Offset(0f, y.toFloat()), Offset(width, y.toFloat()), 1f)
+            }
+
+            // 1a. Floating geometric shapes (ambient depth layer)
+            @Suppress("UNUSED_EXPRESSION")
+            particleFrame // trigger recomposition
+            for (shape in floatingShapes) {
+                val sx = shape.x * width
+                val sy = shape.y * height
+                val shapeRadius = shape.size * minOf(width, height)
+                val shapePath = Path()
+                for (i in 0 until shape.sides) {
+                    val angle = (shape.rotation + i * 360f / shape.sides) * (PI.toFloat() / 180f)
+                    val px = sx + shapeRadius * cos(angle)
+                    val py = sy + shapeRadius * sin(angle)
+                    if (i == 0) shapePath.moveTo(px, py) else shapePath.lineTo(px, py)
+                }
+                shapePath.close()
+                drawPath(
+                    path = shapePath,
+                    color = neonColor.copy(alpha = shape.alpha),
+                    style = Stroke(width = 1f)
+                )
             }
 
             val scanY = height * scanProgress.value

@@ -38,7 +38,10 @@ public class WakeOnLanService : IWakeOnLanService
             Buffer.BlockCopy(macBytes, 0, magicPacket, i * 6, 6);
         }
 
-        var broadcastEndpoint = new IPEndPoint(IPAddress.Parse(broadcastIp), port);
+        if (!IPAddress.TryParse(broadcastIp, out var parsedBroadcast))
+            throw new ArgumentException($"Invalid broadcast IP: {broadcastIp}", nameof(broadcastIp));
+
+        var broadcastEndpoint = new IPEndPoint(parsedBroadcast, port);
         var interfaces = NetworkInterface.GetAllNetworkInterfaces()
             .Where(ni => ni.OperationalStatus == OperationalStatus.Up &&
                          ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&

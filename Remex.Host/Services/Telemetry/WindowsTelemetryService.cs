@@ -16,7 +16,7 @@ using Remex.Core.Services;
 namespace Remex.Host.Services.Telemetry;
 
 [SupportedOSPlatform("windows")]
-public class WindowsTelemetryService : ITelemetryService
+public class WindowsTelemetryService : ITelemetryService, IDisposable
 {
     private const string HwInfoSharedMemoryName = "Global\\HWiNFO_SENS_SM2";
     private readonly ILogger<WindowsTelemetryService> _logger;
@@ -411,4 +411,12 @@ public class WindowsTelemetryService : ITelemetryService
     }
 
     #endregion
+
+    public void Dispose()
+    {
+        _cpuCounter?.Dispose();
+        _ramCounter?.Dispose();
+        _diskReadCounter?.Dispose();
+        _diskWriteCounter?.Dispose();
+    }
 }

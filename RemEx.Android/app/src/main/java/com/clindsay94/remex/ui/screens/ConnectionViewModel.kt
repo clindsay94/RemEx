@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.DiscoveredHost
@@ -16,6 +17,7 @@ import org.json.JSONObject
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
     private val nsdDiscoveryManager = NsdDiscoveryManager(application)
+    private val res = application.resources
 
     val connectionPreferences: StateFlow<SettingsManager.ConnectionPreferences?> = settingsManager.connectionPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -26,13 +28,13 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
 
-    private val _connectionStatus = MutableStateFlow("Disconnected")
+    private val _connectionStatus = MutableStateFlow(res.getString(R.string.status_disconnected))
     val connectionStatus: StateFlow<String> = _connectionStatus.asStateFlow()
 
     private val _connectionError = MutableStateFlow<String?>(null)
     val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
 
-    private val _capabilitySummary = MutableStateFlow("Awaiting host metadata")
+    private val _capabilitySummary = MutableStateFlow(res.getString(R.string.status_awaiting_metadata))
     val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
 
     private val _isDiscovering = MutableStateFlow(false)
@@ -45,9 +47,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             RemexClientManager.isConnected.collect { connected ->
                 if (connected) {
-                    _connectionStatus.value = "Connected"
+                    _connectionStatus.value = res.getString(R.string.status_connected)
                 } else if (!_isConnecting.value) {
-                    _connectionStatus.value = "Disconnected"
+                    _connectionStatus.value = res.getString(R.string.status_disconnected)
                 }
             }
         }
@@ -86,7 +88,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             _isConnecting.value = true
-            _connectionStatus.value = "Connecting to $newHost:$newPort..."
+            _connectionStatus.value = res.getString(R.string.status_connecting, newHost, newPort)
 
             try {
                 _connectionError.value = null
@@ -103,7 +105,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                         if (!json.optBoolean("success", false)) {
                             val msg = json.optString("message", "Connection failed")
                             _connectionError.value = msg
-                            _connectionStatus.value = "Error: $msg"
+                            _connectionStatus.value = res.getString(R.string.status_error, msg)
                         } else {
                             // Start foreground service to keep connection alive
                             try {
@@ -114,12 +116,12 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                         }
                     } catch (_: Exception) { /* non-JSON result is fine */ }
                 } else {
-                    _connectionError.value = "Native library not loaded"
-                    _connectionStatus.value = "Native library not loaded"
+                    _connectionError.value = res.getString(R.string.status_native_lib_not_loaded)
+                    _connectionStatus.value = res.getString(R.string.status_native_lib_not_loaded)
                 }
             } catch (e: Exception) {
                 _connectionError.value = e.message
-                _connectionStatus.value = "Error: ${e.message}"
+                _connectionStatus.value = res.getString(R.string.status_error, e.message ?: "")
             } finally {
                 _isConnecting.value = false
             }
@@ -127,7 +129,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun updateStatus(isConnected: Boolean) {
-        _connectionStatus.value = if (isConnected) "Connected" else "Disconnected"
+        _connectionStatus.value = if (isConnected) res.getString(R.string.status_connected) else res.getString(R.string.status_disconnected)
     }
 
     fun clearError() {
@@ -143,10 +145,10 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 val result = nsdDiscoveryManager.discoverHost()
                 _discoveredHost.value = result
                 if (result == null) {
-                    _connectionError.value = "No RemEx host found on the network"
+                    _connectionError.value = res.getString(R.string.error_no_host_found)
                 }
             } catch (e: Exception) {
-                _connectionError.value = "Discovery failed: ${e.message}"
+                _connectionError.value = res.getString(R.string.error_discovery_failed, e.message ?: "")
             } finally {
                 _isDiscovering.value = false
             }
@@ -176,14 +178,14 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             val platform = json.optString("platform", "unknown")
             val supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false)
             val remoteDesktopText = if (supportsRemoteDesktop) {
-                "desktop available"
+                res.getString(R.string.capability_desktop_available)
             } else {
-                json.optString("remoteDesktopUnavailableReason", "desktop unavailable")
+                json.optString("remoteDesktopUnavailableReason", res.getString(R.string.capability_desktop_unavailable))
             }
 
             "$platform / $runtimeMode / $remoteDesktopText"
         } catch (_: Exception) {
-            "Host metadata unavailable"
+            res.getString(R.string.status_metadata_unavailable)
         }
     }
 }

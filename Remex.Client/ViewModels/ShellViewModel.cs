@@ -82,7 +82,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private int _tutorialPageIndex;
 
     /// <summary>Total number of tutorial pages.</summary>
-    public int TutorialPageCount => 9;
+    public int TutorialPageCount => 10;
 
     /// <summary>
     /// When true, a dismissible banner is shown at the top of the content area informing
@@ -235,7 +235,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         if (!Connection.IsConnected)
         {
-            ConnectionBannerMessage = $"{featureName} requires a connected RemEx host. Open Settings to configure your connection.";
+            ConnectionBannerMessage = string.Format(LocalizationService.Instance["Status_FeatureRequiresConnection"], featureName);
             ShowConnectionBanner = true;
         }
     }

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Client.Services;
 
 namespace Remex.Client.ViewModels;
 
@@ -141,7 +142,7 @@ public partial class SensorViewModel : ObservableObject
 
     public void Update(SensorReading reading)
     {
-        Name = string.IsNullOrWhiteSpace(reading.Name) ? "Unknown" : reading.Name;
+        Name = string.IsNullOrWhiteSpace(reading.Name) ? LocalizationService.Instance["Sensor_Unknown"] : reading.Name;
         Value = reading.Value;
         Unit = string.IsNullOrWhiteSpace(reading.Unit) ? "" : reading.Unit;
         Category = string.IsNullOrWhiteSpace(reading.Category) ? "Other" : reading.Category;

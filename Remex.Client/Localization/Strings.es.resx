@@ -397,4 +397,7 @@ Chrome)</value></data>
   <data name="Service_UninstallFailed" xml:space="preserve"><value>La desinstalación pudo haber fallado — ver registro.</value></data>
   <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Conexión cancelada</value></data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Tiempo de espera de conexión agotado</value></data>
+  <data name="Home_QrCodeButton" xml:space="preserve"><value>Código QR</value></data>
+  <data name="Home_QrCodeScanHint" xml:space="preserve"><value>Escanear con la app RemEx Android</value></data>
+  <data name="Home_QrCodeTooltip" xml:space="preserve"><value>Generar un código QR para conectar la app RemEx Android</value></data>
 </root>

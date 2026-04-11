@@ -254,4 +254,10 @@
     <string name="remote_desktop_direct_touch_desc">Позиції дотику відповідають координатам екрану</string>
     <string name="remote_desktop_pointer_speed_label">Швидкість курсора: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Натисніть = Клік • Утримуйте = Правий клік • 2 пальці = Прокрутка • Перо = Абсолютний</string>
+    <string name="connection_scan_qr_code">Сканувати QR-код</string>
+    <string name="qr_scanner_title">Сканувати QR-код</string>
+    <string name="cd_back">Назад</string>
+    <string name="qr_scanner_hint">Направте камеру на QR-код, показаний на вашому ПК</string>
+    <string name="qr_scanner_permission_required">Для сканування QR-кодів потрібен дозвіл камери</string>
+    <string name="qr_scanner_grant_permission">Надати дозвіл</string>
 </resources>

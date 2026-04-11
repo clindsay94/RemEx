@@ -254,4 +254,10 @@
     <string name="remote_desktop_direct_touch_desc">Posições de toque mapeiam diretamente para coordenadas da tela</string>
     <string name="remote_desktop_pointer_speed_label">Velocidade do cursor: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Toque = Clique • Pressionar = Clique direito • 2 dedos = Rolar • Caneta = Absoluto</string>
+    <string name="connection_scan_qr_code">Escanear código QR</string>
+    <string name="qr_scanner_title">Escanear código QR</string>
+    <string name="cd_back">Voltar</string>
+    <string name="qr_scanner_hint">Aponte a câmera para o código QR exibido no seu PC</string>
+    <string name="qr_scanner_permission_required">É necessária permissão da câmera para escanear códigos QR</string>
+    <string name="qr_scanner_grant_permission">Conceder permissão</string>
 </resources>

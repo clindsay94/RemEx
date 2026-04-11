@@ -46,6 +46,8 @@ public static class MessageSerializer
             ct);
     }
 
+    private const int MaxMessageSize = 4 * 1024 * 1024; // 4 MB safety limit
+
     /// <summary>
     /// Receive a single <see cref="RemexMessage"/> from a WebSocket connection.
     /// Returns null if the socket closed or the message was invalid.
@@ -66,6 +68,9 @@ public static class MessageSerializer
                 return null;
 
             ms.Write(buffer, 0, result.Count);
+
+            if (ms.Length > MaxMessageSize)
+                throw new InvalidOperationException($"WebSocket message exceeded {MaxMessageSize} byte limit.");
         } 
         while (!result.EndOfMessage);
 

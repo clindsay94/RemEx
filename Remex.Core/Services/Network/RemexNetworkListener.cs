@@ -46,25 +46,47 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         var portStr = _configuration["Remex:CommandPort"];
         if (!int.TryParse(portStr, out int port))
         {
-            port = 8338; // Default to 8338
+            port = 8338;
         }
 
-        _logger.LogInformation($"Starting external network listener on port {port}");
+        const int maxPortAttempts = 5;
+        int actualPort = port;
+        TcpListener? listener = null;
+
+        for (int attempt = 0; attempt < maxPortAttempts; attempt++)
+        {
+            actualPort = port + attempt;
+            _logger.LogInformation("Starting external network listener on port {Port}", actualPort);
+            try
+            {
+                listener = new TcpListener(IPAddress.Any, actualPort);
+                listener.Start();
+                if (attempt > 0)
+                {
+                    _logger.LogWarning("Primary port {Primary} unavailable; fell back to port {Fallback}", port, actualPort);
+                }
+                break;
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+            {
+                _logger.LogWarning("Port {Port} is already in use. Trying next port...", actualPort);
+                listener = null;
+            }
+        }
+
+        if (listener is null)
+        {
+            _logger.LogError("Could not bind to any port in range {Start}-{End}. Network listener disabled.", port, port + maxPortAttempts - 1);
+            return;
+        }
+
+        _tcpListener = listener;
 
         try
         {
-            _tcpListener = new TcpListener(IPAddress.Any, port);
-            _tcpListener.Start();
-
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
             _listenTask = AcceptClientsAsync(_cts.Token);
             await _listenTask;
-        }
-        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
-        {
-            _logger.LogWarning($"Port {port} is already in use. Failed to start network listener.");
-            // Do not throw, allow the application to continue running without the external network listener if the port is busy.
         }
         catch (OperationCanceledException)
         {
@@ -72,7 +94,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error starting external network listener.");
+            _logger.LogError(ex, "Error in external network listener.");
             throw;
         }
     }
@@ -109,7 +131,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 if (_tcpListener == null) break;
 
                 var client = await _tcpListener.AcceptTcpClientAsync(token);
-                _ = HandleClientAsync(client, token); // fire and forget
+                _ = HandleClientSafeAsync(client, token);
             }
         }
         catch (OperationCanceledException)
@@ -119,6 +141,18 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error accepting client connection");
+        }
+    }
+
+    private async Task HandleClientSafeAsync(TcpClient client, CancellationToken token)
+    {
+        try
+        {
+            await HandleClientAsync(client, token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Unhandled exception in client handler");
         }
     }
 

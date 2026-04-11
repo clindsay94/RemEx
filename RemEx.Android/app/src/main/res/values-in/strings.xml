@@ -254,4 +254,10 @@
     <string name="remote_desktop_direct_touch_desc">Posisi sentuhan dipetakan langsung ke koordinat layar</string>
     <string name="remote_desktop_pointer_speed_label">Kecepatan kursor: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Ketuk = Klik • Tekan lama = Klik kanan • 2 jari = Gulir • Pena = Absolut</string>
+    <string name="connection_scan_qr_code">Pindai Kode QR</string>
+    <string name="qr_scanner_title">Pindai Kode QR</string>
+    <string name="cd_back">Kembali</string>
+    <string name="qr_scanner_hint">Arahkan kamera ke kode QR yang ditampilkan di PC Anda</string>
+    <string name="qr_scanner_permission_required">Izin kamera diperlukan untuk memindai kode QR</string>
+    <string name="qr_scanner_grant_permission">Berikan Izin</string>
 </resources>

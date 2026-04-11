@@ -254,4 +254,10 @@
     <string name="remote_desktop_direct_touch_desc">Pozycje dotyku mapują się bezpośrednio na współrzędne ekranu</string>
     <string name="remote_desktop_pointer_speed_label">Szybkość kursora: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Dotknięcie = Kliknięcie • Przytrzymanie = Prawy klik • 2 palce = Przewijanie • Rysik = Absolutny</string>
+    <string name="connection_scan_qr_code">Skanuj kod QR</string>
+    <string name="qr_scanner_title">Skanuj kod QR</string>
+    <string name="cd_back">Wstecz</string>
+    <string name="qr_scanner_hint">Skieruj aparat na kod QR wyświetlony na komputerze</string>
+    <string name="qr_scanner_permission_required">Uprawnienie do aparatu jest wymagane do skanowania kodów QR</string>
+    <string name="qr_scanner_grant_permission">Udziel uprawnienia</string>
 </resources>

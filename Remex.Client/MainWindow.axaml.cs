@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Remex.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Core.Models;
@@ -47,17 +48,23 @@ public partial class MainWindow : Window
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (settings.BackgroundMaterial == "Mica")
+            if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Mica")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
+                Background = Brushes.Transparent;
             }
-            else if (settings.BackgroundMaterial == "Acrylic")
+            else if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
+                Background = Brushes.Transparent;
             }
             else
             {
+                // Non-Windows platforms and any non-transparent mode: use a solid
+                // background so the window is never see-through, regardless of
+                // whether the compositor honours alpha channels on the window.
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
+                Background = new SolidColorBrush(Color.FromRgb(0x0A, 0x0A, 0x10));
             }
         });
     }

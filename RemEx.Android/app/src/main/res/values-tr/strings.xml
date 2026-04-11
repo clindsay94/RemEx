@@ -254,4 +254,10 @@
     <string name="remote_desktop_direct_touch_desc">Dokunma konumları doğrudan ekran koordinatlarına eşlenir</string>
     <string name="remote_desktop_pointer_speed_label">İmleç hızı: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Dokun = Tıkla • Uzun bas = Sağ tıkla • 2 parmak = Kaydır • Kalem = Mutlak</string>
+    <string name="connection_scan_qr_code">QR Kodu Tara</string>
+    <string name="qr_scanner_title">QR Kodu Tara</string>
+    <string name="cd_back">Geri</string>
+    <string name="qr_scanner_hint">Kamerayı PC\'nizde gösterilen QR koduna yöneltin</string>
+    <string name="qr_scanner_permission_required">QR kodlarını taramak için kamera izni gereklidir</string>
+    <string name="qr_scanner_grant_permission">İzin Ver</string>
 </resources>

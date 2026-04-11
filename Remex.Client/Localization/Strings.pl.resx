@@ -376,4 +376,7 @@ Linux: ip addr lub hostname -I</value></data>
   <data name="Service_UninstallFailed" xml:space="preserve"><value>Odinstalowanie mogło się nie powieść — sprawdź log.</value></data>
   <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Połączenie anulowane</value></data>
   <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Upłynął limit czasu połączenia</value></data>
+  <data name="Home_QrCodeButton" xml:space="preserve"><value>Kod QR</value></data>
+  <data name="Home_QrCodeScanHint" xml:space="preserve"><value>Skanuj aplikacją RemEx Android</value></data>
+  <data name="Home_QrCodeTooltip" xml:space="preserve"><value>Wygeneruj kod QR, aby połączyć aplikację RemEx Android</value></data>
 </root>

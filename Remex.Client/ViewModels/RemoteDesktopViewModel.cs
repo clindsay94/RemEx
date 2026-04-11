@@ -54,7 +54,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private double _actualFps;
 
     [ObservableProperty]
-    private string _statusText = "Not streaming";
+    private string _statusText = LocalizationService.Instance["Status_NotStreaming"];
 
     /// <summary>True when the host reports an error (e.g. capture failure). Shown as overlay during streaming.</summary>
     [ObservableProperty]
@@ -67,7 +67,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private bool _isViewportZoomed;
 
     [ObservableProperty]
-    private string _viewportZoomText = "Zoom: 1.0×";
+    private string _viewportZoomText = string.Format(LocalizationService.Instance["Status_ZoomFormat"], 1.0);
 
     [ObservableProperty]
     private bool _showCursorPad;
@@ -82,7 +82,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private Thickness _cursorPadMargin = new(0, 0, 24, 24);
 
     [ObservableProperty]
-    private string _cursorPadModeText = "Pad: Full";
+    private string _cursorPadModeText = LocalizationService.Instance["Status_PadFull"];
 
     /// <summary>
     /// When true, all touch input is treated as pen/stylus (tap = click, drag = click-drag).
@@ -150,7 +150,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     public string RemoteDesktopCapabilityText =>
         Connection.IsConnected
             ? Connection.RemoteDesktopAvailabilitySummary
-            : "Connect to a host to check remote desktop availability.";
+            : LocalizationService.Instance["Status_ConnectToCheckDesktop"];
 
     private bool CanStartStream() => !IsStreaming && Connection.IsConnected && IsRemoteDesktopSupported;
     private bool CanStopStream() => IsStreaming;
@@ -167,7 +167,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
         try
         {
-            StatusText = "Connecting...";
+            StatusText = LocalizationService.Instance["Status_StreamConnecting"];
 
             await _desktopService.ConnectAsync(Connection.HostAddress);
 
@@ -183,7 +183,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             HasStreamError = false;
             _fpsWindowStart = DateTime.UtcNow;
             _frameCount = 0;
-            StatusText = "Streaming";
+            StatusText = LocalizationService.Instance["Status_Streaming"];
         }
         catch (Exception ex)
         {
@@ -201,7 +201,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 _desktopService.Disconnect();
             }
 
-            StatusText = $"Failed: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["Status_StreamFailedFormat"], ex.Message);
         }
     }
 
@@ -218,7 +218,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             _desktopService.Disconnect();
             IsStreaming = false;
             HasStreamError = false;
-            StatusText = "Stopped";
+            StatusText = LocalizationService.Instance["Status_Stopped"];
             ActualFps = 0;
         }
     }
@@ -271,15 +271,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             CursorPadScale = 0.62;
             CursorPadMargin = new Thickness(0, 0, 14, 12);
-            CursorPadModeText = "Pad: Compact";
-            StatusText = "Compact cursor pad enabled";
+            CursorPadModeText = LocalizationService.Instance["Status_PadCompact"];
+            StatusText = LocalizationService.Instance["Status_PadCompactTooltip"];
         }
         else
         {
             CursorPadScale = 1.0;
             CursorPadMargin = new Thickness(0, 0, 24, 24);
-            CursorPadModeText = "Pad: Full";
-            StatusText = "Full-size cursor pad enabled";
+            CursorPadModeText = LocalizationService.Instance["Status_PadFull"];
+            StatusText = LocalizationService.Instance["Status_PadFullTooltip"];
         }
     }
 
@@ -295,14 +295,14 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         // Connection.HostAddress and Connection.AccessKey are already bound via XAML
         // and auto-persist through ConnectionViewModel's property change handlers.
         ShowConnectionPanel = false;
-        StatusText = "Connection settings saved";
+        StatusText = LocalizationService.Instance["Status_ConnectionSaved"];
     }
 
     [RelayCommand]
     private void ResetZoom()
     {
         IsViewportZoomed = false;
-        ViewportZoomText = "Zoom: 1.0×";
+        ViewportZoomText = string.Format(LocalizationService.Instance["Status_ZoomFormat"], 1.0);
         ViewportZoomResetRequested?.Invoke();
     }
 
@@ -367,7 +367,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             {
                 Dispatcher.UIThread.Post(() =>
                 {
-                    StatusText = $"Frame decode error ({jpegBytes.Length} bytes): {ex.GetType().Name}: {ex.Message}";
+                    StatusText = string.Format(LocalizationService.Instance["Status_FrameDecodeErrorFormat"], jpegBytes.Length, ex.GetType().Name, ex.Message);
                     HasStreamError = true;
                 });
             }
@@ -382,7 +382,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             Dispatcher.UIThread.Post(async () =>
             {
-                StatusText = "Self-connection detected — cannot mirror own screen";
+                StatusText = LocalizationService.Instance["Status_SelfConnection"];
                 await StopStreamAsync();
             });
             return;
@@ -402,7 +402,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             IsStreaming = false;
-            StatusText = "Disconnected";
+            StatusText = LocalizationService.Instance["Status_Disconnected"];
             ActualFps = 0;
         });
     }
@@ -430,7 +430,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
                 if (!Connection.IsConnected && !IsStreaming)
                 {
-                    StatusText = "Not streaming";
+                    StatusText = LocalizationService.Instance["Status_NotStreaming"];
                     HasStreamError = false;
                 }
             });

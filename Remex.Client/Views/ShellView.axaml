@@ -914,22 +914,37 @@
                                            Text="{conv:Localize Tutorial_P7_Body3}"/>
                             </StackPanel>
 
-                            <!-- Page 8: You're All Set -->
+                            <!-- Page 8: QR Code Pairing -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=8}">
-                                <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{conv:Localize Tutorial_P8_Title}" FontSize="22" FontWeight="Black"
+                                <TextBlock Text="📱" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P8_QR_Title}" FontSize="22" FontWeight="Black"
                                            Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="{conv:Localize Tutorial_P8_Body1}"/>
+                                           Text="{conv:Localize Tutorial_P8_QR_Body1}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap"
+                                               Text="{conv:Localize Tutorial_P8_QR_Steps}"/>
+                                </Border>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
-                                           Text="{conv:Localize Tutorial_P8_Body2}"/>
+                                           Text="{conv:Localize Tutorial_P8_QR_Body2}"/>
+                            </StackPanel>
+
+                            <!-- Page 9: You're All Set -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=9}">
+                                <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P9_Title}" FontSize="22" FontWeight="Black"
+                                           Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P9_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center"
+                                           Text="{conv:Localize Tutorial_P9_Body2}"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center"
-                                           Text="{conv:Localize Tutorial_P8_Replay}"/>
+                                           Text="{conv:Localize Tutorial_P9_Replay}"/>
                             </StackPanel>
 
                             <!-- Page indicator dots -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,4,0,0">
-                                <!-- Pages 0-8 -->
+                                <!-- Pages 0-9 -->
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=0}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
@@ -948,6 +963,8 @@
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=7}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=8}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}"
+                                         Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=9}"/>
                             </StackPanel>
 
                             <!-- Navigation buttons -->
@@ -960,13 +977,13 @@
                                         FontWeight="SemiBold" Cursor="Hand"/>
                                 <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}"
                                         Command="{Binding TutorialNextCommand}"
-                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=8}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=9}"
                                         Background="#4A3AFF" Foreground="White"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="Bold" Cursor="Hand"/>
                                 <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}"
                                         Command="{Binding TutorialFinishCommand}"
-                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=4}"
+                                        IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=9}"
                                         Background="#4ADE80" Foreground="#1A1A1A"
                                         Padding="16,8" CornerRadius="8" FontSize="13"
                                         FontWeight="Bold" Cursor="Hand"/>

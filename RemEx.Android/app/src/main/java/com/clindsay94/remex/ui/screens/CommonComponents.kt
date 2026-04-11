@@ -99,6 +99,7 @@ fun DisconnectedFullScreen(
 ) {
     Column(
         modifier = modifier
+            .fillMaxWidth()
             .padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally

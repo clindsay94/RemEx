@@ -388,4 +388,7 @@ Linux: ip addr atau hostname -I</value></data>
 <data name="Service_UninstallFailed" xml:space="preserve"><value>Copot pemasangan mungkin gagal — lihat log.</value></data>
 <data name="Status_ConnectionCancelled" xml:space="preserve"><value>Koneksi dibatalkan</value></data>
 <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Koneksi habis waktu</value></data>
+<data name="Home_QrCodeButton" xml:space="preserve"><value>Kode QR</value></data>
+<data name="Home_QrCodeScanHint" xml:space="preserve"><value>Pindai dengan aplikasi RemEx Android</value></data>
+<data name="Home_QrCodeTooltip" xml:space="preserve"><value>Buat kode QR untuk menghubungkan aplikasi RemEx Android</value></data>
 </root>

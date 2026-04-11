@@ -385,4 +385,7 @@ Linux: ip addr या hostname -I</value></data>
 <data name="Service_UninstallFailed" xml:space="preserve"><value>अनइंस्टॉल विफल हो सकता है — लॉग देखें。</value></data>
 <data name="Status_ConnectionCancelled" xml:space="preserve"><value>कनेक्शन रद्द कर दिया गया</value></data>
 <data name="Status_ConnectionTimedOut" xml:space="preserve"><value>कनेक्शन का समय समाप्त</value></data>
+<data name="Home_QrCodeButton" xml:space="preserve"><value>QR कोड</value></data>
+<data name="Home_QrCodeScanHint" xml:space="preserve"><value>RemEx Android ऐप से स्कैन करें</value></data>
+<data name="Home_QrCodeTooltip" xml:space="preserve"><value>RemEx Android ऐप को कनेक्ट करने के लिए QR कोड जनरेट करें</value></data>
 </root>

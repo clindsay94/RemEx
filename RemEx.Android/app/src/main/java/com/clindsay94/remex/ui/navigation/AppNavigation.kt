@@ -241,7 +241,11 @@ fun AppNavigation() {
                 QrScannerScreen(
                     onScanned = { host, port, key ->
                         connectionViewModel.applyQrResultAndConnect(host, port, key)
-                        navController.popBackStack()
+                        // Navigate to Dashboard after successful QR scan and auto-connect
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     },
                     onBack = { navController.popBackStack() }
                 )

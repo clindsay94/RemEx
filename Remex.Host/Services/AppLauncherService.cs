@@ -57,7 +57,7 @@ public class AppLauncherService : IAppLauncherService
             UseShellExecute = true,
             WorkingDirectory = appDir ?? string.Empty
         };
-        Process.Start(psi);
+        Process.Start(psi)?.Dispose();
     }
 
     private void LaunchInInteractiveSession(string targetPath)
@@ -75,10 +75,10 @@ public class AppLauncherService : IAppLauncherService
                 throw new Exception($"WTSQueryUserToken failed (Error: {Marshal.GetLastWin32Error()}).");
             }
 
-            // We use 'explorer.exe' or 'cmd.exe /c start' to let the OS handle file associations/shortcuts
-            // because CreateProcessAsUser doesn't support UseShellExecute natively.
-            string commandLine = $"cmd.exe /c start \"\" /D \"{System.IO.Path.GetDirectoryName(targetPath)}\" \"{targetPath}\"";
-            string? appDir = System.IO.Path.GetDirectoryName(targetPath);
+            // Sanitize targetPath to prevent command injection
+            string sanitizedPath = targetPath.Replace("\"", "");
+            string? appDir = System.IO.Path.GetDirectoryName(sanitizedPath);
+            string commandLine = $"cmd.exe /c start \"\" /D \"{appDir}\" \"{sanitizedPath}\"";
 
             STARTUPINFO si = new STARTUPINFO();
             si.cb = Marshal.SizeOf(si);

@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Core.Models;
+using Remex.Client.Services;
 using Remex.Core.Services;
 
 namespace Remex.Client.ViewModels;
@@ -81,11 +82,11 @@ public partial class AddProgramViewModel : ObservableObject
 
         var files = await PickFileAsync(new FilePickerOpenOptions
         {
-            Title = "Select Application",
+            Title = LocalizationService.Instance["FilePicker_SelectApplication"],
             AllowMultiple = false,
             FileTypeFilter = new[]
             {
-                new FilePickerFileType("Applications")
+                new FilePickerFileType(LocalizationService.Instance["FilePicker_Applications"])
                 {
                     Patterns = OperatingSystem.IsWindows()
                         ? new[] { "*.exe", "*.lnk", "*.bat" }
