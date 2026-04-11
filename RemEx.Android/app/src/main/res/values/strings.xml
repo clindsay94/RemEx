@@ -302,4 +302,16 @@
     <string name="personalization_shape_task_manager">Task Manager</string>
     <string name="personalization_shape_pc_orb">PC Connection Orb</string>
     <string name="personalization_preview">PREVIEW</string>
+
+    <!-- ═══ Widget Configuration Activities ═══ -->
+    <string name="widget_config_app_launcher_title">Configure App Launcher</string>
+    <string name="widget_config_app_launcher_hint">Select the apps to show on your widget:</string>
+    <string name="widget_config_no_apps">No apps available yet.</string>
+    <string name="widget_config_no_apps_hint">Connect to your PC and sync apps first.</string>
+    <string name="widget_config_hardware_info_title">Configure Hardware Info</string>
+    <string name="widget_config_hardware_info_hint">Select the sensors to display on your widget:</string>
+    <string name="widget_config_no_sensors">No sensors available yet.</string>
+    <string name="widget_config_no_sensors_hint">Connect to your PC first to discover sensors.</string>
+    <string name="widget_config_remote_control_title">Configure Remote Control</string>
+    <string name="widget_config_remote_control_hint">Select the commands to show on your widget:</string>
 </resources>

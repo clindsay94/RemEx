@@ -38,8 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clindsay94.remex.R
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
@@ -85,7 +87,7 @@ class AppLauncherConfigActivity : AppCompatActivity() {
                         TopAppBar(
                             title = {
                                 Text(
-                                    "Configure App Launcher",
+                                    stringResource(R.string.widget_config_app_launcher_title),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -98,7 +100,7 @@ class AppLauncherConfigActivity : AppCompatActivity() {
                             .padding(padding)
                     ) {
                         Text(
-                            "Select the apps to show on your widget:",
+                            stringResource(R.string.widget_config_app_launcher_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -113,11 +115,11 @@ class AppLauncherConfigActivity : AppCompatActivity() {
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        "No apps available yet.",
+                                        stringResource(R.string.widget_config_no_apps),
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                     Text(
-                                        "Connect to your PC and sync apps first.",
+                                        stringResource(R.string.widget_config_no_apps_hint),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -153,7 +155,7 @@ class AppLauncherConfigActivity : AppCompatActivity() {
                                 .padding(16.dp),
                             enabled = selected.isNotEmpty()
                         ) {
-                            Text("Done")
+                            Text(stringResource(R.string.button_done))
                         }
                     }
                 }

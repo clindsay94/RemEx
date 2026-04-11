@@ -48,9 +48,16 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private void ProcessInputQueue()
     {
-        foreach (var input in _inputQueue.GetConsumingEnumerable())
+        try
         {
-            DispatchInput(input);
+            foreach (var input in _inputQueue.GetConsumingEnumerable())
+            {
+                DispatchInput(input);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Input processing thread faulted.");
         }
     }
 
@@ -73,9 +80,9 @@ public sealed class RemoteDesktopHandler : IDisposable
                     await webSocket.CloseOutputAsync(WebSocketCloseStatus.PolicyViolation, "interactive desktop unavailable", ct);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Best effort close.
+                _logger.LogTrace(ex, "Best-effort WebSocket close failed.");
             }
 
             return;
@@ -132,7 +139,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                             if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
                                 await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "stream ended", ct);
                         }
-                        catch { /* best-effort close */ }
+                        catch (Exception ex) { _logger.LogTrace(ex, "Best-effort WebSocket close failed."); }
 
                         // If we exit the inner loop, break the outer loop too
                         return;

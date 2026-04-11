@@ -62,10 +62,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         settingsManager = SettingsManager(context)
         
         // Start Global Connection Heartbeat
-        managerScope.launch {
+        managerScope.launch(Dispatchers.IO) {
             while (true) {
                 if (!isConnected.value && !isConnecting.value) {
-                    val settings = settingsManager!!
+                    val settings = settingsManager ?: continue
                     val host = settings.hostFlow.first()
                     // Auto-connect if a valid host is configured
                     if (host.isNotBlank()) {

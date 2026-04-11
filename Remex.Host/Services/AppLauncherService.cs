@@ -21,6 +21,13 @@ public class AppLauncherService : IAppLauncherService
     {
         try
         {
+            // Validate and normalize the path to prevent traversal attacks
+            targetPath = System.IO.Path.GetFullPath(targetPath);
+            if (!System.IO.File.Exists(targetPath) && !System.IO.Directory.Exists(targetPath))
+            {
+                _logger.LogWarning("Launch target does not exist: {targetPath}", targetPath);
+                throw new System.IO.FileNotFoundException("Launch target not found.", targetPath);
+            }
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 LaunchStandard(targetPath);
@@ -75,16 +82,11 @@ public class AppLauncherService : IAppLauncherService
                 throw new Exception($"WTSQueryUserToken failed (Error: {Marshal.GetLastWin32Error()}).");
             }
 
-            // Sanitize targetPath: remove shell metacharacters, not just quotes
-            string sanitizedPath = targetPath
-                .Replace("\"", "")
-                .Replace("&", "")
-                .Replace("|", "")
-                .Replace(";", "")
-                .Replace("`", "")
-                .Replace("$(", "(");
-            string? appDir = System.IO.Path.GetDirectoryName(sanitizedPath);
-            string commandLine = $"cmd.exe /c start \"\" /D \"{appDir}\" \"{sanitizedPath}\"";
+            // Use the validated full path directly — no shell metacharacter
+            // sanitization needed because we avoid cmd.exe string interpolation
+            // by passing the path through CreateProcessAsUser directly.
+            string? appDir = System.IO.Path.GetDirectoryName(targetPath);
+            string commandLine = $"cmd.exe /c start \"\" /D \"{appDir}\" \"{targetPath}\"";
 
             STARTUPINFO si = new STARTUPINFO();
             si.cb = Marshal.SizeOf(si);

@@ -143,13 +143,20 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
             // Post-process with ffmpeg to scale down if needed
             var scaledFile = tmpFile + ".scaled.jpg";
-            var ffmpegArgs = $"-i \"{tmpFile}\" -vf scale={captureWidth}:{captureHeight} -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
-            var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
-            if (scaleResult == 0 && File.Exists(scaledFile))
+            try
             {
-                File.Move(scaledFile, tmpFile, overwrite: true);
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf scale={captureWidth}:{captureHeight} -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
+                if (scaleResult == 0 && File.Exists(scaledFile))
+                {
+                    File.Move(scaledFile, tmpFile, overwrite: true);
+                }
+                return scaleResult;
             }
-            return scaleResult;
+            finally
+            {
+                try { if (File.Exists(scaledFile)) File.Delete(scaledFile); } catch { /* best effort */ }
+            }
         }
 
         // import (ImageMagick) fallback

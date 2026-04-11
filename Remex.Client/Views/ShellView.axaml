@@ -435,7 +435,7 @@
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#1AFFFFFF" CornerRadius="6" 
                                                         BorderBrush="#2AFFFFFF" BorderThickness="1"/>
-                                                <TextBlock Text="Dark Glass" FontSize="11" FontWeight="Bold" 
+                                                <TextBlock Text="{conv:Localize Custom_PresetStandardGlass}" FontSize="11" FontWeight="Bold" 
                                                            HorizontalAlignment="Center" 
                                                            />
                                             </StackPanel>
@@ -445,7 +445,7 @@
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#050505" CornerRadius="2" 
                                                         BorderBrush="#00F3FF" BorderThickness="1"/>
-                                                <TextBlock Text="Cyber-NOC" FontSize="11" FontWeight="Bold" 
+                                                <TextBlock Text="{conv:Localize Custom_PresetCyberNOC}" FontSize="11" FontWeight="Bold" 
                                                            HorizontalAlignment="Center" 
                                                            />
                                             </StackPanel>
@@ -455,7 +455,7 @@
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#CCFFFFFF" CornerRadius="12" 
                                                         BorderBrush="#FFB800" BorderThickness="1"/>
-                                                <TextBlock Text="Solar-Flare" FontSize="11" FontWeight="Bold" 
+                                                <TextBlock Text="{conv:Localize Custom_PresetSolarFlare}" FontSize="11" FontWeight="Bold" 
                                                            HorizontalAlignment="Center" 
                                                            Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>
@@ -465,7 +465,7 @@
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#2C2C2E" CornerRadius="4" 
                                                         BorderBrush="#444" BorderThickness="3"/>
-                                                <TextBlock Text="Monolith" FontSize="11" FontWeight="Bold" 
+                                                <TextBlock Text="{conv:Localize Custom_PresetMonolith}" FontSize="11" FontWeight="Bold" 
                                                            HorizontalAlignment="Center" 
                                                            Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>

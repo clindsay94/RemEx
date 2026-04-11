@@ -33,6 +33,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     private long _lastBytesReceived;
     private long _lastBytesSent;
     private DateTime _lastNetworkPoll = DateTime.MinValue;
+    private readonly object _networkLock = new();
 
     // Cached fallback payload to return when WMI/PerformanceCounter stalls
     private TelemetryPayload? _cachedFallback;
@@ -307,23 +308,26 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         // Network Activity
         try
         {
-            if (_activeNic != null)
+            lock (_networkLock)
             {
-                var stats = _activeNic.GetIPv4Statistics();
-                var now = DateTime.UtcNow;
-                var elapsedSeconds = (now - _lastNetworkPoll).TotalSeconds;
-
-                if (elapsedSeconds > 0)
+                if (_activeNic != null)
                 {
-                    var netDown = ((stats.BytesReceived - _lastBytesReceived) / 1024.0 / 1024.0) / elapsedSeconds;
-                    var netUp = ((stats.BytesSent - _lastBytesSent) / 1024.0 / 1024.0) / elapsedSeconds;
-                    sensors.Add(new SensorReading { Name = "Current DL Rate", Value = netDown >= 0 ? netDown : 0, Unit = "MB/s", Category = "Network", Source = "WindowsPerf" });
-                    sensors.Add(new SensorReading { Name = "Current UP Rate", Value = netUp >= 0 ? netUp : 0, Unit = "MB/s", Category = "Network", Source = "WindowsPerf" });
-                }
+                    var stats = _activeNic.GetIPv4Statistics();
+                    var now = DateTime.UtcNow;
+                    var elapsedSeconds = (now - _lastNetworkPoll).TotalSeconds;
 
-                _lastBytesReceived = stats.BytesReceived;
-                _lastBytesSent = stats.BytesSent;
-                _lastNetworkPoll = now;
+                    if (elapsedSeconds > 0)
+                    {
+                        var netDown = ((stats.BytesReceived - _lastBytesReceived) / 1024.0 / 1024.0) / elapsedSeconds;
+                        var netUp = ((stats.BytesSent - _lastBytesSent) / 1024.0 / 1024.0) / elapsedSeconds;
+                        sensors.Add(new SensorReading { Name = "Current DL Rate", Value = netDown >= 0 ? netDown : 0, Unit = "MB/s", Category = "Network", Source = "WindowsPerf" });
+                        sensors.Add(new SensorReading { Name = "Current UP Rate", Value = netUp >= 0 ? netUp : 0, Unit = "MB/s", Category = "Network", Source = "WindowsPerf" });
+                    }
+
+                    _lastBytesReceived = stats.BytesReceived;
+                    _lastBytesSent = stats.BytesSent;
+                    _lastNetworkPoll = now;
+                }
             }
         }
         catch (Exception ex)

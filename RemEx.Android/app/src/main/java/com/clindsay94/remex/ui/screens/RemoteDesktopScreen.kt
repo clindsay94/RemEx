@@ -610,7 +610,7 @@ fun RemoteDesktopScreen(
                 if (safeFrame != null && !safeFrame.isRecycled) {
                     Image(
                         bitmap = safeFrame.asImageBitmap(),
-                        contentDescription = "Remote Desktop Frame",
+                        contentDescription = stringResource(R.string.cd_remote_desktop_frame),
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {

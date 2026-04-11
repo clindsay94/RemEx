@@ -44,7 +44,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     public async Task StartListeningAsync(CancellationToken cancellationToken)
     {
         var portStr = _configuration["Remex:CommandPort"];
-        if (!int.TryParse(portStr, out int port))
+        if (!int.TryParse(portStr, out int port) || port < 1 || port > 65535)
         {
             port = 8338;
         }
@@ -56,6 +56,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         for (int attempt = 0; attempt < maxPortAttempts; attempt++)
         {
             actualPort = port + attempt;
+            if (actualPort > 65535) break;
             _logger.LogInformation("Starting external network listener on port {Port}", actualPort);
             try
             {

@@ -105,7 +105,12 @@ fun QrScannerScreen(
                         val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
                         cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
+                            val cameraProvider = try {
+                                cameraProviderFuture.get()
+                            } catch (e: Exception) {
+                                android.util.Log.e("QrScanner", "Camera provider init failed", e)
+                                return@addListener
+                            }
 
                             val preview = Preview.Builder().build().also {
                                 it.setSurfaceProvider(previewView.surfaceProvider)

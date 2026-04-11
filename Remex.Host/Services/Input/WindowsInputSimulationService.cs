@@ -28,8 +28,8 @@ public class WindowsInputSimulationService : IInputSimulationService
         x = Math.Clamp(x, 0, primaryW - 1);
         y = Math.Clamp(y, 0, primaryH - 1);
 
-        int absX = (int)((x * 65535.0) / (primaryW - 1));
-        int absY = (int)((y * 65535.0) / (primaryH - 1));
+        int absX = (int)((x * 65535.0) / Math.Max(1, primaryW - 1));
+        int absY = (int)((y * 65535.0) / Math.Max(1, primaryH - 1));
 
         var input = new INPUT
         {

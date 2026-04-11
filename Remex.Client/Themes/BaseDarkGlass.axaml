@@ -39,7 +39,11 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
 
+    <!-- Compatibility aliases for WinUI-style resource names -->
+    <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>
+
     <!-- UI Geometry -->
     <CornerRadius x:Key="CardCornerRadius">16</CornerRadius>
+    <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
     <Thickness x:Key="CardBorderThickness">1</Thickness>
 </ResourceDictionary>

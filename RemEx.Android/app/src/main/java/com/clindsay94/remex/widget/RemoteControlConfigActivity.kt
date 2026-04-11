@@ -29,8 +29,10 @@ import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clindsay94.remex.R
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -69,7 +71,7 @@ class RemoteControlConfigActivity : AppCompatActivity() {
                         TopAppBar(
                             title = {
                                 Text(
-                                    "Configure Remote Control",
+                                    stringResource(R.string.widget_config_remote_control_title),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -82,7 +84,7 @@ class RemoteControlConfigActivity : AppCompatActivity() {
                             .padding(padding)
                     ) {
                         Text(
-                            "Select the commands to show on your widget:",
+                            stringResource(R.string.widget_config_remote_control_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -116,7 +118,7 @@ class RemoteControlConfigActivity : AppCompatActivity() {
                                 .padding(16.dp),
                             enabled = selected.isNotEmpty()
                         ) {
-                            Text("Done")
+                            Text(stringResource(R.string.button_done))
                         }
                     }
                 }

@@ -34,11 +34,23 @@ public partial class ShellView : UserControl
             };
     }
 
+    private ShellViewModel? _previousVm;
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_previousVm != null)
+        {
+            _previousVm.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
         if (DataContext is ShellViewModel vm)
         {
             vm.PropertyChanged += OnViewModelPropertyChanged;
+            _previousVm = vm;
+        }
+        else
+        {
+            _previousVm = null;
         }
     }
 

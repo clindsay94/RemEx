@@ -79,7 +79,10 @@ public partial class App : Application
                     System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
                     System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
                 }
-                catch { }
+                catch (System.Globalization.CultureNotFoundException)
+                {
+                    // Invalid language code in settings — ignore, use default culture
+                }
             }
 
             var viewModel = Services.GetRequiredService<ShellViewModel>();
@@ -175,6 +178,11 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             _flyout?.Close();
+            _flyout = null;
+
+            if (Services.GetService<ShellViewModel>() is IDisposable disposableVm)
+                disposableVm.Dispose();
+
             desktop.Shutdown();
         }
     }
