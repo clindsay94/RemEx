@@ -148,7 +148,7 @@ fun RemoteDesktopScreen(
                 controller.hide(WindowInsetsCompat.Type.systemBars())
                 controller.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             } else {
                 controller.show(WindowInsetsCompat.Type.systemBars())
                 activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
