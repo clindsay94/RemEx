@@ -90,53 +90,81 @@
                         <!-- Connection status inline -->
                         <Border CornerRadius="12" Padding="16,12" Margin="0,4,0,0"
                                 Background="{DynamicResource CardBackgroundBrush}">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
-                                <!-- Status indicator -->
-                                <Border Width="36" Height="36" CornerRadius="18" VerticalAlignment="Center"
-                                        Background="{DynamicResource CardBackgroundBrush}">
-                                    <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <Ellipse.Fill>
-                                            <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
-                                        </Ellipse.Fill>
-                                        <!-- Pulse animation for connected state -->
-                                        <Ellipse.Styles>
-                                            <Style Selector="Ellipse">
-                                                <Style.Animations>
-                                                    <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
-                                                        <KeyFrame KeyTime="0:0:0">
-                                                            <Setter Property="Opacity" Value="0.6"/>
-                                                        </KeyFrame>
-                                                        <KeyFrame KeyTime="0:0:1">
-                                                            <Setter Property="Opacity" Value="1.0"/>
-                                                        </KeyFrame>
-                                                        <KeyFrame KeyTime="0:0:2">
-                                                            <Setter Property="Opacity" Value="0.6"/>
-                                                        </KeyFrame>
-                                                    </Animation>
-                                                </Style.Animations>
-                                            </Style>
-                                        </Ellipse.Styles>
-                                    </Ellipse>
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <!-- Status indicator -->
+                                    <Border Width="36" Height="36" CornerRadius="18" VerticalAlignment="Center"
+                                            Background="{DynamicResource CardBackgroundBrush}">
+                                        <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Ellipse.Fill>
+                                                <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
+                                            </Ellipse.Fill>
+                                            <!-- Pulse animation for connected state -->
+                                            <Ellipse.Styles>
+                                                <Style Selector="Ellipse">
+                                                    <Style.Animations>
+                                                        <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                                            <KeyFrame KeyTime="0:0:0">
+                                                                <Setter Property="Opacity" Value="0.6"/>
+                                                            </KeyFrame>
+                                                            <KeyFrame KeyTime="0:0:1">
+                                                                <Setter Property="Opacity" Value="1.0"/>
+                                                            </KeyFrame>
+                                                            <KeyFrame KeyTime="0:0:2">
+                                                                <Setter Property="Opacity" Value="0.6"/>
+                                                            </KeyFrame>
+                                                        </Animation>
+                                                    </Style.Animations>
+                                                </Style>
+                                            </Ellipse.Styles>
+                                        </Ellipse>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Connection.StatusText}" FontSize="15" FontWeight="Bold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                                        <Button Classes="action-pill action-pill-accent" Content="{local:Localize Btn_Connect}"
+                                                Command="{Binding Connection.ConnectCommand}"
+                                                IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"
+                                                ToolTip.Tip="{local:Localize Home_ConnectTooltip}"/>
+                                        <Button Classes="action-pill action-pill-danger" Content="{local:Localize Btn_Cancel}"
+                                                Command="{Binding Connection.DisconnectCommand}"
+                                                IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
+                                                ToolTip.Tip="{local:Localize Home_CancelTooltip}"/>
+                                        <Button Classes="action-pill" Content="{local:Localize Home_QrCodeButton}"
+                                                Command="{Binding Connection.GenerateQrCodeCommand}"
+                                                Padding="16,8"
+                                                ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- QR Code panel — visible after GenerateQrCode is invoked -->
+                                <Border IsVisible="{Binding Connection.ShowQrCode}"
+                                        HorizontalAlignment="Center">
+                                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                        <TextBlock Text="{local:Localize Home_QrCodeScanHint}"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   HorizontalAlignment="Center"/>
+                                        <Border Background="White" CornerRadius="4" Padding="8">
+                                            <Image Source="{Binding Connection.QrCodeImage}"
+                                                   Width="220" Height="220"
+                                                   Stretch="Uniform"/>
+                                        </Border>
+                                        <Button Content="{local:Localize Close}"
+                                                Command="{Binding Connection.CloseQrCodeCommand}"
+                                                HorizontalAlignment="Center"
+                                                Background="Transparent"
+                                                Foreground="{DynamicResource TextMutedBrush}"
+                                                FontSize="11" Padding="8,4" BorderThickness="0"/>
+                                    </StackPanel>
                                 </Border>
-
-                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="15" FontWeight="Bold" 
-                                               Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" 
-                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                    <Button Classes="action-pill action-pill-accent" Content="{local:Localize Btn_Connect}" 
-                                            Command="{Binding Connection.ConnectCommand}" 
-                                            IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"
-                                            ToolTip.Tip="{local:Localize Home_ConnectTooltip}"/>
-                                    <Button Classes="action-pill action-pill-danger" Content="{local:Localize Btn_Cancel}" 
-                                            Command="{Binding Connection.DisconnectCommand}" 
-                                            IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
-                                            ToolTip.Tip="{local:Localize Home_CancelTooltip}"/>
-                                </StackPanel>
-                            </Grid>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </Grid>
