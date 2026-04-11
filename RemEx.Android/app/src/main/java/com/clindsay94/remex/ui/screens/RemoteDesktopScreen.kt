@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import android.content.pm.ActivityInfo
 import android.util.Log
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -129,6 +130,13 @@ fun RemoteDesktopScreen(
     val inertiaMinVelPx = with(density) { INERTIA_MIN_VELOCITY.dp.toPx() }
     val inertiaStopVelPx = with(density) { INERTIA_STOP_VELOCITY.dp.toPx() }
 
+    DisposableEffect(activity) {
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
     DisposableEffect(activity, isFullscreen) {
         if (activity == null) {
             onDispose { }
@@ -140,8 +148,10 @@ fun RemoteDesktopScreen(
                 controller.hide(WindowInsetsCompat.Type.systemBars())
                 controller.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             } else {
                 controller.show(WindowInsetsCompat.Type.systemBars())
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
             onDispose {
                 WindowCompat.setDecorFitsSystemWindows(window, true)
