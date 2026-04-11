@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -34,11 +35,28 @@ public partial class HomeViewModel : ObservableObject
         var canvas = _shell.CanvasViewModel;
         if (canvas is null) return;
 
+        // Use the profile as the source of truth for which sensors are pinned
+        var pinnedIds = _shell.LayoutService.CurrentProfile?.PinnedSensorIds ?? new List<string>();
+
         PinnedSensors.Clear();
-        foreach (var card in canvas.Cards
-                     .Where(c => c.CardType == "Sensor" && c.IsPinnedToHome && c.Sensor != null))
+        
+        // Strategy: find a SensorViewModel for every ID in the pinned list.
+        // We look in placed cards first, then in staged (discovered) templates.
+        foreach (var id in pinnedIds)
         {
-            PinnedSensors.Add(card.Sensor!);
+            var sensorVm = canvas.Cards
+                .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == id)
+                .Select(c => c.Sensor)
+                .FirstOrDefault()
+                ?? canvas.StagedCards
+                .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == id)
+                .Select(c => c.Sensor)
+                .FirstOrDefault();
+
+            if (sensorVm != null)
+            {
+                PinnedSensors.Add(sensorVm);
+            }
         }
     }
 

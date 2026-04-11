@@ -37,39 +37,38 @@
             </Grid>
 
             <!-- ═══ Service Section ═══ -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsWindowsServiceSectionVisible}">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize Settings_ServiceSection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsServiceSectionVisible}">
+               <StackPanel Spacing="16">
+                   <TextBlock Text="{Binding ServiceSectionHeader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
 
-                    <!-- Status row -->
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Spacing="4">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Ellipse Width="10" Height="10" VerticalAlignment="Center">
-                                    <Ellipse.Fill>
-                                        <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="16" FontWeight="Bold" Foreground="#E0E0FF"/>
-                            </StackPanel>
-                            <TextBlock Text="{Binding ServiceUsername, StringFormat=Account: {0}}" FontSize="11" Foreground="#6666AA" IsVisible="{Binding IsServiceInstalled}"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </Grid>
+                   <!-- Status row -->
+                   <Grid ColumnDefinitions="*,Auto">
+                       <StackPanel Spacing="4">
+                           <StackPanel Orientation="Horizontal" Spacing="8">
+                               <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                                   <Ellipse.Fill>
+                                       <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                   </Ellipse.Fill>
+                               </Ellipse>
+                               <TextBlock Text="{Binding ServiceStatusText}" FontSize="16" FontWeight="Bold" Foreground="#E0E0FF"/>
+                           </StackPanel>
+                           <TextBlock Text="{Binding ServiceUsername, StringFormat=Account: {0}}" FontSize="11" Foreground="#6666AA" IsVisible="{Binding IsServiceInstalled}"/>
+                       </StackPanel>
+                       <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                   </Grid>
 
-                    <!-- Action buttons -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding !IsServiceBusy}">
-                        <!-- Not installed → Install + Configure Login -->
-                        <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding !IsServiceInstalled}"/>
-                        <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="#4A3AFF" Foreground="White" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding !IsServiceInstalled}"/>
+                   <!-- Action buttons -->
+                   <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding !IsServiceBusy}">
+                       <!-- Not installed → Install + Configure Login -->
+                       <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}"/>
+                       <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="#4A3AFF" Foreground="White" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}"/>
 
-                        <!-- Installed → Start / Stop / Configure / Uninstall -->
-                        <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="#4ADE80" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}" IsEnabled="{Binding !IsServiceRunning}"/>
-                        <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="#FFD93D" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}" IsEnabled="{Binding IsServiceRunning}"/>
-                        <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}"/>
-                        <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="#3A1A1A" Foreground="#FF6B6B" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsServiceInstalled}"/>
-                    </StackPanel>
-
+                       <!-- Installed → Start / Stop / Configure / Uninstall -->
+                       <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="#4ADE80" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding !IsServiceRunning}"/>
+                       <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="#FFD93D" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding IsServiceRunning}"/>
+                       <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}"/>
+                       <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="#3A1A1A" Foreground="#FF6B6B" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}"/>
+                   </StackPanel>
                     <!-- Credential configuration panel -->
                     <Border IsVisible="{Binding IsCredentialPanelOpen}" Background="#0A0A1A" CornerRadius="8" Padding="16" BorderBrush="#2A2A3E" BorderThickness="1">
                         <StackPanel Spacing="12">

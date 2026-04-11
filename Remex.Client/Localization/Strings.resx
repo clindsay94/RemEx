@@ -61,7 +61,9 @@
   <data name="Settings_GridSize" xml:space="preserve"><value>Grid Size</value></data>
   <data name="Settings_PinnedSensors" xml:space="preserve"><value>PINNED SENSORS</value></data>
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve"><value>Select sensors to display on the Home screen</value></data>
-  <data name="Settings_ServiceSection" xml:space="preserve"><value>WINDOWS SERVICE</value></data>
+  <data name="Settings_ServiceSection" xml:space="preserve"><value>BACKGROUND SERVICE</value></data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve"><value>WINDOWS SERVICE</value></data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve"><value>LINUX DAEMON (SYSTEMD)</value></data>
   <data name="Settings_ServiceLogin" xml:space="preserve"><value>SERVICE LOGIN</value></data>
   <data name="Settings_ServiceDesc" xml:space="preserve"><value>The service runs in the background so RemEx can accept remote commands without the app open. It runs under your Windows account to access the desktop session.</value></data>
   <data name="Settings_AccountFormat" xml:space="preserve"><value>Account: {0}</value></data>

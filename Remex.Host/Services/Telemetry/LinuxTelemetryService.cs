@@ -33,8 +33,6 @@ public class LinuxTelemetryService : ITelemetryService
         var ramResult = await GetRamUsageAsync(ct);
         var uptimeStr = await GetUptimeAsync(ct);
         
-        // GPU, Network formatting via /sys/class omitted for brevity, sensors fallback assumed.
-
         var sensors = new System.Collections.Generic.List<SensorReading>
         {
             new() { Name = "Total CPU Usage", Value = cpuResult, Unit = "%", Category = "CPU", Source = "Linux" },
@@ -42,6 +40,91 @@ public class LinuxTelemetryService : ITelemetryService
             new() { Name = "Physical Memory Available", Value = ramResult.total - ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux" },
             new() { Name = "Physical Memory Load", Value = (ramResult.used / ramResult.total) * 100.0, Unit = "%", Category = "Memory", Source = "Linux" }
         };
+
+        // Hardware monitoring via /sys/class/hwmon
+        try
+        {
+            if (Directory.Exists("/sys/class/hwmon"))
+            {
+                foreach (var hwmonDir in Directory.GetDirectories("/sys/class/hwmon"))
+                {
+                    var chipName = string.Empty;
+                    var namePath = Path.Combine(hwmonDir, "name");
+                    if (File.Exists(namePath))
+                        chipName = (await File.ReadAllTextAsync(namePath, ct)).Trim();
+
+                    // Temperatures
+                    foreach (var tempInput in Directory.GetFiles(hwmonDir, "temp*_input"))
+                    {
+                        try
+                        {
+                            var inputVal = (await File.ReadAllTextAsync(tempInput, ct)).Trim();
+                            if (double.TryParse(inputVal, out var milliCelsius))
+                            {
+                                var labelPath = tempInput.Replace("_input", "_label");
+                                var label = File.Exists(labelPath) 
+                                    ? (await File.ReadAllTextAsync(labelPath, ct)).Trim() 
+                                    : Path.GetFileNameWithoutExtension(tempInput);
+
+                                // Clean up technical names (e.g., temp1_input -> Temp1)
+                                label = label.Replace("_input", "", StringComparison.OrdinalIgnoreCase)
+                                             .Replace("_", " ", StringComparison.OrdinalIgnoreCase);
+                                
+                                if (label.Length > 0)
+                                    label = char.ToUpper(label[0]) + label.Substring(1);
+
+                                sensors.Add(new SensorReading
+                                {
+                                    Name = string.IsNullOrWhiteSpace(chipName) ? label : $"{chipName} {label}",
+                                    Value = milliCelsius / 1000.0,
+                                    Unit = "°C",
+                                    Category = "Temperature",
+                                    Source = "Linux"
+                                });
+                            }
+                        }
+                        catch { /* Skip unreadable sensor */ }
+                    }
+
+                    // Fans
+                    foreach (var fanInput in Directory.GetFiles(hwmonDir, "fan*_input"))
+                    {
+                        try
+                        {
+                            var inputVal = (await File.ReadAllTextAsync(fanInput, ct)).Trim();
+                            if (double.TryParse(inputVal, out var rpm))
+                            {
+                                var labelPath = fanInput.Replace("_input", "_label");
+                                var label = File.Exists(labelPath) 
+                                    ? (await File.ReadAllTextAsync(labelPath, ct)).Trim() 
+                                    : Path.GetFileNameWithoutExtension(fanInput);
+
+                                // Clean up technical names
+                                label = label.Replace("_input", "", StringComparison.OrdinalIgnoreCase)
+                                             .Replace("_", " ", StringComparison.OrdinalIgnoreCase);
+
+                                if (label.Length > 0)
+                                    label = char.ToUpper(label[0]) + label.Substring(1);
+
+                                sensors.Add(new SensorReading
+                                {
+                                    Name = string.IsNullOrWhiteSpace(chipName) ? label : $"{chipName} {label}",
+                                    Value = rpm,
+                                    Unit = "RPM",
+                                    Category = "Fan",
+                                    Source = "Linux"
+                                });
+                            }
+                        }
+                        catch { /* Skip unreadable sensor */ }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read hwmon sensors");
+        }
 
         return new TelemetryPayload
         {

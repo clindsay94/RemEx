@@ -4,6 +4,7 @@ using Remex.Client.Services;
 using Remex.Client.Models;
 using Remex.Core.Models;
 using System;
+using System.Collections.ObjectModel;
 
 namespace Remex.Client.ViewModels;
 
@@ -16,6 +17,8 @@ public partial class CustomizationViewModel : ObservableObject
     private readonly ShellViewModel _shell;
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
+
+    public ObservableCollection<string> AvailableBackgroundTypes { get; } = new();
 
     public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService)
     {
@@ -32,6 +35,32 @@ public partial class CustomizationViewModel : ObservableObject
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
         _canvasBackgroundType = settings.BackgroundMaterial;
+
+        // Load available background types
+        RefreshBackgroundTypes();
+    }
+
+    private void RefreshBackgroundTypes()
+    {
+        AvailableBackgroundTypes.Clear();
+        if (OperatingSystem.IsWindows())
+        {
+            AvailableBackgroundTypes.Add("Mica");
+            AvailableBackgroundTypes.Add("Acrylic");
+        }
+        else
+        {
+            // For Linux, we stick to software-rendered atmospheres for now
+            // since desktop-compositor blur is highly variable across environments.
+        }
+        AvailableBackgroundTypes.Add("Gradient");
+        AvailableBackgroundTypes.Add("Wallpaper");
+
+        // Fallback if current type is not available (e.g. switching from Windows to Linux)
+        if (!AvailableBackgroundTypes.Contains(CanvasBackgroundType))
+        {
+            CanvasBackgroundType = "Gradient";
+        }
     }
 
     [ObservableProperty]

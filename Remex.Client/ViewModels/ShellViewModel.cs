@@ -174,15 +174,41 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void TutorialNext()
     {
-        if (TutorialPageIndex < TutorialPageCount - 1)
-            TutorialPageIndex++;
+        int nextIndex = TutorialPageIndex + 1;
+
+        // Skip OS-specific pages
+        if (OperatingSystem.IsWindows())
+        {
+            if (nextIndex == 3) nextIndex = 4; // Skip Linux Service page
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            if (nextIndex == 2) nextIndex = 3; // Skip Windows Service page
+            if (nextIndex == 4) nextIndex = 5; // Skip HWInfo page (Windows only)
+        }
+
+        if (nextIndex < TutorialPageCount)
+            TutorialPageIndex = nextIndex;
     }
 
     [RelayCommand]
     public void TutorialPrevious()
     {
-        if (TutorialPageIndex > 0)
-            TutorialPageIndex--;
+        int prevIndex = TutorialPageIndex - 1;
+
+        // Skip OS-specific pages
+        if (OperatingSystem.IsWindows())
+        {
+            if (prevIndex == 3) prevIndex = 2; // Skip Linux Service page
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            if (prevIndex == 4) prevIndex = 3; // Skip HWInfo page (Windows only)
+            if (prevIndex == 2) prevIndex = 1; // Skip Windows Service page
+        }
+
+        if (prevIndex >= 0)
+            TutorialPageIndex = prevIndex;
     }
 
     [RelayCommand]

@@ -291,7 +291,10 @@
 
                               <!-- Condensed Sensor Typography (themed) -->
                               <StackPanel>
-                                <TextBlock Text="{Binding Name, FallbackValue=Unknown}" FontSize="10" FontWeight="Bold" Foreground="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding Name, FallbackValue=Unknown}" FontSize="10" FontWeight="Bold" 
+                                           Foreground="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" 
+                                           TextTrimming="CharacterEllipsis" Margin="0,0,0,4"
+                                           ToolTip.Tip="{Binding Name}"/>
 
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
                                   <TextBlock Text="{Binding Value, FallbackValue=—, StringFormat={}{0:F2}}" FontSize="16" FontWeight="Black" Foreground="{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>

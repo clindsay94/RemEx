@@ -98,7 +98,7 @@ android {
         }
     }
     buildToolsVersion = "36.0.0"
-    ndkVersion = "29.0.14206865"
+    ndkVersion = "30.0.14904198"
 
     sourceSets {
         getByName("main") {
@@ -138,7 +138,7 @@ val remexGeneratedDebugJniRoot =
     layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug")
 val remexGeneratedReleaseJniRoot =
     layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release")
-val androidNdkVersion = "29.0.14206865"
+val androidNdkVersion = "30.0.14904198"
 val androidSdkDir = androidLocalProperties.getProperty("sdk.dir")
     ?: error("Missing sdk.dir in local.properties")
 val androidNdkDir = File(androidSdkDir, "ndk/$androidNdkVersion")
@@ -227,7 +227,9 @@ val publishRemexCoreAndroidDebug by tasks.registering(Exec::class) {
         "-p:Configuration=Debug",
         "-p:TargetFramework=net10.0-android",
         "-p:RuntimeIdentifier=android-arm64",
-        "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild"
+        "-p:AndroidSdkDirectory=$androidSdkDir",
+        "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild",
+        "-p:JavaSdkDirectory=${System.getProperty("java.home")}"
     )
 }
 
@@ -244,7 +246,9 @@ val publishRemexCoreAndroidRelease by tasks.registering(Exec::class) {
         "-p:Configuration=Release",
         "-p:TargetFramework=net10.0-android",
         "-p:RuntimeIdentifier=android-arm64",
-        "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild"
+        "-p:AndroidSdkDirectory=$androidSdkDir",
+        "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild",
+        "-p:JavaSdkDirectory=${System.getProperty("java.home")}"
     )
 }
 
@@ -520,6 +524,7 @@ val remexPublishRelease by tasks.registering {
     description =
         "Bump version (versionCode+1, minor+1, patch→0), clean build release APK + AAB, and verify"
     dependsOn("clean")
+    dependsOn("mergeReleaseAssets") // Force assets to be merged first
     dependsOn("assembleRelease")
     dependsOn("bundleRelease")
     dependsOn(verifyRemexCoreInReleaseApk)

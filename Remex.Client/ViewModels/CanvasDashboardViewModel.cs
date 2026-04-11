@@ -353,7 +353,21 @@ public partial class CanvasDashboardViewModel : ObservableObject
     {
         if (card.CardType != "Sensor" || card.Sensor is null) return;
 
+        var sensorName = card.Sensor.Name;
+        if (string.IsNullOrWhiteSpace(sensorName)) return;
+
         card.IsPinnedToHome = !card.IsPinnedToHome;
+
+        if (card.IsPinnedToHome)
+        {
+            if (!_profile.PinnedSensorIds.Contains(sensorName, StringComparer.OrdinalIgnoreCase))
+                _profile.PinnedSensorIds.Add(sensorName);
+        }
+        else
+        {
+            _profile.PinnedSensorIds.RemoveAll(id => string.Equals(id, sensorName, StringComparison.OrdinalIgnoreCase));
+        }
+
         TriggerSave();
 
         // Refresh home pinned sensors immediately.
@@ -504,11 +518,7 @@ public partial class CanvasDashboardViewModel : ObservableObject
             GridSize = GridSize,
             HostAddress = Connection.HostAddress,
             Cards = Cards.Select(c => c.ToCardState()).ToList(),
-            PinnedSensorIds = Cards
-                .Where(c => c.IsPinnedToHome && c.Sensor != null)
-                .Select(c => c.Sensor!.Name)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList(),
+            PinnedSensorIds = _profile.PinnedSensorIds.ToList(),
         };
 
         _profile = profile;

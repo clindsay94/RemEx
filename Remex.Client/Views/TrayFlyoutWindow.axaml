@@ -63,7 +63,8 @@
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold" 
                                                        Foreground="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" 
-                                                       Opacity="0.8"/>
+                                                       Opacity="0.8" TextTrimming="CharacterEllipsis"
+                                                       ToolTip.Tip="{Binding Name}"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
                                                 <TextBlock FontSize="24" FontWeight="Black" Foreground="{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                     <TextBlock.Text>

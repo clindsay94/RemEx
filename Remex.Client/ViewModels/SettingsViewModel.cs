@@ -304,13 +304,26 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _serviceStatusText = LocalizationService.Instance["Service_Checking"];
 
-    [ObservableProperty]
-    private bool _isWindowsServiceSectionVisible;
+    public string ServiceSectionHeader => OperatingSystem.IsWindows() 
+        ? LocalizationService.Instance["Settings_ServiceSection_Windows"]
+        : LocalizationService.Instance["Settings_ServiceSection_Linux"];
+
+    public bool IsWindows => OperatingSystem.IsWindows();
+    public bool IsLinux => OperatingSystem.IsLinux();
+
+    public bool ShowInstallButton => IsWindows && !IsServiceInstalled;
+    public bool ShowStartStopButtons => IsWindows && IsServiceInstalled;
 
     [ObservableProperty]
+    private bool _isServiceSectionVisible;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowInstallButton))]
+    [NotifyPropertyChangedFor(nameof(ShowStartStopButtons))]
     private bool _isServiceInstalled;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowStartStopButtons))]
     private bool _isServiceRunning;
 
     [ObservableProperty]
@@ -389,7 +402,18 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task InstallServiceAsync()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (OperatingSystem.IsWindows())
+        {
+            await InstallWindowsServiceAsync();
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            await InstallLinuxServiceAsync();
+        }
+    }
+
+    private async Task InstallWindowsServiceAsync()
+    {
         if (string.IsNullOrWhiteSpace(ServicePassword))
         {
             ServiceStatusText = LocalizationService.Instance["Service_PasswordRequired"];
@@ -505,12 +529,106 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    private async Task InstallLinuxServiceAsync()
+    {
+        IsServiceBusy = true;
+        try
+        {
+            ServiceStatusText = "Locating Remex.Host binary…";
+            var hostBinary = FindHostExePath();
+            if (string.IsNullOrEmpty(hostBinary))
+            {
+                ServiceStatusText = "Error: Remex.Host binary not found.";
+                return;
+            }
+
+            var serviceName = "remex-host";
+            var servicePath = $"/etc/systemd/system/{serviceName}.service";
+            var user = Environment.UserName;
+            
+            var serviceContent = $@"[Unit]
+Description=Remex Host Service
+After=network.target
+
+[Service]
+Type=simple
+User={user}
+ExecStart={hostBinary}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target";
+
+            var tempFile = Path.Combine(Path.GetTempPath(), $"{serviceName}.service");
+            await File.WriteAllTextAsync(tempFile, serviceContent);
+
+            AppendLog("Generated systemd service unit file.");
+
+            ServiceStatusText = "Installing systemd service (requires sudo)…";
+            
+            // On Linux, we use pkexec or sudo to move the file and enable the service
+            var installCmd = $"pkexec sh -c \"mv '{tempFile}' '{servicePath}' && systemctl daemon-reload && systemctl enable {serviceName} && systemctl start {serviceName}\"";
+            
+            AppendLog($"Executing: {installCmd}");
+            
+            var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "sh",
+                Arguments = $"-c \"{installCmd}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            });
+
+            if (process != null)
+            {
+                var stdout = await process.StandardOutput.ReadToEndAsync();
+                var stderr = await process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode == 0)
+                {
+                    ServiceStatusText = "Service installed and started.";
+                    AppendLog("systemd service installed successfully.");
+                }
+                else
+                {
+                    ServiceStatusText = "Installation failed.";
+                    AppendLog($"Error: {stderr}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ServiceStatusText = $"Error: {ex.Message}";
+            AppendLog($"EXCEPTION: {ex.Message}");
+        }
+        finally
+        {
+            await RefreshServiceStatusAsync();
+            IsServiceBusy = false;
+        }
+    }
+
     // ─────────── Uninstall ───────────
 
     [RelayCommand]
     private async Task UninstallServiceAsync()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (OperatingSystem.IsWindows())
+        {
+            await UninstallWindowsServiceAsync();
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            await UninstallLinuxServiceAsync();
+        }
+    }
+
+    private async Task UninstallWindowsServiceAsync()
+    {
         IsServiceBusy = true;
 
         try
@@ -528,6 +646,58 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             var (ok, output) = await RunElevatedAsync("sc.exe", $"delete {ServiceName}");
             AppendLog(output);
             ServiceStatusText = ok ? LocalizationService.Instance["Service_Uninstalling"] : LocalizationService.Instance["Service_UninstallFailed"];
+        }
+        catch (Exception ex)
+        {
+            ServiceStatusText = $"Error: {ex.Message}";
+            AppendLog($"EXCEPTION: {ex.Message}");
+        }
+        finally
+        {
+            await RefreshServiceStatusAsync();
+            IsServiceBusy = false;
+        }
+    }
+
+    private async Task UninstallLinuxServiceAsync()
+    {
+        IsServiceBusy = true;
+        try
+        {
+            var serviceName = "remex-host";
+            var servicePath = $"/etc/systemd/system/{serviceName}.service";
+
+            ServiceStatusText = "Removing systemd service (requires sudo)…";
+            var uninstallCmd = $"pkexec sh -c \"systemctl stop {serviceName} && systemctl disable {serviceName} && rm '{servicePath}' && systemctl daemon-reload\"";
+
+            AppendLog($"Executing: {uninstallCmd}");
+
+            var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "sh",
+                Arguments = $"-c \"{uninstallCmd}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            });
+
+            if (process != null)
+            {
+                var stderr = await process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode == 0)
+                {
+                    ServiceStatusText = "Service removed.";
+                    AppendLog("systemd service uninstalled successfully.");
+                }
+                else
+                {
+                    ServiceStatusText = "Uninstallation failed.";
+                    AppendLog($"Error: {stderr}");
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -631,13 +801,36 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private async Task RefreshServiceStatusAsync()
     {
-        if (!OperatingSystem.IsWindows())
+        if (OperatingSystem.IsAndroid())
         {
-            IsWindowsServiceSectionVisible = false;
+            IsServiceSectionVisible = false;
             return;
         }
 
-        IsWindowsServiceSectionVisible = true;
+        IsServiceSectionVisible = true;
+
+        if (OperatingSystem.IsLinux())
+        {
+            try
+            {
+                // Basic check for remex-host service
+                IsServiceInstalled = File.Exists("/etc/systemd/system/remex-host.service");
+                if (IsServiceInstalled)
+                {
+                    var processes = Process.GetProcessesByName("Remex.Host");
+                    IsServiceRunning = processes.Length > 0;
+                    ServiceStatusText = IsServiceRunning 
+                        ? LocalizationService.Instance["Service_Running"] 
+                        : LocalizationService.Instance["Service_Stopped"];
+                }
+                else
+                {
+                    ServiceStatusText = LocalizationService.Instance["Service_NotInstalled"];
+                }
+            }
+            catch { IsServiceInstalled = false; ServiceStatusText = "Unknown (Error)"; }
+            return;
+        }
 
         try
         {
@@ -765,31 +958,32 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private string? FindHostExePath()
     {
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        var binaryName = OperatingSystem.IsWindows() ? "Remex.Host.exe" : "Remex.Host";
 
         // Strategy 1: User-configured custom path
         var customPath = _profile.HostPath;
         if (!string.IsNullOrWhiteSpace(customPath))
         {
-            if (File.Exists(customPath) && customPath.EndsWith("Remex.Host.exe", StringComparison.OrdinalIgnoreCase))
+            if (File.Exists(customPath) && customPath.EndsWith(binaryName, StringComparison.OrdinalIgnoreCase))
                 return customPath;
-            var exeInCustom = Path.Combine(customPath, "Remex.Host.exe");
-            if (File.Exists(exeInCustom)) return exeInCustom;
+            var binInCustom = Path.Combine(customPath, binaryName);
+            if (File.Exists(binInCustom)) return binInCustom;
         }
 
-        // Strategy 2: Same directory as running client (flat publish, e.g. P:\PublishedRemex)
-        var adjacent = Path.Combine(basePath, "Remex.Host.exe");
+        // Strategy 2: Same directory as running client
+        var adjacent = Path.Combine(basePath, binaryName);
         if (File.Exists(adjacent)) return adjacent;
 
         // Strategy 3: Sibling subfolder
-        var siblingSubfolder = Path.Combine(basePath, "Remex.Host", "Remex.Host.exe");
+        var siblingSubfolder = Path.Combine(basePath, "Remex.Host", binaryName);
         if (File.Exists(siblingSubfolder)) return siblingSubfolder;
 
         // Strategy 4: Parent-level sibling
-        var parentSibling = Path.GetFullPath(Path.Combine(basePath, "..", "Remex.Host", "Remex.Host.exe"));
+        var parentSibling = Path.GetFullPath(Path.Combine(basePath, "..", "Remex.Host", binaryName));
         if (File.Exists(parentSibling)) return parentSibling;
 
         // Strategy 5: Dev-time publish output
-        var devPublish = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "publish", "Remex.Host", "Remex.Host.exe"));
+        var devPublish = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "publish", "Remex.Host", binaryName));
         if (File.Exists(devPublish)) return devPublish;
 
         return null;

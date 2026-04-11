@@ -528,12 +528,7 @@
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="{conv:Localize Custom_BackgroundMode}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                        <ComboBox SelectedItem="{Binding CustomizationVm.CanvasBackgroundType}" HorizontalAlignment="Stretch">
-                                            <x:String>Mica</x:String>
-                                            <x:String>Acrylic</x:String>
-                                            <x:String>Gradient</x:String>
-                                            <x:String>Wallpaper</x:String>
-                                        </ComboBox>
+                                        <ComboBox SelectedItem="{Binding CustomizationVm.CanvasBackgroundType}" ItemsSource="{Binding CustomizationVm.AvailableBackgroundTypes}" HorizontalAlignment="Stretch"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -586,10 +581,10 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- ═══ WINDOWS SERVICE (desktop only) ═══ -->
-                            <Border Classes="glass-card" Padding="16" IsVisible="{Binding SettingsVm.IsWindowsServiceSectionVisible}">
+                            <!-- ═══ BACKGROUND SERVICE (desktop only) ═══ -->
+                            <Border Classes="glass-card" Padding="16" IsVisible="{Binding SettingsVm.IsServiceSectionVisible}">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="{conv:Localize Settings_ServiceSection}" FontSize="11" FontWeight="SemiBold" 
+                                    <TextBlock Text="{Binding SettingsVm.ServiceSectionHeader}" FontSize="11" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
                                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -631,29 +626,29 @@
                                                 Background="{DynamicResource CardBackgroundBrush}" 
                                                 Foreground="{DynamicResource TextSecondaryBrush}" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
-                                                IsVisible="{Binding !SettingsVm.IsServiceInstalled}"/>
+                                                IsVisible="{Binding SettingsVm.ShowInstallButton}"/>
                                         <Button Content="{conv:Localize Service_BtnInstall}" 
                                                 Command="{Binding SettingsVm.InstallServiceCommand}" 
                                                 Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
-                                                IsVisible="{Binding !SettingsVm.IsServiceInstalled}"/>
+                                                IsVisible="{Binding SettingsVm.ShowInstallButton}"/>
                                         <Button Content="{conv:Localize Btn_Start}" 
                                                 Command="{Binding SettingsVm.StartServiceCommand}" 
                                                 Background="#22C55E" Foreground="#1A1A1A" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
-                                                IsVisible="{Binding SettingsVm.IsServiceInstalled}" 
+                                                IsVisible="{Binding SettingsVm.ShowStartStopButtons}" 
                                                 IsEnabled="{Binding !SettingsVm.IsServiceRunning}"/>
                                         <Button Content="{conv:Localize Btn_Stop}" 
                                                 Command="{Binding SettingsVm.StopServiceCommand}" 
                                                 Background="#F59E0B" Foreground="#1A1A1A" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
-                                                IsVisible="{Binding SettingsVm.IsServiceInstalled}" 
+                                                IsVisible="{Binding SettingsVm.ShowStartStopButtons}" 
                                                 IsEnabled="{Binding SettingsVm.IsServiceRunning}"/>
                                         <Button Content="{conv:Localize Service_BtnRemove}" 
                                                 Command="{Binding SettingsVm.UninstallServiceCommand}" 
                                                 Background="#3A1A1A" Foreground="#FF6B6B" 
                                                 Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
-                                                IsVisible="{Binding SettingsVm.IsServiceInstalled}"/>
+                                                IsVisible="{Binding SettingsVm.ShowStartStopButtons}"/>
                                     </WrapPanel>
 
                                     <!-- Credential panel -->
