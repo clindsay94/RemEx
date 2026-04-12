@@ -492,5 +492,6 @@ Linux: ip addr  or  hostname -I</value></data>
   <data name="AppLauncher_UnnamedApp" xml:space="preserve"><value>Unnamed App</value></data>
   <data name="FilePicker_SelectApplication" xml:space="preserve"><value>Select Application</value></data>
   <data name="FilePicker_Applications" xml:space="preserve"><value>Applications</value></data>
+  <data name="FilePicker_AllFiles" xml:space="preserve"><value>All Files</value></data>
   <data name="Sensor_Unknown" xml:space="preserve"><value>Unknown</value></data>
 </root>

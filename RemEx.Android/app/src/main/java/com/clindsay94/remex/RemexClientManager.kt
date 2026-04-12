@@ -132,7 +132,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     }
 
     override fun onFrameReceived(frame: ByteArray) {
-        _frames.tryEmit(frame)
+        // Log frame arrival (keep it compact to avoid logcat flooding)
+        if (System.currentTimeMillis() % 1000 < 50) { 
+            Log.d("RemexManager", "onFrameReceived: ${frame.size} bytes")
+        }
+
+        // Defensive copy to prevent native side from overwriting buffer 
+        // while we are still processing it in the ViewModel coroutine.
+        _frames.tryEmit(frame.copyOf())
     }
 
     override fun onHostInfoUpdate(hostInfoData: String) {

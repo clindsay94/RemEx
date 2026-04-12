@@ -24,6 +24,11 @@ import org.json.JSONObject
 
 private const val TAG = "RemoteDesktopVM"
 
+data class DesktopFrame(
+    val bitmap: Bitmap,
+    val timestamp: Long = System.nanoTime()
+)
+
 data class RemoteDesktopCapabilityState(
     val supportsRemoteDesktop: Boolean = true,
     val unavailableReason: String? = null
@@ -51,8 +56,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     /** Previous frame bitmap kept for inBitmap reuse (avoids GC churn). */
     private var reusableBitmap: Bitmap? = null
 
-    private val _currentFrame = MutableStateFlow<Bitmap?>(null)
-    val currentFrame: StateFlow<Bitmap?> = _currentFrame.asStateFlow()
+    private val _currentFrame = MutableStateFlow<DesktopFrame?>(null)
+    val currentFrame: StateFlow<DesktopFrame?> = _currentFrame.asStateFlow()
 
     private val _isStreaming = MutableStateFlow(false)
     val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
@@ -94,9 +99,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         viewModelScope.launch(Dispatchers.Default) {
-            RemexClientManager.frames.collect { bytes ->
-                decodeFrame(bytes)
-            }
+            RemexClientManager.frames
+                .collect { bytes ->
+                    decodeFrame(bytes)
+                }
         }
 
         viewModelScope.launch {
@@ -159,6 +165,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * Uses inBitmap for memory reuse when dimensions match.
      */
     private fun decodeFrame(bytes: ByteArray) {
+        if (bytes.isEmpty()) {
+            Log.w(TAG, "decodeFrame: Received empty byte array")
+            return
+        }
+
         try {
             // Try to reuse the previous bitmap buffer
             val existing = reusableBitmap
@@ -170,8 +181,16 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
             val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
             if (decoded != null) {
+                if (System.currentTimeMillis() % 1000 < 50) { 
+                    Log.d(TAG, "decodeFrame: Decoded frame, size: ${bytes.size} bytes, reused: ${decodeOptions.inBitmap != null}")
+                }
                 reusableBitmap = decoded
-                _currentFrame.value = decoded
+                // Wrap bitmap with a unique timestamp to bypass StateFlow equality checks
+                _currentFrame.value = DesktopFrame(decoded)
+            } else {
+                Log.e(TAG, "decodeFrame: BitmapFactory returned null for ${bytes.size} bytes")
+                // Fallback: Reset reuse if decoding failed
+                decodeOptions.inBitmap = null
             }
         } catch (e: IllegalArgumentException) {
             // inBitmap reuse failed (dimensions changed) — decode without reuse
@@ -181,7 +200,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 if (decoded != null) {
                     reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
                     reusableBitmap = decoded
-                    _currentFrame.value = decoded
+                    _currentFrame.value = DesktopFrame(decoded)
                 }
             } catch (e2: Exception) {
                 Log.e(TAG, "Frame decode failed after fallback", e2)

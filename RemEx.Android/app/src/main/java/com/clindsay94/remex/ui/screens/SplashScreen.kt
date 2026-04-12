@@ -439,7 +439,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                         // Quadratic bezier toward phone center
                         val ctrlX = (anchor.x + phoneCenter.x) / 2f
                         val ctrlY = anchor.y
-                        path.quadraticBezierTo(ctrlX, ctrlY, phoneCenter.x, phoneCenter.y)
+                        path.quadraticTo(ctrlX, ctrlY, phoneCenter.x, phoneCenter.y)
                         drawContext.canvas.drawPath(path, tracePaint)
                     }
                 }

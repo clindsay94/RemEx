@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -90,6 +91,7 @@ fun RemoteDesktopScreen(
     viewModel: RemoteDesktopViewModel = viewModel()
 ) {
     val currentFrame by viewModel.currentFrame.collectAsState()
+    val currentBitmap = currentFrame?.bitmap
     val isStreaming by viewModel.isStreaming.collectAsState()
     val capabilityState by viewModel.capabilityState.collectAsState()
     val desktopError by viewModel.desktopError.collectAsState()
@@ -101,7 +103,7 @@ fun RemoteDesktopScreen(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
-    var isFullscreen by remember { mutableStateOf(false) }
+    var isFullscreen by rememberSaveable { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
@@ -129,13 +131,6 @@ fun RemoteDesktopScreen(
     val doubleTapRadiusPx = with(density) { DOUBLE_TAP_RADIUS_DP.dp.toPx() }
     val inertiaMinVelPx = with(density) { INERTIA_MIN_VELOCITY.dp.toPx() }
     val inertiaStopVelPx = with(density) { INERTIA_STOP_VELOCITY.dp.toPx() }
-
-    DisposableEffect(activity) {
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        onDispose {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        }
-    }
 
     DisposableEffect(activity, isFullscreen) {
         if (activity == null) {
@@ -169,8 +164,8 @@ fun RemoteDesktopScreen(
         val adjustedX = (localOffset.x - centerX - panOffsetX) / zoomFactor + centerX
         val adjustedY = (localOffset.y - centerY - panOffsetY) / zoomFactor + centerY
 
-        val bmpWidth = currentFrame?.width?.toFloat() ?: 1920f
-        val bmpHeight = currentFrame?.height?.toFloat() ?: 1080f
+        val bmpWidth = currentBitmap?.width?.toFloat() ?: 1920f
+        val bmpHeight = currentBitmap?.height?.toFloat() ?: 1080f
         val bmpAspect = bmpWidth / bmpHeight
         val boxAspect = imageSize.width.toFloat() / imageSize.height.toFloat()
 
@@ -269,6 +264,31 @@ fun RemoteDesktopScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .onGloballyPositioned { imageSize = it.size }
+                    // ═══ STYLUS HOVER HANDLING ═══
+                    .pointerInput(isStreaming) {
+                        if (!isStreaming) return@pointerInput
+                        awaitPointerEventScope {
+                            var lastHoverTime = 0L
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Main)
+                                if (event.type == PointerEventType.Move) {
+                                    val stylusChange = event.changes.find { it.type == PointerType.Stylus && !it.pressed }
+                                    if (stylusChange != null) {
+                                        val now = stylusChange.uptimeMillis
+                                        if (now - lastHoverTime >= MOVE_THROTTLE_MS) {
+                                            lastHoverTime = now
+                                            val hostPos = mapLocalToHost(stylusChange.position)
+                                            viewModel.sendMouseAbsolute(hostPos.x.toInt(), hostPos.y.toInt())
+                                            cursorX = stylusChange.position.x
+                                            cursorY = stylusChange.position.y
+                                            cursorVisible = true
+                                            isStylusActive = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     // ═══ UNIFIED GESTURE STATE MACHINE ═══
                     // Key on directTouch so the handler restarts when mode changes
                     .pointerInput(isStreaming, inputResetTrigger, directTouch) {
@@ -288,6 +308,8 @@ fun RemoteDesktopScreen(
                             var isDoubleTapHoldArmed = false // second press in double-tap window
                             var doubleTapHoldConfirmed = false // hold gating passed
                             var lastMoveTime = 0L        // for move throttling
+                            var scrollAccumX = 0f
+                            var scrollAccumY = 0f
 
                             // Two-finger gesture state
                             var twoFingerIntent: String? = null // "scroll" | "pinch" | null
@@ -315,6 +337,8 @@ fun RemoteDesktopScreen(
                                 twoFingerIntent = null
                                 prevTwoFingerDist = 0f
                                 prevTwoFingerCenter = Offset.Zero
+                                scrollAccumX = 0f
+                                scrollAccumY = 0f
                             }
 
                             fun cancelDrag() {
@@ -367,7 +391,11 @@ fun RemoteDesktopScreen(
                                                     "pinch" -> {
                                                         if (distDelta > 2f) {
                                                             val zoomDelta = dist / prevTwoFingerDist
+                                                            val oldZoom = zoomFactor
                                                             zoomFactor = (zoomFactor * zoomDelta).coerceIn(1f, 4f)
+                                                            val actualDelta = zoomFactor / oldZoom
+                                                            panOffsetX = (center.x - imageSize.width / 2f) * (1f - actualDelta) + panOffsetX * actualDelta
+                                                            panOffsetY = (center.y - imageSize.height / 2f) * (1f - actualDelta) + panOffsetY * actualDelta
                                                         }
                                                     }
                                                     "scroll" -> {
@@ -376,10 +404,15 @@ fun RemoteDesktopScreen(
                                                             panOffsetX += moveDelta.x
                                                             panOffsetY += moveDelta.y
                                                         } else {
-                                                            // Mouse wheel scroll
-                                                            val scrollAmount = (moveDelta.y * 2).toInt()
-                                                            if (abs(scrollAmount) >= 1) {
-                                                                viewModel.sendMouseScroll(0, -scrollAmount)
+                                                            // Mouse wheel scroll with accumulator
+                                                            scrollAccumX += moveDelta.x * 0.5f
+                                                            scrollAccumY += moveDelta.y * 0.5f
+                                                            val sx = scrollAccumX.toInt()
+                                                            val sy = scrollAccumY.toInt()
+                                                            if (sx != 0 || sy != 0) {
+                                                                viewModel.sendMouseScroll(-sx, -sy)
+                                                                scrollAccumX -= sx
+                                                                scrollAccumY -= sy
                                                             }
                                                         }
                                                     }
@@ -606,21 +639,25 @@ fun RemoteDesktopScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                val safeFrame = currentFrame
+                val safeFrame = currentBitmap
+
                 if (safeFrame != null && !safeFrame.isRecycled) {
-                    Image(
-                        bitmap = safeFrame.asImageBitmap(),
-                        contentDescription = stringResource(R.string.cd_remote_desktop_frame),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                scaleX = zoomFactor
-                                scaleY = zoomFactor
-                                translationX = panOffsetX
-                                translationY = panOffsetY
-                            },
-                        contentScale = ContentScale.Fit
-                    )
+                    // Force Image to redraw when frame changes by using key(timestamp)
+                    key(currentFrame?.timestamp) {
+                        Image(
+                            bitmap = safeFrame.asImageBitmap(),
+                            contentDescription = stringResource(R.string.cd_remote_desktop_frame),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = zoomFactor
+                                    scaleY = zoomFactor
+                                    translationX = panOffsetX
+                                    translationY = panOffsetY
+                                },
+                            contentScale = ContentScale.Fit
+                        )
+                    }
 
                     // Cursor overlay: only in absolute modes (direct touch / stylus)
                     if (isStreaming && cursorVisible && (directTouch || isStylusActive)) {

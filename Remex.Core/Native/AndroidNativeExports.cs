@@ -123,7 +123,7 @@ public static class AndroidNativeExports
                 var (host, port, accessKey) = GetDesktopEndpoint();
                 await RemexDesktopClient.Current.StartStreamAsync(host, port, config, accessKey);
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] StartDesktopStream failed: {ex.Message}"); }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StartDesktopStream failed: {ex.Message}"); }
         });
     }
 
@@ -137,7 +137,7 @@ public static class AndroidNativeExports
                 await RemexDesktopClient.Current.StopStreamAsync();
                 await RemexDesktopClient.Current.DisconnectAsync();
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] StopDesktopStream failed: {ex.Message}"); }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StopDesktopStream failed: {ex.Message}"); }
         });
     }
 
@@ -167,7 +167,7 @@ public static class AndroidNativeExports
             {
                 await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port, initRequest.AccessKey);
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] ConnectAsync failed: {ex.Message}"); }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"ConnectAsync failed: {ex.Message}"); }
         });
 
         var response = new AndroidNativeInitializationResponse
@@ -240,7 +240,7 @@ public static class AndroidNativeExports
             {
                 await RemexNativeClient.Current.SendMessageAsync(message);
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] SendMessage failed: {ex.Message}"); }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendMessage failed: {ex.Message}"); }
         });
 
         return SerializeOperationSuccess("Message dispatched.");
@@ -258,7 +258,7 @@ public static class AndroidNativeExports
                         var (host, port, accessKey) = GetDesktopEndpoint();
                         await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), accessKey);
                     }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopStart failed: {ex.Message}"); }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopStart failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -270,7 +270,7 @@ public static class AndroidNativeExports
                         var (host, port, accessKey) = GetDesktopEndpoint();
                         await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, accessKey);
                     }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopInput failed: {ex.Message}"); }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopInput failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -282,7 +282,7 @@ public static class AndroidNativeExports
                         var (host, port, accessKey) = GetDesktopEndpoint();
                         await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, accessKey);
                     }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopConfig failed: {ex.Message}"); }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopConfig failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -294,7 +294,7 @@ public static class AndroidNativeExports
                         await RemexDesktopClient.Current.StopStreamAsync();
                         await RemexDesktopClient.Current.DisconnectAsync();
                     }
-                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[RemexNative] DesktopStop failed: {ex.Message}"); }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopStop failed: {ex.Message}"); }
                 });
                 return true;
 
@@ -366,25 +366,38 @@ public static class AndroidNativeExports
     private static void NotifyJavaFrame(byte[] frame)
     {
         IntPtr env = IntPtr.Zero;
+        IntPtr vm = IntPtr.Zero;
+        IntPtr callback = IntPtr.Zero;
+        IntPtr methodId = IntPtr.Zero;
+
         lock (SyncRoot)
         {
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onFrameReceivedMethodId == IntPtr.Zero) return;
-            if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
+            vm = _javaVm;
+            callback = _callbackGlobalRef;
+            methodId = _onFrameReceivedMethodId;
         }
 
-        IntPtr jArray = IntPtr.Zero;
+        if (JniHelper.AttachCurrentThread(vm, out env, IntPtr.Zero) != 0) return;
+
         try
         {
-            jArray = JniHelper.NewByteArray(env, frame.Length);
-            JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
-            JniHelper.CallVoidMethod(env, _callbackGlobalRef, _onFrameReceivedMethodId, jArray);
-        }
-        finally 
-        {
-            if (jArray != IntPtr.Zero)
+            IntPtr jArray = JniHelper.NewByteArray(env, frame.Length);
+            if (jArray == IntPtr.Zero) return;
+
+            try
+            {
+                JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
+                JniHelper.CallVoidMethod(env, callback, methodId, jArray);
+            }
+            finally 
             {
                 JniHelper.DeleteLocalRef(env, jArray);
             }
+        }
+        finally 
+        {
+            JniHelper.DetachCurrentThread(vm);
         }
     }
 
@@ -409,41 +422,62 @@ public static class AndroidNativeExports
     private static void NotifyJavaData(IntPtr methodId, string json)
     {
         IntPtr env = IntPtr.Zero;
+        IntPtr vm = IntPtr.Zero;
+        IntPtr callback = IntPtr.Zero;
+
         lock (SyncRoot)
         {
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || methodId == IntPtr.Zero) return;
-            if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
+            vm = _javaVm;
+            callback = _callbackGlobalRef;
         }
 
-        IntPtr jString = IntPtr.Zero;
+        if (JniHelper.AttachCurrentThread(vm, out env, IntPtr.Zero) != 0) return;
+
         try
         {
-            jString = JniHelper.CreateJString(env, json);
-            JniHelper.CallVoidMethod(env, _callbackGlobalRef, methodId, jString);
-        }
-        finally 
-        {
-            if (jString != IntPtr.Zero)
+            IntPtr jString = JniHelper.CreateJString(env, json);
+            if (jString == IntPtr.Zero) return;
+            try
+            {
+                JniHelper.CallVoidMethod(env, callback, methodId, jString);
+            }
+            finally 
             {
                 JniHelper.DeleteLocalRef(env, jString);
             }
+        }
+        finally 
+        {
+            JniHelper.DetachCurrentThread(vm);
         }
     }
 
     private static void NotifyJavaConnectionState(bool isConnected)
     {
         IntPtr env = IntPtr.Zero;
+        IntPtr vm = IntPtr.Zero;
+        IntPtr callback = IntPtr.Zero;
+        IntPtr methodId = IntPtr.Zero;
+
         lock (SyncRoot)
         {
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onConnectionStateChangedMethodId == IntPtr.Zero) return;
-            if (JniHelper.AttachCurrentThread(_javaVm, out env, IntPtr.Zero) != 0) return;
+            vm = _javaVm;
+            callback = _callbackGlobalRef;
+            methodId = _onConnectionStateChangedMethodId;
         }
+
+        if (JniHelper.AttachCurrentThread(vm, out env, IntPtr.Zero) != 0) return;
 
         try
         {
-            JniHelper.CallVoidMethod(env, _callbackGlobalRef, _onConnectionStateChangedMethodId, isConnected);
+            JniHelper.CallVoidMethod(env, callback, methodId, isConnected);
         }
-        finally { }
+        finally 
+        {
+            JniHelper.DetachCurrentThread(vm);
+        }
     }
 
     private static IntPtr Export(IntPtr env, Func<string> action)

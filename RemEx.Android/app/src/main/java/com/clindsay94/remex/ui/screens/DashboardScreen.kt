@@ -153,7 +153,8 @@ fun DashboardScreen(
     // current value without needing it as a restart key (review fix).
     val canvasScaleState = remember { mutableFloatStateOf(1f) }
     var canvasScale by canvasScaleState
-    val transformableState = rememberTransformableState { zoomChange, panChange, rotationChange ->
+    @Suppress("DEPRECATION")
+    val transformableState = rememberTransformableState { zoomChange, _, _ ->
         canvasScale = (canvasScale * zoomChange).coerceIn(0.4f, 3f)
     }
 

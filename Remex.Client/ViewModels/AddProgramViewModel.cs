@@ -84,15 +84,29 @@ public partial class AddProgramViewModel : ObservableObject
         {
             Title = LocalizationService.Instance["FilePicker_SelectApplication"],
             AllowMultiple = false,
-            FileTypeFilter = new[]
-            {
-                new FilePickerFileType(LocalizationService.Instance["FilePicker_Applications"])
+            FileTypeFilter = OperatingSystem.IsWindows()
+                ? new[]
                 {
-                    Patterns = OperatingSystem.IsWindows()
-                        ? new[] { "*.exe", "*.lnk", "*.bat" }
-                        : new[] { "*.sh", "*.desktop", "*" } // Linux/Mac extensions or no extension
+                    new FilePickerFileType(LocalizationService.Instance["FilePicker_Applications"])
+                    {
+                        Patterns = new[] { "*.exe", "*.lnk", "*.bat" }
+                    },
+                    FilePickerFileTypes.All
                 }
-            }
+                : new[]
+                {
+                    new FilePickerFileType(LocalizationService.Instance["FilePicker_Applications"])
+                    {
+                        // On Linux, using Patterns with '*' (like in FilePickerFileTypes.All) can 
+                        // sometimes restrict directory navigation in certain GTK versions. 
+                        // Using MimeTypes exclusively is more reliable for applications.
+                        MimeTypes = new[] { "application/x-executable", "application/x-desktop" }
+                    },
+                    new FilePickerFileType(LocalizationService.Instance["FilePicker_AllFiles"] ?? "All Files")
+                    {
+                        MimeTypes = new[] { "*/*" }
+                    }
+                }
         });
 
         if (files != null && files.Count > 0)

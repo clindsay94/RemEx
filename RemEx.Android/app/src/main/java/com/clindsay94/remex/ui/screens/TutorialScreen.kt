@@ -25,7 +25,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,7 +55,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
@@ -324,27 +324,30 @@ private fun TutorialPageContent(page: TutorialPage) {
 
             val linkColor = MaterialTheme.colorScheme.primary
             val linkLabel = stringResource(page.linkLabelRes)
+            val linkStyles = TextLinkStyles(
+                style = SpanStyle(
+                    color = linkColor,
+                    fontWeight = FontWeight.SemiBold,
+                    textDecoration = TextDecoration.Underline
+                )
+            )
             val annotatedString = buildAnnotatedString {
-                pushStringAnnotation(tag = "URL", annotation = page.linkUrl)
-                withStyle(
-                    SpanStyle(
-                        color = linkColor,
-                        fontWeight = FontWeight.SemiBold,
-                        textDecoration = TextDecoration.Underline
-                    )
-                ) {
-                    append(linkLabel)
-                }
-                pop()
+                val start = length
+                append(linkLabel)
+                addLink(
+                    url = LinkAnnotation.Url(
+                        url = page.linkUrl,
+                        styles = linkStyles,
+                        linkInteractionListener = { uriHandler.openUri(page.linkUrl) }
+                    ),
+                    start = start,
+                    end = length
+                )
             }
 
-            ClickableText(
+            Text(
                 text = annotatedString,
                 style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
-                onClick = { offset ->
-                    annotatedString.getStringAnnotations("URL", offset, offset)
-                        .firstOrNull()?.let { uriHandler.openUri(it.item) }
-                }
             )
         }
     }

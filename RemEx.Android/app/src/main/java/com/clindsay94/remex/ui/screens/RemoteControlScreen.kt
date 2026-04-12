@@ -53,7 +53,7 @@ import com.clindsay94.remex.RemexClientManager
 
 private data class RemoteCommandCard(
     val id: String,
-    @StringRes val titleRes: Int,
+    @param:StringRes val titleRes: Int,
     val action: String,
     val icon: ImageVector,
     val requiresConfirmation: Boolean

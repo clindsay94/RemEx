@@ -16,6 +16,11 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     private readonly ILogger<LinuxScreenCaptureService> _logger;
     private int _screenWidth;
     private int _screenHeight;
+    // Primary monitor geometry — used to crop multi-monitor captures
+    private int _primaryX;
+    private int _primaryY;
+    private int _primaryWidth;
+    private int _primaryHeight;
 
     private enum DisplayServer { Unknown, X11, Wayland }
     private readonly DisplayServer _displayServer;
@@ -98,12 +103,17 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         }
     }
 
-    public (int Width, int Height) GetScreenSize() => (_screenWidth, _screenHeight);
+    public (int Width, int Height) GetScreenSize() =>
+        _primaryWidth > 0 ? (_primaryWidth, _primaryHeight) : (_screenWidth, _screenHeight);
 
     private async Task<int> CaptureWaylandAsync(string tool, string tmpFile, int quality,
         int captureWidth, int captureHeight, CancellationToken ct)
     {
         var toolName = Path.GetFileName(tool);
+
+        if (toolName == "spectacle")
+            return await CaptureWithSpectacleAsync(tool, tmpFile, quality, captureWidth, captureHeight, ct);
+
         if (toolName == "grim")
         {
             // grim outputs PNG; use ffmpeg to convert to JPEG with quality/scale
@@ -126,6 +136,44 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
         // Generic Wayland screenshot tool fallback
         return await RunProcessAsync(tool, $"\"{tmpFile}\"", ct);
+    }
+
+    private async Task<int> CaptureWithSpectacleAsync(string tool, string tmpFile, int quality,
+        int captureWidth, int captureHeight, CancellationToken ct)
+    {
+        // spectacle -b (background) -n (no notification) -o (output file)
+        // Capture to PNG first, then convert with ffmpeg for quality/scale control.
+        var pngFile = tmpFile + ".png";
+        try
+        {
+            var env = new Dictionary<string, string>();
+            foreach (var key in new[] { "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "KDE_FULL_SESSION" })
+            {
+                var val = Environment.GetEnvironmentVariable(key);
+                if (!string.IsNullOrEmpty(val)) env[key] = val;
+            }
+
+            var result = await RunProcessAsync(tool, $"-b -n -o \"{pngFile}\"", ct, env);
+            if (result != 0 || !File.Exists(pngFile))
+            {
+                _logger.LogWarning("spectacle capture failed (exit={Code}). Is spectacle installed?", result);
+                return result;
+            }
+
+            // Crop to primary monitor first, then scale. If no primary detected, scale the full capture.
+            string vf;
+            if (_primaryWidth > 0)
+                vf = $"crop={_primaryWidth}:{_primaryHeight}:{_primaryX}:{_primaryY},scale={captureWidth}:{captureHeight}";
+            else
+                vf = $"scale={captureWidth}:{captureHeight}";
+
+            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{vf}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+            return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
+        }
+        finally
+        {
+            try { if (File.Exists(pngFile)) File.Delete(pngFile); } catch { /* best effort */ }
+        }
     }
 
     private async Task<int> CaptureX11Async(string tool, string tmpFile, int quality, double scale,
@@ -208,7 +256,16 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
         if (_displayServer == DisplayServer.Wayland)
         {
-            primary = FindExecutable("grim");
+            // On KDE Plasma, grim requires zwlr_screencopy_manager_v1 which KDE does not implement.
+            // Prefer spectacle on KDE; fall back to grim for wlroots compositors (Hyprland, Sway).
+            var desktop = Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "";
+            var isKde = desktop.Contains("KDE", StringComparison.OrdinalIgnoreCase);
+
+            if (isKde)
+                primary = FindExecutable("spectacle") ?? FindExecutable("grim");
+            else
+                primary = FindExecutable("grim") ?? FindExecutable("spectacle");
+
             fallback = FindExecutable("ffmpeg");
         }
         else
@@ -220,7 +277,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (primary is null && fallback is null)
         {
             _logger.LogWarning(
-                "No screen capture tools found. Install scrot or grim (Wayland), or ffmpeg as a fallback.");
+                "No screen capture tools found. Install spectacle or grim (Wayland), scrot (X11), or ffmpeg as a fallback.");
         }
 
         return (primary, fallback);
@@ -264,29 +321,39 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var output = proc.StandardOutput.ReadToEnd();
             proc.WaitForExit(3000);
 
-            // Parse "Screen 0: ... current 1920 x 1080" or connected output lines with resolution
+            // Parse connected output lines: "DP-1 connected primary 1920x1080+0+0 ..."
+            bool foundAny = false;
             foreach (var line in output.Split('\n'))
             {
-                // Look for primary/connected output with resolution
-                if (line.Contains(" connected") && line.Contains('x'))
+                if (!line.Contains(" connected") || !line.Contains('x')) continue;
+
+                var isPrimary = line.Contains(" primary ");
+                var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
                 {
-                    // Format: "DP-1 connected primary 1920x1080+0+0 ..."
-                    var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var part in parts)
+                    // Geometry token: WxH+X+Y
+                    if (!part.Contains('x') || !part.Contains('+')) continue;
+                    var geom = part.Split('+');
+                    var wh = geom[0].Split('x');
+                    if (wh.Length != 2) continue;
+                    if (!int.TryParse(wh[0], out int w) || !int.TryParse(wh[1], out int h)) continue;
+                    int x = geom.Length > 1 && int.TryParse(geom[1], out int px) ? px : 0;
+                    int y = geom.Length > 2 && int.TryParse(geom[2], out int py) ? py : 0;
+
+                    if (!foundAny)
                     {
-                        if (part.Contains('x') && part.Contains('+'))
-                        {
-                            var res = part.Split('+')[0].Split('x');
-                            if (res.Length == 2 && int.TryParse(res[0], out int w) && int.TryParse(res[1], out int h))
-                            {
-                                _screenWidth = w;
-                                _screenHeight = h;
-                                return true;
-                            }
-                        }
+                        _screenWidth = w; _screenHeight = h;
+                        foundAny = true;
                     }
+                    if (isPrimary)
+                    {
+                        _primaryX = x; _primaryY = y;
+                        _primaryWidth = w; _primaryHeight = h;
+                    }
+                    break;
                 }
             }
+            if (foundAny) return true;
         }
         catch { /* fall through */ }
         return false;
@@ -372,6 +439,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     {
         _screenWidth = 1920;
         _screenHeight = 1080;
+        _primaryWidth = 0; // 0 = no primary detected, use full capture
         _logger.LogWarning("Could not detect screen size, defaulting to {W}x{H}.", _screenWidth, _screenHeight);
     }
 

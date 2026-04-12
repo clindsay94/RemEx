@@ -70,9 +70,16 @@ fun QrScannerScreen(
     }
 
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(lifecycleOwner) {
         onDispose {
+            // Explicitly unbind all use cases and cleanup scanner resources
+            try {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            } catch (_: Exception) { }
             analysisExecutor.shutdown()
             barcodeScanner.close()
         }
@@ -101,9 +108,16 @@ fun QrScannerScreen(
             if (hasCameraPermission) {
                 AndroidView(
                     factory = { ctx ->
-                        val previewView = PreviewView(ctx)
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-
+                        PreviewView(ctx).apply {
+                            // COMPATIBLE mode (TextureView) is often more reliable than PERFORMANCE (SurfaceView)
+                            // in Compose layouts, especially for avoiding black screens on navigation transitions.
+                            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    update = { previewView ->
+                        // The binding logic should be triggered when the view is ready
                         cameraProviderFuture.addListener({
                             val cameraProvider = try {
                                 cameraProviderFuture.get()
@@ -121,43 +135,43 @@ fun QrScannerScreen(
                                 .build()
 
                             imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
-                                var closeImageProxy = true
-                                try {
-                                    val mediaImage = imageProxy.image
-                                    if (mediaImage != null && !scannedOnce.value) {
-                                        val image = InputImage.fromMediaImage(
-                                            mediaImage,
-                                            imageProxy.imageInfo.rotationDegrees
-                                        )
-                                        closeImageProxy = false
-                                        barcodeScanner.process(image)
-                                            .addOnSuccessListener { barcodes ->
-                                                for (barcode in barcodes) {
-                                                    val raw = barcode.rawValue ?: continue
-                                                    try {
-                                                        val json = JSONObject(raw)
-                                                        val host = json.getString("host")
-                                                        val port = json.getInt("port")
-                                                        val key = json.optString("key", "")
-                                                        if (!scannedOnce.value) {
-                                                            scannedOnce.value = true
-                                                            onScanned(host, port, key)
-                                                        }
-                                                    } catch (_: Exception) {
-                                                        // Not a RemEx QR code — keep scanning
+                                if (scannedOnce.value) {
+                                    imageProxy.close()
+                                    return@setAnalyzer
+                                }
+
+                                val mediaImage = imageProxy.image
+                                if (mediaImage != null) {
+                                    val image = InputImage.fromMediaImage(
+                                        mediaImage,
+                                        imageProxy.imageInfo.rotationDegrees
+                                    )
+                                    barcodeScanner.process(image)
+                                        .addOnSuccessListener { barcodes ->
+                                            for (barcode in barcodes) {
+                                                val raw = barcode.rawValue ?: continue
+                                                try {
+                                                    val json = JSONObject(raw)
+                                                    val host = json.getString("host")
+                                                    val port = json.getInt("port")
+                                                    val key = json.optString("key", "")
+                                                    if (!scannedOnce.value) {
+                                                        scannedOnce.value = true
+                                                        onScanned(host, port, key)
                                                     }
+                                                } catch (_: Exception) {
+                                                    // Not a RemEx QR code — keep scanning
                                                 }
                                             }
-                                            .addOnCompleteListener { imageProxy.close() }
-                                    }
-                                } finally {
-                                    if (closeImageProxy) {
-                                        imageProxy.close()
-                                    }
+                                        }
+                                        .addOnCompleteListener { imageProxy.close() }
+                                } else {
+                                    imageProxy.close()
                                 }
                             }
 
                             try {
+                                // IMPORTANT: Unbind previous uses before binding new ones to avoid conflicts
                                 cameraProvider.unbindAll()
                                 cameraProvider.bindToLifecycle(
                                     lifecycleOwner,
@@ -168,11 +182,8 @@ fun QrScannerScreen(
                             } catch (e: Exception) {
                                 android.util.Log.e("QrScanner", "Camera binding failed", e)
                             }
-                        }, ContextCompat.getMainExecutor(ctx))
-
-                        previewView
-                    },
-                    modifier = Modifier.fillMaxSize()
+                        }, ContextCompat.getMainExecutor(context))
+                    }
                 )
 
                 // Scanning hint overlay
@@ -221,3 +232,4 @@ fun QrScannerScreen(
         }
     }
 }
+

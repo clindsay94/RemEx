@@ -166,4 +166,12 @@ public static unsafe class JniHelper
         var detachCurrentThread = (delegate* unmanaged<IntPtr, int>)vm->Functions[5];
         return detachCurrentThread(vmPtr);
     }
+
+    [DllImport("log", EntryPoint = "__android_log_print", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int __android_log_print(int prio, string tag, string fmt, string msg);
+
+    public static void AndroidLogE(string tag, string message)
+    {
+        __android_log_print(6, tag, "%s", message);
+    }
 }
