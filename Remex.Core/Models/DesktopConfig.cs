@@ -26,6 +26,6 @@ public record DesktopConfig
     public int TargetFps
     {
         get => _targetFps;
-        init => _targetFps = Math.Clamp(value, 1, 60);
+        init => _targetFps = Math.Clamp(value, 1, 120);
     }
 }

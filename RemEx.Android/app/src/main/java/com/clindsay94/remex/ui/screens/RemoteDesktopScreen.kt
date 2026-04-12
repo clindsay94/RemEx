@@ -4,10 +4,16 @@ import android.content.pm.ActivityInfo
 import android.util.Log
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -117,6 +123,7 @@ fun RemoteDesktopScreen(
     var isStylusActive by remember { mutableStateOf(false) }
     var inputResetTrigger by remember { mutableIntStateOf(0) }
     var cursorVisible by remember { mutableStateOf(false) }
+    var mouseControlsExpanded by rememberSaveable { mutableStateOf(false) }
 
     // Keyboard support
     val focusRequester = remember { FocusRequester() }
@@ -735,6 +742,90 @@ fun RemoteDesktopScreen(
                         }
                         IconButton(onClick = { zoomFactor = (zoomFactor + 0.5f).coerceIn(1f, 4f) }) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_zoom_in)) }
                         IconButton(onClick = { zoomFactor = (zoomFactor - 0.5f).coerceIn(1f, 4f) }) { Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_zoom_out)) }
+                    }
+                }
+            }
+
+            // ═══ FLOATING MOUSE BUTTONS ═══
+            if (isStreaming) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(end = 16.dp, bottom = 16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        AnimatedVisibility(
+                            visible = mouseControlsExpanded,
+                            enter = fadeIn() + slideInVertically { it / 2 },
+                            exit = fadeOut() + slideOutVertically { it / 2 }
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.End,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Right Click
+                                FloatingActionButton(
+                                    onClick = { viewModel.sendMouseClick(2) },
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mouse,
+                                        contentDescription = stringResource(R.string.cd_mouse_right),
+                                        modifier = Modifier.size(24.dp).graphicsLayer { rotationY = 180f }
+                                    )
+                                }
+
+                                // Middle Click
+                                FloatingActionButton(
+                                    onClick = { viewModel.sendMouseClick(1) },
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mouse,
+                                        contentDescription = stringResource(R.string.cd_mouse_middle),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                // Left Click
+                                FloatingActionButton(
+                                    onClick = { viewModel.sendMouseClick(0) },
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mouse,
+                                        contentDescription = stringResource(R.string.cd_mouse_left),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        val rotation by animateFloatAsState(
+                            targetValue = if (mouseControlsExpanded) 45f else 0f,
+                            label = "rotation"
+                        )
+
+                        FloatingActionButton(
+                            onClick = { mouseControlsExpanded = !mouseControlsExpanded },
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = stringResource(R.string.cd_expand_mouse_controls),
+                                modifier = Modifier.graphicsLayer { rotationZ = rotation }
+                            )
+                        }
                     }
                 }
             }

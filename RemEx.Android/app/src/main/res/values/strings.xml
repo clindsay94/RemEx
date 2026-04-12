@@ -156,6 +156,10 @@
     <string name="cd_exit_fullscreen">Exit Fullscreen</string>
     <string name="cd_zoom_in">Zoom In</string>
     <string name="cd_zoom_out">Zoom Out</string>
+    <string name="cd_mouse_left">Left Click</string>
+    <string name="cd_mouse_middle">Middle Click</string>
+    <string name="cd_mouse_right">Right Click</string>
+    <string name="cd_expand_mouse_controls">Expand Mouse Controls</string>
     <string name="remote_desktop_config_title">Stream Configuration</string>
     <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
