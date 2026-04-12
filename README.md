@@ -7,10 +7,10 @@
 ![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-![Version](https://img.shields.io/badge/Version-1.8.0-FF6B6B)
+![Version](https://img.shields.io/badge/Version-1.10.0-FF6B6B)
 
 A high-performance, cross-platform **command center** for remote PC management.\
-Real-time hardware telemetry · Remote desktop · App launcher · Process manager\
+Real-time hardware telemetry · Remote desktop · QR Pairing · App launcher · Process manager\
 Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full **native Android** app (Kotlin + Jetpack Compose) powered by a .NET NativeAOT JNI core.
 
 ---
@@ -19,273 +19,131 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 
 ### Windows Desktop Client (Installer)
 
-1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-vX.X.X-Setup.exe`.
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-v1.10.0-Setup.exe`.
 2. Run the installer and follow the wizard:
    - Choose **Client only** or **Client + Windows Service** (service starts automatically at boot).
-   - Optionally create a desktop shortcut.
 3. Launch **RemEx** from the Start Menu or desktop shortcut.
 
-The desktop client will automatically start and manage the host service in the background. Just follow the first-run tutorial to get connected!
+### Linux Desktop Client & Host (Automated)
 
-### Linux Desktop Client (Manual)
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download:
+   - `remex-client-v1.10.0-linux-x64.tar.gz` (for the Desktop UI)
+   - `remex-host-v1.10.0-linux-x64.tar.gz` (for the background service)
+2. **Extract** the archives:
+   ```bash
+   tar -xzf remex-client-v1.10.0-linux-x64.tar.gz
+   tar -xzf remex-host-v1.10.0-linux-x64.tar.gz
+   ```
+3. **Install** via the provided scripts (installs to `~/.local/share/` and sets up `systemd` user services):
+   ```bash
+   # Install Client (adds to Applications menu)
+   ./remex-client-v1.10.0-linux-x64/install.sh install
 
-1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `Remex-vX.X.X-linux-x64.7z`.
-2. **Extract the archive** to a permanent location (e.g., `~/Applications/RemEx`).
-3. Run **`Remex.Client.Desktop`** from the extracted folder.
-4. **(Optional)** Create a `.desktop` launcher entry or symlink for easy access.
+   # Install Host (starts background service)
+   ./remex-host-v1.10.0-linux-x64/install.sh install
+   ```
 
 ### Native Android App
 
-The recommended way to install the Android app is through the **Google Play Store** once it becomes publicly available. In the meantime, you can sideload the APK:
-
-1. Go to the **Releases** page and download the latest `Remex-vX.X.X.apk` file to your Android device.
-2. You may need to enable "Install from unknown sources" in your device's settings.
-3. Open the downloaded `.apk` file to install the application.
-
-You can also join my Play Store testing track for easier access to new versions and updates. Just send me an email, and I'll add you to the list.
+1. Go to the **Releases** page and download the latest `RemEx-v1.10.0.apk`.
+2. Open the downloaded `.apk` file to install.
+3. Use the new **QR Scanner** on the connection screen to pair instantly with your PC!
 
 ---
 
-## Clients
+## 💎 Key Features (v1.10.0)
 
-RemEx ships two distinct client experiences sharing the same host backend:
+### 🐧 Full Linux Integration
+RemEx is now a first-class citizen on Linux. We've implemented native capture and telemetry services for a seamless experience on Ubuntu, Fedora, Arch, and more.
+- **Native Screen Capture:** High-performance Linux frame capture.
+- **Input Simulation:** Full mouse/keyboard control for Linux hosts.
+- **Systemd Support:** Automated user-level service management.
 
-| Client | Stack | Target |
-| :--- | :--- | :--- |
-| **Desktop / Avalonia Android** (`RemEx.Client.Desktop`) | .NET 10 · Avalonia 11 · CommunityToolkit.Mvvm | Windows · Linux · Android (Avalonia) |
-| **Native Android** (`RemEx.Android`) | Kotlin · Jetpack Compose · Material 3 · JNI → .NET NativeAOT | Android (arm64-v8a) |
-| **Host** (`Remex.Host`) | ASP.NET Core Minimal API · WebSocket · mDNS | Windows Service · Linux daemon |
-
-The native Android app bundles `libRemexCore.so` — a NativeAOT-compiled version of `Remex.Core` — and calls it through a Kotlin JNI bridge (`RemexCoreClient`). This gives all WebSocket, mDNS, and command logic identical behavior on Android without a separate runtime.
-
----
-
-## Features
+### 📱 QR Code Pairing
+No more typing IP addresses. The desktop client now generates a secure QR code that the Android app scans to auto-configure and connect instantly.
+- **Found in:** Home Screen -> "Pair New Device" (Desktop) / Connection Screen -> "Scan QR" (Android).
 
 ### 🖥️ Glassmorphic Dashboard (Avalonia)
+- **Cinematic Boot:** 5-second animated materialization effect on startup.
+- **Dark Glass Design:** Layered translucent cards with dynamic gradient theming.
+- **Live Localization:** Switch between 8 languages (en, es, hi, id, pl, pt-BR, tr, uk) instantly without restart.
+- **Interactive Onboarding:** 9-page tutorial that intelligently adapts to your operating system.
 
-- **Cinematic boot sequence** — `BootSequenceControl` plays a full-screen 5-second animated intro (particles, orbit rings, node-graph materialization) on startup before the shell loads
-- **Dark glass design system** — layered translucent cards, fluid hover states, dynamic gradient theming
-- **Sidebar navigation** — collapsible `SplitView` with compact icon mode (64 px) and expanded label mode (220 px)
-- **Theme engine** — swap between BaseDarkGlass, CyberNOC, Monolith, and SolarFlare at runtime; override accent color, corner radius, glass opacity, and glow strength
-- **DashboardBackground** — choose from solid, gradient, or animated canvas backgrounds
-- **Home screen** — NOC-style overview with connection status, quick-action pills, and pinned live sensor cards
-- **Live localization** — switch UI language at runtime without restarting; 8 locales supported (en, es, hi, id, pl, pt-BR, tr, uk). All 13 AXAML views are fully localized via a `LocalizationService` singleton and `{local:Localize KEY}` markup extension
-- **Interactive tutorial** — 9-page first-run walkthrough covering architecture overview, Windows service installation, Linux systemd setup, HWInfo configuration, sensor monitoring, app launcher setup, and network discovery
+### 📡 Real-Time Telemetry & Desktop
+- **HWInfo (Windows) / lmsensors (Linux):** Massive sensor support with smart deduplication.
+- **GPU-Accelerated Remote Desktop:** Low-latency DXGI capture (Windows) and optimized Linux capture.
+- **Free-form Canvas:** Arrange live sensor cards on a 4,000x4,000 zoomable workspace.
 
-### 📱 Native Android App (Kotlin / Compose)
-
-- **Material 3** design with dynamic color seeding (Material You), spring animations, and card-shape presets
-- **Bottom NavigationBar + FAB** for one-handed navigation; settings opened as a modal flow
-- **Personalization screen** — choose font family (system, Roboto, Montserrat, Nunito), theme seed color, and card shape preset (Rounded, Cut, Mixed)
-- **Dashboard** — drag-and-drop card placement with animated previews and per-type shape support
-- **Home-screen widgets** — Sensor, Resource Monitor, Remote Control, and general Remex widgets configurable from a dedicated `WidgetConfigActivity`
-- **Animated splash screen** — Canvas-based animation with particles, a scanline sweep, and a wireframe→solid logo materialization; tap to skip
-
-### 📡 Real-Time Telemetry
-
-- **[HWInfo](https://hwinfo.com/download/)** (Windows) / **lmsensors** (Linux) sensor data streamed over WebSocket
-    -- HWInfo is free to use, but there's some configuring you have to do, namely enabling the Shared Memory, which has a 12 hour limit before you have to re-enable it.  
-- **Source identification** — each sensor reading is tagged with its source (`HWInfo`, `WindowsPerf`, or `Linux`); source badges shown in the sensor list
-- **Smart deduplication** — when HWInfo is active, overlapping Windows Performance Counter sensors are automatically hidden at the category level
-- **Free-form canvas** — drag, resize, and arrange sensor cards on a 4 000 × 4 000 workspace
-- **Sparkline graphs** — bar, line, area, and gauge visualizations per sensor (with brush/pen caching for performance)
-- **Pin to Home** — pin any sensor to the landing page for at-a-glance monitoring
-- **Scrollable sensor list** — Settings panel sensor list wraps in a `ScrollViewer` for large sensor counts, with HWInfo info tooltip
-- **mDNS service discovery** — the host advertises itself via mDNS so clients can auto-detect it on the local network without entering an IP
-
-### 🖳 Remote Desktop
-
-- Live screen streaming over a dedicated WebSocket (`/ws/desktop`) with configurable JPEG quality, downscale factor, and target FPS (up to 120)
-- **DXGI desktop duplication** — GPU-accelerated screen capture on Windows using the Desktop Duplication API for low-latency, high-efficiency frame capture
-- **Settings-synced stream config** — Quality, FPS, and scale sliders in Settings now directly control the active stream (previously disconnected)
-- Touch & stylus input forwarding (mouse clicks, keyboard, S-Pen drag)
-- Fullscreen immersive mode with virtual cursor pad
-- Zoom/pan viewport for detail inspection
-- JNI frame callback path for zero-copy delivery to the native Android renderer
-
-### ⏻ Remote Execution
-
-- **Power commands** — Shutdown, Restart, Force Restart, Restart to UEFI, Lock
-- **Wake-on-LAN** — broadcast magic packets across all active physical NICs
-- **TCP command ingress** — accept power commands from external scripts or tools on a configurable port
-
-### 🔐 Access Key Security
-
-All communication layers support optional shared-secret authentication to protect against LAN-local attacks. **Leave empty to disable (backward compatible).**
-
-| Layer | Files Modified | What was added |
-| ----- | --------------- | --------------- |
-| **Host WebSocket** | HostBootstrapper.cs | `Remex:AccessKey` config read, constant-time validation on `/ws` and `/ws/desktop`, returns 401 on mismatch |
-| **Host TCP Commands** | RemexNetworkListener.cs | `Remex:AccessKey` config read, constant-time validation via `Parameters["AccessKey"]`, rejects with 401 on mismatch |
-| **Host config** | appsettings.json | `Remex.AccessKey` section (empty = disabled) |
-| **Core models** | DashboardProfile.cs | `AccessKey` property for desktop profile persistence |
-| **Core clients** | RemexNativeClient.cs, RemexDesktopClient.cs | `accessKey` parameter + `BuildUri()` helper appending `?key=` |
-| **JNI bridge** | AndroidNativeExports.cs | `AccessKey` in init request, threaded through all desktop endpoints |
-| **Avalonia UI** | SettingsView.axaml, SettingsViewModel.cs, ConnectionViewModel.cs | Password field in Settings, persisted to profile, applied on connect/reconnect |
-| **Android** | SettingsManager.kt, RemoteControlViewModel.kt, TaskManagerViewModel.kt, AppLauncherViewModel.kt, RemoteControlWidget.kt, AppLauncherWidget.kt | DataStore persistence, Key icon text field, passed through JNI init JSON and injected into all TCP command `Parameters` |
-
-**Key design decisions:**
-
-- Empty access key = authentication disabled (backward compatible)
-- WebSocket: key sent as `?key=<value>` query parameter on the URI
-- TCP commands: key sent as `Parameters["AccessKey"]` in the JSON request
-- Server uses `CryptographicOperations.FixedTimeEquals` to prevent timing attacks
-- Configurable from all UIs (no JSON file editing required)
-- **Important:** If you set an access key, all clients must provide it — the Android app injects it automatically into TCP commands
-
-### ◈ App Launcher
-
-- Define app shortcuts on the host, sync them to the client, and launch remotely
-- Supports Session 0 → interactive-desktop launching on Windows Services
-- Persistent local storage with host-sync fallback; view-model factory injection for safe JSON parsing
-
-### ▤ Task Manager
-
-- Live process list with CPU and memory usage (polled every 2 seconds)
-- **Search** by process name; **sort** by name, CPU, or memory — ascending or descending
-- Kill processes remotely with automatic elevation fallback (`pkexec` on Linux, admin prompt on Windows)
-- Cross-platform: Windows `Process` API and Linux `/proc` filesystem
+### 🔐 Production Readiness
+- **Strict Validation:** Robust input validation across all network layers.
+- **Async & Null Safety:** Hardened codebase following strict architectural guidelines.
+- **Access Key Security:** Optional shared-secret authentication for all communication.
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```text
-Remex.Core/              Shared models, messages, and service contracts
+Remex.Core/              Shared models, messages, and validation logic
                          ↳ Compiled as libRemexCore.so (NativeAOT) for Android JNI
-Remex.Host/              Headless ASP.NET background service (Minimal APIs + WebSocket + mDNS)
-Remex.Client/            Shared Avalonia UI (Views, ViewModels, Controls, Services, Themes)
-Remex.Client.Desktop/    Desktop entry point — Windows / Linux
-RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
-Remex.Core.Tests/        xUnit tests — Core models and serialization
-Remex.Host.Tests/        xUnit tests — Host endpoints and handlers
-scripts/                 Utility scripts — Windows Service installer, android-fresh pipeline
-installer/               Inno Setup script + build automation for Windows installer
+Remex.Host/              Headless ASP.NET service (Minimal APIs + WebSocket + mDNS)
+Remex.Client/            Shared Avalonia UI (Views, ViewModels, Themes)
+RemEx.Android/           Native Android app (Kotlin + Jetpack Compose + JNI)
+docs/                    Architectural guidelines (Async, Null Safety, Validation)
+installer/               Build scripts for Windows (Inno Setup) and Linux (bash)
 ```
 
 ### Communication Protocols
 
 | Protocol | Purpose | Default Port |
 | :--- | :--- | :--- |
-| WebSocket `/ws` | Real-time telemetry + commands | 5005 |
-| WebSocket `/ws/desktop` | Remote desktop streaming | 5005 |
-| TCP | External command ingress | 8338 |
-| Named Pipe | Local IPC (desktop client ↔ Windows Service) | `RemExLocalIPC` |
-| mDNS | Host auto-discovery on LAN | — |
-| HTTP `GET /` | Health check | 5005 |
-
-Full API documentation: [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md)
+| WebSocket `/ws` | Telemetry + Power Commands | 5005 |
+| WebSocket `/ws/desktop` | Remote Desktop Stream | 5005 |
+| TCP | External Script Ingress | 8338 |
+| Named Pipe | Local IPC (Client ↔ Service) | `RemExLocalIPC` |
 
 ---
 
-## Getting Started With Building for Contributing
+## 🛠️ Building for Developers
 
 ### Prerequisites
-
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- Android Studio or a JDK + Android SDK (for the native `RemEx.Android` Gradle build)
+- Android SDK (see [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md))
 
-### Build & Run
-
-**Host service** (telemetry + remote execution backend):
-
+### Desktop & Host
 ```bash
+# Run Host
 dotnet run --project Remex.Host
-```
 
-**Desktop client**:
-
-```bash
+# Run Client
 dotnet run --project Remex.Client.Desktop
 ```
 
-**Run tests**:
-
+### Linux Packages
 ```bash
-dotnet test Remex.sln
+# Build both Client and Host .tar.gz packages
+./installer/build-linux.sh
 ```
 
-### Publish
-
-**Desktop** (self-contained single-file, Windows x64):
-
-```bash
-dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-```
-
-### Building the Native Android App — Hardened Fresh Build (Recommended)
-
-The native `RemEx.Android` Gradle project embeds `libRemexCore.so` built from `Remex.Core`. Use the hardened pipeline to guarantee a fresh native library and verified APK every time:
-
+### Android (Hardened Fresh Build)
+We recommend using our fresh pipeline to ensure the NativeAOT `.so` is perfectly synced:
 ```powershell
-# From repo root — rebuild libRemexCore.so, assemble APK, verify SHA-256, install
-.\scripts\android-fresh.ps1 -Configuration Debug -Install
-
-# Build only (no install)
-.\scripts\android-fresh.ps1 -Configuration Debug
 .\scripts\android-fresh.ps1 -Configuration Release
 ```
 
-Or run Gradle tasks directly from `RemEx.Android/`:
-
-```powershell
-.\gradlew.bat remexFreshInstallDebug --rerun-tasks --no-configuration-cache
-.\gradlew.bat remexFreshAssembleDebug --rerun-tasks --no-configuration-cache
-.\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
-```
-
-### Publish with Auto-Versioning
-
-```powershell
-# From RemEx.Android/ — auto-bumps versionCode+1 and minor version, builds signed APK + AAB
-.\gradlew.bat remexPublishRelease --rerun-tasks --no-configuration-cache
-```
-
-This reads `app/version.properties`, increments `versionCode` by 1 and the minor version (resetting patch to 0), writes the new values back, and produces a signed AAB ready to upload to the Play Console. Commit the updated `version.properties` after publishing.
-
-The custom `SyncRemexCoreSoTask` and `VerifyRemexCoreInApkTask` Gradle tasks enforce SHA-256 hash matching between the published `.so` and the APK-embedded copy, failing fast on any stale artifact.
-
-### Install as a Windows Service
-
-The host can run as a Windows Service that starts automatically at boot — no login required.
-
-```powershell
-.\scripts\install-service.ps1 -Action Install    # Install and start
-.\scripts\install-service.ps1 -Action Status     # Check status
-.\scripts\install-service.ps1 -Action Uninstall  # Remove
-.\scripts\install-service.ps1 -HostPath "C:\MyPath\Remex.Host.exe"  # Custom path
-```
-
-The desktop client uses multi-strategy host binary resolution: user-configured path → adjacent directory → sibling subfolder → parent-level sibling → dev-time publish output. You can set a custom host path in **Settings → Windows Service → Host Binary Path** with a file browser.
-
-> When the service is running, the desktop client detects the occupied port and connects to the existing host instead of starting its own. The service manager UI is accessible from the Settings panel. Session 0 detection warns when running in a non-interactive service context.
-
 ---
 
-## Configuration
-
-The host reads from `appsettings.json`:
-
-```jsonc
-{
-  "Remex": {
-    "CommandPort": 8338,  // TCP command ingress port
-    "AccessKey": ""       // Shared key for WebSocket auth (leave empty to disable)
-  }
-}
-```
-
-The Avalonia client persists dashboard layout, sensor positions, theme settings, and host address to a local JSON profile (auto-saved with a 2-second debounce). The native Android client uses `SettingsManager` (Kotlin `DataStore`) for all preferences, including theme seed color, font family, and card-shape preset.
+## 📖 Guidelines & Docs
+We've introduced strict development guidelines to maintain the "Production Ready" standard:
+- [**Android Setup Guide**](docs/ANDROID_SETUP.md)
+- [**Async Guidelines**](docs/ASYNC_GUIDELINES.md)
+- [**Null Safety Guidelines**](docs/NULL_SAFETY_GUIDELINES.md)
+- [**Validation Guidelines**](docs/VALIDATION_GUIDELINES.md)
 
 ---
 
 ## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup, build commands, and project conventions.
-
----
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed conventions.
 
 ## License
-
 [MIT](LICENSE) — Copyright © 2026 Connor
