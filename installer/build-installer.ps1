@@ -26,8 +26,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$RepoRoot    = Resolve-Path "$PSScriptRoot\.."
-$VersionFile = Join-Path $RepoRoot "RemEx.Android\app\version.properties"
+$RepoRoot    = Resolve-Path (Join-Path $PSScriptRoot "..")
+$VersionFile = Join-Path $RepoRoot "RemEx.Android" "app" "version.properties"
 $BuildProps  = Join-Path $RepoRoot "Directory.Build.props"
 $IssFile     = Join-Path $PSScriptRoot "RemEx.iss"
 $ClientProj  = Join-Path $RepoRoot "Remex.Client.Desktop"
@@ -81,8 +81,10 @@ if (-not $SkipPublish) {
 # 4. Compile the Inno Setup script
 # ------------------------------------------------------------------
 $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+$useWine = $false
+
 if (-not $iscc) {
-    # Common install locations for Inno Setup 6
+    # Common install locations for Inno Setup 6 (Windows native paths)
     $candidates = @(
         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
         "C:\Program Files\Inno Setup 6\ISCC.exe"
@@ -93,14 +95,33 @@ if (-not $iscc) {
 }
 
 if (-not $iscc) {
-    Write-Error "ISCC.exe (Inno Setup compiler) not found. Install Inno Setup 6 from https://jrsoftware.org/isinfo.php"
+    # Wine prefix locations (Linux)
+    $wineCandidates = @(
+        "$HOME/.wine/drive_c/users/$env:USER/AppData/Local/Programs/Inno Setup 6/ISCC.exe",
+        "$HOME/.wine/drive_c/Program Files (x86)/Inno Setup 6/ISCC.exe",
+        "$HOME/.wine/drive_c/Program Files/Inno Setup 6/ISCC.exe"
+    )
+    foreach ($c in $wineCandidates) {
+        if (Test-Path $c) { $iscc = $c; $useWine = $true; break }
+    }
+}
+
+if (-not $iscc) {
+    Write-Error "ISCC.exe (Inno Setup compiler) not found. Install Inno Setup 6 from https://jrsoftware.org/isinfo.php (Windows) or via Wine (Linux)."
     exit 1
 }
 
 $isccPath = if ($iscc -is [string]) { $iscc } else { $iscc.Source }
 
 Write-Host "Compiling installer with Inno Setup..." -ForegroundColor Cyan
-& $isccPath "/DAppVersion=$version" $IssFile
+if ($useWine) {
+    # Convert the Linux path to a Wine Windows path for ISCC, then invoke via wine
+    $wineIsccPath = & wine winepath -w $isccPath 2>/dev/null
+    $wineIssFile  = & wine winepath -w $IssFile   2>/dev/null
+    & wine $isccPath "/DAppVersion=$version" $wineIssFile
+} else {
+    & $isccPath "/DAppVersion=$version" $IssFile
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Error "iscc failed (exit $LASTEXITCODE)"
     exit 1
