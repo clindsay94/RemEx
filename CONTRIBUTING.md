@@ -16,36 +16,31 @@ Thanks for your interest in contributing! This document covers how to set up the
 
 ```text
 Remex.sln                    .NET solution
-├── Remex.Core/              Shared models, messages, and service interfaces
+├── Remex.Core/              Shared models, messages, and validation logic
 │                            ↳ Also compiled as libRemexCore.so (NativeAOT) for Android JNI
 ├── Remex.Host/              ASP.NET headless service (Minimal APIs + WebSocket + mDNS)
 ├── Remex.Client/            Shared Avalonia UI — views, viewmodels, controls, services, themes
 ├── Remex.Client.Desktop/    Desktop entry point (Windows / Linux)
-├── Remex.Core.Tests/        xUnit tests for Core
-├── Remex.Host.Tests/        xUnit tests for Host
 ├── RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+├── docs/                    Architectural guidelines (Async, Null Safety, Validation)
 ├── scripts/                 Utility scripts (Windows Service installer, android-fresh pipeline)
-└── installer/               Inno Setup script + build-installer.ps1 for Windows packaging
+└── installer/               Build scripts for Windows (Inno Setup) and Linux (bash)
 ```
 
 ---
 
 ## Build & Run
 
-### Host Service
-
+### Host Service & Desktop Client
 ```bash
+# Run Host
 dotnet run --project Remex.Host
-```
 
-### Desktop Client
-
-```bash
+# Run Client
 dotnet run --project Remex.Client.Desktop
 ```
 
 ### Tests
-
 ```bash
 dotnet test Remex.sln
 ```
@@ -54,120 +49,62 @@ dotnet test Remex.sln
 
 ## Publish
 
-### Desktop — Self-Contained Single File (Windows x64)
-
+### Linux Packages
+The Linux build produces `.tar.gz` archives for both the client and host, including automated `install.sh` scripts.
 ```bash
-dotnet publish Remex.Client.Desktop\Remex.Client.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+# From repo root
+./installer/build-linux.sh
 ```
 
 ### Windows Installer (Inno Setup)
-
-Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php) installed. The script publishes the desktop binary first, then compiles the installer:
-
+Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php). The script publishes the desktop binary, then compiles the installer:
 ```powershell
 # From repo root
-.\installer\build-installer.ps1 -Version 1.8.0
+.\installer\build-installer.ps1 -Version 1.10.0
 ```
 
-Output: `installer/Output/RemEx-v1.8.0-Setup.exe`
-
-### Native Android App (`RemEx.Android`) — Hardened Fresh Rebuild
-
-The native Android app requires `libRemexCore.so` to be built from `Remex.Core` before assembling the APK. Use the hardened pipeline to guarantee a verified artifact every time:
-
+### Native Android App (`RemEx.Android`)
+The native Android app requires `libRemexCore.so` to be built from `Remex.Core` before assembling the APK.
 ```powershell
-# From repo root (recommended)
-.\scripts\android-fresh.ps1 -Configuration Debug -Install   # build + install to connected device
-.\scripts\android-fresh.ps1 -Configuration Debug            # build only
-.\scripts\android-fresh.ps1 -Configuration Release          # release build + verification
-
-# Or run Gradle tasks directly from RemEx.Android/
-.\gradlew.bat remexFreshInstallDebug --rerun-tasks --no-configuration-cache
-.\gradlew.bat remexFreshAssembleDebug --rerun-tasks --no-configuration-cache
-.\gradlew.bat remexFreshAssembleRelease --rerun-tasks --no-configuration-cache
+# Build + Verify + Install (recommended)
+.\scripts\android-fresh.ps1 -Configuration Release -Install
 ```
-
-These tasks:
-
-- Delete every `bin/` and `obj/` directory across the repository.
-- Rebuild `Remex.Core` as a NativeAOT Android shared library (`libRemexCore.so`).
-- Copy the `.so` into `RemEx.Android/app/src/main/jniLibs/arm64-v8a/` via `SyncRemexCoreSoTask`.
-- Verify the APK-embedded library SHA-256 matches the just-built file via `VerifyRemexCoreInApkTask`.
-- Fail immediately on any hash mismatch or missing artifact.
 
 ---
 
-## Development Notes
+## Development Guidelines
+We have established strict architectural patterns to ensure "Production Readiness." All contributions must adhere to these guidelines:
+- [**Async/Await Patterns**](docs/ASYNC_GUIDELINES.md) — Mandatory for all async code.
+- [**Null Safety**](docs/NULL_SAFETY_GUIDELINES.md) — Comprehensive rules for handling nullable types.
+- [**Validation**](docs/VALIDATION_GUIDELINES.md) — Unified validation logic for all network-facing services.
 
-### Architecture (Avalonia client)
+---
 
-- **MVVM** — Views in `Remex.Client/Views/`, ViewModels in `Remex.Client/ViewModels/`. Uses `CommunityToolkit.Mvvm` source generators (`[ObservableProperty]`, `[RelayCommand]`).
-- **Navigation** — `ShellViewModel` owns the sidebar and child VM lifecycle. Views are resolved via `DataTemplate` in `ShellView.axaml`.
-- **Communication** — `ConnectionViewModel` manages the primary WebSocket. `RemoteDesktopService` has its own dedicated socket (`/ws/desktop`). Local IPC uses a named pipe (`RemExLocalIPC`).
-- **Telemetry** — `HWiNFO` (Windows) / `lmsensors` (Linux) polled by the host and broadcast over the WebSocket.
-- **mDNS** — `MdnsAdvertisingService` (host) and `MdnsDiscoveryService` (client) enable auto-discovery on the LAN.
+## Versioning
 
-### Architecture (native Android — `RemEx.Android`)
+### .NET Projects
+Managed centrally in `Directory.Build.props`.
 
-- **Compose + ViewModel** — Each screen has a `*Screen.kt` Composable and a `*ViewModel.kt` backed by `StateFlow`.
-- **JNI Bridge** — `RemexCoreClient` (Kotlin `object`) loads `libRemexCore.so` at startup and exposes all native entry points. Register callbacks via `RemexCoreClient.setCallback()`.
-- **`RemexClientManager`** — Singleton that owns connection state and routes JNI callbacks to the active ViewModel.
-- **Navigation** — `AppNavigation.kt` with `NavHost`; routes defined in `NavRoutes.kt`. Bottom `NavigationBar` visible on all main screens; hidden during splash/connection.
-- **Personalization** — `SettingsManager` (DataStore) persists theme seed color, font family, and card-shape preset. `PersonalizationViewModel` exposes `StateFlow`s consumed by `RemExTheme` and card Composables.
-- **Widgets** — Each widget provider reads from `WidgetSettingsManager` (DataStore) and is configured via `WidgetConfigActivity`.
-
-### Coding Guidelines
-
-#### Async/Await
-This codebase follows specific async/await conventions for Avalonia and ASP.NET Core. See [docs/ASYNC_GUIDELINES.md](docs/ASYNC_GUIDELINES.md) for details. Key points:
-- **Never use `ConfigureAwait(false)`** — not needed in Avalonia or ASP.NET Core
-- Use `await` directly on all async operations
-- Name async methods with the `Async` suffix
-- Avoid `.Result` or `.Wait()` (causes deadlocks)
-
-### Versioning
-
-The .NET version is set once in `Directory.Build.props` and applied to all .NET projects automatically.
-
-**Android Native App (`RemEx.Android`):** Version is managed in `app/version.properties` and read automatically by the Gradle build:
-
+### Android Native App
+Managed in `RemEx.Android/app/version.properties`:
 ```properties
-versionCode=9
-versionName=1.8.0
+versionCode=12
+versionName=1.10.0
 ```
 
-Two release workflows are available:
-
-| Command | Version Behavior | Outputs |
-|:--------|:-----------------|:--------|
-| `.\gradlew remexFreshAssembleRelease` | Uses current version as-is | APK + AAB |
-| `.\gradlew remexPublishRelease` | Auto-bumps: versionCode+1, minor+1, patch→0 | APK + AAB (ready for Play Console upload) |
-
-For example, if `version.properties` has `versionCode=3` and `versionName=1.1.1`, running `remexPublishRelease` will build with `versionCode=4` and `versionName=1.2.0`, and write the new values back to `version.properties`. Commit the updated file after publishing.
-
-### Themes (Avalonia)
-
-Theme resource dictionaries live in `Remex.Client/Themes/`. The `ThemeService` swaps them at runtime and applies customization overrides (accent color, corner radius, opacity, glow). Android-specific overrides are in `Material3Android.axaml`.
+Use `.\gradlew remexPublishRelease` from the `RemEx.Android/` directory to auto-increment these values and prepare a release build.
 
 ---
 
 ## Submitting Changes
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make changes and ensure tests pass: `dotnet test Remex.sln`
-4. Commit with a clear message
-5. Open a pull request against `main`
-
-### Guidelines
-
-- Keep PRs focused — one feature or fix per PR
-- Follow existing code style and naming conventions
-- Add tests for new message types, models, or service logic
-- Update `CHANGELOG.md` under an `[Unreleased]` section
+1. Fork the repository and create a feature branch.
+2. Ensure all tests pass: `dotnet test Remex.sln`.
+3. Follow existing code style and naming conventions.
+4. **Important:** All new features or bug fixes must include corresponding tests and adhere to our [Architectural Guidelines](docs/).
+5. Open a pull request against `main`.
 
 ---
 
 ## License
-
 By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
