@@ -102,9 +102,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Loads current values from the persisted profile.</summary>
-        public async Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        _profile = await _layoutService.LoadAsync().ConfigureAwait(false);
+        _profile = await _layoutService.LoadAsync();
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
@@ -244,7 +244,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         Save();
         await _layoutService.FlushAsync();
         SavedStatus = LocalizationService.Instance["Settings_SavedStatus"];
-        
+
         // Clear status after 3 seconds
         _ = Task.Delay(3000).ContinueWith(_ => SavedStatus = string.Empty);
     }
@@ -304,7 +304,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _serviceStatusText = LocalizationService.Instance["Service_Checking"];
 
-    public string ServiceSectionHeader => OperatingSystem.IsWindows() 
+    public string ServiceSectionHeader => OperatingSystem.IsWindows()
         ? LocalizationService.Instance["Settings_ServiceSection_Windows"]
         : LocalizationService.Instance["Settings_ServiceSection_Linux"];
 
@@ -554,7 +554,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             var serviceName = "remex-host";
             var servicePath = $"/etc/systemd/system/{serviceName}.service";
             var user = Environment.UserName;
-            
+
             var serviceContent = $@"[Unit]
 Description=Remex Host Service
 After=network.target
@@ -575,7 +575,7 @@ WantedBy=multi-user.target";
             AppendLog("Generated systemd service unit file.");
 
             ServiceStatusText = LocalizationService.Instance["Service_InstallingLinux"];
-            
+
             // Use pkexec for privilege elevation with safe argument passing
             using var process = new Process
             {
@@ -589,7 +589,7 @@ WantedBy=multi-user.target";
                     CreateNoWindow = true
                 }
             };
-            
+
             AppendLog(LocalizationService.Instance["Service_InstallingLinux"]);
             process.Start();
 
@@ -849,8 +849,8 @@ WantedBy=multi-user.target";
                 {
                     var processes = Process.GetProcessesByName("Remex.Host");
                     IsServiceRunning = processes.Length > 0;
-                    ServiceStatusText = IsServiceRunning 
-                        ? LocalizationService.Instance["Service_Running"] 
+                    ServiceStatusText = IsServiceRunning
+                        ? LocalizationService.Instance["Service_Running"]
                         : LocalizationService.Instance["Service_Stopped"];
                 }
                 else

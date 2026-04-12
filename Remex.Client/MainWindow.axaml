@@ -4,6 +4,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:Remex.Client.Views" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
     x:Class="Remex.Client.MainWindow" Title="Remex — Command Center"
+    Width="1200" Height="800"
     ExtendClientAreaToDecorationsHint="True"
     ExtendClientAreaChromeHints="PreferSystemChrome"
     ExtendClientAreaTitleBarHeightHint="32"

@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
+using Remex.Core.Guards;
 
 namespace Remex.Client.ViewModels;
 
@@ -86,6 +87,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Total number of tutorial pages.</summary>
     public int TutorialPageCount => 10;
 
+    /// <summary>User preference to not show tutorial again.</summary>
+    [ObservableProperty]
+    private bool _dontShowTutorialAgain;
+
     /// <summary>
     /// When true, a dismissible banner is shown at the top of the content area informing
     /// the user that a host connection is required for the current feature.
@@ -113,10 +118,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IImmersiveModeService? immersiveMode = null)
     {
-        _layoutService = layoutService;
-        _themeService = themeService;
-        _immersiveMode = immersiveMode;
-        Connection = connectionViewModel;
+        _layoutService = Guard.NotNull(layoutService);
+        _themeService = Guard.NotNull(themeService);
+        Connection = Guard.NotNull(connectionViewModel);
+        _immersiveMode = immersiveMode; // Intentionally optional
 
         _onCustomizationApplied = settings => Customization = settings;
         _themeService.CustomizationApplied += _onCustomizationApplied;
@@ -142,6 +147,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         Connection.PropertyChanged -= _onConnectionChanged;
+
+        // Dispose child ViewModels
+        _homeViewModel?.Dispose();
+        _canvasViewModel?.Dispose();
+        _settingsViewModel?.Dispose();
+        _remoteViewModel?.Dispose();
+        _appLauncherViewModel?.Dispose();
+        _customizationViewModel?.Dispose();
+        _remoteDesktopViewModel?.Dispose();
+        _taskManagerViewModel?.Dispose();
+
+        // Dispose shared connection ViewModel
+        Connection.Dispose();
     }
 
     public void BeginWelcomeSplash()
@@ -156,7 +174,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private async Task DismissWelcomeSplashAsync()
     {
         // Safety fallback — normally BootSequenceControl fires SequenceCompleted
-        await Task.Delay(6000).ConfigureAwait(false);
+        await Task.Delay(6000);
         Dispatcher.UIThread.Post(() =>
         {
             if (ShowWelcomeSplash)
@@ -247,16 +265,18 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private void CompleteTutorial()
     {
         ShowTutorialOverlay = false;
-        // Persist that the user has completed the tutorial
+        // Persist that the user has completed the tutorial (or chosen not to see it again)
         var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
         var updated = current with { HasCompletedTutorial = true };
         _layoutService.RequestSave(updated);
+        // Reset the checkbox for next time (if user manually replays tutorial)
+        DontShowTutorialAgain = false;
     }
 
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
     {
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
-        
+
         // Material 3 style: 
         // On Android, we use a consistent, professional transition.
         // On Desktop, we can keep the variety.
@@ -264,7 +284,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         {
             // We'll use CrossFade (index 2) as it's the closest to M3 FadeThrough 
             // without complex shared-axis custom code.
-            TransitionType = 2; 
+            TransitionType = 2;
         }
         else
         {

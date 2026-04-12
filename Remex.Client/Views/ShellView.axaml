@@ -967,6 +967,12 @@
                                          Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=9}"/>
                             </StackPanel>
 
+                            <!-- Don't Show Again checkbox -->
+                            <CheckBox IsChecked="{Binding DontShowTutorialAgain}"
+                                      Content="{conv:Localize Tutorial_DontShowAgain}"
+                                      Foreground="#AAAACC" FontSize="12"
+                                      Margin="0,8,0,0" HorizontalAlignment="Center"/>
+
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}"

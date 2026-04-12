@@ -12,7 +12,7 @@ namespace Remex.Client.ViewModels;
 /// ViewModel for the Customization page.
 /// Provides theming, layout presets, and visual customization options.
 /// </summary>
-public partial class CustomizationViewModel : ObservableObject
+public partial class CustomizationViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly DashboardLayoutService _layoutService;
@@ -103,7 +103,7 @@ public partial class CustomizationViewModel : ObservableObject
 
         // Update the current profile object
         var profile = _layoutService.CurrentProfile with { Customization = settings };
-        
+
         // Use the internal setter if possible, or request a save
         _themeService.ApplyCustomization(settings);
         _layoutService.RequestSave(profile);
@@ -115,7 +115,7 @@ public partial class CustomizationViewModel : ObservableObject
         if (Enum.TryParse<AppTheme>(themeName, true, out var theme))
         {
             SelectedTheme = theme;
-            
+
             // Apply preset defaults based on PRD
             switch (theme)
             {
@@ -161,4 +161,10 @@ public partial class CustomizationViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
+
+    public void Dispose()
+    {
+        // No resources to dispose currently, but implementing IDisposable for consistency
+        // in the ViewModel disposal hierarchy
+    }
 }

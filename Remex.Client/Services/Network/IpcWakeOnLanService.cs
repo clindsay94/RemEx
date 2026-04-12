@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
@@ -46,9 +47,17 @@ public class IpcWakeOnLanService : IWakeOnLanService
                 }
             }
         }
-        catch (Exception ex)
+        catch (TimeoutException ex)
         {
-            throw new Exception($"Failed to send WakeOnLan command over IPC: {ex.Message}", ex);
+            throw new Exception($"Failed to send WakeOnLan command over IPC (connection timeout): {ex.Message}", ex);
+        }
+        catch (IOException ex)
+        {
+            throw new Exception($"Failed to send WakeOnLan command over IPC (I/O error): {ex.Message}", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new Exception($"Failed to send WakeOnLan command over IPC (JSON error): {ex.Message}", ex);
         }
     }
 }

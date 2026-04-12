@@ -1,0 +1,21 @@
+{
+  "RemexClient": {
+    "Connection": {
+      "MaxLatencyPoints": 30,
+      "MaxReconnectDelaySeconds": 30,
+      "InitialReconnectDelayMs": 1000,
+      "ConnectionTimeoutMs": 5000,
+      "PingIntervalSeconds": 30
+    },
+    "Ui": {
+      "RefreshIntervalMs": 1000,
+      "MaxTelemetryHistoryPoints": 60,
+      "EnableAnimations": true
+    },
+    "Paths": {
+      "AppDataDirectory": "",
+      "DashboardProfilesDirectory": "",
+      "LogsDirectory": ""
+    }
+  }
+}

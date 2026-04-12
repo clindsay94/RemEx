@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="11.3.11" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.5" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Include="Avalonia.Diagnostics" Version="11.3.11">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>

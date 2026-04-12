@@ -5,10 +5,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Exceptions;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
@@ -93,11 +95,17 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         {
             // Normal shutdown
         }
-        catch (Exception ex)
+        catch (SocketException ex)
         {
-            _logger.LogError(ex, "Error in external network listener.");
+            _logger.LogError(ex, "Socket error in external network listener");
             throw;
         }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "I/O error in external network listener");
+            throw;
+        }
+        // Let unexpected exceptions (OutOfMemoryException, etc.) propagate naturally
     }
 
     public void StopListening()
@@ -139,10 +147,15 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         {
             // Normal cancellation
         }
-        catch (Exception ex)
+        catch (SocketException ex)
         {
-            _logger.LogError(ex, "Error accepting client connection");
+            _logger.LogWarning(ex, "Socket error while accepting client connection");
         }
+        catch (ObjectDisposedException)
+        {
+            _logger.LogDebug("TcpListener was disposed, stopping client acceptance");
+        }
+        // Let unexpected exceptions propagate
     }
 
     private async Task HandleClientSafeAsync(TcpClient client, CancellationToken token)
@@ -151,9 +164,23 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         {
             await HandleClientAsync(client, token);
         }
-        catch (Exception ex)
+        catch (SocketException ex)
         {
-            _logger.LogWarning(ex, "Unhandled exception in client handler");
+            _logger.LogWarning(ex, "Network error while handling client");
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "I/O error while handling client");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("Client handling cancelled during shutdown");
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException && ex is not StackOverflowException)
+        {
+            // Top-level safety net for per-client processing
+            // Only catch exceptions we can handle; let fatal exceptions propagate
+            _logger.LogError(ex, "Unexpected exception in client handler");
         }
     }
 
@@ -186,9 +213,13 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 {
                     request = RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.CommandRequest);
                 }
-                catch (Exception ex)
+                catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, "Failed to deserialize command request");
+                    _logger.LogWarning(ex, "Failed to deserialize command request - invalid JSON format");
+                }
+                catch (NotSupportedException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to deserialize command request - unsupported JSON structure");
                 }
 
                 CommandResponse response;
@@ -218,16 +249,25 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         }
         catch (EndOfStreamException)
         {
-            _logger.LogDebug("Client closed connection unexpectedly.");
+            _logger.LogDebug("Client closed connection unexpectedly");
         }
         catch (OperationCanceledException)
         {
-            // Normal shutdown
+            _logger.LogDebug("Client handling cancelled during shutdown");
         }
-        catch (Exception ex)
+        catch (SocketException ex)
         {
-            _logger.LogError(ex, "Error handling client");
+            _logger.LogWarning(ex, "Network error during client communication");
         }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "I/O error during client communication");
+        }
+        catch (ObjectDisposedException)
+        {
+            _logger.LogDebug("Stream or client was disposed during communication");
+        }
+        // Let unexpected exceptions propagate to HandleClientSafeAsync
     }
 
     private async Task<CommandResponse> ExecuteCommandAsync(CommandRequest request)
@@ -282,11 +322,22 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                     return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
             }
         }
-        catch (Exception ex)
+        catch (SocketException ex)
         {
-            _logger.LogError(ex, $"Error executing command {request.Action}");
-            return new CommandResponse(false, "Command Failed", ex.Message);
+            _logger.LogError(ex, "Network error executing command {Action}", request.Action);
+            return new CommandResponse(false, "Network Error", $"Command '{request.Action}' failed due to network issue");
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid operation executing command {Action}", request.Action);
+            return new CommandResponse(false, "Invalid Operation", ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid argument for command {Action}", request.Action);
+            return new CommandResponse(false, "Invalid Argument", ex.Message);
+        }
+        // Let unexpected exceptions propagate to caller
     }
 
     private bool ValidateAccessKey(CommandRequest request)

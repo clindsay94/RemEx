@@ -55,9 +55,13 @@ public sealed class RemoteDesktopHandler : IDisposable
                 DispatchInput(input);
             }
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Input processing thread faulted.");
+            _logger.LogError(ex, "Input processing thread faulted (collection was modified).");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Input processing thread cancelled gracefully.");
         }
     }
 
@@ -192,9 +196,23 @@ public sealed class RemoteDesktopHandler : IDisposable
             }
         }
         catch (OperationCanceledException) { return; }
-        catch (Exception ex)
+        catch (System.ComponentModel.Win32Exception ex)
         {
-            _logger.LogWarning(ex, "Diagnostic: test capture threw.");
+            _logger.LogWarning(ex, "Diagnostic: test capture threw (Win32 error - screen capture unavailable).");
+            await SendDesktopError(webSocket,
+                $"Screen capture error on host: {ex.GetType().Name}: {ex.Message}",
+                ct);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Diagnostic: test capture threw (access denied).");
+            await SendDesktopError(webSocket,
+                $"Screen capture error on host: {ex.GetType().Name}: {ex.Message}",
+                ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Diagnostic: test capture threw (invalid operation).");
             await SendDesktopError(webSocket,
                 $"Screen capture error on host: {ex.GetType().Name}: {ex.Message}",
                 ct);
@@ -281,10 +299,20 @@ public sealed class RemoteDesktopHandler : IDisposable
             }
             catch (OperationCanceledException) { break; }
             catch (WebSocketException) { break; }
-            catch (Exception ex)
+            catch (System.ComponentModel.Win32Exception ex)
             {
                 consecutiveFailures++;
-                _logger.LogWarning(ex, "Frame capture/send error (consecutive failures: {Count}).", consecutiveFailures);
+                _logger.LogWarning(ex, "Frame capture/send error (Win32 error, consecutive failures: {Count}).", consecutiveFailures);
+            }
+            catch (InvalidOperationException ex)
+            {
+                consecutiveFailures++;
+                _logger.LogWarning(ex, "Frame capture/send error (invalid operation, consecutive failures: {Count}).", consecutiveFailures);
+            }
+            catch (OutOfMemoryException ex)
+            {
+                _logger.LogError(ex, "Out of memory during frame capture - aborting stream.");
+                break;
             }
 
             // After 5 consecutive failures (~0.5s at 10fps), alert the client once
@@ -406,9 +434,17 @@ public sealed class RemoteDesktopHandler : IDisposable
                     break;
             }
         }
-        catch (Exception ex)
+        catch (System.ComponentModel.Win32Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to dispatch input: {Type}", input.EventType);
+            _logger.LogWarning(ex, "Failed to dispatch input (Win32 error): {Type}", input.EventType);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch input (invalid operation): {Type}", input.EventType);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Failed to dispatch input (invalid argument): {Type}", input.EventType);
         }
     }
 

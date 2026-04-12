@@ -9,9 +9,15 @@ using System;
 
 namespace Remex.Client.Services;
 
-public class ThemeService
+public class ThemeService : IDisposable
 {
     public event Action<CustomizationSettings>? CustomizationApplied;
+
+    public void Dispose()
+    {
+        // Clear event subscribers to prevent memory leaks
+        CustomizationApplied = null;
+    }
 
     public void SetBaseTheme(AppTheme theme)
     {
@@ -49,7 +55,7 @@ public class ThemeService
             }
 
             SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
-            
+
             CustomizationApplied?.Invoke(settings);
         });
     }
@@ -59,7 +65,7 @@ public class ThemeService
         if (Application.Current?.Resources is not ResourceDictionary resources) return;
 
         resources.MergedDictionaries.Clear();
-        
+
         var uri = new Uri($"avares://Remex.Client/Themes/{theme}.axaml");
         resources.MergedDictionaries.Add(new ResourceInclude(uri)
         {

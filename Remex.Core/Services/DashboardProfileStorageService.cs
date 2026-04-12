@@ -33,7 +33,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
 
         try
         {
-            var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
+            var json = await File.ReadAllTextAsync(_filePath);
             return RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.DashboardProfile) ?? new DashboardProfile();
         }
         catch
@@ -45,6 +45,6 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
     public async Task SaveProfileAsync(DashboardProfile profile)
     {
         var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
-        await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
+        await File.WriteAllTextAsync(_filePath, json);
     }
 }

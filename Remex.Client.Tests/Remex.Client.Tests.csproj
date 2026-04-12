@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.3" />
+    <PackageReference Include="FluentAssertions" Version="7.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Remex.Host\Remex.Host.csproj" />
+    <ProjectReference Include="..\Remex.Client\Remex.Client.csproj" />
     <ProjectReference Include="..\Remex.Core\Remex.Core.csproj" />
   </ItemGroup>
 

@@ -1,14 +1,18 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
+using Remex.Core.Guards;
 using Remex.Core.Models;
 using Remex.Core.Services.Network;
+using Remex.Core.Validation;
 
 namespace Remex.Client.ViewModels;
 
-public partial class RemoteViewModel : ObservableObject
+public partial class RemoteViewModel : ObservableValidator, IDisposable
 {
     private readonly ShellViewModel _shell;
     private readonly IWakeOnLanService _wolService;
@@ -18,12 +22,19 @@ public partial class RemoteViewModel : ObservableObject
     public ConnectionViewModel Connection { get; }
 
     [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [ValidMacAddress]
     private string _wolMacAddress = string.Empty;
 
     [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [ValidIpAddress]
     private string _wolBroadcastIp = "255.255.255.255";
 
     [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [ValidPort]
+    [Range(1, 65535, ErrorMessage = "Port must be between 1 and 65535")]
     private int _wolPort = 9;
 
     [ObservableProperty]
@@ -35,17 +46,17 @@ public partial class RemoteViewModel : ObservableObject
         IWakeOnLanService wolService,
         DashboardLayoutService layoutService)
     {
-        Connection = connection;
-        _shell = shell;
-        _wolService = wolService;
-        _layoutService = layoutService;
+        Connection = Guard.NotNull(connection);
+        _shell = Guard.NotNull(shell);
+        _wolService = Guard.NotNull(wolService);
+        _layoutService = Guard.NotNull(layoutService);
 
         _ = LoadWolConfigAsync();
     }
 
     private async Task LoadWolConfigAsync()
     {
-        _profile = await _layoutService.LoadAsync().ConfigureAwait(false);
+        _profile = await _layoutService.LoadAsync();
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             WolMacAddress = _profile.WolMacAddress;
@@ -71,9 +82,21 @@ public partial class RemoteViewModel : ObservableObject
         _layoutService.RequestSave(updated);
     }
 
-        [RelayCommand]
+    [RelayCommand]
     private async Task SendWolAsync()
     {
+        // Validate inputs before sending WOL packet
+        ValidateAllProperties();
+        if (HasErrors)
+        {
+            var macErrors = GetErrors(nameof(WolMacAddress)).Cast<ValidationResult>().Select(e => e.ErrorMessage).FirstOrDefault();
+            var ipErrors = GetErrors(nameof(WolBroadcastIp)).Cast<ValidationResult>().Select(e => e.ErrorMessage).FirstOrDefault();
+            var portErrors = GetErrors(nameof(WolPort)).Cast<ValidationResult>().Select(e => e.ErrorMessage).FirstOrDefault();
+
+            WolStatusText = macErrors ?? ipErrors ?? portErrors ?? "Invalid WOL settings";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(WolMacAddress))
         {
             WolStatusText = LocalizationService.Instance["Wol_EnterMac"];
@@ -174,4 +197,10 @@ public partial class RemoteViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
+
+    public void Dispose()
+    {
+        // No resources to dispose currently, but implementing IDisposable for consistency
+        // in the ViewModel disposal hierarchy
+    }
 }

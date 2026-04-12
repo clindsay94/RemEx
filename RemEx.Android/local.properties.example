@@ -1,0 +1,14 @@
+# Android SDK Configuration
+# Copy this file to local.properties and update the path
+
+# Linux example:
+# sdk.dir=/home/youruser/Android/Sdk
+
+# Windows example:
+# sdk.dir=C:\\Android\\Sdk
+
+# macOS example:
+# sdk.dir=/Users/youruser/Library/Android/sdk
+
+# IMPORTANT: local.properties is gitignored
+# Each developer must create this file manually

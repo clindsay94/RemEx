@@ -69,7 +69,7 @@ public static class RemexJson
     {
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
         JsonSerializer.Serialize(writer, value, typeInfo);
-        await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+        await writer.FlushAsync(cancellationToken);
     }
 
     public static T? Deserialize<T>(string json, JsonTypeInfo<T> typeInfo)

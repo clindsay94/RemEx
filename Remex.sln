@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Core.Tests", "Remex.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Host.Tests", "Remex.Host.Tests\Remex.Host.Tests.csproj", "{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Client.Tests", "Remex.Client.Tests\Remex.Client.Tests.csproj", "{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,18 @@ Global
 		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x64.Build.0 = Release|Any CPU
 		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x86.ActiveCfg = Release|Any CPU
 		{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}.Release|x86.Build.0 = Release|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Debug|x64.Build.0 = Debug|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Debug|x86.Build.0 = Debug|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Release|x64.ActiveCfg = Release|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Release|x64.Build.0 = Release|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Release|x86.ActiveCfg = Release|Any CPU
+		{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

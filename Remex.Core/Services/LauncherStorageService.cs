@@ -50,7 +50,7 @@ public class LauncherStorageService : ILauncherStorageService
         try
         {
             using var stream = File.OpenRead(_configFilePath);
-            var entries = await RemexJson.DeserializeAsync(stream, RemexJson.TypeInfo<List<AppEntry>>()).ConfigureAwait(false);
+            var entries = await RemexJson.DeserializeAsync(stream, RemexJson.TypeInfo<List<AppEntry>>());
             return entries ?? new List<AppEntry>();
         }
         catch (Exception)
@@ -70,7 +70,7 @@ public class LauncherStorageService : ILauncherStorageService
         {
             var entryList = entries as List<AppEntry> ?? new List<AppEntry>(entries);
             using var stream = File.Create(_configFilePath);
-            await RemexJson.SerializeIndentedAsync(stream, entryList, RemexJson.TypeInfo<List<AppEntry>>()).ConfigureAwait(false);
+            await RemexJson.SerializeIndentedAsync(stream, entryList, RemexJson.TypeInfo<List<AppEntry>>());
         }
         catch (Exception)
         {

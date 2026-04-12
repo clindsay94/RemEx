@@ -90,16 +90,14 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
 
         if (OperatingSystem.IsLinux())
         {
+            // On Linux, check for interactive session with display server
+            if (!isInteractiveSession)
+                return false;
+
             // Require a display server (X11 or Wayland) to be available
             var hasDisplay = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
             var hasWayland = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
-            if (!hasDisplay && !hasWayland)
-                return false;
-
-            // Check for at least one capture tool and one input tool
-            var hasCaptool = HasExecutable("scrot") || HasExecutable("grim") || HasExecutable("ffmpeg") || HasExecutable("gnome-screenshot");
-            var hasInputTool = HasExecutable("xdotool") || HasExecutable("ydotool");
-            return hasCaptool && hasInputTool;
+            return hasDisplay || hasWayland;
         }
 
         return true;

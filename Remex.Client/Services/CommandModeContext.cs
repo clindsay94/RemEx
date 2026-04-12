@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -36,9 +37,14 @@ public static class CommandModeContext
             // If we get an unauthorized access exception, the Mutex exists but we can't acquire it (likely created by service)
             IsServerMode = false;
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            Console.WriteLine($"Error checking Mutex: {ex.Message}");
+            Console.WriteLine($"I/O error checking Mutex: {ex.Message}");
+            IsServerMode = false; // default to client mode to be safe
+        }
+        catch (PlatformNotSupportedException ex)
+        {
+            Console.WriteLine($"Platform does not support Mutex: {ex.Message}");
             IsServerMode = false; // default to client mode to be safe
         }
 

@@ -13,11 +13,11 @@ namespace Remex.Host.Handlers;
 /// Background streams telemetry data while the connection is established.
 /// </summary>
 public sealed class PingPongHandler(
-    ILogger<PingPongHandler> logger, 
-    TelemetryBackgroundService telemetryBackgroundService, 
-    Remex.Core.Services.Command.ISystemCommandService commandService, 
-    Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService, 
-    Remex.Core.Services.ILauncherStorageService launcherStorage, 
+    ILogger<PingPongHandler> logger,
+    TelemetryBackgroundService telemetryBackgroundService,
+    Remex.Core.Services.Command.ISystemCommandService commandService,
+    Remex.Core.Services.Network.IWakeOnLanService wakeOnLanService,
+    Remex.Core.Services.ILauncherStorageService launcherStorage,
     Remex.Core.Services.IAppLauncherService appLauncherService,
     Remex.Core.Services.IDashboardProfileStorageService profileStorage,
     Remex.Core.Services.IProcessMonitorService processMonitorService,
@@ -37,9 +37,13 @@ public sealed class PingPongHandler(
             };
             await MessageSerializer.SendAsync(webSocket, hostInfo, ct);
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
         {
-            logger.LogWarning(ex, "Failed to send host capability metadata on connect.");
+            logger.LogWarning(ex, "Failed to send host capability metadata on connect (WebSocket error).");
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "Failed to send host capability metadata on connect (invalid state).");
         }
 
         // Sync launchers on connect
@@ -49,9 +53,17 @@ public sealed class PingPongHandler(
             var syncMsg = new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = entries };
             await MessageSerializer.SendAsync(webSocket, syncMsg, ct);
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            logger.LogWarning(ex, "Failed to sync launchers on connect.");
+            logger.LogWarning(ex, "Failed to sync launchers on connect (I/O error).");
+        }
+        catch (WebSocketException ex)
+        {
+            logger.LogWarning(ex, "Failed to sync launchers on connect (WebSocket error).");
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            logger.LogWarning(ex, "Failed to sync launchers on connect (JSON error).");
         }
 
         // Sync layout on connect
@@ -61,9 +73,17 @@ public sealed class PingPongHandler(
             var syncMsg = new RemexMessage { Type = MessageTypes.LayoutSync, DashboardProfile = profile };
             await MessageSerializer.SendAsync(webSocket, syncMsg, ct);
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            logger.LogWarning(ex, "Failed to sync layout on connect.");
+            logger.LogWarning(ex, "Failed to sync layout on connect (I/O error).");
+        }
+        catch (WebSocketException ex)
+        {
+            logger.LogWarning(ex, "Failed to sync layout on connect (WebSocket error).");
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            logger.LogWarning(ex, "Failed to sync layout on connect (JSON error).");
         }
 
         // Start background telemetry stream
@@ -293,7 +313,7 @@ public sealed class PingPongHandler(
                 }
 
                 // Assuming 1-second ticks as defined in instructions/impl generally
-                await Task.Delay(1000, ct); 
+                await Task.Delay(1000, ct);
             }
         }
         catch (OperationCanceledException) { }

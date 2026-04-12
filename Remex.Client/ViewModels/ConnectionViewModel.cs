@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,16 +12,21 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using QRCoder;
 using Remex.Client.Services;
 using Remex.Core;
+using Remex.Core.Exceptions;
+using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.Network;
+using Remex.Core.Validation;
 
 namespace Remex.Client.ViewModels;
 
-public partial class ConnectionViewModel : ObservableObject, IDisposable
+public partial class ConnectionViewModel : ObservableValidator, IDisposable
 {
     private const int MaxLatencyPoints = 30;
     private const int MaxReconnectDelaySeconds = 30;
@@ -36,6 +42,9 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     private bool _isConnected;
 
     [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Required(ErrorMessage = "Host address is required")]
+    [ValidWebSocketUri]
     private string _hostAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
     [ObservableProperty]
@@ -67,15 +76,18 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
 
     private readonly IMdnsDiscoveryService? _discoveryService;
     private readonly Remex.Client.Services.DashboardLayoutService? _layoutService;
+    private readonly ILogger<ConnectionViewModel> _logger;
 
-    public ConnectionViewModel() : this(null, null) { }
+    public ConnectionViewModel() : this(null, null, null) { }
 
     public ConnectionViewModel(
         IMdnsDiscoveryService? discoveryService,
-        Remex.Client.Services.DashboardLayoutService? layoutService)
+        Remex.Client.Services.DashboardLayoutService? layoutService,
+        ILogger<ConnectionViewModel>? logger = null)
     {
         _discoveryService = discoveryService;
         _layoutService = layoutService;
+        _logger = logger ?? NullLogger<ConnectionViewModel>.Instance;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
 
@@ -287,10 +299,17 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
         {
             return (false, LocalizationService.Instance["Status_CommandTimedOut"]);
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
         {
-            return (false, ex.Message);
+            _logger.LogWarning(ex, "WebSocket error sending command {Action}", action);
+            return (false, $"Network error: {ex.Message}");
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid operation sending command {Action}", action);
+            return (false, $"Invalid operation: {ex.Message}");
+        }
+        // Let unexpected exceptions propagate
         finally
         {
             _pendingCommandResponse = null;
@@ -302,6 +321,18 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
     {
+        // Validate inputs before attempting connection
+        ValidateAllProperties();
+        if (HasErrors)
+        {
+            var errors = GetErrors(nameof(HostAddress))
+                .Cast<ValidationResult>()
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault();
+            StatusText = errors ?? "Invalid connection settings";
+            return;
+        }
+
         _userDisconnected = false;
         IsConnecting = true;
         HostCapabilities = null;
@@ -331,16 +362,30 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
         }
         catch (OperationCanceledException)
         {
-            StatusText = linkedCts.Token.IsCancellationRequested && !timeoutCts.Token.IsCancellationRequested 
-                ? LocalizationService.Instance["Status_ConnectionCancelled"] 
+            StatusText = linkedCts.Token.IsCancellationRequested && !timeoutCts.Token.IsCancellationRequested
+                ? LocalizationService.Instance["Status_ConnectionCancelled"]
                 : LocalizationService.Instance["Status_ConnectionTimedOut"];
             Cleanup();
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
         {
+            _logger.LogWarning(ex, "WebSocket connection failed to {HostAddress}", HostAddress);
+            StatusText = string.Format(LocalizationService.Instance["Status_ErrorFormat"], "Connection failed");
+            Cleanup();
+        }
+        catch (UriFormatException ex)
+        {
+            _logger.LogError(ex, "Invalid WebSocket URI: {HostAddress}", HostAddress);
+            StatusText = LocalizationService.Instance["Status_InvalidHostAddress"] ?? "Invalid host address format";
+            Cleanup();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid WebSocket state during connection");
             StatusText = string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message);
             Cleanup();
         }
+        // Let unexpected exceptions (OutOfMemoryException, etc.) propagate to app-level handler
         finally
         {
             IsConnecting = false;
@@ -363,9 +408,17 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
                     CancellationToken.None);
             }
         }
-        catch
+        catch (WebSocketException)
         {
-            // Best-effort close.
+            // Best-effort close - WebSocket already in bad state
+        }
+        catch (OperationCanceledException)
+        {
+            // Best-effort close - operation was cancelled
+        }
+        catch (ObjectDisposedException)
+        {
+            // Best-effort close - WebSocket already disposed
         }
 
         Cleanup();
@@ -388,8 +441,14 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
             await MessageSerializer.SendAsync(_webSocket, ping);
             StatusText = LocalizationService.Instance["Status_PingSent"];
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
         {
+            _logger.LogWarning(ex, "Failed to send ping message");
+            StatusText = string.Format(LocalizationService.Instance["Status_SendErrorFormat"], "Network error");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid operation sending ping");
             StatusText = string.Format(LocalizationService.Instance["Status_SendErrorFormat"], ex.Message);
         }
     }
@@ -407,8 +466,14 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
             };
             await MessageSerializer.SendAsync(_webSocket, msg);
         }
-        catch (Exception ex)
+        catch (WebSocketException ex)
         {
+            _logger.LogWarning(ex, "Failed to send layout update to host");
+            Debug.WriteLine($"Failed to send layout update: {ex.Message}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid operation sending layout update");
             Debug.WriteLine($"Failed to send layout update: {ex.Message}");
         }
     }
@@ -444,8 +509,8 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
                             StatusText = LocalizationService.Instance["Status_Pong"];
                         });
                         break;
-                        
-                                        case MessageTypes.Telemetry when message.Telemetry is not null:
+
+                    case MessageTypes.Telemetry when message.Telemetry is not null:
                         Dispatcher.UIThread.Post(() =>
                         {
                             Telemetry = message.Telemetry;
@@ -481,19 +546,31 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Expected on disconnect.
+            // Expected on disconnect
+            _logger.LogDebug("Receive loop cancelled during shutdown");
         }
-        catch (WebSocketException)
+        catch (WebSocketException ex)
         {
-            // Connection lost.
+            // Connection lost
+            _logger.LogWarning(ex, "WebSocket connection lost in receive loop");
         }
-        catch (Exception ex)
+        catch (JsonException ex)
         {
+            _logger.LogError(ex, "Failed to deserialize message from host");
             Dispatcher.UIThread.Post(() =>
             {
-                StatusText = string.Format(LocalizationService.Instance["Status_ReceiveErrorFormat"], ex.Message);
+                StatusText = "Error: Invalid message format from host";
             });
         }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "I/O error in receive loop");
+            Dispatcher.UIThread.Post(() =>
+            {
+                StatusText = string.Format(LocalizationService.Instance["Status_ReceiveErrorFormat"], "Connection error");
+            });
+        }
+        // Let unexpected exceptions propagate to app-level handler
 
         // If we exited the loop because the server closed, update UI state.
         if (IsConnected)
@@ -542,7 +619,7 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
 
                 try
                 {
-                Dispatcher.UIThread.Post(() => StatusText = LocalizationService.Instance["Status_Connecting"]);
+                    Dispatcher.UIThread.Post(() => StatusText = LocalizationService.Instance["Status_Connecting"]);
                     var ws = new ClientWebSocket();
                     ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 
@@ -647,8 +724,21 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
             oldBitmap?.Dispose();
             ShowQrCode = true;
         }
-        catch (Exception ex)
+        catch (JsonException ex)
         {
+            _logger.LogError(ex, "Failed to serialize QR code payload");
+            StatusText = "Error: Invalid QR code data";
+            ShowQrCode = false;
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError(ex, "Invalid argument generating QR code");
+            StatusText = string.Format(LocalizationService.Instance["Status_QrCodeFailed"], "Invalid data");
+            ShowQrCode = false;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to generate QR code image");
             Debug.WriteLine($"Failed to generate QR code: {ex}");
             StatusText = string.Format(LocalizationService.Instance["Status_QrCodeFailed"], ex.Message);
             ShowQrCode = false;

@@ -38,7 +38,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         _themeService = themeService;
 
         // Use SpecialFolder.Personal on Android for better persistence (survives uninstall/backup)
-        var baseFolder = OperatingSystem.IsAndroid() 
+        var baseFolder = OperatingSystem.IsAndroid()
             ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
             : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
@@ -51,7 +51,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <inheritdoc />
     public async Task<DashboardProfile> LoadAsync()
     {
-        await _gate.WaitAsync().ConfigureAwait(false);
+        await _gate.WaitAsync();
         try
         {
             DashboardProfile profile;
@@ -61,7 +61,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             }
             else
             {
-                var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
+                var json = await File.ReadAllTextAsync(_filePath);
                 profile = JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions)
                         ?? new DashboardProfile();
             }
@@ -128,17 +128,17 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         _debounceTimer?.Dispose();
         _debounceTimer = null;
 
-        await SaveInternalAsync(profile).ConfigureAwait(false);
+        await SaveInternalAsync(profile);
     }
 
     private async Task SaveInternalAsync(DashboardProfile profile)
     {
-        await _gate.WaitAsync().ConfigureAwait(false);
+        await _gate.WaitAsync();
         try
         {
             var json = JsonSerializer.Serialize(profile, JsonOptions);
-            await File.WriteAllTextAsync(_filePath, json).ConfigureAwait(false);
-            
+            await File.WriteAllTextAsync(_filePath, json);
+
             if (OperatingSystem.IsAndroid())
             {
                 System.Diagnostics.Debug.WriteLine($"[RemexPersistence] Saved profile to: {_filePath}");

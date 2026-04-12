@@ -55,7 +55,7 @@ public class MdnsDiscoveryService : IMdnsDiscoveryService
         {
             mdns.Start();
             discovery.QueryServiceInstances("_remex._tcp");
-            await Task.Delay(timeout, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(timeout, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

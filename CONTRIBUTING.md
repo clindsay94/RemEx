@@ -6,6 +6,7 @@ Thanks for your interest in contributing! This document covers how to set up the
 
 ## Prerequisites
 - [Android Studio](https://developer.android.com/studio/) or a standalone JDK 17+ and Android SDK with `ANDROID_HOME` set
+  - **New to Android development?** See our comprehensive [Android Setup Guide](docs/ANDROID_SETUP.md) for step-by-step instructions
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - An IDE that supports .NET — Visual Studio 2022+, Rider, or VS Code with the C# Dev Kit
 
@@ -114,6 +115,15 @@ These tasks:
 - **Navigation** — `AppNavigation.kt` with `NavHost`; routes defined in `NavRoutes.kt`. Bottom `NavigationBar` visible on all main screens; hidden during splash/connection.
 - **Personalization** — `SettingsManager` (DataStore) persists theme seed color, font family, and card-shape preset. `PersonalizationViewModel` exposes `StateFlow`s consumed by `RemExTheme` and card Composables.
 - **Widgets** — Each widget provider reads from `WidgetSettingsManager` (DataStore) and is configured via `WidgetConfigActivity`.
+
+### Coding Guidelines
+
+#### Async/Await
+This codebase follows specific async/await conventions for Avalonia and ASP.NET Core. See [docs/ASYNC_GUIDELINES.md](docs/ASYNC_GUIDELINES.md) for details. Key points:
+- **Never use `ConfigureAwait(false)`** — not needed in Avalonia or ASP.NET Core
+- Use `await` directly on all async operations
+- Name async methods with the `Async` suffix
+- Avoid `.Result` or `.Wait()` (causes deadlocks)
 
 ### Versioning
 

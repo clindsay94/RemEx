@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace Remex.Client.ViewModels;
 /// ViewModel for the Home "NOC-style" landing page.
 /// Shows connection status, pinned sensor summaries, and navigation buttons.
 /// </summary>
-public partial class HomeViewModel : ObservableObject
+public partial class HomeViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
 
@@ -39,7 +40,7 @@ public partial class HomeViewModel : ObservableObject
         var pinnedIds = _shell.LayoutService.CurrentProfile?.PinnedSensorIds ?? new List<string>();
 
         PinnedSensors.Clear();
-        
+
         // Strategy: find a SensorViewModel for every ID in the pinned list.
         // We look in placed cards first, then in staged (discovered) templates.
         foreach (var id in pinnedIds)
@@ -85,4 +86,10 @@ public partial class HomeViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateToTaskManager() => _shell.NavigateToTaskManager();
+
+    public void Dispose()
+    {
+        // No resources to dispose currently, but implementing IDisposable for consistency
+        // in the ViewModel disposal hierarchy
+    }
 }

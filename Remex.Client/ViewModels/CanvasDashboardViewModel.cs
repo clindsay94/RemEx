@@ -124,7 +124,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     {
         if (_isInitialized) return;
 
-        var localProfile = await _layoutService.LoadAsync().ConfigureAwait(false);
+        var localProfile = await _layoutService.LoadAsync();
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -161,7 +161,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             // But for now, let's just ensure we stay in sync.
 
             RefreshSensorActivationItems();
-            
+
             // Final refresh of home pinned sensors after local load.
             if (_shell.CurrentView is HomeViewModel home)
                 home.RefreshPinnedSensors();
@@ -207,8 +207,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 CardType = "Connection",
                 CardTitle = "Connection",
                 Connection = Connection,
-                PositionX = 20, PositionY = 20,
-                Width = 240, Height = 180,
+                PositionX = 20,
+                PositionY = 20,
+                Width = 240,
+                Height = 180,
                 ZIndex = _nextZIndex++,
             });
         }
@@ -220,8 +222,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 CardType = "Actions",
                 CardTitle = "Actions",
                 Connection = Connection,
-                PositionX = 280, PositionY = 20,
-                Width = 240, Height = 180,
+                PositionX = 280,
+                PositionY = 20,
+                Width = 240,
+                Height = 180,
                 ZIndex = _nextZIndex++,
             });
         }
@@ -233,8 +237,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 CardType = "Latency",
                 CardTitle = "Latency",
                 Connection = Connection,
-                PositionX = 540, PositionY = 20,
-                Width = 360, Height = 220,
+                PositionX = 540,
+                PositionY = 20,
+                Width = 360,
+                Height = 220,
                 ZIndex = _nextZIndex++,
             });
         }
@@ -359,7 +365,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Toggles a sensor card's pinned state on the Home overview.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanTogglePinToHome))]
     private void TogglePinToHome(CanvasCardViewModel card)
     {
         if (card.CardType != "Sensor" || card.Sensor is null) return;
@@ -384,6 +390,14 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         // Refresh home pinned sensors immediately.
         if (_shell.CurrentView is HomeViewModel home)
             home.RefreshPinnedSensors();
+    }
+
+    private bool CanTogglePinToHome(CanvasCardViewModel? card)
+    {
+        return card is not null &&
+               card.CardType == "Sensor" &&
+               card.Sensor is not null &&
+               !string.IsNullOrWhiteSpace(card.Sensor.Name);
     }
 
     // ═══════════════ Navigation ═══════════════
@@ -444,7 +458,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         else
         {
             // Offline — reload from local storage.
-            var profile = await _layoutService.LoadAsync().ConfigureAwait(false);
+            var profile = await _layoutService.LoadAsync();
             await Dispatcher.UIThread.InvokeAsync(() => ApplyProfile(profile));
             LayoutStatus = "Loaded from local storage";
         }
@@ -713,7 +727,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         }
 
         foreach (var c in Cards) TrackZIndex(c.ZIndex);
-        
+
         // Also update local storage so they stay in sync even when offline next time
         _layoutService.RequestSave(profile);
 
