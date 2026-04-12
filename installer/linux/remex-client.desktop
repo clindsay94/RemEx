@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RemEx
+GenericName=Remote Desktop Client
+Comment=Remote desktop and system monitoring
+Exec=REMEX_INSTALL_DIR/Remex.Client.Desktop
+Icon=remex
+Categories=Network;RemoteAccess;
+Keywords=remote;desktop;monitor;telemetry;
+StartupNotify=true
+StartupWMClass=Remex.Client.Desktop
