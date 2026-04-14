@@ -90,6 +90,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     continue
                 }
 
+                // 2^20 * 5000ms ≈ 87 minutes, which already exceeds maxDelayMs (5 min),
+                // so coerceAtMost(20) safely avoids Int overflow on the shift.
                 val backoffMs = minOf(baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)), maxDelayMs)
                 Log.i("RemexManager", "Heartbeat auto-connect to $host (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)")
                 connect()

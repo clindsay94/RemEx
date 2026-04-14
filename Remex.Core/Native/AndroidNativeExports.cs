@@ -204,6 +204,8 @@ public static class AndroidNativeExports
 
         // Fire-and-forget: WOL is a UDP broadcast with no acknowledgement.
         // Blocking the JNI thread for I/O is not safe — dispatch to the thread pool.
+        // Persistent failures are surfaced to the user via the Android toast/status mechanism
+        // that observes RemexNativeClient.Current.ConnectionStateChanged.
         _ = Task.Run(async () =>
         {
             try
@@ -328,6 +330,8 @@ public static class AndroidNativeExports
 
         // Dispatch to the thread pool to avoid blocking the JNI calling thread
         // with a synchronous WebSocket round-trip.
+        // Command responses and errors are delivered back to Kotlin via the
+        // RegisterCallbackNative callbacks (onConnectionStateChanged, onDesktopError, etc.).
         _ = Task.Run(async () =>
         {
             try
