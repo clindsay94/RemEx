@@ -25,6 +25,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -115,6 +116,12 @@ fun AppNavigation() {
             && currentRoute != Screen.Personalization.route
             && currentRoute != Screen.Faq.route
             && currentRoute != Screen.Connection.route
+
+    LaunchedEffect(currentRoute, showMouseFab) {
+        if (!showMouseFab) {
+            showMouseOverlay = false
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
