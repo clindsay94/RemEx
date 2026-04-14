@@ -148,7 +148,7 @@ fun TaskManagerScreen(
                     visible = true,
                     enter = fadeIn() + expandVertically()
                 ) {
-                    val maxRam = processes.maxOfOrNull { it.ram } ?: 1.0
+                    val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item {
                             ProcessHeader()
