@@ -226,8 +226,8 @@ fun FloatingMouseIsland(
         value = textValue,
         onValueChange = {
             if (it.text.length > textValue.text.length) {
-                val newChar = it.text.last().toString()
-                viewModel.sendText(newChar)
+                val addedText = it.text.substring(textValue.text.length)
+                viewModel.sendText(addedText)
             }
             textValue = it
         },
