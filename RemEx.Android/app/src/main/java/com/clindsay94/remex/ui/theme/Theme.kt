@@ -54,7 +54,7 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Pink40
 )
 
-val Shapes = Shapes(
+val remexShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),
@@ -318,7 +318,7 @@ fun RemExTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typographyForFontFamily(fontFamilyKey),
-        shapes = Shapes,
+        shapes = remexShapes,
         motionScheme = MotionScheme.expressive(),
         content = content
     )

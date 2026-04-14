@@ -61,19 +61,40 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         
         settingsManager = SettingsManager(context)
         
-        // Start Global Connection Heartbeat
+        // Start Global Connection Heartbeat with exponential backoff.
+        // Interval = min(BASE_DELAY_MS * 2^failures, MAX_DELAY_MS).
+        // The failure counter resets to 0 whenever the device is connected.
         managerScope.launch(Dispatchers.IO) {
+            var consecutiveFailures = 0
+            val baseDelayMs = 5_000L
+            val maxDelayMs = 300_000L // 5 minutes
+
             while (true) {
-                if (!isConnected.value && !isConnecting.value) {
-                    val settings = settingsManager ?: continue
-                    val host = settings.hostFlow.first()
-                    // Auto-connect if a valid host is configured
-                    if (host.isNotBlank()) {
-                        Log.i("RemexManager", "Heartbeat triggering auto-connect to $host")
-                        connect()
-                    }
+                if (isConnected.value) {
+                    // Connected — reset backoff and poll at base rate
+                    consecutiveFailures = 0
+                    delay(baseDelayMs)
+                    continue
                 }
-                delay(5000)
+
+                if (isConnecting.value) {
+                    delay(baseDelayMs)
+                    continue
+                }
+
+                val settings = settingsManager ?: run { delay(baseDelayMs); continue }
+                val host = settings.hostFlow.first()
+
+                if (host.isBlank()) {
+                    delay(baseDelayMs)
+                    continue
+                }
+
+                val backoffMs = minOf(baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)), maxDelayMs)
+                Log.i("RemexManager", "Heartbeat auto-connect to $host (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)")
+                connect()
+                consecutiveFailures++
+                delay(backoffMs)
             }
         }
     }
