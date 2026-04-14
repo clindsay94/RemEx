@@ -78,12 +78,20 @@ fun SplashScreen(onFinished: () -> Unit) {
     val brandMainStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Black, fontSize = 40.sp, letterSpacing = 4.sp)
     val brandCompleteStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Light, fontSize = 22.sp, letterSpacing = 1.sp)
     val taglineStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Light, fontSize = 13.sp, fontStyle = FontStyle.Italic, letterSpacing = 0.5.sp)
+    val splashTaglineResId = remember(context) {
+        context.resources.getIdentifier("splash_tagline", "string", context.packageName)
+    }
+    val taglineText = if (splashTaglineResId != 0) {
+        stringResource(splashTaglineResId)
+    } else {
+        "— Command Your PC"
+    }
 
     val remMeasured = remember(textMeasurer) { textMeasurer.measure("REM", brandMainStyle) }
     val exMeasured = remember(textMeasurer) { textMeasurer.measure("EX", brandMainStyle) }
     val oteMeasured = remember(textMeasurer) { textMeasurer.measure("(ote)", brandCompleteStyle) }
     val ecuMeasured = remember(textMeasurer) { textMeasurer.measure("(ecution)", brandCompleteStyle) }
-    val tagMeasured = remember(textMeasurer) { textMeasurer.measure("— Command Your PC", taglineStyle) }
+    val tagMeasured = remember(textMeasurer, taglineText) { textMeasurer.measure(taglineText, taglineStyle) }
 
     var isSkipping by remember { mutableStateOf(false) }
     val skipAlpha = remember { Animatable(1f) }
