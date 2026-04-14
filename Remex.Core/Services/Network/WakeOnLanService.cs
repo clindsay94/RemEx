@@ -50,7 +50,7 @@ public class WakeOnLanService : IWakeOnLanService
                          (ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet || 
                           ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211));
 
-        var tasks = new List<Task>();
+        var tasks = new List<Task<bool>>();
 
         foreach (var ni in interfaces)
         {
@@ -73,21 +73,24 @@ public class WakeOnLanService : IWakeOnLanService
         }
         else
         {
-            await Task.WhenAll(tasks);
+            var results = await Task.WhenAll(tasks);
+            if (!results.Any(r => r))
+                throw new InvalidOperationException("Failed to send magic packet: all network interfaces failed.");
         }
     }
 
-    private static async Task SendToEndpointAsync(IPAddress localAddress, IPEndPoint broadcastEndpoint, byte[] magicPacket)
+    private static async Task<bool> SendToEndpointAsync(IPAddress localAddress, IPEndPoint broadcastEndpoint, byte[] magicPacket)
     {
         try
         {
             using var udpClient = new UdpClient(new IPEndPoint(localAddress, 0));
             udpClient.EnableBroadcast = true;
             await udpClient.SendAsync(magicPacket, magicPacket.Length, broadcastEndpoint);
+            return true;
         }
         catch (Exception)
         {
-            // Ignore failures on individual interfaces
+            return false;
         }
     }
 }
