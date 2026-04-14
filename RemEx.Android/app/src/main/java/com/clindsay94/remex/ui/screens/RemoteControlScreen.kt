@@ -161,13 +161,15 @@ fun RemoteControlScreen(
                 }
             }
 
+            val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 CommandCategory.entries.forEach { category ->
-                    val categoryCards = remoteCommandCards.filter { it.category == category }
+                    val categoryCards = cardsByCategory[category].orEmpty()
                     item(span = { GridItemSpan(maxCurrentLineSpan) }) {
                         CommandCategoryHeader(label = stringResource(category.labelRes))
                     }
