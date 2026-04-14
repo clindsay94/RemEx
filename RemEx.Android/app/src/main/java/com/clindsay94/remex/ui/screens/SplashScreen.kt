@@ -20,7 +20,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.R
@@ -64,8 +68,22 @@ fun SplashScreen(onFinished: () -> Unit) {
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.secondary
     val background = MaterialTheme.colorScheme.background
+    val onBackground = MaterialTheme.colorScheme.onBackground
     val substrateColor = Color(0xFF050508)
     val neonColor = primary.copy(alpha = 1f) // Theme-aware: uses Material primary color
+
+    val textMeasurer = rememberTextMeasurer()
+
+    // Pre-measured text layouts for tagline reveal
+    val brandMainStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Black, fontSize = 40.sp, letterSpacing = 4.sp)
+    val brandCompleteStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Light, fontSize = 22.sp, letterSpacing = 1.sp)
+    val taglineStyle = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Light, fontSize = 13.sp, fontStyle = FontStyle.Italic, letterSpacing = 0.5.sp)
+
+    val remMeasured = remember(textMeasurer) { textMeasurer.measure("REM", brandMainStyle) }
+    val exMeasured = remember(textMeasurer) { textMeasurer.measure("EX", brandMainStyle) }
+    val oteMeasured = remember(textMeasurer) { textMeasurer.measure("(ote)", brandCompleteStyle) }
+    val ecuMeasured = remember(textMeasurer) { textMeasurer.measure("(ecution)", brandCompleteStyle) }
+    val tagMeasured = remember(textMeasurer) { textMeasurer.measure("— Command Your PC", taglineStyle) }
 
     var isSkipping by remember { mutableStateOf(false) }
     val skipAlpha = remember { Animatable(1f) }
@@ -402,11 +420,29 @@ fun SplashScreen(onFinished: () -> Unit) {
                 )
             }
 
+            // Tagline layout constants (computed each frame but cheap)
+            val textGap = 16.dp.toPx()
+            val totalBrandWidth = remMeasured.size.width + textGap + exMeasured.size.width
+            val remX = center.x - totalBrandWidth / 2f
+            val exX = remX + remMeasured.size.width + textGap
+            val brandY = logoRectY + logoSize + 16.dp.toPx()
+            val completionY = brandY + remMeasured.size.height + 2.dp.toPx()
+            val tagY = completionY + oteMeasured.size.height + 8.dp.toPx()
+            val tagX = center.x - tagMeasured.size.width / 2f
+
             // Zone 1: Below scanY -> Substrate (nothing drawn)
             // Zone 2: Between waveY and scanY -> Wireframe
             if (scanY > logoRectY && waveY < logoRectY + logoSize) {
                 clipRect(top = waveY, bottom = scanY) {
                     drawWireframe()
+                }
+            }
+
+            // Zone 2 text: "REM" and "EX" revealed by scanline (neon wireframe color)
+            if (scanY > brandY) {
+                clipRect(top = maxOf(waveY, brandY - 4.dp.toPx()), bottom = scanY) {
+                    drawText(remMeasured, color = neonColor, topLeft = Offset(remX, brandY))
+                    drawText(exMeasured, color = neonColor, topLeft = Offset(exX, brandY))
                 }
             }
 
@@ -442,6 +478,27 @@ fun SplashScreen(onFinished: () -> Unit) {
                         path.quadraticTo(ctrlX, ctrlY, phoneCenter.x, phoneCenter.y)
                         drawContext.canvas.drawPath(path, tracePaint)
                     }
+                }
+            }
+
+            // Zone 3 text: solid brand text + completion + tagline (revealed by wave)
+            if (waveY > brandY) {
+                clipRect(top = 0f, bottom = waveY) {
+                    // "REM" and "EX" redrawn in solid primary color
+                    drawText(remMeasured, color = primary, topLeft = Offset(remX, brandY))
+                    drawText(exMeasured, color = primary, topLeft = Offset(exX, brandY))
+                }
+            }
+            if (waveY > completionY) {
+                clipRect(top = 0f, bottom = waveY) {
+                    // "(ote)" and "(ecution)" complete the words
+                    drawText(oteMeasured, color = onBackground.copy(alpha = 0.75f), topLeft = Offset(remX, completionY))
+                    drawText(ecuMeasured, color = onBackground.copy(alpha = 0.75f), topLeft = Offset(exX, completionY))
+                }
+            }
+            if (waveY > tagY) {
+                clipRect(top = 0f, bottom = waveY) {
+                    drawText(tagMeasured, color = onBackground.copy(alpha = 0.5f), topLeft = Offset(tagX, tagY))
                 }
             }
 

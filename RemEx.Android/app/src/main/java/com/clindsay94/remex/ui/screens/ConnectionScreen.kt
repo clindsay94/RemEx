@@ -19,7 +19,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -36,6 +38,7 @@ fun ConnectionScreen(
     viewModel: ConnectionViewModel = viewModel(),
     onNavigateToQrScanner: () -> Unit = {}
 ) {
+    val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val connectionPrefs by viewModel.connectionPreferences.collectAsState()
     val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsState()
@@ -204,7 +207,10 @@ fun ConnectionScreen(
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = { viewModel.clearError() }) {
+                            IconButton(onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.clearError()
+                            }) {
                                 Icon(
                                     Icons.Default.Close,
                                     contentDescription = stringResource(R.string.button_dismiss),
@@ -247,6 +253,7 @@ fun ConnectionScreen(
                         )
                         Button(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (!hasNearbyWifiPermission()) {
                                     pendingDiscover = true
                                     discoverPermissionLauncher.launch(
@@ -278,7 +285,10 @@ fun ConnectionScreen(
                         }
 
                         OutlinedButton(
-                            onClick = onNavigateToQrScanner,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onNavigateToQrScanner()
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -550,6 +560,7 @@ fun ConnectionScreen(
 
                 Button(
                     onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (connectPermissions.isNotEmpty() && !hasAllConnectPermissions()) {
                             pendingConnect = true
                             connectPermissionLauncher.launch(connectPermissions)

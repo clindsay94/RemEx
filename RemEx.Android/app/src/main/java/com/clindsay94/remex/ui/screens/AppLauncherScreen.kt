@@ -37,7 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +68,7 @@ fun AppLauncherScreen(
         )
     }
 ) {
+    val haptic = LocalHapticFeedback.current
     val apps by viewModel.apps.collectAsState()
     val shapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
@@ -76,7 +79,10 @@ fun AppLauncherScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.screen_app_launcher_title), fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.refreshApps() }, enabled = isConnected) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.refreshApps()
+                    }, enabled = isConnected) {
                         Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                     }
                 }
@@ -112,7 +118,10 @@ fun AppLauncherScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Button(
-                        onClick = { viewModel.refreshApps() },
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.refreshApps()
+                        },
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(stringResource(R.string.button_fetch_from_host))
@@ -131,7 +140,10 @@ fun AppLauncherScreen(
                     AppGridItem(
                         app = app,
                         shape = cardShape(shapePreset, cornerRadius),
-                        onClick = { viewModel.launchApp(app) }
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.launchApp(app)
+                        }
                     )
                 }
             }

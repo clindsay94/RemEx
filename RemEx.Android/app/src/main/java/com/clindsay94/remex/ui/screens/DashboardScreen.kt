@@ -107,6 +107,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(),
     onNavigateToConnection: () -> Unit = {}
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val isConnected by viewModel.isConnected.collectAsState()
     val isConnecting by viewModel.isConnecting.collectAsState()
     val telemetrySensors by viewModel.telemetrySensors.collectAsState()
@@ -190,11 +191,17 @@ fun DashboardScreen(
                 actions = {
                     // Zoom reset — only shown when user has pinched away from 1×
                     if (canvasScale != 1f) {
-                        IconButton(onClick = { canvasScale = 1f }) {
+                        IconButton(onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            canvasScale = 1f
+                        }) {
                             Icon(Icons.Default.FilterCenterFocus, contentDescription = stringResource(R.string.cd_reset_zoom))
                         }
                     }
-                    IconButton(onClick = { showCardDrawer = !showCardDrawer }) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        showCardDrawer = !showCardDrawer
+                    }) {
                         Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_customize_cards))
                     }
                 }
@@ -407,6 +414,7 @@ fun DashboardScreen(
                                         ) {
                                             detectDragGestures(
                                                 onDragStart = { startOffset ->
+                                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                                     draggingCardId = availableCard.id
                                                     draggingPointerPx = Offset(
                                                         x = itemTopLeftPx.x + startOffset.x,
@@ -452,6 +460,7 @@ fun DashboardScreen(
                                             )
                                         },
                                     onClick = {
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                         val checked = !enabledCards.contains(availableCard.id)
                                         viewModel.setCardEnabled(availableCard.id, checked)
                                     }

@@ -1,13 +1,15 @@
 package com.clindsay94.remex.ui.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -51,7 +54,9 @@ import com.clindsay94.remex.ui.screens.SettingsScreen
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
+import com.clindsay94.remex.ui.screens.FloatingMouseIsland
 import com.clindsay94.remex.ui.screens.QrScannerScreen
+import com.clindsay94.remex.ui.screens.RemoteControlViewModel
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
@@ -97,6 +102,19 @@ fun AppNavigation() {
             && currentRoute != Screen.RemoteDesktop.route
             && currentRoute != Screen.QrScanner.route
     var showOverflowMenu by remember { mutableStateOf(false) }
+    var showMouseOverlay by remember { mutableStateOf(false) }
+
+    val mouseViewModel: RemoteControlViewModel = viewModel()
+    val mouseShapePreset by mouseViewModel.remoteMouseCardShapePreset.collectAsState()
+    val mouseCornerRadius by mouseViewModel.cardCornerRadius.collectAsState()
+
+    // Hide mouse overlay when navigating away from main nav screens
+    val showMouseFab = showNav
+            && currentRoute != Screen.RemoteMouse.route
+            && currentRoute != Screen.Settings.route
+            && currentRoute != Screen.Personalization.route
+            && currentRoute != Screen.Faq.route
+            && currentRoute != Screen.Connection.route
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -186,21 +204,22 @@ fun AppNavigation() {
             }
         },
         floatingActionButton = {
-            if (showNav && currentRoute == Screen.Dashboard.route) {
+            if (showMouseFab) {
                 FloatingActionButton(
-                    onClick = { navController.navigate(Screen.Personalization.route) },
+                    onClick = { showMouseOverlay = !showMouseOverlay },
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                 ) {
-                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_settings_fab))
+                    Icon(Icons.Default.Mouse, contentDescription = stringResource(R.string.screen_remote_mouse_title))
                 }
             }
         }
     ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(if (showNav) innerPadding else PaddingValues(0.dp))) {
         NavHost(
             navController = navController,
             startDestination = Screen.Splash.route,
-            modifier = Modifier.padding(if (showNav) innerPadding else PaddingValues(0.dp))
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.Splash.route) {
                 SplashScreen(
@@ -281,5 +300,31 @@ fun AppNavigation() {
                 FaqScreen()
             }
         }
+
+        if (showMouseOverlay) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { showMouseOverlay = false },
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                FloatingMouseIsland(
+                    viewModel = mouseViewModel,
+                    shapePreset = mouseShapePreset,
+                    cornerRadius = mouseCornerRadius,
+                    onDismiss = { showMouseOverlay = false },
+                    modifier = Modifier
+                        .padding(bottom = 80.dp, end = 16.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { /* consume click so tapping island doesn't dismiss */ }
+                )
+            }
+        }
+        } // end outer Box
     }
 }
