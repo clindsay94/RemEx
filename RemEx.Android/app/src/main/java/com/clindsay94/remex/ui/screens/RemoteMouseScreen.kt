@@ -266,7 +266,7 @@ fun FloatingMouseIsland(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Dismiss",
+                        contentDescription = stringResource(android.R.string.cancel),
                         modifier = Modifier.size(18.dp)
                     )
                 }
