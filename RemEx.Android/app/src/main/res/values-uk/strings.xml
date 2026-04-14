@@ -105,6 +105,9 @@
     <string name="rc_hibernate">Гібернація</string>
     <string name="rc_monitor_off">Вимкнути монітор</string>
     <string name="rc_logoff">Вийти з системи</string>
+    <string name="rc_category_session">Сесія</string>
+    <string name="rc_category_power">Живлення</string>
+    <string name="rc_category_energy">Енергія</string>
 
     <string name="screen_remote_desktop_title">Віддалений робочий стіл</string>
     <string name="cd_show_keyboard">Показати клавіатуру</string>

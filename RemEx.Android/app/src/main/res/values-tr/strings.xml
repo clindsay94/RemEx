@@ -105,6 +105,9 @@
     <string name="rc_hibernate">Hazırda Beklet</string>
     <string name="rc_monitor_off">Monitörü Kapat</string>
     <string name="rc_logoff">Oturumu Kapat</string>
+    <string name="rc_category_session">Oturum</string>
+    <string name="rc_category_power">Güç</string>
+    <string name="rc_category_energy">Enerji</string>
 
     <string name="screen_remote_desktop_title">Uzak Masaüstü</string>
     <string name="cd_show_keyboard">Klavyeyi Göster</string>

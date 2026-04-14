@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -40,6 +41,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +57,7 @@ fun TaskManagerScreen(
     onNavigateToConnection: () -> Unit = {},
     viewModel: TaskManagerViewModel = viewModel()
 ) {
+    val haptic = LocalHapticFeedback.current
     val processes by viewModel.processes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortField by viewModel.sortField.collectAsState()
@@ -67,7 +71,10 @@ fun TaskManagerScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.screen_task_manager_title), fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.refreshProcesses() }) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.refreshProcesses()
+                    }) {
                         Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                     }
                 }
@@ -102,15 +109,19 @@ fun TaskManagerScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SortChip(stringResource(R.string.sort_name), sortField == ProcessSortField.NAME, sortDescending) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.updateSortField(ProcessSortField.NAME)
                 }
                 SortChip(stringResource(R.string.sort_cpu), sortField == ProcessSortField.CPU, sortDescending) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.updateSortField(ProcessSortField.CPU)
                 }
                 SortChip(stringResource(R.string.sort_ram), sortField == ProcessSortField.RAM, sortDescending) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.updateSortField(ProcessSortField.RAM)
                 }
                 SortChip(stringResource(R.string.sort_pid), sortField == ProcessSortField.PID, sortDescending) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.updateSortField(ProcessSortField.PID)
                 }
             }
@@ -137,12 +148,13 @@ fun TaskManagerScreen(
                     visible = true,
                     enter = fadeIn() + expandVertically()
                 ) {
+                    val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item {
                             ProcessHeader()
                         }
                         items(processes, key = { it.id }) { process ->
-                            ProcessItem(process = process, onKill = { viewModel.killProcess(process.id) })
+                            ProcessItem(process = process, maxRam = maxRam, onKill = { viewModel.killProcess(process.id) })
                         }
                     }
                 }
@@ -182,7 +194,8 @@ private fun ProcessHeader() {
 }
 
 @Composable
-private fun ProcessItem(process: ProcessInfo, onKill: () -> Unit) {
+private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
     var showConfirm by remember { mutableStateOf(false) }
 
     if (showConfirm) {
@@ -191,7 +204,11 @@ private fun ProcessItem(process: ProcessInfo, onKill: () -> Unit) {
             title = { Text(stringResource(R.string.task_manager_kill_title)) },
             text = { Text(stringResource(R.string.task_manager_kill_message, process.name, process.id)) },
             confirmButton = {
-                TextButton(onClick = { onKill(); showConfirm = false }) {
+                TextButton(onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onKill()
+                    showConfirm = false
+                }) {
                     Text(stringResource(R.string.button_kill), color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -223,10 +240,29 @@ private fun ProcessItem(process: ProcessInfo, onKill: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Text(text = "${process.cpu.toInt()}%", modifier = Modifier.width(60.dp), style = MaterialTheme.typography.bodyMedium)
-        Text(text = "${process.ram.toInt()}MB", modifier = Modifier.width(80.dp), style = MaterialTheme.typography.bodyMedium)
+        Column(modifier = Modifier.width(60.dp)) {
+            Text(text = "${process.cpu.toInt()}%", style = MaterialTheme.typography.bodyMedium)
+            LinearProgressIndicator(
+                progress = { (process.cpu / 100.0).toFloat().coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth().height(2.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        }
+        Column(modifier = Modifier.width(80.dp)) {
+            Text(text = "${process.ram.toInt()}MB", style = MaterialTheme.typography.bodyMedium)
+            LinearProgressIndicator(
+                progress = { (process.ram / maxRam).toFloat().coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth().height(2.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        }
 
-        IconButton(onClick = { showConfirm = true }, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            showConfirm = true
+        }, modifier = Modifier.size(32.dp)) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = stringResource(R.string.cd_kill_process),

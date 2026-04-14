@@ -25,6 +25,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +43,7 @@ fun NotConnectedBanner(
     onNavigateToConnection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     AnimatedVisibility(
         visible = !isConnected,
         enter = expandVertically(),
@@ -75,7 +78,10 @@ fun NotConnectedBanner(
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(
-                    onClick = onNavigateToConnection,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onNavigateToConnection()
+                    },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -97,6 +103,7 @@ fun DisconnectedFullScreen(
     onNavigateToConnection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -126,7 +133,10 @@ fun DisconnectedFullScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onNavigateToConnection) {
+        Button(onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onNavigateToConnection()
+        }) {
             Text(stringResource(R.string.button_setup_connection))
         }
     }

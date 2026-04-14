@@ -21,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,10 +65,12 @@ fun SettingsScreen(
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary
             ) {
+                val haptic = LocalHapticFeedback.current
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = pagerState.currentPage == index,
                         onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         },
                         text = { Text(title) }
@@ -90,6 +94,7 @@ fun SettingsScreen(
 
 @Composable
 private fun HelpTab(onReplayTutorial: (() -> Unit)?) {
+    val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
@@ -112,6 +117,7 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?) {
         if (onReplayTutorial != null) {
             OutlinedButton(
                 onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     scope.launch {
                         // Reset onboarding flag so the tutorial shows
                         settingsManager.resetOnboarding()

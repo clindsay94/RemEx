@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Bedtime
@@ -44,6 +46,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,26 +55,33 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 
+private enum class CommandCategory(@param:StringRes val labelRes: Int) {
+    SESSION(R.string.rc_category_session),
+    POWER(R.string.rc_category_power),
+    ENERGY(R.string.rc_category_energy)
+}
+
 private data class RemoteCommandCard(
     val id: String,
     @param:StringRes val titleRes: Int,
     val action: String,
     val icon: ImageVector,
-    val requiresConfirmation: Boolean
+    val requiresConfirmation: Boolean,
+    val category: CommandCategory
 )
 
 private val remoteCommandCards = listOf(
-    RemoteCommandCard("wake", R.string.rc_wake_pc, "WakeOnLan", Icons.Default.Sensors, false),
-    RemoteCommandCard("lock", R.string.rc_lock_pc, "Lock", Icons.Default.Lock, false),
-    RemoteCommandCard("shutdown", R.string.rc_shutdown, "Shutdown", Icons.Default.PowerSettingsNew, true),
-    RemoteCommandCard("restart", R.string.rc_restart, "Restart", Icons.Default.RestartAlt, true),
-    RemoteCommandCard("uefi", R.string.rc_reboot_uefi, "RestartToUefi", Icons.Default.Refresh, true),
-    RemoteCommandCard("force_shutdown", R.string.rc_force_shutdown, "ForceShutdown", Icons.Default.PowerOff, true),
-    RemoteCommandCard("force_restart", R.string.rc_force_restart, "ForceRestart", Icons.Default.Sensors, true),
-    RemoteCommandCard("sleep", R.string.rc_sleep, "Sleep", Icons.Default.Bedtime, false),
-    RemoteCommandCard("hibernate", R.string.rc_hibernate, "Hibernate", Icons.Default.Bedtime, false),
-    RemoteCommandCard("monitor_off", R.string.rc_monitor_off, "MonitorOff", Icons.Default.Monitor, false),
-    RemoteCommandCard("logoff", R.string.rc_logoff, "SignOut", Icons.AutoMirrored.Filled.Logout, false)
+    RemoteCommandCard("wake", R.string.rc_wake_pc, "WakeOnLan", Icons.Default.Sensors, false, CommandCategory.SESSION),
+    RemoteCommandCard("lock", R.string.rc_lock_pc, "Lock", Icons.Default.Lock, false, CommandCategory.SESSION),
+    RemoteCommandCard("logoff", R.string.rc_logoff, "SignOut", Icons.AutoMirrored.Filled.Logout, false, CommandCategory.SESSION),
+    RemoteCommandCard("shutdown", R.string.rc_shutdown, "Shutdown", Icons.Default.PowerSettingsNew, true, CommandCategory.POWER),
+    RemoteCommandCard("force_shutdown", R.string.rc_force_shutdown, "ForceShutdown", Icons.Default.PowerOff, true, CommandCategory.POWER),
+    RemoteCommandCard("restart", R.string.rc_restart, "Restart", Icons.Default.RestartAlt, true, CommandCategory.POWER),
+    RemoteCommandCard("force_restart", R.string.rc_force_restart, "ForceRestart", Icons.Default.Sensors, true, CommandCategory.POWER),
+    RemoteCommandCard("uefi", R.string.rc_reboot_uefi, "RestartToUefi", Icons.Default.Refresh, true, CommandCategory.POWER),
+    RemoteCommandCard("sleep", R.string.rc_sleep, "Sleep", Icons.Default.Bedtime, false, CommandCategory.ENERGY),
+    RemoteCommandCard("hibernate", R.string.rc_hibernate, "Hibernate", Icons.Default.Bedtime, false, CommandCategory.ENERGY),
+    RemoteCommandCard("monitor_off", R.string.rc_monitor_off, "MonitorOff", Icons.Default.Monitor, false, CommandCategory.ENERGY)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -150,41 +161,65 @@ fun RemoteControlScreen(
                 }
             }
 
+            val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(remoteCommandCards) { card ->
-                    CommandCard(
-                        card = card,
-                        isAwaitingConfirmation = activeConfirmationId == card.id,
-                        timerText = timerInputs[card.id].orEmpty(),
-                        shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius),
-                        onTimerTextChanged = { timerInputs[card.id] = it },
-                        onPrimaryClick = {
-                            if (card.action == "WakeOnLan") {
-                                viewModel.wakePc()
-                            } else if (card.requiresConfirmation) {
-                                activeConfirmationId = if (activeConfirmationId == card.id) null else card.id
-                            } else {
-                                viewModel.sendSystemCommand(card.action)
+                CommandCategory.entries.forEach { category ->
+                    val categoryCards = cardsByCategory[category].orEmpty()
+                    item(span = { GridItemSpan(maxCurrentLineSpan) }) {
+                        CommandCategoryHeader(label = stringResource(category.labelRes))
+                    }
+                    items(categoryCards) { card ->
+                        CommandCard(
+                            card = card,
+                            isAwaitingConfirmation = activeConfirmationId == card.id,
+                            timerText = timerInputs[card.id].orEmpty(),
+                            shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius),
+                            onTimerTextChanged = { timerInputs[card.id] = it },
+                            onPrimaryClick = {
+                                if (card.action == "WakeOnLan") {
+                                    viewModel.wakePc()
+                                } else if (card.requiresConfirmation) {
+                                    activeConfirmationId = if (activeConfirmationId == card.id) null else card.id
+                                } else {
+                                    viewModel.sendSystemCommand(card.action)
+                                }
+                            },
+                            onConfirm = {
+                                val delay = timerInputs[card.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
+                                viewModel.sendSystemCommand(card.action, delay)
+                                activeConfirmationId = null
+                            },
+                            onCancel = {
+                                activeConfirmationId = null
+                                timerInputs[card.id] = ""
                             }
-                        },
-                        onConfirm = {
-                            val delay = timerInputs[card.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
-                            viewModel.sendSystemCommand(card.action, delay)
-                            activeConfirmationId = null
-                        },
-                        onCancel = {
-                            activeConfirmationId = null
-                            timerInputs[card.id] = ""
-                        }
-                    )
+                        )
+                    }
                 }
             }
             } // end inner Column
         }
+    }
+}
+
+@Composable
+private fun CommandCategoryHeader(label: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 4.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
     }
 }
 
@@ -199,6 +234,7 @@ private fun CommandCard(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val localizedTitle = stringResource(card.titleRes)
 
     Card(
@@ -239,15 +275,24 @@ private fun CommandCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(onClick = onConfirm, modifier = Modifier.weight(1f)) {
+                    Button(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onConfirm()
+                    }, modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.button_confirm))
                     }
-                    TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                    TextButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCancel()
+                    }, modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.button_cancel))
                     }
                 }
             } else {
-                Button(onClick = onPrimaryClick, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onPrimaryClick()
+                }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (card.requiresConfirmation) stringResource(R.string.button_select) else stringResource(R.string.button_run))
                 }
             }
