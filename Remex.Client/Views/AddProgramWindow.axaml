@@ -11,7 +11,7 @@
         Title="{local:Localize AddProgram_Title}"
         Width="400" Height="450"
         WindowStartupLocation="CenterOwner"
-        Background="#1A1A24"
+        Background="{DynamicResource GlassBaseDarkBrush}"
         ExtendClientAreaToDecorationsHint="True">
 
     <Window.Resources>
@@ -20,20 +20,20 @@
 
     <Grid RowDefinitions="Auto, *, Auto" Margin="24">
 
-        <TextBlock Grid.Row="0" Text="{local:Localize AddProgram_Header}" FontSize="18" FontWeight="Bold" Foreground="#E0E0FF" Margin="0,0,0,24" />
+        <TextBlock Grid.Row="0" Text="{local:Localize AddProgram_Header}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,24" />
 
         <StackPanel Grid.Row="1" Spacing="16">
 
-            <TextBlock Text="{local:Localize AddProgram_ExePath}" Foreground="#A0A0FF" FontWeight="SemiBold" FontSize="12" />
+            <TextBlock Text="{local:Localize AddProgram_ExePath}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
                 <TextBox Grid.Column="0" Text="{Binding TargetPath}" Watermark="{local:Localize AddProgram_WatermarkPath}" Margin="0,0,8,0" />
                 <Button Grid.Column="1" Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="glass-button" />
             </Grid>
 
-            <TextBlock Text="{local:Localize AddProgram_DisplayName}" Foreground="#A0A0FF" FontWeight="SemiBold" FontSize="12" />
+            <TextBlock Text="{local:Localize AddProgram_DisplayName}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <TextBox Text="{Binding DisplayName}" Watermark="{local:Localize AddProgram_WatermarkName}" />
 
-            <TextBlock Text="{local:Localize AddProgram_AccentColor}" Foreground="#A0A0FF" FontWeight="SemiBold" FontSize="12" />
+            <TextBlock Text="{local:Localize AddProgram_AccentColor}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
                 <TextBox Grid.Column="0" Text="{Binding HexColor}" Watermark="{local:Localize AddProgram_WatermarkColor}" Margin="0,0,8,0" />
                 <Border Grid.Column="1" Width="32" Height="32" CornerRadius="4">
@@ -43,7 +43,7 @@
                 </Border>
             </Grid>
 
-            <TextBlock Text="{local:Localize AddProgram_IconPreview}" Foreground="#A0A0FF" FontWeight="SemiBold" FontSize="12" />
+            <TextBlock Text="{local:Localize AddProgram_IconPreview}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Border Width="64" Height="64" Classes="glass-card" HorizontalAlignment="Left">
                 <Image Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}"
                        Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -53,7 +53,7 @@
 
         <Grid Grid.Row="2" ColumnDefinitions="*, *" Margin="0,24,0,0">
             <Button Grid.Column="0" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}" HorizontalAlignment="Stretch" Margin="0,0,8,0" Classes="glass-button" />
-            <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="glass-button" Background="#4A3AFF" Foreground="White" />
+            <Button Grid.Column="1" Content="{local:Localize Btn_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" Margin="8,0,0,0" Classes="glass-button" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" />
         </Grid>
     </Grid>
 </Window>

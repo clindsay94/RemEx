@@ -174,9 +174,10 @@ fun AppNavigation() {
                 NavigationBar {
                     navItems.forEach { screen ->
                         val isSelected = currentRoute == screen.route
+                        val screenTitle = stringResource(screen.titleRes)
                         NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title, style = MaterialTheme.typography.labelSmall) },
+                            icon = { Icon(screen.icon, contentDescription = screenTitle) },
+                            label = { Text(screenTitle, style = MaterialTheme.typography.labelSmall) },
                             selected = isSelected,
                             alwaysShowLabel = false,
                             onClick = { navigateTo(screen.route) }
@@ -192,7 +193,7 @@ fun AppNavigation() {
                             ) {
                                 secondaryNavItems.forEach { screen ->
                                     DropdownMenuItem(
-                                        text = { Text(screen.title) },
+                                        text = { Text(stringResource(screen.titleRes)) },
                                         leadingIcon = { Icon(screen.icon, contentDescription = null) },
                                         onClick = {
                                             showOverflowMenu = false
@@ -201,7 +202,7 @@ fun AppNavigation() {
                                     )
                                 }
                                 DropdownMenuItem(
-                                    text = { Text(Screen.Personalization.title) },
+                                    text = { Text(stringResource(Screen.Personalization.titleRes)) },
                                     leadingIcon = { Icon(Screen.Personalization.icon, contentDescription = null) },
                                     onClick = {
                                         showOverflowMenu = false

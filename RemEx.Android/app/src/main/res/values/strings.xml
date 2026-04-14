@@ -194,6 +194,9 @@
 
     <!-- ═══ Connection Screen ═══ -->
     <string name="screen_connection_title">Connection</string>
+    <string name="screen_splash_title">Loading</string>
+    <string name="screen_tutorial_title">Tutorial</string>
+    <string name="screen_qr_scanner_title">Scan QR Code</string>
     <string name="connection_host_settings">Host Settings</string>
     <string name="cd_dismiss_error">Dismiss</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
