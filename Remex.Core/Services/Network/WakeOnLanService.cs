@@ -75,7 +75,8 @@ public class WakeOnLanService : IWakeOnLanService
         {
             var results = await Task.WhenAll(tasks);
             if (!results.Any(r => r))
-                throw new InvalidOperationException("Failed to send magic packet: all network interfaces failed.");
+                throw new InvalidOperationException(
+                    $"Failed to send magic packet to MAC '{macAddress}' via broadcast endpoint {broadcastIp}:{port}: all network interfaces failed.");
         }
     }
 
