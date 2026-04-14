@@ -1,8 +1,13 @@
 package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,8 +28,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -77,11 +85,20 @@ fun NotConnectedBanner(
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.weight(1f)
                 )
+                val bannerInteractionSource = remember { MutableInteractionSource() }
+                val isBannerPressed by bannerInteractionSource.collectIsPressedAsState()
+                val bannerScale by animateFloatAsState(
+                    targetValue = if (isBannerPressed) 0.92f else 1f,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "bannerButtonScale"
+                )
                 TextButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onNavigateToConnection()
                     },
+                    interactionSource = bannerInteractionSource,
+                    modifier = Modifier.graphicsLayer(scaleX = bannerScale, scaleY = bannerScale),
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -133,10 +150,22 @@ fun DisconnectedFullScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onNavigateToConnection()
-        }) {
+        val ctaInteractionSource = remember { MutableInteractionSource() }
+        val isCtaPressed by ctaInteractionSource.collectIsPressedAsState()
+        val ctaScale by animateFloatAsState(
+            targetValue = if (isCtaPressed) 0.95f else 1f,
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            label = "ctaButtonScale"
+        )
+        Button(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onNavigateToConnection()
+            },
+            interactionSource = ctaInteractionSource,
+            modifier = Modifier.graphicsLayer(scaleX = ctaScale, scaleY = ctaScale),
+            shape = ButtonDefaults.shape
+        ) {
             Text(stringResource(R.string.button_setup_connection))
         }
     }

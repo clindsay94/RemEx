@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -77,7 +78,7 @@ private val remoteCommandCards = listOf(
     RemoteCommandCard("shutdown", R.string.rc_shutdown, "Shutdown", Icons.Default.PowerSettingsNew, true, CommandCategory.POWER),
     RemoteCommandCard("force_shutdown", R.string.rc_force_shutdown, "ForceShutdown", Icons.Default.PowerOff, true, CommandCategory.POWER),
     RemoteCommandCard("restart", R.string.rc_restart, "Restart", Icons.Default.RestartAlt, true, CommandCategory.POWER),
-    RemoteCommandCard("force_restart", R.string.rc_force_restart, "ForceRestart", Icons.Default.Sensors, true, CommandCategory.POWER),
+    RemoteCommandCard("force_restart", R.string.rc_force_restart, "ForceRestart", Icons.Default.Warning, true, CommandCategory.POWER),
     RemoteCommandCard("uefi", R.string.rc_reboot_uefi, "RestartToUefi", Icons.Default.Refresh, true, CommandCategory.POWER),
     RemoteCommandCard("sleep", R.string.rc_sleep, "Sleep", Icons.Default.Bedtime, false, CommandCategory.ENERGY),
     RemoteCommandCard("hibernate", R.string.rc_hibernate, "Hibernate", Icons.Default.Bedtime, false, CommandCategory.ENERGY),
