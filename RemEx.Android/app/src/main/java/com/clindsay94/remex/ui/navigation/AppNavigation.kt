@@ -200,10 +200,18 @@ fun AppNavigation() {
                                         }
                                     )
                                 }
+                                DropdownMenuItem(
+                                    text = { Text(Screen.Personalization.title) },
+                                    leadingIcon = { Icon(Screen.Personalization.icon, contentDescription = null) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        navigateTo(Screen.Personalization.route)
+                                    }
+                                )
                             }
                         },
                         label = { Text(stringResource(R.string.nav_more_label), style = MaterialTheme.typography.labelSmall) },
-                        selected = secondaryNavItems.any { it.route == currentRoute },
+                        selected = secondaryNavItems.any { it.route == currentRoute } || currentRoute == Screen.Personalization.route,
                         alwaysShowLabel = false,
                         onClick = { showOverflowMenu = !showOverflowMenu }
                     )
