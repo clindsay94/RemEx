@@ -71,21 +71,21 @@
                                 </Button>
 
                                 <!-- Action Toolbar (Bottom Area) -->
-                                <Border Grid.Row="1" Background="#33000000" Padding="4,2">
+                                <Border Grid.Row="1" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
                                     <Grid ColumnDefinitions="*, *, *">
-                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="#999" 
+                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" 
                                                 Padding="0" FontSize="16" HorizontalAlignment="Stretch"
                                                 ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}"
                                                 Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveUpCommand}" 
                                                 CommandParameter="{Binding}" />
                                         
-                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="#999" 
+                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" 
                                                 Padding="0" FontSize="16" HorizontalAlignment="Stretch"
                                                 ToolTip.Tip="{local:Localize AppLauncher_MoveRight}"
                                                 Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveDownCommand}" 
                                                 CommandParameter="{Binding}" />
                                         
-                                        <Button Grid.Column="2" Content="✕" Background="Transparent" Foreground="#EE5555" 
+                                        <Button Grid.Column="2" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" 
                                                 Padding="0" FontSize="16" HorizontalAlignment="Stretch"
                                                 ToolTip.Tip="{local:Localize AppLauncher_Remove}"
                                                 Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" 

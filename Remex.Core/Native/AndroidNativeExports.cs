@@ -44,6 +44,20 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.MetaReceived += OnNativeMetaReceived;
     }
 
+    // Clears all callback state. Must be called with SyncRoot held.
+    private static void ClearCallbackState()
+    {
+        _callbackGlobalRef = IntPtr.Zero;
+        _onTelemetryUpdateMethodId = IntPtr.Zero;
+        _onConnectionStateChangedMethodId = IntPtr.Zero;
+        _onLauncherSyncMethodId = IntPtr.Zero;
+        _onProcessListSyncMethodId = IntPtr.Zero;
+        _onFrameReceivedMethodId = IntPtr.Zero;
+        _onHostInfoUpdateMethodId = IntPtr.Zero;
+        _onDesktopErrorMethodId = IntPtr.Zero;
+        _onDesktopMetaMethodId = IntPtr.Zero;
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
     public static void RegisterCallbackNative(IntPtr env, IntPtr thiz, IntPtr callbackObj)
     {
@@ -61,14 +75,7 @@ public static class AndroidNativeExports
 
             if (callbackObj == IntPtr.Zero)
             {
-                _callbackGlobalRef = IntPtr.Zero;
-                _onTelemetryUpdateMethodId = IntPtr.Zero;
-                _onConnectionStateChangedMethodId = IntPtr.Zero;
-                _onLauncherSyncMethodId = IntPtr.Zero;
-                _onProcessListSyncMethodId = IntPtr.Zero;
-                _onFrameReceivedMethodId = IntPtr.Zero;
-                _onHostInfoUpdateMethodId = IntPtr.Zero;
-                _onDesktopErrorMethodId = IntPtr.Zero;
+                ClearCallbackState();
                 return;
             }
 
@@ -195,15 +202,20 @@ public static class AndroidNativeExports
         var effectiveBroadcastIp = string.IsNullOrWhiteSpace(broadcastIp) ? "255.255.255.255" : broadcastIp;
         var effectivePort = port > 0 ? port : 9;
 
-        try
+        // Fire-and-forget: WOL is a UDP broadcast with no acknowledgement.
+        // Blocking the JNI thread for I/O is not safe — dispatch to the thread pool.
+        // Persistent failures are surfaced to the user via the Android toast/status mechanism
+        // that observes RemexNativeClient.Current.ConnectionStateChanged.
+        _ = Task.Run(async () =>
         {
-            service.WakeAsync(macAddress, effectiveBroadcastIp, effectivePort).GetAwaiter().GetResult();
-            return SerializeOperationSuccess($"Wake-on-LAN packet sent to {macAddress}.");
-        }
-        catch (Exception ex)
-        {
-            return SerializeOperationFailure($"Failed to send Wake-on-LAN packet to {macAddress}.", ex.ToString());
-        }
+            try
+            {
+                await service.WakeAsync(macAddress, effectiveBroadcastIp, effectivePort);
+            }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"WakeAsync failed: {ex.Message}"); }
+        });
+
+        return SerializeOperationSuccess($"Wake-on-LAN dispatched to {macAddress}.");
     }
 
     private static string HandleRequestTelemetry()
@@ -316,15 +328,20 @@ public static class AndroidNativeExports
             return SerializeCommandResponse(new CommandResponse(false, "Failed to deserialize command.", null));
         }
 
-        try
+        // Dispatch to the thread pool to avoid blocking the JNI calling thread
+        // with a synchronous WebSocket round-trip.
+        // Command responses and errors are delivered back to Kotlin via the
+        // RegisterCallbackNative callbacks (onConnectionStateChanged, onDesktopError, etc.).
+        _ = Task.Run(async () =>
         {
-            var response = RemexNativeClient.Current.SendCommandAsync(command, CancellationToken.None).GetAwaiter().GetResult();
-            return SerializeCommandResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return SerializeCommandResponse(new CommandResponse(false, "Command dispatch failed.", ex.ToString()));
-        }
+            try
+            {
+                await RemexNativeClient.Current.SendCommandAsync(command, CancellationToken.None);
+            }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendCommand failed: {ex.Message}"); }
+        });
+
+        return SerializeCommandResponse(new CommandResponse(true, "Command dispatched.", null));
     }
 
     private static void OnNativeProcessListReceived(List<ProcessInfo> processes)

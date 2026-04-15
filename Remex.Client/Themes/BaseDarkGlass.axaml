@@ -38,6 +38,11 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
+    <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
+    <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <!-- Semi-transparent dark overlay for toolbars and floating panels -->
+    <SolidColorBrush x:Key="GlassOverlayBrush" Color="#33000000"/>
 
     <!-- Compatibility aliases for WinUI-style resource names -->
     <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>

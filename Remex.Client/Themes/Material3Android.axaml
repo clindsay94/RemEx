@@ -11,6 +11,13 @@
         <!-- Elevation Shadows (M3 Style) -->
         <BoxShadows x:Key="M3Elevation1">0 1 3 1 #1A000000, 0 1 2 0 #33000000</BoxShadows>
         <BoxShadows x:Key="M3Elevation2">0 2 6 2 #1A000000, 0 1 2 0 #33000000</BoxShadows>
+
+        <!-- Semantic brushes injected for views that reference them directly -->
+        <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+        <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
+        <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+        <!-- Semi-transparent dark overlay for toolbars and floating panels -->
+        <SolidColorBrush x:Key="GlassOverlayBrush" Color="#33000000"/>
     </Styles.Resources>
 
     <!-- ═══ Base Component Overrides ═══ -->

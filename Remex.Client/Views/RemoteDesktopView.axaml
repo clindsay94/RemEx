@@ -133,7 +133,7 @@
         </Border>
 
         <!-- ═══ VIEWPORT ═══ -->
-        <Border x:Name="ViewportBorder" Grid.Row="2" Background="#0A0A14" ClipToBounds="True"
+        <Border x:Name="ViewportBorder" Grid.Row="2" Background="{DynamicResource GlassBaseDarkBrush}" ClipToBounds="True"
                 Gestures.IsHoldingEnabled="True"
                 Holding="OnViewportHolding">
             <Panel>
@@ -143,7 +143,7 @@
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderTitle}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderHint}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding RemoteDesktopCapabilityText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" TextAlignment="Center"/>
-                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#FF6B6B" HorizontalAlignment="Center" 
+                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource SystemErrorBrush}" HorizontalAlignment="Center" 
                                Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="500"/>
                     <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8" Padding="14,10" Margin="0,8,0,0" MaxWidth="500">
                         <StackPanel Spacing="4">
@@ -197,11 +197,11 @@
 
                 <!-- Error overlay (shown during streaming when no frames arrive) -->
                 <Border IsVisible="{Binding HasStreamError}"
-                        Background="#CC0A0A14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource GlassBaseMediumBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
                         CornerRadius="12" Padding="24,16" MaxWidth="520">
                     <StackPanel Spacing="8" HorizontalAlignment="Center">
-                        <TextBlock Text="{local:Localize RemoteDesktop_StreamError}" FontSize="18" FontWeight="Bold" Foreground="#FF6B6B" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding StatusText}" FontSize="13" Foreground="#FFAAAA" 
+                        <TextBlock Text="{local:Localize RemoteDesktop_StreamError}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource SystemErrorBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding StatusText}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" 
                                    TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
                     </StackPanel>
                 </Border>
@@ -215,15 +215,15 @@
                         Opacity="0.7" CornerRadius="8" Padding="10 6"
                         FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
                         ToolTip.Tip="{local:Localize RemoteDesktop_ToggleCompactPadTip}"
-                        Background="#CC1A1A2E" Foreground="#C0C0FF"/>
+                        Background="{DynamicResource GlassBaseMediumBrush}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <Button Content="{local:Localize RemoteDesktop_TogglePen}" Command="{Binding ToggleStylusModeCommand}"
                             Opacity="0.7" CornerRadius="8" Padding="10 6"
                             FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
                             ToolTip.Tip="{local:Localize RemoteDesktop_ToggleStylusModeTip}"
-                            Background="#CC1A1A2E" Foreground="#C0C0FF"/>
+                            Background="{DynamicResource GlassBaseMediumBrush}" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <Button Content="{local:Localize RemoteDesktop_Fullscreen}" Command="{Binding ToggleFullScreenCommand}"
                             Opacity="0.7"
-                            Background="#CC1A1A2E" Foreground="#C0C0FF" CornerRadius="8"
+                            Background="{DynamicResource GlassBaseMediumBrush}" Foreground="{DynamicResource TextSecondaryBrush}" CornerRadius="8"
                             Padding="10 6" FontSize="14" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
                             ToolTip.Tip="{local:Localize RemoteDesktop_ExitFullscreenTip}"/>
                 </StackPanel>
@@ -244,7 +244,7 @@
                         IsVisible="{Binding IsViewportZoomed}"
                         HorizontalAlignment="Left" VerticalAlignment="Top"
                         Margin="8,8,0,0" Opacity="0.7"
-                        Background="#CC1A1A2E" Foreground="#C0C0FF" CornerRadius="8"
+                        Background="{DynamicResource GlassBaseMediumBrush}" Foreground="{DynamicResource TextSecondaryBrush}" CornerRadius="8"
                         Padding="12 6" FontSize="11" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
             </Panel>
         </Border>
@@ -254,13 +254,13 @@
             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="#6BFF6B" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
                 <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
                 <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"
                            IsVisible="{Binding IsViewportZoomed}"/>
                 <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4"
                         IsVisible="{Binding IsStreaming}"
-                        Background="#6BFF6B"
+                        Background="{DynamicResource SystemSuccessBrush}"
                         VerticalAlignment="Center" Margin="8,0,0,0"/>
             </Grid>
         </Border>

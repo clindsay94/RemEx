@@ -30,6 +30,11 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
+    <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
+    <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <!-- Semi-transparent overlay (light theme: use a light wash) -->
+    <SolidColorBrush x:Key="GlassOverlayBrush" Color="#1A000000"/>
 
     <!-- UI Geometry -->
     <CornerRadius x:Key="CardCornerRadius">24</CornerRadius>

@@ -141,12 +141,12 @@
   </UserControl.Styles>
 
   <!-- ===== Root layout ===== -->
-  <ScrollViewer Background="#12121E" HorizontalScrollBarVisibility="Disabled">
+  <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="24">
 
       <!-- Header -->
-      <TextBlock Text="REMEX" FontSize="24" FontWeight="Black" Foreground="#E0E0FF" Margin="8 0 0 4"/>
-      <TextBlock Text="{local:Localize Home_Subtitle}" FontSize="13" Foreground="#6666AA" Margin="8 0 0 20"/>
+      <TextBlock Text="REMEX" FontSize="24" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" Margin="8 0 0 4"/>
+      <TextBlock Text="{local:Localize Home_Subtitle}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" Margin="8 0 0 20"/>
 
       <!-- Card grid -->
       <WrapPanel Orientation="Horizontal">
@@ -194,20 +194,20 @@
             <StackPanel Orientation="Horizontal" Spacing="24" Margin="0 8 0 0">
               <StackPanel>
                 <TextBlock Classes="stat-label" Text="{local:Localize Canvas_Avg}"/>
-                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+                <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
               </StackPanel>
               <StackPanel>
                 <TextBlock Classes="stat-label" Text="{local:Localize Canvas_Max}"/>
-                <TextBlock Foreground="#FF6B6B" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+                <TextBlock Foreground="{DynamicResource SystemErrorBrush}" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
               </StackPanel>
               <StackPanel>
                 <TextBlock Classes="stat-label" Text="{local:Localize Dashboard_Samples}"/>
-                <TextBlock Foreground="#C0C0FF" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.LatencyHistory.Count}"/>
+                <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" FontWeight="SemiBold" Text="{Binding Connection.LatencyHistory.Count}"/>
               </StackPanel>
             </StackPanel>
 
             <!-- Mini bar chart -->
-            <Border Background="#0A0A16" CornerRadius="8" Margin="0 12 0 0" Padding="8" Height="80">
+            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Margin="0 12 0 0" Padding="8" Height="80">
               <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -313,7 +313,7 @@
 
             <StackPanel Margin="0 4 0 0" Orientation="Horizontal" Spacing="8">
               <TextBlock Classes="stat-label" Text="{local:Localize Dashboard_Uptime}" VerticalAlignment="Center"/>
-              <TextBlock Classes="stat-value" FontSize="14" Foreground="#8888AA" Text="{Binding Connection.Telemetry.UptimeText, FallbackValue=—}" VerticalAlignment="Center"/>
+              <TextBlock Classes="stat-value" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding Connection.Telemetry.UptimeText, FallbackValue=—}" VerticalAlignment="Center"/>
             </StackPanel>
           </StackPanel>
         </Border>

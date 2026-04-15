@@ -35,14 +35,7 @@ object RemexCoreClient {
             isLibraryLoaded = true
             Log.i(TAG, "Loaded libRemexCore.so successfully")
         } catch (e: UnsatisfiedLinkError) {
-            Log.w(TAG, "Failed to load RemexCore, trying libRemexCore", e)
-            try {
-                System.loadLibrary("libRemexCore")
-                isLibraryLoaded = true
-                Log.i(TAG, "Loaded libRemexCore.so via fallback name")
-            } catch (e2: UnsatisfiedLinkError) {
-                Log.e(TAG, "Failed to load native library by any name", e2)
-            }
+            Log.e(TAG, "Failed to load native library libRemexCore.so. Ensure the compiled .so is present in jniLibs/arm64-v8a/", e)
         }
     }
 
@@ -182,5 +175,11 @@ object RemexCoreClient {
     private external fun StopDesktopStreamNative()
 
     @JvmStatic
-    private external fun FreeMemory(pointer: Long)
+    /**
+     * Frees unmanaged memory previously allocated on the native heap and returned
+     * as a pointer. Reserved for future use if [Export] is changed to use
+     * Marshal.AllocHGlobal instead of JNI-managed jstring references.
+     */
+    @JvmStatic
+    internal external fun FreeMemory(pointer: Long)
 }
