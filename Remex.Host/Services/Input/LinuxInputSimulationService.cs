@@ -46,6 +46,31 @@ public class LinuxInputSimulationService : IInputSimulationService
         _logger.LogInformation("Linux input backend: {Backend} ({Path})", _backend, _toolPath);
     }
 
+    public (int X, int Y) GetCursorPosition()
+    {
+        // xdotool getmouselocation returns "x:123 y:456 screen:0 window:12345"
+        if (_backend == InputBackend.Xdotool)
+        {
+            try
+            {
+                var result = RunToolWithOutput("getmouselocation", "--shell");
+                // Output format: X=123\nY=456\nSCREEN=0\nWINDOW=12345
+                var lines = result.Split('\n');
+                var x = 0;
+                var y = 0;
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("X=")) int.TryParse(line.Substring(2), out x);
+                    if (line.StartsWith("Y=")) int.TryParse(line.Substring(2), out y);
+                }
+                return (x, y);
+            }
+            catch { return (0, 0); }
+        }
+        // ydotool doesn't support querying cursor position
+        return (0, 0);
+    }
+
     public void MoveMouse(int x, int y)
     {
         if (_backend == InputBackend.Ydotool)
@@ -206,6 +231,43 @@ public class LinuxInputSimulationService : IInputSimulationService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "{Backend} command failed: {Args}", _backend, string.Join(" ", arguments));
+        }
+    }
+
+    private string RunToolWithOutput(params string[] arguments)
+    {
+        if (_backend == InputBackend.None)
+            return string.Empty;
+
+        try
+        {
+            var argList = new List<string>(arguments);
+            var psi = new ProcessStartInfo(_toolPath)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            foreach (var arg in argList)
+                psi.ArgumentList.Add(arg);
+
+            // Set DISPLAY for xdotool
+            if (_backend == InputBackend.Xdotool && !string.IsNullOrEmpty(_display))
+                psi.Environment["DISPLAY"] = _display;
+
+            using var proc = Process.Start(psi);
+            if (proc is null) return string.Empty;
+
+            var output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(2000);
+            return output;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "{Backend} query command failed: {Args}", _backend, string.Join(" ", arguments));
+            return string.Empty;
         }
     }
 

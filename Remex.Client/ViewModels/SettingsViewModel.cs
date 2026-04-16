@@ -269,7 +269,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     // ═══════════════ Navigation ═══════════════
 
     [RelayCommand]
-    private void NavigateBack() => _shell.NavigateToHome();
+    private void NavigateBack()
+    {
+        // Refresh Home's pinned sensors so changes made in Settings are immediately visible.
+        if (_shell.CurrentView is HomeViewModel home)
+            home.RefreshPinnedSensors();
+
+        _shell.NavigateToHome();
+    }
 
     [RelayCommand]
     private void ReplayTutorial()

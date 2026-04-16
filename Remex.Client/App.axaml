@@ -25,8 +25,8 @@
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="{DynamicResource CardBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
-            <!-- Subtle inset shadow (using BoxShadow syntax: offsetX offsetY blur spread color) -->
-            <Setter Property="BoxShadow" Value="0 8 32 0 #40000000"/>
+            <!-- Use dynamic shadow for theme consistency -->
+            <Setter Property="BoxShadow" Value="{DynamicResource CardShadow}"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
@@ -40,7 +40,7 @@
         <Style Selector="Border.glass-card.interactive:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
             <Setter Property="RenderTransform" Value="scale(1.02)"/>
-            <Setter Property="BoxShadow" Value="0 12 48 0 #60000000, 0 0 15 2 #406C4CFF"/>
+            <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
         </Style>
 
         <!-- Glass Navigation Button -->

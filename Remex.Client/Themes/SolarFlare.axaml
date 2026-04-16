@@ -5,6 +5,17 @@
     <!-- Colors -->
     <Color x:Key="GlassBaseDark">#F8FAFC</Color>
     <Color x:Key="GlassBaseMedium">#F1F5F9</Color>
+
+    <!-- Background Gradients (Light) -->
+    <Color x:Key="BackgroundGradientStart">#FEF3C7</Color>
+    <Color x:Key="BackgroundGradientMid">#FDE68A</Color>
+    <Color x:Key="BackgroundGradientEnd">#F59E0B</Color>
+
+    <LinearGradientBrush x:Key="BackgroundGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="{StaticResource BackgroundGradientStart}" />
+        <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
+        <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
+    </LinearGradientBrush>
     <Color x:Key="AccentPrimary">#FFB800</Color>
     <Color x:Key="AccentHover">#FFC933</Color>
     <Color x:Key="AccentPressed">#CC9300</Color>
@@ -39,4 +50,6 @@
     <!-- UI Geometry -->
     <CornerRadius x:Key="CardCornerRadius">24</CornerRadius>
     <Thickness x:Key="CardBorderThickness">1</Thickness>
+    <BoxShadows x:Key="CardShadow">0 4 16 0 #1A000000</BoxShadows>
+    <BoxShadows x:Key="CardHoverShadow">0 8 32 0 #30000000, 0 0 12 2 #40FFB800</BoxShadows>
 </ResourceDictionary>

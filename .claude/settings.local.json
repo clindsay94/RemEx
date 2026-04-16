@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C \"P:/Repo/RemEx\" ls-files \"RemEx.Android/local.properties\")"
+      "Bash(git -C \"P:/Repo/RemEx\" ls-files \"RemEx.Android/local.properties\")",
+      "Read(//home/connorl/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Read(//home/connorl/.local/bin/**)",
+      "Bash(dotnet-ildasm /home/connorl/.nuget/packages/materialcolorutilities/0.3.0/lib/net6.0/MaterialColorUtilities.dll)",
+      "Bash(git diff *)"
     ]
   }
 }

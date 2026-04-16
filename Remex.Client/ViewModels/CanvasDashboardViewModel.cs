@@ -113,6 +113,13 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     private void OnStagedCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
+        if (e.NewItems != null)
+        {
+            foreach (CanvasCardViewModel card in e.NewItems)
+            {
+                card.RequestPinToggle = () => TogglePinToHome(card);
+            }
+        }
         HasStagedCards = StagedCards.Count > 0;
         RefreshSensorActivationItems();
     }
@@ -149,6 +156,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 var card = CanvasCardViewModel.FromCardState(state);
                 card.CardTitle = state.CardType;
                 card.Connection = Connection;
+                card.RequestPinToggle = () => TogglePinToHome(card);
                 Cards.Add(card);
                 TrackZIndex(card.ZIndex);
             }
@@ -202,7 +210,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     {
         if (!Cards.Any(c => c.CardType == "Connection"))
         {
-            Cards.Add(new CanvasCardViewModel
+            var card = new CanvasCardViewModel
             {
                 CardType = "Connection",
                 CardTitle = "Connection",
@@ -212,12 +220,14 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 Width = 240,
                 Height = 180,
                 ZIndex = _nextZIndex++,
-            });
+            };
+            card.RequestPinToggle = () => TogglePinToHome(card);
+            Cards.Add(card);
         }
 
         if (!Cards.Any(c => c.CardType == "Actions"))
         {
-            Cards.Add(new CanvasCardViewModel
+            var card = new CanvasCardViewModel
             {
                 CardType = "Actions",
                 CardTitle = "Actions",
@@ -227,12 +237,14 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 Width = 240,
                 Height = 180,
                 ZIndex = _nextZIndex++,
-            });
+            };
+            card.RequestPinToggle = () => TogglePinToHome(card);
+            Cards.Add(card);
         }
 
         if (!Cards.Any(c => c.CardType == "Latency"))
         {
-            Cards.Add(new CanvasCardViewModel
+            var card = new CanvasCardViewModel
             {
                 CardType = "Latency",
                 CardTitle = "Latency",
@@ -242,7 +254,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 Width = 360,
                 Height = 220,
                 ZIndex = _nextZIndex++,
-            });
+            };
+            card.RequestPinToggle = () => TogglePinToHome(card);
+            Cards.Add(card);
         }
     }
 
@@ -497,14 +511,16 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     var sensor = new SensorViewModel();
 
                     // Keep one reusable template in staging so users can add more cards.
-                    StagedCards.Add(new CanvasCardViewModel
+                    var staged = new CanvasCardViewModel
                     {
                         CardType = "Sensor",
                         CardTitle = sensorName,
                         Sensor = sensor,
                         Width = 200,
                         Height = 120,
-                    });
+                    };
+                    staged.RequestPinToggle = () => TogglePinToHome(staged);
+                    StagedCards.Add(staged);
 
                     // Restore every persisted card for this sensor.
                     foreach (var saved in _profile.Cards.Where(c => c.CardType == "Sensor" && c.SensorId == sensorName))
@@ -518,6 +534,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         restored.CardTitle = sensorName;
                         restored.Sensor = sensor;
                         restored.IsPinnedToHome = _profile.PinnedSensorIds.Contains(sensorName);
+                        restored.RequestPinToggle = () => TogglePinToHome(restored);
                         Cards.Add(restored);
                         TrackZIndex(saved.ZIndex);
                     }
@@ -537,13 +554,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     private void TriggerSave()
     {
-        var profile = _profile with
+        // Use the current profile from the layout service as the base to avoid overwriting 
+        // global flags (like HasCompletedTutorial) set by other components.
+        var baseProfile = _layoutService.CurrentProfile ?? _profile;
+
+        var profile = baseProfile with
         {
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
             HostAddress = Connection.HostAddress,
             Cards = Cards.Select(c => c.ToCardState()).ToList(),
-            PinnedSensorIds = _profile.PinnedSensorIds.ToList(),
+            // Rebuild pinned sensors from the actual card states to ensure consistency
+            PinnedSensorIds = Cards
+                .Where(c => c.CardType == "Sensor" && c.IsPinnedToHome && c.Sensor != null)
+                .Select(c => c.Sensor!.Name)
+                .Distinct()
+                .ToList(),
         };
 
         _profile = profile;
@@ -696,6 +722,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 existing.Height = state.Height;
                 existing.ZIndex = state.ZIndex;
                 existing.IsPinnedToHome = profile.PinnedSensorIds.Contains(existing.Sensor?.Name ?? state.SensorId ?? "");
+                existing.RequestPinToggle = () => TogglePinToHome(existing);
                 continue;
             }
 
@@ -704,6 +731,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 var card = CanvasCardViewModel.FromCardState(state);
                 card.CardTitle = state.CardType;
                 card.Connection = Connection;
+                card.RequestPinToggle = () => TogglePinToHome(card);
                 Cards.Add(card);
                 TrackZIndex(card.ZIndex);
                 continue;
@@ -722,6 +750,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             restored.CardTitle = state.SensorId ?? "Sensor";
             restored.Sensor = sensor;
             restored.IsPinnedToHome = profile.PinnedSensorIds.Contains(state.SensorId ?? "");
+            restored.RequestPinToggle = () => TogglePinToHome(restored);
             Cards.Add(restored);
             TrackZIndex(restored.ZIndex);
         }

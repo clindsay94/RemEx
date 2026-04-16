@@ -63,6 +63,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         public void KeyDown(int keyCode) => ReceivedEvents.Add($"keydown:{keyCode}");
         public void KeyUp(int keyCode) => ReceivedEvents.Add($"keyup:{keyCode}");
         public void TypeText(string text) => ReceivedEvents.Add($"type:{text}");
+        public (int X, int Y) GetCursorPosition() => (0, 0);
     }
 
     private class MockHostCapabilitiesProvider : IHostCapabilitiesProvider

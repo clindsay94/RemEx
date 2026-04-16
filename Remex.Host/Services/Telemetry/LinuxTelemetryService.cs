@@ -146,14 +146,21 @@ public class LinuxTelemetryService : ITelemetryService
 
                                 var friendlyLabel = MapLabel(rawLabel);
 
-                                sensors.Add(new SensorReading
+                                var tempC = Math.Round(milliCelsius / 1000.0, 1);
+
+                                // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C) 
+                                // which are common placeholder values for disconnected sensors on many Linux drivers.
+                                if (tempC is > -50 and < 112)
                                 {
-                                    Name = $"{friendlyChip} {friendlyLabel}".Trim(),
-                                    Value = Math.Round(milliCelsius / 1000.0, 1),
-                                    Unit = "°C",
-                                    Category = category.Length > 0 ? category : "Temperature",
-                                    Source = "Linux"
-                                });
+                                    sensors.Add(new SensorReading
+                                    {
+                                        Name = $"{friendlyChip} {friendlyLabel}".Trim(),
+                                        Value = tempC,
+                                        Unit = "°C",
+                                        Category = category.Length > 0 ? category : "Temperature",
+                                        Source = "Linux"
+                                    });
+                                }
                             }
                         }
                         catch { /* Skip unreadable sensor */ }

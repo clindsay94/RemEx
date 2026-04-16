@@ -52,19 +52,28 @@ public partial class MainWindow : Window
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
+                Opacity = 1.0;
             }
             else if (OperatingSystem.IsWindows() && settings.BackgroundMaterial == "Acrylic")
             {
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur };
                 Background = Brushes.Transparent;
+                Opacity = 1.0;
+            }
+            else if (settings.BackgroundMaterial == "Glass")
+            {
+                // Glass mode: request compositor-level transparency so the desktop is visible
+                // behind the window. AppWindowOpacity further controls how much shows through.
+                TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.Blur };
+                Background = Brushes.Transparent;
+                Opacity = Math.Clamp(settings.AppWindowOpacity, 0.1, 1.0);
             }
             else
             {
-                // Non-Windows platforms and any non-transparent mode: use a solid
-                // background so the window is never see-through, regardless of
-                // whether the compositor honours alpha channels on the window.
+                // Gradient, Wallpaper, Solid, and all non-transparent modes.
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
                 Background = new SolidColorBrush(Color.FromRgb(0x0A, 0x0A, 0x10));
+                Opacity = 1.0;
             }
         });
     }

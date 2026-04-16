@@ -36,7 +36,20 @@
     <!-- Semi-transparent dark overlay for toolbars and floating panels -->
     <SolidColorBrush x:Key="GlassOverlayBrush" Color="#33000000"/>
 
+    <!-- Background Gradients (Neon) -->
+    <Color x:Key="BackgroundGradientStart">#05050A</Color>
+    <Color x:Key="BackgroundGradientMid">#0A1A2E</Color>
+    <Color x:Key="BackgroundGradientEnd">#000000</Color>
+
+    <LinearGradientBrush x:Key="BackgroundGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="{StaticResource BackgroundGradientStart}" />
+        <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
+        <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
+    </LinearGradientBrush>
+    
     <!-- UI Geometry -->
     <CornerRadius x:Key="CardCornerRadius">2</CornerRadius>
     <Thickness x:Key="CardBorderThickness">1</Thickness>
+    <BoxShadows x:Key="CardShadow">0 8 32 0 #40000000</BoxShadows>
+    <BoxShadows x:Key="CardHoverShadow">0 12 48 0 #60000000, 0 0 15 2 #4000F3FF</BoxShadows>
 </ResourceDictionary>

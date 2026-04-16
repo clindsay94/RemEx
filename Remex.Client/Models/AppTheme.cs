@@ -5,5 +5,6 @@ public enum AppTheme
     BaseDarkGlass,
     CyberNOC,
     SolarFlare,
-    Monolith
+    Monolith,
+    Dynamic
 }

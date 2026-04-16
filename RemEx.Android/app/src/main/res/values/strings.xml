@@ -110,6 +110,7 @@
     <string name="screen_settings_title">Settings</string>
     <string name="settings_tab_connection">Connection</string>
     <string name="settings_tab_personalization">Personalization</string>
+    <string name="settings_tab_input">Input</string>
     <string name="settings_tab_help">Help</string>
     <string name="settings_help_title">Help &amp; About</string>
     <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
@@ -170,6 +171,8 @@
     <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
     <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
     <string name="remote_desktop_pointer_speed_label">Cursor Speed: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Tap = Click • Long Press = Right Click • 2 Fingers = Scroll • Pen = Absolute</string>
 
     <!-- ═══ Dashboard Screen ═══ -->

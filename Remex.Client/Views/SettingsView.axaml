@@ -48,7 +48,7 @@
             <!-- ═══ Service Section ═══ -->
             <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsServiceSectionVisible}">
                <StackPanel Spacing="16">
-                   <TextBlock Text="{Binding ServiceSectionHeader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                   <TextBlock Text="{Binding ServiceSectionHeader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                    <!-- Status row -->
                    <Grid ColumnDefinitions="*,Auto">
@@ -111,7 +111,7 @@
             <!-- ═══ General Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize Settings_General}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Settings_General}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel>
@@ -131,7 +131,7 @@
             <!-- ═══ Connection Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="{local:Localize Settings_Connection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Settings_Connection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                     <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                         <StackPanel Spacing="4">
@@ -140,16 +140,16 @@
                         </StackPanel>
                     </Border>
                     
-                    <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
+                    <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"
+                        <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"
                                  ToolTip.Tip="{local:Localize Settings_HostAddressTooltip}"/>
                         <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"
                                 ToolTip.Tip="{local:Localize Settings_DiscoverTooltip}"/>
                     </Grid>
 
-                    <TextBlock Text="{local:Localize Settings_AccessKey}" FontSize="13" Foreground="{DynamicResource TextSecondary}" Margin="0,8,0,0"/>
-                    <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDark}" Foreground="{DynamicResource TextPrimary}" BorderBrush="{DynamicResource CardBorder}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="{local:Localize Settings_AccessKeyWatermark}"
+                    <TextBlock Text="{local:Localize Settings_AccessKey}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/>
+                    <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="{local:Localize Settings_AccessKeyWatermark}"
                              ToolTip.Tip="{local:Localize Settings_AccessKeyTooltip}"/>
 
                     <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,8,0,0"
@@ -162,7 +162,7 @@
             <!-- ═══ Layout Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize Settings_Layout}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Settings_Layout}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
                     <!-- Snap toggle -->
                     <Grid ColumnDefinitions="*,Auto">
@@ -195,11 +195,11 @@
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{local:Localize Settings_PinnedSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Settings_PinnedSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
                         <TextBlock Text="ℹ" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" Cursor="Hand" VerticalAlignment="Center"
                                    ToolTip.Tip="{local:Localize Settings_HwInfoTooltip}"/>
                     </StackPanel>
-                    <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                    <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                     <TextBlock Text="{local:Localize Settings_OpenSensorWorkspaceHint}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" IsVisible="{Binding !AvailableSensors.Count}"/>
 
@@ -226,7 +226,7 @@
             <!-- ═══ Help Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="{local:Localize Settings_Help}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Settings_Help}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
                     <Button Content="{local:Localize Settings_ReplayTutorial}" Command="{Binding ReplayTutorialCommand}"
                             Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8"
                             CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"

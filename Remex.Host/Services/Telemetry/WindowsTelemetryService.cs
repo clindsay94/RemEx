@@ -166,11 +166,21 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
                     if (!string.IsNullOrWhiteSpace(label))
                     {
                         var value = FormatSensorValue(reading.Value, reading.szUnit, reading.tReading);
+                        var unit = NormalizeUnit(reading.szUnit, reading.Value);
+
+                        // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C) 
+                        // which are common placeholder values for disconnected sensors.
+                        if (reading.tReading == SENSOR_READING_TYPE.SENSOR_TYPE_TEMP)
+                        {
+                            if (value <= -50 || value >= 112)
+                                continue;
+                        }
+
                         sensors.Add(new SensorReading
                         {
                             Name = label,
                             Value = value,
-                            Unit = NormalizeUnit(reading.szUnit, reading.Value),
+                            Unit = unit,
                             Category = DetermineCategory(label),
                             Source = "HWInfo"
                         });

@@ -2,22 +2,32 @@ package com.clindsay94.remex.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -27,6 +37,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.launch
@@ -43,6 +54,7 @@ fun SettingsScreen(
     val tabs = listOf(
         stringResource(R.string.settings_tab_connection),
         stringResource(R.string.settings_tab_personalization),
+        stringResource(R.string.settings_tab_input),
         stringResource(R.string.settings_tab_help)
     )
     val pagerState = rememberPagerState(pageCount = { tabs.size })
@@ -85,7 +97,123 @@ fun SettingsScreen(
                 when (page) {
                     0 -> ConnectionScreen()
                     1 -> PersonalizationScreen()
-                    2 -> HelpTab(onReplayTutorial = onReplayTutorial)
+                    2 -> InputTab()
+                    3 -> HelpTab(onReplayTutorial = onReplayTutorial)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InputTab() {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
+    val scope = rememberCoroutineScope()
+    val preferences by
+            settingsManager.remoteDesktopPreferencesFlow.collectAsState(
+                    initial = SettingsManager.RemoteDesktopPreferences()
+            )
+
+    Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Text(
+                text = stringResource(R.string.settings_tab_input),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp
+        )
+
+        Card(
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor =
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+        ) {
+            Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Pointer Speed
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                            text =
+                                    String.format(
+                                            stringResource(R.string.remote_desktop_pointer_speed_label),
+                                            preferences.pointerSpeed
+                                    ),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                    )
+                    Slider(
+                            value = preferences.pointerSpeed,
+                            onValueChange = {
+                                scope.launch { settingsManager.saveRemoteDesktopPointerSpeed(it) }
+                            },
+                            valueRange = 0.25f..3.0f,
+                            steps = 10
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                // Vertical Scroll Sensitivity
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                            text =
+                                    String.format(
+                                            stringResource(
+                                                    R.string.remote_desktop_v_scroll_sensitivity_label
+                                            ),
+                                            preferences.verticalScrollSensitivity
+                                    ),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                    )
+                    Slider(
+                            value = preferences.verticalScrollSensitivity,
+                            onValueChange = {
+                                scope.launch {
+                                    settingsManager.saveRemoteDesktopScrollSensitivity(
+                                            it,
+                                            preferences.horizontalScrollSensitivity
+                                    )
+                                }
+                            },
+                            valueRange = 0.1f..5.0f,
+                            steps = 20
+                    )
+                }
+
+                // Horizontal Scroll Sensitivity
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                            text =
+                                    String.format(
+                                            stringResource(
+                                                    R.string.remote_desktop_h_scroll_sensitivity_label
+                                            ),
+                                            preferences.horizontalScrollSensitivity
+                                    ),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                    )
+                    Slider(
+                            value = preferences.horizontalScrollSensitivity,
+                            onValueChange = {
+                                scope.launch {
+                                    settingsManager.saveRemoteDesktopScrollSensitivity(
+                                            preferences.verticalScrollSensitivity,
+                                            it
+                                    )
+                                }
+                            },
+                            valueRange = 0.1f..5.0f,
+                            steps = 20
+                    )
                 }
             }
         }

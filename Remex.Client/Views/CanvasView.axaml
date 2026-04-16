@@ -17,9 +17,9 @@
         </Style>
         <!-- ═══ DraggableCard chrome ═══ -->
         <Style Selector="ctrl|DraggableCard">
-            <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="ClipToBounds" Value="False"/>
             <Setter Property="Template">
@@ -141,10 +141,10 @@
     <Grid Background="Transparent" RowDefinitions="Auto,*">
 
         <!-- ═══ Toolbar ═══ -->
-        <Border Grid.Row="0" Background="{DynamicResource GlassBaseDark}" Padding="12 8">
+        <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
                 <Button Classes="back-btn" Content="{local:Localize Canvas_Header}" IsHitTestVisible="False" Background="Transparent"/>
-                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <Button Grid.Column="3" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -198,9 +198,14 @@
                                             <MenuItem Header="Line ╱╲╱" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
                                             <MenuItem Header="Area ▓▓▓" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
                                             <MenuItem Header="Gauge ━━━" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
-                                            <Separator/>
-                                            <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).TogglePinToHomeCommand}" CommandParameter="{Binding}"/>
                                         </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding TogglePinToHomeCommand}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Text="📌" IsVisible="{Binding IsPinnedToHome}"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+
                                     </ContextMenu>
                                 </ctrl:DraggableCard.ContextMenu>
 
@@ -299,20 +304,18 @@
 
                         <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
                             <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding SensorActivationItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:SensorActivationItem">
-                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
-                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                            <Button Grid.Column="2" Classes="stage-mini-btn" Content="↑" Margin="6,0,4,0"
-                                                    Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
-                                            <Button Grid.Column="3" Classes="stage-mini-btn" Content="↓"
-                                                    Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                <ItemsControl ItemsSource="{Binding SensorActivationItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SensorActivationItem">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <Button Grid.Column="2" Classes="stage-mini-btn" Content="↑" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
+                                                <Button Grid.Column="3" Classes="stage-mini-btn" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </ScrollViewer>
                         </Border>
 

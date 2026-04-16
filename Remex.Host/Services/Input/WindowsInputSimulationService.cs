@@ -292,6 +292,13 @@ public class WindowsInputSimulationService : IInputSimulationService
         public int Y;
     }
 
+    public (int X, int Y) GetCursorPosition()
+    {
+        if (GetCursorPos(out var point))
+            return (point.X, point.Y);
+        return (0, 0);
+    }
+
     #endregion
 
     /// <summary>
@@ -443,65 +450,65 @@ public class WindowsInputSimulationService : IInputSimulationService
                 case Key.Z: return 0x5A;
 
                 // Function keys
-                case Key.F1:  return 0x70;
-                case Key.F2:  return 0x71;
-                case Key.F3:  return 0x72;
-                case Key.F4:  return 0x73;
-                case Key.F5:  return 0x74;
-                case Key.F6:  return 0x75;
-                case Key.F7:  return 0x76;
-                case Key.F8:  return 0x77;
-                case Key.F9:  return 0x78;
+                case Key.F1: return 0x70;
+                case Key.F2: return 0x71;
+                case Key.F3: return 0x72;
+                case Key.F4: return 0x73;
+                case Key.F5: return 0x74;
+                case Key.F6: return 0x75;
+                case Key.F7: return 0x76;
+                case Key.F8: return 0x77;
+                case Key.F9: return 0x78;
                 case Key.F10: return 0x79;
                 case Key.F11: return 0x7A;
                 case Key.F12: return 0x7B;
 
                 // Navigation keys
-                case Key.Left:      return 0x25;
-                case Key.Up:        return 0x26;
-                case Key.Right:     return 0x27;
-                case Key.Down:      return 0x28;
-                case Key.Home:      return 0x24;
-                case Key.End:       return 0x23;
-                case Key.PageUp:    return 0x21;
-                case Key.PageDown:  return 0x22;
-                case Key.Insert:    return 0x2D;
-                case Key.Delete:    return 0x2E;
+                case Key.Left: return 0x25;
+                case Key.Up: return 0x26;
+                case Key.Right: return 0x27;
+                case Key.Down: return 0x28;
+                case Key.Home: return 0x24;
+                case Key.End: return 0x23;
+                case Key.PageUp: return 0x21;
+                case Key.PageDown: return 0x22;
+                case Key.Insert: return 0x2D;
+                case Key.Delete: return 0x2E;
 
                 // System keys
-                case Key.Escape:    return 0x1B;
-                case Key.Tab:       return 0x09;
-                case Key.Enter:     return 0x0D;
-                case Key.Space:     return 0x20;
-                case Key.Back:      return 0x08;
+                case Key.Escape: return 0x1B;
+                case Key.Tab: return 0x09;
+                case Key.Enter: return 0x0D;
+                case Key.Space: return 0x20;
+                case Key.Back: return 0x08;
 
                 // Modifiers
-                case Key.LeftShift:   return 0xA0; // VK_LSHIFT
-                case Key.RightShift:  return 0xA1; // VK_RSHIFT
-                case Key.LeftCtrl:    return 0xA2; // VK_LCONTROL
-                case Key.RightCtrl:   return 0xA3; // VK_RCONTROL
-                case Key.LeftAlt:     return 0xA4; // VK_LMENU
-                case Key.RightAlt:    return 0xA5; // VK_RMENU
-                case Key.LWin:        return 0x5B; // VK_LWIN
-                case Key.RWin:        return 0x5C; // VK_RWIN
+                case Key.LeftShift: return 0xA0; // VK_LSHIFT
+                case Key.RightShift: return 0xA1; // VK_RSHIFT
+                case Key.LeftCtrl: return 0xA2; // VK_LCONTROL
+                case Key.RightCtrl: return 0xA3; // VK_RCONTROL
+                case Key.LeftAlt: return 0xA4; // VK_LMENU
+                case Key.RightAlt: return 0xA5; // VK_RMENU
+                case Key.LWin: return 0x5B; // VK_LWIN
+                case Key.RWin: return 0x5C; // VK_RWIN
 
                 // Numpad
-                case Key.NumPad0:    return 0x60;
-                case Key.NumPad1:    return 0x61;
-                case Key.NumPad2:    return 0x62;
-                case Key.NumPad3:    return 0x63;
-                case Key.NumPad4:    return 0x64;
-                case Key.NumPad5:    return 0x65;
-                case Key.NumPad6:    return 0x66;
-                case Key.NumPad7:    return 0x67;
-                case Key.NumPad8:    return 0x68;
-                case Key.NumPad9:    return 0x69;
-                case Key.Multiply:   return 0x6A;
-                case Key.Add:        return 0x6B;
-                case Key.Separator:  return 0x6C;
-                case Key.Subtract:   return 0x6D;
-                case Key.Decimal:    return 0x6E;
-                case Key.Divide:     return 0x6F;
+                case Key.NumPad0: return 0x60;
+                case Key.NumPad1: return 0x61;
+                case Key.NumPad2: return 0x62;
+                case Key.NumPad3: return 0x63;
+                case Key.NumPad4: return 0x64;
+                case Key.NumPad5: return 0x65;
+                case Key.NumPad6: return 0x66;
+                case Key.NumPad7: return 0x67;
+                case Key.NumPad8: return 0x68;
+                case Key.NumPad9: return 0x69;
+                case Key.Multiply: return 0x6A;
+                case Key.Add: return 0x6B;
+                case Key.Separator: return 0x6C;
+                case Key.Subtract: return 0x6D;
+                case Key.Decimal: return 0x6E;
+                case Key.Divide: return 0x6F;
             }
         }
 

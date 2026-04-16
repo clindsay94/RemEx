@@ -2,8 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:models="using:Remex.Client.Models"
-    xmlns:local="clr-namespace:Remex.Client.Converters"
-    x:Class="Remex.Client.Views.CustomizationView" x:DataType="vm:CustomizationViewModel">
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.CustomizationView" x:DataType="vm:CustomizationViewModel">
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24">
@@ -17,7 +16,22 @@
 
             <!-- ═══ Section 1: Presets ═══ -->
             <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <UniformGrid Columns="4">
+            <UniformGrid Columns="5">
+                <!-- Dynamic -->
+                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectDynamic">
+                    <StackPanel Spacing="8">
+                        <Border Height="40" CornerRadius="20" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                    <GradientStop Offset="0" Color="#6C4CFF" />
+                                    <GradientStop Offset="0.5" Color="#00F3FF" />
+                                    <GradientStop Offset="1" Color="#FF00FF" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <TextBlock Text="{local:Localize Custom_PresetDynamic}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    </StackPanel>
+                </Border>
                 <!-- Base Dark Glass -->
                 <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
                     <StackPanel Spacing="8">
@@ -52,7 +66,7 @@
             <Border Classes="glass-card" Padding="24">
                 <StackPanel Spacing="20">
                     <TextBlock Text="{local:Localize Custom_AdvancedTuning}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                    
+
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
@@ -108,6 +122,17 @@
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="{local:Localize Custom_BackgroundMode}" VerticalAlignment="Center"/>
                         <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="200"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsGlassModeSelected}">
+                        <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                            <Slider Minimum="0.1" Maximum="1.0" Value="{Binding AppWindowOpacity}" Width="200" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding AppWindowOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,2*">
+                        <TextBlock Text="Scheme Variant" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="200"/>
                     </Grid>
                 </StackPanel>
             </Border>

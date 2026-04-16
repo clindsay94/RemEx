@@ -99,6 +99,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     public void RequestSave(DashboardProfile profile)
     {
         _pendingProfile = profile;
+        CurrentProfile = profile;
 
         // On Android, we save immediately to prevent data loss if the app is killed
         if (OperatingSystem.IsAndroid())

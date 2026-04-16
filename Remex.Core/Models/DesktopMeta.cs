@@ -16,4 +16,16 @@ public record DesktopMeta
     /// </summary>
     [JsonPropertyName("hostInstanceId")]
     public string? HostInstanceId { get; init; }
+
+    /// <summary>
+    /// Current mouse cursor X position (for trackpad mode visibility).
+    /// </summary>
+    [JsonPropertyName("cursorX")]
+    public int CursorX { get; init; }
+
+    /// <summary>
+    /// Current mouse cursor Y position (for trackpad mode visibility).
+    /// </summary>
+    [JsonPropertyName("cursorY")]
+    public int CursorY { get; init; }
 }

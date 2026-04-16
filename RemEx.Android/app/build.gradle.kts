@@ -1,3 +1,5 @@
+import com.android.build.api.variant.VariantOutputConfiguration
+import com.android.build.api.variant.impl.VariantOutputImpl
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
@@ -24,7 +26,7 @@ val versionProps = Properties().apply {
 }
 
 var remexVersionCode = versionProps.getProperty("versionCode", "1").toInt()
-var remexVersionName = versionProps.getProperty("versionName", "1.0.0")
+var remexVersionName: String? = versionProps.getProperty("versionName", "1.0.0")
 
 val isPublishBuild = gradle.startParameter.taskNames.any {
     it.contains("remexPublishRelease", ignoreCase = true)
@@ -32,7 +34,7 @@ val isPublishBuild = gradle.startParameter.taskNames.any {
 
 if (isPublishBuild) {
     remexVersionCode += 1
-    val parts = remexVersionName.split(".").toMutableList()
+    val parts = remexVersionName?.split(".")?.toMutableList() ?: mutableListOf("1", "0", "0")
     if (parts.size >= 3) {
         parts[1] = (parts[1].toInt() + 1).toString()
         parts[2] = "0"
@@ -88,6 +90,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            freeCompilerArgs.addAll("-Xannotation-default-target=param-property")
+        }
+    }
     buildFeatures {
         compose = true
         viewBinding = true
@@ -123,11 +132,11 @@ android {
 androidComponents {
     onVariants { variant ->
         val mainOutput =
-            variant.outputs.single { it.outputType == com.android.build.api.variant.VariantOutputConfiguration.OutputType.SINGLE }
+            variant.outputs.single { it.outputType == VariantOutputConfiguration.OutputType.SINGLE }
         val globalVersionName = android.defaultConfig.versionName ?: "1.0"
 
         // Use set on the file name property directly using the newer variant API
-        if (mainOutput is com.android.build.api.variant.impl.VariantOutputImpl) {
+        if (mainOutput is VariantOutputImpl) {
             mainOutput.outputFileName.set("RemEx-V${globalVersionName}-${variant.name}.apk")
         }
     }

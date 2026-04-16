@@ -11,4 +11,10 @@ public interface IInputSimulationService
     void KeyDown(int keyCode);
     void KeyUp(int keyCode);
     void TypeText(string text);
+
+    /// <summary>
+    /// Gets the current cursor position.
+    /// Returns (0, 0) if unavailable.
+    /// </summary>
+    (int X, int Y) GetCursorPosition();
 }

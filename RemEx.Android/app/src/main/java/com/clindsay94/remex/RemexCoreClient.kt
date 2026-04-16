@@ -174,7 +174,6 @@ object RemexCoreClient {
     @JvmName("StopDesktopStreamNative")
     private external fun StopDesktopStreamNative()
 
-    @JvmStatic
     /**
      * Frees unmanaged memory previously allocated on the native heap and returned
      * as a pointer. Reserved for future use if [Export] is changed to use

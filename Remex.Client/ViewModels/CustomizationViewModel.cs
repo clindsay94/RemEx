@@ -17,8 +17,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
+    private bool _isApplyingPreset;
 
     public ObservableCollection<string> AvailableBackgroundTypes { get; } = new();
+
+    public ObservableCollection<string> AvailableSchemeVariants { get; } = new()
+    {
+        "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz"
+    };
 
     public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService)
     {
@@ -32,8 +38,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _cornerRadius = settings.CornerRadius;
         _remoteCardCornerRadius = settings.RemoteCardCornerRadius;
         _glassOpacity = settings.GlassOpacity;
+        _appWindowOpacity = settings.AppWindowOpacity;
         _glowStrength = settings.GlowStrength;
         _accentColor = settings.AccentColor;
+        _schemeVariant = settings.SchemeVariant;
         _canvasBackgroundType = settings.BackgroundMaterial;
 
         // Load available background types
@@ -48,6 +56,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             AvailableBackgroundTypes.Add("Mica");
             AvailableBackgroundTypes.Add("Acrylic");
         }
+        else if (OperatingSystem.IsLinux())
+        {
+            AvailableBackgroundTypes.Add("Glass"); // Linux Mica-like alternative
+        }
         AvailableBackgroundTypes.Add("Gradient");
         AvailableBackgroundTypes.Add("Wallpaper");
         AvailableBackgroundTypes.Add("Solid");
@@ -55,7 +67,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // Fallback if current type is not available (e.g. switching from Windows to Linux)
         if (!AvailableBackgroundTypes.Contains(CanvasBackgroundType))
         {
-            CanvasBackgroundType = "Gradient";
+            CanvasBackgroundType = OperatingSystem.IsLinux() ? "Glass" : "Gradient";
         }
     }
 
@@ -72,10 +84,16 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private double _glassOpacity;
 
     [ObservableProperty]
+    private double _appWindowOpacity;
+
+    [ObservableProperty]
     private double _glowStrength;
 
     [ObservableProperty]
     private string _accentColor;
+
+    [ObservableProperty]
+    private string _schemeVariant;
 
     [ObservableProperty]
     private string _canvasBackgroundType;
@@ -84,20 +102,32 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     partial void OnCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnRemoteCardCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
+    partial void OnAppWindowOpacityChanged(double value) => ApplyAndSave();
     partial void OnGlowStrengthChanged(double value) => ApplyAndSave();
     partial void OnAccentColorChanged(string value) => ApplyAndSave();
-    partial void OnCanvasBackgroundTypeChanged(string value) => ApplyAndSave();
+    partial void OnSchemeVariantChanged(string value) => ApplyAndSave();
+    partial void OnCanvasBackgroundTypeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsGlassModeSelected));
+        ApplyAndSave();
+    }
+
+    public bool IsGlassModeSelected => CanvasBackgroundType == "Glass";
 
     private void ApplyAndSave()
     {
+        if (_isApplyingPreset) return;
+
         var settings = new CustomizationSettings
         {
             ThemeId = SelectedTheme.ToString(),
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
             GlassOpacity = GlassOpacity,
+            AppWindowOpacity = AppWindowOpacity,
             GlowStrength = GlowStrength,
             AccentColor = AccentColor,
+            SchemeVariant = SchemeVariant,
             BackgroundMaterial = CanvasBackgroundType
         };
 
@@ -114,40 +144,57 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     {
         if (Enum.TryParse<AppTheme>(themeName, true, out var theme))
         {
-            SelectedTheme = theme;
-
-            // Apply preset defaults based on PRD
-            switch (theme)
+            _isApplyingPreset = true;
+            try
             {
-                case AppTheme.CyberNOC:
-                    CornerRadius = 2;
-                    RemoteCardCornerRadius = 4;
-                    AccentColor = "#00F3FF";
-                    GlowStrength = 10;
-                    GlassOpacity = 0.05;
-                    break;
-                case AppTheme.SolarFlare:
-                    CornerRadius = 24;
-                    RemoteCardCornerRadius = 48;
-                    AccentColor = "#FFB800";
-                    GlowStrength = 2;
-                    GlassOpacity = 0.8;
-                    break;
-                case AppTheme.Monolith:
-                    CornerRadius = 8;
-                    RemoteCardCornerRadius = 12;
-                    AccentColor = "#0A84FF";
-                    GlowStrength = 0;
-                    GlassOpacity = 1.0;
-                    break;
-                case AppTheme.BaseDarkGlass:
-                    CornerRadius = 16;
-                    RemoteCardCornerRadius = 24;
-                    AccentColor = "#6C4CFF";
-                    GlowStrength = 2;
-                    GlassOpacity = 0.1;
-                    break;
+                SelectedTheme = theme;
+
+                // Apply preset defaults based on PRD
+                switch (theme)
+                {
+                    case AppTheme.CyberNOC:
+                        CornerRadius = 2;
+                        RemoteCardCornerRadius = 4;
+                        AccentColor = "#00F3FF";
+                        GlowStrength = 10;
+                        GlassOpacity = 0.05;
+                        break;
+                    case AppTheme.SolarFlare:
+                        CornerRadius = 24;
+                        RemoteCardCornerRadius = 48;
+                        AccentColor = "#FFB800";
+                        GlowStrength = 2;
+                        GlassOpacity = 0.8;
+                        break;
+                    case AppTheme.Monolith:
+                        CornerRadius = 8;
+                        RemoteCardCornerRadius = 12;
+                        AccentColor = "#0A84FF";
+                        GlowStrength = 0;
+                        GlassOpacity = 1.0;
+                        break;
+                    case AppTheme.BaseDarkGlass:
+                        CornerRadius = 16;
+                        RemoteCardCornerRadius = 24;
+                        AccentColor = "#6C4CFF";
+                        GlowStrength = 2;
+                        GlassOpacity = 0.1;
+                        break;
+                    case AppTheme.Dynamic:
+                        CornerRadius = 24;
+                        RemoteCardCornerRadius = 24;
+                        GlowStrength = 4;
+                        GlassOpacity = 0.4;
+                        // Keep existing AccentColor as the seed
+                        break;
+                }
             }
+            finally
+            {
+                _isApplyingPreset = false;
+            }
+
+            ApplyAndSave();
         }
     }
 

@@ -66,9 +66,28 @@ public partial class CanvasCardViewModel : ObservableObject
     [ObservableProperty]
     private ConnectionViewModel? _connection;
 
-    /// <summary>Whether this sensor is pinned to the Home overview.</summary>
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TogglePinToHomeCommand))]
     private bool _isPinnedToHome;
+
+    /// <summary>Action to request a pin toggle, typically wired to the dashboard.</summary>
+    private Action? _requestPinToggle;
+    public Action? RequestPinToggle
+    {
+        get => _requestPinToggle;
+        set
+        {
+            if (SetProperty(ref _requestPinToggle, value))
+            {
+                TogglePinToHomeCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTogglePinToHome))]
+    private void TogglePinToHome() => RequestPinToggle?.Invoke();
+
+    private bool CanTogglePinToHome() => RequestPinToggle != null;
 
     // ═══════════════ Serialisation ═══════════════
 

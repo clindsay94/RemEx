@@ -111,6 +111,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                         // Send screen metadata
                         var (sw, sh) = _screenCapture.GetScreenSize();
+                        var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
                         var metaMsg = new RemexMessage
                         {
                             Type = MessageTypes.DesktopMeta,
@@ -119,22 +120,26 @@ public sealed class RemoteDesktopHandler : IDisposable
                                 ScreenWidth = sw,
                                 ScreenHeight = sh,
                                 HostInstanceId = HostBootstrapper.InstanceId,
+                                CursorX = cursorX,
+                                CursorY = cursorY,
                             }
                         };
                         await MessageSerializer.SendAsync(webSocket, metaMsg, ct);
 
-                        // Run stream + input receive concurrently
+                        // Run stream + input receive + cursor update concurrently
                         using (var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                         {
                             var streamTask = StreamFramesAsync(webSocket, streamCts.Token);
                             var receiveTask = ReceiveInputLoopAsync(webSocket, streamCts, ct);
+                            var cursorTask = StreamCursorPositionAsync(webSocket, streamCts.Token);
 
-                            // When either finishes, cancel the other
-                            await Task.WhenAny(streamTask, receiveTask);
+                            // When either finishes, cancel the others
+                            await Task.WhenAny(streamTask, receiveTask, cursorTask);
                             await streamCts.CancelAsync();
 
                             try { await streamTask; } catch (OperationCanceledException) { }
                             try { await receiveTask; } catch (OperationCanceledException) { }
+                            try { await cursorTask; } catch (OperationCanceledException) { }
                         }
 
                         // Close the WebSocket gracefully
@@ -354,6 +359,61 @@ public sealed class RemoteDesktopHandler : IDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to send DesktopError to client.");
+        }
+    }
+
+    /// <summary>
+    /// Periodically sends cursor position updates to the client (for trackpad mode).
+    /// Updates every 100ms to provide smooth cursor tracking without excessive overhead.
+    /// </summary>
+    private async Task StreamCursorPositionAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        var lastX = 0;
+        var lastY = 0;
+
+        try
+        {
+            while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+            {
+                var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+
+                // Only send update if cursor moved (reduce network traffic)
+                if (cursorX != lastX || cursorY != lastY)
+                {
+                    var (sw, sh) = _screenCapture.GetScreenSize();
+                    var metaMsg = new RemexMessage
+                    {
+                        Type = MessageTypes.DesktopMeta,
+                        DesktopMeta = new DesktopMeta
+                        {
+                            ScreenWidth = sw,
+                            ScreenHeight = sh,
+                            HostInstanceId = HostBootstrapper.InstanceId,
+                            CursorX = cursorX,
+                            CursorY = cursorY,
+                        }
+                    };
+
+                    try
+                    {
+                        await MessageSerializer.SendAsync(webSocket, metaMsg, ct);
+                        lastX = cursorX;
+                        lastY = cursorY;
+                    }
+                    catch (WebSocketException)
+                    {
+                        break;
+                    }
+                }
+
+                // Update cursor position every 100ms (10Hz)
+                await Task.Delay(100, ct);
+            }
+        }
+        catch (OperationCanceledException) { /* graceful shutdown */ }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cursor position streaming error.");
         }
     }
 

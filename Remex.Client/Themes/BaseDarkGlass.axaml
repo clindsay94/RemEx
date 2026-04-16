@@ -6,6 +6,17 @@
     <Color x:Key="GlassBaseDark">#D90A0A10</Color>
     <Color x:Key="GlassBaseMedium">#F212121E</Color>
     
+    <!-- Background Gradients (Dark) -->
+    <Color x:Key="BackgroundGradientStart">#1A0A2E</Color>
+    <Color x:Key="BackgroundGradientMid">#0D1B2A</Color>
+    <Color x:Key="BackgroundGradientEnd">#000000</Color>
+
+    <LinearGradientBrush x:Key="BackgroundGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="{StaticResource BackgroundGradientStart}" />
+        <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
+        <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
+    </LinearGradientBrush>
+    
     <!-- Accents -->
     <Color x:Key="AccentPrimary">#6C4CFF</Color>
     <Color x:Key="AccentHover">#826AFF</Color>
@@ -51,4 +62,6 @@
     <CornerRadius x:Key="CardCornerRadius">16</CornerRadius>
     <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
     <Thickness x:Key="CardBorderThickness">1</Thickness>
+    <BoxShadows x:Key="CardShadow">0 8 32 0 #40000000</BoxShadows>
+    <BoxShadows x:Key="CardHoverShadow">0 12 48 0 #60000000, 0 0 15 2 #406C4CFF</BoxShadows>
 </ResourceDictionary>

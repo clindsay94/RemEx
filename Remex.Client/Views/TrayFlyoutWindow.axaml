@@ -1,39 +1,27 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Remex.Client.ViewModels"
-        xmlns:conv="using:Remex.Client.Converters"
-        xmlns:ctrl="using:Remex.Client.Controls"
-        xmlns:local="clr-namespace:Remex.Client.Converters"
-        x:Class="Remex.Client.Views.TrayFlyoutWindow"
-        x:DataType="vm:HomeViewModel"
-        Width="340" Height="480"
-        Title="{local:Localize TrayFlyout_Title}"
-        CanResize="False"
-        Focusable="False"
-        ShowInTaskbar="False"
-        Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur"
-        SystemDecorations="None">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:conv="using:Remex.Client.Converters"
+    xmlns:ctrl="using:Remex.Client.Controls"
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="340" Height="480" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="AcrylicBlur" SystemDecorations="None">
 
     <Window.Styles>
         <Style Selector="Border.widget-card">
-            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="CornerRadius" Value="20"/>
-            <Setter Property="BorderBrush" Value="#20FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="ClipToBounds" Value="True"/>
         </Style>
     </Window.Styles>
 
-    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="24" BorderBrush="#30FFFFFF" BorderThickness="1.5" Margin="8">
+    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="24" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1.5" Margin="8">
         <Grid RowDefinitions="Auto,*,Auto" Margin="16">
             <!-- Header -->
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="2">
-                    <TextBlock Text="{local:Localize TrayFlyout_Header}" FontSize="11" FontWeight="Black" 
-                               Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" 
-                               Foreground="{DynamicResource TextMutedBrush}"/>
+                    <TextBlock Text="{local:Localize TrayFlyout_Header}" FontSize="11" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
                 <Ellipse Grid.Column="1" Width="8" Height="8" VerticalAlignment="Top" Margin="0,4,0,0">
                     <Ellipse.Fill>
@@ -50,21 +38,11 @@
                             <Border Classes="widget-card" Margin="0,0,0,10" Height="80" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                 <Grid>
                                     <!-- Background Sparkline -->
-                                    <ctrl:SparklineControl History="{Binding History}" 
-                                                           GraphType="{Binding ResolvedGraphType}" 
-                                                           AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" 
-                                                           TrackBrush="#10FFFFFF" 
-                                                           CurrentValue="{Binding Value}" 
-                                                           MinSeen="{Binding MinSeenValue}" 
-                                                           MaxSeen="{Binding MaxSeenValue}" 
-                                                           Opacity="0.25"/>
+                                    <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="#10FFFFFF" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" Opacity="0.25"/>
 
                                     <Grid ColumnDefinitions="*,Auto" Margin="16,12">
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold" 
-                                                       Foreground="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" 
-                                                       Opacity="0.8" TextTrimming="CharacterEllipsis"
-                                                       ToolTip.Tip="{Binding Name}"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold" Foreground="{Binding Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" Opacity="0.8" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
                                                 <TextBlock FontSize="24" FontWeight="Black" Foreground="{Binding Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                     <TextBlock.Text>
@@ -74,11 +52,10 @@
                                                         </MultiBinding>
                                                     </TextBlock.Text>
                                                 </TextBlock>
-                                                <TextBlock Text="{Binding Unit}" FontSize="12" Foreground="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" 
-                                                           VerticalAlignment="Bottom" Margin="0,0,0,4" Opacity="0.7"/>
+                                                <TextBlock Text="{Binding Unit}" FontSize="12" Foreground="{Binding Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,4" Opacity="0.7"/>
                                             </StackPanel>
                                         </StackPanel>
-                                        
+
                                         <!-- Mini Status Indicator -->
                                         <Border Grid.Column="1" Width="32" Height="32" CornerRadius="16" Background="#15FFFFFF" VerticalAlignment="Center">
                                             <TextBlock Text="⚡" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/>

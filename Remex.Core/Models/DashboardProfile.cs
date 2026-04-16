@@ -129,8 +129,11 @@ public record CustomizationSettings
     /// <summary>Corner radius in pixels for remote control buttons.</summary>
     public double RemoteCardCornerRadius { get; init; } = 24;
 
-    /// <summary>Opacity (0.0 to 1.0) of the glass-effect backgrounds.</summary>
+    /// <summary>Opacity (0.0 to 1.0) of the canvas cards.</summary>
     public double GlassOpacity { get; init; } = 0.1;
+
+    /// <summary>Opacity (0.1 to 1.0) of the entire app window when Glass mode is active.</summary>
+    public double AppWindowOpacity { get; init; } = 0.92;
 
     /// <summary>Relative strength of the neon/glow effects.</summary>
     public double GlowStrength { get; init; } = 2;
@@ -143,6 +146,9 @@ public record CustomizationSettings
 
     /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
     public string AccentColor { get; init; } = "#6C4CFF";
+
+    /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
+    public string SchemeVariant { get; init; } = "TonalSpot";
 
     /// <summary>Requested window or surface material treatment.</summary>
     [JsonPropertyName("canvasBackgroundType")]

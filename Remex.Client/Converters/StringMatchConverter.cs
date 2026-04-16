@@ -42,6 +42,10 @@ public static class StringMatchConverter
     public static readonly IValueConverter IsAcrylic =
         new StringEqualsConverter("Acrylic");
 
+    /// <summary>Returns true when the bound string equals "Glass".</summary>
+    public static readonly IValueConverter IsGlass =
+        new StringEqualsConverter("Glass");
+
     /// <summary>Returns true when the bound string equals "Solid".</summary>
     public static readonly IValueConverter IsSolid =
         new StringEqualsConverter("Solid");

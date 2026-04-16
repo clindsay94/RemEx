@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,10 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
-import com.clindsay94.remex.R
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,166 +42,207 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.theme.cardShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteMouseScreen(
-    onNavigateToConnection: () -> Unit = {},
-    viewModel: RemoteControlViewModel = viewModel()
+        onNavigateToConnection: () -> Unit = {},
+        viewModel: RemoteControlViewModel = viewModel()
 ) {
     val haptic = LocalHapticFeedback.current
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
     val shapePreset by viewModel.remoteMouseCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
+    val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_remote_mouse_title), fontWeight = FontWeight.Bold) }
-            )
-        }
+            topBar = {
+                TopAppBar(
+                        title = {
+                            Text(
+                                    stringResource(R.string.screen_remote_mouse_title),
+                                    fontWeight = FontWeight.Bold
+                            )
+                        }
+                )
+            }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+                modifier = Modifier.fillMaxSize().padding(padding),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             NotConnectedBanner(
-                isConnected = isConnected,
-                onNavigateToConnection = onNavigateToConnection
+                    isConnected = isConnected,
+                    onNavigateToConnection = onNavigateToConnection
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-            BasicTextField(
-                value = textValue,
-                onValueChange = {
-                    if (it.text.length > textValue.text.length) {
-                        val newChar = it.text.last().toString()
-                        viewModel.sendText(newChar)
-                    }
-                    textValue = it
-                },
-                modifier = Modifier
-                    .size(1.dp)
-                    .graphicsLayer { alpha = 0f }
-                    .focusRequester(focusRequester)
-            )
+                BasicTextField(
+                        value = textValue,
+                        onValueChange = {
+                            if (it.text.length > textValue.text.length) {
+                                val newChar = it.text.last().toString()
+                                viewModel.sendText(newChar)
+                            }
+                            textValue = it
+                        },
+                        modifier =
+                                Modifier.size(1.dp)
+                                        .graphicsLayer { alpha = 0f }
+                                        .focusRequester(focusRequester)
+                )
 
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            viewModel.sendMouseMove(dragAmount.x.toInt(), dragAmount.y.toInt())
+                Surface(
+                        modifier =
+                                Modifier.weight(1f)
+                                        .fillMaxWidth()
+                                        .pointerInput(Unit) {
+                                            detectDragGestures { change, dragAmount ->
+                                                change.consume()
+                                                viewModel.sendMouseMove(
+                                                        dragAmount.x.toInt(),
+                                                        dragAmount.y.toInt()
+                                                )
+                                            }
+                                        }
+                                        .pointerInput(Unit) {
+                                            detectTapGestures(
+                                                    onTap = {
+                                                        haptic.performHapticFeedback(
+                                                                HapticFeedbackType.LongPress
+                                                        )
+                                                        viewModel.sendMouseClick(1)
+                                                    }
+                                            )
+                                        },
+                        shape = cardShape(shapePreset, cornerRadius),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 4.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                    imageVector = Icons.Default.Mouse,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint =
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.5f
+                                            )
+                            )
+                            Text(
+                                    stringResource(R.string.remote_mouse_trackpad_label),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color =
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.5f
+                                            )
+                            )
                         }
                     }
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.sendMouseClick(1)
-                        })
-                    },
-                shape = cardShape(shapePreset, cornerRadius),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 4.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Mouse,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+                }
+
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Button(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.sendMouseClick(1)
+                            },
+                            modifier = Modifier.weight(1f).height(80.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            colors =
+                                    ButtonDefaults.buttonColors(
+                                            containerColor =
+                                                    MaterialTheme.colorScheme.secondaryContainer,
+                                            contentColor =
+                                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                    ) {
                         Text(
-                            stringResource(R.string.remote_mouse_trackpad_label),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                stringResource(R.string.remote_mouse_left_click),
+                                fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Button(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.sendMouseClick(2)
+                            },
+                            modifier = Modifier.weight(1f).height(80.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            colors =
+                                    ButtonDefaults.buttonColors(
+                                            containerColor =
+                                                    MaterialTheme.colorScheme.secondaryContainer,
+                                            contentColor =
+                                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                    ) {
+                        Text(
+                                stringResource(R.string.remote_mouse_right_click),
+                                fontWeight = FontWeight.Bold
                         )
                     }
                 }
-            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.sendMouseClick(1)
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(80.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text(stringResource(R.string.remote_mouse_left_click), fontWeight = FontWeight.Bold)
+                    IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.sendScroll((-100 * vScrollSensitivity).toInt())
+                            }
+                    ) {
+                        Icon(
+                                Icons.Default.KeyboardDoubleArrowUp,
+                                contentDescription = stringResource(R.string.cd_scroll_up)
+                        )
+                    }
+                    IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.sendScroll((100 * vScrollSensitivity).toInt())
+                            }
+                    ) {
+                        Icon(
+                                Icons.Default.KeyboardDoubleArrowDown,
+                                contentDescription = stringResource(R.string.cd_scroll_down)
+                        )
+                    }
+                    IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                focusRequester.requestFocus()
+                            }
+                    ) {
+                        Icon(
+                                Icons.Default.Keyboard,
+                                contentDescription = stringResource(R.string.cd_keyboard)
+                        )
+                    }
                 }
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.sendMouseClick(2)
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(80.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                ) {
-                    Text(stringResource(R.string.remote_mouse_right_click), fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.sendScroll(-100)
-                }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = stringResource(R.string.cd_scroll_up))
-                }
-                IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.sendScroll(100)
-                }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = stringResource(R.string.cd_scroll_down))
-                }
-                IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    focusRequester.requestFocus()
-                }) {
-                    Icon(Icons.Default.Keyboard, contentDescription = stringResource(R.string.cd_keyboard))
-                }
-            }
             } // end inner Column
         }
     }
@@ -212,158 +250,213 @@ fun RemoteMouseScreen(
 
 @Composable
 fun FloatingMouseIsland(
-    viewModel: RemoteControlViewModel,
-    shapePreset: Float,
-    cornerRadius: Int,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+        viewModel: RemoteControlViewModel,
+        shapePreset: Float,
+        cornerRadius: Int,
+        onDismiss: () -> Unit,
+        modifier: Modifier = Modifier,
+        onDrag: ((dragAmount: androidx.compose.ui.geometry.Offset) -> Unit)? = null,
+        onDragStart: (() -> Unit)? = null,
+        onDragEnd: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
+    val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
 
     BasicTextField(
-        value = textValue,
-        onValueChange = {
-            if (it.text.length > textValue.text.length) {
-                val addedText = it.text.substring(textValue.text.length)
-                viewModel.sendText(addedText)
-            }
-            textValue = it
-        },
-        modifier = Modifier
-            .size(1.dp)
-            .graphicsLayer { alpha = 0f }
-            .focusRequester(focusRequester)
+            value = textValue,
+            onValueChange = {
+                if (it.text.length > textValue.text.length) {
+                    val addedText = it.text.substring(textValue.text.length)
+                    viewModel.sendText(addedText)
+                }
+                textValue = it
+            },
+            modifier =
+                    Modifier.size(1.dp).graphicsLayer { alpha = 0f }.focusRequester(focusRequester)
     )
 
     Card(
-        modifier = modifier.width(300.dp),
-        shape = cardShape(shapePreset, cornerRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            modifier = modifier.width(300.dp),
+            shape = cardShape(shapePreset, cornerRadius),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                            Modifier.fillMaxWidth()
+                                    .then(
+                                            if (onDrag != null) {
+                                                Modifier.pointerInput(Unit) {
+                                                    detectDragGesturesAfterLongPress(
+                                                            onDragStart = { onDragStart?.invoke() },
+                                                            onDrag = { _, dragAmount ->
+                                                                onDrag.invoke(dragAmount)
+                                                            },
+                                                            onDragEnd = { onDragEnd?.invoke() }
+                                                    )
+                                                }
+                                            } else Modifier
+                                    ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.screen_remote_mouse_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                        text = stringResource(R.string.screen_remote_mouse_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                 )
                 IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onDismiss()
-                    },
-                    modifier = Modifier.size(28.dp)
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onDismiss()
+                        },
+                        modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
-                        Icons.Default.Close,
-                        contentDescription = stringResource(android.R.string.cancel),
-                        modifier = Modifier.size(18.dp)
+                            Icons.Default.Close,
+                            contentDescription = stringResource(android.R.string.cancel),
+                            modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            viewModel.sendMouseMove(dragAmount.x.toInt(), dragAmount.y.toInt())
-                        }
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.sendMouseClick(1)
-                        })
-                    },
-                shape = cardShape(shapePreset, cornerRadius),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 4.dp
+                    modifier =
+                            Modifier.fillMaxWidth()
+                                    .height(180.dp)
+                                    .pointerInput(Unit) {
+                                        detectDragGestures { change, dragAmount ->
+                                            change.consume()
+                                            viewModel.sendMouseMove(
+                                                    dragAmount.x.toInt(),
+                                                    dragAmount.y.toInt()
+                                            )
+                                        }
+                                    }
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                                onTap = {
+                                                    haptic.performHapticFeedback(
+                                                            HapticFeedbackType.LongPress
+                                                    )
+                                                    viewModel.sendMouseClick(1)
+                                                }
+                                        )
+                                    },
+                    shape = cardShape(shapePreset, cornerRadius),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.Mouse,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                imageVector = Icons.Default.Mouse,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         )
                         Text(
-                            stringResource(R.string.remote_mouse_trackpad_label),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                stringResource(R.string.remote_mouse_trackpad_label),
+                                style = MaterialTheme.typography.bodySmall,
+                                color =
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                alpha = 0.4f
+                                        )
                         )
                     }
                 }
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.sendMouseClick(1)
-                    },
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.sendMouseClick(1)
+                        },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        containerColor =
+                                                MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor =
+                                                MaterialTheme.colorScheme.onSecondaryContainer
+                                )
                 ) {
-                    Text(stringResource(R.string.remote_mouse_left_click), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                            stringResource(R.string.remote_mouse_left_click),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                    )
                 }
                 Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.sendMouseClick(2)
-                    },
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.sendMouseClick(2)
+                        },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        containerColor =
+                                                MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor =
+                                                MaterialTheme.colorScheme.onSecondaryContainer
+                                )
                 ) {
-                    Text(stringResource(R.string.remote_mouse_right_click), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                            stringResource(R.string.remote_mouse_right_click),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.sendScroll(-100)
-                }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowUp, contentDescription = stringResource(R.string.cd_scroll_up))
+                IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.sendScroll((-100 * vScrollSensitivity).toInt())
+                        }
+                ) {
+                    Icon(
+                            Icons.Default.KeyboardDoubleArrowUp,
+                            contentDescription = stringResource(R.string.cd_scroll_up)
+                    )
                 }
-                IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.sendScroll(100)
-                }) {
-                    Icon(Icons.Default.KeyboardDoubleArrowDown, contentDescription = stringResource(R.string.cd_scroll_down))
+                IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.sendScroll((100 * vScrollSensitivity).toInt())
+                        }
+                ) {
+                    Icon(
+                            Icons.Default.KeyboardDoubleArrowDown,
+                            contentDescription = stringResource(R.string.cd_scroll_down)
+                    )
                 }
-                IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    focusRequester.requestFocus()
-                }) {
-                    Icon(Icons.Default.Keyboard, contentDescription = stringResource(R.string.cd_keyboard))
+                IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            focusRequester.requestFocus()
+                        }
+                ) {
+                    Icon(
+                            Icons.Default.Keyboard,
+                            contentDescription = stringResource(R.string.cd_keyboard)
+                    )
                 }
             }
         }

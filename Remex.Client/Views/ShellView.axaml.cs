@@ -108,4 +108,9 @@ public partial class ShellView : UserControl
     {
         if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("Monolith");
     }
+
+    private void OnSelectDynamic(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("Dynamic");
+    }
 }

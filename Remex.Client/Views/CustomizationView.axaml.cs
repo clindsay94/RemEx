@@ -30,4 +30,9 @@ public partial class CustomizationView : UserControl
     {
         if (DataContext is CustomizationViewModel vm) vm.SelectThemeCommand.Execute("Monolith");
     }
+
+    private void OnSelectDynamic(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is CustomizationViewModel vm) vm.SelectThemeCommand.Execute("Dynamic");
+    }
 }

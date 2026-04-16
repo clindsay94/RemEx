@@ -24,20 +24,17 @@ import org.json.JSONObject
 
 private const val TAG = "RemoteDesktopVM"
 
-data class DesktopFrame(
-    val bitmap: Bitmap,
-    val timestamp: Long = System.nanoTime()
-)
+data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTime())
 
 data class RemoteDesktopCapabilityState(
-    val supportsRemoteDesktop: Boolean = true,
-    val unavailableReason: String? = null
+        val supportsRemoteDesktop: Boolean = true,
+        val unavailableReason: String? = null
 )
 
 data class RemoteDesktopConfigState(
-    val quality: Int = 50,
-    val targetFps: Int = 30,
-    val scale: Float = 0.6f
+        val quality: Int = 50,
+        val targetFps: Int = 30,
+        val scale: Float = 0.6f
 )
 
 class RemoteDesktopViewModel(application: Application) : AndroidViewModel(application) {
@@ -48,10 +45,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private var hostScreenHeight: Int = 1080
 
     /** Reusable BitmapFactory options to reduce allocation pressure. */
-    private val decodeOptions = BitmapFactory.Options().apply {
-        inMutable = true
-        inPreferredConfig = Bitmap.Config.RGB_565 // Half the memory of ARGB_8888
-    }
+    private val decodeOptions =
+            BitmapFactory.Options().apply {
+                inMutable = true
+                inPreferredConfig = Bitmap.Config.RGB_565 // Half the memory of ARGB_8888
+            }
 
     /** Previous frame bitmap kept for inBitmap reuse (avoids GC churn). */
     private var reusableBitmap: Bitmap? = null
@@ -62,6 +60,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _isStreaming = MutableStateFlow(false)
     val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
 
+    // Cursor position from host (for trackpad mode visibility)
+    private val _hostCursorX = MutableStateFlow(0f)
+    val hostCursorX: StateFlow<Float> = _hostCursorX.asStateFlow()
+
+    private val _hostCursorY = MutableStateFlow(0f)
+    val hostCursorY: StateFlow<Float> = _hostCursorY.asStateFlow()
+
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())
     val capabilityState: StateFlow<RemoteDesktopCapabilityState> = _capabilityState.asStateFlow()
 
@@ -71,16 +76,36 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _configState = MutableStateFlow(RemoteDesktopConfigState())
     val configState: StateFlow<RemoteDesktopConfigState> = _configState.asStateFlow()
 
-    val savedDesktopDefaults = settingsManager.remoteDesktopPreferencesFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsManager.RemoteDesktopPreferences())
+    val savedDesktopDefaults =
+            settingsManager.remoteDesktopPreferencesFlow.stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    SettingsManager.RemoteDesktopPreferences()
+            )
 
-    val directTouch: StateFlow<Boolean> = settingsManager.remoteDesktopPreferencesFlow
-        .map { it.directTouch }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val directTouch: StateFlow<Boolean> =
+            settingsManager
+                    .remoteDesktopPreferencesFlow
+                    .map { it.directTouch }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val pointerSpeed: StateFlow<Float> = settingsManager.remoteDesktopPreferencesFlow
-        .map { it.pointerSpeed }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+    val pointerSpeed: StateFlow<Float> =
+            settingsManager
+                    .remoteDesktopPreferencesFlow
+                    .map { it.pointerSpeed }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
+    val verticalScrollSensitivity: StateFlow<Float> =
+            settingsManager
+                    .remoteDesktopPreferencesFlow
+                    .map { it.verticalScrollSensitivity }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
+    val horizontalScrollSensitivity: StateFlow<Float> =
+            settingsManager
+                    .remoteDesktopPreferencesFlow
+                    .map { it.horizontalScrollSensitivity }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
     /** Tracks reconnection attempts to avoid stacking. */
     private var reconnectJob: Job? = null
@@ -90,35 +115,38 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     init {
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
-                _configState.value = RemoteDesktopConfigState(
-                    quality = prefs.quality.coerceIn(1, 100),
-                    targetFps = prefs.targetFps.coerceIn(1, 120),
-                    scale = prefs.scale.coerceIn(0.25f, 1.0f)
-                )
+                _configState.value =
+                        RemoteDesktopConfigState(
+                                quality = prefs.quality.coerceIn(1, 100),
+                                targetFps = prefs.targetFps.coerceIn(1, 120),
+                                scale = prefs.scale.coerceIn(0.25f, 1.0f)
+                        )
             }
         }
 
         viewModelScope.launch(Dispatchers.Default) {
-            RemexClientManager.frames
-                .collect { bytes ->
-                    decodeFrame(bytes)
-                }
+            RemexClientManager.frames.collect { bytes -> decodeFrame(bytes) }
         }
 
         viewModelScope.launch {
             RemexClientManager.hostCapabilities.collect { hostInfo ->
                 try {
                     val json = JSONObject(hostInfo)
-                    _capabilityState.value = RemoteDesktopCapabilityState(
-                        supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false),
-                        unavailableReason = json.optString("remoteDesktopUnavailableReason").takeIf { it.isNotBlank() }
-                    )
+                    _capabilityState.value =
+                            RemoteDesktopCapabilityState(
+                                    supportsRemoteDesktop =
+                                            json.optBoolean("supportsRemoteDesktop", false),
+                                    unavailableReason =
+                                            json.optString("remoteDesktopUnavailableReason")
+                                                    .takeIf { it.isNotBlank() }
+                            )
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse host capabilities", e)
-                    _capabilityState.value = RemoteDesktopCapabilityState(
-                        supportsRemoteDesktop = false,
-                        unavailableReason = "Host metadata unavailable"
-                    )
+                    _capabilityState.value =
+                            RemoteDesktopCapabilityState(
+                                    supportsRemoteDesktop = false,
+                                    unavailableReason = "Host metadata unavailable"
+                            )
                 }
             }
         }
@@ -138,6 +166,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     val json = JSONObject(metaData)
                     hostScreenWidth = json.optInt("screenWidth", 1920)
                     hostScreenHeight = json.optInt("screenHeight", 1080)
+                    // Parse cursor position from host (for trackpad mode)
+                    if (json.has("cursorX") && json.has("cursorY")) {
+                        _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
+                        _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
+                    }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop meta", e)
                 }
@@ -161,8 +194,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * Decodes a JPEG frame using bitmap pooling to avoid OOM.
-     * Uses inBitmap for memory reuse when dimensions match.
+     * Decodes a JPEG frame using bitmap pooling to avoid OOM. Uses inBitmap for memory reuse when
+     * dimensions match.
      */
     private fun decodeFrame(bytes: ByteArray) {
         if (bytes.isEmpty()) {
@@ -181,8 +214,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
             val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
             if (decoded != null) {
-                if (System.currentTimeMillis() % 1000 < 50) { 
-                    Log.d(TAG, "decodeFrame: Decoded frame, size: ${bytes.size} bytes, reused: ${decodeOptions.inBitmap != null}")
+                if (System.currentTimeMillis() % 1000 < 50) {
+                    Log.d(
+                            TAG,
+                            "decodeFrame: Decoded frame, size: ${bytes.size} bytes, reused: ${decodeOptions.inBitmap != null}"
+                    )
                 }
                 reusableBitmap = decoded
                 // Wrap bitmap with a unique timestamp to bypass StateFlow equality checks
@@ -223,8 +259,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * Attempts to restart the stream after transient network errors
-     * with exponential backoff (1s, 2s, 4s, 8s, 16s).
+     * Attempts to restart the stream after transient network errors with exponential backoff (1s,
+     * 2s, 4s, 8s, 16s).
      */
     private fun attemptReconnect() {
         if (!_capabilityState.value.supportsRemoteDesktop) return
@@ -234,16 +270,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        reconnectJob = viewModelScope.launch {
-            val backoffMs = (1000L shl reconnectAttempts).coerceAtMost(16_000L)
-            reconnectAttempts++
-            Log.i(TAG, "Reconnect attempt $reconnectAttempts in ${backoffMs}ms")
-            delay(backoffMs)
+        reconnectJob =
+                viewModelScope.launch {
+                    val backoffMs = (1000L shl reconnectAttempts).coerceAtMost(16_000L)
+                    reconnectAttempts++
+                    Log.i(TAG, "Reconnect attempt $reconnectAttempts in ${backoffMs}ms")
+                    delay(backoffMs)
 
-            if (RemexClientManager.isConnected.value && _capabilityState.value.supportsRemoteDesktop) {
-                startStreaming()
-            }
-        }
+                    if (RemexClientManager.isConnected.value &&
+                                    _capabilityState.value.supportsRemoteDesktop
+                    ) {
+                        startStreaming()
+                    }
+                }
     }
 
     fun updateQuality(value: Int) {
@@ -265,14 +304,21 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun updateDirectTouch(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.saveRemoteDesktopDirectTouch(enabled)
-        }
+        viewModelScope.launch { settingsManager.saveRemoteDesktopDirectTouch(enabled) }
     }
 
     fun updatePointerSpeed(speed: Float) {
         viewModelScope.launch {
             settingsManager.saveRemoteDesktopPointerSpeed(speed.coerceIn(0.25f, 3.0f))
+        }
+    }
+
+    fun updateScrollSensitivity(vertical: Float, horizontal: Float) {
+        viewModelScope.launch {
+            settingsManager.saveRemoteDesktopScrollSensitivity(
+                    vertical.coerceIn(0.1f, 5.0f),
+                    horizontal.coerceIn(0.1f, 5.0f)
+            )
         }
     }
 
@@ -283,8 +329,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         if (!_capabilityState.value.supportsRemoteDesktop) {
-            _desktopError.value = _capabilityState.value.unavailableReason
-                ?: "Remote desktop is unavailable on this host"
+            _desktopError.value =
+                    _capabilityState.value.unavailableReason
+                            ?: "Remote desktop is unavailable on this host"
             return
         }
 
@@ -322,81 +369,101 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         val intY = accumulatedY.toInt()
 
         if (intX != 0 || intY != 0) {
-            sendInput(JSONObject().apply {
-                put("eventType", "mouseMove")
-                put("deltaX", intX)
-                put("deltaY", intY)
-            })
+            sendInput(
+                    JSONObject().apply {
+                        put("eventType", "mouseMove")
+                        put("deltaX", intX)
+                        put("deltaY", intY)
+                    }
+            )
             accumulatedX -= intX
             accumulatedY -= intY
         }
     }
 
     fun sendMouseScroll(deltaX: Int, deltaY: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseScroll")
-            put("deltaX", deltaX)
-            put("deltaY", deltaY)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "mouseScroll")
+                    put("deltaX", deltaX)
+                    put("deltaY", deltaY)
+                }
+        )
     }
 
     fun sendMouseClick(button: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseClick")
-            put("button", button)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "mouseClick")
+                    put("button", button)
+                }
+        )
     }
 
     fun sendMouseDown(button: Int, x: Int? = null, y: Int? = null) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseDown")
-            put("button", button)
-            if (x != null) put("x", x)
-            if (y != null) put("y", y)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "mouseDown")
+                    put("button", button)
+                    if (x != null) put("x", x)
+                    if (y != null) put("y", y)
+                }
+        )
     }
 
     fun sendMouseUp(button: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseUp")
-            put("button", button)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "mouseUp")
+                    put("button", button)
+                }
+        )
     }
 
     fun sendMouseAbsolute(x: Int, y: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseMove")
-            put("x", x)
-            put("y", y)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "mouseMove")
+                    put("x", x)
+                    put("y", y)
+                }
+        )
     }
 
     fun sendMouseAbsoluteClick(button: Int, x: Int, y: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "mouseClick")
-            put("button", button)
-            put("x", x)
-            put("y", y)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "mouseClick")
+                    put("button", button)
+                    put("x", x)
+                    put("y", y)
+                }
+        )
     }
 
     fun sendText(text: String) {
         if (text.isEmpty()) return
-        sendInput(JSONObject().apply {
-            put("eventType", "typeText")
-            put("text", text)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "typeText")
+                    put("text", text)
+                }
+        )
     }
 
     fun sendKeyPress(keyCode: Int) {
-        sendInput(JSONObject().apply {
-            put("eventType", "keyDown")
-            put("keyCode", keyCode)
-        })
-        sendInput(JSONObject().apply {
-            put("eventType", "keyUp")
-            put("keyCode", keyCode)
-        })
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "keyDown")
+                    put("keyCode", keyCode)
+                }
+        )
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "keyUp")
+                    put("keyCode", keyCode)
+                }
+        )
     }
 
     fun getHostScreenSize(): Pair<Int, Int> = Pair(hostScreenWidth, hostScreenHeight)
@@ -407,10 +474,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         try {
-            val message = JSONObject().apply {
-                put("type", "desktop_config")
-                put("desktopConfig", buildConfigJson())
-            }
+            val message =
+                    JSONObject().apply {
+                        put("type", "desktop_config")
+                        put("desktopConfig", buildConfigJson())
+                    }
             RemexCoreClient.SendMessage(message.toString())
         } catch (e: Exception) {
             Log.w(TAG, "Failed to push config update", e)
@@ -420,9 +488,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private fun persistDesktopDefaults() {
         viewModelScope.launch {
             settingsManager.saveRemoteDesktopDefaults(
-                quality = _configState.value.quality,
-                targetFps = _configState.value.targetFps,
-                scale = _configState.value.scale
+                    quality = _configState.value.quality,
+                    targetFps = _configState.value.targetFps,
+                    scale = _configState.value.scale
             )
         }
     }
@@ -441,10 +509,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 return@launch
             }
 
-            val message = JSONObject().apply {
-                put("type", "desktop_input")
-                put("inputEvent", input)
-            }
+            val message =
+                    JSONObject().apply {
+                        put("type", "desktop_input")
+                        put("inputEvent", input)
+                    }
             RemexCoreClient.SendMessage(message.toString())
         }
     }

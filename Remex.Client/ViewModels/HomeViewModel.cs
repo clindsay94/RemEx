@@ -46,11 +46,11 @@ public partial class HomeViewModel : ObservableObject, IDisposable
         foreach (var id in pinnedIds)
         {
             var sensorVm = canvas.Cards
-                .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == id)
+                .Where(c => c.CardType == "Sensor" && string.Equals(c.Sensor?.Name, id, StringComparison.OrdinalIgnoreCase))
                 .Select(c => c.Sensor)
                 .FirstOrDefault()
                 ?? canvas.StagedCards
-                .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == id)
+                .Where(c => c.CardType == "Sensor" && string.Equals(c.Sensor?.Name, id, StringComparison.OrdinalIgnoreCase))
                 .Select(c => c.Sensor)
                 .FirstOrDefault();
 
