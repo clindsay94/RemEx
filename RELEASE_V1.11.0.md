@@ -5,6 +5,25 @@
 
 ---
 
+## 🚀 Post-Release Refinements (Apr 16, 2026)
+
+### UI Component Architecture
+- **RemexScreenHeader:** New reusable header component for consistent screen presentation
+- Extracted header logic into dedicated composable for better code reuse
+- Improved component composition and separation of concerns
+
+### Code Quality Improvements
+- Refactored multiple UI screens for better maintainability
+- Enhanced code structure and readability improvements
+- Optimized import organization across Android UI layer
+- Improved null safety in navigation and screen handlers
+
+### Build Configuration
+- Updated Directory.Build.props with latest standards
+- Enhanced cross-platform build consistency
+
+---
+
 ## 📋 Overview
 
 RemEx v1.11.0 is a comprehensive polish release focused on improving user experience across all platforms. This release brings significant enhancements to the Android app's UI/UX, expands desktop theming capabilities, and refactors core services for better stability and maintainability.
@@ -207,7 +226,10 @@ App will automatically migrate settings from v1.10.0
 
 ## 📝 Known Issues
 
-None reported at release time. Please file issues on GitHub if any are discovered.
+- **Linux:** Remote desktop cursor display intermittently fails to render on phone screen (Windows behavior unconfirmed)
+  - Cursor input still registers correctly
+  - Workaround: Rapidly move cursor to expand overlay—expanded version renders temporarily
+  - Investigating root cause in cursor overlay rendering/scaling logic
 
 ---
 

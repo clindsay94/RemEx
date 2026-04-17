@@ -6,7 +6,9 @@
       "Read(//usr/local/bin/**)",
       "Read(//home/connorl/.local/bin/**)",
       "Bash(dotnet-ildasm /home/connorl/.nuget/packages/materialcolorutilities/0.3.0/lib/net6.0/MaterialColorUtilities.dll)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
