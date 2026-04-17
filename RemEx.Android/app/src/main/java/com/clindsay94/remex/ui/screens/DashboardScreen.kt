@@ -53,10 +53,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -82,10 +80,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+
+// Wrapper that isolates AnimatedVisibility from outer ColumnScope receiver.
+// When the transformable Box lives inside a Column, Kotlin's overload resolution
+// binds to ColumnScope.AnimatedVisibility and then fails because @LayoutScopeMarker
+// blocks the outer ColumnScope implicit receiver. Calling AnimatedVisibility from
+// a plain composable body resolves to the top-level overload cleanly.
+@Composable
+private fun PlainAnimatedVisibility(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.animation.AnimatedVisibilityScope.() -> Unit
+) {
+    AnimatedVisibility(visible = visible, modifier = modifier, content = content)
+}
 
 private data class AvailableCardItem(
     val id: String,
@@ -186,51 +199,45 @@ fun DashboardScreen(
         )
     } ?: 0f
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_dashboard_title), fontWeight = FontWeight.Bold) },
-                actions = {
-                    // Zoom reset — only shown when user has pinched away from 1×
-                    if (canvasScale != 1f) {
-                        IconButton(onClick = {
-                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                            canvasScale = 1f
-                        }) {
-                            Icon(Icons.Default.FilterCenterFocus, contentDescription = stringResource(R.string.cd_reset_zoom))
-                        }
-                    }
+    val visibleCards = cards.filter { enabledCards.contains(it.id) }
+
+    // Base canvas dimensions — independent of scale.
+    // graphicsLayer handles the visual zoom without relayout.
+    val canvasWidthDp = remember(visibleCards) {
+        val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
+        (maxRight + 200f).coerceAtLeast(800f)
+    }
+    val canvasHeightDp = remember(visibleCards) {
+        val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
+        (maxBottom + 200f).coerceAtLeast(1200f)
+    }
+
+    val hScrollState = rememberScrollState()
+    val vScrollState = rememberScrollState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        RemexScreenHeader(
+            title = stringResource(R.string.screen_dashboard_title),
+            actions = {
+                if (canvasScale != 1f) {
                     IconButton(onClick = {
                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                        showCardDrawer = !showCardDrawer
+                        canvasScale = 1f
                     }) {
-                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_customize_cards))
+                        Icon(Icons.Default.FilterCenterFocus, contentDescription = stringResource(R.string.cd_reset_zoom))
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        val visibleCards = cards.filter { enabledCards.contains(it.id) }
-
-        // Base canvas dimensions — independent of scale.
-        // graphicsLayer handles the visual zoom without relayout.
-        val canvasWidthDp = remember(visibleCards) {
-            val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
-            (maxRight + 200f).coerceAtLeast(800f)
-        }
-        val canvasHeightDp = remember(visibleCards) {
-            val maxBottom = visibleCards.maxOfOrNull { it.yDp + it.heightDp } ?: 0f
-            (maxBottom + 200f).coerceAtLeast(1200f)
-        }
-
-        val hScrollState = rememberScrollState()
-        val vScrollState = rememberScrollState()
-
+                IconButton(onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    showCardDrawer = !showCardDrawer
+                }) {
+                    Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_customize_cards))
+                }
+            }
+        )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                // transformable handles pinch gestures without consuming scroll events
                 .transformable(state = transformableState)
         ) {
             Box(
@@ -360,7 +367,7 @@ fun DashboardScreen(
             }
 
             // Card drawer — slides in from the right
-            AnimatedVisibility(
+            PlainAnimatedVisibility(
                 visible = showCardDrawer,
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {

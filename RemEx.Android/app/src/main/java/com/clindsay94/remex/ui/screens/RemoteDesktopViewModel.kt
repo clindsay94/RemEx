@@ -60,11 +60,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _isStreaming = MutableStateFlow(false)
     val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
 
-    // Cursor position from host (for trackpad mode visibility)
-    private val _hostCursorX = MutableStateFlow(0f)
+    // Cursor position from host (for trackpad mode visibility).
+    // Sentinel -1f means "not yet reported" so (0,0) is a valid visible position.
+    private val _hostCursorX = MutableStateFlow(-1f)
     val hostCursorX: StateFlow<Float> = _hostCursorX.asStateFlow()
 
-    private val _hostCursorY = MutableStateFlow(0f)
+    private val _hostCursorY = MutableStateFlow(-1f)
     val hostCursorY: StateFlow<Float> = _hostCursorY.asStateFlow()
 
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())

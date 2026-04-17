@@ -153,7 +153,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 if (!string.IsNullOrEmpty(val)) env[key] = val;
             }
 
-            var result = await RunProcessAsync(tool, $"-b -n -o \"{pngFile}\"", ct, env);
+            // --cursor/-p includes the OS cursor in the capture (KDE Plasma 6 supports this).
+            var result = await RunProcessAsync(tool, $"-b -n -p -o \"{pngFile}\"", ct, env);
             if (result != 0 || !File.Exists(pngFile))
             {
                 _logger.LogWarning("spectacle capture failed (exit={Code}). Is spectacle installed?", result);
@@ -183,9 +184,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (toolName == "scrot")
         {
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
-            // scrot -z suppresses cursor, -q sets JPEG quality. 
-            // Capture at full resolution and let ffmpeg handle scaling if needed.
-            var args = $"-z -q {quality} \"{tmpFile}\"";
+            // -q sets JPEG quality. -z would suppress the cursor, so we omit it
+            // to include the OS cursor in the captured frame.
+            var args = $"-q {quality} \"{tmpFile}\"";
             var result = await RunProcessAsync(tool, args, ct, env);
             if (result != 0 || scale >= 0.99) return result;
 

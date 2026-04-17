@@ -116,6 +116,21 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
         )
     }
 
+    private var mouseMoveAccumX = 0f
+    private var mouseMoveAccumY = 0f
+
+    fun sendMouseMove(deltaX: Float, deltaY: Float) {
+        mouseMoveAccumX += deltaX
+        mouseMoveAccumY += deltaY
+        val intX = mouseMoveAccumX.toInt()
+        val intY = mouseMoveAccumY.toInt()
+        if (intX != 0 || intY != 0) {
+            sendMouseMove(intX, intY)
+            mouseMoveAccumX -= intX
+            mouseMoveAccumY -= intY
+        }
+    }
+
     fun sendMouseClick(button: Int) {
         sendInput(
                 JSONObject().apply {

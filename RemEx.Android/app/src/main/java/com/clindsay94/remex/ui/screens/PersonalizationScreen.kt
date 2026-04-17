@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList
@@ -42,15 +43,17 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PersonalizationScreen(
-    viewModel: PersonalizationViewModel = viewModel()
+    viewModel: PersonalizationViewModel = viewModel(),
+    showHeader: Boolean = true
 ) {
     val settingsState by viewModel.personalization.collectAsState()
 
     if (settingsState == null) {
-        Scaffold(
-            topBar = { TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title), fontWeight = FontWeight.Bold) }) }
-        ) { padding ->
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (showHeader) {
+                RemexScreenHeader(title = stringResource(R.string.screen_personalization_title))
+            }
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
@@ -104,13 +107,13 @@ fun PersonalizationScreen(
         )
     }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title), fontWeight = FontWeight.Bold) }) }
-    ) { padding ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (showHeader) {
+            RemexScreenHeader(title = stringResource(R.string.screen_personalization_title))
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)

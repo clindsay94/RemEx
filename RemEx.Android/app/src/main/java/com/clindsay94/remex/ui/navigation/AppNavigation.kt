@@ -248,7 +248,7 @@ fun AppNavigation() {
                                                         } else {
                                                             Modifier.align(Alignment.BottomEnd)
                                                                     .padding(
-                                                                            bottom = 80.dp,
+                                                                            bottom = 96.dp,
                                                                             end = 16.dp
                                                                     )
                                                         }
@@ -291,7 +291,7 @@ fun AppNavigation() {
                                                                             }
                                                                     mouseFabOffsetY =
                                                                             with(density) {
-                                                                                -80.dp.toPx()
+                                                                                -96.dp.toPx()
                                                                             }
                                                                 }
                                                                 mouseFabOffsetX += dragAmount.x
@@ -319,7 +319,7 @@ fun AppNavigation() {
         Box(
                 modifier =
                         Modifier.fillMaxSize()
-                                .padding(if (showNav) innerPadding else PaddingValues(0.dp))
+                                .padding(PaddingValues(0.dp))
                                 .pointerInput(showNav) {
                                     if (showNav) {
                                         awaitEachGesture {
@@ -409,12 +409,13 @@ fun AppNavigation() {
             }
 
             if (showMouseOverlay) {
-                // Default position: bottom-right with some padding
+                // Default position: bottom-center with some padding to clear FAB
+                val density = androidx.compose.ui.platform.LocalDensity.current
                 val defaultOffsetX = remember {
-                    with(context.resources.displayMetrics) { widthPixels - 200f }
+                    with(context.resources.displayMetrics) { widthPixels / 2f - with(density) { 150.dp.toPx() } }
                 }
                 val defaultOffsetY = remember {
-                    with(context.resources.displayMetrics) { heightPixels - 500f }
+                    with(context.resources.displayMetrics) { heightPixels - with(density) { 440.dp.toPx() } }
                 }
 
                 // Use saved position if available, otherwise use default

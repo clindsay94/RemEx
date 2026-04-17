@@ -26,9 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +48,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -74,22 +73,19 @@ fun AppLauncherScreen(
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_app_launcher_title), fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.refreshApps()
-                    }, enabled = isConnected) {
-                        Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
-                    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        RemexScreenHeader(
+            title = stringResource(R.string.screen_app_launcher_title),
+            actions = {
+                IconButton(onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.refreshApps()
+                }, enabled = isConnected) {
+                    Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                 }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            }
+        )
+        Column(modifier = Modifier.fillMaxSize()) {
             NotConnectedBanner(
                 isConnected = isConnected,
                 onNavigateToConnection = onNavigateToConnection

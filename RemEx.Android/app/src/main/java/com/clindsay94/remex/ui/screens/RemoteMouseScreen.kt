@@ -28,20 +28,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -53,7 +53,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
+import kotlin.math.sqrt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,20 +74,10 @@ fun RemoteMouseScreen(
     val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = {
-                            Text(
-                                    stringResource(R.string.screen_remote_mouse_title),
-                                    fontWeight = FontWeight.Bold
-                            )
-                        }
-                )
-            }
-    ) { padding ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        RemexScreenHeader(title = stringResource(R.string.screen_remote_mouse_title))
         Column(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             NotConnectedBanner(
@@ -263,6 +258,8 @@ fun FloatingMouseIsland(
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
     val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
+    val scope = rememberCoroutineScope()
+    var inertiaJob by remember { mutableStateOf<Job?>(null) }
 
     BasicTextField(
             value = textValue,
@@ -331,17 +328,66 @@ fun FloatingMouseIsland(
                             Modifier.fillMaxWidth()
                                     .height(180.dp)
                                     .pointerInput(Unit) {
-                                        detectDragGestures { change, dragAmount ->
-                                            change.consume()
-                                            viewModel.sendMouseMove(
-                                                    dragAmount.x.toInt(),
-                                                    dragAmount.y.toInt()
-                                            )
-                                        }
+                                        val recentDeltas = ArrayDeque<Offset>(4)
+                                        detectDragGestures(
+                                                onDragStart = {
+                                                    inertiaJob?.cancel()
+                                                    inertiaJob = null
+                                                    recentDeltas.clear()
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    viewModel.sendMouseMove(
+                                                            dragAmount.x.toInt(),
+                                                            dragAmount.y.toInt()
+                                                    )
+                                                    recentDeltas.addLast(
+                                                            Offset(dragAmount.x, dragAmount.y)
+                                                    )
+                                                    if (recentDeltas.size > 3)
+                                                            recentDeltas.removeFirst()
+                                                },
+                                                onDragEnd = {
+                                                    if (recentDeltas.isNotEmpty()) {
+                                                        var avgX = 0f
+                                                        var avgY = 0f
+                                                        recentDeltas.forEach {
+                                                            avgX += it.x
+                                                            avgY += it.y
+                                                        }
+                                                        avgX /= recentDeltas.size
+                                                        avgY /= recentDeltas.size
+                                                        val velocity =
+                                                                sqrt(avgX * avgX + avgY * avgY)
+                                                        if (velocity > 2f) {
+                                                            inertiaJob =
+                                                                    scope.launch {
+                                                                        var vx = avgX
+                                                                        var vy = avgY
+                                                                        while (sqrt(
+                                                                                        vx * vx +
+                                                                                                vy * vy
+                                                                                ) > 0.5f
+                                                                        ) {
+                                                                            viewModel.sendMouseMove(
+                                                                                    vx,
+                                                                                    vy
+                                                                            )
+                                                                            vx *= 0.93f
+                                                                            vy *= 0.93f
+                                                                            delay(16L)
+                                                                        }
+                                                                    }
+                                                        }
+                                                    }
+                                                }
+                                        )
                                     }
                                     .pointerInput(Unit) {
                                         detectTapGestures(
                                                 onTap = {
+                                                    inertiaJob?.cancel()
+                                                    inertiaJob = null
                                                     haptic.performHapticFeedback(
                                                             HapticFeedbackType.LongPress
                                                     )

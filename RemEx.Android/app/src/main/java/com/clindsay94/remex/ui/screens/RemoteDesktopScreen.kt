@@ -34,10 +34,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -63,7 +65,6 @@ private const val TAG = "RemoteDesktopScreen"
 private const val TAP_MAX_DURATION_MS = 250L
 private const val LONG_PRESS_THRESHOLD_MS = 500L
 private const val DOUBLE_TAP_WINDOW_MS = 300L
-private const val DOUBLE_TAP_HOLD_GATE_MS = 100L
 
 // Movement thresholds (dp, converted to px at runtime)
 private const val FINGER_SLOP_DP = 8f
@@ -105,6 +106,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
     val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -411,7 +413,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                     null // for double-tap detection
                                             var isDoubleTapHoldArmed =
                                                     false // second press in double-tap window
-                                            var doubleTapHoldConfirmed = false // hold gating passed
+                                            var longPressArmed =
+                                                    false // 500ms still-hold completed (trackpad)
+                                            var longPressJob: Job? = null
                                             var lastMoveTime = 0L // for move throttling
                                             var scrollAccumX = 0f
                                             var scrollAccumY = 0f
@@ -436,7 +440,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                 pressPos = Offset.Zero
                                                 hasMovedBeyondSlop = false
                                                 isDoubleTapHoldArmed = false
-                                                doubleTapHoldConfirmed = false
+                                                longPressArmed = false
+                                                longPressJob?.cancel()
+                                                longPressJob = null
                                                 lastMoveTime = 0L
                                                 recentDeltas.clear()
                                             }
@@ -663,10 +669,29 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                             lt.isStylus == isStylus
                                                             ) {
                                                                 isDoubleTapHoldArmed = true
-                                                                doubleTapHoldConfirmed = false
                                                             } else {
                                                                 isDoubleTapHoldArmed = false
-                                                                doubleTapHoldConfirmed = false
+                                                            }
+
+                                                            // Arm long-press-then-drag timer for
+                                                            // trackpad mode (fires after 500ms
+                                                            // still-hold). Not used in absolute
+                                                            // mode or when double-tap is armed.
+                                                            longPressJob?.cancel()
+                                                            longPressArmed = false
+                                                            if (!useAbsolute && !isDoubleTapHoldArmed) {
+                                                                longPressJob =
+                                                                        scope.launch {
+                                                                            delay(LONG_PRESS_THRESHOLD_MS)
+                                                                            if (!isDragging &&
+                                                                                            !hasMovedBeyondSlop
+                                                                            ) {
+                                                                                longPressArmed = true
+                                                                                haptic.performHapticFeedback(
+                                                                                        HapticFeedbackType.LongPress
+                                                                                )
+                                                                            }
+                                                                        }
                                                             }
 
                                                             // DO NOT send mouseDown here — deferred
@@ -684,6 +709,13 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                             distance > slop
                                                             ) {
                                                                 hasMovedBeyondSlop = true
+                                                                // Moving cancels the still-hold
+                                                                // long-press timer if it hasn't
+                                                                // fired yet
+                                                                if (!longPressArmed) {
+                                                                    longPressJob?.cancel()
+                                                                    longPressJob = null
+                                                                }
                                                             }
 
                                                             // Update cursor position for visual
@@ -702,55 +734,12 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
                                                             if (hasMovedBeyondSlop) {
                                                                 if (isDoubleTapHoldArmed &&
-                                                                                !doubleTapHoldConfirmed
+                                                                                !isDragging
                                                                 ) {
-                                                                    // Double-tap-hold gating: need
-                                                                    // >100ms hold OR movement >slop
-                                                                    val holdTime = now - pressTime
-                                                                    if (holdTime >=
-                                                                                    DOUBLE_TAP_HOLD_GATE_MS ||
-                                                                                    distance > slop
-                                                                    ) {
-                                                                        doubleTapHoldConfirmed =
-                                                                                true
-                                                                        // Enter left-drag from
-                                                                        // original press position
-                                                                        if (useAbsolute) {
-                                                                            val hostPress =
-                                                                                    mapLocalToHost(
-                                                                                            pressPos
-                                                                                    )
-                                                                            viewModel.sendMouseDown(
-                                                                                    0,
-                                                                                    hostPress.x
-                                                                                            .toInt(),
-                                                                                    hostPress.y
-                                                                                            .toInt()
-                                                                            )
-                                                                        } else {
-                                                                            viewModel.sendMouseDown(
-                                                                                    0
-                                                                            )
-                                                                        }
-                                                                        isDragging = true
-                                                                        dragButton = 0
-                                                                        lastTap = null // Consumed
-                                                                        // double-tap
-                                                                    } else {
-                                                                        continue // Still gating
-                                                                    }
-                                                                }
-
-                                                                if (!isDragging &&
-                                                                                !isDoubleTapHoldArmed
-                                                                ) {
-                                                                    // Normal drag: just move
-                                                                    // cursor, no mouseDown
-                                                                    // In trackpad mode, finger
-                                                                    // drags = cursor move (no
-                                                                    // button held)
-                                                                    // In absolute/stylus mode, we
-                                                                    // need mouseDown for drag
+                                                                    // Double-tap-then-drag: second
+                                                                    // press has started moving —
+                                                                    // immediately enter left drag
+                                                                    // from original press position
                                                                     if (useAbsolute) {
                                                                         val hostPress =
                                                                                 mapLocalToHost(
@@ -761,12 +750,46 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                 hostPress.x.toInt(),
                                                                                 hostPress.y.toInt()
                                                                         )
-                                                                        isDragging = true
-                                                                        dragButton = 0
+                                                                    } else {
+                                                                        viewModel.sendMouseDown(0)
                                                                     }
-                                                                    // Trackpad: no isDragging, just
-                                                                    // move cursor
+                                                                    isDragging = true
+                                                                    dragButton = 0
+                                                                    isDoubleTapHoldArmed = false
+                                                                    lastTap = null
+                                                                } else if (longPressArmed &&
+                                                                                !isDragging &&
+                                                                                !useAbsolute
+                                                                ) {
+                                                                    // Long-press-then-drag
+                                                                    // (trackpad): enter left drag
+                                                                    // now that user has started
+                                                                    // moving after 500ms hold
+                                                                    viewModel.sendMouseDown(0)
+                                                                    isDragging = true
+                                                                    dragButton = 0
+                                                                    longPressArmed = false
+                                                                } else if (!isDragging &&
+                                                                                !isDoubleTapHoldArmed &&
+                                                                                useAbsolute
+                                                                ) {
+                                                                    // Absolute/stylus mode: normal
+                                                                    // drag requires mouseDown
+                                                                    val hostPress =
+                                                                            mapLocalToHost(
+                                                                                    pressPos
+                                                                            )
+                                                                    viewModel.sendMouseDown(
+                                                                            0,
+                                                                            hostPress.x.toInt(),
+                                                                            hostPress.y.toInt()
+                                                                    )
+                                                                    isDragging = true
+                                                                    dragButton = 0
                                                                 }
+                                                                // Trackpad (relative, no
+                                                                // long-press, no double-tap): just
+                                                                // move cursor, no button held
 
                                                                 if (useAbsolute) {
                                                                     // Absolute positioning
@@ -948,6 +971,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                     viewModel.sendMouseUp(dragButton)
                                                 }
                                                 inertiaJob?.cancel()
+                                                longPressJob?.cancel()
                                             }
                                         }
                                     },
@@ -975,7 +999,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
                     // Cursor overlay: visible in absolute modes (direct touch/stylus) OR when host
                     // provides cursor position (trackpad mode)
-                    val hasHostCursor = hostCursorX > 0f || hostCursorY > 0f
+                    // Sentinel -1f from ViewModel means "no cursor reported yet".
+                    // (0,0) is a valid on-screen position (top-left corner).
+                    val hasHostCursor = hostCursorX >= 0f && hostCursorY >= 0f
                     val showCursor =
                             isStreaming &&
                                     (cursorVisible && (directTouch || isStylusActive) ||
@@ -1006,9 +1032,16 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                 modifier =
                                         Modifier.offset {
                                                     val halfPx = (cursorSizeDp / 2).roundToPx()
+                                                    // Apply the same zoom/pan transform the
+                                                    // underlying Image uses so the cursor tracks
+                                                    // the frame as the user zooms or pans.
+                                                    val transformedX =
+                                                            displayCursorX * zoomFactor + panOffsetX
+                                                    val transformedY =
+                                                            displayCursorY * zoomFactor + panOffsetY
                                                     IntOffset(
-                                                            displayCursorX.roundToInt() - halfPx,
-                                                            displayCursorY.roundToInt() - halfPx
+                                                            transformedX.roundToInt() - halfPx,
+                                                            transformedY.roundToInt() - halfPx
                                                     )
                                                 }
                                                 .size(cursorSizeDp)

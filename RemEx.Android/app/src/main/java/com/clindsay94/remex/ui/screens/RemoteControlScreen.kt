@@ -31,11 +31,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 
 private enum class CommandCategory(@param:StringRes val labelRes: Int) {
     SESSION(R.string.rc_category_session),
@@ -175,20 +174,12 @@ fun RemoteControlScreen(
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
 
-    Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = {
-                            Text(
-                                    stringResource(R.string.screen_remote_control_title),
-                                    fontWeight = FontWeight.Bold
-                            )
-                        }
-                )
-            }
-    ) { paddingValues ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        RemexScreenHeader(
+                title = stringResource(R.string.screen_remote_control_title)
+        )
         Column(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             NotConnectedBanner(
