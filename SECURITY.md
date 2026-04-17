@@ -6,8 +6,8 @@ RemEx is a remote access and command execution tool. We take security seriously 
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.10.x  | :white_check_mark: |
-| 1.8.x   | :white_check_mark: |
+| 1.12.x  | :white_check_mark: |
+| 1.10.x   | :white_check_mark: |
 | < 1.8   | :x:                |
 
 ## Reporting a Vulnerability
