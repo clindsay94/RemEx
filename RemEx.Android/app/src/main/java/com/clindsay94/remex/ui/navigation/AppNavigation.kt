@@ -1,16 +1,15 @@
 package com.clindsay94.remex.ui.navigation
 
 import android.view.HapticFeedbackConstants
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Mouse
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,9 +47,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
@@ -85,13 +86,13 @@ import kotlinx.coroutines.launch
 
 // Routes that require an active PC connection to be useful
 private val connectionRequiredRoutes =
-    setOf(
-        Screen.AppLauncher.route,
-        Screen.RemoteDesktop.route,
-        Screen.TaskManager.route,
-        Screen.RemoteControl.route,
-        Screen.RemoteMouse.route,
-    )
+        setOf(
+                Screen.AppLauncher.route,
+                Screen.RemoteDesktop.route,
+                Screen.TaskManager.route,
+                Screen.RemoteControl.route,
+                Screen.RemoteMouse.route,
+        )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +103,7 @@ fun AppNavigation() {
     val connectionViewModel: ConnectionViewModel = viewModel()
 
     val hasCompletedOnboarding by
-        settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
+            settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
     val splashShown by settingsManager.splashShownFlow.collectAsState(initial = null)
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
@@ -115,84 +116,95 @@ fun AppNavigation() {
     val savedMouseFabY by mouseViewModel.mouseFabY.collectAsState()
 
     AppNavigationContent(
-        hasCompletedOnboarding = hasCompletedOnboarding,
-        splashShown = splashShown,
-        isConnected = isConnected,
-        mouseShapePreset = mouseShapePreset,
-        mouseCornerRadius = mouseCornerRadius,
-        savedFabPositionX = savedFabPositionX,
-        savedFabPositionY = savedFabPositionY,
-        savedMouseFabX = savedMouseFabX,
-        savedMouseFabY = savedMouseFabY,
-        onMarkSplashShown = { scope -> scope.launch { settingsManager.markSplashShown() } },
-        onSaveMouseFabPosition = { x, y -> mouseViewModel.saveMouseFabPosition(x, y) },
-        onSaveFloatingMouseIslandPosition = { x, y -> mouseViewModel.saveFloatingMouseIslandPosition(x, y) },
-        onQrScanned = { host, port, key -> connectionViewModel.applyQrResultAndConnect(host, port, key) },
-        dashboardScreenContent = { onNavigateToConnection ->
-            DashboardScreen(onNavigateToConnection = onNavigateToConnection)
-        },
-        remoteControlScreenContent = { onNavigateToConnection ->
-            RemoteControlScreen(onNavigateToConnection = onNavigateToConnection)
-        },
-        remoteMouseScreenContent = { onNavigateToConnection ->
-            RemoteMouseScreen(onNavigateToConnection = onNavigateToConnection)
-        },
-        appLauncherScreenContent = { onNavigateToConnection ->
-            AppLauncherScreen(onNavigateToConnection = onNavigateToConnection)
-        },
-        taskManagerScreenContent = { onNavigateToConnection ->
-            TaskManagerScreen(onNavigateToConnection = onNavigateToConnection)
-        },
-        connectionScreenContent = { onNavigateToQrScanner ->
-            ConnectionScreen(
-                viewModel = connectionViewModel,
-                onNavigateToQrScanner = onNavigateToQrScanner
-            )
-        },
-        floatingMouseIslandContent = { shapePreset, cornerRadius, onDismiss, onDragStart, onDrag, onDragEnd ->
-            FloatingMouseIsland(
-                viewModel = mouseViewModel,
-                shapePreset = shapePreset,
-                cornerRadius = cornerRadius,
-                onDismiss = onDismiss,
-                onDragStart = onDragStart,
-                onDrag = onDrag,
-                onDragEnd = onDragEnd
-            )
-        }
+            hasCompletedOnboarding = hasCompletedOnboarding,
+            splashShown = splashShown,
+            isConnected = isConnected,
+            mouseShapePreset = mouseShapePreset,
+            mouseCornerRadius = mouseCornerRadius,
+            savedFabPositionX = savedFabPositionX,
+            savedFabPositionY = savedFabPositionY,
+            savedMouseFabX = savedMouseFabX,
+            savedMouseFabY = savedMouseFabY,
+            onMarkSplashShown = { scope -> scope.launch { settingsManager.markSplashShown() } },
+            onSaveMouseFabPosition = { x, y -> mouseViewModel.saveMouseFabPosition(x, y) },
+            onSaveFloatingMouseIslandPosition = { x, y ->
+                mouseViewModel.saveFloatingMouseIslandPosition(x, y)
+            },
+            onQrScanned = { host, port, key ->
+                connectionViewModel.applyQrResultAndConnect(host, port, key)
+            },
+            dashboardScreenContent = { onNavigateToConnection ->
+                DashboardScreen(onNavigateToConnection = onNavigateToConnection)
+            },
+            remoteControlScreenContent = { onNavigateToConnection ->
+                RemoteControlScreen(onNavigateToConnection = onNavigateToConnection)
+            },
+            remoteMouseScreenContent = { onNavigateToConnection ->
+                RemoteMouseScreen(onNavigateToConnection = onNavigateToConnection)
+            },
+            appLauncherScreenContent = { onNavigateToConnection ->
+                AppLauncherScreen(onNavigateToConnection = onNavigateToConnection)
+            },
+            taskManagerScreenContent = { onNavigateToConnection ->
+                TaskManagerScreen(onNavigateToConnection = onNavigateToConnection)
+            },
+            connectionScreenContent = { onNavigateToQrScanner ->
+                ConnectionScreen(
+                        viewModel = connectionViewModel,
+                        onNavigateToQrScanner = onNavigateToQrScanner
+                )
+            },
+            floatingMouseIslandContent = {
+                    shapePreset,
+                    cornerRadius,
+                    onDismiss,
+                    onDragStart,
+                    onDrag,
+                    onDragEnd ->
+                FloatingMouseIsland(
+                        viewModel = mouseViewModel,
+                        shapePreset = shapePreset,
+                        cornerRadius = cornerRadius,
+                        onDismiss = onDismiss,
+                        onDragStart = onDragStart,
+                        onDrag = onDrag,
+                        onDragEnd = onDragEnd
+                )
+            }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AppNavigationContent(
-    hasCompletedOnboarding: Boolean?,
-    splashShown: Boolean?,
-    isConnected: Boolean,
-    mouseShapePreset: Float,
-    mouseCornerRadius: Int,
-    savedFabPositionX: Float,
-    savedFabPositionY: Float,
-    savedMouseFabX: Float,
-    savedMouseFabY: Float,
-    onMarkSplashShown: (kotlinx.coroutines.CoroutineScope) -> Unit,
-    onSaveMouseFabPosition: (Float, Float) -> Unit,
-    onSaveFloatingMouseIslandPosition: (Float, Float) -> Unit,
-    onQrScanned: (String, Int, String) -> Unit,
-    dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-    remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-    remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-    appLauncherScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-    taskManagerScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-    connectionScreenContent: @Composable (onNavigateToQrScanner: () -> Unit) -> Unit,
-    floatingMouseIslandContent: @Composable (
-        shapePreset: Float,
-        cornerRadius: Int,
-        onDismiss: () -> Unit,
-        onDragStart: (() -> Unit)?,
-        onDrag: ((androidx.compose.ui.geometry.Offset) -> Unit)?,
-        onDragEnd: (() -> Unit)?
-    ) -> Unit
+        hasCompletedOnboarding: Boolean?,
+        splashShown: Boolean?,
+        isConnected: Boolean,
+        mouseShapePreset: Float,
+        mouseCornerRadius: Int,
+        savedFabPositionX: Float,
+        savedFabPositionY: Float,
+        savedMouseFabX: Float,
+        savedMouseFabY: Float,
+        onMarkSplashShown: (kotlinx.coroutines.CoroutineScope) -> Unit,
+        onSaveMouseFabPosition: (Float, Float) -> Unit,
+        onSaveFloatingMouseIslandPosition: (Float, Float) -> Unit,
+        onQrScanned: (String, Int, String) -> Unit,
+        dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        appLauncherScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        taskManagerScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        connectionScreenContent: @Composable (onNavigateToQrScanner: () -> Unit) -> Unit,
+        floatingMouseIslandContent:
+                @Composable
+                (
+                        shapePreset: Float,
+                        cornerRadius: Int,
+                        onDismiss: () -> Unit,
+                        onDragStart: (() -> Unit)?,
+                        onDrag: ((androidx.compose.ui.geometry.Offset) -> Unit)?,
+                        onDragEnd: (() -> Unit)?) -> Unit
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -205,12 +217,13 @@ private fun AppNavigationContent(
     }
 
     val startDestination =
-        when {
-            splashShown -> {
-                if (hasCompletedOnboarding == true) Screen.Dashboard.route else Screen.Tutorial.route
+            when {
+                splashShown -> {
+                    if (hasCompletedOnboarding == true) Screen.Dashboard.route
+                    else Screen.Tutorial.route
+                }
+                else -> Screen.Splash.route
             }
-            else -> Screen.Splash.route
-        }
 
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -220,10 +233,10 @@ private fun AppNavigationContent(
     val scope = rememberCoroutineScope()
 
     val showNav =
-        currentRoute != Screen.Splash.route &&
-            currentRoute != Screen.Tutorial.route &&
-            currentRoute != Screen.RemoteDesktop.route &&
-            currentRoute != Screen.QrScanner.route
+            currentRoute != Screen.Splash.route &&
+                    currentRoute != Screen.Tutorial.route &&
+                    currentRoute != Screen.RemoteDesktop.route &&
+                    currentRoute != Screen.QrScanner.route
     var showOverflowMenu by remember { mutableStateOf(false) }
     var showMouseOverlay by remember { mutableStateOf(false) }
     var navBarVisible by remember { mutableStateOf(true) }
@@ -234,10 +247,10 @@ private fun AppNavigationContent(
         navBarVisible = true
         navHideJob?.cancel()
         navHideJob =
-            scope.launch {
-                kotlinx.coroutines.delay(3000L)
-                navBarVisible = false
-            }
+                scope.launch {
+                    kotlinx.coroutines.delay(3000L)
+                    navBarVisible = false
+                }
     }
 
     // Show nav bar on route change
@@ -248,22 +261,22 @@ private fun AppNavigationContent(
     }
 
     var mouseFabOffsetX by
-        remember(savedMouseFabX) {
-            mutableStateOf(if (savedMouseFabX.isNaN()) Float.NaN else savedMouseFabX)
-        }
+            remember(savedMouseFabX) {
+                mutableStateOf(if (savedMouseFabX.isNaN()) Float.NaN else savedMouseFabX)
+            }
     var mouseFabOffsetY by
-        remember(savedMouseFabY) {
-            mutableStateOf(if (savedMouseFabY.isNaN()) Float.NaN else savedMouseFabY)
-        }
+            remember(savedMouseFabY) {
+                mutableStateOf(if (savedMouseFabY.isNaN()) Float.NaN else savedMouseFabY)
+            }
 
     // Hide mouse overlay when navigating away from main nav screens
     val showMouseFab =
-        showNav &&
-            currentRoute != Screen.RemoteMouse.route &&
-            currentRoute != Screen.Settings.route &&
-            currentRoute != Screen.Personalization.route &&
-            currentRoute != Screen.Faq.route &&
-            currentRoute != Screen.Connection.route
+            showNav &&
+                    currentRoute != Screen.RemoteMouse.route &&
+                    currentRoute != Screen.Settings.route &&
+                    currentRoute != Screen.Personalization.route &&
+                    currentRoute != Screen.Faq.route &&
+                    currentRoute != Screen.Connection.route
 
     LaunchedEffect(currentRoute, showMouseFab) {
         if (!showMouseFab) {
@@ -286,11 +299,11 @@ private fun AppNavigationContent(
         if (!isConnected && route in connectionRequiredRoutes) {
             scope.launch {
                 val result =
-                    snackbarHostState.showSnackbar(
-                        message = noConnectedMsg,
-                        actionLabel = setupConnectionLabel,
-                        withDismissAction = true
-                    )
+                        snackbarHostState.showSnackbar(
+                                message = noConnectedMsg,
+                                actionLabel = setupConnectionLabel,
+                                withDismissAction = true
+                        )
                 if (result == SnackbarResult.ActionPerformed) {
                     navigateToConnection()
                 }
@@ -305,115 +318,59 @@ private fun AppNavigationContent(
     }
 
     Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = MaterialTheme.colorScheme.inverseSurface,
-                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                    actionColor = MaterialTheme.colorScheme.inversePrimary
-                )
-            }
-        },
-        bottomBar = {
-            // Empty - navigation is now a floating overlay
-        },
-        floatingActionButton = {
-            if (showMouseFab) {
-                val density = LocalDensity.current
-                Box(modifier = Modifier.fillMaxSize()) {
-                    FloatingActionButton(
-                        onClick = { showMouseOverlay = !showMouseOverlay },
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier =
-                            Modifier.then(
-                                    if (!mouseFabOffsetX.isNaN() && !mouseFabOffsetY.isNaN()) {
-                                        Modifier.offset {
-                                            IntOffset(mouseFabOffsetX.toInt(), mouseFabOffsetY.toInt())
-                                        }
-                                    } else {
-                                        Modifier.align(Alignment.BottomEnd)
-                                            .padding(bottom = 96.dp, end = 16.dp)
-                                    }
-                                )
-                                .pointerInput(Unit) {
-                                    detectDragGesturesAfterLongPress(
-                                        onDragStart = {
-                                            scope.launch {
-                                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                            }
-                                        },
-                                        onDrag = { change, dragAmount ->
-                                            change.consume()
-                                            if (mouseFabOffsetX.isNaN()) {
-                                                // If we don't have a saved position, we start from a reasonable default
-                                                // approximately where Alignment.BottomEnd with padding is.
-                                                mouseFabOffsetX = with(density) { -16.dp.toPx() }
-                                                mouseFabOffsetY = with(density) { -96.dp.toPx() }
-                                            }
-                                            mouseFabOffsetX += dragAmount.x
-                                        mouseFabOffsetY += dragAmount.y
-                                    },
-                                    onDragEnd = {
-                                        onSaveMouseFabPosition(
-                                            mouseFabOffsetX,
-                                            mouseFabOffsetY
-                                        )
-                                    }
-                                )
-                                }
-                    ) {
-                        Icon(
-                            Icons.Default.Mouse,
-                            contentDescription = stringResource(R.string.screen_remote_mouse_title)
-                        )
-                    }
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    Snackbar(
+                            snackbarData = data,
+                            containerColor = MaterialTheme.colorScheme.inverseSurface,
+                            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                            actionColor = MaterialTheme.colorScheme.inversePrimary
+                    )
                 }
+            },
+            bottomBar = {
+                // Empty - navigation is now a floating overlay
             }
-        }
     ) { innerPadding ->
         Box(
-            modifier =
-                Modifier.fillMaxSize()
-                    .padding(innerPadding)
-                    .pointerInput(showNav) {
-                        if (showNav) {
-                            awaitEachGesture {
-                                awaitPointerEvent()
-                                // Show nav on any touch interaction
-                                showNavBarWithTimer()
+                modifier =
+                        Modifier.fillMaxSize().padding(innerPadding).pointerInput(showNav) {
+                            if (showNav) {
+                                awaitEachGesture {
+                                    awaitPointerEvent()
+                                    // Show nav on any touch interaction
+                                    showNavBarWithTimer()
+                                }
                             }
                         }
-                    }
         ) {
             NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                modifier = Modifier.fillMaxSize()
+                    navController = navController,
+                    startDestination = startDestination,
+                    modifier = Modifier.fillMaxSize()
             ) {
                 composable(Screen.Splash.route) {
                     SplashScreen(
-                        onFinished = {
-                            onMarkSplashShown(scope)
-                            val nextRoute =
-                                if (hasCompletedOnboarding == true) Screen.Dashboard.route
-                                else Screen.Tutorial.route
-                            navController.navigate(nextRoute) {
-                                popUpTo(Screen.Splash.route) { inclusive = true }
-                                launchSingleTop = true
+                            onFinished = {
+                                onMarkSplashShown(scope)
+                                val nextRoute =
+                                        if (hasCompletedOnboarding == true) Screen.Dashboard.route
+                                        else Screen.Tutorial.route
+                                navController.navigate(nextRoute) {
+                                    popUpTo(Screen.Splash.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
                             }
-                        }
                     )
                 }
                 composable(Screen.Tutorial.route) {
                     TutorialScreen(
-                        onFinished = {
-                            navController.navigate(Screen.Dashboard.route) {
-                                popUpTo(Screen.Tutorial.route) { inclusive = true }
-                                launchSingleTop = true
+                            onFinished = {
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Tutorial.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
                             }
-                        }
                     )
                 }
                 composable(Screen.Dashboard.route) {
@@ -424,14 +381,14 @@ private fun AppNavigationContent(
                 }
                 composable(Screen.QrScanner.route) {
                     QrScannerScreen(
-                        onScanned = { host, port, key ->
-                            onQrScanned(host, port, key)
-                            navController.navigate(Screen.Dashboard.route) {
-                                popUpTo(Screen.Dashboard.route) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        },
-                        onBack = { navController.popBackStack() }
+                            onScanned = { host, port, key ->
+                                onQrScanned(host, port, key)
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Dashboard.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                            onBack = { navController.popBackStack() }
                     )
                 }
                 composable(Screen.RemoteControl.route) {
@@ -450,9 +407,11 @@ private fun AppNavigationContent(
                 composable(Screen.Personalization.route) { PersonalizationScreen() }
                 composable(Screen.Settings.route) {
                     SettingsScreen(
-                        onReplayTutorial = {
-                            navController.navigate(Screen.Tutorial.route) { launchSingleTop = true }
-                        }
+                            onReplayTutorial = {
+                                navController.navigate(Screen.Tutorial.route) {
+                                    launchSingleTop = true
+                                }
+                            }
                     )
                 }
                 composable(Screen.Faq.route) { FaqScreen() }
@@ -462,9 +421,10 @@ private fun AppNavigationContent(
                 // Default position: bottom-center with some padding to clear FAB
                 val density = LocalDensity.current
                 val defaultOffsetX = remember {
-                    val with = with(receiver = context.resources.displayMetrics) {
-                        widthPixels / 2f - with(density) { 150.dp.toPx() }
-                    }
+                    val with =
+                            with(receiver = context.resources.displayMetrics) {
+                                widthPixels / 2f - with(density) { 150.dp.toPx() }
+                            }
                     with
                 }
                 val defaultOffsetY = remember {
@@ -474,155 +434,283 @@ private fun AppNavigationContent(
                 }
 
                 // Use saved position if available, otherwise use default
-                var fabOffsetX by
-                    remember {
-                        mutableStateOf(
+                var fabOffsetX by remember {
+                    mutableStateOf(
                             if (savedFabPositionX.isNaN()) defaultOffsetX else savedFabPositionX
-                        )
-                    }
-                var fabOffsetY by
-                    remember {
-                        mutableStateOf(
+                    )
+                }
+                var fabOffsetY by remember {
+                    mutableStateOf(
                             if (savedFabPositionY.isNaN()) defaultOffsetY else savedFabPositionY
-                        )
-                    }
+                    )
+                }
 
                 Box(
-                    modifier =
-                        Modifier.fillMaxSize()
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { showMouseOverlay = false }
+                        modifier =
+                                Modifier.fillMaxSize().clickable(
+                                                indication = null,
+                                                interactionSource =
+                                                        remember { MutableInteractionSource() }
+                                        ) { showMouseOverlay = false }
                 ) {
                     Box(
-                        modifier = Modifier.offset { IntOffset(fabOffsetX.toInt(), fabOffsetY.toInt()) }
+                            modifier =
+                                    Modifier.offset {
+                                        IntOffset(fabOffsetX.toInt(), fabOffsetY.toInt())
+                                    }
                     ) {
                         floatingMouseIslandContent(
-                            mouseShapePreset,
-                            mouseCornerRadius,
-                            { showMouseOverlay = false },
-                            { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP) },
-                            { dragAmount ->
-                                fabOffsetX =
-                                    (fabOffsetX + dragAmount.x).coerceIn(
-                                        0f,
-                                        context.resources.displayMetrics.widthPixels - 320f
-                                    )
-                                fabOffsetY =
-                                    (fabOffsetY + dragAmount.y).coerceIn(
-                                        0f,
-                                        context.resources.displayMetrics.heightPixels - 400f
-                                    )
-                            },
-                            {
-                                onSaveFloatingMouseIslandPosition(fabOffsetX, fabOffsetY)
-                            }
+                                mouseShapePreset,
+                                mouseCornerRadius,
+                                { showMouseOverlay = false },
+                                {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                },
+                                { dragAmount ->
+                                    fabOffsetX =
+                                            (fabOffsetX + dragAmount.x).coerceIn(
+                                                    0f,
+                                                    context.resources.displayMetrics.widthPixels -
+                                                            320f
+                                            )
+                                    fabOffsetY =
+                                            (fabOffsetY + dragAmount.y).coerceIn(
+                                                    0f,
+                                                    context.resources.displayMetrics.heightPixels -
+                                                            400f
+                                            )
+                                },
+                                { onSaveFloatingMouseIslandPosition(fabOffsetX, fabOffsetY) }
                         )
                     }
                 }
             }
-            // ═══ FLOATING PILL NAVIGATION BAR (OneUI 8.5 style) ═══
+            // ═══ FLOATING PILL NAVIGATION BAR (OneUI 8.5 style) + MOUSE FAB ═══
             if (showNav) {
                 AnimatedVisibility(
-                    visible = navBarVisible,
-                    enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) + slideInVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) { it / 2 },
-                    exit = fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()) + slideOutVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) { it / 2 },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                        visible = navBarVisible,
+                        enter =
+                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                                        slideInVertically(
+                                                MaterialTheme.motionScheme.defaultSpatialSpec()
+                                        ) { it / 2 },
+                        exit =
+                                fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                                        slideOutVertically(
+                                                MaterialTheme.motionScheme.defaultSpatialSpec()
+                                        ) { it / 2 },
+                        modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     Row(
-                        modifier =
-                            Modifier.padding(bottom = 24.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
-                                    shape = MaterialTheme.shapes.extraLarge
-                                )
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.padding(bottom = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                     ) {
-                        navItems.forEach { screen ->
-                            val isSelected = currentRoute == screen.route
-                            val screenTitle = stringResource(screen.titleRes)
+                        // ── Navigation pill ──
+                        Row(
+                                modifier =
+                                        Modifier.background(
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .surfaceContainerHigh.copy(
+                                                                        alpha = 0.95f
+                                                                ),
+                                                        shape = MaterialTheme.shapes.extraLarge
+                                                )
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Navigation indicator state
+                            val selectedIndex = navItems.indexOfFirst { it.route == currentRoute }
 
-                            FilledTonalIconButton(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    navigateTo(screen.route)
-                                    showNavBarWithTimer()
-                                },
-                                modifier = Modifier.size(48.dp),
-                                colors =
-                                    IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor =
-                                            if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surfaceContainerHighest
+                            navItems.forEachIndexed { index, screen ->
+                                val isSelected = currentRoute == screen.route
+                                val screenTitle = stringResource(screen.titleRes)
+
+                                // Animate indicator sliding to selected button
+                                val indicatorWeight by
+                                        animateFloatAsState(
+                                                targetValue = if (isSelected) 1f else 0f,
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .fastSpatialSpec(),
+                                                label = "nav_indicator_$index"
+                                        )
+
+                                val containerColor by
+                                        animateColorAsState(
+                                                targetValue =
+                                                        if (isSelected)
+                                                                MaterialTheme.colorScheme
+                                                                        .primaryContainer
+                                                        else
+                                                                MaterialTheme.colorScheme
+                                                                        .surfaceContainerHighest,
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .defaultEffectsSpec(),
+                                                label = "nav_color_$index"
+                                        )
+
+                                val iconTint by
+                                        animateColorAsState(
+                                                targetValue =
+                                                        if (isSelected)
+                                                                MaterialTheme.colorScheme
+                                                                        .onPrimaryContainer
+                                                        else
+                                                                MaterialTheme.colorScheme
+                                                                        .onSurfaceVariant,
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .defaultEffectsSpec(),
+                                                label = "nav_icon_tint_$index"
+                                        )
+
+                                val iconScale by
+                                        animateFloatAsState(
+                                                targetValue = if (isSelected) 1.12f else 1f,
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .fastSpatialSpec(),
+                                                label = "nav_icon_scale_$index"
+                                        )
+
+                                FilledTonalIconButton(
+                                        onClick = {
+                                            view.performHapticFeedback(
+                                                    HapticFeedbackConstants.KEYBOARD_TAP
+                                            )
+                                            navigateTo(screen.route)
+                                            showNavBarWithTimer()
+                                        },
+                                        modifier = Modifier.size(48.dp),
+                                        colors =
+                                                IconButtonDefaults.filledTonalIconButtonColors(
+                                                        containerColor = containerColor
+                                                )
+                                ) {
+                                    Icon(
+                                            imageVector = screen.icon,
+                                            contentDescription = screenTitle,
+                                            tint = iconTint,
+                                            modifier =
+                                                    Modifier.size(24.dp).graphicsLayer {
+                                                        scaleX = iconScale
+                                                        scaleY = iconScale
+                                                    }
                                     )
-                            ) {
-                                Icon(
-                                    imageVector = screen.icon,
-                                    contentDescription = screenTitle,
-                                    tint =
-                                        if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                }
+                            }
+
+                            // Overflow button wrapped in Box for proper menu anchor positioning
+                            Box {
+                                val isOverflowSelected =
+                                        secondaryNavItems.any { it.route == currentRoute } ||
+                                                currentRoute == Screen.Personalization.route
+
+                                val overflowContainerColor by
+                                        animateColorAsState(
+                                                targetValue =
+                                                        if (isOverflowSelected)
+                                                                MaterialTheme.colorScheme
+                                                                        .primaryContainer
+                                                        else
+                                                                MaterialTheme.colorScheme
+                                                                        .surfaceContainerHighest,
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .defaultEffectsSpec(),
+                                                label = "overflow_color"
+                                        )
+
+                                FilledTonalIconButton(
+                                        onClick = {
+                                            view.performHapticFeedback(
+                                                    HapticFeedbackConstants.KEYBOARD_TAP
+                                            )
+                                            showOverflowMenu = !showOverflowMenu
+                                            showNavBarWithTimer()
+                                        },
+                                        modifier = Modifier.size(48.dp),
+                                        colors =
+                                                IconButtonDefaults.filledTonalIconButtonColors(
+                                                        containerColor = overflowContainerColor
+                                                )
+                                ) {
+                                    Icon(
+                                            Icons.Default.MoreVert,
+                                            contentDescription =
+                                                    stringResource(R.string.nav_more_label),
+                                            modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                DropdownMenu(
+                                        expanded = showOverflowMenu,
+                                        onDismissRequest = { showOverflowMenu = false },
+                                        offset = DpOffset(0.dp, 8.dp)
+                                ) {
+                                    secondaryNavItems.forEach { screen ->
+                                        DropdownMenuItem(
+                                                text = { Text(stringResource(screen.titleRes)) },
+                                                leadingIcon = {
+                                                    Icon(screen.icon, contentDescription = null)
+                                                },
+                                                onClick = {
+                                                    view.performHapticFeedback(
+                                                            HapticFeedbackConstants.KEYBOARD_TAP
+                                                    )
+                                                    showOverflowMenu = false
+                                                    navigateTo(screen.route)
+                                                    showNavBarWithTimer()
+                                                }
+                                        )
+                                    }
+                                    DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                        stringResource(
+                                                                Screen.Personalization.titleRes
+                                                        )
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                        Screen.Personalization.icon,
+                                                        contentDescription = null
+                                                )
+                                            },
+                                            onClick = {
+                                                view.performHapticFeedback(
+                                                        HapticFeedbackConstants.KEYBOARD_TAP
+                                                )
+                                                showOverflowMenu = false
+                                                navigateTo(Screen.Personalization.route)
+                                                showNavBarWithTimer()
+                                            }
+                                    )
+                                }
                             }
                         }
 
-                        // Overflow button wrapped in Box for proper menu anchor positioning
-                        Box {
-                            FilledTonalIconButton(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    showOverflowMenu = !showOverflowMenu
-                                    showNavBarWithTimer()
-                                },
-                                modifier = Modifier.size(48.dp),
-                                colors =
-                                    IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor =
-                                            if (secondaryNavItems.any { it.route == currentRoute } ||
-                                                    currentRoute == Screen.Personalization.route)
-                                                MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surfaceContainerHighest
-                                    )
+                        // ── Mouse FAB (anchored to the right of toolbar, never overlapping) ──
+                        if (showMouseFab) {
+                            FloatingActionButton(
+                                    onClick = {
+                                        view.performHapticFeedback(
+                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                        )
+                                        showMouseOverlay = !showMouseOverlay
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                             ) {
                                 Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.nav_more_label),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = showOverflowMenu,
-                                onDismissRequest = { showOverflowMenu = false },
-                                offset = DpOffset(0.dp, 8.dp)
-                            ) {
-                                secondaryNavItems.forEach { screen ->
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(screen.titleRes)) },
-                                        leadingIcon = { Icon(screen.icon, contentDescription = null) },
-                                        onClick = {
-                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                            showOverflowMenu = false
-                                            navigateTo(screen.route)
-                                            showNavBarWithTimer()
-                                        }
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Screen.Personalization.titleRes)) },
-                                    leadingIcon = {
-                                        Icon(Screen.Personalization.icon, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                        showOverflowMenu = false
-                                        navigateTo(Screen.Personalization.route)
-                                        showNavBarWithTimer()
-                                    }
+                                        Icons.Default.UnfoldMore,
+                                        contentDescription =
+                                                stringResource(R.string.screen_remote_mouse_title)
                                 )
                             }
                         }
@@ -638,26 +726,26 @@ private fun AppNavigationContent(
 private fun AppNavigationPreview() {
     RemExTheme {
         AppNavigationContent(
-            hasCompletedOnboarding = true,
-            splashShown = true,
-            isConnected = true,
-            mouseShapePreset = 0f,
-            mouseCornerRadius = 12,
-            savedFabPositionX = Float.NaN,
-            savedFabPositionY = Float.NaN,
-            savedMouseFabX = Float.NaN,
-            savedMouseFabY = Float.NaN,
-            onMarkSplashShown = {},
-            onSaveMouseFabPosition = { _, _ -> },
-            onSaveFloatingMouseIslandPosition = { _, _ -> },
-            onQrScanned = { _, _, _ -> },
-            dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
-            remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
-            remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
-            appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
-            taskManagerScreenContent = { Box(Modifier.fillMaxSize()) },
-            connectionScreenContent = { Box(Modifier.fillMaxSize()) },
-            floatingMouseIslandContent = { _, _, _, _, _, _ -> Box(Modifier.size(300.dp)) }
+                hasCompletedOnboarding = true,
+                splashShown = true,
+                isConnected = true,
+                mouseShapePreset = 0f,
+                mouseCornerRadius = 12,
+                savedFabPositionX = Float.NaN,
+                savedFabPositionY = Float.NaN,
+                savedMouseFabX = Float.NaN,
+                savedMouseFabY = Float.NaN,
+                onMarkSplashShown = {},
+                onSaveMouseFabPosition = { _, _ -> },
+                onSaveFloatingMouseIslandPosition = { _, _ -> },
+                onQrScanned = { _, _, _ -> },
+                dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
+                remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
+                remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
+                appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
+                taskManagerScreenContent = { Box(Modifier.fillMaxSize()) },
+                connectionScreenContent = { Box(Modifier.fillMaxSize()) },
+                floatingMouseIslandContent = { _, _, _, _, _, _ -> Box(Modifier.size(300.dp)) }
         )
     }
 }
@@ -667,26 +755,26 @@ private fun AppNavigationPreview() {
 private fun AppNavigationDisconnectedPreview() {
     RemExTheme {
         AppNavigationContent(
-            hasCompletedOnboarding = true,
-            splashShown = true,
-            isConnected = false,
-            mouseShapePreset = 0f,
-            mouseCornerRadius = 12,
-            savedFabPositionX = Float.NaN,
-            savedFabPositionY = Float.NaN,
-            savedMouseFabX = Float.NaN,
-            savedMouseFabY = Float.NaN,
-            onMarkSplashShown = {},
-            onSaveMouseFabPosition = { _, _ -> },
-            onSaveFloatingMouseIslandPosition = { _, _ -> },
-            onQrScanned = { _, _, _ -> },
-            dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
-            remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
-            remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
-            appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
-            taskManagerScreenContent = { Box(Modifier.fillMaxSize()) },
-            connectionScreenContent = { Box(Modifier.fillMaxSize()) },
-            floatingMouseIslandContent = { _, _, _, _, _, _ -> Box(Modifier.size(300.dp)) }
+                hasCompletedOnboarding = true,
+                splashShown = true,
+                isConnected = false,
+                mouseShapePreset = 0f,
+                mouseCornerRadius = 12,
+                savedFabPositionX = Float.NaN,
+                savedFabPositionY = Float.NaN,
+                savedMouseFabX = Float.NaN,
+                savedMouseFabY = Float.NaN,
+                onMarkSplashShown = {},
+                onSaveMouseFabPosition = { _, _ -> },
+                onSaveFloatingMouseIslandPosition = { _, _ -> },
+                onQrScanned = { _, _, _ -> },
+                dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
+                remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
+                remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
+                appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
+                taskManagerScreenContent = { Box(Modifier.fillMaxSize()) },
+                connectionScreenContent = { Box(Modifier.fillMaxSize()) },
+                floatingMouseIslandContent = { _, _, _, _, _, _ -> Box(Modifier.size(300.dp)) }
         )
     }
 }
