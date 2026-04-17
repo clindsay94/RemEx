@@ -1,7 +1,11 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,12 +44,13 @@ import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PersonalizationScreen(
     viewModel: PersonalizationViewModel = viewModel(),
     showHeader: Boolean = true
 ) {
+    val view = LocalView.current
     val settingsState by viewModel.personalization.collectAsState()
 
     if (settingsState == null) {
@@ -126,15 +131,18 @@ fun PersonalizationScreen(
             )
 
             // ═══ Language Settings ═══
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.animateContentSize()
+            ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SectionHeader(stringResource(R.string.personalization_section_language), Icons.Default.Language)
-                    
+
                     Text(stringResource(R.string.personalization_app_language), style = MaterialTheme.typography.labelMedium)
-                    
+
                     val currentLocales = AppCompatDelegate.getApplicationLocales()
                     val currentLangTag = if (currentLocales.isEmpty) "system" else currentLocales[0]?.toLanguageTag() ?: "system"
-                    
+
                     val supportedLanguages = listOf(
                         "system" to stringResource(R.string.personalization_system_default),
                         "en" to "English",
@@ -147,7 +155,7 @@ fun PersonalizationScreen(
                         "tr" to "Türkçe",
                         "uk" to "Українська"
                     )
-                    
+
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
@@ -177,7 +185,10 @@ fun PersonalizationScreen(
 
                     ExposedDropdownMenuBox(
                         expanded = expanded,
-                        onExpandedChange = { expanded = it }
+                        onExpandedChange = {
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            expanded = it
+                        }
                     ) {
                         OutlinedTextField(
                             value = supportedLanguages.find { it.first == currentLangTag }?.second ?: stringResource(R.string.personalization_system_default),
@@ -199,6 +210,7 @@ fun PersonalizationScreen(
                                 DropdownMenuItem(
                                     text = { Text(name) },
                                     onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                         expanded = false
                                         if (tag == "system") {
                                             AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
@@ -214,10 +226,13 @@ fun PersonalizationScreen(
             }
 
             // ═══ Theme Mode & Style ═══
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.animateContentSize()
+            ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SectionHeader(stringResource(R.string.personalization_section_theme), Icons.Default.Tune)
-                    
+
                     Text(stringResource(R.string.personalization_display_mode), style = MaterialTheme.typography.labelMedium)
                     SingleSelectChips(
                         options = listOf("system", "light", "dark"),
@@ -235,10 +250,13 @@ fun PersonalizationScreen(
             }
 
             // ═══ Ultimate Color Studio ═══
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.animateContentSize()
+            ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SectionHeader(stringResource(R.string.personalization_section_color), Icons.Default.Palette)
-                    
+
                     Text(stringResource(R.string.personalization_palette_mode), style = MaterialTheme.typography.labelMedium)
                     SingleSelectChips(
                         options = listOf("default", "custom"),
@@ -246,81 +264,119 @@ fun PersonalizationScreen(
                         onSelected = { palette = it }
                     )
 
-                    if (palette == "custom") {
-                        val currentHct = remember(seedColor, themeSeedChroma) {
-                            try {
-                                val baseHct = Hct.fromInt(seedColor.toColorInt())
-                                Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone)
-                            } catch (e: Exception) {
-                                Hct.fromInt(0xFF6750A4.toInt())
+                    AnimatedVisibility(
+                        visible = palette == "custom",
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            val currentHct = remember(seedColor, themeSeedChroma) {
+                                try {
+                                    val baseHct = Hct.fromInt(seedColor.toColorInt())
+                                    Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone)
+                                } catch (e: Exception) {
+                                    Hct.fromInt(0xFF6750A4.toInt())
+                                }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Hue Slider
-                        Text(stringResource(R.string.personalization_hue_label, currentHct.hue.roundToInt()), style = MaterialTheme.typography.labelSmall)
-                        HueSlider(
-                            value = currentHct.hue.toFloat(),
-                            onValueChange = { newHue ->
-                                val updated = Hct.from(newHue.toDouble(), currentHct.chroma, currentHct.tone)
-                                seedColor = String.format("#%06X", (0xFFFFFF and updated.toInt()))
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Hue Slider
+                            Text(
+                                stringResource(R.string.personalization_hue_label, currentHct.hue.roundToInt()),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            HueSlider(
+                                value = currentHct.hue.toFloat(),
+                                onValueChange = { newHue ->
+                                    val updated = Hct.from(newHue.toDouble(), currentHct.chroma, currentHct.tone)
+                                    seedColor = String.format("#%06X", (0xFFFFFF and updated.toInt()))
+                                }
+                            )
+
+                            // Chroma Slider
+                            Text(
+                                stringResource(R.string.personalization_chroma_label, themeSeedChroma.roundToInt()),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Slider(
+                                value = themeSeedChroma,
+                                onValueChange = { themeSeedChroma = it },
+                                onValueChangeFinished = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                },
+                                valueRange = 0f..120f
+                            )
+
+                            // Contrast Slider
+                            Text(
+                                stringResource(R.string.personalization_contrast_label, "%.2f".format(themeContrast)),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Slider(
+                                value = themeContrast,
+                                onValueChange = { themeContrast = it },
+                                onValueChangeFinished = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                },
+                                valueRange = -1.0f..1.0f
+                            )
+
+                            // Tonal Row
+                            Text(stringResource(R.string.personalization_tonal_range), style = MaterialTheme.typography.labelSmall)
+                            TonalRow(hct = currentHct)
+
+                            // Mini Dashboard Preview
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                MiniCardPreview(
+                                    seedColor = seedColor,
+                                    shapePreset = telemetryCardShapePreset,
+                                    cornerRadius = cornerRadius,
+                                    opacity = cardOpacity
+                                )
                             }
-                        )
 
-                        // Chroma Slider
-                        Text(stringResource(R.string.personalization_chroma_label, themeSeedChroma.roundToInt()), style = MaterialTheme.typography.labelSmall)
-                        Slider(
-                            value = themeSeedChroma,
-                            onValueChange = { themeSeedChroma = it },
-                            valueRange = 0f..120f
-                        )
-
-                        // Contrast Slider
-                        Text(stringResource(R.string.personalization_contrast_label, "%.2f".format(themeContrast)), style = MaterialTheme.typography.labelSmall)
-                        Slider(
-                            value = themeContrast,
-                            onValueChange = { themeContrast = it },
-                            valueRange = -1.0f..1.0f
-                        )
-
-                        // Tonal Row
-                        Text(stringResource(R.string.personalization_tonal_range), style = MaterialTheme.typography.labelSmall)
-                        TonalRow(hct = currentHct)
-
-                        // Mini Dashboard Preview
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            MiniCardPreview(
-                                seedColor = seedColor,
-                                shapePreset = telemetryCardShapePreset,
-                                cornerRadius = cornerRadius,
-                                opacity = cardOpacity
+                            OutlinedTextField(
+                                value = seedColor,
+                                onValueChange = { if (it.length <= 7) seedColor = it },
+                                label = { Text(stringResource(R.string.personalization_manual_hex)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         }
-
-                        OutlinedTextField(
-                            value = seedColor,
-                            onValueChange = { if (it.length <= 7) seedColor = it },
-                            label = { Text(stringResource(R.string.personalization_manual_hex)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                        )
                     }
                 }
             }
 
             // ═══ Individual Card Shapes ═══
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.animateContentSize()
+            ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     SectionHeader(stringResource(R.string.personalization_section_geometry), Icons.Default.Tune)
-                    
+
                     Text(stringResource(R.string.personalization_corner_base, cornerRadius), style = MaterialTheme.typography.labelMedium)
-                    Slider(value = cornerRadius.toFloat(), onValueChange = { cornerRadius = it.toInt() }, valueRange = 4f..36f)
+                    Slider(
+                        value = cornerRadius.toFloat(),
+                        onValueChange = { cornerRadius = it.toInt() },
+                        onValueChangeFinished = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        },
+                        valueRange = 4f..36f
+                    )
 
                     Text(stringResource(R.string.personalization_card_opacity, (cardOpacity * 100).roundToInt()), style = MaterialTheme.typography.labelMedium)
-                    Slider(value = cardOpacity, onValueChange = { cardOpacity = it }, valueRange = 0.1f..1.0f)
+                    Slider(
+                        value = cardOpacity,
+                        onValueChange = { cardOpacity = it },
+                        onValueChangeFinished = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        },
+                        valueRange = 0.1f..1.0f
+                    )
 
                     val shapeConfigs = listOf(
                         stringResource(R.string.personalization_shape_telemetry) to telemetryCardShapePreset to { v: Float -> telemetryCardShapePreset = v },
@@ -352,7 +408,15 @@ fun PersonalizationScreen(
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                Slider(value = current, onValueChange = setter, valueRange = 0f..maxShapes, modifier = Modifier.weight(1f))
+                                Slider(
+                                    value = current,
+                                    onValueChange = setter,
+                                    onValueChangeFinished = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                    },
+                                    valueRange = 0f..maxShapes,
+                                    modifier = Modifier.weight(1f)
+                                )
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
@@ -364,7 +428,7 @@ fun PersonalizationScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
@@ -380,11 +444,15 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
 
 @Composable
 private fun SingleSelectChips(options: List<String>, selected: String, onSelected: (String) -> Unit) {
+    val view = LocalView.current
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { option ->
             FilterChip(
                 selected = selected == option,
-                onClick = { onSelected(option) },
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onSelected(option)
+                },
                 label = { Text(option.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }) }
             )
         }
@@ -413,33 +481,46 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TonalRow(hct: Hct) {
     val tones = listOf(10, 30, 50, 70, 90, 95)
     val palette = remember(hct) { TonalPalette.fromHueAndChroma(hct.hue, hct.chroma) }
-    
+
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         tones.forEach { tone ->
+            val targetColor = Color(palette.tone(tone))
+            val animatedColor by animateColorAsState(
+                targetValue = targetColor,
+                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                label = "TonalColorAnimation"
+            )
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(40.dp)
                     .clip(MaterialTheme.shapes.small)
-                    .background(Color(palette.tone(tone)))
+                    .background(animatedColor)
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MiniCardPreview(seedColor: String, shapePreset: Float, cornerRadius: Int, opacity: Float) {
-    val previewColor = remember(seedColor) { try { Color(seedColor.toColorInt()) } catch (e: Exception) { Color(0xFF6750A4.toInt()) } }
-    
+    val baseColor = remember(seedColor) { try { Color(seedColor.toColorInt()) } catch (e: Exception) { Color(0xFF6750A4.toInt()) } }
+    val animatedColor by animateColorAsState(
+        targetValue = baseColor,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "MiniCardColorAnimation"
+    )
+
     Box(
         modifier = Modifier
             .size(width = 140.dp, height = 100.dp)
             .clip(cardShape(shapePreset, cornerRadius))
-            .background(previewColor.copy(alpha = opacity))
+            .background(animatedColor.copy(alpha = opacity))
             .padding(12.dp)
     ) {
         Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {

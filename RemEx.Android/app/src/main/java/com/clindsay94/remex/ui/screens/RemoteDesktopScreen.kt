@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -34,12 +36,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -106,7 +106,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
     val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -687,9 +687,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                             !hasMovedBeyondSlop
                                                                             ) {
                                                                                 longPressArmed = true
-                                                                                haptic.performHapticFeedback(
-                                                                                        HapticFeedbackType.LongPress
-                                                                                )
+                                                                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                                                                             }
                                                                         }
                                                             }

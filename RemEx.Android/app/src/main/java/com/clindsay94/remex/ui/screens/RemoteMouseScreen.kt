@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -43,9 +45,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -66,13 +66,39 @@ fun RemoteMouseScreen(
         onNavigateToConnection: () -> Unit = {},
         viewModel: RemoteControlViewModel = viewModel()
 ) {
-    val haptic = LocalHapticFeedback.current
-    val focusRequester = remember { FocusRequester() }
-    var textValue by remember { mutableStateOf(TextFieldValue("")) }
     val shapePreset by viewModel.remoteMouseCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
+
+    RemoteMouseScreenContent(
+            isConnected = isConnected,
+            shapePreset = shapePreset,
+            cornerRadius = cornerRadius,
+            vScrollSensitivity = vScrollSensitivity,
+            onNavigateToConnection = onNavigateToConnection,
+            onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
+            onMouseClick = { button -> viewModel.sendMouseClick(button) },
+            onScroll = { amount -> viewModel.sendScroll(amount) },
+            onTextSent = { text -> viewModel.sendText(text) }
+    )
+}
+
+@Composable
+fun RemoteMouseScreenContent(
+        isConnected: Boolean,
+        shapePreset: Float,
+        cornerRadius: Int,
+        vScrollSensitivity: Float,
+        onNavigateToConnection: () -> Unit,
+        onMouseMove: (Int, Int) -> Unit,
+        onMouseClick: (Int) -> Unit,
+        onScroll: (Int) -> Unit,
+        onTextSent: (String) -> Unit
+) {
+    val view = LocalView.current
+    val focusRequester = remember { FocusRequester() }
+    var textValue by remember { mutableStateOf(TextFieldValue("")) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         RemexScreenHeader(title = stringResource(R.string.screen_remote_mouse_title))
@@ -94,7 +120,7 @@ fun RemoteMouseScreen(
                         onValueChange = {
                             if (it.text.length > textValue.text.length) {
                                 val newChar = it.text.last().toString()
-                                viewModel.sendText(newChar)
+                                onTextSent(newChar)
                             }
                             textValue = it
                         },
@@ -111,7 +137,7 @@ fun RemoteMouseScreen(
                                         .pointerInput(Unit) {
                                             detectDragGestures { change, dragAmount ->
                                                 change.consume()
-                                                viewModel.sendMouseMove(
+                                                onMouseMove(
                                                         dragAmount.x.toInt(),
                                                         dragAmount.y.toInt()
                                                 )
@@ -120,10 +146,8 @@ fun RemoteMouseScreen(
                                         .pointerInput(Unit) {
                                             detectTapGestures(
                                                     onTap = {
-                                                        haptic.performHapticFeedback(
-                                                                HapticFeedbackType.LongPress
-                                                        )
-                                                        viewModel.sendMouseClick(1)
+                                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                        onMouseClick(1)
                                                     }
                                             )
                                         },
@@ -160,8 +184,8 @@ fun RemoteMouseScreen(
                 ) {
                     Button(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.sendMouseClick(1)
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                onMouseClick(1)
                             },
                             modifier = Modifier.weight(1f).height(80.dp),
                             shape = MaterialTheme.shapes.medium,
@@ -180,8 +204,8 @@ fun RemoteMouseScreen(
                     }
                     Button(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.sendMouseClick(2)
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                onMouseClick(2)
                             },
                             modifier = Modifier.weight(1f).height(80.dp),
                             shape = MaterialTheme.shapes.medium,
@@ -206,8 +230,8 @@ fun RemoteMouseScreen(
                 ) {
                     IconButton(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.sendScroll((-100 * vScrollSensitivity).toInt())
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                onScroll((-100 * vScrollSensitivity).toInt())
                             }
                     ) {
                         Icon(
@@ -217,8 +241,8 @@ fun RemoteMouseScreen(
                     }
                     IconButton(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.sendScroll((100 * vScrollSensitivity).toInt())
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                onScroll((100 * vScrollSensitivity).toInt())
                             }
                     ) {
                         Icon(
@@ -228,7 +252,7 @@ fun RemoteMouseScreen(
                     }
                     IconButton(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                 focusRequester.requestFocus()
                             }
                     ) {
@@ -250,14 +274,46 @@ fun FloatingMouseIsland(
         cornerRadius: Int,
         onDismiss: () -> Unit,
         modifier: Modifier = Modifier,
-        onDrag: ((dragAmount: androidx.compose.ui.geometry.Offset) -> Unit)? = null,
+        onDrag: ((dragAmount: Offset) -> Unit)? = null,
         onDragStart: (() -> Unit)? = null,
         onDragEnd: (() -> Unit)? = null
 ) {
-    val haptic = LocalHapticFeedback.current
+    val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
+
+    FloatingMouseIslandContent(
+            shapePreset = shapePreset,
+            cornerRadius = cornerRadius,
+            vScrollSensitivity = vScrollSensitivity,
+            onDismiss = onDismiss,
+            onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
+            onMouseClick = { button -> viewModel.sendMouseClick(button) },
+            onScroll = { amount -> viewModel.sendScroll(amount) },
+            onTextSent = { text -> viewModel.sendText(text) },
+            modifier = modifier,
+            onDrag = onDrag,
+            onDragStart = onDragStart,
+            onDragEnd = onDragEnd
+    )
+}
+
+@Composable
+fun FloatingMouseIslandContent(
+        shapePreset: Float,
+        cornerRadius: Int,
+        vScrollSensitivity: Float,
+        onDismiss: () -> Unit,
+        onMouseMove: (Float, Float) -> Unit,
+        onMouseClick: (Int) -> Unit,
+        onScroll: (Int) -> Unit,
+        onTextSent: (String) -> Unit,
+        modifier: Modifier = Modifier,
+        onDrag: ((dragAmount: Offset) -> Unit)? = null,
+        onDragStart: (() -> Unit)? = null,
+        onDragEnd: (() -> Unit)? = null
+) {
+    val view = LocalView.current
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
-    val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
     val scope = rememberCoroutineScope()
     var inertiaJob by remember { mutableStateOf<Job?>(null) }
 
@@ -266,7 +322,7 @@ fun FloatingMouseIsland(
             onValueChange = {
                 if (it.text.length > textValue.text.length) {
                     val addedText = it.text.substring(textValue.text.length)
-                    viewModel.sendText(addedText)
+                    onTextSent(addedText)
                 }
                 textValue = it
             },
@@ -310,7 +366,7 @@ fun FloatingMouseIsland(
                 )
                 IconButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onDismiss()
                         },
                         modifier = Modifier.size(28.dp)
@@ -337,9 +393,9 @@ fun FloatingMouseIsland(
                                                 },
                                                 onDrag = { change, dragAmount ->
                                                     change.consume()
-                                                    viewModel.sendMouseMove(
-                                                            dragAmount.x.toInt(),
-                                                            dragAmount.y.toInt()
+                                                    onMouseMove(
+                                                            dragAmount.x,
+                                                            dragAmount.y
                                                     )
                                                     recentDeltas.addLast(
                                                             Offset(dragAmount.x, dragAmount.y)
@@ -369,7 +425,7 @@ fun FloatingMouseIsland(
                                                                                                 vy * vy
                                                                                 ) > 0.5f
                                                                         ) {
-                                                                            viewModel.sendMouseMove(
+                                                                            onMouseMove(
                                                                                     vx,
                                                                                     vy
                                                                             )
@@ -388,10 +444,8 @@ fun FloatingMouseIsland(
                                                 onTap = {
                                                     inertiaJob?.cancel()
                                                     inertiaJob = null
-                                                    haptic.performHapticFeedback(
-                                                            HapticFeedbackType.LongPress
-                                                    )
-                                                    viewModel.sendMouseClick(1)
+                                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                    onMouseClick(1)
                                                 }
                                         )
                                     },
@@ -425,8 +479,8 @@ fun FloatingMouseIsland(
             ) {
                 Button(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.sendMouseClick(1)
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            onMouseClick(1)
                         },
                         modifier = Modifier.weight(1f).height(52.dp),
                         shape = MaterialTheme.shapes.medium,
@@ -446,8 +500,8 @@ fun FloatingMouseIsland(
                 }
                 Button(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.sendMouseClick(2)
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            onMouseClick(2)
                         },
                         modifier = Modifier.weight(1f).height(52.dp),
                         shape = MaterialTheme.shapes.medium,
@@ -473,8 +527,8 @@ fun FloatingMouseIsland(
             ) {
                 IconButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.sendScroll((-100 * vScrollSensitivity).toInt())
+                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            onScroll((-100 * vScrollSensitivity).toInt())
                         }
                 ) {
                     Icon(
@@ -484,18 +538,18 @@ fun FloatingMouseIsland(
                 }
                 IconButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.sendScroll((100 * vScrollSensitivity).toInt())
+                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            onScroll((100 * vScrollSensitivity).toInt())
                         }
                 ) {
                     Icon(
                             Icons.Default.KeyboardDoubleArrowDown,
                             contentDescription = stringResource(R.string.cd_scroll_down)
-                    )
+                        )
                 }
                 IconButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             focusRequester.requestFocus()
                         }
                 ) {

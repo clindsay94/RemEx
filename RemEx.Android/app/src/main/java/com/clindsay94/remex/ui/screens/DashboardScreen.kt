@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -16,7 +18,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
@@ -36,7 +37,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
@@ -50,6 +50,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -122,7 +123,6 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(),
     onNavigateToConnection: () -> Unit = {}
 ) {
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val isConnected by viewModel.isConnected.collectAsState()
     val isConnecting by viewModel.isConnecting.collectAsState()
     val telemetrySensors by viewModel.telemetrySensors.collectAsState()
@@ -133,6 +133,54 @@ fun DashboardScreen(
     val cardOpacity by viewModel.cardOpacity.collectAsState()
     val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
     val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
+
+    DashboardScreenContent(
+        isConnected = isConnected,
+        isConnecting = isConnecting,
+        telemetrySensors = telemetrySensors,
+        telemetryHistory = telemetryHistory,
+        cards = cards,
+        enabledCards = enabledCards,
+        cornerRadius = cornerRadius,
+        cardOpacity = cardOpacity,
+        pcCardShapePreset = pcCardShapePreset,
+        telemetryCardShapePreset = telemetryCardShapePreset,
+        onNavigateToConnection = onNavigateToConnection,
+        onMoveCard = { cardId, dx, dy -> viewModel.moveCard(cardId, dx, dy) },
+        onResizeCard = { cardId, dw, dh -> viewModel.resizeCard(cardId, dw, dh) },
+        onSaveCardLayout = { viewModel.saveCardLayout() },
+        onToggleConnection = { viewModel.toggleConnection() },
+        onWakePc = { viewModel.wakePc() },
+        onCycleTelemetryDisplayMode = { cardId -> viewModel.cycleTelemetryDisplayMode(cardId) },
+        onPlaceCardAt = { cardId, x, y -> viewModel.placeCardAt(cardId, x, y) },
+        onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun DashboardScreenContent(
+    isConnected: Boolean,
+    isConnecting: Boolean,
+    telemetrySensors: List<TelemetrySensor>,
+    telemetryHistory: Map<String, List<Float>>,
+    cards: List<HomeCardState>,
+    enabledCards: Set<String>,
+    cornerRadius: Int,
+    cardOpacity: Float,
+    pcCardShapePreset: Float,
+    telemetryCardShapePreset: Float,
+    onNavigateToConnection: () -> Unit,
+    onMoveCard: (String, Float, Float) -> Unit,
+    onResizeCard: (String, Float, Float) -> Unit,
+    onSaveCardLayout: () -> Unit,
+    onToggleConnection: () -> Unit,
+    onWakePc: () -> Unit,
+    onCycleTelemetryDisplayMode: (String) -> Unit,
+    onPlaceCardAt: (String, Float, Float) -> Unit,
+    onSetCardEnabled: (String, Boolean) -> Unit
+) {
+    val view = LocalView.current
 
     val pcStatusTitle = stringResource(R.string.dashboard_pc_status)
     val pcStatusSubtitle = stringResource(R.string.dashboard_pc_status_subtitle)
@@ -221,14 +269,14 @@ fun DashboardScreen(
             actions = {
                 if (canvasScale != 1f) {
                     IconButton(onClick = {
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                         canvasScale = 1f
                     }) {
                         Icon(Icons.Default.FilterCenterFocus, contentDescription = stringResource(R.string.cd_reset_zoom))
                     }
                 }
                 IconButton(onClick = {
-                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                     showCardDrawer = !showCardDrawer
                 }) {
                     Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_customize_cards))
@@ -281,13 +329,13 @@ fun DashboardScreen(
                                         onDrag = { change, dragAmount ->
                                             change.consume()
                                             val currentScale = canvasScaleState.floatValue
-                                            viewModel.moveCard(
-                                                cardId = card.id,
-                                                deltaXDp = dragAmount.x / (density * currentScale),
-                                                deltaYDp = dragAmount.y / (density * currentScale)
+                                            onMoveCard(
+                                                card.id,
+                                                dragAmount.x / (density * currentScale),
+                                                dragAmount.y / (density * currentScale)
                                             )
                                         },
-                                        onDragEnd = { viewModel.saveCardLayout() }
+                                        onDragEnd = { onSaveCardLayout() }
                                     )
                                 },
                             shape = cardShape(cardShapePreset, cornerRadius),
@@ -307,15 +355,17 @@ fun DashboardScreen(
                                             isConnecting = isConnecting,
                                             shapePreset = pcCardShapePreset,
                                             cornerRadius = cornerRadius,
-                                            onToggle = { viewModel.toggleConnection() },
-                                            onWake = { viewModel.wakePc() },
+                                            onToggle = {
+                                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                                onToggleConnection()
+                                            },
                                             onNavigateToConnection = onNavigateToConnection
                                         )
                                     }
 
                                     "WAKE_ON_LAN" -> {
                                         WakeOnLanCard(
-                                            onWake = { viewModel.wakePc() }
+                                            onWake = { onWakePc() }
                                         )
                                     }
 
@@ -328,7 +378,7 @@ fun DashboardScreen(
                                             history = history,
                                             mode = card.displayMode,
                                             onCycleDisplayMode = {
-                                                viewModel.cycleTelemetryDisplayMode(
+                                                onCycleTelemetryDisplayMode(
                                                     card.id
                                                 )
                                             },
@@ -350,13 +400,13 @@ fun DashboardScreen(
                                                 onDrag = { change, dragAmount ->
                                                     change.consume()
                                                     val currentScale = canvasScaleState.floatValue
-                                                    viewModel.resizeCard(
-                                                        cardId = card.id,
-                                                        deltaWidthDp = dragAmount.x / (density * currentScale),
-                                                        deltaHeightDp = dragAmount.y / (density * currentScale)
+                                                    onResizeCard(
+                                                        card.id,
+                                                        dragAmount.x / (density * currentScale),
+                                                        dragAmount.y / (density * currentScale)
                                                     )
                                                 },
-                                                onDragEnd = { viewModel.saveCardLayout() }
+                                                onDragEnd = { onSaveCardLayout() }
                                             )
                                         }
                                 )
@@ -423,7 +473,7 @@ fun DashboardScreen(
                                         ) {
                                             detectDragGestures(
                                                 onDragStart = { startOffset ->
-                                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                                                     draggingCardId = availableCard.id
                                                     draggingPointerPx = Offset(
                                                         x = itemTopLeftPx.x + startOffset.x,
@@ -450,7 +500,7 @@ fun DashboardScreen(
                                                             ((draggingPointerPx.y - canvasTopLeftPx.y) / (density * canvasScale) - (dragSize.heightDp / 2f)).coerceAtLeast(
                                                                 0f
                                                             )
-                                                        viewModel.placeCardAt(
+                                                        onPlaceCardAt(
                                                             draggingId,
                                                             dropXDp,
                                                             dropYDp
@@ -469,9 +519,9 @@ fun DashboardScreen(
                                             )
                                         },
                                     onClick = {
-                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                         val checked = !enabledCards.contains(availableCard.id)
-                                        viewModel.setCardEnabled(availableCard.id, checked)
+                                        onSetCardEnabled(availableCard.id, checked)
                                     }
                                 ) {
                                     Row(
@@ -503,7 +553,10 @@ fun DashboardScreen(
                         }
 
                         Button(
-                            onClick = { showCardDrawer = false },
+                            onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                showCardDrawer = false
+                            },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(stringResource(R.string.button_done))
@@ -565,6 +618,7 @@ fun DashboardScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ConnectionOrbCard(
     isConnected: Boolean,
@@ -572,7 +626,6 @@ private fun ConnectionOrbCard(
     shapePreset: Float,
     cornerRadius: Int,
     onToggle: () -> Unit,
-    onWake: () -> Unit,
     onNavigateToConnection: () -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -595,10 +648,7 @@ private fun ConnectionOrbCard(
 
             val animatedShapePreset by animateFloatAsState(
                 targetValue = currentMorphTarget,
-                animationSpec = spring(
-                    stiffness = Spring.StiffnessVeryLow,
-                    dampingRatio = Spring.DampingRatioLowBouncy
-                ),
+                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
                 label = "orb_morph"
             )
 
@@ -608,7 +658,7 @@ private fun ConnectionOrbCard(
                     isConnecting -> MaterialTheme.colorScheme.secondary
                     else -> MaterialTheme.colorScheme.error
                 },
-                animationSpec = tween(1000),
+                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                 label = "orb_color"
             )
 
@@ -658,9 +708,13 @@ private fun ConnectionOrbCard(
 
 @Composable
 private fun WakeOnLanCard(onWake: () -> Unit) {
+    val view = LocalView.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Button(
-            onClick = onWake,
+            onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                onWake()
+            },
             modifier = Modifier.padding(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -682,6 +736,7 @@ private fun WakeOnLanCard(onWake: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TelemetryCardContent(
     title: String,
@@ -691,6 +746,7 @@ private fun TelemetryCardContent(
     onCycleDisplayMode: () -> Unit,
     isExpressiveShape: Boolean = false
 ) {
+    val view = LocalView.current
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Give extra padding for organic/expressive shapes so content doesn't clip into the shape edges
         val paddingFactor = if (isExpressiveShape) 0.22f else 0.12f
@@ -716,7 +772,10 @@ private fun TelemetryCardContent(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = onCycleDisplayMode, modifier = Modifier.size(24.dp)) {
+                IconButton(onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onCycleDisplayMode()
+                }, modifier = Modifier.size(24.dp)) {
                     Icon(
                         Icons.Default.Tune,
                 contentDescription = stringResource(R.string.cd_change_display_mode),
@@ -741,10 +800,7 @@ private fun TelemetryCardContent(
                     val percent = (sensor?.value ?: 0.0).toFloat().coerceIn(0f, 100f) / 100f
                     val animatedProgress by animateFloatAsState(
                         targetValue = percent,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
+                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                         label = "gauge_bounce"
                     )
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {

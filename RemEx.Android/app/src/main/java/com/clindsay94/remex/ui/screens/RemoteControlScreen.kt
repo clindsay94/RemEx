@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,8 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -171,6 +171,31 @@ fun RemoteControlScreen(
     val shapePreset by viewModel.remoteControlCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
+
+    RemoteControlScreenContent(
+        commandStatus = commandStatus,
+        shapePreset = shapePreset,
+        cornerRadius = cornerRadius,
+        isConnected = isConnected,
+        onNavigateToConnection = onNavigateToConnection,
+        onWakePc = { viewModel.wakePc() },
+        onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
+        onClearCommandStatus = { viewModel.clearCommandStatus() }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RemoteControlScreenContent(
+    commandStatus: String?,
+    shapePreset: Float,
+    cornerRadius: Int,
+    isConnected: Boolean,
+    onNavigateToConnection: () -> Unit,
+    onWakePc: () -> Unit,
+    onSendSystemCommand: (String, Int) -> Unit,
+    onClearCommandStatus: () -> Unit
+) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
 
@@ -225,11 +250,11 @@ fun RemoteControlScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                    text = commandStatus.orEmpty(),
+                                    text = commandStatus,
                                     modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.bodySmall
                             )
-                            TextButton(onClick = { viewModel.clearCommandStatus() }) {
+                            TextButton(onClick = { onClearCommandStatus() }) {
                                 Text(stringResource(R.string.button_dismiss))
                             }
                         }
@@ -264,13 +289,13 @@ fun RemoteControlScreen(
                                     onTimerTextChanged = { timerInputs[card.id] = it },
                                     onPrimaryClick = {
                                         if (card.action == "WakeOnLan") {
-                                            viewModel.wakePc()
+                                            onWakePc()
                                         } else if (card.requiresConfirmation) {
                                             activeConfirmationId =
                                                     if (activeConfirmationId == card.id) null
                                                     else card.id
                                         } else {
-                                            viewModel.sendSystemCommand(card.action)
+                                            onSendSystemCommand(card.action, 0)
                                         }
                                     },
                                     onConfirm = {
@@ -281,7 +306,7 @@ fun RemoteControlScreen(
                                                         .toIntOrNull()
                                                         ?.coerceAtLeast(0)
                                                         ?: 0
-                                        viewModel.sendSystemCommand(card.action, delay)
+                                        onSendSystemCommand(card.action, delay)
                                         activeConfirmationId = null
                                     },
                                     onCancel = {
@@ -364,7 +389,7 @@ private fun CommandCard(
         onConfirm: () -> Unit,
         onCancel: () -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     val localizedTitle = stringResource(card.titleRes)
 
     Card(
@@ -412,14 +437,14 @@ private fun CommandCard(
                 ) {
                     Button(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                 onConfirm()
                             },
                             modifier = Modifier.weight(1f)
                     ) { Text(stringResource(R.string.button_confirm)) }
                     TextButton(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
                                 onCancel()
                             },
                             modifier = Modifier.weight(1f)
@@ -428,7 +453,7 @@ private fun CommandCard(
             } else {
                 Button(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onPrimaryClick()
                         },
                         modifier = Modifier.fillMaxWidth()

@@ -179,22 +179,11 @@ class SettingsManager(private val context: Context) {
                 preferences[BROADCAST_IP_KEY] ?: "255.255.255.255"
             }
 
-    val subnetMaskFlow: Flow<String> =
-            context.dataStore.data.map { preferences ->
-                preferences[SUBNET_MASK_KEY] ?: "255.255.255.0"
-            }
+    // Removed individual unused flows (subnetMaskFlow, desktopQualityFlow, etc.)
+    // as they are covered by connectionPreferencesFlow and remoteDesktopPreferencesFlow.
 
     val accessKeyFlow: Flow<String> =
             context.dataStore.data.map { preferences -> preferences[ACCESS_KEY] ?: "" }
-
-    val desktopQualityFlow: Flow<Int> =
-            context.dataStore.data.map { preferences -> preferences[DESKTOP_QUALITY_KEY] ?: 50 }
-
-    val desktopTargetFpsFlow: Flow<Int> =
-            context.dataStore.data.map { preferences -> preferences[DESKTOP_TARGET_FPS_KEY] ?: 30 }
-
-    val desktopScaleFlow: Flow<Float> =
-            context.dataStore.data.map { preferences -> preferences[DESKTOP_SCALE_KEY] ?: 0.6f }
 
     val homeLayoutJsonFlow: Flow<String> =
             context.dataStore.data.map { preferences -> preferences[HOME_LAYOUT_JSON_KEY] ?: "" }
@@ -294,21 +283,6 @@ class SettingsManager(private val context: Context) {
                                         ?: 0f
                 )
             }
-
-    suspend fun saveSettings(
-            host: String,
-            port: Int,
-            mac: String = "",
-            broadcast: String = "255.255.255.255"
-    ) {
-        saveConnectionSettings(
-                host = host,
-                port = port,
-                mac = mac,
-                broadcast = broadcast,
-                subnetMask = "255.255.255.0"
-        )
-    }
 
     suspend fun saveConnectionSettings(
             host: String,

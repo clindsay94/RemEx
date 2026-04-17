@@ -1,6 +1,8 @@
 package com.clindsay94.remex.ui.screens
 
 import androidx.compose.animation.*
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,8 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,7 +56,6 @@ fun TaskManagerScreen(
     onNavigateToConnection: () -> Unit = {},
     viewModel: TaskManagerViewModel = viewModel()
 ) {
-    val haptic = LocalHapticFeedback.current
     val processes by viewModel.processes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortField by viewModel.sortField.collectAsState()
@@ -65,13 +64,48 @@ fun TaskManagerScreen(
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    TaskManagerScreenContent(
+        processes = processes,
+        searchQuery = searchQuery,
+        sortField = sortField,
+        sortDescending = sortDescending,
+        shapePreset = shapePreset,
+        cornerRadius = cornerRadius,
+        isConnected = isConnected,
+        onRefreshProcesses = { viewModel.refreshProcesses() },
+        onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
+        onUpdateSortField = { viewModel.updateSortField(it) },
+        onKillProcess = { viewModel.killProcess(it) },
+        onNavigateToConnection = onNavigateToConnection
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TaskManagerScreenContent(
+    processes: List<ProcessInfo>,
+    searchQuery: String,
+    sortField: ProcessSortField,
+    sortDescending: Boolean,
+    shapePreset: Float,
+    cornerRadius: Int,
+    isConnected: Boolean,
+    onRefreshProcesses: () -> Unit,
+    onUpdateSearchQuery: (String) -> Unit,
+    onUpdateSortField: (ProcessSortField) -> Unit,
+    onKillProcess: (Int) -> Unit,
+    onNavigateToConnection: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val view = LocalView.current
+
+    Column(modifier = modifier.fillMaxSize()) {
         RemexScreenHeader(
             title = stringResource(R.string.screen_task_manager_title),
             actions = {
                 IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.refreshProcesses()
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onRefreshProcesses()
                 }) {
                     Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                 }
@@ -87,7 +121,7 @@ fun TaskManagerScreen(
 
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = viewModel::updateSearchQuery,
+                onValueChange = onUpdateSearchQuery,
                 label = { Text(stringResource(R.string.task_manager_search_hint)) },
                 singleLine = true,
                 modifier = Modifier
@@ -103,20 +137,20 @@ fun TaskManagerScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SortChip(stringResource(R.string.sort_name), sortField == ProcessSortField.NAME, sortDescending) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.updateSortField(ProcessSortField.NAME)
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onUpdateSortField(ProcessSortField.NAME)
                 }
                 SortChip(stringResource(R.string.sort_cpu), sortField == ProcessSortField.CPU, sortDescending) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.updateSortField(ProcessSortField.CPU)
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onUpdateSortField(ProcessSortField.CPU)
                 }
                 SortChip(stringResource(R.string.sort_ram), sortField == ProcessSortField.RAM, sortDescending) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.updateSortField(ProcessSortField.RAM)
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onUpdateSortField(ProcessSortField.RAM)
                 }
                 SortChip(stringResource(R.string.sort_pid), sortField == ProcessSortField.PID, sortDescending) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.updateSortField(ProcessSortField.PID)
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onUpdateSortField(ProcessSortField.PID)
                 }
             }
 
@@ -148,7 +182,7 @@ fun TaskManagerScreen(
                             ProcessHeader()
                         }
                         items(processes, key = { it.id }) { process ->
-                            ProcessItem(process = process, maxRam = maxRam, onKill = { viewModel.killProcess(process.id) })
+                            ProcessItem(process = process, maxRam = maxRam, onKill = { onKillProcess(process.id) })
                         }
                     }
                 }
@@ -189,7 +223,7 @@ private fun ProcessHeader() {
 
 @Composable
 private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit) {
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     var showConfirm by remember { mutableStateOf(false) }
 
     if (showConfirm) {
@@ -199,7 +233,7 @@ private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit
             text = { Text(stringResource(R.string.task_manager_kill_message, process.name, process.id)) },
             confirmButton = {
                 TextButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    view.performHapticFeedback(HapticFeedbackConstants.REJECT)
                     onKill()
                     showConfirm = false
                 }) {
@@ -254,7 +288,7 @@ private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit
         }
 
         IconButton(onClick = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             showConfirm = true
         }, modifier = Modifier.size(32.dp)) {
             Icon(

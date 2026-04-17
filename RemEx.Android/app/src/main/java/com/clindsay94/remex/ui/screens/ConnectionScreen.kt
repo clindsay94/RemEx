@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,9 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -31,6 +31,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.DiscoveredHost
+import com.clindsay94.remex.data.SettingsManager
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,16 +43,54 @@ fun ConnectionScreen(
     viewModel: ConnectionViewModel = viewModel(),
     onNavigateToQrScanner: () -> Unit = {}
 ) {
-    val haptic = LocalHapticFeedback.current
-    val context = LocalContext.current
     val connectionPrefs by viewModel.connectionPreferences.collectAsState()
     val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsState()
     val isConnecting by viewModel.isConnecting.collectAsState()
+    val isConnected by RemexClientManager.isConnected.collectAsState()
     val status by viewModel.connectionStatus.collectAsState()
     val connectionError by viewModel.connectionError.collectAsState()
     val capabilitySummary by viewModel.capabilitySummary.collectAsState()
     val isDiscovering by viewModel.isDiscovering.collectAsState()
     val discoveredHost by viewModel.discoveredHost.collectAsState()
+
+    ConnectionScreenContent(
+        connectionPrefs = connectionPrefs,
+        desktopPrefs = desktopPrefs,
+        isConnecting = isConnecting,
+        isConnected = isConnected,
+        status = status,
+        connectionError = connectionError,
+        capabilitySummary = capabilitySummary,
+        isDiscovering = isDiscovering,
+        discoveredHost = discoveredHost,
+        onNavigateToQrScanner = onNavigateToQrScanner,
+        onConnect = { host, port, mac, broadcast, subnet, key, quality, fps, scale ->
+            viewModel.connect(host, port, mac, broadcast, subnet, key, quality, fps, scale)
+        },
+        onClearError = { viewModel.clearError() },
+        onDiscoverHost = { viewModel.discoverHost() }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConnectionScreenContent(
+    connectionPrefs: SettingsManager.ConnectionPreferences?,
+    desktopPrefs: SettingsManager.RemoteDesktopPreferences?,
+    isConnecting: Boolean,
+    isConnected: Boolean,
+    status: String,
+    connectionError: String?,
+    capabilitySummary: String,
+    isDiscovering: Boolean,
+    discoveredHost: DiscoveredHost?,
+    onNavigateToQrScanner: () -> Unit,
+    onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
+    onClearError: () -> Unit,
+    onDiscoverHost: () -> Unit
+) {
+    val view = LocalView.current
+    val context = LocalContext.current
 
     var hostInput by remember { mutableStateOf("") }
     var portInput by remember { mutableStateOf("") }
@@ -89,16 +132,16 @@ fun ConnectionScreen(
 
     fun doConnect() {
         val p = portInput.toIntOrNull() ?: 5005
-        viewModel.connect(
-            newHost = hostInput.trim(),
-            newPort = p,
-            macAddress = macInput.trim(),
-            broadcastIp = broadcastInput.trim().ifEmpty { "255.255.255.255" },
-            subnetMask = subnetInput.trim().ifEmpty { "255.255.255.0" },
-            accessKey = accessKeyInput.trim(),
-            desktopQuality = qualityInput.toInt(),
-            desktopTargetFps = targetFpsInput.toInt().coerceIn(1, 120),
-            desktopScale = scaleInput
+        onConnect(
+            hostInput.trim(),
+            p,
+            macInput.trim(),
+            broadcastInput.trim().ifEmpty { "255.255.255.255" },
+            subnetInput.trim().ifEmpty { "255.255.255.0" },
+            accessKeyInput.trim(),
+            qualityInput.toInt(),
+            targetFpsInput.toInt().coerceIn(1, 120),
+            scaleInput
         )
     }
 
@@ -119,7 +162,7 @@ fun ConnectionScreen(
         if (pendingDiscover) {
             pendingDiscover = false
             if (granted) {
-                viewModel.discoverHost()
+                onDiscoverHost()
             }
         }
     }
@@ -208,8 +251,8 @@ fun ConnectionScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             IconButton(onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.clearError()
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                onClearError()
                             }) {
                                 Icon(
                                     Icons.Default.Close,
@@ -251,42 +294,49 @@ fun ConnectionScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Button(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                if (!hasNearbyWifiPermission()) {
-                                    pendingDiscover = true
-                                    discoverPermissionLauncher.launch(
-                                        Manifest.permission.NEARBY_WIFI_DEVICES
-                                    )
-                                } else {
-                                    viewModel.discoverHost()
-                                }
-                            },
-                            enabled = !isDiscovering,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                Button(
+                    onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        if (isDiscovering) return@Button
+                        if (!hasNearbyWifiPermission()) {
+                            pendingDiscover = true
+                            discoverPermissionLauncher.launch(
+                                Manifest.permission.NEARBY_WIFI_DEVICES
                             )
-                        ) {
-                            if (isDiscovering) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.connection_searching))
-                            } else {
-                                Icon(Icons.Default.Search, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (discoveredHost != null) stringResource(R.string.connection_found_host, discoveredHost!!.host) else stringResource(R.string.connection_discover_button))
-                            }
+                        } else {
+                            onDiscoverHost()
                         }
+                    },
+                    enabled = !isDiscovering,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    if (isDiscovering) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.connection_searching))
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            if (discoveredHost != null) {
+                                stringResource(R.string.connection_found_host, discoveredHost.host)
+                            } else {
+                                stringResource(R.string.connection_discover_button)
+                            }
+                        )
+                    }
+                }
 
                         OutlinedButton(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                 onNavigateToQrScanner()
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -328,7 +378,10 @@ fun ConnectionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .animateContentSize()
-                        .clickable { showHelpSection = !showHelpSection },
+                        .clickable {
+                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            showHelpSection = !showHelpSection
+                        },
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                     )
@@ -530,6 +583,9 @@ fun ConnectionScreen(
                         Slider(
                             value = qualityInput,
                             onValueChange = { qualityInput = it },
+                            onValueChangeFinished = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            },
                             valueRange = 1f..100f,
                             modifier = Modifier.minimumInteractiveComponentSize()
                         )
@@ -540,6 +596,9 @@ fun ConnectionScreen(
                         Slider(
                             value = targetFpsInput,
                             onValueChange = { targetFpsInput = it },
+                            onValueChangeFinished = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            },
                             valueRange = 1f..120f,
                             modifier = Modifier.minimumInteractiveComponentSize()
                         )
@@ -550,6 +609,9 @@ fun ConnectionScreen(
                         Slider(
                             value = scaleInput,
                             onValueChange = { scaleInput = it },
+                            onValueChangeFinished = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            },
                             valueRange = 0.25f..1.0f,
                             modifier = Modifier.minimumInteractiveComponentSize()
                         )
@@ -560,7 +622,7 @@ fun ConnectionScreen(
 
                 Button(
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                         if (connectPermissions.isNotEmpty() && !hasAllConnectPermissions()) {
                             pendingConnect = true
                             connectPermissionLauncher.launch(connectPermissions)
@@ -602,48 +664,41 @@ fun ConnectionScreen(
 
 @Composable
 private fun HelpStep(number: String, title: String, body: String?) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    number,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+    ListItem(
+        headlineContent = { Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold) },
+        supportingContent = body?.let { { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) } },
+        leadingContent = {
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        number,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            if (body != null) {
-                Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
+        },
+        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+    )
 }
 
 @Composable
 private fun IpInstructionRow(platform: String, icon: androidx.compose.ui.graphics.vector.ImageVector, instruction: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp).padding(top = 2.dp)
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(platform, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-            Text(instruction, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
+    ListItem(
+        headlineContent = { Text(platform, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) },
+        supportingContent = { Text(instruction, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+        leadingContent = {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+    )
 }

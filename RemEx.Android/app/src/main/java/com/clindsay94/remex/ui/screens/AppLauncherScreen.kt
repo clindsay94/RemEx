@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.animation.core.animateDpAsState
@@ -35,9 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -51,7 +51,6 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppLauncherScreen(
     onNavigateToConnection: () -> Unit = {},
@@ -67,19 +66,42 @@ fun AppLauncherScreen(
         )
     }
 ) {
-    val haptic = LocalHapticFeedback.current
     val apps by viewModel.apps.collectAsState()
     val shapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    AppLauncherScreenContent(
+        apps = apps,
+        shapePreset = shapePreset,
+        cornerRadius = cornerRadius,
+        isConnected = isConnected,
+        onRefreshApps = { viewModel.refreshApps() },
+        onLaunchApp = { viewModel.launchApp(it) },
+        onNavigateToConnection = onNavigateToConnection
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun AppLauncherScreenContent(
+    apps: List<AppEntry>,
+    shapePreset: Float,
+    cornerRadius: Int,
+    isConnected: Boolean,
+    onRefreshApps: () -> Unit,
+    onLaunchApp: (AppEntry) -> Unit,
+    onNavigateToConnection: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val view = LocalView.current
+    Column(modifier = modifier.fillMaxSize()) {
         RemexScreenHeader(
             title = stringResource(R.string.screen_app_launcher_title),
             actions = {
                 IconButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.refreshApps()
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onRefreshApps()
                 }, enabled = isConnected) {
                     Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                 }
@@ -98,53 +120,72 @@ fun AppLauncherScreen(
                     modifier = Modifier.weight(1f)
                 )
             } else if (apps.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Launch,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Text(
-                        stringResource(R.string.app_launcher_no_apps),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Button(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.refreshApps()
-                        },
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(stringResource(R.string.button_fetch_from_host))
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Launch,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Text(
+                            stringResource(R.string.app_launcher_no_apps),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Button(
+                            onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                onRefreshApps()
+                            },
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(stringResource(R.string.button_fetch_from_host))
+                        }
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 100.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(apps, key = { it.name + it.path }) { app ->
+                        AppGridItem(
+                            app = app,
+                            shape = cardShape(shapePreset, cornerRadius),
+                            onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                onLaunchApp(app)
+                            }
+                        )
                     }
                 }
             }
-            } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 100.dp),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(apps, key = { it.name + it.path }) { app ->
-                    AppGridItem(
-                        app = app,
-                        shape = cardShape(shapePreset, cornerRadius),
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.launchApp(app)
-                        }
-                    )
-                }
-            }
-            }
         }
+    }
+}
+
+@Composable
+fun AppLauncherScreenPreview() {
+    MaterialTheme {
+        AppLauncherScreenContent(
+            apps = listOf(
+                AppEntry("Calculator", "calc.exe"),
+                AppEntry("Notepad", "notepad.exe"),
+                AppEntry("Chrome", "chrome.exe")
+            ),
+            shapePreset = 0f,
+            cornerRadius = 8,
+            isConnected = true,
+            onRefreshApps = {},
+            onLaunchApp = {},
+            onNavigateToConnection = {}
+        )
     }
 }
 

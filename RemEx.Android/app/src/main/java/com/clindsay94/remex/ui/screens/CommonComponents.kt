@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -22,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,8 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,13 +50,14 @@ import kotlinx.coroutines.delay
  * Non-blocking — the screen content is still visible/interactable below it. Includes a 3-second
  * debounce to avoid flashing during transient reconnection cycles.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NotConnectedBanner(
         isConnected: Boolean,
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     var showBanner by remember { mutableStateOf(false) }
 
     // Debounce: only show banner if disconnected for 3+ seconds
@@ -70,8 +72,8 @@ fun NotConnectedBanner(
 
     AnimatedVisibility(
             visible = showBanner,
-            enter = expandVertically(),
-            exit = shrinkVertically(),
+            enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()),
+            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()),
             modifier = modifier
     ) {
         Card(
@@ -103,12 +105,12 @@ fun NotConnectedBanner(
                 val bannerScale by
                         animateFloatAsState(
                                 targetValue = if (isBannerPressed) 0.92f else 1f,
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                                 label = "bannerButtonScale"
                         )
                 TextButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                             onNavigateToConnection()
                         },
                         interactionSource = bannerInteractionSource,
@@ -134,13 +136,14 @@ fun NotConnectedBanner(
  * Full-screen disconnected placeholder — used when a screen's content is entirely dependent on a
  * live connection (e.g. App Launcher with no cached apps).
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DisconnectedFullScreen(
         screenName: String,
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     Column(
             modifier = modifier.fillMaxWidth().padding(32.dp),
             verticalArrangement = Arrangement.Center,
@@ -173,12 +176,12 @@ fun DisconnectedFullScreen(
         val ctaScale by
                 animateFloatAsState(
                         targetValue = if (isCtaPressed) 0.95f else 1f,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                         label = "ctaButtonScale"
                 )
         Button(
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                     onNavigateToConnection()
                 },
                 interactionSource = ctaInteractionSource,
