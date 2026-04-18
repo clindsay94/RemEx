@@ -27,31 +27,31 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 ### Linux Desktop Client & Host (Automated)
 
 1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download:
-   - `remex-client-v1.11.0-linux-x64.tar.gz` (for the Desktop UI)
-   - `remex-host-v1.11.0-linux-x64.tar.gz` (for the background service)
+   - `remex-client-v1.xx.x-linux-x64.tar.gz` (for the Desktop UI)
+   - `remex-host-v1.xx.x-linux-x64.tar.gz` (for the background service)
 2. **Extract** the archives:
    ```bash
-   tar -xzf remex-client-v1.11.0-linux-x64.tar.gz
-   tar -xzf remex-host-v1.11.0-linux-x64.tar.gz
+   tar -xzf remex-client-v1.xx.x-linux-x64.tar.gz
+   tar -xzf remex-host-v1.xx.x-linux-x64.tar.gz
    ```
 3. **Install** via the provided scripts (installs to `~/.local/share/` and sets up `systemd` user services):
    ```bash
    # Install Client (adds to Applications menu)
-   ./remex-client-v1.11.0-linux-x64/install.sh install
+   ./remex-client-v1.xx.x-linux-x64/install.sh install
 
    # Install Host (starts background service)
-   ./remex-host-v1.11.0-linux-x64/install.sh install
+   ./remex-host-v1.xx.x-linux-x64/install.sh install
    ```
 
 ### Native Android App
 
-1. Go to the **Releases** page and download the latest `RemEx-v1.11.0.apk`.
+1. Go to the **Releases** page and download the latest `RemEx-v1.13.0.apk`.
 2. Open the downloaded `.apk` file to install.
 3. Use the new **QR Scanner** on the connection screen to pair instantly with your PC!
 
 ---
 
-## 💎 Key Features (v1.11.0)
+## 💎 Key Features (v1.13.0)
 
 ### ✨ Enhanced User Experience (New in v1.11.0)
 - **Haptic Feedback:** Tactile vibration feedback for all Android interactions.
