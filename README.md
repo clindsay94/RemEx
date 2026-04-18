@@ -7,7 +7,7 @@
 ![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-![Version](https://img.shields.io/badge/Version-1.11.0-FF6B6B)
+![Version](https://img.shields.io/badge/Version-1.13.0-FF6B6B)
 
 A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · QR Pairing · App launcher · Process manager\
