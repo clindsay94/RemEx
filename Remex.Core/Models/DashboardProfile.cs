@@ -110,6 +110,9 @@ public record DashboardProfile
     /// <summary>Host screen capture target frames per second (5–120).</summary>
     public int StreamFps { get; init; } = 30;
 
+    /// <summary>Host screen capture scale factor sent to the desktop client (0.25–1.0).</summary>
+    public double StreamScale { get; init; } = 0.5;
+
     /// <summary>Visual aesthetic and theme overrides.</summary>
     public CustomizationSettings Customization { get; init; } = new();
 }

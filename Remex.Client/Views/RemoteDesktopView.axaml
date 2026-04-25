@@ -71,7 +71,7 @@
                     <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
                     <TextBlock Text="{local:Localize RemoteDesktop_Scale}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                    <ComboBox SelectedIndex="1" x:Name="ScaleComboBox" MinWidth="60" FontSize="11" VerticalAlignment="Center">
+                    <ComboBox SelectedIndex="{Binding SelectedScaleIndex}" MinWidth="60" FontSize="11" VerticalAlignment="Center">
                         <ComboBoxItem Content="25%" Tag="0.25"/>
                         <ComboBoxItem Content="50%" Tag="0.5"/>
                         <ComboBoxItem Content="75%" Tag="0.75"/>
@@ -81,7 +81,7 @@
                     <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
                     <TextBlock Text="{local:Localize RemoteDesktop_Fps}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                    <ComboBox SelectedIndex="1" x:Name="FpsComboBox" MinWidth="55" FontSize="11" VerticalAlignment="Center">
+                    <ComboBox SelectedIndex="{Binding SelectedFpsIndex}" MinWidth="55" FontSize="11" VerticalAlignment="Center">
                         <ComboBoxItem Content="5" Tag="5"/>
                         <ComboBoxItem Content="10" Tag="10"/>
                         <ComboBoxItem Content="15" Tag="15"/>
