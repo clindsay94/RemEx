@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -93,7 +94,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async void OnLayoutProfileReceived(DashboardProfile profile)
+    private void OnLayoutProfileReceived(DashboardProfile profile)
+        => _ = OnLayoutProfileReceivedAsync(profile).ContinueWith(
+            t => Debug.WriteLine($"[Remex] OnLayoutProfileReceivedAsync failed: {t.Exception?.GetBaseException().Message}"),
+            TaskContinuationOptions.OnlyOnFaulted);
+
+    private async Task OnLayoutProfileReceivedAsync(DashboardProfile profile)
     {
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
