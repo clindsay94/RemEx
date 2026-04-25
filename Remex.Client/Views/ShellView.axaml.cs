@@ -88,29 +88,4 @@ public partial class ShellView : UserControl
         if (DataContext is ShellViewModel vm)
             vm.IsSettingsPanelOpen = false;
     }
-
-    private void OnSelectBaseDark(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("BaseDarkGlass");
-    }
-
-    private void OnSelectCyberNOC(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("CyberNOC");
-    }
-
-    private void OnSelectSolarFlare(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("SolarFlare");
-    }
-
-    private void OnSelectMonolith(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("Monolith");
-    }
-
-    private void OnSelectDynamic(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("Dynamic");
-    }
 }

@@ -333,7 +333,7 @@
                                     <TextBlock Text="{conv:Localize Shell_Theme}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                                     <UniformGrid Columns="2">
                                         <!-- Dynamic -->
-                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" PointerPressed="OnSelectDynamic">
+                                        <Button Classes="theme-tile" Margin="3" Padding="10" Command="{Binding CustomizationVm.SelectThemeCommand}" CommandParameter="Dynamic" Classes.selected="{Binding CustomizationVm.SelectedThemePreset, Converter={x:Static conv:StringMatchConverter.EqualsParameter}, ConverterParameter=Dynamic}">
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" CornerRadius="14" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1.5">
                                                     <Border.Background>
@@ -346,32 +346,32 @@
                                                 </Border>
                                                 <TextBlock Text="{conv:Localize Custom_PresetDynamic}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" />
                                             </StackPanel>
-                                        </Border>
+                                        </Button>
                                         <!-- Standard Glass -->
-                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" PointerPressed="OnSelectBaseDark">
+                                        <Button Classes="theme-tile" Margin="3" Padding="10" Command="{Binding CustomizationVm.SelectThemeCommand}" CommandParameter="BaseDarkGlass" Classes.selected="{Binding CustomizationVm.SelectedThemePreset, Converter={x:Static conv:StringMatchConverter.EqualsParameter}, ConverterParameter=BaseDarkGlass}">
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#1AFFFFFF" CornerRadius="6" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
                                                 <TextBlock Text="{conv:Localize Custom_PresetStandardGlass}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" />
                                             </StackPanel>
-                                        </Border>
-                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" PointerPressed="OnSelectCyberNOC">
+                                        </Button>
+                                        <Button Classes="theme-tile" Margin="3" Padding="10" Command="{Binding CustomizationVm.SelectThemeCommand}" CommandParameter="CyberNOC" Classes.selected="{Binding CustomizationVm.SelectedThemePreset, Converter={x:Static conv:StringMatchConverter.EqualsParameter}, ConverterParameter=CyberNOC}">
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
                                                 <TextBlock Text="{conv:Localize Custom_PresetCyberNOC}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" />
                                             </StackPanel>
-                                        </Border>
-                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" PointerPressed="OnSelectSolarFlare">
+                                        </Button>
+                                        <Button Classes="theme-tile" Margin="3" Padding="10" Command="{Binding CustomizationVm.SelectThemeCommand}" CommandParameter="SolarFlare" Classes.selected="{Binding CustomizationVm.SelectedThemePreset, Converter={x:Static conv:StringMatchConverter.EqualsParameter}, ConverterParameter=SolarFlare}">
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
                                                 <TextBlock Text="{conv:Localize Custom_PresetSolarFlare}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>
-                                        </Border>
-                                        <Border Classes="glass-card interactive" Margin="3" Padding="10" Cursor="Hand" PointerPressed="OnSelectMonolith">
+                                        </Button>
+                                        <Button Classes="theme-tile" Margin="3" Padding="10" Command="{Binding CustomizationVm.SelectThemeCommand}" CommandParameter="Monolith" Classes.selected="{Binding CustomizationVm.SelectedThemePreset, Converter={x:Static conv:StringMatchConverter.EqualsParameter}, ConverterParameter=Monolith}">
                                             <StackPanel Spacing="6">
                                                 <Border Height="28" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
                                                 <TextBlock Text="{conv:Localize Custom_PresetMonolith}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>
-                                        </Border>
+                                        </Button>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>

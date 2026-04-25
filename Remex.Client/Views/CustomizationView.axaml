@@ -18,7 +18,7 @@
             <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="5">
                 <!-- Dynamic -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectDynamic">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="Dynamic" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Dynamic}">
                     <StackPanel Spacing="8">
                         <Border Height="40" CornerRadius="20" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2">
                             <Border.Background>
@@ -31,35 +31,35 @@
                         </Border>
                         <TextBlock Text="{local:Localize Custom_PresetDynamic}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Base Dark Glass -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="BaseDarkGlass" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=BaseDarkGlass}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
                         <TextBlock Text="{local:Localize Custom_PresetStandardGlass}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Cyber-NOC -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectCyberNOC">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="CyberNOC" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=CyberNOC}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
                         <TextBlock Text="{local:Localize Custom_PresetCyberNOC}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Solar-Flare -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectSolarFlare">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="SolarFlare" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=SolarFlare}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
                         <TextBlock Text="{local:Localize Custom_PresetSolarFlare}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Monolith -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectMonolith">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="Monolith" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Monolith}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
                         <TextBlock Text="{local:Localize Custom_PresetMonolith}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
             </UniformGrid>
 
             <!-- ═══ Section 2: Advanced Overrides ═══ -->

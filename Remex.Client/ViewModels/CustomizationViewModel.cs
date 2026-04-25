@@ -74,6 +74,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private AppTheme _selectedTheme;
 
+    /// <summary>String representation of <see cref="SelectedTheme"/> used for Classes.selected bindings in AXAML.</summary>
+    public string SelectedThemePreset => SelectedTheme.ToString();
+
     [ObservableProperty]
     private double _cornerRadius;
 
@@ -98,7 +101,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _canvasBackgroundType;
 
-    partial void OnSelectedThemeChanged(AppTheme value) => ApplyAndSave();
+    partial void OnSelectedThemeChanged(AppTheme value)
+    {
+        OnPropertyChanged(nameof(SelectedThemePreset));
+        ApplyAndSave();
+    }
     partial void OnCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnRemoteCardCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();

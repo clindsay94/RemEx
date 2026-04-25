@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Remex.Client.Services;
 using Remex.Core.Guards;
 
@@ -20,6 +21,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
+    private readonly IServiceProvider _services;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
     private readonly PropertyChangedEventHandler _onConnectionChanged;
     private static readonly Random _rng = new();
@@ -117,11 +119,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
 
-    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IImmersiveModeService? immersiveMode = null)
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null)
     {
         _layoutService = Guard.NotNull(layoutService);
         _themeService = Guard.NotNull(themeService);
         Connection = Guard.NotNull(connectionViewModel);
+        _services = Guard.NotNull(services);
         _immersiveMode = immersiveMode; // Intentionally optional
 
         _onCustomizationApplied = settings => Customization = settings;
@@ -304,7 +307,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToHome()
     {
-        _homeViewModel ??= Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<HomeViewModel>(App.Services);
+        _homeViewModel ??= _services.GetRequiredService<HomeViewModel>();
         _homeViewModel.RefreshPinnedSensors();
         SetTransitionAndNavigate(0, _homeViewModel);
     }
@@ -322,7 +325,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         NotifyIfDisconnected("Remote Control");
         _remoteViewModel ??= new RemoteViewModel(
             Connection, this,
-            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(App.Services),
+            _services.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(),
             _layoutService);
         SetTransitionAndNavigate(2, _remoteViewModel);
     }
@@ -333,7 +336,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         NotifyIfDisconnected("App Launcher");
         if (_appLauncherViewModel is null)
         {
-            _appLauncherViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppLauncherViewModel>(App.Services);
+            _appLauncherViewModel = _services.GetRequiredService<AppLauncherViewModel>();
         }
         SetTransitionAndNavigate(3, _appLauncherViewModel);
     }
