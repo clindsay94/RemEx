@@ -388,4 +388,16 @@ Linux: ip addr या hostname -I</value></data>
 <data name="Home_QrCodeButton" xml:space="preserve"><value>QR कोड</value></data>
 <data name="Home_QrCodeScanHint" xml:space="preserve"><value>RemEx Android ऐप से स्कैन करें</value></data>
 <data name="Home_QrCodeTooltip" xml:space="preserve"><value>RemEx Android ऐप को कनेक्ट करने के लिए QR कोड जनरेट करें</value></data>
+  <data name="About_GitHubStar" xml:space="preserve">
+    <value>⭐ GitHub पर स्टार देने पर विचार करें!</value>
+  </data>
+  <data name="About_GitHubDesc" xml:space="preserve">
+    <value>ओपन सोर्स और मुफ़्त। (कृपया एक स्टार दें, उनके पास मेरी बिल्ली है!)</value>
+  </data>
+  <data name="About_ViewGitHub" xml:space="preserve">
+    <value>GitHub पर स्रोत देखें</value>
+  </data>
+  <data name="About_MadeWith" xml:space="preserve">
+    <value>डेन्वर, कोलोराडो में ❤️ के साथ बनाया गया</value>
+  </data>
 </root>

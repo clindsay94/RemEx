@@ -22,17 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,7 +40,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+
+data class TaskManagerUiState(
+    val processes: List<ProcessInfo> = emptyList(),
+    val searchQuery: String = "",
+    val sortField: ProcessSortField = ProcessSortField.NAME,
+    val sortDescending: Boolean = false,
+    val shapePreset: Float = 0f,
+    val cornerRadius: Int = 8,
+    val isConnected: Boolean = false,
+    val isRefreshing: Boolean = false
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +65,9 @@ fun TaskManagerScreen(
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
-    TaskManagerScreenContent(
+    val uiState = TaskManagerUiState(
         processes = processes,
         searchQuery = searchQuery,
         sortField = sortField,
@@ -72,6 +75,11 @@ fun TaskManagerScreen(
         shapePreset = shapePreset,
         cornerRadius = cornerRadius,
         isConnected = isConnected,
+        isRefreshing = isRefreshing
+    )
+
+    TaskManagerScreenContent(
+        uiState = uiState,
         onRefreshProcesses = { viewModel.refreshProcesses() },
         onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
         onUpdateSortField = { viewModel.updateSortField(it) },
@@ -83,13 +91,7 @@ fun TaskManagerScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskManagerScreenContent(
-    processes: List<ProcessInfo>,
-    searchQuery: String,
-    sortField: ProcessSortField,
-    sortDescending: Boolean,
-    shapePreset: Float,
-    cornerRadius: Int,
-    isConnected: Boolean,
+    uiState: TaskManagerUiState,
     onRefreshProcesses: () -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
     onUpdateSortField: (ProcessSortField) -> Unit,
@@ -99,90 +101,97 @@ fun TaskManagerScreenContent(
 ) {
     val view = LocalView.current
 
-    Column(modifier = modifier.fillMaxSize()) {
-        RemexScreenHeader(
-            title = stringResource(R.string.screen_task_manager_title),
-            actions = {
-                IconButton(onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onRefreshProcesses()
-                }) {
-                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
-                }
-            }
-        )
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            NotConnectedBanner(
-                isConnected = isConnected,
-                onNavigateToConnection = onNavigateToConnection
-            )
-
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onUpdateSearchQuery,
-                label = { Text(stringResource(R.string.task_manager_search_hint)) },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius)
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SortChip(stringResource(R.string.sort_name), sortField == ProcessSortField.NAME, sortDescending) {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onUpdateSortField(ProcessSortField.NAME)
-                }
-                SortChip(stringResource(R.string.sort_cpu), sortField == ProcessSortField.CPU, sortDescending) {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onUpdateSortField(ProcessSortField.CPU)
-                }
-                SortChip(stringResource(R.string.sort_ram), sortField == ProcessSortField.RAM, sortDescending) {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onUpdateSortField(ProcessSortField.RAM)
-                }
-                SortChip(stringResource(R.string.sort_pid), sortField == ProcessSortField.PID, sortDescending) {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onUpdateSortField(ProcessSortField.PID)
-                }
-            }
-
-            if (!isConnected && processes.isEmpty()) {
-                DisconnectedFullScreen(
-                    screenName = stringResource(R.string.screen_task_manager_title),
-                    onNavigateToConnection = onNavigateToConnection,
-                    modifier = Modifier.weight(1f)
-                )
-            } else if (processes.isEmpty()) {
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(stringResource(R.string.task_manager_fetching), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.screen_task_manager_title)) },
+                actions = {
+                    IconButton(onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onRefreshProcesses()
+                    }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                     }
                 }
-            } else {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + expandVertically()
+            )
+        }
+    ) { innerPadding ->
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = onRefreshProcesses,
+            modifier = modifier.fillMaxSize().padding(innerPadding)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                NotConnectedBanner(
+                    isConnected = uiState.isConnected,
+                    onNavigateToConnection = onNavigateToConnection
+                )
+
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = onUpdateSearchQuery,
+                    label = { Text(stringResource(R.string.task_manager_search_hint)) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius)
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        item {
-                            ProcessHeader()
+                    SortChip(stringResource(R.string.sort_name), uiState.sortField == ProcessSortField.NAME, uiState.sortDescending) {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onUpdateSortField(ProcessSortField.NAME)
+                    }
+                    SortChip(stringResource(R.string.sort_cpu), uiState.sortField == ProcessSortField.CPU, uiState.sortDescending) {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onUpdateSortField(ProcessSortField.CPU)
+                    }
+                    SortChip(stringResource(R.string.sort_ram), uiState.sortField == ProcessSortField.RAM, uiState.sortDescending) {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onUpdateSortField(ProcessSortField.RAM)
+                    }
+                    SortChip(stringResource(R.string.sort_pid), uiState.sortField == ProcessSortField.PID, uiState.sortDescending) {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onUpdateSortField(ProcessSortField.PID)
+                    }
+                }
+
+                if (!uiState.isConnected && uiState.processes.isEmpty()) {
+                    DisconnectedFullScreen(
+                        screenName = stringResource(R.string.screen_task_manager_title),
+                        onNavigateToConnection = onNavigateToConnection,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else if (uiState.processes.isEmpty()) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(stringResource(R.string.task_manager_fetching), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        items(processes, key = { it.id }) { process ->
-                            ProcessItem(process = process, maxRam = maxRam, onKill = { onKillProcess(process.id) })
+                    }
+                } else {
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn() + expandVertically()
+                    ) {
+                        val maxRam = remember(uiState.processes) { uiState.processes.maxOfOrNull { it.ram } ?: 1.0 }
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            item {
+                                ProcessHeader()
+                            }
+                            items(uiState.processes, key = { it.id }) { process ->
+                                ProcessItem(process = process, maxRam = maxRam, onKill = { onKillProcess(process.id) })
+                            }
                         }
                     }
                 }
@@ -210,7 +219,7 @@ private fun ProcessHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -290,12 +299,11 @@ private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit
         IconButton(onClick = {
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             showConfirm = true
-        }, modifier = Modifier.size(32.dp)) {
+        }) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = stringResource(R.string.cd_kill_process),
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.error
             )
         }
     }

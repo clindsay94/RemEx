@@ -30,6 +30,24 @@
     <string name="button_dismiss">Dismiss</string>
     <string name="button_done">Done</string>
     <string name="cd_refresh">Refresh</string>
+    <string name="cd_phone">Phone</string>
+    <string name="cd_terminal">Terminal</string>
+    <string name="cd_launch_icon">Launch</string>
+    <string name="cd_trackpad_icon">Trackpad</string>
+    <string name="cd_monitor_icon">Monitor</string>
+    <string name="cd_play_icon">Play</string>
+    <string name="cd_camera_icon">Camera</string>
+    <string name="cd_section_icon">Section Icon</string>
+    <string name="cd_card_enabled">Card Enabled</string>
+    <string name="cd_connection_icon">Connection</string>
+    <string name="cd_error_icon">Error</string>
+    <string name="cd_wifi_icon">Wi-Fi</string>
+    <string name="cd_search_icon">Search</string>
+    <string name="cd_qr_scanner_icon">QR Scanner</string>
+    <string name="cd_success_icon">Success</string>
+    <string name="cd_help_icon">Help</string>
+    <string name="cd_expand_icon">Expand</string>
+    <string name="cd_category_icon">Category</string>
 
     <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Skip</string>

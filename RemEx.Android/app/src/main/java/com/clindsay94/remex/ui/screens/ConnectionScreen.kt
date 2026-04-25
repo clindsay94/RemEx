@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,8 +33,18 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.SettingsManager
-import androidx.compose.ui.tooling.preview.Preview
-import com.clindsay94.remex.ui.theme.RemExTheme
+
+data class ConnectionUiState(
+    val connectionPrefs: SettingsManager.ConnectionPreferences? = null,
+    val desktopPrefs: SettingsManager.RemoteDesktopPreferences? = null,
+    val isConnecting: Boolean = false,
+    val isConnected: Boolean = false,
+    val status: String = "Disconnected",
+    val connectionError: String? = null,
+    val capabilitySummary: String = "",
+    val isDiscovering: Boolean = false,
+    val discoveredHost: DiscoveredHost? = null
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +62,7 @@ fun ConnectionScreen(
     val isDiscovering by viewModel.isDiscovering.collectAsState()
     val discoveredHost by viewModel.discoveredHost.collectAsState()
 
-    ConnectionScreenContent(
+    val uiState = ConnectionUiState(
         connectionPrefs = connectionPrefs,
         desktopPrefs = desktopPrefs,
         isConnecting = isConnecting,
@@ -62,7 +71,11 @@ fun ConnectionScreen(
         connectionError = connectionError,
         capabilitySummary = capabilitySummary,
         isDiscovering = isDiscovering,
-        discoveredHost = discoveredHost,
+        discoveredHost = discoveredHost
+    )
+
+    ConnectionScreenContent(
+        uiState = uiState,
         onNavigateToQrScanner = onNavigateToQrScanner,
         onConnect = { host, port, mac, broadcast, subnet, key, quality, fps, scale ->
             viewModel.connect(host, port, mac, broadcast, subnet, key, quality, fps, scale)
@@ -75,15 +88,7 @@ fun ConnectionScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConnectionScreenContent(
-    connectionPrefs: SettingsManager.ConnectionPreferences?,
-    desktopPrefs: SettingsManager.RemoteDesktopPreferences?,
-    isConnecting: Boolean,
-    isConnected: Boolean,
-    status: String,
-    connectionError: String?,
-    capabilitySummary: String,
-    isDiscovering: Boolean,
-    discoveredHost: DiscoveredHost?,
+    uiState: ConnectionUiState,
     onNavigateToQrScanner: () -> Unit,
     onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
     onClearError: () -> Unit,
@@ -168,9 +173,9 @@ fun ConnectionScreenContent(
     }
 
     // Initialize inputs from saved values only once they are loaded
-    LaunchedEffect(connectionPrefs, desktopPrefs) {
-        val cp = connectionPrefs
-        val dp = desktopPrefs
+    LaunchedEffect(uiState.connectionPrefs, uiState.desktopPrefs) {
+        val cp = uiState.connectionPrefs
+        val dp = uiState.desktopPrefs
         if (cp != null && dp != null) {
             if (hostInput.isEmpty() && cp.host.isNotEmpty()) hostInput = cp.host
             if (portInput.isEmpty()) portInput = cp.port.toString()
@@ -185,8 +190,8 @@ fun ConnectionScreenContent(
     }
 
     // Auto-fill host/port when a host is discovered
-    LaunchedEffect(discoveredHost) {
-        discoveredHost?.let {
+    LaunchedEffect(uiState.discoveredHost) {
+        uiState.discoveredHost?.let {
             hostInput = it.host
             portInput = it.port.toString()
         }
@@ -199,7 +204,7 @@ fun ConnectionScreenContent(
             )
         }
     ) { padding ->
-        if (connectionPrefs == null || desktopPrefs == null) {
+        if (uiState.connectionPrefs == null || uiState.desktopPrefs == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -215,7 +220,7 @@ fun ConnectionScreenContent(
             ) {
                 Icon(
                     imageVector = Icons.Default.SettingsEthernet,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.cd_connection_icon),
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -227,7 +232,7 @@ fun ConnectionScreenContent(
                 )
 
                 // --- Error display ---
-                AnimatedVisibility(visible = connectionError != null) {
+                AnimatedVisibility(visible = uiState.connectionError != null) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer
@@ -241,11 +246,11 @@ fun ConnectionScreenContent(
                         ) {
                             Icon(
                                 Icons.Default.ErrorOutline,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.cd_error_icon),
                                 tint = MaterialTheme.colorScheme.onErrorContainer
                             )
                             Text(
-                                text = connectionError ?: "",
+                                text = uiState.connectionError ?: "",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 modifier = Modifier.weight(1f)
@@ -278,7 +283,7 @@ fun ConnectionScreenContent(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Wifi,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.cd_wifi_icon),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(Modifier.width(8.dp))
@@ -294,45 +299,45 @@ fun ConnectionScreenContent(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                Button(
-                    onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        if (isDiscovering) return@Button
-                        if (!hasNearbyWifiPermission()) {
-                            pendingDiscover = true
-                            discoverPermissionLauncher.launch(
-                                Manifest.permission.NEARBY_WIFI_DEVICES
+                        Button(
+                            onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                if (uiState.isDiscovering) return@Button
+                                if (!hasNearbyWifiPermission()) {
+                                    pendingDiscover = true
+                                    discoverPermissionLauncher.launch(
+                                        Manifest.permission.NEARBY_WIFI_DEVICES
+                                    )
+                                } else {
+                                    onDiscoverHost()
+                                }
+                            },
+                            enabled = !uiState.isDiscovering,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
-                        } else {
-                            onDiscoverHost()
-                        }
-                    },
-                    enabled = !isDiscovering,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    if (isDiscovering) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.connection_searching))
-                    } else {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            if (discoveredHost != null) {
-                                stringResource(R.string.connection_found_host, discoveredHost.host)
+                        ) {
+                            if (uiState.isDiscovering) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.connection_searching))
                             } else {
-                                stringResource(R.string.connection_discover_button)
+                                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search_icon))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (uiState.discoveredHost != null) {
+                                        stringResource(R.string.connection_found_host, uiState.discoveredHost.host)
+                                    } else {
+                                        stringResource(R.string.connection_discover_button)
+                                    }
+                                )
                             }
-                        )
-                    }
-                }
+                        }
 
                         OutlinedButton(
                             onClick = {
@@ -346,20 +351,20 @@ fun ConnectionScreenContent(
                         ) {
                             Icon(
                                 Icons.Default.QrCodeScanner,
-                                contentDescription = null
+                                contentDescription = stringResource(R.string.cd_qr_scanner_icon)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.connection_scan_qr_code))
                         }
 
-                        AnimatedVisibility(visible = discoveredHost != null) {
+                        AnimatedVisibility(visible = uiState.discoveredHost != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
                                     Icons.Default.CheckCircle,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.cd_success_icon),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -383,7 +388,7 @@ fun ConnectionScreenContent(
                             showHelpSection = !showHelpSection
                         },
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -398,7 +403,7 @@ fun ConnectionScreenContent(
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.Help,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.cd_help_icon),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
@@ -410,7 +415,7 @@ fun ConnectionScreenContent(
                             }
                             Icon(
                                 if (showHelpSection) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.cd_expand_icon),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -633,9 +638,9 @@ fun ConnectionScreenContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    enabled = !isConnecting && hostInput.isNotEmpty()
+                    enabled = !uiState.isConnecting && hostInput.isNotEmpty()
                 ) {
-                    if (isConnecting) {
+                    if (uiState.isConnecting) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -647,13 +652,13 @@ fun ConnectionScreenContent(
                 }
 
                 Text(
-                    text = stringResource(R.string.connection_status_label, status),
+                    text = stringResource(R.string.connection_status_label, uiState.status),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (status == "Connected") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (uiState.status == "Connected") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Text(
-                    text = capabilitySummary,
+                    text = uiState.capabilitySummary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -695,7 +700,7 @@ private fun IpInstructionRow(platform: String, icon: androidx.compose.ui.graphic
         leadingContent = {
             Icon(
                 icon,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.cd_section_icon),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },

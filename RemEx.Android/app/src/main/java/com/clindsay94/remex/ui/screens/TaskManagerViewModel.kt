@@ -174,11 +174,17 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         _sortDescending.value = field != ProcessSortField.NAME
     }
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     fun refreshProcesses() {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
+                _isRefreshing.value = true
                 val request = JSONObject().apply { put("type", "process_list_request") }
                 RemexCoreClient.SendMessage(request.toString())
+                delay(1000) // Ensure spinner is visible long enough
+                _isRefreshing.value = false
             }
         }
     }

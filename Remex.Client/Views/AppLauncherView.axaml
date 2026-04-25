@@ -76,13 +76,13 @@
                                         <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" 
                                                 Padding="0" FontSize="16" HorizontalAlignment="Stretch"
                                                 ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}"
-                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveUpCommand}" 
+                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" 
                                                 CommandParameter="{Binding}" />
                                         
                                         <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" 
                                                 Padding="0" FontSize="16" HorizontalAlignment="Stretch"
                                                 ToolTip.Tip="{local:Localize AppLauncher_MoveRight}"
-                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveDownCommand}" 
+                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" 
                                                 CommandParameter="{Binding}" />
                                         
                                         <Button Grid.Column="2" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" 

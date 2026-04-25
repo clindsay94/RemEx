@@ -393,19 +393,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToSettings()
     {
-        // Now opens the settings overlay instead of navigating
+        IsSettingsPanelOpen = false;
         EnsureSettingsVm();
-        EnsureCustomizationVm();
-        IsSettingsPanelOpen = true;
+        CurrentView = _settingsViewModel;
     }
 
     [RelayCommand]
     public void NavigateToCustomization()
     {
-        // Now opens the settings overlay instead of navigating
-        EnsureSettingsVm();
+        IsSettingsPanelOpen = false;
         EnsureCustomizationVm();
-        IsSettingsPanelOpen = true;
+        CurrentView = _customizationViewModel;
     }
 
     private void EnsureSettingsVm()

@@ -391,4 +391,16 @@ Linux: ip addr veya hostname -I</value></data>
 <data name="Home_QrCodeButton" xml:space="preserve"><value>QR Kodu</value></data>
 <data name="Home_QrCodeScanHint" xml:space="preserve"><value>RemEx Android uygulamasıyla tarayın</value></data>
 <data name="Home_QrCodeTooltip" xml:space="preserve"><value>RemEx Android uygulamasını bağlamak için QR kodu oluşturun</value></data>
+  <data name="About_GitHubStar" xml:space="preserve">
+    <value>⭐ GitHub'da bir yıldız vermeyi düşünün!</value>
+  </data>
+  <data name="About_GitHubDesc" xml:space="preserve">
+    <value>Açık kaynaklı ve ücretsiz. (lütfen bir yıldız verin, kedimi rehin aldılar!)</value>
+  </data>
+  <data name="About_ViewGitHub" xml:space="preserve">
+    <value>GitHub'da Kaynak Kodunu Görüntüle</value>
+  </data>
+  <data name="About_MadeWith" xml:space="preserve">
+    <value>Denver, Colorado'da ❤️ ile yapıldı</value>
+  </data>
 </root>

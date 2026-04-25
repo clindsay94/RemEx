@@ -229,7 +229,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task MoveUpAsync(AppEntry entry)
+    private async Task MoveLeftAsync(AppEntry entry)
     {
         if (entry == null) return;
         var index = Launchers.IndexOf(entry);
@@ -239,7 +239,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task MoveDownAsync(AppEntry entry)
+    private async Task MoveRightAsync(AppEntry entry)
     {
         if (entry == null) return;
         var index = Launchers.IndexOf(entry);

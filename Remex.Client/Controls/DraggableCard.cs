@@ -42,6 +42,10 @@ public class DraggableCard : ContentControl
     private const double CardMinWidth = 120;
     private const double CardMinHeight = 80;
 
+    // ═══════════════ IsSelected tracking ═══════════════
+
+    private CanvasCardViewModel? _trackedCardVm;
+
     // ═══════════════ Styled Properties ═══════════════
 
     public static readonly StyledProperty<bool> IsDraggingProperty =
@@ -60,18 +64,29 @@ public class DraggableCard : ContentControl
         RenderTransform = new ScaleTransform(1, 1);
 
         // Sync the .selected pseudo-class with the ViewModel's IsSelected property.
-        DataContextChanged += (_, _) =>
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (_trackedCardVm != null)
         {
-            if (DataContext is CanvasCardViewModel cardVm)
-            {
-                cardVm.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected))
-                        UpdateSelectedClass(cardVm.IsSelected);
-                };
-                UpdateSelectedClass(cardVm.IsSelected);
-            }
-        };
+            _trackedCardVm.PropertyChanged -= OnCardViewModelPropertyChanged;
+            _trackedCardVm = null;
+        }
+
+        if (DataContext is CanvasCardViewModel cardVm)
+        {
+            _trackedCardVm = cardVm;
+            cardVm.PropertyChanged += OnCardViewModelPropertyChanged;
+            UpdateSelectedClass(cardVm.IsSelected);
+        }
+    }
+
+    private void OnCardViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected) && sender is CanvasCardViewModel cardVm)
+            UpdateSelectedClass(cardVm.IsSelected);
     }
 
     private void UpdateSelectedClass(bool isSelected)

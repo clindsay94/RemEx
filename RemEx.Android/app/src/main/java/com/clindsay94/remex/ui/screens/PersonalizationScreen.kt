@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
-import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList
@@ -54,11 +53,14 @@ fun PersonalizationScreen(
     val settingsState by viewModel.personalization.collectAsState()
 
     if (settingsState == null) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (showHeader) {
-                RemexScreenHeader(title = stringResource(R.string.screen_personalization_title))
+        Scaffold(
+            topBar = {
+                if (showHeader) {
+                    TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title)) })
+                }
             }
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        ) { innerPadding ->
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
@@ -112,27 +114,29 @@ fun PersonalizationScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (showHeader) {
-            RemexScreenHeader(title = stringResource(R.string.screen_personalization_title))
+    Scaffold(
+        topBar = {
+            if (showHeader) {
+                TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title)) })
+            }
         }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
                 text = stringResource(R.string.personalization_appearance_studio),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-1).sp
+                style = MaterialTheme.typography.headlineMedium
             )
 
             // ═══ Language Settings ═══
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 modifier = Modifier.animateContentSize()
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -227,7 +231,7 @@ fun PersonalizationScreen(
 
             // ═══ Theme Mode & Style ═══
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 modifier = Modifier.animateContentSize()
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -251,7 +255,7 @@ fun PersonalizationScreen(
 
             // ═══ Ultimate Color Studio ═══
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 modifier = Modifier.animateContentSize()
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -352,7 +356,7 @@ fun PersonalizationScreen(
 
             // ═══ Individual Card Shapes ═══
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 modifier = Modifier.animateContentSize()
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -437,7 +441,7 @@ fun PersonalizationScreen(
 @Composable
 private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = stringResource(R.string.cd_section_icon), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
     }
 }

@@ -1,58 +1,25 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
-import androidx.compose.ui.platform.LocalView
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Monitor
-import androidx.compose.material.icons.filled.PowerOff
-import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Sensors
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.ui.components.RemexScreenHeader
 
 private enum class CommandCategory(@param:StringRes val labelRes: Int) {
     SESSION(R.string.rc_category_session),
@@ -161,6 +128,13 @@ private val remoteCommandCards =
                 )
         )
 
+data class RemoteControlUiState(
+    val commandStatus: String? = null,
+    val shapePreset: Float = 0f,
+    val cornerRadius: Int = 8,
+    val isConnected: Boolean = false
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlScreen(
@@ -172,11 +146,15 @@ fun RemoteControlScreen(
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    RemoteControlScreenContent(
+    val uiState = RemoteControlUiState(
         commandStatus = commandStatus,
         shapePreset = shapePreset,
         cornerRadius = cornerRadius,
-        isConnected = isConnected,
+        isConnected = isConnected
+    )
+
+    RemoteControlScreenContent(
+        uiState = uiState,
         onNavigateToConnection = onNavigateToConnection,
         onWakePc = { viewModel.wakePc() },
         onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
@@ -187,10 +165,7 @@ fun RemoteControlScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlScreenContent(
-    commandStatus: String?,
-    shapePreset: Float,
-    cornerRadius: Int,
-    isConnected: Boolean,
+    uiState: RemoteControlUiState,
     onNavigateToConnection: () -> Unit,
     onWakePc: () -> Unit,
     onSendSystemCommand: (String, Int) -> Unit,
@@ -199,125 +174,107 @@ fun RemoteControlScreenContent(
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        RemexScreenHeader(
-                title = stringResource(R.string.screen_remote_control_title)
-        )
-        Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            NotConnectedBanner(
-                    isConnected = isConnected,
-                    onNavigateToConnection = onNavigateToConnection
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.screen_remote_control_title)) }
             )
+        }
+    ) { innerPadding ->
+        val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
 
-            Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
+        LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentPadding = PaddingValues(16.dp)
+        ) {
+            item(span = { GridItemSpan(2) }) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    NotConnectedBanner(
+                        isConnected = uiState.isConnected,
+                        onNavigateToConnection = onNavigateToConnection
+                    )
+
+                    Text(
                         text = stringResource(R.string.remote_control_section_header),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
-                )
+                    )
 
-                Text(
+                    Text(
                         text = stringResource(R.string.remote_control_description),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    )
 
-                if (!commandStatus.isNullOrBlank()) {
-                    Card(
-                            colors =
-                                    CardDefaults.cardColors(
-                                            containerColor =
-                                                    MaterialTheme.colorScheme.secondaryContainer,
-                                            contentColor =
-                                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                    ),
+                    if (!uiState.commandStatus.isNullOrBlank()) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
                             modifier = Modifier.fillMaxWidth(),
-                            shape =
-                                    com.clindsay94.remex.ui.theme.cardShape(
-                                            shapePreset,
-                                            cornerRadius
-                                    )
-                    ) {
-                        Row(
+                            shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius)
+                        ) {
+                            Row(
                                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                    text = commandStatus,
+                            ) {
+                                Text(
+                                    text = uiState.commandStatus,
                                     modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.bodySmall
-                            )
-                            TextButton(onClick = { onClearCommandStatus() }) {
-                                Text(stringResource(R.string.button_dismiss))
+                                )
+                                TextButton(onClick = { onClearCommandStatus() }) {
+                                    Text(stringResource(R.string.button_dismiss))
+                                }
                             }
                         }
                     }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+            }
 
-                val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
-
-                LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    CommandCategory.entries.forEach { category ->
-                        val categoryCards = cardsByCategory[category].orEmpty()
-                        item(span = { GridItemSpan(maxCurrentLineSpan) }) {
-                            CommandCategoryHeader(
-                                    label = stringResource(category.labelRes),
-                                    category = category
-                            )
-                        }
-                        items(categoryCards) { card ->
-                            CommandCard(
-                                    card = card,
-                                    isAwaitingConfirmation = activeConfirmationId == card.id,
-                                    timerText = timerInputs[card.id].orEmpty(),
-                                    shape =
-                                            com.clindsay94.remex.ui.theme.cardShape(
-                                                    shapePreset,
-                                                    cornerRadius
-                                            ),
-                                    onTimerTextChanged = { timerInputs[card.id] = it },
-                                    onPrimaryClick = {
-                                        if (card.action == "WakeOnLan") {
-                                            onWakePc()
-                                        } else if (card.requiresConfirmation) {
-                                            activeConfirmationId =
-                                                    if (activeConfirmationId == card.id) null
-                                                    else card.id
-                                        } else {
-                                            onSendSystemCommand(card.action, 0)
-                                        }
-                                    },
-                                    onConfirm = {
-                                        val delay =
-                                                timerInputs[card.id]
-                                                        .orEmpty()
-                                                        .trim()
-                                                        .toIntOrNull()
-                                                        ?.coerceAtLeast(0)
-                                                        ?: 0
-                                        onSendSystemCommand(card.action, delay)
-                                        activeConfirmationId = null
-                                    },
-                                    onCancel = {
-                                        activeConfirmationId = null
-                                        timerInputs[card.id] = ""
-                                    }
-                            )
-                        }
-                    }
+            CommandCategory.entries.forEach { category ->
+                val categoryCards = cardsByCategory[category].orEmpty()
+                item(span = { GridItemSpan(2) }) {
+                    CommandCategoryHeader(
+                        label = stringResource(category.labelRes),
+                        category = category
+                    )
                 }
-            } // end inner Column
+                items(categoryCards) { cmdCard ->
+                    CommandCard(
+                        card = cmdCard,
+                        isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
+                        timerText = timerInputs[cmdCard.id].orEmpty(),
+                        shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius),
+                        onTimerTextChanged = { timerInputs[cmdCard.id] = it },
+                        onPrimaryClick = {
+                            if (cmdCard.action == "WakeOnLan") {
+                                onWakePc()
+                            } else if (cmdCard.requiresConfirmation) {
+                                activeConfirmationId = if (activeConfirmationId == cmdCard.id) null else cmdCard.id
+                            } else {
+                                onSendSystemCommand(cmdCard.action, 0)
+                            }
+                        },
+                        onConfirm = {
+                            val delay = timerInputs[cmdCard.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
+                            onSendSystemCommand(cmdCard.action, delay)
+                            activeConfirmationId = null
+                        },
+                        onCancel = {
+                            activeConfirmationId = null
+                            timerInputs[cmdCard.id] = ""
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -334,11 +291,11 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
     val backgroundColor =
             when (category) {
                 CommandCategory.SESSION ->
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        MaterialTheme.colorScheme.primaryContainer
                 CommandCategory.POWER ->
-                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                        MaterialTheme.colorScheme.errorContainer
                 CommandCategory.ENERGY ->
-                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                        MaterialTheme.colorScheme.tertiaryContainer
             }
 
     val contentColor =
@@ -355,7 +312,8 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
                                     top = if (category == CommandCategory.SESSION) 0.dp else 16.dp
                             ),
             color = backgroundColor,
-            shape = MaterialTheme.shapes.small
+            shape = MaterialTheme.shapes.small,
+            tonalElevation = 2.dp
     ) {
         Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -364,7 +322,7 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
         ) {
             Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.cd_category_icon),
                     tint = contentColor,
                     modifier = Modifier.size(20.dp)
             )

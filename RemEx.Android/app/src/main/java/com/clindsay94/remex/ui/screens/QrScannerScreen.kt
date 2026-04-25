@@ -195,7 +195,7 @@ fun QrScannerScreen(
                 ) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
                         modifier = Modifier.padding(horizontal = 32.dp)
                     ) {
                         Text(
@@ -214,7 +214,7 @@ fun QrScannerScreen(
                 ) {
                     Icon(
                         Icons.Default.CameraAlt,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.cd_camera_icon),
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -6,8 +6,8 @@
     xmlns:converters="using:Remex.Client.Converters" x:DataType="vm:ShellViewModel" x:Class="Remex.Client.Controls.DashboardBackgroundControl">
 
     <ContentControl.Template>
-        <ControlTemplate x:CompileBindings="False">
-            <Grid>
+        <ControlTemplate>
+            <Grid x:DataType="vm:ShellViewModel">
                 <!-- ═══ Custom Gradient Mode ═══ -->
                 <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}">
                     <Rectangle.Transitions>

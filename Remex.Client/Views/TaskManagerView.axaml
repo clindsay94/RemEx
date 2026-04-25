@@ -92,8 +92,7 @@
                                         </StackPanel>
                                         <StackPanel Width="80">
                                             <TextBlock Text="{local:Localize TaskMgr_MemLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                                            <!-- Simple bytes to MB conversion for display -->
-                                            <TextBlock Text="{Binding MemoryUsage, StringFormat='{}{0:N0} B'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding MemoryUsage, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>

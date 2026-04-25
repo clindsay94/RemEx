@@ -189,11 +189,11 @@ public partial class RemoteDesktopView : UserControl
         // Since the TransformContainer and ViewportBorder are the same size (filling the Panel),
         // but the TransformContainer is scaled/panned, we must calculate where the cursor
         // appears in the scaled coordinate space so it matches physical finger position.
-        
+
         // We want the indicator to be exactly where the user is touching.
         // But the indicator is inside the TransformContainer.
         // So we need the pointer position relative to the UNTRANSFORMED TransformContainer.
-        
+
         vm.CursorIndicatorX = (viewportPoint.X - _viewportOffsetX) / _viewportZoom;
         vm.CursorIndicatorY = (viewportPoint.Y - _viewportOffsetY) / _viewportZoom;
         vm.IsCursorVisible = true;
@@ -355,7 +355,7 @@ public partial class RemoteDesktopView : UserControl
         if (coords is null) return;
 
         _longPressFired = true;
-        _isTouchDragging = true; 
+        _isTouchDragging = true;
 
         ShowCursorAt(pos);
 

@@ -26,6 +26,13 @@ fun getGoogleFontFamily(fontName: String): FontFamily {
 
 // Set of Material typography styles to start with
 val Typography = Typography(
+    headlineMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Black,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-1).sp
+    ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,

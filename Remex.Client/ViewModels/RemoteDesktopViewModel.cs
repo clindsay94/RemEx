@@ -154,7 +154,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         < 0.375 => 0.25,
         < 0.625 => 0.50,
         < 0.875 => 0.75,
-        _       => 1.0,
+        _ => 1.0,
     };
 
     /// <summary>Zero-based index of the current Scale value in the Scale ComboBox (25%, 50%, 75%, 100%).</summary>
@@ -163,9 +163,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         get => Scale switch
         {
             <= 0.25 => 0,
-            <= 0.5  => 1,
+            <= 0.5 => 1,
             <= 0.75 => 2,
-            _       => 3,
+            _ => 3,
         };
         set => Scale = value switch
         {
@@ -182,15 +182,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     {
         get => TargetFps switch
         {
-            <= 5   => 0,
-            <= 10  => 1,
-            <= 15  => 2,
-            <= 20  => 3,
-            <= 30  => 4,
-            <= 60  => 5,
+            <= 5 => 0,
+            <= 10 => 1,
+            <= 15 => 2,
+            <= 20 => 3,
+            <= 30 => 4,
+            <= 60 => 5,
             <= 120 => 6,
             <= 240 => 7,
-            _      => 8,
+            _ => 8,
         };
         set => TargetFps = value switch
         {

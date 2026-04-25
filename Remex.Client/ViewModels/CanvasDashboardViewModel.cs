@@ -170,7 +170,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             // Create default cards if this is a fresh profile.
             EnsureDefaultCards();
 
-            // If we're already connected, maybe the host is empty? 
+            // If we're already connected, maybe the host is empty?
             // We should probably push our local layout if the host didn't send anything.
             // But for now, let's just ensure we stay in sync.
 
@@ -560,7 +560,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     private void TriggerSave()
     {
-        // Use the current profile from the layout service as the base to avoid overwriting 
+        // Use the current profile from the layout service as the base to avoid overwriting
         // global flags (like HasCompletedTutorial) set by other components.
         var baseProfile = _layoutService.CurrentProfile ?? _profile;
 
