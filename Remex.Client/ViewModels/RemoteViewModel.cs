@@ -142,7 +142,7 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
     private async Task<bool> ConfirmAsync(string titleKey, string messageKey, string btnKey)
     {
         if (OnConfirmationRequested is null)
-            return true;
+            return false;
         return await OnConfirmationRequested(
             LocalizationService.Instance[titleKey],
             LocalizationService.Instance[messageKey],

@@ -7,6 +7,8 @@ namespace Remex.Client.Views;
 
 public partial class ConfirmationDialog : Window
 {
+    public ConfirmationDialog() : this("Preview Title", "Preview Message", "Confirm") { }
+
     public ConfirmationDialog(string title, string message, string confirmText)
     {
         InitializeComponent();

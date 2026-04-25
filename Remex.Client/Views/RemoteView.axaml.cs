@@ -7,6 +7,8 @@ namespace Remex.Client.Views;
 
 public partial class RemoteView : UserControl
 {
+    private RemoteViewModel? _previousViewModel;
+
     public RemoteView()
     {
         InitializeComponent();
@@ -16,9 +18,14 @@ public partial class RemoteView : UserControl
     {
         base.OnDataContextChanged(e);
 
-        if (DataContext is RemoteViewModel viewModel)
+        if (_previousViewModel is not null)
+            _previousViewModel.OnConfirmationRequested = null;
+
+        _previousViewModel = DataContext as RemoteViewModel;
+
+        if (_previousViewModel is not null)
         {
-            viewModel.OnConfirmationRequested = async (title, message, confirmText) =>
+            _previousViewModel.OnConfirmationRequested = async (title, message, confirmText) =>
             {
                 var dialog = new ConfirmationDialog(title, message, confirmText);
                 var topLevel = TopLevel.GetTopLevel(this);
