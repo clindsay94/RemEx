@@ -142,11 +142,20 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             Quality = profile.StreamQuality;
             TargetFps = profile.StreamFps;
-            Scale = profile.StreamScale;
+            Scale = SnapScale(profile.StreamScale);
         }
     }
 
     // ═══════════════ ComboBox index helpers ═══════════════
+
+    /// <summary>Snaps a scale value to the nearest valid option (0.25, 0.50, 0.75, 1.0).</summary>
+    private static double SnapScale(double value) => value switch
+    {
+        < 0.375 => 0.25,
+        < 0.625 => 0.50,
+        < 0.875 => 0.75,
+        _       => 1.0,
+    };
 
     /// <summary>Zero-based index of the current Scale value in the Scale ComboBox (25%, 50%, 75%, 100%).</summary>
     public int SelectedScaleIndex
@@ -290,6 +299,18 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             TargetFps = TargetFps,
         };
         await _desktopService.SendConfigAsync(config);
+        PersistStreamSettings();
+    }
+
+    private void PersistStreamSettings()
+    {
+        var updated = _shell.LayoutService.CurrentProfile with
+        {
+            StreamQuality = Quality,
+            StreamFps = TargetFps,
+            StreamScale = Scale,
+        };
+        _shell.LayoutService.RequestSave(updated);
     }
 
     [RelayCommand]

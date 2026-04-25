@@ -70,13 +70,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _streamFps = 30;
 
-    /// <summary>Host screen capture scale factor for the desktop client (0.25–1.0).</summary>
-    [ObservableProperty]
-    private double _streamScale = 0.5;
-
     partial void OnStreamQualityChanged(int value) => Save();
     partial void OnStreamFpsChanged(int value) => Save();
-    partial void OnStreamScaleChanged(double value) => Save();
 
     /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
     public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();
@@ -122,7 +117,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             Services.LocalizationService.Instance.SetCulture(Language);
             StreamQuality = _profile.StreamQuality;
             StreamFps = _profile.StreamFps;
-            StreamScale = _profile.StreamScale;
             UpdateHostCapabilitySummary();
             RefreshSensors();
         });
@@ -1120,8 +1114,7 @@ WantedBy=multi-user.target";
             HostPath = HostPath,
             Language = Language,
             StreamQuality = StreamQuality,
-            StreamFps = StreamFps,
-            StreamScale = StreamScale
+            StreamFps = StreamFps
         };
 
         _profile = updated;
