@@ -9,13 +9,13 @@
   <UserControl.Styles>
     <!-- ===== Base card style ===== -->
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="#1E1E2E"/>
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
       <Setter Property="CornerRadius" Value="16"/>
       <Setter Property="Padding" Value="20"/>
       <Setter Property="Margin" Value="4"/>
-      <Setter Property="BorderBrush" Value="#2A2A3E"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="BoxShadow" Value="0 4 24 0 #40000000"/>
+      <Setter Property="BoxShadow" Value="{DynamicResource CardShadow}"/>
       <Setter Property="Opacity" Value="0"/>
       <Setter Property="RenderTransform" Value="translateY(20px)"/>
       <Setter Property="Transitions">
@@ -48,7 +48,7 @@
     <Style Selector="TextBlock.card-title">
       <Setter Property="FontSize" Value="13"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="Foreground" Value="#8888AA"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
       <Setter Property="Margin" Value="0 0 0 12"/>
 
     </Style>
@@ -57,11 +57,11 @@
     <Style Selector="TextBlock.stat-value">
       <Setter Property="FontSize" Value="28"/>
       <Setter Property="FontWeight" Value="Bold"/>
-      <Setter Property="Foreground" Value="#E0E0FF"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="TextBlock.stat-label">
       <Setter Property="FontSize" Value="12"/>
-      <Setter Property="Foreground" Value="#6666AA"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
     <!-- ===== Status indicator ===== -->
@@ -73,8 +73,8 @@
 
     <!-- ===== Buttons ===== -->
     <Style Selector="Button.dash-btn">
-      <Setter Property="Background" Value="#2A2A4A"/>
-      <Setter Property="Foreground" Value="#C0C0FF"/>
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
       <Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Padding" Value="16 10"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
@@ -83,28 +83,28 @@
       <Setter Property="Cursor" Value="Hand"/>
     </Style>
     <Style Selector="Button.dash-btn:pointerover">
-      <Setter Property="Background" Value="#3A3A5A"/>
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
     </Style>
     <Style Selector="Button.dash-btn-accent">
-      <Setter Property="Background" Value="#4A3AFF"/>
+      <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
       <Setter Property="Foreground" Value="White"/>
     </Style>
     <Style Selector="Button.dash-btn-accent:pointerover">
-      <Setter Property="Background" Value="#5A4AFF"/>
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
     <Style Selector="Button.dash-btn-danger">
-      <Setter Property="Background" Value="#3A1A1A"/>
-      <Setter Property="Foreground" Value="#FF6B6B"/>
+      <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
     </Style>
     <Style Selector="Button.dash-btn-danger:pointerover">
-      <Setter Property="Background" Value="#4A2A2A"/>
+      <Setter Property="Background" Value="{DynamicResource GlassBaseMediumBrush}"/>
     </Style>
 
     <!-- ===== Input ===== -->
     <Style Selector="TextBox.host-input">
-      <Setter Property="Background" Value="#12121E"/>
-      <Setter Property="Foreground" Value="#C0C0FF"/>
-      <Setter Property="BorderBrush" Value="#2A2A3E"/>
+      <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
       <Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Padding" Value="12 8"/>
       <Setter Property="FontSize" Value="13"/>
@@ -113,7 +113,7 @@
 
     <!-- ===== Latency bar ===== -->
     <Style Selector="Border.latency-bar">
-      <Setter Property="Background" Value="#4A3AFF"/>
+      <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
       <Setter Property="CornerRadius" Value="2"/>
       <Setter Property="Margin" Value="1 0"/>
       <Setter Property="VerticalAlignment" Value="Bottom"/>
@@ -136,7 +136,7 @@
     </Style>
     <Style Selector="Border.sensor-card:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.04)"/>
-      <Setter Property="BoxShadow" Value="0 4 16 0 #40000000, 0 0 12 2 #304A3AFF"/>
+      <Setter Property="BoxShadow" Value="{DynamicResource CardHoverShadow}"/>
     </Style>
   </UserControl.Styles>
 
