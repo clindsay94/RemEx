@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -193,21 +194,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
             CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
         };
-        var tcs = new TaskCompletionSource<RemexMessage>();
-        _pendingCommandResponse = tcs;
         try
         {
-            await MessageSerializer.SendAsync(_webSocket, msg);
-            var response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var response = await SendCommandAndWaitAsync(msg);
             return new Remex.Core.Models.IPC.CommandResponse(response.CommandSuccess ?? false, response.CommandMessage ?? "", null);
         }
         catch
         {
             return new Remex.Core.Models.IPC.CommandResponse(false, "Timeout waiting for server response", null);
-        }
-        finally
-        {
-            _pendingCommandResponse = null;
         }
     }
 
@@ -267,16 +261,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     private bool CanConnect() => !IsConnected && !IsConnecting;
     private bool CanDisconnect() => IsConnected || IsConnecting;
 
-    private System.Threading.Tasks.TaskCompletionSource<RemexMessage>? _pendingCommandResponse;
-
     public System.Net.WebSockets.WebSocket? GetWebSocket() => _webSocket;
     public async Task<(bool Success, string Message)> SendCommandAsync(string action, System.Collections.Generic.Dictionary<string, string>? parameters = null)
     {
         if (_webSocket?.State != WebSocketState.Open)
             return (false, LocalizationService.Instance["Status_NotConnected"]);
-
-        var tcs = new System.Threading.Tasks.TaskCompletionSource<RemexMessage>();
-        _pendingCommandResponse = tcs;
 
         try
         {
@@ -287,12 +276,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 CommandParameters = parameters,
                 Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
             };
-            await MessageSerializer.SendAsync(_webSocket, msg, System.Threading.CancellationToken.None);
-
-            using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
-            cts.Token.Register(() => tcs.TrySetCanceled());
-
-            var response = await tcs.Task;
+            var response = await SendCommandAndWaitAsync(msg);
             return (response.CommandSuccess ?? false, response.CommandMessage ?? LocalizationService.Instance["Status_NoMessage"]);
         }
         catch (OperationCanceledException)
@@ -310,13 +294,53 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             return (false, $"Invalid operation: {ex.Message}");
         }
         // Let unexpected exceptions propagate
-        finally
-        {
-            _pendingCommandResponse = null;
-        }
     }
 
     private bool CanSendPing() => IsConnected;
+
+    // ---------------------------------------------------------------------------
+    // Correlated command/response infrastructure
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// How long to wait for a command response before giving up.
+    /// </summary>
+    private const int CommandTimeoutSeconds = 10;
+
+    /// <summary>
+    /// Pending command awaiters keyed by correlation ID.
+    /// Replaces the former single <c>_pendingCommandResponse</c> field so concurrent
+    /// callers no longer overwrite each other.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _pendingCommands = new();
+
+    /// <summary>
+    /// Stamps a correlation ID onto <paramref name="msg"/>, registers a TCS, sends the
+    /// message, and awaits the matching response with a <see cref="CommandTimeoutSeconds"/>
+    /// timeout.  Cleans up the dictionary entry regardless of outcome.
+    /// </summary>
+    private async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)
+    {
+        var correlationId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCommands[correlationId] = tcs;
+        try
+        {
+            await MessageSerializer.SendAsync(_webSocket!, msg with { CorrelationId = correlationId }, ct);
+            try
+            {
+                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(CommandTimeoutSeconds), ct);
+            }
+            catch (TimeoutException)
+            {
+                throw new OperationCanceledException("Command timed out.");
+            }
+        }
+        finally
+        {
+            _pendingCommands.TryRemove(correlationId, out _);
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
@@ -519,7 +543,21 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                         break;
 
                     case MessageTypes.CommandResponse:
-                        _pendingCommandResponse?.TrySetResult(message);
+                        if (message.CorrelationId is string cid
+                            && _pendingCommands.TryGetValue(cid, out var matchedTcs))
+                        {
+                            // Normal path: correlation ID present and matches a pending request
+                            matchedTcs.TrySetResult(message);
+                        }
+                        else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
+                        {
+                            // Fallback for hosts that do not echo correlation IDs
+                            foreach (var entry in _pendingCommands)
+                            {
+                                if (entry.Value.TrySetResult(message))
+                                    break;
+                            }
+                        }
                         break;
 
                     case MessageTypes.LauncherSync when message.LauncherEntries is not null:
@@ -688,6 +726,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         _webSocket?.Dispose();
         _webSocket = null;
+
+        // Cancel all in-flight command awaiters so callers don't hang after disconnect
+        foreach (var (_, pendingTcs) in _pendingCommands)
+            pendingTcs.TrySetCanceled();
+        _pendingCommands.Clear();
 
         IsConnected = false;
         HostCapabilities = null;
