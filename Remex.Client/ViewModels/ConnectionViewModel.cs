@@ -199,7 +199,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             var response = await SendCommandAndWaitAsync(msg);
             return new Remex.Core.Models.IPC.CommandResponse(response.CommandSuccess ?? false, response.CommandMessage ?? "", null);
         }
-        catch
+        catch (OperationCanceledException)
         {
             return new Remex.Core.Models.IPC.CommandResponse(false, "Timeout waiting for server response", null);
         }
@@ -551,7 +551,19 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                         }
                         else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
                         {
-                            // Fallback for hosts that do not echo correlation IDs
+                            // Fallback for hosts that do not echo correlation IDs back in their
+                            // CommandResponse messages (i.e. unpatched / older host versions).
+                            // LIMITATION: With multiple concurrent in-flight commands this path
+                            // delivers the response to at most one caller (the first whose TCS
+                            // accepts it); all remaining concurrent callers will eventually time
+                            // out.  Upgrade the host so it echoes CorrelationId to avoid this.
+                            if (_pendingCommands.Count > 1)
+                                Debug.WriteLine(
+                                    "[ConnectionViewModel] WARNING: Fallback correlation path taken with " +
+                                    $"{_pendingCommands.Count} concurrent in-flight commands. " +
+                                    "Only one caller will receive this response; the rest will time out. " +
+                                    "Upgrade the host to a version that echoes CorrelationId.");
+
                             foreach (var entry in _pendingCommands)
                             {
                                 if (entry.Value.TrySetResult(message))
