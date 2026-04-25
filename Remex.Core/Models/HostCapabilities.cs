@@ -5,6 +5,9 @@ namespace Remex.Core.Models;
 /// </summary>
 public sealed record HostCapabilities
 {
+    /// <summary>Version of the host application.</summary>
+    public string Version { get; init; } = "unknown";
+
     /// <summary>Runtime mode for the active host process, such as interactive or service.</summary>
     public string RuntimeMode { get; init; } = "unknown";
 

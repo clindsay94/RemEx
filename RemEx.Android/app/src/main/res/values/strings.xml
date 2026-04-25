@@ -112,7 +112,8 @@
     <string name="settings_tab_personalization">Personalization</string>
     <string name="settings_tab_input">Input</string>
     <string name="settings_tab_help">Help</string>
-    <string name="settings_help_title">Help &amp; About</string>
+    <string name="settings_tab_about">About</string>
+    <string name="settings_help_title">Help</string>
     <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
     <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
     <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
@@ -253,6 +254,13 @@
 
     <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
+    <string name="screen_about_title">About RemEx</string>
+    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
+    <string name="about_version_android">Android Version: %1$s</string>
+    <string name="about_version_pc">PC Version: %1$s</string>
+    <string name="about_github_star">Give my repository a star on Github</string>
+    <string name="about_github_cat">(pls, they have my cat)</string>
+    <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
     <string name="faq_header">Frequently Asked Questions</string>
     <string name="cd_collapse">Collapse</string>
     <string name="cd_expand">Expand</string>

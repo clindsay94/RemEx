@@ -44,6 +44,7 @@ sealed class Screen(val route: String, @param:StringRes val titleRes: Int, val i
     object Settings : Screen("settings", R.string.screen_settings_title, Icons.Default.Settings)
     object Tutorial : Screen("tutorial", R.string.screen_tutorial_title, Icons.Default.Dashboard)
     object Faq : Screen("faq", R.string.screen_faq_title, Icons.AutoMirrored.Filled.HelpOutline)
+    object About : Screen("about", R.string.screen_about_title, Icons.Default.Settings)
     object QrScanner :
             Screen("qr_scanner", R.string.screen_qr_scanner_title, Icons.Default.QrCodeScanner)
 }
@@ -52,5 +53,5 @@ sealed class Screen(val route: String, @param:StringRes val titleRes: Int, val i
 val navItems =
         listOf(Screen.Dashboard, Screen.RemoteDesktop, Screen.TaskManager, Screen.RemoteControl)
 
-/** Overflow (3-dot) menu: App Launcher, Settings, FAQ. Remote Mouse removed (now FAB). */
-val secondaryNavItems = listOf(Screen.AppLauncher, Screen.Settings, Screen.Faq)
+/** Overflow (3-dot) menu: App Launcher, Settings, FAQ, About. Remote Mouse removed (now FAB). */
+val secondaryNavItems = listOf(Screen.AppLauncher, Screen.Settings, Screen.Faq, Screen.About)

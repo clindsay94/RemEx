@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,6 +66,7 @@ import androidx.navigation.compose.rememberNavController
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.screens.AboutScreen
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
@@ -96,7 +98,7 @@ private val connectionRequiredRoutes =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     // Activity-scoped so ConnectionScreen and QrScannerScreen share the same instance
@@ -104,7 +106,6 @@ fun AppNavigation() {
 
     val hasCompletedOnboarding by
             settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
-    val splashShown by settingsManager.splashShownFlow.collectAsState(initial = null)
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
     val mouseViewModel: RemoteControlViewModel = viewModel()
@@ -125,7 +126,7 @@ fun AppNavigation() {
             savedFabPositionY = savedFabPositionY,
             savedMouseFabX = savedMouseFabX,
             savedMouseFabY = savedMouseFabY,
-            onMarkSplashShown = { scope -> scope.launch { settingsManager.markSplashShown() } },
+            onMarkSplashShown = { onMarkSplashShown() },
             onSaveMouseFabPosition = { x, y -> mouseViewModel.saveMouseFabPosition(x, y) },
             onSaveFloatingMouseIslandPosition = { x, y ->
                 mouseViewModel.saveFloatingMouseIslandPosition(x, y)
@@ -178,7 +179,7 @@ fun AppNavigation() {
 @Composable
 private fun AppNavigationContent(
         hasCompletedOnboarding: Boolean?,
-        splashShown: Boolean?,
+        splashShown: Boolean,
         isConnected: Boolean,
         mouseShapePreset: Float,
         mouseCornerRadius: Int,
@@ -186,7 +187,7 @@ private fun AppNavigationContent(
         savedFabPositionY: Float,
         savedMouseFabX: Float,
         savedMouseFabY: Float,
-        onMarkSplashShown: (kotlinx.coroutines.CoroutineScope) -> Unit,
+        onMarkSplashShown: () -> Unit,
         onSaveMouseFabPosition: (Float, Float) -> Unit,
         onSaveFloatingMouseIslandPosition: (Float, Float) -> Unit,
         onQrScanned: (String, Int, String) -> Unit,
@@ -211,22 +212,21 @@ private fun AppNavigationContent(
 
     // While DataStore hasn't loaded yet, show a plain background to avoid a
     // white flash before the correct start destination is chosen.
-    if (hasCompletedOnboarding == null || splashShown == null) {
+    if (hasCompletedOnboarding == null) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
         return
     }
 
     val startDestination =
-            when {
-                splashShown -> {
-                    if (hasCompletedOnboarding == true) Screen.Dashboard.route
-                    else Screen.Tutorial.route
-                }
-                else -> Screen.Splash.route
+            if (splashShown) {
+                if (hasCompletedOnboarding == true) Screen.Dashboard.route
+                else Screen.Tutorial.route
+            } else {
+                Screen.Splash.route
             }
 
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -352,7 +352,7 @@ private fun AppNavigationContent(
                 composable(Screen.Splash.route) {
                     SplashScreen(
                             onFinished = {
-                                onMarkSplashShown(scope)
+                                onMarkSplashShown()
                                 val nextRoute =
                                         if (hasCompletedOnboarding == true) Screen.Dashboard.route
                                         else Screen.Tutorial.route
@@ -407,14 +407,20 @@ private fun AppNavigationContent(
                 composable(Screen.Personalization.route) { PersonalizationScreen() }
                 composable(Screen.Settings.route) {
                     SettingsScreen(
-                            onReplayTutorial = {
-                                navController.navigate(Screen.Tutorial.route) {
-                                    launchSingleTop = true
-                                }
+                        onReplayTutorial = {
+                            navController.navigate(Screen.Tutorial.route) {
+                                launchSingleTop = true
                             }
+                        },
+                        onNavigateToAbout = {
+                            navController.navigate(Screen.About.route) {
+                                launchSingleTop = true
+                            }
+                        }
                     )
                 }
                 composable(Screen.Faq.route) { FaqScreen() }
+                composable(Screen.About.route) { AboutScreen() }
             }
 
             if (showMouseOverlay) {
@@ -502,7 +508,7 @@ private fun AppNavigationContent(
                         modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     Row(
-                            modifier = Modifier.padding(bottom = 24.dp),
+                            modifier = Modifier.navigationBarsPadding().padding(bottom = 24.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                     ) {

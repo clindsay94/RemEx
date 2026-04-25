@@ -1,12 +1,28 @@
 package com.clindsay94.remex.ui.screens
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -14,23 +30,32 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.RoundedPolygon
+import com.clindsay94.remex.ui.theme.materialShapesList
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.clindsay94.remex.R
-import com.clindsay94.remex.data.SettingsManager
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.min
@@ -38,215 +63,190 @@ import kotlin.math.sin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// ─── Data classes ─────────────────────────────────────────────────────────────
-
-private data class Particle(
+private class Particle(
         var x: Float,
         var y: Float,
         var vx: Float,
         var vy: Float,
-        var alpha: Float,
         var lifetime: Float,
-        var maxLifetime: Float
+        var maxLifetime: Float,
+        var alpha: Float
 )
 
-private data class FloatingShape(
+private class FloatingShape(
         var x: Float,
         var y: Float,
+        var size: Float,
         var vx: Float,
         var vy: Float,
+        var morph: Morph,
+        var currentEndShape: RoundedPolygon,
+        var morphProgress: Float,
+        var morphSpeed: Float,
         var rotation: Float,
         var rotationSpeed: Float,
-        var size: Float,
         var alpha: Float,
-        val sides: Int
+        var color: Color
 )
 
-private data class StreamParticle(
-        var t: Float, // 0..1 along Bezier
-        var speed: Float,
-        var alpha: Float,
-        var radius: Float
-)
+private class StreamParticle(var t: Float, var speed: Float, var radius: Float, var alpha: Float)
 
-// ─── Font helpers ─────────────────────────────────────────────────────────────
-
-private val victorMonoFamily: FontFamily by lazy {
-        FontFamily(
-                Font(R.font.victor_mono_bold, FontWeight.Bold),
-                Font(R.font.victor_mono_bold, FontWeight.Bold, FontStyle.Italic),
-                Font(R.font.victor_mono_bold, FontWeight.Normal, FontStyle.Italic)
-        )
-}
-
-// ─── Bezier helpers ───────────────────────────────────────────────────────────
-
-/** Evaluate a cubic Bezier at parameter t. */
-private fun cubicBezier(p0: Offset, p1: Offset, p2: Offset, p3: Offset, t: Float): Offset {
-        val u = 1f - t
-        val tt = t * t
-        val uu = u * u
-        val uuu = uu * u
-        val ttt = tt * t
-        return Offset(
-                uuu * p0.x + 3f * uu * t * p1.x + 3f * u * tt * p2.x + ttt * p3.x,
-                uuu * p0.y + 3f * uu * t * p1.y + 3f * u * tt * p2.y + ttt * p3.y
-        )
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// SPLASH SCREEN COMPOSABLE
-// ═════════════════════════════════════════════════════════════════════════════
-
+/**
+ * A highly animated technical splash screen using Jetpack Compose Canvas.
+ *
+ * Visual Stages:
+ * 1.  Substrate reveals: Circuit board traces and radial grids appear in the background.
+ * 2.  The Phone (source) emits a "Scan" radar (primary color).
+ * 3.  The Scan reveals the "Wireframe" of the system (Monitor, Phone, and partial text).
+ * 4.  The Monitor (target) emits a "Wave" radar (secondary color).
+ * 5.  The Wave reveals the "Solid" surfaces, the connection stream, and the full "RemEx" brand.
+ * 6.  Connection Established: Energy flows from Phone to Monitor.
+ * 7.  Final Transition: The camera pulls into the Monitor screen to enter the app.
+ */
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
-        val context = LocalContext.current
-        @Suppress("UNUSED_VARIABLE") val settingsManager = remember { SettingsManager(context) }
         val scope = rememberCoroutineScope()
-        @Suppress("UNUSED_VARIABLE") val density = LocalDensity.current
 
-        // ── Material 3 color roles (strategic assignment) ────────────────────────
-        val primary = MaterialTheme.colorScheme.primary
-        val secondary = MaterialTheme.colorScheme.secondary
-        val tertiary = MaterialTheme.colorScheme.tertiary
-        val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-        val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
-        val onPrimary = MaterialTheme.colorScheme.onPrimary
+        // Colors from theme
         val background = MaterialTheme.colorScheme.background
+        val substrateColor = background.copy(alpha = 1f)
         val onBackground = MaterialTheme.colorScheme.onBackground
+        val primary = MaterialTheme.colorScheme.primary
+        val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+        val secondary = MaterialTheme.colorScheme.secondary
+        val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
+        val tertiary = MaterialTheme.colorScheme.tertiary
+        val onPrimary = MaterialTheme.colorScheme.onPrimary
         val surface = MaterialTheme.colorScheme.surface
         val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
-        val substrateColor = Color(0xFF050508)
 
+        // Animation States
+        val scanProgress = remember { Animatable(0f) }
+        val waveProgress = remember { Animatable(0f) }
+        val connectionGlow = remember { Animatable(0f) }
+        val zoomScale = remember { Animatable(1f) }
+        val zoomProgress = remember { Animatable(0f) }
+        val fadeOverlay = remember { Animatable(0f) }
+
+        // Dash/Stream offset
+        val infiniteTransition = rememberInfiniteTransition(label = "stream")
+        val streamOffset =
+                infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 1f,
+                        animationSpec =
+                                infiniteRepeatable(
+                                        animation = tween(1500, easing = LinearEasing)
+                                ),
+                        label = "offset"
+                )
+
+        // Text Measurement
         val textMeasurer = rememberTextMeasurer()
-
-        // ── Text styles (Victor Mono via local font asset) ───────────────────────────
-        val brandMainStyle =
+        val remStyle =
                 TextStyle(
-                        fontFamily = victorMonoFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 68.sp,
+                        color = Color.White,
+                        fontSize = 54.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
                         letterSpacing = 4.sp
                 )
-        val brandCompleteStyle =
+        val exStyle = remStyle.copy(color = primary)
+        val completionStyle =
                 TextStyle(
-                        fontFamily = victorMonoFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontStyle = FontStyle.Italic,
-                        fontSize = 48.sp,
-                        letterSpacing = 1.5.sp
-                )
-        val taglineStyle =
-                TextStyle(
-                        fontFamily = victorMonoFamily,
-                        fontWeight = FontWeight.Normal,
-                        fontStyle = FontStyle.Italic,
-                        fontSize = 20.sp,
-                        letterSpacing = 0.8.sp
-                )
-        val chipTextStyle =
-                TextStyle(
+                        color = primary.copy(alpha = 0.8f),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 10.sp
+                        letterSpacing = 1.sp
+                )
+        val tagStyle =
+                TextStyle(
+                        color = onBackground.copy(alpha = 0.7f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Light,
+                        fontFamily = FontFamily.SansSerif,
+                        letterSpacing = 3.sp
                 )
 
-        // ── Pre-measured text ────────────────────────────────────────────────────
-        val remMeasured = remember(textMeasurer) { textMeasurer.measure("REM", brandMainStyle) }
-        val exMeasured = remember(textMeasurer) { textMeasurer.measure("EX", brandMainStyle) }
-        val oteMeasured =
-                remember(textMeasurer) { textMeasurer.measure("(ote)", brandCompleteStyle) }
-        val ecuMeasured =
-                remember(textMeasurer) { textMeasurer.measure("(ecution)", brandCompleteStyle) }
-        val commandMeasured =
-                remember(textMeasurer) { textMeasurer.measure("Command ", taglineStyle) }
-        val yourPcMeasured =
-                remember(textMeasurer) { textMeasurer.measure("Your PC", taglineStyle) }
-        val cpuLabelMeasured = remember(textMeasurer) { textMeasurer.measure("CPU", chipTextStyle) }
+        val remMeasured = textMeasurer.measure("REM", remStyle)
+        val oteMeasured = textMeasurer.measure("ote", completionStyle)
+        val exMeasured = textMeasurer.measure("EX", exStyle)
+        val ecuMeasured = textMeasurer.measure("ecution", completionStyle)
+        val commandMeasured = textMeasurer.measure("COMMAND ", tagStyle)
+        val yourPcMeasured = textMeasurer.measure("YOUR PC", tagStyle)
 
-        // ── Skip state ──────────────────────────────────────────────────────────
-        var isSkipping by remember { mutableStateOf(false) }
-        val skipAlpha = remember { Animatable(1f) }
-
-        // ── Particle system (12 embers) ─────────────────────────────────────────
+        // Random background elements
         val particles = remember {
                 val rng = java.util.Random(42L)
-                MutableList(12) {
+                List(25) {
                         Particle(
                                 x = rng.nextFloat(),
-                                y = 0.4f + rng.nextFloat() * 0.6f,
-                                vx = (rng.nextFloat() - 0.5f) * 0.016f,
-                                vy = -(0.02f + rng.nextFloat() * 0.02f),
-                                alpha = rng.nextFloat() * 0.7f,
-                                lifetime = rng.nextFloat() * 2.0f,
-                                maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+                                y = rng.nextFloat(),
+                                vx = (rng.nextFloat() - 0.5f) * 0.005f,
+                                vy = -(0.01f + rng.nextFloat() * 0.02f),
+                                lifetime = rng.nextFloat() * 2f,
+                                maxLifetime = 2f + rng.nextFloat() * 2f,
+                                alpha = 0f
                         )
                 }
         }
-        var particleFrame by remember { mutableStateOf(0) }
 
-        // ── Floating geometric shapes ───────────────────────────────────────────
         val floatingShapes = remember {
                 val rng = java.util.Random(77L)
-                val types = intArrayOf(3, 4, 6)
-                MutableList(8) {
+                val shapes = materialShapesList
+                val colors = listOf(primary, secondary, tertiary)
+                List(18) {
+                        val startIdx = rng.nextInt(shapes.size)
+                        var endIdx = rng.nextInt(shapes.size)
+                        while (endIdx == startIdx) endIdx = rng.nextInt(shapes.size)
+
                         FloatingShape(
                                 x = rng.nextFloat(),
                                 y = rng.nextFloat(),
-                                vx = (rng.nextFloat() - 0.5f) * 0.003f,
+                                size = 0.06f + rng.nextFloat() * 0.12f,
+                                vx = (rng.nextFloat() - 0.5f) * 0.002f,
                                 vy = (rng.nextFloat() - 0.5f) * 0.002f,
+                                morph = Morph(shapes[startIdx], shapes[endIdx]),
+                                currentEndShape = shapes[endIdx],
+                                morphProgress = rng.nextFloat(),
+                                morphSpeed = 0.003f + rng.nextFloat() * 0.007f,
                                 rotation = rng.nextFloat() * 360f,
-                                rotationSpeed = (rng.nextFloat() - 0.5f) * 1.5f,
-                                size = 0.03f + rng.nextFloat() * 0.04f,
-                                alpha = 0.03f + rng.nextFloat() * 0.05f,
-                                sides = types[rng.nextInt(types.size)]
+                                rotationSpeed = (rng.nextFloat() - 0.5f) * 1.8f,
+                                alpha = 0.08f + rng.nextFloat() * 0.12f,
+                                color = colors[rng.nextInt(colors.size)]
                         )
                 }
         }
 
-        // ── Stream particles (energy flow along connection curve) ────────────────
         val streamParticles = remember {
-                val rng = java.util.Random(200L)
-                MutableList(18) {
+                val rng = java.util.Random(111L)
+                List(12) {
                         StreamParticle(
                                 t = rng.nextFloat(),
-                                speed = 0.003f + rng.nextFloat() * 0.004f,
-                                alpha = 0.3f + rng.nextFloat() * 0.5f,
-                                radius = 1.5f + rng.nextFloat() * 2.5f
+                                speed = 0.008f + rng.nextFloat() * 0.012f,
+                                radius = 1f + rng.nextFloat() * 2.5f,
+                                alpha = 0.3f + rng.nextFloat() * 0.6f
                         )
                 }
         }
 
-        // ── Skip helper ─────────────────────────────────────────────────────────
-        suspend fun skipSplash() {
-                if (isSkipping) return
-                isSkipping = true
-                skipAlpha.animateTo(0f, tween(300, easing = LinearEasing))
-                onFinished()
-        }
-
-        // ── Animation state ─────────────────────────────────────────────────────
-        val scanProgress = remember { Animatable(-0.2f) } // Phase 1: from phone
-        val waveProgress = remember { Animatable(-0.2f) } // Phase 2: from monitor
-        val streamOffset = remember { Animatable(0f) } // dash animation
-        val connectionGlow = remember { Animatable(0f) } // Phase 3: glow intensity 0->1
-        val zoomScale = remember { Animatable(1f) } // Phase 4: pull-in scale
-        val zoomProgress = remember { Animatable(0f) } // Phase 4: pull-in translate 0->1
-        val fadeOverlay = remember { Animatable(0f) } // Phase 4: final fade 0->1
-
-        // ── Scan line spring animations (curved motion physics) ─────────────────
         val scanLineAnimatables = remember { List(5) { Animatable(0f) } }
 
-        // ── Animation orchestration ─────────────────────────────────────────────
-        LaunchedEffect(Unit) {
-                // Stream offset loop (dashes along connection traces)
-                scope.launch {
-                        while (!isSkipping) {
-                                streamOffset.animateTo(1f, tween(2000, easing = LinearEasing))
-                                streamOffset.snapTo(0f)
-                        }
-                }
+        var particleFrame by remember { mutableStateOf(0) }
+        var isSkipping by remember { mutableStateOf(false) }
+        val skipAlpha = remember { Animatable(1f) }
 
+        fun skipSplash() {
+                if (isSkipping) return
+                isSkipping = true
+                scope.launch {
+                        skipAlpha.animateTo(0f, tween(300))
+                        onFinished()
+                }
+        }
+
+        LaunchedEffect(Unit) {
                 // Particle + stream-particle update loop (~60 fps)
                 scope.launch {
                         val rng = java.util.Random(99L)
@@ -273,11 +273,21 @@ fun SplashScreen(onFinished: () -> Unit) {
                                                 p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
                                         }
                                 }
-                                // Floating shapes
+                                // Floating shapes morphing
                                 for (s in floatingShapes) {
                                         s.x += s.vx
                                         s.y += s.vy
                                         s.rotation += s.rotationSpeed
+                                        s.morphProgress += s.morphSpeed
+                                        if (s.morphProgress > 1f) {
+                                            s.morphProgress = 0f
+                                            val shapes = materialShapesList
+                                            val startShape = s.currentEndShape
+                                            val nextIdx = rng.nextInt(shapes.size)
+                                            val endShape = shapes[nextIdx]
+                                            s.morph = Morph(startShape, endShape)
+                                            s.currentEndShape = endShape
+                                        }
                                         if (s.x < -0.1f) s.x = 1.1f
                                         if (s.x > 1.1f) s.x = -0.1f
                                         if (s.y < -0.1f) s.y = 1.1f
@@ -453,6 +463,16 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val tagY = exYPos + exMeasured.size.height + 12.dp.toPx()
 
                         // ═════════════════════════════════════════════════════════════
+                        // RADAR PARAMETERS
+                        // ═════════════════════════════════════════════════════════════
+                        val phoneScanCenter = Offset(phoneCx, phoneCy)
+                        val monitorWaveCenter = Offset(monitorCx, monitorCy)
+
+                        val maxRadiusPx = hypot(width, height)
+                        val scanRadius = maxRadiusPx * scanProgress.value.coerceAtLeast(0f)
+                        val waveRadius = maxRadiusPx * waveProgress.value.coerceAtLeast(0f)
+
+                        // ═════════════════════════════════════════════════════════════
                         // BACKGROUND LAYER (always visible, subtle)
                         // ═════════════════════════════════════════════════════════════
 
@@ -519,23 +539,42 @@ fun SplashScreen(onFinished: () -> Unit) {
                         }
                         for (n in netNodes) drawCircle(nodeColor, 3.dp.toPx(), n)
 
-                        // Floating shapes — tertiary
+                        // Floating shapes — Material Morphing
                         @Suppress("UNUSED_EXPRESSION") particleFrame
                         for (shape in floatingShapes) {
                                 val shx = shape.x * width
                                 val shy = shape.y * height
                                 val r = shape.size * min(width, height)
-                                val sp = Path()
-                                for (i in 0 until shape.sides) {
-                                        val a =
-                                                (shape.rotation + i * 360f / shape.sides) *
-                                                        (PI.toFloat() / 180f)
-                                        val px = shx + r * cos(a)
-                                        val py = shy + r * sin(a)
-                                        if (i == 0) sp.moveTo(px, py) else sp.lineTo(px, py)
+
+                                val morphPath = Path()
+                                var first = true
+                                shape.morph.forEachCubic(shape.morphProgress) { bezier ->
+                                    if (first) {
+                                        morphPath.moveTo(bezier.anchor0X, bezier.anchor0Y)
+                                        first = false
+                                    }
+                                    morphPath.cubicTo(
+                                        bezier.control0X, bezier.control0Y,
+                                        bezier.control1X, bezier.control1Y,
+                                        bezier.anchor1X, bezier.anchor1Y
+                                    )
                                 }
-                                sp.close()
-                                drawPath(sp, tertiary.copy(alpha = shape.alpha), style = Stroke(1f))
+                                morphPath.close()
+
+                                // Scale and translate the morphPath
+                                val bounds = morphPath.getBounds()
+                                val scale = r / maxOf(bounds.width, bounds.height)
+
+                                val matrix = Matrix()
+                                matrix.translate(shx, shy)
+                                matrix.rotateZ(shape.rotation)
+                                matrix.scale(scale, scale)
+                                matrix.translate(-bounds.center.x, -bounds.center.y)
+                                morphPath.transform(matrix)
+
+                                drawPath(morphPath, shape.color.copy(alpha = shape.alpha), style = Stroke(2.dp.toPx()))
+                                // Subtle fill to make them feel more "Material"
+                                drawPath(morphPath, shape.color.copy(alpha = shape.alpha * 0.3f))
                         }
 
                         // Radial grid — surfaceVariant
@@ -560,6 +599,151 @@ fun SplashScreen(onFinished: () -> Unit) {
                                 )
                         }
 
+                        // ─── Platform Logos ──────────────────────────────────────────
+                        val baseLogoAlpha = 0.08f // Lowered for better reveal contrast
+
+                        fun getLogoEffect(pos: Offset): Float {
+                                val sDist = hypot(pos.x - phoneScanCenter.x, pos.y - phoneScanCenter.y)
+                                val wDist = hypot(pos.x - monitorWaveCenter.x, pos.y - monitorWaveCenter.y)
+                                val thickness = 90.dp.toPx()
+
+                                // Scan impact: peak as scan line passes, then settle into persistent glow
+                                val sDiff = abs(sDist - scanRadius)
+                                val sImpact = if (sDiff < thickness) (1f - sDiff / thickness) else 0f
+                                val sPersistent = if (scanRadius > sDist) 0.30f else 0f
+                                val sEffect = maxOf(sImpact, sPersistent)
+
+                                // Wave impact: stronger peak and higher persistent glow
+                                val wDiff = abs(wDist - waveRadius)
+                                val wImpact = if (wDiff < thickness) (1f - wDiff / thickness) * 1.6f else 0f
+                                val wPersistent = if (waveRadius > wDist) 0.75f else 0f
+                                val wEffect = maxOf(wImpact, wPersistent)
+
+                                // Total effect is the strongest of either, allowing wave to overtake scan
+                                return maxOf(sEffect, wEffect).coerceIn(0f, 2f)
+                        }
+
+                        // 1. Windows Logo (Top-Right)
+                        val winSize = 64.dp.toPx()
+                        val winTop = Offset(width - winSize - 40.dp.toPx(), 40.dp.toPx())
+                        val winCenter = Offset(winTop.x + winSize / 2f, winTop.y + winSize / 2f)
+                        val winEffect = getLogoEffect(winCenter)
+                        val winAlpha = (baseLogoAlpha + winEffect * 0.55f).coerceAtMost(1f)
+                        val winStrokeWidth = 2.0.dp.toPx() + winEffect * 2.2.dp.toPx()
+                        val winColor = primary.copy(alpha = winAlpha)
+
+                        scale(1f + winEffect * 0.12f, 1f + winEffect * 0.12f, winCenter) {
+                            val winGap = winSize * 0.08f
+                            val winHalf = winSize / 2f
+                            listOf(
+                                Rect(winTop.x, winTop.y, winTop.x + winHalf - winGap, winTop.y + winHalf - winGap),
+                                Rect(winTop.x + winHalf + winGap, winTop.y - 2.dp.toPx(), winTop.x + winSize, winTop.y + winHalf - winGap),
+                                Rect(winTop.x, winTop.y + winHalf + winGap, winTop.x + winHalf - winGap, winTop.y + winSize),
+                                Rect(winTop.x + winHalf + winGap, winTop.y + winHalf + winGap, winTop.x + winSize, winTop.y + winSize + 2.dp.toPx())
+                            ).forEach { r ->
+                                drawRect(winColor, r.topLeft, r.size, style = Stroke(winStrokeWidth))
+                                if (winEffect > 0.1f) {
+                                    drawRect(winColor.copy(alpha = (winEffect * 0.25f).coerceAtMost(1f)), r.topLeft, r.size, style = Stroke(winStrokeWidth * 3.5f))
+                                    if (winEffect > 0.8f) { // Extra glow layer for wave phase
+                                        drawRect(winColor.copy(alpha = (winEffect * 0.1f).coerceAtMost(1f)), r.topLeft, r.size, style = Stroke(winStrokeWidth * 7f))
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. Linux Penguin Silhouette (Top-Right, next to Windows)
+                        val tuxSize = 56.dp.toPx()
+                        val tuxTop = Offset(winTop.x - tuxSize - 35.dp.toPx(), 50.dp.toPx())
+                        val tuxCenter = Offset(tuxTop.x + tuxSize / 2f, tuxTop.y + tuxSize / 2f)
+                        val tuxEffect = getLogoEffect(tuxCenter)
+                        val tuxAlpha = (baseLogoAlpha + tuxEffect * 0.55f).coerceAtMost(1f)
+                        val tuxStrokeWidth = 2.0.dp.toPx() + tuxEffect * 2.2.dp.toPx()
+                        val tuxColor = primary.copy(alpha = tuxAlpha)
+
+                        scale(1f + tuxEffect * 0.12f, 1f + tuxEffect * 0.12f, tuxCenter) {
+                            val tuxPath = Path().apply {
+                                addOval(Rect(tuxTop.x + tuxSize * 0.3f, tuxTop.y, tuxTop.x + tuxSize * 0.7f, tuxTop.y + tuxSize * 0.35f))
+                                addOval(Rect(tuxTop.x + tuxSize * 0.15f, tuxTop.y + tuxSize * 0.3f, tuxTop.x + tuxSize * 0.85f, tuxTop.y + tuxSize * 0.9f))
+                                moveTo(tuxTop.x + tuxSize * 0.15f, tuxTop.y + tuxSize * 0.5f)
+                                lineTo(tuxTop.x, tuxTop.y + tuxSize * 0.7f)
+                                moveTo(tuxTop.x + tuxSize * 0.85f, tuxTop.y + tuxSize * 0.5f)
+                                lineTo(tuxTop.x + tuxSize, tuxTop.y + tuxSize * 0.7f)
+                            }
+                            drawPath(tuxPath, tuxColor, style = Stroke(tuxStrokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                            if (tuxEffect > 0.1f) {
+                                drawPath(tuxPath, tuxColor.copy(alpha = (tuxEffect * 0.25f).coerceAtMost(1f)), style = Stroke(tuxStrokeWidth * 3.5f))
+                                if (tuxEffect > 0.8f) {
+                                    drawPath(tuxPath, tuxColor.copy(alpha = (tuxEffect * 0.1f).coerceAtMost(1f)), style = Stroke(tuxStrokeWidth * 7f))
+                                }
+                            }
+                        }
+
+                        // 3. Android Logo (Bottom-Left)
+                        val andSize = 72.dp.toPx()
+                        val andTop = Offset(40.dp.toPx(), height - andSize - 120.dp.toPx())
+                        val andCenter = Offset(andTop.x + andSize / 2f, andTop.y + andSize / 2f)
+                        val andEffect = getLogoEffect(andCenter)
+                        val andAlpha = (baseLogoAlpha + andEffect * 0.55f).coerceAtMost(1f)
+                        val andStrokeWidth = 2.0.dp.toPx() + andEffect * 2.2.dp.toPx()
+                        val andColor = secondary.copy(alpha = andAlpha)
+
+                        scale(1f + andEffect * 0.12f, 1f + andEffect * 0.12f, andCenter) {
+                            val andPath = Path().apply {
+                                addArc(Rect(andTop.x, andTop.y, andTop.x + andSize, andTop.y + andSize), 180f, 180f)
+                                moveTo(andTop.x + andSize * 0.25f, andTop.y + andSize * 0.1f)
+                                lineTo(andTop.x + andSize * 0.1f, andTop.y - andSize * 0.15f)
+                                moveTo(andTop.x + andSize * 0.75f, andTop.y + andSize * 0.1f)
+                                lineTo(andTop.x + andSize * 0.9f, andTop.y - andSize * 0.15f)
+                            }
+                            drawPath(andPath, andColor, style = Stroke(andStrokeWidth, cap = StrokeCap.Round))
+                            if (andEffect > 0.1f) {
+                                 drawPath(andPath, andColor.copy(alpha = (andEffect * 0.25f).coerceAtMost(1f)), style = Stroke(andStrokeWidth * 3.5f))
+                                 if (andEffect > 0.8f) {
+                                     drawPath(andPath, andColor.copy(alpha = (andEffect * 0.1f).coerceAtMost(1f)), style = Stroke(andStrokeWidth * 7f))
+                                 }
+                            }
+                        }
+
+                        // 4. RemEx App Logo (Bottom-Left, under Android)
+                        val rxSize = 54.dp.toPx()
+                        val rxTop = Offset(45.dp.toPx(), height - rxSize - 40.dp.toPx())
+                        val rxCenter = Offset(rxTop.x + rxSize * 0.75f, rxTop.y + rxSize / 2f)
+                        val rxEffect = getLogoEffect(rxCenter)
+                        val rxAlpha = (baseLogoAlpha + rxEffect * 0.55f).coerceAtMost(1f)
+                        val rxStrokeWidth = 2.0.dp.toPx() + rxEffect * 2.2.dp.toPx()
+                        val rxColor = secondary.copy(alpha = rxAlpha)
+
+                        scale(1f + rxEffect * 0.12f, 1f + rxEffect * 0.12f, rxCenter) {
+                            val rxPath = Path().apply {
+                                moveTo(rxTop.x, rxTop.y + rxSize)
+                                lineTo(rxTop.x, rxTop.y)
+                                arcTo(
+                                    Rect(rxTop.x, rxTop.y, rxTop.x + rxSize * 0.7f, rxTop.y + rxSize * 0.5f),
+                                    270f,
+                                    180f,
+                                    false
+                                )
+                                lineTo(rxTop.x + rxSize * 0.6f, rxTop.y + rxSize)
+
+                                // Stylized 'X'
+                                moveTo(rxTop.x + rxSize * 0.9f, rxTop.y)
+                                lineTo(rxTop.x + rxSize * 1.5f, rxTop.y + rxSize)
+                                moveTo(rxTop.x + rxSize * 1.5f, rxTop.y)
+                                lineTo(rxTop.x + rxSize * 0.9f, rxTop.y + rxSize)
+
+                                // Terminal cursor underscore
+                                moveTo(rxTop.x + rxSize * 0.9f, rxTop.y + rxSize + 3.dp.toPx())
+                                lineTo(rxTop.x + rxSize * 1.3f, rxTop.y + rxSize + 3.dp.toPx())
+                            }
+                            drawPath(rxPath, rxColor, style = Stroke(rxStrokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                            if (rxEffect > 0.1f) {
+                                drawPath(rxPath, rxColor.copy(alpha = (rxEffect * 0.25f).coerceAtMost(1f)), style = Stroke(rxStrokeWidth * 3.5f))
+                                if (rxEffect > 0.8f) {
+                                    drawPath(rxPath, rxColor.copy(alpha = (rxEffect * 0.1f).coerceAtMost(1f)), style = Stroke(rxStrokeWidth * 7f))
+                                }
+                            }
+                        }
+
                         // Particle embers — tertiary
                         if (waveProgress.value < 0.5f) {
                                 @Suppress("UNUSED_EXPRESSION") particleFrame
@@ -572,103 +756,6 @@ fun SplashScreen(onFinished: () -> Unit) {
                                                 )
                                 }
                         }
-
-                        // CPU chips — surface
-                        val chipColor = surface.copy(alpha = 0.12f)
-                        val chipStroke = Stroke(1.dp.toPx())
-                        val pinCnt = 5
-
-                        // Top-right chip
-                        val trCTop = Offset(width - 100.dp.toPx(), 30.dp.toPx())
-                        val trCSz = Size(70.dp.toPx(), 50.dp.toPx())
-                        drawRect(chipColor, trCTop, trCSz, style = chipStroke)
-                        drawText(
-                                cpuLabelMeasured,
-                                surface.copy(alpha = 0.10f),
-                                Offset(
-                                        trCTop.x + trCSz.width / 2f -
-                                                cpuLabelMeasured.size.width / 2f,
-                                        trCTop.y + trCSz.height / 2f -
-                                                cpuLabelMeasured.size.height / 2f
-                                )
-                        )
-                        val trPs = trCSz.height / (pinCnt + 1)
-                        for (i in 1..pinCnt) {
-                                val py = trCTop.y + i * trPs
-                                drawLine(
-                                        chipColor,
-                                        Offset(trCTop.x - 8.dp.toPx(), py),
-                                        Offset(trCTop.x, py),
-                                        1f
-                                )
-                                drawLine(
-                                        chipColor,
-                                        Offset(trCTop.x + trCSz.width, py),
-                                        Offset(trCTop.x + trCSz.width + 8.dp.toPx(), py),
-                                        1f
-                                )
-                        }
-                        drawLine(
-                                chipColor,
-                                Offset(trCTop.x + trCSz.width / 2f, trCTop.y),
-                                Offset(trCTop.x + trCSz.width / 2f, trCTop.y - 20.dp.toPx()),
-                                1f
-                        )
-                        drawLine(
-                                chipColor,
-                                Offset(trCTop.x + trCSz.width, trCTop.y + trCSz.height / 2f),
-                                Offset(
-                                        trCTop.x + trCSz.width + 30.dp.toPx(),
-                                        trCTop.y + trCSz.height / 2f
-                                ),
-                                1f
-                        )
-
-                        // Bottom-left chip
-                        val blCTop = Offset(20.dp.toPx(), height - 90.dp.toPx())
-                        val blCSz = Size(70.dp.toPx(), 50.dp.toPx())
-                        drawRect(chipColor, blCTop, blCSz, style = chipStroke)
-                        drawText(
-                                cpuLabelMeasured,
-                                surface.copy(alpha = 0.10f),
-                                Offset(
-                                        blCTop.x + blCSz.width / 2f -
-                                                cpuLabelMeasured.size.width / 2f,
-                                        blCTop.y + blCSz.height / 2f -
-                                                cpuLabelMeasured.size.height / 2f
-                                )
-                        )
-                        val blPs = blCSz.height / (pinCnt + 1)
-                        for (i in 1..pinCnt) {
-                                val py = blCTop.y + i * blPs
-                                drawLine(
-                                        chipColor,
-                                        Offset(blCTop.x - 8.dp.toPx(), py),
-                                        Offset(blCTop.x, py),
-                                        1f
-                                )
-                                drawLine(
-                                        chipColor,
-                                        Offset(blCTop.x + blCSz.width, py),
-                                        Offset(blCTop.x + blCSz.width + 8.dp.toPx(), py),
-                                        1f
-                                )
-                        }
-                        drawLine(
-                                chipColor,
-                                Offset(blCTop.x + blCSz.width / 2f, blCTop.y + blCSz.height),
-                                Offset(
-                                        blCTop.x + blCSz.width / 2f,
-                                        blCTop.y + blCSz.height + 20.dp.toPx()
-                                ),
-                                1f
-                        )
-                        drawLine(
-                                chipColor,
-                                Offset(blCTop.x, blCTop.y + blCSz.height / 2f),
-                                Offset(blCTop.x - 30.dp.toPx(), blCTop.y + blCSz.height / 2f),
-                                1f
-                        )
 
                         // ═════════════════════════════════════════════════════════════
                         // WIREFRAME CLOSURE (neon outlines — revealed by scan 1)
@@ -714,7 +801,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                                                 Path().apply {
                                                         moveTo(lineStartX, ly)
                                                         val midX = (lineStartX + lineEndX) / 2f
-                                                        quadraticBezierTo(
+                                                        quadraticTo(
                                                                 midX,
                                                                 ly + curvePeak,
                                                                 lineEndX,
@@ -993,16 +1080,6 @@ fun SplashScreen(onFinished: () -> Unit) {
                         }
 
                         // ═════════════════════════════════════════════════════════════
-                        // RADAR PARAMETERS
-                        // ═════════════════════════════════════════════════════════════
-                        val phoneScanCenter = Offset(phoneCx, phoneCy)
-                        val monitorWaveCenter = Offset(monitorCx, monitorCy)
-
-                        val maxRadiusPx = hypot(width, height)
-                        val scanRadius = maxRadiusPx * scanProgress.value.coerceAtLeast(0f)
-                        val waveRadius = maxRadiusPx * waveProgress.value.coerceAtLeast(0f)
-
-                        // ═════════════════════════════════════════════════════════════
                         // PHASE 1: SCAN RADAR + WIREFRAME (from phone)
                         // ═════════════════════════════════════════════════════════════
                         if (scanRadius > 0f) {
@@ -1181,4 +1258,17 @@ fun SplashScreen(onFinished: () -> Unit) {
                         }
                 }
         }
+}
+
+/** Cubic Bezier point calculation */
+private fun cubicBezier(p0: Offset, p1: Offset, p2: Offset, p3: Offset, t: Float): Offset {
+        val u = 1 - t
+        val tt = t * t
+        val uu = u * u
+        val uuu = uu * u
+        val ttt = tt * t
+
+        val x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x
+        val y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
+        return Offset(x, y)
 }

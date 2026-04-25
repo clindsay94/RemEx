@@ -14,6 +14,9 @@
   </resheader>
 
   <!-- Navigation -->
+  <data name="App_Name" xml:space="preserve">
+    <value>RemEx</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Home</value>
   </data>
@@ -1315,5 +1318,31 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
     <value>Unknown</value>
+  </data>
+
+  <!-- About Screen -->
+  <data name="About_Header" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="About_Tagline" xml:space="preserve">
+    <value>REMOTE PC CONTROL</value>
+  </data>
+  <data name="About_DesktopClient" xml:space="preserve">
+    <value>Desktop Client</value>
+  </data>
+  <data name="About_PCHost" xml:space="preserve">
+    <value>PC Host</value>
+  </data>
+  <data name="About_GitHubStar" xml:space="preserve">
+    <value>⭐ If you like RemEx, star us on GitHub!</value>
+  </data>
+  <data name="About_GitHubDesc" xml:space="preserve">
+    <value>Open source and free forever. Your support helps us grow.</value>
+  </data>
+  <data name="About_ViewGitHub" xml:space="preserve">
+    <value>View Source on GitHub</value>
+  </data>
+  <data name="About_MadeWith" xml:space="preserve">
+    <value>Made with ❤️ for the community</value>
   </data>
 </root>

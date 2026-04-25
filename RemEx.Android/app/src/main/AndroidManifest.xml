@@ -22,7 +22,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RemEx"
-        android:extractNativeLibs="false"
         android:localeConfig="@xml/locales_config">
 
         <!-- Service for backwards compatibility of per-app languages -->

@@ -173,7 +173,7 @@ public class BootSequenceControl : Control
         _stopwatch.Restart();
         _elapsed += dt;
 
-        if (_elapsed >= 5.0 && !_completed)
+        if (_elapsed >= 6.0 && !_completed)
         {
             _completed = true;
             _timer.Stop();
@@ -200,23 +200,23 @@ public class BootSequenceControl : Control
         var a = AccentColor;
         byte r = a.R, g = a.G, b = a.B;
 
-        _accentBrush   = new ImmutableSolidColorBrush(a);
+        _accentBrush = new ImmutableSolidColorBrush(a);
         _accentBrush70 = new ImmutableSolidColorBrush(new Color(178, r, g, b));
         _accentBrush60 = new ImmutableSolidColorBrush(new Color(153, r, g, b));
         _accentBrush40 = new ImmutableSolidColorBrush(new Color(102, r, g, b));
-        _accentBrush30 = new ImmutableSolidColorBrush(new Color(76,  r, g, b));
-        _accentBrush25 = new ImmutableSolidColorBrush(new Color(64,  r, g, b));
-        _accentBrush15 = new ImmutableSolidColorBrush(new Color(38,  r, g, b));
+        _accentBrush30 = new ImmutableSolidColorBrush(new Color(76, r, g, b));
+        _accentBrush25 = new ImmutableSolidColorBrush(new Color(64, r, g, b));
+        _accentBrush15 = new ImmutableSolidColorBrush(new Color(38, r, g, b));
         _substrateBrush = new ImmutableSolidColorBrush(Color.Parse("#050508"));
-        _whiteBrush     = new ImmutableSolidColorBrush(Colors.White);
+        _whiteBrush = new ImmutableSolidColorBrush(Colors.White);
 
-        _gridPen        = new Pen(_accentBrush15, 1.0);
-        _gridBrightPen  = new Pen(_accentBrush40, 1.5);
-        _scanLinePen    = new Pen(new ImmutableSolidColorBrush(new Color(204, r, g, b)), 2.0);
-        _outerRingPen   = new Pen(_accentBrush40, 1.5);
-        _middleRingPen  = new Pen(_accentBrush70, 2.5);
-        _innerRingPen   = new Pen(_accentBrush25, 1.0);
-        _tracePen       = new Pen(_accentBrush30, 1.0);
+        _gridPen = new Pen(_accentBrush15, 1.0);
+        _gridBrightPen = new Pen(_accentBrush40, 1.5);
+        _scanLinePen = new Pen(new ImmutableSolidColorBrush(new Color(204, r, g, b)), 2.0);
+        _outerRingPen = new Pen(_accentBrush40, 1.5);
+        _middleRingPen = new Pen(_accentBrush70, 2.5);
+        _innerRingPen = new Pen(_accentBrush25, 1.0);
+        _tracePen = new Pen(_accentBrush30, 1.0);
 
         // 8 particle alpha brushes: 5%, 10%, 15%, 25%, 40%, 55%, 65%, 80%
         byte[] alphas = { 13, 26, 38, 64, 102, 140, 166, 204 };
@@ -234,13 +234,13 @@ public class BootSequenceControl : Control
 
     private void SpawnParticle(ref Particle p, double width, double height, bool forceSpawn = false)
     {
-        p.X          = _rng.NextDouble() * width;
-        p.Y          = height * 0.4 + _rng.NextDouble() * height * 0.6;
-        p.Vx         = (_rng.NextDouble() - 0.5) * 16.0;
-        p.Vy         = -20.0 - _rng.NextDouble() * 20.0;
+        p.X = _rng.NextDouble() * width;
+        p.Y = height * 0.4 + _rng.NextDouble() * height * 0.6;
+        p.Vx = (_rng.NextDouble() - 0.5) * 16.0;
+        p.Vy = -20.0 - _rng.NextDouble() * 20.0;
         p.MaxLifetime = 1.5 + _rng.NextDouble() * 1.5;
-        p.Lifetime   = forceSpawn ? _rng.NextDouble() * p.MaxLifetime : 0.0;
-        p.Alpha      = 0.0;
+        p.Lifetime = forceSpawn ? _rng.NextDouble() * p.MaxLifetime : 0.0;
+        p.Alpha = 0.0;
     }
 
     private void InitNodes(double cx, double cy)
@@ -285,9 +285,9 @@ public class BootSequenceControl : Control
 
     private void UpdateRotations(double dt)
     {
-        _outerAngle  += 0.20 * dt;
+        _outerAngle += 0.20 * dt;
         _middleAngle -= 0.35 * dt;
-        _innerAngle  += 0.50 * dt;
+        _innerAngle += 0.50 * dt;
     }
 
     private void UpdateNodes(double dt)
@@ -331,14 +331,14 @@ public class BootSequenceControl : Control
         {
             if (!_pulseRings[i].Active) continue;
             double age = _elapsed - _pulseRings[i].Birth;
-            double t   = age / 0.8;
+            double t = age / 0.8;
             if (t >= 1.0)
             {
                 _pulseRings[i].Active = false;
                 continue;
             }
             _pulseRings[i].Radius = 5.0 + 30.0 * t;
-            _pulseRings[i].Alpha  = 0.6 * (1.0 - t);
+            _pulseRings[i].Alpha = 0.6 * (1.0 - t);
         }
     }
 
@@ -350,8 +350,8 @@ public class BootSequenceControl : Control
             if (_elapsed - _lastPacketTime > 2.0)
             {
                 _dataPacketProgress = 0.0;
-                _dataPacketNode     = _rng.Next(3);
-                _lastPacketTime     = _elapsed;
+                _dataPacketNode = _rng.Next(3);
+                _lastPacketTime = _elapsed;
             }
         }
         else
@@ -365,10 +365,10 @@ public class BootSequenceControl : Control
         if (_elapsed < 1.2 || _elapsed > 2.8) { _arcFlickerVisible = false; return; }
         if (_elapsed - _lastArcFlicker > 0.1)
         {
-            _lastArcFlicker     = _elapsed;
-            _arcFlickerVisible  = true;
-            _arcFlickerAngle    = _rng.NextDouble() * Math.PI * 2;
-            _arcFlickerCount    = _rng.Next(2, 4);
+            _lastArcFlicker = _elapsed;
+            _arcFlickerVisible = true;
+            _arcFlickerAngle = _rng.NextDouble() * Math.PI * 2;
+            _arcFlickerCount = _rng.Next(2, 4);
         }
         else if (_elapsed - _lastArcFlicker > 0.033)
         {
@@ -385,8 +385,8 @@ public class BootSequenceControl : Control
         var bounds = Bounds;
         if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
-        double w  = bounds.Width;
-        double h  = bounds.Height;
+        double w = bounds.Width;
+        double h = bounds.Height;
         double cx = w / 2;
         double cy = h / 2;
 
@@ -441,7 +441,7 @@ public class BootSequenceControl : Control
             double smearAlpha = 0.30 * (1.0 - fadeProgress);
             if (smearAlpha > 0.005)
             {
-                double[] yOffsets  = {  4,  8, -4 };
+                double[] yOffsets = { 4, 8, -4 };
                 double[] smearMult = { 1.0, 0.5, 0.5 };
                 foreach (var (yOff, mult) in System.Linq.Enumerable.Zip(yOffsets, smearMult))
                 {
@@ -483,7 +483,7 @@ public class BootSequenceControl : Control
         // Radial concentric rings
         foreach (var rf in radii)
         {
-            double rad   = rf * maxRadius;
+            double rad = rf * maxRadius;
             double ringY = cy;
             double alpha = Smoothstep(ringY - rad, ringY + rad, scanY);
             if (alpha <= 0.005) continue;
@@ -499,8 +499,8 @@ public class BootSequenceControl : Control
         for (int i = 0; i < 12; i++)
         {
             double angle = i * Math.PI / 6.0;
-            double ex    = cx + maxRadius * Math.Cos(angle);
-            double ey    = cy + maxRadius * Math.Sin(angle);
+            double ex = cx + maxRadius * Math.Cos(angle);
+            double ey = cy + maxRadius * Math.Sin(angle);
 
             double lineAlpha = Smoothstep(Math.Min(cy, ey) - 10, Math.Max(cy, ey) + 10, scanY);
             if (lineAlpha <= 0.005) continue;
@@ -563,19 +563,19 @@ public class BootSequenceControl : Control
 
         // How far each ring arc has formed (0→full circle in the first half of phase2)
         double ringFormT = Math.Clamp(phase2t * 2.0, 0, 1);
-        double outerArcDeg  = ringFormT * 360.0;
+        double outerArcDeg = ringFormT * 360.0;
         double middleArcDeg = ringFormT * 360.0;
-        double innerArcDeg  = ringFormT * 360.0;
+        double innerArcDeg = ringFormT * 360.0;
 
-        const double outerR  = 80.0;
+        const double outerR = 80.0;
         const double middleR = 55.0;
-        const double innerR  = 30.0;
+        const double innerR = 30.0;
 
         // Connection trace arcs (node→core) with animated dash
         RenderTraceArcs(ctx, cx, cy, middleR, phase2t, elapsed);
 
         // Outer ring
-        RenderRing(ctx, cx, cy, outerR,  _outerRingPen,  outerArcDeg,  _outerAngle,  false, 0, elapsed);
+        RenderRing(ctx, cx, cy, outerR, _outerRingPen, outerArcDeg, _outerAngle, false, 0, elapsed);
 
         // Outer ring tick marks (N/E/S/W) — only when ring is complete
         if (outerArcDeg >= 359.9)
@@ -585,7 +585,7 @@ public class BootSequenceControl : Control
         RenderRing(ctx, cx, cy, middleR, _middleRingPen, middleArcDeg, _middleAngle, _arcFlickerVisible && ringFormT < 1.0, _arcFlickerAngle, elapsed);
 
         // Inner ring
-        RenderRing(ctx, cx, cy, innerR,  _innerRingPen,  innerArcDeg,  _innerAngle,  false, 0, elapsed);
+        RenderRing(ctx, cx, cy, innerR, _innerRingPen, innerArcDeg, _innerAngle, false, 0, elapsed);
 
         // Core reactor
         RenderCore(ctx, cx, cy, elapsed);
@@ -606,7 +606,7 @@ public class BootSequenceControl : Control
         {
             // Partial arc using StreamGeometry
             double startAngle = rotationAngle;
-            double endAngle   = rotationAngle + arcDeg * Math.PI / 180.0;
+            double endAngle = rotationAngle + arcDeg * Math.PI / 180.0;
 
             var geo = new StreamGeometry();
             using (var gctx = geo.Open())
@@ -633,8 +633,8 @@ public class BootSequenceControl : Control
                     double ex2 = cx + radius * Math.Cos(jitterAngle);
                     double ey2 = cy + radius * Math.Sin(jitterAngle);
                     double len = 4.0 + _rng.NextDouble() * 4.0;
-                    double nx  = -Math.Sin(jitterAngle); // perpendicular
-                    double ny  = Math.Cos(jitterAngle);
+                    double nx = -Math.Sin(jitterAngle); // perpendicular
+                    double ny = Math.Cos(jitterAngle);
                     ctx.DrawLine(new Pen(_accentBrush, 1.0),
                         new Point(ex2, ey2),
                         new Point(ex2 + nx * len, ey2 + ny * len));
@@ -761,8 +761,8 @@ public class BootSequenceControl : Control
             {
                 double destX = cx;
                 double destY = cy;
-                double px    = pos.X + (destX - pos.X) * _dataPacketProgress;
-                double py    = pos.Y + (destY - pos.Y) * _dataPacketProgress;
+                double px = pos.X + (destX - pos.X) * _dataPacketProgress;
+                double py = pos.Y + (destY - pos.Y) * _dataPacketProgress;
                 ctx.DrawEllipse(_accentBrush, null, new Point(px, py), 2.0, 2.0);
             }
         }
@@ -804,20 +804,20 @@ public class BootSequenceControl : Control
             ctx.DrawText(_cachedRemexText, new Point(tx, ty));
         }
 
-        // "COMMAND CENTER" subtitle fades in
+        // "COMMAND YOUR PC" subtitle fades in
         if (phase3t > 0.5)
         {
             double subtitleAlpha = Math.Clamp((phase3t - 0.5) / 0.5, 0, 1);
             using var sop = ctx.PushOpacity(subtitleAlpha * 0.6);
             var subTypeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
-            string subtitle = "COMMAND CENTER";
+            string subtitle = "COMMAND YOUR PC";
             double letterSpacing = 4.0;
             // Measure total width including extra spacing
             var tempText = new FormattedText(subtitle, CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight, subTypeface, 11.0, _accentBrush60);
             double totalW = tempText.Width + (subtitle.Length - 1) * letterSpacing;
             double startX = cx - totalW / 2.0;
-            double charY   = cy + 152.0;
+            double charY = cy + 152.0;
 
             foreach (char c in subtitle)
             {
@@ -833,18 +833,18 @@ public class BootSequenceControl : Control
         string statusStr;
         if (phase3t < 0.3)
         {
-            statusStr   = "INITIALIZING...";
+            statusStr = "INITIALIZING...";
             statusAlpha = 0.7;
         }
         else if (phase3t < 0.6)
         {
             // Rapid flicker
-            statusStr   = "INITIALIZING...";
+            statusStr = "INITIALIZING...";
             statusAlpha = (Math.Sin(elapsed * 40.0) > 0) ? 0.8 : 0.2;
         }
         else
         {
-            statusStr   = "SYSTEMS ONLINE";
+            statusStr = "SYSTEMS ONLINE";
             statusAlpha = 0.9;
         }
 

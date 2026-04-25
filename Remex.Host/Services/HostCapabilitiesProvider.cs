@@ -16,9 +16,11 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         var isInteractiveSession = GetIsInteractiveSession();
         var runtimeMode = GetRuntimeMode(isInteractiveSession);
         var supportsRemoteDesktop = SupportsRemoteDesktop(isInteractiveSession);
+        var version = typeof(HostCapabilitiesProvider).Assembly.GetName().Version?.ToString() ?? "unknown";
 
         return new HostCapabilities
         {
+            Version = version,
             Platform = platform,
             RuntimeMode = runtimeMode,
             IsInteractiveSession = isInteractiveSession,

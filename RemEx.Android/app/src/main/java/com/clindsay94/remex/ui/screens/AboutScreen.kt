@@ -3,6 +3,10 @@ package com.clindsay94.remex.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,6 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -45,14 +53,27 @@ import org.json.JSONObject
 @Composable
 fun AboutScreen() {
     val context = LocalContext.current
+    val isConnected by RemexClientManager.isConnected.collectAsState()
     val hostCapabilities by RemexClientManager.hostCapabilities.collectAsState(initial = "")
 
-    val pcVersion = try {
-        if (hostCapabilities.isNotEmpty()) {
+    val pcInfo = try {
+        if (isConnected && hostCapabilities.isNotEmpty()) {
             val json = JSONObject(hostCapabilities)
-            json.optString("version", "Unknown")
+            val version = json.optString("version", "")
+            val platform = json.optString("platform", "")
+            val runtime = json.optString("runtimeMode", "")
+
+            if (version.isNotEmpty()) {
+                version
+            } else if (platform.isNotEmpty() || runtime.isNotEmpty()) {
+                "$platform ($runtime)"
+            } else {
+                "Connected"
+            }
+        } else if (isConnected) {
+            "Connected"
         } else {
-            "Unknown"
+            "Disconnected"
         }
     } catch (e: Exception) {
         "Unknown"
@@ -70,24 +91,34 @@ fun AboutScreen() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // App Logo and Name
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp)
+                )
+            }
 
-            Text(
-                text = stringResource(R.string.about_app_name),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black
-            )
-
-            Text(
-                text = stringResource(R.string.splash_tagline),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.splash_tagline),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 2.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -98,20 +129,38 @@ fun AboutScreen() {
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 )
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.about_version_android, BuildConfig.VERSION_NAME),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Smartphone,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Android Client: ${BuildConfig.VERSION_NAME}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                    Text(
-                        text = stringResource(R.string.about_version_pc, pcVersion),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Terminal,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "PC Host: $pcInfo",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
@@ -141,7 +190,12 @@ fun AboutScreen() {
                     Button(
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/clindsay94/remex"))
-                            context.startActivity(intent)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                // Fallback or log if browser not found
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

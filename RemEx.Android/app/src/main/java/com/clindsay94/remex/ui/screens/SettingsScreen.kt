@@ -48,7 +48,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onReplayTutorial: (() -> Unit)? = null
+    onReplayTutorial: (() -> Unit)? = null,
+    onNavigateToAbout: (() -> Unit)? = null
 ) {
     val tabs = listOf(
         stringResource(R.string.settings_tab_connection),
@@ -87,7 +88,10 @@ fun SettingsScreen(
                 0 -> ConnectionScreen()
                 1 -> PersonalizationScreen(showHeader = false)
                 2 -> InputTab()
-                3 -> HelpTab(onReplayTutorial = onReplayTutorial)
+                3 -> HelpTab(
+                    onReplayTutorial = onReplayTutorial,
+                    onNavigateToAbout = onNavigateToAbout
+                )
             }
         }
     }
@@ -219,7 +223,10 @@ private fun InputTab() {
 }
 
 @Composable
-private fun HelpTab(onReplayTutorial: (() -> Unit)?) {
+private fun HelpTab(
+    onReplayTutorial: (() -> Unit)?,
+    onNavigateToAbout: (() -> Unit)?
+) {
     val view = LocalView.current
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
@@ -267,5 +274,18 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (onNavigateToAbout != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    onNavigateToAbout()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.screen_about_title))
+            }
+        }
     }
 }

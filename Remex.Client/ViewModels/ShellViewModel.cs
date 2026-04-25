@@ -112,6 +112,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private CustomizationViewModel? _customizationViewModel;
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
+    private AboutViewModel? _aboutViewModel;
 
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
@@ -157,6 +158,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _customizationViewModel?.Dispose();
         _remoteDesktopViewModel?.Dispose();
         _taskManagerViewModel?.Dispose();
+        _aboutViewModel?.Dispose();
 
         // Dispose shared connection ViewModel
         Connection.Dispose();
@@ -277,12 +279,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
 
-        // Material 3 style: 
+        // Material 3 style:
         // On Android, we use a consistent, professional transition.
         // On Desktop, we can keep the variety.
         if (OperatingSystem.IsAndroid())
         {
-            // We'll use CrossFade (index 2) as it's the closest to M3 FadeThrough 
+            // We'll use CrossFade (index 2) as it's the closest to M3 FadeThrough
             // without complex shared-axis custom code.
             TransitionType = 2;
         }
@@ -349,6 +351,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this, _immersiveMode);
         SetTransitionAndNavigate(5, _remoteDesktopViewModel);
+    }
+
+    [RelayCommand]
+    public void NavigateToAbout()
+    {
+        _aboutViewModel ??= new AboutViewModel(Connection, this);
+        SetTransitionAndNavigate(6, _aboutViewModel);
     }
 
     [RelayCommand]
