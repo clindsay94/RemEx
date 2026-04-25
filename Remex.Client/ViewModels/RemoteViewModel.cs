@@ -133,6 +133,22 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
     }
 
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
+    private async Task<bool> ConfirmAsync(string titleKey, string messageKey, string btnKey)
+    {
+        if (OnConfirmationRequested is null)
+            return true;
+        return await OnConfirmationRequested(
+            LocalizationService.Instance[titleKey],
+            LocalizationService.Instance[messageKey],
+            LocalizationService.Instance[btnKey]);
+    }
+
     [RelayCommand]
     private async Task LockPcAsync()
     {
@@ -142,30 +158,40 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
     [RelayCommand]
     private async Task ShutdownPcAsync()
     {
+        if (!await ConfirmAsync("Confirm_Shutdown_Title", "Confirm_Shutdown_Message", "Confirm_Shutdown_Btn"))
+            return;
         await ExecuteRemoteCommandAsync("Shutdown", LocalizationService.Instance["Wol_ShutdownSent"]);
     }
 
     [RelayCommand]
     private async Task ForceShutdownPcAsync()
     {
+        if (!await ConfirmAsync("Confirm_ForceShutdown_Title", "Confirm_ForceShutdown_Message", "Confirm_ForceShutdown_Btn"))
+            return;
         await ExecuteRemoteCommandAsync("ForceShutdown", LocalizationService.Instance["Wol_ForceShutdownSent"]);
     }
 
     [RelayCommand]
     private async Task RestartPcAsync()
     {
+        if (!await ConfirmAsync("Confirm_Restart_Title", "Confirm_Restart_Message", "Confirm_Restart_Btn"))
+            return;
         await ExecuteRemoteCommandAsync("Restart", LocalizationService.Instance["Wol_RestartSent"]);
     }
 
     [RelayCommand]
     private async Task ForceRestartAsync()
     {
+        if (!await ConfirmAsync("Confirm_ForceRestart_Title", "Confirm_ForceRestart_Message", "Confirm_ForceRestart_Btn"))
+            return;
         await ExecuteRemoteCommandAsync("ForceRestart", LocalizationService.Instance["Wol_ForceRestartSent"]);
     }
 
     [RelayCommand]
     private async Task RestartToUefiAsync()
     {
+        if (!await ConfirmAsync("Confirm_RebootUefi_Title", "Confirm_RebootUefi_Message", "Confirm_RebootUefi_Btn"))
+            return;
         await ExecuteRemoteCommandAsync("RestartToUefi", LocalizationService.Instance["Wol_RebootUefiSent"]);
     }
 
