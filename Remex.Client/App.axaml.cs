@@ -3,8 +3,11 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using System;
+using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Remex.Client.Models;
 using Remex.Client.Services;
 using Remex.Client.ViewModels;
 using Remex.Client.Views;
@@ -58,9 +61,40 @@ public partial class App : Application
         Services = collection.BuildServiceProvider();
         CommandModeContext.StartListener(Services);
 
+        // Synchronously apply the saved theme before the window opens.
+        // This prevents a dark-glass flash for SolarFlare (or any non-default) users.
+        ApplyThemeBeforeWindowShown();
+
         _ = InitializeAppAsync();
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void ApplyThemeBeforeWindowShown()
+    {
+        try
+        {
+            var baseFolder = OperatingSystem.IsAndroid()
+                ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
+                : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var filePath = Path.Combine(baseFolder, "Remex", "dashboard_layout.json");
+
+            if (!File.Exists(filePath)) return;
+
+            using var doc = JsonDocument.Parse(File.ReadAllText(filePath));
+            if (!doc.RootElement.TryGetProperty("customization", out var customization)) return;
+            if (!customization.TryGetProperty("baseTheme", out var baseThemeProp)) return;
+
+            var themeId = baseThemeProp.GetString();
+            if (string.IsNullOrWhiteSpace(themeId)) return;
+            if (!Enum.TryParse<AppTheme>(themeId, ignoreCase: true, out var theme)) return;
+
+            Services.GetRequiredService<ThemeService>().ApplyThemeSync(theme);
+        }
+        catch
+        {
+            // Silently fall back to the default dark theme already declared in App.axaml.
+        }
     }
 
     private async Task InitializeAppAsync()

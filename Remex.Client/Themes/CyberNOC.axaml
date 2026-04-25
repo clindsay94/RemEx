@@ -15,7 +15,7 @@
     <Color x:Key="CardBackgroundHover">#26FFFFFF</Color>
     <Color x:Key="CardBorder">#2AFFFFFF</Color>
     <Color x:Key="TextPrimary">#F8FAFC</Color>
-    <Color x:Key="TextSecondary">#00F3FF</Color>
+    <Color x:Key="TextSecondary">#4ECFCF</Color>
     <Color x:Key="TextMuted">#4F5E66</Color>
 
     <!-- Brushes -->

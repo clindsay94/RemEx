@@ -37,6 +37,16 @@ public class ThemeService : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyBaseThemeInternal(theme));
     }
 
+    /// <summary>
+    /// Applies the base theme synchronously on the current (UI) thread.
+    /// Safe to call from <c>OnFrameworkInitializationCompleted</c> before the
+    /// event loop starts, so the correct theme is loaded before any window is shown.
+    /// </summary>
+    public void ApplyThemeSync(AppTheme theme)
+    {
+        ApplyBaseThemeInternal(theme);
+    }
+
     public void ApplyCustomization(CustomizationSettings settings)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
