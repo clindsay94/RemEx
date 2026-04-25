@@ -42,8 +42,12 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
     <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
     <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
     <!-- Semi-transparent overlay (light theme: use a light wash) -->
     <SolidColorBrush x:Key="GlassOverlayBrush" Color="#1A000000"/>
 
