@@ -105,9 +105,7 @@
                                         <!-- Home -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" AutomationProperties.Name="{conv:Localize Nav_Home}" ToolTip.Tip="{conv:Localize Nav_HomeTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="{DynamicResource AccentPrimaryBrush}" Opacity="0.7">
-                                                    <TextBlock Text="H" FontSize="13" FontWeight="Black" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconHome}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -115,9 +113,7 @@
                                         <!-- Canvas / Sensors -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" AutomationProperties.Name="{conv:Localize Nav_Sensors}" ToolTip.Tip="{conv:Localize Nav_SensorsTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1A22C55E">
-                                                    <TextBlock Text="S" FontSize="13" FontWeight="Black" Foreground="#22C55E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconSensors}" Fill="#22C55E" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -125,9 +121,7 @@
                                         <!-- Remote Control -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" AutomationProperties.Name="{conv:Localize Nav_Remote}" ToolTip.Tip="{conv:Localize Nav_RemoteTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1AFF6B6B">
-                                                    <TextBlock Text="R" FontSize="13" FontWeight="Black" Foreground="#FF6B6B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconRemote}" Fill="#FF6B6B" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Remote}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -135,9 +129,7 @@
                                         <!-- App Launcher -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" AutomationProperties.Name="{conv:Localize Nav_Launcher}" ToolTip.Tip="{conv:Localize Nav_LauncherTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1A00F3FF">
-                                                    <TextBlock Text="L" FontSize="13" FontWeight="Black" Foreground="#00F3FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconLauncher}" Fill="#00F3FF" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -145,9 +137,7 @@
                                         <!-- Task Manager -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" AutomationProperties.Name="{conv:Localize Nav_Tasks}" ToolTip.Tip="{conv:Localize Nav_TasksTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1AFFB800">
-                                                    <TextBlock Text="T" FontSize="13" FontWeight="Black" Foreground="#FFB800" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconTasks}" Fill="#FFB800" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Tasks}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -158,9 +148,7 @@
                                         <!-- Remote Desktop — Android only; desktop IS the host -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=5}" Command="{Binding NavigateToRemoteDesktopCommand}" IsVisible="{Binding IsAndroid}" AutomationProperties.Name="{conv:Localize Nav_Desktop}" ToolTip.Tip="{conv:Localize Nav_DesktopTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1AFF00FF">
-                                                    <TextBlock Text="D" FontSize="13" FontWeight="Black" Foreground="#FF00FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconDesktop}" Fill="#FF00FF" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Desktop}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -168,9 +156,7 @@
                                         <!-- Settings -->
                                         <Button Classes="nav-item" Command="{Binding NavigateToSettingsCommand}" AutomationProperties.Name="{conv:Localize Nav_Settings}" ToolTip.Tip="{conv:Localize Nav_SettingsTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1A9999FF">
-                                                    <TextBlock Text="⚙" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconSettings}" Fill="#9999FF" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
@@ -178,9 +164,7 @@
                                         <!-- About -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" AutomationProperties.Name="{conv:Localize About_Header}" ToolTip.Tip="{conv:Localize About_Header}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                                <Border Width="24" Height="24" CornerRadius="6" Background="#1A9999FF">
-                                                    <TextBlock Text="ℹ" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
+                                                <Path Data="{StaticResource IconAbout}" Fill="#9999FF" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
                                                 <TextBlock Text="{conv:Localize About_Header}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
