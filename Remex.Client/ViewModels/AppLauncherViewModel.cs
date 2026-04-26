@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,18 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private ObservableCollection<AppEntry> _launchers = new();
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    public IEnumerable<AppEntry> FilteredApps =>
+        string.IsNullOrWhiteSpace(SearchText)
+            ? Launchers
+            : Launchers.Where(a => a.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+    partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(FilteredApps));
+
+    partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => OnPropertyChanged(nameof(FilteredApps));
 
     public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService)
     {

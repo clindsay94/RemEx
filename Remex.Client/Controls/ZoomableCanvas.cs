@@ -263,4 +263,14 @@ public class ZoomableCanvas : Panel
     {
         _childTransform.Matrix = new Matrix(_zoom, 0, 0, _zoom, _offsetX, _offsetY);
     }
+
+    /// <summary>Resets pan and zoom to the default 1:1 origin.</summary>
+    public void ResetView()
+    {
+        _zoom = 1.0;
+        _offsetX = 0;
+        _offsetY = 0;
+        UpdateTransform();
+        InvalidateArrange();
+    }
 }

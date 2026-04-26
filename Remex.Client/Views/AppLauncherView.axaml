@@ -34,8 +34,11 @@
                 </StackPanel>
             </Border>
 
+            <!-- ═══ Search ═══ -->
+            <TextBox Watermark="Search apps..." Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13"/>
+
             <!-- ═══ Apps Grid ═══ -->
-            <ItemsControl ItemsSource="{Binding Launchers}" x:Name="LauncherGrid">
+            <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal" ItemWidth="160" ItemHeight="160" />

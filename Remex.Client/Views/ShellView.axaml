@@ -45,12 +45,20 @@
 
         <!-- ═══ Settings overlay panel ═══ -->
         <Style Selector="Border.settings-overlay">
+            <Setter Property="RenderTransform" Value="translateX(420px)"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut"/>
                     <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
+        </Style>
+        <Style Selector="Border.settings-overlay.open">
+            <Setter Property="RenderTransform" Value="translateX(0px)"/>
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="IsHitTestVisible" Value="True"/>
         </Style>
 
         <!-- ═══ Gear FAB ═══ -->
@@ -199,11 +207,12 @@
                                     <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
                                 </Transitions>
                             </Border.Transitions>
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <TextBlock Grid.Column="0" Text="⚠" FontSize="16" Foreground="#FFB800" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Grid.Column="1" Text="{Binding ConnectionBannerMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
-                                <Button Grid.Column="3" Content="✕" Command="{Binding DismissConnectionBannerCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="6,4" CornerRadius="6" FontSize="12" Cursor="Hand" BorderThickness="0"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" Background="#22C55E" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
+                                <Button Grid.Column="3" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
+                                <Button Grid.Column="4" Content="✕" Command="{Binding DismissConnectionBannerCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="6,4" CornerRadius="6" FontSize="12" Cursor="Hand" BorderThickness="0"/>
                             </Grid>
                         </Border>
 
@@ -281,7 +290,7 @@
             </Border>
 
             <!-- ═══ SETTINGS SLIDE-IN PANEL (Right side) ═══ -->
-            <Border Grid.Row="0" Grid.RowSpan="3" Classes="settings-overlay" IsVisible="{Binding IsSettingsPanelOpen}" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="400" MaxWidth="420" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" BoxShadow="-8 0 40 0 #40000000">
+            <Border Grid.Row="0" Grid.RowSpan="3" x:Name="SettingsPanel" Classes="settings-overlay" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="400" MaxWidth="420" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" BoxShadow="-8 0 40 0 #40000000">
                 <Grid RowDefinitions="Auto,*">
                     <!-- Panel header -->
                     <Border Grid.Row="0" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">

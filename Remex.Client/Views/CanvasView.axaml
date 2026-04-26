@@ -142,7 +142,7 @@
 
         <!-- ═══ Toolbar ═══ -->
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
                 <Button Classes="back-btn" Content="{local:Localize Canvas_Header}" IsHitTestVisible="False" Background="Transparent"/>
                 <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
@@ -158,10 +158,16 @@
                         <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="5" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}">
+                <Button Grid.Column="5" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Data="{StaticResource IconImport}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding StagedCards.Count, StringFormat=Sensors ({0})}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="6" Classes="back-btn" Command="{Binding ResetViewCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="Reset View" FontSize="12"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -171,7 +177,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
 
             <!-- ═══ CANVAS ═══ -->
-            <ctrl:ZoomableCanvas Grid.Column="0" Background="Transparent">
+            <ctrl:ZoomableCanvas Grid.Column="0" x:Name="MainCanvas" Background="Transparent">
                 <ItemsControl ItemsSource="{Binding Cards}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>

@@ -58,7 +58,7 @@
                                     </ContextMenu>
                                 </Border.ContextMenu>
 
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="*,Auto,Auto">
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
                                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
                                             <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -81,6 +81,9 @@
                                             <TextBlock Text="{Binding MemoryUsage, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
                                         </StackPanel>
                                     </StackPanel>
+
+                                    <!-- Kill Button (visible only when row is selected) -->
+                                    <Button Grid.Column="2" Content="{local:Localize TaskMgr_KillProcess}" Margin="12,0,0,0" Padding="10,6" CornerRadius="8" Background="#3A1A1A" Foreground="#FF6B6B" FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" IsVisible="{Binding $parent[ListBoxItem].IsSelected}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>

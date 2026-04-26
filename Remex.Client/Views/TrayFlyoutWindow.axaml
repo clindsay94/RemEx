@@ -3,7 +3,7 @@
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:conv="using:Remex.Client.Converters"
     xmlns:ctrl="using:Remex.Client.Controls"
-    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="340" Height="480" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="AcrylicBlur" SystemDecorations="None">
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="340" SizeToContent="Height" MaxHeight="520" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="AcrylicBlur" SystemDecorations="None">
 
     <Window.Styles>
         <Style Selector="Border.widget-card">
@@ -31,7 +31,7 @@
             </Grid>
 
             <!-- Widget List -->
-            <ScrollViewer Grid.Row="1" Margin="0,16" VerticalScrollBarVisibility="Hidden">
+            <ScrollViewer Grid.Row="1" Margin="0,16" VerticalScrollBarVisibility="Hidden" MaxHeight="380">
                 <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0">
                     <ListBox.Styles>
                         <Style Selector="ListBoxItem">

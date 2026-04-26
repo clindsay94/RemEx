@@ -319,6 +319,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
     {
+        // Clear app launcher search when navigating away
+        if (CurrentView is AppLauncherViewModel alvm && viewModel != alvm)
+            alvm.SearchText = string.Empty;
+
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
 
         // Material 3 style:

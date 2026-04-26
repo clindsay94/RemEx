@@ -28,6 +28,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     public ConnectionViewModel Connection { get; }
 
+    /// <summary>Raised when the view should reset the canvas pan/zoom to origin.</summary>
+    public event EventHandler? ResetViewRequested;
+
+    [RelayCommand]
+    private void ResetView() => ResetViewRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>Cards currently placed on the canvas.</summary>
     public ObservableCollection<CanvasCardViewModel> Cards { get; } = new();
 
