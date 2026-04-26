@@ -433,6 +433,34 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    public void DismissOverlays()
+    {
+        IsSettingsPanelOpen = false;
+        IsDrawerOpen = false;
+        ShowTutorialOverlay = false;
+        ShowConnectionBanner = false;
+    }
+
+    [RelayCommand]
+    public void OpenCommandPalette()
+    {
+        var vm = new CommandPaletteViewModel(this);
+        var window = new Remex.Client.Views.CommandPaletteWindow(vm);
+
+        // Find the main window to use as owner for centering
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow is { } mainWindow)
+        {
+            window.ShowDialog(mainWindow);
+        }
+        else
+        {
+            window.Show();
+        }
+    }
+
+    [RelayCommand]
     public void ToggleDrawer()
     {
         IsDrawerOpen = !IsDrawerOpen;
