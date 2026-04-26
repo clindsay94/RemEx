@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Remex.Client.Models;
 using Remex.Client.Services;
 using Remex.Core.Guards;
+using Remex.Core.Models;
 
 namespace Remex.Client.ViewModels;
 
@@ -78,6 +79,27 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Whether the settings overlay panel is open.</summary>
     [ObservableProperty]
     private bool _isSettingsPanelOpen;
+
+    // ═══════════════ Sensor Alert Notifications ═══════════════
+
+    /// <summary>Number of sensor alerts fired in this session (badge count).</summary>
+    [ObservableProperty]
+    private int _alertBadgeCount;
+
+    /// <summary>Whether there are any unacknowledged sensor alerts.</summary>
+    public bool HasAlerts => AlertBadgeCount > 0;
+
+    partial void OnAlertBadgeCountChanged(int value) => OnPropertyChanged(nameof(HasAlerts));
+
+    /// <summary>Recent sensor alert notifications (most recent first).</summary>
+    public ObservableCollection<SensorAlertNotification> AlertNotifications { get; } = new();
+
+    [RelayCommand]
+    private void DismissAlerts()
+    {
+        AlertBadgeCount = 0;
+        AlertNotifications.Clear();
+    }
 
     /// <summary>Index of the active navigation item (for highlight).</summary>
     [ObservableProperty]
@@ -198,6 +220,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
         _ = _canvasViewModel.InitializeAsync();
+        _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
     }
 
     public void Dispose()
@@ -207,7 +230,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();
-        _canvasViewModel?.Dispose();
+        if (_canvasViewModel != null)
+        {
+            _canvasViewModel.SensorAlertFired -= OnSensorAlertFired;
+            _canvasViewModel.Dispose();
+        }
         _settingsViewModel?.Dispose();
         _remoteViewModel?.Dispose();
         _appLauncherViewModel?.Dispose();
@@ -296,6 +323,26 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     public void DismissConnectionBanner() => ShowConnectionBanner = false;
+
+    // ═══════════════ Canvas Undo / Redo (routed from MainWindow key bindings) ═══════════════
+
+    [RelayCommand]
+    private void CanvasUndo() => _canvasViewModel?.UndoCommand.Execute(null);
+
+    [RelayCommand]
+    private void CanvasRedo() => _canvasViewModel?.RedoCommand.Execute(null);
+
+    // ═══════════════ Sensor Alert Notifications ═══════════════
+
+    private void OnSensorAlertFired(SensorAlert alert)
+    {
+        AlertBadgeCount++;
+        AlertNotifications.Insert(0, new SensorAlertNotification(
+            alert.SensorName, alert.Severity, DateTime.Now));
+        // Cap the list at 20 entries
+        while (AlertNotifications.Count > 20)
+            AlertNotifications.RemoveAt(AlertNotifications.Count - 1);
+    }
 
     [RelayCommand]
     public void DismissLayoutLoadWarning() => ShowLayoutLoadWarning = false;
@@ -525,3 +572,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         }
     }
 }
+
+/// <summary>A single entry in the shell's sensor-alert notification feed.</summary>
+public sealed record SensorAlertNotification(string SensorName, AlertSeverity Severity, DateTime Time);

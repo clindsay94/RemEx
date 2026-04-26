@@ -31,6 +31,9 @@
         <KeyBinding Gesture="F5" Command="{Binding NavigateToCanvasCommand}" />
         <!-- Command palette -->
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenCommandPaletteCommand}" />
+        <!-- Canvas undo / redo -->
+        <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoCommand}" />
+        <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoCommand}" />
     </Window.KeyBindings>
 
     <views:ShellView />

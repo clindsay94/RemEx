@@ -118,6 +118,9 @@ public record DashboardProfile
 
     /// <summary>Visual aesthetic and theme overrides.</summary>
     public CustomizationSettings Customization { get; init; } = new();
+
+    /// <summary>Configured sensor threshold alerts.</summary>
+    public List<SensorAlert> SensorAlerts { get; init; } = new();
 }
 
 /// <summary>

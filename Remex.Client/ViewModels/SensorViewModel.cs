@@ -54,6 +54,23 @@ public partial class SensorViewModel : ObservableObject
     [ObservableProperty]
     private SensorCardTheme _theme = SensorCardTheme.Presets[0];
 
+    // ═══════════════ Alert ═══════════════
+
+    [ObservableProperty]
+    private bool _isAlertActive;
+
+    private SensorAlert? _alert;
+
+    /// <summary>Configured threshold alert for this sensor (null = none).</summary>
+    public SensorAlert? Alert
+    {
+        get => _alert;
+        set => _alert = value;
+    }
+
+    /// <summary>Raised when the sensor value crosses its configured threshold.</summary>
+    public event Action<SensorAlert>? AlertTriggered;
+
     // ═══════════════ Graph Type ═══════════════
 
     [ObservableProperty]
@@ -183,6 +200,31 @@ public partial class SensorViewModel : ObservableObject
         OnPropertyChanged(nameof(MinSeenValue));
         OnPropertyChanged(nameof(MaxSeenValue));
         OnPropertyChanged(nameof(ResolvedGraphType));
+
+        CheckAlert();
+    }
+
+    private void CheckAlert()
+    {
+        if (_alert is null)
+        {
+            IsAlertActive = false;
+            return;
+        }
+
+        bool triggered = _alert.Direction == AlertDirection.Above
+            ? Value > _alert.Threshold
+            : Value < _alert.Threshold;
+
+        if (triggered && !IsAlertActive)
+        {
+            IsAlertActive = true;
+            AlertTriggered?.Invoke(_alert);
+        }
+        else if (!triggered)
+        {
+            IsAlertActive = false;
+        }
     }
 
     // ═══════════════ Auto Resolution ═══════════════

@@ -38,7 +38,7 @@
 
             <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="{local:Localize Settings_Header}" FontSize="24" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                
+
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SavedStatus}" FontSize="12" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                     <Button Content="{local:Localize Settings_SaveChanges}" Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold"/>
@@ -140,7 +140,7 @@
                             <TextBlock Text="{Binding HostCapabilityText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
-                    
+
                     <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws"
