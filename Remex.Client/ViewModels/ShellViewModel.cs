@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Remex.Client.Models;
 using Remex.Client.Services;
 using Remex.Core.Guards;
 
@@ -26,6 +28,21 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly PropertyChangedEventHandler _onConnectionChanged;
     private static readonly Random _rng = new();
     private bool _welcomeSplashStarted;
+
+    /// <summary>All tutorial pages in order; each declares which platforms display it.</summary>
+    private static readonly IReadOnlyList<TutorialPage> _tutorialPages = new[]
+    {
+        new TutorialPage(0, "Welcome",          "Welcome to Remex.",                       PlatformFlags.All),
+        new TutorialPage(1, "Connect",          "Connect to your host.",                   PlatformFlags.All),
+        new TutorialPage(2, "Windows Service",  "Install the Windows background service.", PlatformFlags.Windows),
+        new TutorialPage(3, "Linux Service",    "Install the Linux systemd service.",      PlatformFlags.Linux),
+        new TutorialPage(4, "HWiNFO",          "Monitor hardware sensors.",               PlatformFlags.Windows),
+        new TutorialPage(5, "Dashboard",        "Customize your dashboard.",               PlatformFlags.All),
+        new TutorialPage(6, "Remote Control",   "Control your remote machine.",            PlatformFlags.All),
+        new TutorialPage(7, "Remote Desktop",   "Stream your remote desktop.",             PlatformFlags.All),
+        new TutorialPage(8, "Customization",    "Personalize the app look and feel.",      PlatformFlags.All),
+        new TutorialPage(9, "Finish",           "You're all set — let's go!",             PlatformFlags.All),
+    };
 
     /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
     public DashboardLayoutService LayoutService => _layoutService;
@@ -87,7 +104,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private int _tutorialPageIndex;
 
     /// <summary>Total number of tutorial pages.</summary>
-    public int TutorialPageCount => 10;
+    public int TutorialPageCount => _tutorialPages.Count;
 
     /// <summary>User preference to not show tutorial again.</summary>
     [ObservableProperty]
@@ -237,38 +254,28 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void TutorialNext()
     {
+        var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
+                     : OperatingSystem.IsLinux()   ? PlatformFlags.Linux
+                     : PlatformFlags.Android;
+
         int nextIndex = TutorialPageIndex + 1;
+        while (nextIndex < _tutorialPages.Count && (_tutorialPages[nextIndex].SupportedPlatforms & platform) == 0)
+            nextIndex++;
 
-        // Skip OS-specific pages
-        if (OperatingSystem.IsWindows())
-        {
-            if (nextIndex == 3) nextIndex = 4; // Skip Linux Service page
-        }
-        else if (OperatingSystem.IsLinux())
-        {
-            if (nextIndex == 2) nextIndex = 3; // Skip Windows Service page
-            if (nextIndex == 4) nextIndex = 5; // Skip HWInfo page (Windows only)
-        }
-
-        if (nextIndex < TutorialPageCount)
+        if (nextIndex < _tutorialPages.Count)
             TutorialPageIndex = nextIndex;
     }
 
     [RelayCommand]
     public void TutorialPrevious()
     {
-        int prevIndex = TutorialPageIndex - 1;
+        var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
+                     : OperatingSystem.IsLinux()   ? PlatformFlags.Linux
+                     : PlatformFlags.Android;
 
-        // Skip OS-specific pages
-        if (OperatingSystem.IsWindows())
-        {
-            if (prevIndex == 3) prevIndex = 2; // Skip Linux Service page
-        }
-        else if (OperatingSystem.IsLinux())
-        {
-            if (prevIndex == 4) prevIndex = 3; // Skip HWInfo page (Windows only)
-            if (prevIndex == 2) prevIndex = 1; // Skip Windows Service page
-        }
+        int prevIndex = TutorialPageIndex - 1;
+        while (prevIndex >= 0 && (_tutorialPages[prevIndex].SupportedPlatforms & platform) == 0)
+            prevIndex--;
 
         if (prevIndex >= 0)
             TutorialPageIndex = prevIndex;

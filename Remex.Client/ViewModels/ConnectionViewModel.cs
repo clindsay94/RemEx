@@ -75,6 +75,9 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
+    /// <summary>Hosts discovered via mDNS; populated after <see cref="DiscoverHostsCommand"/> completes.</summary>
+    public ObservableCollection<string> DiscoveredHosts { get; } = new();
+
     private readonly IMdnsDiscoveryService? _discoveryService;
     private readonly Remex.Client.Services.DashboardLayoutService? _layoutService;
     private readonly ILogger<ConnectionViewModel> _logger;
@@ -117,6 +120,13 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         StatusText = LocalizationService.Instance["Status_SearchingHosts"];
         var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            DiscoveredHosts.Clear();
+            foreach (var host in foundHosts)
+                DiscoveredHosts.Add(host);
+        });
 
         if (foundHosts.Any())
         {

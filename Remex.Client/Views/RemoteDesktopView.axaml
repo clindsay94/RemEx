@@ -76,7 +76,13 @@
                     <!-- Right: Settings -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <TextBlock Text="{local:Localize RemoteDesktop_Quality}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                        <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
+                        <StackPanel Spacing="1" VerticalAlignment="Center">
+                            <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
+                            <Grid ColumnDefinitions="*,*" Width="80">
+                                <TextBlock Text="Low" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Column="1" Text="High" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
                         <TextBlock Text="{Binding Quality, StringFormat={}{0}%}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Width="32" VerticalAlignment="Center"/>
 
                         <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>

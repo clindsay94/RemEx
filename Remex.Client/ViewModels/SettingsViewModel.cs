@@ -219,6 +219,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isDiscovering;
 
+    /// <summary>Hosts found by the last mDNS discovery run; bound to the host picker ComboBox.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<string> DiscoveredHosts => _connection.DiscoveredHosts;
+
     [RelayCommand]
     private async Task DiscoverHostAsync()
     {

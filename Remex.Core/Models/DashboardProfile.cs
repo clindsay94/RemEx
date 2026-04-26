@@ -153,6 +153,9 @@ public record CustomizationSettings
     /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
     public string AccentColor { get; init; } = "#6C4CFF";
 
+    /// <summary>User-defined custom accent colours (hex strings) saved via the colour picker.</summary>
+    public List<string> CustomAccentColors { get; init; } = new();
+
     /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
     public string SchemeVariant { get; init; } = "TonalSpot";
 

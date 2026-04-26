@@ -148,6 +148,8 @@
                         <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"
                                 ToolTip.Tip="{local:Localize Settings_DiscoverTooltip}"/>
                     </Grid>
+                    <ComboBox IsVisible="{Binding DiscoveredHosts.Count}" ItemsSource="{Binding DiscoveredHosts}" SelectedItem="{Binding HostAddress}" HorizontalAlignment="Stretch" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12,4" FontSize="12" FontFamily="Consolas, monospace"
+                              ToolTip.Tip="Select a discovered host"/>
 
                     <TextBlock Text="{local:Localize Settings_AccessKey}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/>
                     <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="{local:Localize Settings_AccessKeyWatermark}"
@@ -188,6 +190,10 @@
                             </TextBlock>
                         </Grid>
                         <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding GridSize}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                        <Grid ColumnDefinitions="*,*">
+                            <TextBlock Text="Small" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="Large" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                        </Grid>
                     </StackPanel>
                 </StackPanel>
             </Border>
