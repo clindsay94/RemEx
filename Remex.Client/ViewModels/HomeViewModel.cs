@@ -14,9 +14,20 @@ namespace Remex.Client.ViewModels;
 public partial class HomeViewModel : ObservableObject, IDisposable
 {
     private readonly ShellViewModel _shell;
+    private readonly System.ComponentModel.PropertyChangedEventHandler _onConnectionChanged;
+    private readonly System.ComponentModel.PropertyChangedEventHandler _onShellChanged;
 
     /// <summary>Shared connection ViewModel — drives the status hero card.</summary>
     public ConnectionViewModel Connection { get; }
+
+    /// <summary>Exposes ShellViewModel so AXAML can bind to shell-level preferences.</summary>
+    public ShellViewModel Shell => _shell;
+
+    /// <summary>
+    /// True when the connection status dot should display its pulse animation:
+    /// only when actually connected and the user hasn't opted in to reduced motion.
+    /// </summary>
+    public bool ShowConnectionPulse => Connection.IsConnected && !_shell.IsReducedMotion;
 
     /// <summary>Pinned sensor summaries displayed in the UniformGrid.</summary>
     public ObservableCollection<SensorViewModel> PinnedSensors { get; } = new();
@@ -25,6 +36,20 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     {
         Connection = connection;
         _shell = shell;
+
+        // Re-compute ShowConnectionPulse whenever either dependency changes
+        _onConnectionChanged = (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
+                OnPropertyChanged(nameof(ShowConnectionPulse));
+        };
+        _onShellChanged = (_, e) =>
+        {
+            if (e.PropertyName == nameof(ShellViewModel.IsReducedMotion))
+                OnPropertyChanged(nameof(ShowConnectionPulse));
+        };
+        Connection.PropertyChanged += _onConnectionChanged;
+        _shell.PropertyChanged += _onShellChanged;
     }
 
     /// <summary>
@@ -89,7 +114,7 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        // No resources to dispose currently, but implementing IDisposable for consistency
-        // in the ViewModel disposal hierarchy
+        Connection.PropertyChanged -= _onConnectionChanged;
+        _shell.PropertyChanged -= _onShellChanged;
     }
 }

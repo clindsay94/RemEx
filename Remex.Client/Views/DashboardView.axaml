@@ -157,7 +157,8 @@
             <TextBlock Classes="card-title" Text="{local:Localize Canvas_Connection}"/>
 
             <StackPanel Orientation="Horizontal" Margin="0 4 0 12">
-              <Ellipse Classes="status-dot">
+              <Ellipse Classes="status-dot"
+                       AutomationProperties.Name="{Binding Connection.StatusText}">
                 <Ellipse.Fill>
                   <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
                 </Ellipse.Fill>
@@ -250,7 +251,8 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
                           <!-- ═══ Sensor Sparkline Sub-Card (dynamic size + theme + context menu) ═══ -->
-                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,6,6" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True">
+                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,6,6" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True"
+                                  AutomationProperties.HelpText="{Binding HistorySummary}">
 
                             <!-- ═══ Right-Click Context Menu ═══ -->
                             <Border.ContextMenu>

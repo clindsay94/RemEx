@@ -2,8 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:converters="using:Remex.Client.Converters"
-    xmlns:local="clr-namespace:Remex.Client.Converters"
-    x:Class="Remex.Client.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel">
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel">
 
     <UserControl.Resources>
         <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />
@@ -19,9 +18,7 @@
                     <TextBlock Text="{local:Localize AppLauncher_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
                 </StackPanel>
 
-                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="1" VerticalAlignment="Center"
-                        Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8"
-                        Command="{Binding OpenAddProgramDialogCommand}" />
+                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="1" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
             <!-- ═══ Android Add Panel ═══ -->
@@ -56,40 +53,22 @@
 
                             <Grid RowDefinitions="*, Auto">
                                 <!-- Main Launch Button (Top Area) -->
-                                <Button Grid.Row="0" Background="Transparent" Padding="12" BorderThickness="0"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}"
-                                        CommandParameter="{Binding}">
+                                <Button Grid.Row="0" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
-                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}"
-                                               Width="56" Height="56" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="56" Height="56" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
-                                        <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center"
-                                                   FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" 
-                                                   TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
+                                        <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
                                     </Grid>
                                 </Button>
 
                                 <!-- Action Toolbar (Bottom Area) -->
                                 <Border Grid.Row="1" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
                                     <Grid ColumnDefinitions="*, *, *">
-                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" 
-                                                Padding="0" FontSize="16" HorizontalAlignment="Stretch"
-                                                ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}"
-                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" 
-                                                CommandParameter="{Binding}" />
-                                        
-                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" 
-                                                Padding="0" FontSize="16" HorizontalAlignment="Stretch"
-                                                ToolTip.Tip="{local:Localize AppLauncher_MoveRight}"
-                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" 
-                                                CommandParameter="{Binding}" />
-                                        
-                                        <Button Grid.Column="2" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" 
-                                                Padding="0" FontSize="16" HorizontalAlignment="Stretch"
-                                                ToolTip.Tip="{local:Localize AppLauncher_Remove}"
-                                                Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" 
-                                                CommandParameter="{Binding}" />
+                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
+
+                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
+
+                                        <Button Grid.Column="2" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
                                     </Grid>
                                 </Border>
                             </Grid>
@@ -98,8 +77,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}"
-                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
+            <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
 
         </StackPanel>
     </ScrollViewer>

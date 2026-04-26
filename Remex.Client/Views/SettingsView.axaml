@@ -54,7 +54,8 @@
                    <Grid ColumnDefinitions="*,Auto">
                        <StackPanel Spacing="4">
                            <StackPanel Orientation="Horizontal" Spacing="8">
-                               <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                               <Ellipse Width="10" Height="10" VerticalAlignment="Center"
+                                        AutomationProperties.Name="{Binding ServiceStatusText}">
                                    <Ellipse.Fill>
                                        <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
                                    </Ellipse.Fill>

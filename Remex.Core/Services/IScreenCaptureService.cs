@@ -13,7 +13,7 @@ public interface IScreenCaptureService
     Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default);
 
     /// <summary>
-    /// Gets the native screen dimensions for the primary monitor.
+    /// Gets the native screen dimensions and virtual desktop offsets for the captured area.
     /// </summary>
-    (int Width, int Height) GetScreenSize();
+    (int Width, int Height, int Left, int Top) GetScreenSize();
 }

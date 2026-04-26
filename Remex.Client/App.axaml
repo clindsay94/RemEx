@@ -35,12 +35,12 @@
     <Application.Styles>
         <FluentTheme />
         <!-- Global Control Styles -->
-        
+
         <!-- Base Text Styling -->
         <Style Selector="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
-        
+
         <!-- Reusable Glassmorphic Card -->
         <Style Selector="Border.glass-card">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
@@ -57,7 +57,7 @@
                 </Transitions>
             </Setter>
         </Style>
-        
+
         <!-- Glass Card Hover Effect -->
         <Style Selector="Border.glass-card.interactive:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
@@ -139,14 +139,11 @@
             <Setter Property="RenderTransform" Value="scale(1.15)"/>
         </Style>
 
-        </Application.Styles>
+    </Application.Styles>
 
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="avares://Remex.Client/Assets/icon.png" 
-                      ToolTipText="Remex Desktop - Remote Execution"
-                      IsVisible="True"
-                      Clicked="OnTrayIconClicked">
+            <TrayIcon Icon="avares://Remex.Client/Assets/icon.png" ToolTipText="Remex Desktop - Remote Execution" IsVisible="True" Clicked="OnTrayIconClicked">
                 <TrayIcon.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="Show Main Window" Click="OnShowMainWindow" />

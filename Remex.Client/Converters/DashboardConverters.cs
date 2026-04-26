@@ -89,6 +89,28 @@ public class IntNotEqualConverter : IValueConverter
 }
 
 /// <summary>
+/// Converts a boolean to one of two strings.
+/// Pass "TrueString|FalseString" as the parameter (e.g. "✓|✕").
+/// </summary>
+public class BoolToStringConverter : IValueConverter
+{
+    public static readonly BoolToStringConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is bool b && parameter is string s)
+        {
+            var parts = s.Split('|');
+            return b ? parts[0] : (parts.Length > 1 ? parts[1] : string.Empty);
+        }
+        return string.Empty;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// Converts a double (latency ms) to a bar height for the mini chart.
 /// Clamps to a reasonable pixel range (2–60px).
 /// </summary>

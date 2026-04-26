@@ -1,11 +1,11 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- ═══ DARK GLASS DESIGN SYSTEM ═══ -->
-    
+
     <!-- Base Tints -->
     <Color x:Key="GlassBaseDark">#D90A0A10</Color>
     <Color x:Key="GlassBaseMedium">#F212121E</Color>
-    
+
     <!-- Background Gradients (Dark) -->
     <Color x:Key="BackgroundGradientStart">#1A0A2E</Color>
     <Color x:Key="BackgroundGradientMid">#0D1B2A</Color>
@@ -16,22 +16,22 @@
         <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
         <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
     </LinearGradientBrush>
-    
+
     <!-- Accents -->
     <Color x:Key="AccentPrimary">#6C4CFF</Color>
     <Color x:Key="AccentHover">#826AFF</Color>
     <Color x:Key="AccentPressed">#543BD9</Color>
-    
+
     <!-- Functional Colors -->
     <Color x:Key="SystemSuccess">#22C55E</Color>
     <Color x:Key="SystemError">#F43F5E</Color>
     <Color x:Key="SystemWarning">#F59E0B</Color>
-    
+
     <!-- Surfaces -->
     <Color x:Key="CardBackground">#1AFFFFFF</Color>
     <Color x:Key="CardBackgroundHover">#26FFFFFF</Color>
     <Color x:Key="CardBorder">#2AFFFFFF</Color>
-    
+
     <!-- Text Colors -->
     <Color x:Key="TextPrimary">#F8FAFC</Color>
     <Color x:Key="TextSecondary">#94A3B8</Color>

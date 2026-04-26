@@ -52,8 +52,8 @@
             <!-- ═══ HERO WELCOME SECTION ═══ -->
             <Border Classes="glass-card" Padding="0" ClipToBounds="True">
                 <Grid>
-                    <!-- Decorative gradient orb behind text -->
-                    <Rectangle Opacity="0.12" Name="HeroGlow">
+                    <!-- Decorative gradient orb behind text — hidden when reduced motion is on -->
+                    <Rectangle Opacity="0.12" Name="HeroGlow" IsVisible="{Binding !Shell.IsReducedMotion}">
                         <Rectangle.Fill>
                             <RadialGradientBrush Center="80%,30%" RadiusX="0.5" RadiusY="0.7">
                                 <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
@@ -94,30 +94,46 @@
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <!-- Status indicator -->
                                     <Border Width="36" Height="36" CornerRadius="18" VerticalAlignment="Center"
-                                            Background="{DynamicResource CardBackgroundBrush}">
-                                        <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <Ellipse.Fill>
-                                                <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
-                                            </Ellipse.Fill>
-                                            <!-- Pulse animation for connected state -->
-                                            <Ellipse.Styles>
-                                                <Style Selector="Ellipse">
-                                                    <Style.Animations>
-                                                        <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
-                                                            <KeyFrame KeyTime="0:0:0">
-                                                                <Setter Property="Opacity" Value="0.6"/>
-                                                            </KeyFrame>
-                                                            <KeyFrame KeyTime="0:0:1">
-                                                                <Setter Property="Opacity" Value="1.0"/>
-                                                            </KeyFrame>
-                                                            <KeyFrame KeyTime="0:0:2">
-                                                                <Setter Property="Opacity" Value="0.6"/>
-                                                            </KeyFrame>
-                                                        </Animation>
-                                                    </Style.Animations>
-                                                </Style>
-                                            </Ellipse.Styles>
-                                        </Ellipse>
+                                            Background="{DynamicResource CardBackgroundBrush}"
+                                            AutomationProperties.Name="{Binding Connection.StatusText}">
+                                        <Panel>
+                                            <!-- Pulse ring — only when connected and reduced-motion is off -->
+                                            <Ellipse Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     Opacity="0" IsVisible="{Binding ShowConnectionPulse}">
+                                                <Ellipse.Fill>
+                                                    <SolidColorBrush Color="#22C55E"/>
+                                                </Ellipse.Fill>
+                                                <Ellipse.Styles>
+                                                    <Style Selector="Ellipse">
+                                                        <Style.Animations>
+                                                            <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                                                <KeyFrame KeyTime="0:0:0">
+                                                                    <Setter Property="Opacity" Value="0"/>
+                                                                </KeyFrame>
+                                                                <KeyFrame KeyTime="0:0:1">
+                                                                    <Setter Property="Opacity" Value="0.35"/>
+                                                                </KeyFrame>
+                                                                <KeyFrame KeyTime="0:0:2">
+                                                                    <Setter Property="Opacity" Value="0"/>
+                                                                </KeyFrame>
+                                                            </Animation>
+                                                        </Style.Animations>
+                                                    </Style>
+                                                </Ellipse.Styles>
+                                            </Ellipse>
+                                            <!-- Static dot — always visible -->
+                                            <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Ellipse.Fill>
+                                                    <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <!-- Non-color glyph supplement -->
+                                            <TextBlock Text="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToStringConverter.Instance}, ConverterParameter=✓|✕}"
+                                                       FontSize="7" FontWeight="Black"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                                       Margin="0,0,0,2"
+                                                       Foreground="{DynamicResource TextMutedBrush}"/>
+                                        </Panel>
                                     </Border>
 
                                     <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
@@ -223,7 +239,8 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                            <Border Classes="glass-card interactive" Padding="16" Margin="0,0,8,8" MinWidth="160" MaxWidth="220">
+                            <Border Classes="glass-card interactive" Padding="16" Margin="0,0,8,8" MinWidth="160" MaxWidth="220"
+                                    AutomationProperties.HelpText="{Binding HistorySummary}">
                                 <Grid>
                                     <!-- Sparkline background -->
                                     <ctrl:SparklineControl History="{Binding History}" 

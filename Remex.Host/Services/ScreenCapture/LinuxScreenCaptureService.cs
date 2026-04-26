@@ -103,8 +103,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         }
     }
 
-    public (int Width, int Height) GetScreenSize() =>
-        _primaryWidth > 0 ? (_primaryWidth, _primaryHeight) : (_screenWidth, _screenHeight);
+    public (int Width, int Height, int Left, int Top) GetScreenSize() =>
+        _primaryWidth > 0 
+            ? (_primaryWidth, _primaryHeight, _primaryX, _primaryY) 
+            : (_screenWidth, _screenHeight, 0, 0);
 
     private async Task<int> CaptureWaylandAsync(string tool, string tmpFile, int quality,
         int captureWidth, int captureHeight, CancellationToken ct)

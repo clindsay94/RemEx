@@ -45,13 +45,23 @@ import com.google.android.material.color.utilities.SchemeVibrant
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    surfaceContainerHighest = Color(0xFF36343B),
+    surfaceContainerHigh = Color(0xFF2B2930),
+    surfaceContainer = Color(0xFF211F26),
+    surfaceContainerLow = Color(0xFF1D1B20),
+    surfaceContainerLowest = Color(0xFF0F0D13)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
-    tertiary = Pink40
+    tertiary = Pink40,
+    surfaceContainerHighest = Color(0xFFE6E1E5),
+    surfaceContainerHigh = Color(0xFFECE6EA),
+    surfaceContainer = Color(0xFFF3EDF1),
+    surfaceContainerLow = Color(0xFFF7F2F7),
+    surfaceContainerLowest = Color(0xFFFFFFFF)
 )
 
 val remexShapes = Shapes(

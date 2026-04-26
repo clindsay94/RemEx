@@ -214,7 +214,8 @@
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
                                         <TextBlock Text="{local:Localize Canvas_Connection}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Ellipse Width="10" Height="10">
+                                            <Ellipse Width="10" Height="10"
+                                                     AutomationProperties.Name="{Binding Connection.StatusText}">
                                                 <Ellipse.Fill>
                                                     <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
                                                 </Ellipse.Fill>

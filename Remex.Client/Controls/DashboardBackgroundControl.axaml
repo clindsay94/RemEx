@@ -9,13 +9,24 @@
         <ControlTemplate>
             <Grid x:DataType="vm:ShellViewModel">
                 <!-- ═══ Custom Gradient Mode ═══ -->
-                <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}">
+                <!-- Static base — always visible when gradient mode is active -->
+                <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}"
+                           Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8">
                     <Rectangle.Transitions>
                         <Transitions>
                             <DoubleTransition Property="Opacity" Duration="0:0:1" />
                         </Transitions>
                     </Rectangle.Transitions>
-
+                </Rectangle>
+                <!-- Animated opacity pulse — suppressed when reduced motion is on -->
+                <Rectangle Fill="{DynamicResource BackgroundGradientBrush}"
+                           x:Name="GradientAnimated">
+                    <Rectangle.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
+                            <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
+                        </MultiBinding>
+                    </Rectangle.IsVisible>
                     <Rectangle.Styles>
                         <Style Selector="Rectangle">
                             <Style.Animations>
@@ -38,7 +49,7 @@
                     <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
 
                     <!-- Animated aurora layer 1 — primary accent glow -->
-                    <Rectangle Name="AuroraLayer1">
+                    <Rectangle Name="AuroraLayer1" IsVisible="{Binding !IsReducedMotion}">
                         <Rectangle.Fill>
                             <RadialGradientBrush Center="25%,35%" RadiusX="0.65" RadiusY="0.75">
                                 <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
@@ -65,7 +76,7 @@
                         </Rectangle.Styles>
                     </Rectangle>
                     <!-- Animated aurora layer 2 — secondary accent sweep -->
-                    <Rectangle Name="AuroraLayer2">
+                    <Rectangle Name="AuroraLayer2" IsVisible="{Binding !IsReducedMotion}">
                         <Rectangle.Fill>
                             <RadialGradientBrush Center="72%,65%" RadiusX="0.70" RadiusY="0.60">
                                 <GradientStop Offset="0" Color="{DynamicResource AccentHover}" />
@@ -92,7 +103,7 @@
                         </Rectangle.Styles>
                     </Rectangle>
                     <!-- Accent glow top-center -->
-                    <Rectangle Name="AuroraLayer3">
+                    <Rectangle Name="AuroraLayer3" IsVisible="{Binding !IsReducedMotion}">
                         <Rectangle.Fill>
                             <RadialGradientBrush Center="50%,8%" RadiusX="0.55" RadiusY="0.45">
                                 <GradientStop Offset="0" Color="{DynamicResource AccentPressed}" />

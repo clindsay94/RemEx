@@ -23,7 +23,8 @@
                     <TextBlock Text="{local:Localize TrayFlyout_Header}" FontSize="11" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                     <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
-                <Ellipse Grid.Column="1" Width="8" Height="8" VerticalAlignment="Top" Margin="0,4,0,0">
+                <Ellipse Grid.Column="1" Width="8" Height="8" VerticalAlignment="Top" Margin="0,4,0,0"
+                         AutomationProperties.Name="{Binding Connection.StatusText}">
                     <Ellipse.Fill>
                         <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
                     </Ellipse.Fill>
@@ -35,7 +36,8 @@
                 <ItemsControl ItemsSource="{Binding PinnedSensors}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                            <Border Classes="widget-card" Margin="0,0,0,10" Height="80" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                            <Border Classes="widget-card" Margin="0,0,0,10" Height="80" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                                    AutomationProperties.HelpText="{Binding HistorySummary}">
                                 <Grid>
                                     <!-- Background Sparkline -->
                                     <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="#10FFFFFF" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" Opacity="0.25"/>

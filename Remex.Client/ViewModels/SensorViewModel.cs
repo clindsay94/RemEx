@@ -77,10 +77,23 @@ public partial class SensorViewModel : ObservableObject
     /// </summary>
     public double MaxSeenValue => _maxSeen == double.MinValue ? 100 : _maxSeen;
 
+    /// <summary>
+    /// Short accessible description of the sensor's current reading, e.g. "CPU Temp: 72 °C".
+    /// Used as AutomationProperties.HelpText on sensor cards.
+    /// </summary>
+    public string HistorySummary =>
+        string.IsNullOrWhiteSpace(Unit)
+            ? $"{Name}: {Value:F1}"
+            : $"{Name}: {Value:F1} {Unit}";
+
     partial void OnSelectedGraphTypeChanged(GraphType value)
     {
         OnPropertyChanged(nameof(ResolvedGraphType));
     }
+
+    partial void OnNameChanged(string value) => OnPropertyChanged(nameof(HistorySummary));
+    partial void OnValueChanged(double value) => OnPropertyChanged(nameof(HistorySummary));
+    partial void OnUnitChanged(string value) => OnPropertyChanged(nameof(HistorySummary));
 
     // ═══════════════ Commands ═══════════════
 

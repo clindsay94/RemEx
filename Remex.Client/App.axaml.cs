@@ -20,7 +20,7 @@ public partial class App : Application
 {
     private TrayFlyoutWindow? _flyout;
     public static IServiceProvider Services { get; private set; } = null!;
-    
+
     public static int? OverrideHostPort { get; set; }
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
     public static Func<Task>? StopEmbeddedHostAsync { get; set; }
@@ -200,7 +200,7 @@ public partial class App : Application
                 var viewModel = Services.GetRequiredService<ShellViewModel>();
                 desktop.MainWindow = new MainWindow { DataContext = viewModel };
             }
-            
+
             desktop.MainWindow.Show();
             desktop.MainWindow.Activate();
             desktop.MainWindow.WindowState = WindowState.Normal;

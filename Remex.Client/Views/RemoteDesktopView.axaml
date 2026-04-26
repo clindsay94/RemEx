@@ -64,7 +64,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!-- Left: Stream controls -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Button Content="{local:Localize Btn_Start}" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}"/>
+                        <Button Content="{local:Localize Btn_Start}" Command="{Binding StartStreamCommand}" Classes="rd-btn rd-btn-start" IsVisible="{Binding !IsStreaming}" IsEnabled="{Binding Connection.IsConnected}"/>
                         <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopStreamCommand}" Classes="rd-btn rd-btn-stop" IsVisible="{Binding IsStreaming}"/>
                     </StackPanel>
 

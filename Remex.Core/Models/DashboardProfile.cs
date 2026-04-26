@@ -104,6 +104,9 @@ public record DashboardProfile
     /// <summary>Whether the user has completed the first-run tutorial.</summary>
     public bool HasCompletedTutorial { get; init; }
 
+    /// <summary>Whether infinite/decorative animations should be suppressed for accessibility.</summary>
+    public bool IsReducedMotion { get; init; }
+
     /// <summary>Host screen capture JPEG quality (10–100). Applies to the stream sent to mobile clients.</summary>
     public int StreamQuality { get; init; } = 75;
 

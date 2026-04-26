@@ -111,7 +111,7 @@
 
             <!-- ═══ Graceful Controls ═══ -->
             <TextBlock Text="{local:Localize Remote_Graceful}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-            <UniformGrid Columns="2" Rows="3">
+            <UniformGrid Columns="2" Rows="3" IsEnabled="{Binding Connection.IsConnected}">
                 <Button Classes="remote-btn" Content="{local:Localize Remote_Lock}" Command="{Binding LockPcCommand}" Margin="0,0,4,4"/>
                 <Button Classes="remote-btn" Content="{local:Localize Remote_SignOut}" Command="{Binding SignOutPcCommand}" Margin="4,0,0,4"/>
                 <Button Classes="remote-btn remote-btn-warn" Content="{local:Localize Remote_Shutdown}" Command="{Binding ShutdownPcCommand}" Margin="0,4,4,0"/>
@@ -122,7 +122,7 @@
 
             <!-- ═══ Forced Controls ═══ -->
             <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="#FF6B6B" LetterSpacing="2"/>
-            <UniformGrid Columns="2" Rows="2">
+            <UniformGrid Columns="2" Rows="2" IsEnabled="{Binding Connection.IsConnected}">
                 <Button Classes="remote-btn remote-btn-danger" Content="{local:Localize Remote_ForceShutdown}" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,4"/>
                 <Button Classes="remote-btn remote-btn-danger" Content="{local:Localize Remote_ForceRestart}" Command="{Binding ForceRestartCommand}" Margin="4,0,0,4"/>
                 <Button Classes="remote-btn remote-btn-danger" Content="{local:Localize Remote_RebootUefi}" Command="{Binding RestartToUefiCommand}" Margin="0,4,4,0"/>

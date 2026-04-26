@@ -1,13 +1,13 @@
-<Styles xmlns="https://github.com/avaloniaui" 
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    
+<Styles xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
     <!-- ═══ Material 3 Design Tokens (Android Override) ═══ -->
     <Styles.Resources>
         <CornerRadius x:Key="M3CardCornerRadius">24</CornerRadius>
         <CornerRadius x:Key="M3ButtonCornerRadius">24</CornerRadius>
         <CornerRadius x:Key="M3PillCornerRadius">16</CornerRadius>
         <CornerRadius x:Key="M3InputCornerRadius">16</CornerRadius>
-        
+
         <!-- Elevation Shadows (M3 Style) -->
         <BoxShadows x:Key="M3Elevation1">0 1 3 1 #1A000000, 0 1 2 0 #33000000</BoxShadows>
         <BoxShadows x:Key="M3Elevation2">0 2 6 2 #1A000000, 0 1 2 0 #33000000</BoxShadows>
@@ -25,7 +25,7 @@
     </Styles.Resources>
 
     <!-- ═══ Base Component Overrides ═══ -->
-    
+
     <!-- Cards: Tonal Elevation approach (less shadow, rely on background color) -->
     <Style Selector="Border.glass-card">
         <Setter Property="CornerRadius" Value="{StaticResource M3CardCornerRadius}"/>
@@ -61,12 +61,12 @@
             </Transitions>
         </Setter>
     </Style>
-    
+
     <Style Selector="Button.nav-item-active Border.nav-pill">
         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
         <Setter Property="Opacity" Value="0.25"/>
     </Style>
-    
+
     <!-- Active Nav Text -->
     <Style Selector="Button.nav-item-active TextBlock">
         <Setter Property="FontWeight" Value="Bold"/>
@@ -78,7 +78,7 @@
         <Setter Property="FontFamily" Value="sans-serif"/>
         <Setter Property="LetterSpacing" Value="0.25"/>
     </Style>
-    
+
     <!-- Snappy Button Transitions (M3 Ripple emulation) -->
     <Style Selector="Button">
         <Setter Property="Transitions">
@@ -88,7 +88,7 @@
             </Transitions>
         </Setter>
     </Style>
-    
+
     <Style Selector="Button:pressed">
         <Setter Property="RenderTransform" Value="scale(0.95)"/>
         <!-- Emulate a ripple press state by slightly increasing opacity/lightness -->

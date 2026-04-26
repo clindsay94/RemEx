@@ -505,7 +505,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun sendInput(input: JSONObject) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (!RemexCoreClient.isLibraryLoaded) {
                 return@launch
             }

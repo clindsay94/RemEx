@@ -58,7 +58,8 @@
             <!-- Unified List Container (M3 Surface) -->
             <Border Classes="glass-card" Padding="0" ClipToBounds="True">
                 <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" 
-                         Background="Transparent" BorderThickness="0" CornerRadius="24">
+                         Background="Transparent" BorderThickness="0" CornerRadius="24"
+                         IsEnabled="{Binding Connection.IsConnected}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="models:ProcessInfo">
                             <!-- List Item Surface -->

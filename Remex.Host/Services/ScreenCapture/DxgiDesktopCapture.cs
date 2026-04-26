@@ -35,6 +35,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     public int Width  { get; private set; }
     public int Height { get; private set; }
+    public int DesktopLeft { get; private set; }
+    public int DesktopTop  { get; private set; }
     public bool IsAvailable => _duplOutput != IntPtr.Zero && !_disposed;
 
     // ── HRESULT constants ─────────────────────────────────────────────────────
@@ -98,6 +100,9 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private delegate int  ReleaseFrameFn(IntPtr self);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int  GetDescFn(IntPtr self, IntPtr pDesc);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate void CopyResourceFn(IntPtr self, IntPtr pDst, IntPtr pSrc);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -107,6 +112,23 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private delegate void UnmapFn(IntPtr self, IntPtr pResource, uint Subresource);
 
     // ── Structs ───────────────────────────────────────────────────────────────
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DXGI_OUTPUT_DESC
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string DeviceName;
+        public RECT DesktopCoordinates;
+        public bool AttachedToDesktop;
+        public int Rotation;
+        public IntPtr Monitor;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct D3D11_TEXTURE2D_DESC
@@ -213,6 +235,18 @@ internal sealed class DxgiDesktopCapture : IDisposable
             // IDXGIOutput → IDXGIOutput1
             hr = QueryInterface(output, IID_IDXGIOutput1, out output1);
             if (hr != S_OK) throw new InvalidOperationException($"QI IDXGIOutput1 hr=0x{hr:X8}");
+
+            // Read output position from IDXGIOutput::GetDesc (slot 8)
+            IntPtr outputDescPtr = Marshal.AllocHGlobal(Marshal.SizeOf<DXGI_OUTPUT_DESC>());
+            try
+            {
+                GetSlot<GetDescFn>(output, 8)(output, outputDescPtr);
+                var desc = Marshal.PtrToStructure<DXGI_OUTPUT_DESC>(outputDescPtr);
+                DesktopLeft = desc.DesktopCoordinates.Left;
+                DesktopTop  = desc.DesktopCoordinates.Top;
+                _logger.LogDebug("Captured monitor coordinates: ({L}, {T})", DesktopLeft, DesktopTop);
+            }
+            finally { Marshal.FreeHGlobal(outputDescPtr); }
 
             // IDXGIOutput1::DuplicateOutput = slot 22
             hr = GetSlot<DuplicateOutputFn>(output1, 22)(output1, _d3dDevice, out _duplOutput);

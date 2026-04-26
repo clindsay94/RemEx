@@ -104,6 +104,20 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _connectionBannerMessage = string.Empty;
 
+    /// <summary>
+    /// When true, all infinite/decorative animations are suppressed for users
+    /// who prefer reduced motion.  Persisted in the layout profile.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isReducedMotion;
+
+    partial void OnIsReducedMotionChanged(bool value)
+    {
+        var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+        var updated = current with { IsReducedMotion = value };
+        _layoutService.RequestSave(updated);
+    }
+
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
     private HomeViewModel? _homeViewModel;
@@ -133,6 +147,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         {
             Customization = _layoutService.CurrentProfile.Customization;
         }
+
+        // Load reduced-motion preference
+        if (_layoutService.CurrentProfile is { } profile)
+            _isReducedMotion = profile.IsReducedMotion;
 
         // Auto-hide the connection banner when the host connects
         _onConnectionChanged = (_, e) =>
