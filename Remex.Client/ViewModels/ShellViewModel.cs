@@ -105,6 +105,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private string _connectionBannerMessage = string.Empty;
 
     /// <summary>
+    /// When true, a dismissible banner is shown informing the user that the
+    /// layout profile could not be loaded and defaults were applied.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showLayoutLoadWarning;
+
+    /// <summary>Message shown in the layout load warning banner.</summary>
+    [ObservableProperty]
+    private string _layoutLoadWarningMessage = string.Empty;
+
+    /// <summary>
     /// When true, all infinite/decorative animations are suppressed for users
     /// who prefer reduced motion.  Persisted in the layout profile.
     /// </summary>
@@ -151,6 +162,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // Load reduced-motion preference
         if (_layoutService.CurrentProfile is { } profile)
             _isReducedMotion = profile.IsReducedMotion;
+
+        // Surface any layout load failure to the user via a dismissible banner.
+        if (!string.IsNullOrEmpty(_layoutService.LoadFailureWarning))
+        {
+            _layoutLoadWarningMessage = _layoutService.LoadFailureWarning;
+            _showLayoutLoadWarning = true;
+        }
 
         // Auto-hide the connection banner when the host connects
         _onConnectionChanged = (_, e) =>
@@ -271,6 +289,9 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     public void DismissConnectionBanner() => ShowConnectionBanner = false;
+
+    [RelayCommand]
+    public void DismissLayoutLoadWarning() => ShowLayoutLoadWarning = false;
 
     /// <summary>
     /// Shows the connection banner if the host is not connected.

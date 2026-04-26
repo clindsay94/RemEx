@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -28,10 +29,16 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     private const int DebounceMs = 2000;
 
     /// <summary>
-    /// The currently loaded dashboard profile. 
+    /// The currently loaded dashboard profile.
     /// Updated after calling <see cref="LoadAsync"/>.
     /// </summary>
     public DashboardProfile CurrentProfile { get; private set; } = new();
+
+    /// <summary>
+    /// Set when <see cref="LoadAsync"/> falls back to defaults due to a corrupt or unreadable file.
+    /// <c>null</c> when the last load succeeded.
+    /// </summary>
+    public string? LoadFailureWarning { get; private set; }
 
     public DashboardLayoutService(ThemeService themeService)
     {
@@ -72,9 +79,26 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             CurrentProfile = profile;
             return profile;
         }
-        catch
+        catch (Exception ex)
         {
-            // If the file is corrupt, return defaults rather than crashing.
+            Debug.WriteLine($"[RemexLayout] Failed to load profile from '{_filePath}': {ex.Message}");
+
+            // Rename the corrupt file so it isn't loaded again, but is preserved for diagnostics.
+            if (File.Exists(_filePath))
+            {
+                try
+                {
+                    var backupPath = _filePath + ".bak";
+                    File.Move(_filePath, backupPath, overwrite: true);
+                    Debug.WriteLine($"[RemexLayout] Corrupt profile renamed to '{backupPath}'");
+                }
+                catch (Exception moveEx)
+                {
+                    Debug.WriteLine($"[RemexLayout] Could not rename corrupt profile: {moveEx.Message}");
+                }
+            }
+
+            LoadFailureWarning = $"Dashboard layout could not be loaded ({ex.GetType().Name}). Defaults have been applied.";
             var profile = new DashboardProfile();
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;

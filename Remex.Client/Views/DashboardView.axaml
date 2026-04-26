@@ -157,8 +157,7 @@
             <TextBlock Classes="card-title" Text="{local:Localize Canvas_Connection}"/>
 
             <StackPanel Orientation="Horizontal" Margin="0 4 0 12">
-              <Ellipse Classes="status-dot"
-                       AutomationProperties.Name="{Binding Connection.StatusText}">
+              <Ellipse Classes="status-dot" AutomationProperties.Name="{Binding Connection.StatusText}">
                 <Ellipse.Fill>
                   <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
                 </Ellipse.Fill>
@@ -241,18 +240,24 @@
               <TabControl.ContentTemplate>
                 <DataTemplate x:DataType="vm:SensorGroupViewModel">
                   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="400" Margin="0,16,0,0">
-                    <ItemsControl ItemsSource="{Binding Sensors}">
-                      <ItemsControl.ItemsPanel>
+                    <ListBox ItemsSource="{Binding Sensors}" Background="Transparent" BorderThickness="0" Padding="0">
+                      <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                          <Setter Property="Padding" Value="0"/>
+                          <Setter Property="Background" Value="Transparent"/>
+                          <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                      </ListBox.Styles>
+                      <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                           <WrapPanel Orientation="Horizontal" Margin="0"/>
                         </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
+                      </ListBox.ItemsPanel>
 
-                      <ItemsControl.ItemTemplate>
+                      <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
                           <!-- ═══ Sensor Sparkline Sub-Card (dynamic size + theme + context menu) ═══ -->
-                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,6,6" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True"
-                                  AutomationProperties.HelpText="{Binding HistorySummary}">
+                          <Border Classes="sensor-card" Background="{Binding Theme.CardBackground, Converter={x:Static conv:HexToBrushConverter.Instance}}" CornerRadius="6" Padding="12" Margin="0,0,6,6" Width="{Binding CardWidth}" Height="{Binding CardHeight}" ClipToBounds="True" AutomationProperties.HelpText="{Binding HistorySummary}">
 
                             <!-- ═══ Right-Click Context Menu ═══ -->
                             <Border.ContextMenu>
@@ -303,8 +308,8 @@
                             </Grid>
                           </Border>
                         </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </ScrollViewer>
                 </DataTemplate>
               </TabControl.ContentTemplate>

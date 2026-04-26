@@ -3,8 +3,7 @@
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:conv="using:Remex.Client.Converters"
     xmlns:ctrl="using:Remex.Client.Controls"
-    xmlns:local="clr-namespace:Remex.Client.Converters"
-    x:Class="Remex.Client.Views.HomeView" x:DataType="vm:HomeViewModel">
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.HomeView" x:DataType="vm:HomeViewModel">
 
     <UserControl.Styles>
         <!-- Quick-action pill buttons -->
@@ -83,23 +82,18 @@
                                 <TextBlock Text="REM" FontSize="42" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <TextBlock Text="EX" FontSize="42" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                             </StackPanel>
-                            <TextBlock Text="{local:Localize Home_Subtitle}" FontSize="11" FontWeight="Bold" 
-                                       Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4" Opacity="0.7"/>
+                            <TextBlock Text="{local:Localize Home_Subtitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4" Opacity="0.7"/>
                         </StackPanel>
 
                         <!-- Connection status inline -->
-                        <Border CornerRadius="12" Padding="16,12" Margin="0,4,0,0"
-                                Background="{DynamicResource CardBackgroundBrush}">
+                        <Border CornerRadius="12" Padding="16,12" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}">
                             <StackPanel Spacing="12">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <!-- Status indicator -->
-                                    <Border Width="36" Height="36" CornerRadius="18" VerticalAlignment="Center"
-                                            Background="{DynamicResource CardBackgroundBrush}"
-                                            AutomationProperties.Name="{Binding Connection.StatusText}">
+                                    <Border Width="36" Height="36" CornerRadius="18" VerticalAlignment="Center" Background="{DynamicResource CardBackgroundBrush}" AutomationProperties.Name="{Binding Connection.StatusText}">
                                         <Panel>
                                             <!-- Pulse ring — only when connected and reduced-motion is off -->
-                                            <Ellipse Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Opacity="0" IsVisible="{Binding ShowConnectionPulse}">
+                                            <Ellipse Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" IsVisible="{Binding ShowConnectionPulse}">
                                                 <Ellipse.Fill>
                                                     <SolidColorBrush Color="#22C55E"/>
                                                 </Ellipse.Fill>
@@ -128,56 +122,30 @@
                                                 </Ellipse.Fill>
                                             </Ellipse>
                                             <!-- Non-color glyph supplement -->
-                                            <TextBlock Text="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToStringConverter.Instance}, ConverterParameter=✓|✕}"
-                                                       FontSize="7" FontWeight="Black"
-                                                       HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                                                       Margin="0,0,0,2"
-                                                       Foreground="{DynamicResource TextMutedBrush}"/>
+                                            <TextBlock Text="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToStringConverter.Instance}, ConverterParameter=✓|✕}" FontSize="7" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,2" Foreground="{DynamicResource TextMutedBrush}"/>
                                         </Panel>
                                     </Border>
 
                                     <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Connection.StatusText}" FontSize="15" FontWeight="Bold"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12"
-                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Connection.StatusText}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
-                                        <Button Classes="action-pill action-pill-accent" Content="{local:Localize Btn_Connect}"
-                                                Command="{Binding Connection.ConnectCommand}"
-                                                IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8"
-                                                ToolTip.Tip="{local:Localize Home_ConnectTooltip}"/>
-                                        <Button Classes="action-pill action-pill-danger" Content="{local:Localize Btn_Cancel}"
-                                                Command="{Binding Connection.DisconnectCommand}"
-                                                IsVisible="{Binding Connection.IsConnecting}" Padding="16,8"
-                                                ToolTip.Tip="{local:Localize Home_CancelTooltip}"/>
-                                        <Button Classes="action-pill" Content="{local:Localize Home_QrCodeButton}"
-                                                Command="{Binding Connection.GenerateQrCodeCommand}"
-                                                Padding="16,8"
-                                                ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
+                                        <Button Classes="action-pill action-pill-accent" Content="{local:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Padding="16,8" ToolTip.Tip="{local:Localize Home_ConnectTooltip}"/>
+                                        <Button Classes="action-pill action-pill-danger" Content="{local:Localize Btn_Cancel}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Padding="16,8" ToolTip.Tip="{local:Localize Home_CancelTooltip}"/>
+                                        <Button Classes="action-pill" Content="{local:Localize Home_QrCodeButton}" Command="{Binding Connection.GenerateQrCodeCommand}" Padding="16,8" ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
                                     </StackPanel>
                                 </Grid>
 
                                 <!-- QR Code panel — visible after GenerateQrCode is invoked -->
-                                <Border IsVisible="{Binding Connection.ShowQrCode}"
-                                        HorizontalAlignment="Center">
+                                <Border IsVisible="{Binding Connection.ShowQrCode}" HorizontalAlignment="Center">
                                     <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                        <TextBlock Text="{local:Localize Home_QrCodeScanHint}"
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{local:Localize Home_QrCodeScanHint}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                                         <Border Background="White" CornerRadius="4" Padding="8">
-                                            <Image Source="{Binding Connection.QrCodeImage}"
-                                                   Width="220" Height="220"
-                                                   Stretch="Uniform"/>
+                                            <Image Source="{Binding Connection.QrCodeImage}" Width="220" Height="220" Stretch="Uniform"/>
                                         </Border>
-                                        <Button Content="{local:Localize Close}"
-                                                Command="{Binding Connection.CloseQrCodeCommand}"
-                                                HorizontalAlignment="Center"
-                                                Background="Transparent"
-                                                Foreground="{DynamicResource TextMutedBrush}"
-                                                FontSize="11" Padding="8,4" BorderThickness="0"/>
+                                        <Button Content="{local:Localize Close}" Command="{Binding Connection.CloseQrCodeCommand}" HorizontalAlignment="Center" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Padding="8,4" BorderThickness="0"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -188,36 +156,27 @@
 
             <!-- ═══ QUICK ACTIONS ROW ═══ -->
             <StackPanel Spacing="6">
-                <TextBlock Text="{local:Localize Home_QuickActions}" FontSize="10" FontWeight="Bold" 
-                           Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
+                <TextBlock Text="{local:Localize Home_QuickActions}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
                 <WrapPanel Orientation="Horizontal">
-                    <Button Classes="action-pill action-pill-accent" Margin="0,0,8,8"
-                            Command="{Binding NavigateToCanvasCommand}"
-                            ToolTip.Tip="{local:Localize Home_SensorWorkspaceTooltip}">
+                    <Button Classes="action-pill action-pill-accent" Margin="0,0,8,8" Command="{Binding NavigateToCanvasCommand}" ToolTip.Tip="{local:Localize Home_SensorWorkspaceTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="▦" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="{local:Localize Home_SensorWorkspace}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToRemoteCommand}"
-                            ToolTip.Tip="{local:Localize Home_PcRemoteTooltip}">
+                    <Button Classes="action-pill" Margin="0,0,8,8" Command="{Binding NavigateToRemoteCommand}" ToolTip.Tip="{local:Localize Home_PcRemoteTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="⏻" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="{local:Localize Home_PcRemote}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToAppLauncherCommand}"
-                            ToolTip.Tip="{local:Localize Home_LauncherTooltip}">
+                    <Button Classes="action-pill" Margin="0,0,8,8" Command="{Binding NavigateToAppLauncherCommand}" ToolTip.Tip="{local:Localize Home_LauncherTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="◈" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="{local:Localize Home_Launcher}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Classes="action-pill" Margin="0,0,8,8"
-                            Command="{Binding NavigateToTaskManagerCommand}"
-                            ToolTip.Tip="{local:Localize Home_TasksTooltip}">
+                    <Button Classes="action-pill" Margin="0,0,8,8" Command="{Binding NavigateToTaskManagerCommand}" ToolTip.Tip="{local:Localize Home_TasksTooltip}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="▤" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text="{local:Localize Home_Tasks}" VerticalAlignment="Center"/>
@@ -228,58 +187,47 @@
 
             <!-- ═══ PINNED SENSORS ═══ -->
             <StackPanel Spacing="10" IsVisible="{Binding PinnedSensors.Count}">
-                <TextBlock Text="{local:Localize Home_LiveTelemetry}" FontSize="10" FontWeight="Bold" 
-                           Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
+                <TextBlock Text="{local:Localize Home_LiveTelemetry}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" Margin="4,0,0,0"/>
 
-                <ItemsControl ItemsSource="{Binding PinnedSensors}">
-                    <ItemsControl.ItemsPanel>
+                <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal"/>
                         </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:SensorViewModel">
-                            <Border Classes="glass-card interactive" Padding="16" Margin="0,0,8,8" MinWidth="160" MaxWidth="220"
-                                    AutomationProperties.HelpText="{Binding HistorySummary}">
+                            <Border Classes="glass-card interactive" Padding="16" Margin="0,0,8,8" MinWidth="160" MaxWidth="220" AutomationProperties.HelpText="{Binding HistorySummary}">
                                 <Grid>
                                     <!-- Sparkline background -->
-                                    <ctrl:SparklineControl History="{Binding History}" 
-                                                           GraphType="{Binding ResolvedGraphType}" 
-                                                           AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" 
-                                                           TrackBrush="{DynamicResource TextMutedBrush}" 
-                                                           CurrentValue="{Binding Value}" 
-                                                           MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" 
-                                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
-                                                           Opacity="0.12" Margin="0,0,0,-8"/>
+                                    <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Value}" MinSeen="{Binding MinSeenValue}" MaxSeen="{Binding MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.12" Margin="0,0,0,-8"/>
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold"
-                                                   Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"
-                                                   LetterSpacing="0.5" ToolTip.Tip="{Binding Name}"/>
+                                        <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis" LetterSpacing="0.5" ToolTip.Tip="{Binding Name}"/>
                                         <StackPanel Orientation="Horizontal" Spacing="2">
-                                            <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="28" FontWeight="Black" 
-                                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                            <TextBlock Text="{Binding Unit}" FontSize="11" 
-                                                       Foreground="{DynamicResource TextSecondaryBrush}" 
-                                                       VerticalAlignment="Bottom" Margin="0,0,0,5"/>
+                                            <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Unit}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,5"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
                             </Border>
                         </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </StackPanel>
 
             <!-- ═══ NO SENSORS HINT ═══ -->
             <Border Classes="glass-card" Padding="20" IsVisible="{Binding !PinnedSensors.Count}" Opacity="0.7">
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
-                    <TextBlock Text="▦" FontSize="32" HorizontalAlignment="Center" 
-                               Foreground="{DynamicResource TextMutedBrush}"/>
-                    <TextBlock Text="{local:Localize Home_NoPinnedSensors}" FontSize="14" FontWeight="SemiBold" 
-                               HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" 
-                               FontSize="12" Foreground="{DynamicResource TextMutedBrush}" 
-                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="▦" FontSize="32" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <TextBlock Text="{local:Localize Home_NoPinnedSensors}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 

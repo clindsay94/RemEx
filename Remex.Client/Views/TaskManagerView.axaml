@@ -1,10 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Remex.Client.ViewModels"
-             xmlns:models="using:Remex.Core.Models"
-             xmlns:local="clr-namespace:Remex.Client.Converters"
-             x:Class="Remex.Client.Views.TaskManagerView"
-             x:DataType="vm:TaskManagerViewModel">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Client.ViewModels"
+    xmlns:models="using:Remex.Core.Models"
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.TaskManagerView" x:DataType="vm:TaskManagerViewModel">
 
     <UserControl.Styles>
         <Style Selector="ListBoxItem">
@@ -40,36 +38,23 @@
 
             <!-- Search and Sort Controls -->
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
-                <TextBox Text="{Binding SearchText}" Watermark="{local:Localize TaskMgr_SearchPlaceholder}" 
-                         Background="{DynamicResource GlassBaseDarkBrush}" 
-                         Foreground="{DynamicResource TextPrimaryBrush}" 
-                         BorderBrush="{DynamicResource CardBorderBrush}"
-                         CornerRadius="16" Padding="16,10" FontSize="13" 
-                         VerticalAlignment="Center"/>
+                <TextBox Text="{Binding SearchText}" Watermark="{local:Localize TaskMgr_SearchPlaceholder}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" VerticalAlignment="Center"/>
 
-                <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name"
-                        Content="{local:Localize TaskMgr_SortName}" Classes="sort-btn" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu"
-                        Content="{local:Localize TaskMgr_SortCpu}" Classes="sort-btn" VerticalAlignment="Center"/>
-                <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory"
-                        Content="{local:Localize TaskMgr_SortRam}" Classes="sort-btn" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name" Content="{local:Localize TaskMgr_SortName}" Classes="sort-btn" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu" Content="{local:Localize TaskMgr_SortCpu}" Classes="sort-btn" VerticalAlignment="Center"/>
+                <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="sort-btn" VerticalAlignment="Center"/>
             </Grid>
 
             <!-- Unified List Container (M3 Surface) -->
             <Border Classes="glass-card" Padding="0" ClipToBounds="True">
-                <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" 
-                         Background="Transparent" BorderThickness="0" CornerRadius="24"
-                         IsEnabled="{Binding Connection.IsConnected}">
+                <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent" BorderThickness="0" CornerRadius="24" IsEnabled="{Binding Connection.IsConnected}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="models:ProcessInfo">
                             <!-- List Item Surface -->
                             <Border Background="Transparent" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
                                 <Border.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="{local:Localize TaskMgr_KillProcess}"
-                                                  Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}"
-                                                  CommandParameter="{Binding}" 
-                                                  Foreground="#FF6B6B" />
+                                        <MenuItem Header="{local:Localize TaskMgr_KillProcess}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}" Foreground="#FF6B6B" />
                                     </ContextMenu>
                                 </Border.ContextMenu>
 

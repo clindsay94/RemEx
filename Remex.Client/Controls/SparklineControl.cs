@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
+using Avalonia.VisualTree;
 using Remex.Core.Models;
 
 namespace Remex.Client.Controls;
@@ -116,6 +117,16 @@ public class SparklineControl : Control
 
             InvalidateVisual();
         }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        // Unsubscribe from the live data collection when recycled or removed,
+        // so virtualized items don't keep accumulating listeners.
+        if (History is INotifyCollectionChanged ncc)
+            ncc.CollectionChanged -= OnHistoryCollectionChanged;
     }
 
     private void UpdateBrushes()
