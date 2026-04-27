@@ -97,7 +97,7 @@ fun AboutScreen() {
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = R.mipmap.remex_icon_foreground),
                     contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier.size(80.dp)
                 )
