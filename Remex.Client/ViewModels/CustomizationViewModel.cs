@@ -37,9 +37,29 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         return null;
     }
 
-    // TODO(human): Implement VibrateCardCornerRadius(double target) and VibrateRemoteCornerRadius(double target)
-    // Each should briefly jitter the appropriate property around 'target' to give a tactile snap feel,
-    // then settle at 'target' and call ApplyAndSave(). Use _isSnapping to guard against recursion.
+    private async Task VibrateCardCornerRadius(double target)
+    {
+        _isSnapping = true;
+        await Dispatcher.UIThread.InvokeAsync(() => CornerRadius = Math.Clamp(target + 1.2, 0, 32));
+        await Task.Delay(32);
+        await Dispatcher.UIThread.InvokeAsync(() => CornerRadius = Math.Clamp(target - 1.2, 0, 32));
+        await Task.Delay(32);
+        await Dispatcher.UIThread.InvokeAsync(() => CornerRadius = target);
+        _isSnapping = false;
+        ApplyAndSave();
+    }
+
+    private async Task VibrateRemoteCornerRadius(double target)
+    {
+        _isSnapping = true;
+        await Dispatcher.UIThread.InvokeAsync(() => RemoteCardCornerRadius = Math.Clamp(target + 1.2, 0, 48));
+        await Task.Delay(32);
+        await Dispatcher.UIThread.InvokeAsync(() => RemoteCardCornerRadius = Math.Clamp(target - 1.2, 0, 48));
+        await Task.Delay(32);
+        await Dispatcher.UIThread.InvokeAsync(() => RemoteCardCornerRadius = target);
+        _isSnapping = false;
+        ApplyAndSave();
+    }
 
     public ObservableCollection<string> AvailableBackgroundTypes { get; } = new();
 
