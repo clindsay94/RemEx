@@ -141,6 +141,8 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     _processes.value = list
                 } catch (e: Exception) {
                     Log.w("TaskManagerVM", "Failed to parse process list", e)
+                } finally {
+                    _isRefreshing.value = false
                 }
             }
         }
@@ -190,7 +192,9 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                 _isRefreshing.value = true
                 val request = JSONObject().apply { put("type", "process_list_request") }
                 RemexCoreClient.SendMessage(request.toString())
-                delay(1000) // Ensure spinner is visible long enough
+                // Spinner cleared by processList collector when data arrives.
+                // Safety net: clear after 5s in case host doesn't respond.
+                delay(5000)
                 _isRefreshing.value = false
             }
         }
