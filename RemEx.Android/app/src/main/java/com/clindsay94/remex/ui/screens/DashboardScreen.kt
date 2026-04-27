@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -794,34 +795,46 @@ private fun TelemetryCardContent(
                         )
                     }
                     TelemetryDisplayMode.GAUGE -> {
+                        val (minR, maxR) = getSuggestedRange(sensor?.unit ?: "", history)
                         Sparkline(
                                 data = history,
                                 modifier = Modifier.fillMaxSize().padding(8.dp),
                                 color = MaterialTheme.colorScheme.primary,
-                                isArea = false
+                                isArea = false,
+                                minRange = minR,
+                                maxRange = maxR
                         )
                     }
                     TelemetryDisplayMode.LINE -> {
+                        val (minR, maxR) = getSuggestedRange(sensor?.unit ?: "", history)
                         Sparkline(
                                 data = history,
                                 modifier = Modifier.fillMaxSize().padding(8.dp),
                                 color = MaterialTheme.colorScheme.primary,
-                                isArea = false
+                                isArea = false,
+                                minRange = minR,
+                                maxRange = maxR
                         )
                     }
                     TelemetryDisplayMode.BAR -> {
+                        val (minR, maxR) = getSuggestedRange(sensor?.unit ?: "", history)
                         BarChart(
                                 data = history,
                                 modifier = Modifier.fillMaxSize().padding(8.dp),
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                minRange = minR,
+                                maxRange = maxR
                         )
                     }
                     TelemetryDisplayMode.AREA -> {
+                        val (minR, maxR) = getSuggestedRange(sensor?.unit ?: "", history)
                         Sparkline(
                                 data = history,
                                 modifier = Modifier.fillMaxSize().padding(8.dp),
                                 color = MaterialTheme.colorScheme.primary,
-                                isArea = true
+                                isArea = true,
+                                minRange = minR,
+                                maxRange = maxR
                         )
                     }
                     TelemetryDisplayMode.CIRCLE_GAUGE -> {
@@ -835,6 +848,28 @@ private fun TelemetryCardContent(
             }
         }
     }
+}
+
+private fun getSuggestedRange(unit: String, data: List<Float>): Pair<Float, Float> {
+    if (data.isEmpty()) return 0f to 100f
+    
+    if (unit == "%") return 0f to 100f
+    
+    val dataMin = data.minOrNull() ?: 0f
+    val dataMax = data.maxOrNull() ?: 100f
+    
+    if (unit.contains("°")) {
+        // Temperature: use at least a 20 degree spread to avoid jitter, 
+        // but ensure we cover the data.
+        val center = (dataMin + dataMax) / 2f
+        val spread = (dataMax - dataMin).coerceAtLeast(20f)
+        return (center - spread / 2f) to (center + spread / 2f)
+    }
+    
+    // Default: auto-scale with 10% padding and at least 1 unit range
+    val rawRange = (dataMax - dataMin)
+    val range = rawRange.coerceAtLeast(1f)
+    return (dataMin - range * 0.1f) to (dataMax + range * 0.1f)
 }
 
 private fun formatSensorValue(value: Double, unit: String): String {
@@ -888,15 +923,29 @@ fun CircleGauge(value: Float, modifier: Modifier = Modifier, color: Color = Colo
 }
 
 @Composable
-fun BarChart(data: List<Float>, modifier: Modifier = Modifier, color: Color = Color.Cyan) {
+fun BarChart(
+    data: List<Float>, 
+    modifier: Modifier = Modifier, 
+    color: Color = Color.Cyan,
+    minRange: Float? = null,
+    maxRange: Float? = null
+) {
     Canvas(modifier = modifier) {
         if (data.isEmpty()) return@Canvas
-        val max = data.maxOrNull()?.coerceAtLeast(1f) ?: 1f
+        
+        val dataMax = data.maxOrNull() ?: 1f
+        val dataMin = data.minOrNull() ?: 0f
+        
+        val min = minRange ?: dataMin
+        val max = maxRange ?: dataMax
+        val range = (max - min).coerceAtLeast(1f)
+        
         val barWidth = size.width / (data.size.coerceAtLeast(1) * 1.5f)
         val spacing = barWidth / 2f
         
         data.forEachIndexed { index, value ->
-            val barHeight = (value / max) * size.height
+            val normalized = ((value - min) / range).coerceIn(0f, 1f)
+            val barHeight = normalized * size.height
             val x = index * (barWidth + spacing)
             drawRect(
                 color = color.copy(alpha = 0.6f + (index.toFloat() / data.size) * 0.4f),
@@ -908,20 +957,30 @@ fun BarChart(data: List<Float>, modifier: Modifier = Modifier, color: Color = Co
 }
 
 @Composable
-fun Sparkline(data: List<Float>, modifier: Modifier = Modifier, color: Color = Color.Cyan, isArea: Boolean = false) {
+fun Sparkline(
+    data: List<Float>, 
+    modifier: Modifier = Modifier, 
+    color: Color = Color.Cyan, 
+    isArea: Boolean = false,
+    minRange: Float? = null,
+    maxRange: Float? = null
+) {
     val lineColor by animateColorAsState(targetValue = color, label = "sparkline")
     Canvas(modifier = modifier) {
         if (data.size < 2) return@Canvas
         val path = Path()
         val areaPath = Path()
         
-        val max = data.maxOrNull() ?: 100f
-        val min = data.minOrNull() ?: 0f
+        val dataMax = data.maxOrNull() ?: 100f
+        val dataMin = data.minOrNull() ?: 0f
+        
+        val min = minRange ?: dataMin
+        val max = maxRange ?: dataMax
         val range = (max - min).coerceAtLeast(1f)
 
         data.forEachIndexed { index, value ->
             val x = index * (size.width / (data.size - 1))
-            val normalized = (value - min) / range
+            val normalized = ((value - min) / range).coerceIn(0f, 1f)
             val y = size.height - (normalized * size.height)
             
             if (index == 0) {

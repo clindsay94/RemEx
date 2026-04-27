@@ -122,11 +122,6 @@ fun TaskManagerScreenContent(
             modifier = modifier.fillMaxSize().padding(innerPadding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                NotConnectedBanner(
-                    isConnected = uiState.isConnected,
-                    onNavigateToConnection = onNavigateToConnection
-                )
-
                 SearchBar(
                     query = uiState.searchQuery,
                     onUpdateQuery = onUpdateSearchQuery,

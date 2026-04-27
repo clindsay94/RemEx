@@ -14,6 +14,7 @@
     <!-- ═══ Navigation ═══ -->
     <string name="snackbar_no_pc_connected">No PC connected</string>
     <string name="snackbar_setup_connection">Set up connection</string>
+    <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">More</string>
     <string name="cd_settings_fab">Settings</string>
 

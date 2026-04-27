@@ -73,6 +73,7 @@ import com.clindsay94.remex.ui.screens.ConnectionViewModel
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
 import com.clindsay94.remex.ui.screens.FloatingMouseIsland
+import com.clindsay94.remex.ui.screens.NotConnectedBanner
 import com.clindsay94.remex.ui.screens.PersonalizationScreen
 import com.clindsay94.remex.ui.screens.QrScannerScreen
 import com.clindsay94.remex.ui.screens.RemoteControlScreen
@@ -232,6 +233,18 @@ private fun AppNavigationContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    var showDisconnectionBanner by remember { mutableStateOf(false) }
+
+    // Global Disconnection Banner logic (3s delay)
+    LaunchedEffect(isConnected) {
+        if (!isConnected) {
+            kotlinx.coroutines.delay(3000)
+            showDisconnectionBanner = !isConnected
+        } else {
+            showDisconnectionBanner = false
+        }
+    }
+
     val showNav =
             currentRoute != Screen.Splash.route &&
                     currentRoute != Screen.Tutorial.route &&
@@ -296,6 +309,12 @@ private fun AppNavigationContent(
 
     fun navigateTo(route: String) {
         if (!isConnected && route in connectionRequiredRoutes) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.connection_required_context),
+                    duration = SnackbarDuration.Short
+                )
+            }
             navigateToConnection()
         } else {
             navController.navigate(route) {
@@ -343,11 +362,25 @@ private fun AppNavigationContent(
                             }
                         }
         ) {
-            NavHost(
-                    navController = navController,
-                    startDestination = startDestination,
-                    modifier = Modifier.fillMaxSize()
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                AnimatedVisibility(
+                    visible = showDisconnectionBanner && showNav && currentRoute != Screen.Connection.route,
+                    enter = slideInVertically { -it } + fadeIn(),
+                    exit = slideOutVertically { -it } + fadeOut()
+                ) {
+                    NotConnectedBanner(
+                        isConnected = false, // If we're showing it, it's because we're not connected
+                        onNavigateToConnection = { navigateToConnection() },
+                        useDelay = false
+                    )
+                }
+                
+                Box(modifier = Modifier.weight(1f)) {
+                    NavHost(
+                            navController = navController,
+                            startDestination = startDestination,
+                            modifier = Modifier.fillMaxSize()
+                    ) {
                 composable(Screen.Splash.route) {
                     SplashScreen(
                             onFinished = {

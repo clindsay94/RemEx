@@ -121,11 +121,6 @@ fun AppLauncherScreenContent(
             modifier = modifier.fillMaxSize().padding(innerPadding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                NotConnectedBanner(
-                    isConnected = uiState.isConnected,
-                    onNavigateToConnection = onNavigateToConnection
-                )
-
                 if (!uiState.isConnected && uiState.apps.isEmpty()) {
                     DisconnectedFullScreen(
                         screenName = stringResource(R.string.screen_app_launcher_title),

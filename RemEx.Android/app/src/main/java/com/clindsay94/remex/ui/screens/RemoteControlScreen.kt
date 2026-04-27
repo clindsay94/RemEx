@@ -192,11 +192,6 @@ fun RemoteControlScreenContent(
         ) {
             item(span = { GridItemSpan(2) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    NotConnectedBanner(
-                        isConnected = uiState.isConnected,
-                        onNavigateToConnection = onNavigateToConnection
-                    )
-
                     Text(
                         text = stringResource(R.string.remote_control_section_header),
                         style = MaterialTheme.typography.headlineSmall,

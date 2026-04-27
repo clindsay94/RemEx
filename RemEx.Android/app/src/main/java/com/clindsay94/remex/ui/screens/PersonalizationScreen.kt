@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList

@@ -106,11 +106,6 @@ fun RemoteMouseScreenContent(
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            NotConnectedBanner(
-                    isConnected = uiState.isConnected,
-                    onNavigateToConnection = onNavigateToConnection
-            )
-
             Column(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
