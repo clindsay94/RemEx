@@ -92,6 +92,14 @@ class AppLauncherViewModel(
     private val _isRefreshing = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            remexClientManager.launcherEntries.collect {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     fun refreshApps() {
         viewModelScope.launch(Dispatchers.IO) {
             if (remexCoreClient.isLibraryLoaded) {
@@ -100,7 +108,9 @@ class AppLauncherViewModel(
                     put("type", "launcher_sync_request")
                 }
                 remexCoreClient.SendMessage(request.toString())
-                kotlinx.coroutines.delay(1000)
+                // Spinner cleared by the launcherEntries collector when data arrives.
+                // Safety net: clear after 5s in case host doesn't respond.
+                kotlinx.coroutines.delay(5000)
                 _isRefreshing.value = false
             }
         }

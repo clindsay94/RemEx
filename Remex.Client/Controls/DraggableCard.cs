@@ -85,6 +85,7 @@ public class DraggableCard : ContentControl
             _trackedCardVm = cardVm;
             cardVm.PropertyChanged += OnCardViewModelPropertyChanged;
             UpdateSelectedClass(cardVm.IsSelected);
+            UpdateAlertClass(cardVm.IsAlertActive);
         }
     }
 

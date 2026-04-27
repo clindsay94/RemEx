@@ -124,9 +124,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     put("startTelemetryPolling", true)
                 }
                 val result = RemexCoreClient.InitRemex(initRequest.toString())
-                val json = JSONObject(result)
-                if (!json.optBoolean("success", false)) {
+                if (result.isBlank()) {
                     _isConnecting.value = false
+                } else {
+                    val json = JSONObject(result)
+                    if (!json.optBoolean("success", false)) {
+                        _isConnecting.value = false
+                    }
                 }
             } else {
                 _isConnecting.value = false
