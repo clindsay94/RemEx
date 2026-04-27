@@ -45,6 +45,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     // ═══════════════ Sensor Alerts ═══════════════
 
     private readonly Dictionary<string, SensorAlert> _sensorAlerts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _subscribedSensorNames = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Raised when a sensor crosses its configured threshold.</summary>
     public event Action<SensorAlert>? SensorAlertFired;
@@ -381,11 +382,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             GridSize = _profile.GridSize;
 
             // Restore sensor alerts from profile.
-            foreach (var alert in _profile.SensorAlerts)
+            foreach (var alert in _profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>())
                 _sensorAlerts[alert.SensorName] = alert;
 
             // Restore non-sensor cards from profile.
-            foreach (var state in _profile.Cards.Where(c => c.CardType != "Sensor"))
+            foreach (var state in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType != "Sensor"))
             {
                 var card = CanvasCardViewModel.FromCardState(state);
                 card.CardTitle = state.CardType;
@@ -625,6 +626,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
         card.IsPinnedToHome = !card.IsPinnedToHome;
 
+        if (_profile.PinnedSensorIds == null)
+        {
+            _profile = _profile with { PinnedSensorIds = new() };
+        }
+
         if (card.IsPinnedToHome)
         {
             if (!_profile.PinnedSensorIds.Contains(sensorName, StringComparer.OrdinalIgnoreCase))
@@ -671,6 +677,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _layoutStatus = string.Empty;
+
+    // ═══════════════ P8-I: Snapshot Export Status ═══════════════
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSnapshotStatus))]
+    private string _snapshotStatus = string.Empty;
+
+    public bool HasSnapshotStatus => !string.IsNullOrEmpty(SnapshotStatus);
+
+    /// <summary>Called by the view after a successful snapshot export or clipboard copy.</summary>
+    public void SetSnapshotStatus(string message)
+    {
+        SnapshotStatus = message;
+        _ = Task.Delay(4000).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() => SnapshotStatus = string.Empty));
+    }
 
     /// <summary>
     /// Explicitly saves the current layout to disk and pushes it to the host (if connected).
@@ -750,8 +772,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
 
-                    // Subscribe to alert events to trigger card flash and shell badge.
-                    sensor.AlertTriggered += OnSensorAlertTriggered;
+                    // Subscribe once per sensor name to prevent duplicate firings on reconnect.
+                    if (_subscribedSensorNames.Add(sensorName))
+                        sensor.AlertTriggered += OnSensorAlertTriggered;
 
                     // Keep one reusable template in staging so users can add more cards.
                     var staged = new CanvasCardViewModel
@@ -766,7 +789,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     StagedCards.Add(staged);
 
                     // Restore every persisted card for this sensor.
-                    foreach (var saved in _profile.Cards.Where(c => c.CardType == "Sensor" && c.SensorId == sensorName))
+                    foreach (var saved in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType == "Sensor" && c.SensorId == sensorName))
                     {
                         if (Cards.Any(c => c.CardId == saved.CardId))
                         {
@@ -776,7 +799,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         var restored = CanvasCardViewModel.FromCardState(saved);
                         restored.CardTitle = sensorName;
                         restored.Sensor = sensor;
-                        restored.IsPinnedToHome = _profile.PinnedSensorIds.Contains(sensorName);
+                        var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+                        restored.IsPinnedToHome = pinnedIds.Contains(sensorName);
                         restored.RequestPinToggle = () => TogglePinToHome(restored);
                         Cards.Add(restored);
                         TrackZIndex(saved.ZIndex);
@@ -944,7 +968,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
         GridSize = profile.GridSize;
 
-        var profileCardIds = profile.Cards
+        var profileCardIds = (profile.Cards ?? Enumerable.Empty<CardState>())
             .Select(c => c.CardId)
             .Where(id => !string.IsNullOrWhiteSpace(id))
             .ToHashSet(StringComparer.Ordinal);
@@ -954,7 +978,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             Cards.Remove(existing);
         }
 
-        foreach (var state in profile.Cards)
+        foreach (var state in profile.Cards ?? Enumerable.Empty<CardState>())
         {
             var existing = Cards.FirstOrDefault(c => c.CardId == state.CardId);
 
@@ -965,7 +989,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 existing.Width = state.Width;
                 existing.Height = state.Height;
                 existing.ZIndex = state.ZIndex;
-                existing.IsPinnedToHome = profile.PinnedSensorIds.Contains(existing.Sensor?.Name ?? state.SensorId ?? "");
+                var pinnedIds = profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+                existing.IsPinnedToHome = pinnedIds.Contains(existing.Sensor?.Name ?? state.SensorId ?? "");
                 existing.RequestPinToggle = () => TogglePinToHome(existing);
                 continue;
             }
@@ -993,7 +1018,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             var restored = CanvasCardViewModel.FromCardState(state);
             restored.CardTitle = state.SensorId ?? "Sensor";
             restored.Sensor = sensor;
-            restored.IsPinnedToHome = profile.PinnedSensorIds.Contains(state.SensorId ?? "");
+            var pinnedIds2 = profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+            restored.IsPinnedToHome = pinnedIds2.Contains(state.SensorId ?? "");
             restored.RequestPinToggle = () => TogglePinToHome(restored);
             Cards.Add(restored);
             TrackZIndex(restored.ZIndex);

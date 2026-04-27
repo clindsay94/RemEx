@@ -1,45 +1,32 @@
 package com.clindsay94.remex.ui.screens
 
-import androidx.compose.animation.*
 import android.view.HapticFeedbackConstants
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.animation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
-import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
+import com.clindsay94.remex.ui.theme.cardShape
 
 data class TaskManagerUiState(
     val processes: List<ProcessInfo> = emptyList(),
@@ -58,28 +45,26 @@ fun TaskManagerScreen(
     onNavigateToConnection: () -> Unit = {},
     viewModel: TaskManagerViewModel = viewModel()
 ) {
-    val processes by viewModel.processes.collectAsState()
+    val processList by viewModel.processes.collectAsState(initial = emptyList())
+    val isConnected by viewModel.isConnected.collectAsState(initial = false)
+    val isRefreshing by viewModel.isRefreshing.collectAsState(initial = false)
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortField by viewModel.sortField.collectAsState()
     val sortDescending by viewModel.sortDescending.collectAsState()
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
-    val isConnected by RemexClientManager.isConnected.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-
-    val uiState = TaskManagerUiState(
-        processes = processes,
-        searchQuery = searchQuery,
-        sortField = sortField,
-        sortDescending = sortDescending,
-        shapePreset = shapePreset,
-        cornerRadius = cornerRadius,
-        isConnected = isConnected,
-        isRefreshing = isRefreshing
-    )
 
     TaskManagerScreenContent(
-        uiState = uiState,
+        uiState = TaskManagerUiState(
+            processes = processList,
+            searchQuery = searchQuery,
+            sortField = sortField,
+            sortDescending = sortDescending,
+            shapePreset = shapePreset,
+            cornerRadius = cornerRadius,
+            isConnected = isConnected,
+            isRefreshing = isRefreshing
+        ),
         onRefreshProcesses = { viewModel.refreshProcesses() },
         onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
         onUpdateSortField = { viewModel.updateSortField(it) },
@@ -104,7 +89,22 @@ fun TaskManagerScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.screen_task_manager_title)) },
+                title = {
+                    Column {
+                        Text(
+                            stringResource(R.string.screen_task_manager_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (uiState.isConnected) {
+                            Text(
+                                stringResource(R.string.status_connected),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
                 actions = {
                     IconButton(onClick = {
                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -127,40 +127,17 @@ fun TaskManagerScreenContent(
                     onNavigateToConnection = onNavigateToConnection
                 )
 
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = onUpdateSearchQuery,
-                    label = { Text(stringResource(R.string.task_manager_search_hint)) },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                SearchBar(
+                    query = uiState.searchQuery,
+                    onUpdateQuery = onUpdateSearchQuery,
                     shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius)
                 )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SortChip(stringResource(R.string.sort_name), uiState.sortField == ProcessSortField.NAME, uiState.sortDescending) {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onUpdateSortField(ProcessSortField.NAME)
-                    }
-                    SortChip(stringResource(R.string.sort_cpu), uiState.sortField == ProcessSortField.CPU, uiState.sortDescending) {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onUpdateSortField(ProcessSortField.CPU)
-                    }
-                    SortChip(stringResource(R.string.sort_ram), uiState.sortField == ProcessSortField.RAM, uiState.sortDescending) {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onUpdateSortField(ProcessSortField.RAM)
-                    }
-                    SortChip(stringResource(R.string.sort_pid), uiState.sortField == ProcessSortField.PID, uiState.sortDescending) {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onUpdateSortField(ProcessSortField.PID)
-                    }
-                }
+                FilterSortSection(
+                    currentSortField = uiState.sortField,
+                    sortDescending = uiState.sortDescending,
+                    onUpdateSortField = onUpdateSortField
+                )
 
                 if (!uiState.isConnected && uiState.processes.isEmpty()) {
                     DisconnectedFullScreen(
@@ -168,30 +145,38 @@ fun TaskManagerScreenContent(
                         onNavigateToConnection = onNavigateToConnection,
                         modifier = Modifier.weight(1f)
                     )
-                } else if (uiState.processes.isEmpty()) {
+                } else if (uiState.processes.isEmpty() && uiState.isRefreshing) {
                     Box(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator()
+                            CircularProgressIndicator(strokeCap = StrokeCap.Round)
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(stringResource(R.string.task_manager_fetching), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(R.string.task_manager_fetching),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 } else {
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + expandVertically()
+                    val maxRam = remember(uiState.processes) { uiState.processes.maxOfOrNull { it.ram } ?: 1.0 }
+                    val maxCpu = remember(uiState.processes) { uiState.processes.maxOfOrNull { it.cpu } ?: 1.0 }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        val maxRam = remember(uiState.processes) { uiState.processes.maxOfOrNull { it.ram } ?: 1.0 }
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            item {
-                                ProcessHeader()
-                            }
-                            items(uiState.processes, key = { it.id }) { process ->
-                                ProcessItem(process = process, maxRam = maxRam, onKill = { onKillProcess(process.id) })
-                            }
+                        items(uiState.processes, key = { it.id }) { process ->
+                            ProcessCard(
+                                process = process,
+                                maxRam = maxRam,
+                                maxCpu = maxCpu,
+                                shapePreset = uiState.shapePreset,
+                                cornerRadius = uiState.cornerRadius,
+                                onKill = { onKillProcess(process.id) }
+                            )
                         }
                     }
                 }
@@ -201,39 +186,112 @@ fun TaskManagerScreenContent(
 }
 
 @Composable
-private fun SortChip(label: String, selected: Boolean, descending: Boolean, onClick: () -> Unit) {
-    AssistChip(
-        onClick = onClick,
-        label = {
-            if (selected) {
-                Text("$label ${if (descending) "↓" else "↑"}")
-            } else {
-                Text(label)
-            }
-        }
-    )
-}
-
-@Composable
-private fun ProcessHeader() {
-    Row(
+private fun SearchBar(query: String, onUpdateQuery: (String) -> Unit, shape: Shape) {
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = shape
     ) {
-        Text(stringResource(R.string.task_manager_header_name), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.task_manager_header_cpu), modifier = Modifier.width(60.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.task_manager_header_ram), modifier = Modifier.width(80.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.width(48.dp))
+        TextField(
+            value = query,
+            onValueChange = onUpdateQuery,
+            placeholder = { Text(stringResource(R.string.task_manager_search_hint)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onUpdateQuery("") }) {
+                        Icon(Icons.Default.Close, contentDescription = null)
+                    }
+                }
+            },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
 @Composable
-private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit) {
+private fun FilterSortSection(
+    currentSortField: ProcessSortField,
+    sortDescending: Boolean,
+    onUpdateSortField: (ProcessSortField) -> Unit
+) {
+    val view = LocalView.current
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.sort_by),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 4.dp)
+            )
+        }
+        val fields = listOf(
+            ProcessSortField.CPU to R.string.sort_cpu,
+            ProcessSortField.RAM to R.string.sort_ram,
+            ProcessSortField.NAME to R.string.sort_name,
+            ProcessSortField.PID to R.string.sort_pid
+        )
+        items(fields) { (field, labelRes) ->
+            SortChip(
+                label = stringResource(labelRes),
+                selected = currentSortField == field,
+                descending = sortDescending,
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    onUpdateSortField(field)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SortChip(label: String, selected: Boolean, descending: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        trailingIcon = {
+            if (selected) {
+                Icon(
+                    imageVector = if (descending) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        },
+        shape = MaterialTheme.shapes.medium
+    )
+}
+
+@Composable
+private fun ProcessCard(
+    process: ProcessInfo,
+    maxRam: Double,
+    maxCpu: Double,
+    shapePreset: Float,
+    cornerRadius: Int,
+    onKill: () -> Unit
+) {
     val view = LocalView.current
     var showConfirm by remember { mutableStateOf(false) }
+    val adaptivePadding = calculateAdaptivePadding(shapePreset)
 
     if (showConfirm) {
         AlertDialog(
@@ -241,12 +299,15 @@ private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit
             title = { Text(stringResource(R.string.task_manager_kill_title)) },
             text = { Text(stringResource(R.string.task_manager_kill_message, process.name, process.id)) },
             confirmButton = {
-                TextButton(onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.REJECT)
-                    onKill()
-                    showConfirm = false
-                }) {
-                    Text(stringResource(R.string.button_kill), color = MaterialTheme.colorScheme.error)
+                Button(
+                    onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                        onKill()
+                        showConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.button_kill))
                 }
             },
             dismissButton = {
@@ -257,59 +318,105 @@ private fun ProcessItem(process: ProcessInfo, maxRam: Double, onKill: () -> Unit
         )
     }
 
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = process.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = stringResource(R.string.task_manager_pid_label, process.id),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Column(modifier = Modifier.width(60.dp)) {
-            Text(text = "${process.cpu.toInt()}%", style = MaterialTheme.typography.bodyMedium)
-            LinearProgressIndicator(
-                progress = { (process.cpu / 100.0).toFloat().coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(2.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        }
-        Column(modifier = Modifier.width(80.dp)) {
-            Text(text = "${process.ram.toInt()}MB", style = MaterialTheme.typography.bodyMedium)
-            LinearProgressIndicator(
-                progress = { (process.ram / maxRam).toFloat().coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(2.dp),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        }
-
-        IconButton(onClick = {
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = com.clindsay94.remex.ui.theme.cardShape(shapePreset, cornerRadius),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        onClick = {
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
             showConfirm = true
-        }) {
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(adaptivePadding),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = process.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(R.string.task_manager_pid_label, process.id),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Resource Usage Bars
+            Column(
+                modifier = Modifier.width(100.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                UsageIndicator(
+                    label = "CPU",
+                    value = "${process.cpu.toInt()}%",
+                    progress = (process.cpu / 100.0).toFloat().coerceIn(0f, 1f),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                UsageIndicator(
+                    label = "RAM",
+                    value = "${process.ram.toInt()}MB",
+                    progress = (process.ram / maxRam).toFloat().coerceIn(0f, 1f),
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             Icon(
-                Icons.Default.Close,
-                contentDescription = stringResource(R.string.cd_kill_process),
-                tint = MaterialTheme.colorScheme.error
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
-    )
+}
+
+@Composable
+private fun UsageIndicator(label: String, value: String, progress: Float, color: Color) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = color
+            )
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(CircleShape),
+            color = color,
+            trackColor = color.copy(alpha = 0.1f),
+            strokeCap = StrokeCap.Round
+        )
+    }
 }

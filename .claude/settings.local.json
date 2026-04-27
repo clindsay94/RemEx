@@ -8,7 +8,12 @@
       "Bash(dotnet-ildasm /home/connorl/.nuget/packages/materialcolorutilities/0.3.0/lib/net6.0/MaterialColorUtilities.dll)",
       "Bash(git diff *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git -C /home/connorl/RemEx diff main...HEAD --name-only)",
+      "Bash(grep -v \"\\\\.class$\")",
+      "Bash(grep -v \"\\\\.so$\")",
+      "Bash(dotnet build *)",
+      "Bash(./gradlew compileDebugKotlin)"
     ]
   },
   "outputStyle": "Learning"

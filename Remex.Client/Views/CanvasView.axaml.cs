@@ -1,6 +1,10 @@
 using System;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
 using Remex.Client.Controls;
 using Remex.Client.ViewModels;
 
@@ -89,16 +93,23 @@ public partial class CanvasView : UserControl
 
     private async void OnShowSetAlertRequested(string sensorName, Remex.Core.Models.SensorAlert? existing)
     {
-        if (DataContext is not CanvasDashboardViewModel vm) return;
+        try
+        {
+            if (DataContext is not CanvasDashboardViewModel vm) return;
 
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is not Window ownerWindow) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is not Window ownerWindow) return;
 
-        Remex.Core.Models.SensorAlert? result = null;
-        var dialog = new SetAlertDialog(sensorName, existing, r => result = r);
-        await dialog.ShowDialog(ownerWindow);
+            Remex.Core.Models.SensorAlert? result = null;
+            var dialog = new SetAlertDialog(sensorName, existing, r => result = r);
+            await dialog.ShowDialog(ownerWindow);
 
-        vm.ApplySensorAlert(sensorName, result);
+            vm.ApplySensorAlert(sensorName, result);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CanvasView] SetAlert dialog error: {ex.Message}");
+        }
     }
 
     // ═══════════════ Viewport size tracking ═══════════════
@@ -112,6 +123,69 @@ public partial class CanvasView : UserControl
         if (DataContext is CanvasDashboardViewModel vm)
         {
             vm.CanvasViewWidth = e.NewSize.Width;
+        }
+    }
+
+    // ═══════════════ Snapshot Export (P8-I) ═══════════════
+
+    private void OnExportSnapshot(object? sender, RoutedEventArgs e)
+    {
+        var canvas = this.FindControl<ZoomableCanvas>("MainCanvas");
+        if (canvas is null) return;
+
+        try
+        {
+            var pixelSize = new PixelSize((int)canvas.Bounds.Width, (int)canvas.Bounds.Height);
+            if (pixelSize.Width <= 0 || pixelSize.Height <= 0) return;
+
+            var rtb = new RenderTargetBitmap(pixelSize);
+            rtb.Render(canvas);
+
+            var pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            var fileName = $"Remex_Snapshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+            var filePath = Path.Combine(pictures, fileName);
+
+            rtb.Save(filePath);
+
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Saved to {fileName}");
+        }
+        catch (Exception ex)
+        {
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Export failed: {ex.Message}");
+        }
+    }
+
+    private void OnCopySnapshot(object? sender, RoutedEventArgs e)
+    {
+        var canvas = this.FindControl<ZoomableCanvas>("MainCanvas");
+        if (canvas is null) return;
+
+        try
+        {
+            var pixelSize = new PixelSize((int)canvas.Bounds.Width, (int)canvas.Bounds.Height);
+            if (pixelSize.Width <= 0 || pixelSize.Height <= 0) return;
+
+            var rtb = new RenderTargetBitmap(pixelSize);
+            rtb.Render(canvas);
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel?.Clipboard is null)
+            {
+                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Clipboard unavailable");
+                return;
+            }
+
+            // Save to a temp file and put the path on the clipboard
+            var tempPath = Path.Combine(Path.GetTempPath(), "remex_snapshot_tmp.png");
+            rtb.Save(tempPath);
+
+            _ = topLevel.Clipboard.SetTextAsync(tempPath);
+
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Copied to clipboard");
+        }
+        catch (Exception ex)
+        {
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Copy failed: {ex.Message}");
         }
     }
 }

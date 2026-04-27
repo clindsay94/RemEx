@@ -58,9 +58,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     fun initialize(context: Context) {
         if (settingsManager != null) return
-        
+
         settingsManager = SettingsManager(context)
-        
+
         // Start Global Connection Heartbeat with exponential backoff.
         // Interval = min(BASE_DELAY_MS * 2^failures, MAX_DELAY_MS).
         // The failure counter resets to 0 whenever the device is connected.
@@ -123,7 +123,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     put("accessKey", key)
                     put("startTelemetryPolling", true)
                 }
-                RemexCoreClient.InitRemex(initRequest.toString())
+                val result = RemexCoreClient.InitRemex(initRequest.toString())
+                val json = JSONObject(result)
+                if (!json.optBoolean("success", false)) {
+                    _isConnecting.value = false
+                }
             } else {
                 _isConnecting.value = false
             }
@@ -156,11 +160,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onFrameReceived(frame: ByteArray) {
         // Log frame arrival (keep it compact to avoid logcat flooding)
-        if (System.currentTimeMillis() % 1000 < 50) { 
+        if (System.currentTimeMillis() % 1000 < 50) {
             Log.d("RemexManager", "onFrameReceived: ${frame.size} bytes")
         }
 
-        // Defensive copy to prevent native side from overwriting buffer 
+        // Defensive copy to prevent native side from overwriting buffer
         // while we are still processing it in the ViewModel coroutine.
         _frames.tryEmit(frame.copyOf())
     }

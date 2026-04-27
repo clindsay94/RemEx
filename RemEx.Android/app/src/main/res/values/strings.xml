@@ -101,6 +101,7 @@
     <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">Task Manager</string>
     <string name="task_manager_search_hint">Search process name or PID</string>
+    <string name="sort_by">Sort by:</string>
     <string name="sort_name">Name</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>

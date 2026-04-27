@@ -194,6 +194,46 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
     return MorphPolygonShape(morph, progress)
 }
 
+fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
+    val shapeIndex = shapePreset.toInt()
+    val progress = shapePreset - shapeIndex
+
+    // Define "safety" of each shape. 1.0 = safe (square), 0.0 = very unsafe (extreme clipping)
+    val shapeSafety = listOf(
+        0.55f, // Circle (corners cut off significantly)
+        1.00f, // Square (perfectly safe)
+        0.30f, // Triangle (extreme corner clipping)
+        0.45f, // Diamond (heavy corner clipping)
+        0.65f, // Pentagon
+        0.75f, // Arch
+        0.65f, // Semi-Circle
+        0.85f, // Pill
+        0.80f, // Slanted
+        0.70f, // Fan
+        0.65f, // Clam Shell
+        0.55f, // Gem
+        0.40f, // Heart (top-center and bottom-center clipping)
+        0.50f, // Flower
+        0.65f, // Puffy
+        0.55f, // Puffy Diamond
+        0.65f, // Ghostish
+        0.65f, // Oval
+        0.55f, // 4-Leaf Clover
+        0.55f, // 8-Leaf Clover
+        0.45f, // Sunny
+        0.55f, // Soft Burst
+        0.65f, // Soft Boom
+        0.75f  // Pixel Circle
+    )
+
+    val currentSafety = shapeSafety.getOrElse(shapeIndex) { 0.6f }
+    val nextSafety = shapeSafety.getOrElse(shapeIndex + 1) { currentSafety }
+    val safety = currentSafety + (nextSafety - currentSafety) * progress
+
+    // Base padding is 8dp, max padding for unsafe shapes is 24dp
+    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety)
+}
+
 fun colorSchemeFromSeed(
     seedColor: Color,
     darkTheme: Boolean,

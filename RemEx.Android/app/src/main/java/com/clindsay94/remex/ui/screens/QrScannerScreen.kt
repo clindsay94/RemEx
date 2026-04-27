@@ -18,6 +18,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -55,7 +57,22 @@ fun QrScannerScreen(
         hasCameraPermission = granted
     }
 
-    LaunchedEffect(Unit) {
+    // Re-check permission on resume (in case user went to settings)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasCameraPermission = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(hasCameraPermission) {
         if (!hasCameraPermission) {
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
@@ -72,14 +89,8 @@ fun QrScannerScreen(
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(Unit) {
         onDispose {
-            // Explicitly unbind all use cases and cleanup scanner resources
-            try {
-                if (cameraProviderFuture.isDone) {
-                    cameraProviderFuture.get().unbindAll()
-                }
-            } catch (_: Exception) { }
             analysisExecutor.shutdown()
             barcodeScanner.close()
         }
@@ -108,16 +119,11 @@ fun QrScannerScreen(
             if (hasCameraPermission) {
                 AndroidView(
                     factory = { ctx ->
-                        PreviewView(ctx).apply {
-                            // COMPATIBLE mode (TextureView) is often more reliable than PERFORMANCE (SurfaceView)
-                            // in Compose layouts, especially for avoiding black screens on navigation transitions.
+                        val previewView = PreviewView(ctx).apply {
                             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                             scaleType = PreviewView.ScaleType.FILL_CENTER
                         }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { previewView ->
-                        // The binding logic should be triggered when the view is ready
+
                         cameraProviderFuture.addListener({
                             val cameraProvider = try {
                                 cameraProviderFuture.get()
@@ -171,7 +177,6 @@ fun QrScannerScreen(
                             }
 
                             try {
-                                // IMPORTANT: Unbind previous uses before binding new ones to avoid conflicts
                                 cameraProvider.unbindAll()
                                 cameraProvider.bindToLifecycle(
                                     lifecycleOwner,
@@ -183,7 +188,10 @@ fun QrScannerScreen(
                                 android.util.Log.e("QrScanner", "Camera binding failed", e)
                             }
                         }, ContextCompat.getMainExecutor(context))
-                    }
+
+                        previewView
+                    },
+                    modifier = Modifier.fillMaxSize()
                 )
 
                 // Scanning hint overlay

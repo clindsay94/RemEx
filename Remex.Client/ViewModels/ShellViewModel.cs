@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -101,6 +102,50 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         AlertNotifications.Clear();
     }
 
+    // ═══════════════ Tray Tooltip Summary ═══════════════
+
+    /// <summary>
+    /// Formatted one-liner shown as the tray icon tooltip.
+    /// Example: "Remex — CPU: 54°C · RAM: 67% · Connected"
+    /// </summary>
+    [ObservableProperty]
+    private string _trayStatusSummary = "Remex";
+
+    /// <summary>Recomputes <see cref="TrayStatusSummary"/> from the latest telemetry snapshot.</summary>
+    public void UpdateTrayStatus(Remex.Core.Messages.TelemetryPayload? telemetry)
+    {
+        var connectionLabel = Connection.IsConnected ? "Connected" : "Disconnected";
+
+        if (telemetry?.Sensors is not { Count: > 0 })
+        {
+            TrayStatusSummary = $"Remex — {connectionLabel}";
+            return;
+        }
+
+        var pinned = _layoutService.CurrentProfile?.PinnedSensorIds
+                     ?? Enumerable.Empty<string>();
+
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (var id in pinned)
+        {
+            if (parts.Count >= 2) break;
+            var r = telemetry.Sensors.FirstOrDefault(s => s.Name == id);
+            if (r != null)
+                parts.Add($"{r.Name.Split(' ')[0]}: {r.Value:F0}{r.Unit}");
+        }
+
+        if (parts.Count == 0)
+        {
+            // Fall back to the first two sensors in the payload
+            foreach (var r in telemetry.Sensors.Take(2))
+                parts.Add($"{r.Name.Split(' ')[0]}: {r.Value:F0}{r.Unit}");
+        }
+
+        TrayStatusSummary = parts.Count > 0
+            ? $"Remex — {string.Join(" · ", parts)} · {connectionLabel}"
+            : $"Remex — {connectionLabel}";
+    }
+
     /// <summary>Index of the active navigation item (for highlight).</summary>
     [ObservableProperty]
     private int _activeNavIndex;
@@ -170,6 +215,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
+    private int _lastSensorCardCount = -1;
     private HomeViewModel? _homeViewModel;
     private CanvasDashboardViewModel? _canvasViewModel;
     private SettingsViewModel? _settingsViewModel;
@@ -536,9 +582,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         if (_settingsViewModel is null)
         {
             _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this);
-            _ = _settingsViewModel.InitializeAsync();
+            _ = _settingsViewModel.InitializeAsync(); // InitializeAsync calls RefreshSensors itself
+            _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
+            return;
         }
-        _settingsViewModel.RefreshSensors();
+
+        // Only rebuild the sensor list when the canvas sensor card count changes,
+        // avoiding 50+ CollectionChanged events on every Settings panel open.
+        var currentCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
+        if (currentCount != _lastSensorCardCount)
+        {
+            _lastSensorCardCount = currentCount;
+            _settingsViewModel.RefreshSensors();
+        }
     }
 
     private void EnsureCustomizationVm()

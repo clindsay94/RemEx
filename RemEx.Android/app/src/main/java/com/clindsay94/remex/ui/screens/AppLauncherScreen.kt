@@ -42,6 +42,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 
 data class AppLauncherUiState(
@@ -169,7 +170,8 @@ fun AppLauncherScreenContent(
                         items(uiState.apps, key = { it.name + it.path }) { app ->
                             AppGridItem(
                                 app = app,
-                                shape = cardShape(uiState.shapePreset, uiState.cornerRadius),
+                                shapePreset = uiState.shapePreset,
+                                cornerRadius = uiState.cornerRadius,
                                 onClick = {
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     onLaunchApp(app)
@@ -208,9 +210,13 @@ fun AppLauncherScreenPreview() {
 @Composable
 fun AppGridItem(
     app: AppEntry,
-    shape: androidx.compose.ui.graphics.Shape,
+    shapePreset: Float,
+    cornerRadius: Int,
     onClick: () -> Unit
 ) {
+    val shape = cardShape(shapePreset, cornerRadius)
+    val adaptivePadding = calculateAdaptivePadding(shapePreset)
+
     Card(
         onClick = onClick,
         shape = shape,
@@ -219,7 +225,7 @@ fun AppGridItem(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(adaptivePadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

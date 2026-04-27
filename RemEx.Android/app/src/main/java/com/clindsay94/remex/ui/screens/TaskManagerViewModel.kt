@@ -75,6 +75,8 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     20
             )
 
+    val isConnected: StateFlow<Boolean> = RemexClientManager.isConnected
+
     private val _processes = MutableStateFlow<List<ProcessInfo>>(emptyList())
     private val _searchQuery = MutableStateFlow("")
     private val _sortField = MutableStateFlow(ProcessSortField.CPU)
@@ -177,6 +179,11 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private val _killError = MutableStateFlow<String?>(null)
+    val killError: StateFlow<String?> = _killError.asStateFlow()
+
+    fun clearKillError() { _killError.value = null }
+
     fun refreshProcesses() {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
@@ -204,7 +211,16 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                                     }
                             )
                         }
-                val result = RemexCoreClient.SendCommand(request.toString())
+                val responseJson = RemexCoreClient.SendCommand(request.toString())
+                val success = try {
+                    responseJson.isNotBlank() &&
+                        JSONObject(responseJson).optBoolean("commandSuccess", true)
+                } catch (_: Exception) {
+                    responseJson.isNotBlank()
+                }
+                if (!success) {
+                    _killError.value = "Failed to kill process $pid"
+                }
                 // Request a fresh process list immediately; the host will respond
                 // via the processList SharedFlow when it's ready.
                 refreshProcesses()

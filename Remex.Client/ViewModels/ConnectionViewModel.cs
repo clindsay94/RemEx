@@ -78,6 +78,9 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// <summary>Hosts discovered via mDNS; populated after <see cref="DiscoverHostsCommand"/> completes.</summary>
     public ObservableCollection<string> DiscoveredHosts { get; } = new();
 
+    /// <summary>Recently used connection addresses (most-recent first, max 10).</summary>
+    public ObservableCollection<Remex.Core.Models.ConnectionProfile> ConnectionHistory { get; } = new();
+
     private readonly IMdnsDiscoveryService? _discoveryService;
     private readonly Remex.Client.Services.DashboardLayoutService? _layoutService;
     private readonly ILogger<ConnectionViewModel> _logger;
@@ -120,33 +123,32 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         StatusText = LocalizationService.Instance["Status_SearchingHosts"];
         var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
+        var defaultAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
         Dispatcher.UIThread.Post(() =>
         {
             DiscoveredHosts.Clear();
             foreach (var host in foundHosts)
                 DiscoveredHosts.Add(host);
-        });
 
-        if (foundHosts.Any())
-        {
-            var firstHost = foundHosts.First();
-            // Only overwrite if current address is default or empty
-            var defaultAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
-            if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
+            if (foundHosts.Any())
             {
-                HostAddress = firstHost;
-                StatusText = string.Format(LocalizationService.Instance["Status_FoundHostFormat"], firstHost);
+                var firstHost = foundHosts.First();
+                if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
+                {
+                    HostAddress = firstHost;
+                    StatusText = string.Format(LocalizationService.Instance["Status_FoundHostFormat"], firstHost);
+                }
+                else
+                {
+                    StatusText = string.Format(LocalizationService.Instance["Status_FoundMultipleHostsFormat"], foundHosts.Count);
+                }
             }
             else
             {
-                StatusText = string.Format(LocalizationService.Instance["Status_FoundMultipleHostsFormat"], foundHosts.Count);
+                StatusText = LocalizationService.Instance["Status_NoHostsFound"];
             }
-        }
-        else
-        {
-            StatusText = LocalizationService.Instance["Status_NoHostsFound"];
-        }
+        });
     }
 
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
@@ -269,6 +271,32 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     }
 
     private bool CanConnect() => !IsConnected && !IsConnecting;
+
+    private void SaveConnectionToHistory()
+    {
+        const int MaxHistoryEntries = 10;
+        var address = HostAddress;
+
+        var existing = ConnectionHistory.FirstOrDefault(h => h.HostAddress == address);
+        if (existing != null)
+            ConnectionHistory.Remove(existing);
+
+        ConnectionHistory.Insert(0, new Remex.Core.Models.ConnectionProfile
+        {
+            Name = address,
+            HostAddress = address,
+            LastConnected = DateTime.Now
+        });
+
+        while (ConnectionHistory.Count > MaxHistoryEntries)
+            ConnectionHistory.RemoveAt(ConnectionHistory.Count - 1);
+
+        if (_layoutService != null)
+        {
+            var profile = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+            _layoutService.RequestSave(profile with { ConnectionHistory = ConnectionHistory.ToList() });
+        }
+    }
     private bool CanDisconnect() => IsConnected || IsConnecting;
 
     public System.Net.WebSockets.WebSocket? GetWebSocket() => _webSocket;
@@ -390,6 +418,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             IsConnecting = false;
             StatusText = LocalizationService.Instance["Status_Connected"];
             LatencyText = "—";
+
+            SaveConnectionToHistory();
 
             // Start background receive loop.
             _ = ReceiveLoopAsync(_receiveCts.Token);

@@ -520,12 +520,14 @@ private fun MiniCardPreview(seedColor: String, shapePreset: Float, cornerRadius:
         label = "MiniCardColorAnimation"
     )
 
+    val adaptivePadding = calculateAdaptivePadding(shapePreset)
+
     Box(
         modifier = Modifier
             .size(width = 140.dp, height = 100.dp)
             .clip(cardShape(shapePreset, cornerRadius))
             .background(animatedColor.copy(alpha = opacity))
-            .padding(12.dp)
+            .padding(adaptivePadding)
     ) {
         Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -1325,7 +1325,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>About</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>REMOTE PC CONTROL</value>
+    <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>Desktop Client</value>

@@ -232,6 +232,8 @@ fun DashboardScreenContent(
                                 if (card.type == HomeCardType.PC_STATUS) uiState.pcCardShapePreset
                                 else uiState.telemetryCardShapePreset
 
+                        val adaptivePadding = calculateAdaptivePadding(cardShapePreset)
+
                         Card(
                                 modifier =
                                         Modifier.offset { IntOffset(xPx, yPx) }
@@ -264,7 +266,7 @@ fun DashboardScreenContent(
                                                                 .copy(alpha = uiState.cardOpacity)
                                         )
                         ) {
-                            Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+                            Box(modifier = Modifier.fillMaxSize().padding(adaptivePadding)) {
                                 when (card.type) {
                                     HomeCardType.PC_STATUS -> {
                                         ConnectionOrbCard(
@@ -296,7 +298,8 @@ fun DashboardScreenContent(
                                                 onCycleDisplayMode = {
                                                     onCycleTelemetryDisplayMode(card.id)
                                                 },
-                                                isExpressiveShape = cardShapePreset > 0
+                                                isExpressiveShape = cardShapePreset > 0,
+                                                outerPadding = adaptivePadding
                                         )
                                     }
                                 }
@@ -310,9 +313,9 @@ fun DashboardScreenContent(
                                             onSaveCardLayout()
                                         },
                                         modifier =
-                                                Modifier.align(Alignment.TopEnd)
+                                                Modifier.align(Alignment.TopStart)
                                                         .size(24.dp)
-                                                        .padding(4.dp)
+                                                        .padding(2.dp)
                                 ) {
                                     Icon(
                                             Icons.Default.Close,
@@ -325,7 +328,7 @@ fun DashboardScreenContent(
                                 Box(
                                         modifier =
                                                 Modifier.align(Alignment.BottomEnd)
-                                                        .size(16.dp)
+                                                        .size(24.dp)
                                                         .pointerInput(card.id) {
                                                             detectDragGestures(
                                                                     onDrag = { change, dragAmount ->
@@ -353,7 +356,7 @@ fun DashboardScreenContent(
                                             modifier =
                                                     Modifier.fillMaxSize()
                                                             .graphicsLayer { rotationZ = 45f },
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                                     )
                                 }
                             }
@@ -733,7 +736,8 @@ private fun TelemetryCardContent(
         history: List<Float>,
         mode: TelemetryDisplayMode,
         onCycleDisplayMode: () -> Unit,
-        isExpressiveShape: Boolean
+        isExpressiveShape: Boolean,
+        outerPadding: androidx.compose.ui.unit.Dp = 0.dp
 ) {
     val view = LocalView.current
     Column(
@@ -743,22 +747,29 @@ private fun TelemetryCardContent(
                         onCycleDisplayMode()
                     }
     ) {
+        // P7: Adaptive internal title padding.
+        // The dismiss button is at TopStart. We need room for it (approx 24dp from left).
+        // If outerPadding is already large (e.g. 16dp), we need less extra start padding here.
+        val titleStartPadding = maxOf(0.dp, 24.dp - outerPadding)
+
         Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = titleStartPadding, end = 4.dp, top = 2.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                    text = title,
+                    text = title.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
             )
             Icon(
                     imageVector = Icons.Default.Timeline,
                     contentDescription = stringResource(R.string.cd_change_display_mode),
-                    modifier = Modifier.size(12.dp),
+                    modifier = Modifier.size(10.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }
@@ -774,7 +785,7 @@ private fun TelemetryCardContent(
                 when (mode) {
                     TelemetryDisplayMode.VALUE -> {
                         Text(
-                                text = sensor.value.toString(),
+                                text = formatSensorValue(sensor.value, sensor.unit),
                                 style =
                                         if (isExpressiveShape) MaterialTheme.typography.headlineSmall
                                         else MaterialTheme.typography.headlineMedium,
@@ -782,10 +793,41 @@ private fun TelemetryCardContent(
                                 color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    TelemetryDisplayMode.GAUGE, TelemetryDisplayMode.LINE -> {
+                    TelemetryDisplayMode.GAUGE -> {
                         Sparkline(
                                 data = history,
                                 modifier = Modifier.fillMaxSize().padding(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                isArea = false
+                        )
+                    }
+                    TelemetryDisplayMode.LINE -> {
+                        Sparkline(
+                                data = history,
+                                modifier = Modifier.fillMaxSize().padding(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                isArea = false
+                        )
+                    }
+                    TelemetryDisplayMode.BAR -> {
+                        BarChart(
+                                data = history,
+                                modifier = Modifier.fillMaxSize().padding(8.dp),
+                                color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    TelemetryDisplayMode.AREA -> {
+                        Sparkline(
+                                data = history,
+                                modifier = Modifier.fillMaxSize().padding(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                isArea = true
+                        )
+                    }
+                    TelemetryDisplayMode.CIRCLE_GAUGE -> {
+                        CircleGauge(
+                                value = sensor.value.toFloat(),
+                                modifier = Modifier.size(80.dp),
                                 color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -795,12 +837,84 @@ private fun TelemetryCardContent(
     }
 }
 
+private fun formatSensorValue(value: Double, unit: String): String {
+    if (value.isNaN()) return "--"
+    
+    val absoluteValue = abs(value)
+    val formatted = when {
+        absoluteValue >= 1_000_000_000_000.0 -> "%.1fT".format(value / 1_000_000_000_000.0)
+        absoluteValue >= 1_000_000_000.0 -> "%.1fG".format(value / 1_000_000_000.0)
+        absoluteValue >= 1_000_000.0 -> "%.1fM".format(value / 1_000_000.0)
+        absoluteValue >= 10_000.0 -> "%.1fK".format(value / 1000.0)
+        absoluteValue >= 100.0 -> value.roundToInt().toString()
+        absoluteValue >= 1.0 -> "%.1f".format(value)
+        else -> "%.2f".format(value)
+    }
+    
+    return if (unit.isNotBlank()) "$formatted$unit" else formatted
+}
+
 @Composable
-fun Sparkline(data: List<Float>, modifier: Modifier = Modifier, color: Color = Color.Cyan) {
+fun CircleGauge(value: Float, modifier: Modifier = Modifier, color: Color = Color.Cyan) {
+    val animatedValue by animateFloatAsState(targetValue = value, label = "gauge")
+    val strokeWidth = 10f
+    
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Track
+            drawArc(
+                color = color.copy(alpha = 0.1f),
+                startAngle = 135f,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
+            // Progress
+            drawArc(
+                color = color,
+                startAngle = 135f,
+                sweepAngle = (animatedValue.coerceIn(0f, 100f) / 100f) * 270f,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
+        }
+        Text(
+            text = "${value.roundToInt()}%",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
+
+@Composable
+fun BarChart(data: List<Float>, modifier: Modifier = Modifier, color: Color = Color.Cyan) {
+    Canvas(modifier = modifier) {
+        if (data.isEmpty()) return@Canvas
+        val max = data.maxOrNull()?.coerceAtLeast(1f) ?: 1f
+        val barWidth = size.width / (data.size.coerceAtLeast(1) * 1.5f)
+        val spacing = barWidth / 2f
+        
+        data.forEachIndexed { index, value ->
+            val barHeight = (value / max) * size.height
+            val x = index * (barWidth + spacing)
+            drawRect(
+                color = color.copy(alpha = 0.6f + (index.toFloat() / data.size) * 0.4f),
+                topLeft = Offset(x, size.height - barHeight),
+                size = androidx.compose.ui.geometry.Size(barWidth, barHeight)
+            )
+        }
+    }
+}
+
+@Composable
+fun Sparkline(data: List<Float>, modifier: Modifier = Modifier, color: Color = Color.Cyan, isArea: Boolean = false) {
     val lineColor by animateColorAsState(targetValue = color, label = "sparkline")
     Canvas(modifier = modifier) {
         if (data.size < 2) return@Canvas
         val path = Path()
+        val areaPath = Path()
+        
         val max = data.maxOrNull() ?: 100f
         val min = data.minOrNull() ?: 0f
         val range = (max - min).coerceAtLeast(1f)
@@ -809,8 +923,31 @@ fun Sparkline(data: List<Float>, modifier: Modifier = Modifier, color: Color = C
             val x = index * (size.width / (data.size - 1))
             val normalized = (value - min) / range
             val y = size.height - (normalized * size.height)
-            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            
+            if (index == 0) {
+                path.moveTo(x, y)
+                if (isArea) areaPath.moveTo(x, size.height)
+                if (isArea) areaPath.lineTo(x, y)
+            } else {
+                path.lineTo(x, y)
+                if (isArea) areaPath.lineTo(x, y)
+            }
+            
+            if (isArea && index == data.size - 1) {
+                areaPath.lineTo(x, size.height)
+                areaPath.close()
+            }
         }
+        
+        if (isArea) {
+            drawPath(
+                path = areaPath,
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(lineColor.copy(alpha = 0.4f), Color.Transparent)
+                )
+            )
+        }
+        
         drawPath(path = path, color = lineColor, style = Stroke(width = 4f, cap = StrokeCap.Round))
     }
 }

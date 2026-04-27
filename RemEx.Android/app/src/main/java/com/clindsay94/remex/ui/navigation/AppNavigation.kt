@@ -34,9 +34,9 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -284,8 +284,7 @@ private fun AppNavigationContent(
         }
     }
 
-    val noConnectedMsg = stringResource(R.string.snackbar_no_pc_connected)
-    val setupConnectionLabel = stringResource(R.string.snackbar_setup_connection)
+    val connectedMsg = stringResource(R.string.status_connected)
 
     fun navigateToConnection() {
         navController.navigate(Screen.Connection.route) {
@@ -297,23 +296,23 @@ private fun AppNavigationContent(
 
     fun navigateTo(route: String) {
         if (!isConnected && route in connectionRequiredRoutes) {
-            scope.launch {
-                val result =
-                        snackbarHostState.showSnackbar(
-                                message = noConnectedMsg,
-                                actionLabel = setupConnectionLabel,
-                                withDismissAction = true
-                        )
-                if (result == SnackbarResult.ActionPerformed) {
-                    navigateToConnection()
-                }
+            navigateToConnection()
+        } else {
+            navController.navigate(route) {
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
             }
-            // Still navigate to the screen so they can preview it
         }
-        navController.navigate(route) {
-            popUpTo(navController.graph.startDestinationId) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
+    }
+
+    // Show success snackbar when connected
+    LaunchedEffect(isConnected) {
+        if (isConnected) {
+            snackbarHostState.showSnackbar(
+                message = connectedMsg,
+                duration = SnackbarDuration.Short
+            )
         }
     }
 

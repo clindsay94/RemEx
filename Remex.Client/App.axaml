@@ -148,6 +148,7 @@
                     <NativeMenu>
                         <NativeMenuItem Header="Show Main Window" Click="OnShowMainWindow" />
                         <NativeMenuItem Header="Live Glance" Click="OnToggleLiveGlance" />
+                        <NativeMenuItem Header="Switch to Light Mode" Click="OnToggleTheme" />
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="Exit" Click="OnExitApp" />
                     </NativeMenu>

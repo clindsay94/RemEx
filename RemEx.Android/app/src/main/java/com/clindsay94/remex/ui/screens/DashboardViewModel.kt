@@ -20,7 +20,7 @@ import org.json.JSONObject
 import kotlin.math.roundToInt
 
 enum class HomeCardType { PC_STATUS, TELEMETRY, WAKE_ON_LAN }
-enum class TelemetryDisplayMode { VALUE, GAUGE, LINE }
+enum class TelemetryDisplayMode { VALUE, GAUGE, LINE, BAR, AREA, CIRCLE_GAUGE }
 
 data class TelemetryState(
     val cpuUsage: Int = 0,
@@ -197,7 +197,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     val next = when (card.displayMode) {
                         TelemetryDisplayMode.VALUE -> TelemetryDisplayMode.GAUGE
                         TelemetryDisplayMode.GAUGE -> TelemetryDisplayMode.LINE
-                        TelemetryDisplayMode.LINE -> TelemetryDisplayMode.VALUE
+                        TelemetryDisplayMode.LINE -> TelemetryDisplayMode.BAR
+                        TelemetryDisplayMode.BAR -> TelemetryDisplayMode.AREA
+                        TelemetryDisplayMode.AREA -> TelemetryDisplayMode.CIRCLE_GAUGE
+                        TelemetryDisplayMode.CIRCLE_GAUGE -> TelemetryDisplayMode.VALUE
                     }
                     card.copy(displayMode = next)
                 } else {
@@ -366,6 +369,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val mode = when (obj.optString("displayMode")) {
                     "VALUE" -> TelemetryDisplayMode.VALUE
                     "LINE" -> TelemetryDisplayMode.LINE
+                    "BAR" -> TelemetryDisplayMode.BAR
+                    "AREA" -> TelemetryDisplayMode.AREA
+                    "CIRCLE_GAUGE" -> TelemetryDisplayMode.CIRCLE_GAUGE
                     else -> TelemetryDisplayMode.GAUGE
                 }
 

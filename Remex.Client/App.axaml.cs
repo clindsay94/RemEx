@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ namespace Remex.Client;
 public partial class App : Application
 {
     private TrayFlyoutWindow? _flyout;
+    private NativeMenuItem? _themeToggleMenuItem;
     public static IServiceProvider Services { get; private set; } = null!;
 
     public static int? OverrideHostPort { get; set; }
@@ -139,6 +141,26 @@ public partial class App : Application
                 viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
             }
 
+            // P8-G: keep tray icon tooltip in sync with live sensor readings
+            viewModel.Connection.TelemetryReceived += telemetry =>
+            {
+                viewModel.UpdateTrayStatus(telemetry);
+                UpdateTrayTooltip(viewModel.TrayStatusSummary);
+            };
+
+            // Update tooltip once on connect/disconnect state change
+            viewModel.Connection.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
+                {
+                    viewModel.UpdateTrayStatus(viewModel.Connection.Telemetry);
+                    UpdateTrayTooltip(viewModel.TrayStatusSummary);
+                }
+            };
+
+            // P8-H: seed the theme toggle label from the persisted theme
+            UpdateThemeToggleLabel(profile?.Customization?.ThemeId);
+
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -223,4 +245,55 @@ public partial class App : Application
 
     public static Action? RequestPlatformWidgetUpdate { get; set; }
     private void TriggerPlatformWidgetUpdate() => RequestPlatformWidgetUpdate?.Invoke();
+
+    // ═══════════════ P8-G: Tray Tooltip ═══════════════
+
+    private void UpdateTrayTooltip(string text)
+    {
+        var icons = TrayIcon.GetIcons(this);
+        if (icons?.FirstOrDefault() is { } icon)
+            icon.ToolTipText = text;
+    }
+
+    // ═══════════════ P8-H: Theme Toggle ═══════════════
+
+    private void OnToggleTheme(object? sender, EventArgs e)
+    {
+        var themeService = Services.GetRequiredService<ThemeService>();
+        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
+        var currentThemeId = layoutService.CurrentProfile?.Customization.ThemeId ?? "BaseDarkGlass";
+
+        bool isCurrentlyLight = string.Equals(currentThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+        var newThemeId = isCurrentlyLight ? "BaseDarkGlass" : "SolarFlare";
+
+        var currentCustomization = layoutService.CurrentProfile?.Customization ?? new Remex.Core.Models.CustomizationSettings();
+        var newCustomization = currentCustomization with { ThemeId = newThemeId };
+        themeService.ApplyCustomization(newCustomization);
+
+        var profile = layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+        layoutService.RequestSave(profile with { Customization = newCustomization });
+
+        // Sync the shell's Customization property so the UI reflects the change
+        if (Services.GetService<ShellViewModel>() is { } shellVm)
+            shellVm.Customization = newCustomization;
+
+        UpdateThemeToggleLabel(newThemeId);
+    }
+
+    private void UpdateThemeToggleLabel(string? themeId)
+    {
+        _themeToggleMenuItem ??= FindThemeToggleMenuItem();
+        if (_themeToggleMenuItem is null) return;
+
+        bool isLight = string.Equals(themeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+        _themeToggleMenuItem.Header = isLight ? "Switch to Dark Mode" : "Switch to Light Mode";
+    }
+
+    private NativeMenuItem? FindThemeToggleMenuItem()
+    {
+        var icons = TrayIcon.GetIcons(this);
+        return icons?.FirstOrDefault()?.Menu?.Items
+            .OfType<NativeMenuItem>()
+            .FirstOrDefault(m => m.Header?.ToString()?.Contains("Mode") == true);
+    }
 }

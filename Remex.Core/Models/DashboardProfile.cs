@@ -121,6 +121,24 @@ public record DashboardProfile
 
     /// <summary>Configured sensor threshold alerts.</summary>
     public List<SensorAlert> SensorAlerts { get; init; } = new();
+
+    /// <summary>Recently used connection endpoints (most-recent first, capped at 10).</summary>
+    public List<ConnectionProfile> ConnectionHistory { get; init; } = new();
+}
+
+/// <summary>
+/// A single entry in the connection history list.
+/// </summary>
+public record ConnectionProfile
+{
+    /// <summary>Display name (defaults to the host address).</summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>WebSocket host address (e.g. "ws://192.168.1.10:5005/ws").</summary>
+    public string HostAddress { get; init; } = string.Empty;
+
+    /// <summary>When this host was last successfully connected to.</summary>
+    public System.DateTime LastConnected { get; init; }
 }
 
 /// <summary>
@@ -157,7 +175,7 @@ public record CustomizationSettings
     public string AccentColor { get; init; } = "#6C4CFF";
 
     /// <summary>User-defined custom accent colours (hex strings) saved via the colour picker.</summary>
-    public List<string> CustomAccentColors { get; init; } = new();
+    public IReadOnlyList<string> CustomAccentColors { get; init; } = Array.Empty<string>();
 
     /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
     public string SchemeVariant { get; init; } = "TonalSpot";

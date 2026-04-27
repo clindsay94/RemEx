@@ -95,7 +95,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
-        foreach (var hex in profile.Customization.CustomAccentColors.Take(8))
+        var colors = profile.Customization.CustomAccentColors ?? Array.Empty<string>();
+        foreach (var hex in colors.Take(8))
             CustomAccentColors.Add(hex);
 
         // Load available background types
