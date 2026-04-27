@@ -132,3 +132,27 @@ public class LatencyToHeightConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>
+/// Converts a CornerRadius to a Thickness (padding/margin) that scales with the corner arc,
+/// ensuring card content never visually crowds the rounded edges.
+/// Formula: max(16, maxCorner * 0.7) so large radii get proportionally more breathing room.
+/// </summary>
+public class CornerRadiusToMarginConverter : IValueConverter
+{
+    public static readonly CornerRadiusToMarginConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is Avalonia.CornerRadius cr)
+        {
+            var max = Math.Max(cr.TopLeft, Math.Max(cr.TopRight, Math.Max(cr.BottomLeft, cr.BottomRight)));
+            var margin = Math.Max(16.0, max * 0.7);
+            return new Avalonia.Thickness(margin);
+        }
+        return new Avalonia.Thickness(16);
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

@@ -6,6 +6,8 @@ using Remex.Core.Models;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 
 namespace Remex.Client.ViewModels;
 
@@ -19,6 +21,25 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
     private bool _isApplyingPreset;
+
+    // ═══ Slider snap ═══
+    private static readonly double[] CardSnapPoints = [0, 2, 8, 16, 24, 32];
+    private static readonly double[] RemoteSnapPoints = [0, 4, 12, 24, 48];
+    private const double SnapThreshold = 1.5;
+    private bool _isSnapping;
+    private double? _lastCardSnap;
+    private double? _lastRemoteSnap;
+
+    private static double? FindSnap(double value, double[] points)
+    {
+        foreach (var p in points)
+            if (Math.Abs(value - p) <= SnapThreshold) return p;
+        return null;
+    }
+
+    // TODO(human): Implement VibrateCardCornerRadius(double target) and VibrateRemoteCornerRadius(double target)
+    // Each should briefly jitter the appropriate property around 'target' to give a tactile snap feel,
+    // then settle at 'target' and call ApplyAndSave(). Use _isSnapping to guard against recursion.
 
     public ObservableCollection<string> AvailableBackgroundTypes { get; } = new();
 
@@ -161,8 +182,43 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SelectedThemePreset));
         ApplyAndSave();
     }
-    partial void OnCornerRadiusChanged(double value) => ApplyAndSave();
-    partial void OnRemoteCardCornerRadiusChanged(double value) => ApplyAndSave();
+    partial void OnCornerRadiusChanged(double value)
+    {
+        if (_isSnapping || _isApplyingPreset) { ApplyAndSave(); return; }
+        var snap = FindSnap(value, CardSnapPoints);
+        if (snap.HasValue)
+        {
+            bool isNewSnap = snap != _lastCardSnap;
+            _lastCardSnap = snap;
+            if (Math.Abs(value - snap.Value) > 0.01)
+            {
+                if (isNewSnap) _ = VibrateCardCornerRadius(snap.Value);
+                else { _isSnapping = true; CornerRadius = snap.Value; _isSnapping = false; ApplyAndSave(); }
+                return;
+            }
+        }
+        else { _lastCardSnap = null; }
+        ApplyAndSave();
+    }
+
+    partial void OnRemoteCardCornerRadiusChanged(double value)
+    {
+        if (_isSnapping || _isApplyingPreset) { ApplyAndSave(); return; }
+        var snap = FindSnap(value, RemoteSnapPoints);
+        if (snap.HasValue)
+        {
+            bool isNewSnap = snap != _lastRemoteSnap;
+            _lastRemoteSnap = snap;
+            if (Math.Abs(value - snap.Value) > 0.01)
+            {
+                if (isNewSnap) _ = VibrateRemoteCornerRadius(snap.Value);
+                else { _isSnapping = true; RemoteCardCornerRadius = snap.Value; _isSnapping = false; ApplyAndSave(); }
+                return;
+            }
+        }
+        else { _lastRemoteSnap = null; }
+        ApplyAndSave();
+    }
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
     partial void OnAppWindowOpacityChanged(double value) => ApplyAndSave();
     partial void OnGlowStrengthChanged(double value) => ApplyAndSave();

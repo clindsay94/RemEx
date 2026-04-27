@@ -36,7 +36,7 @@
                 <ControlTemplate>
                     <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="0 8 32 0 #40000000" Padding="0">
                         <Grid>
-                            <ContentPresenter Content="{TemplateBinding Content}" Margin="16"/>
+                            <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
                             <!-- Resize grip -->
                             <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
                                 <Thumb.Template>
