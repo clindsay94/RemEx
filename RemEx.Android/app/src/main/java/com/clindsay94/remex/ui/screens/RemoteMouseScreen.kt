@@ -22,7 +22,16 @@ import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.Mouse
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,18 +53,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.cardShape
 import kotlin.math.sqrt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-data class RemoteMouseUiState(
-    val shapePreset: Float = 0f,
-    val cornerRadius: Int = 8,
-    val vScrollSensitivity: Float = 1.0f,
-    val isConnected: Boolean = false
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,15 +71,11 @@ fun RemoteMouseScreen(
     val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    val uiState = RemoteMouseUiState(
-        shapePreset = shapePreset,
-        cornerRadius = cornerRadius,
-        vScrollSensitivity = vScrollSensitivity,
-        isConnected = isConnected
-    )
-
     RemoteMouseScreenContent(
-            uiState = uiState,
+            isConnected = isConnected,
+            shapePreset = shapePreset,
+            cornerRadius = cornerRadius,
+            vScrollSensitivity = vScrollSensitivity,
             onNavigateToConnection = onNavigateToConnection,
             onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
             onMouseClick = { button -> viewModel.sendMouseClick(button) },
@@ -87,7 +86,10 @@ fun RemoteMouseScreen(
 
 @Composable
 fun RemoteMouseScreenContent(
-        uiState: RemoteMouseUiState,
+        isConnected: Boolean,
+        shapePreset: Float,
+        cornerRadius: Int,
+        vScrollSensitivity: Float,
         onNavigateToConnection: () -> Unit,
         onMouseMove: (Int, Int) -> Unit,
         onMouseClick: (Int) -> Unit,
@@ -98,14 +100,17 @@ fun RemoteMouseScreenContent(
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_remote_mouse_title)) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        RemexScreenHeader(title = stringResource(R.string.screen_remote_mouse_title))
+        Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            NotConnectedBanner(
+                    isConnected = isConnected,
+                    onNavigateToConnection = onNavigateToConnection
             )
-        }
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+
             Column(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -146,22 +151,28 @@ fun RemoteMouseScreenContent(
                                                     }
                                             )
                                         },
-                        shape = cardShape(uiState.shapePreset, uiState.cornerRadius),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shape = cardShape(shapePreset, cornerRadius),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                         tonalElevation = 4.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                     imageVector = Icons.Default.Mouse,
-                                    contentDescription = stringResource(R.string.cd_trackpad_icon),
+                                    contentDescription = null,
                                     modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint =
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.5f
+                                            )
                             )
                             Text(
                                     stringResource(R.string.remote_mouse_trackpad_label),
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color =
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.5f
+                                            )
                             )
                         }
                     }
@@ -220,7 +231,7 @@ fun RemoteMouseScreenContent(
                     IconButton(
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                onScroll((-100 * uiState.vScrollSensitivity).toInt())
+                                onScroll((-100 * vScrollSensitivity).toInt())
                             }
                     ) {
                         Icon(
@@ -231,7 +242,7 @@ fun RemoteMouseScreenContent(
                     IconButton(
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                onScroll((100 * uiState.vScrollSensitivity).toInt())
+                                onScroll((100 * vScrollSensitivity).toInt())
                             }
                     ) {
                         Icon(

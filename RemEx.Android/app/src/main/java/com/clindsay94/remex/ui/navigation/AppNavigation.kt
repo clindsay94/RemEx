@@ -34,9 +34,9 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,7 +73,6 @@ import com.clindsay94.remex.ui.screens.ConnectionViewModel
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
 import com.clindsay94.remex.ui.screens.FloatingMouseIsland
-import com.clindsay94.remex.ui.screens.NotConnectedBanner
 import com.clindsay94.remex.ui.screens.PersonalizationScreen
 import com.clindsay94.remex.ui.screens.QrScannerScreen
 import com.clindsay94.remex.ui.screens.RemoteControlScreen
@@ -233,18 +232,6 @@ private fun AppNavigationContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var showDisconnectionBanner by remember { mutableStateOf(false) }
-
-    // Global Disconnection Banner logic (3s delay)
-    LaunchedEffect(isConnected) {
-        if (!isConnected) {
-            kotlinx.coroutines.delay(3000)
-            showDisconnectionBanner = !isConnected
-        } else {
-            showDisconnectionBanner = false
-        }
-    }
-
     val showNav =
             currentRoute != Screen.Splash.route &&
                     currentRoute != Screen.Tutorial.route &&
@@ -297,7 +284,8 @@ private fun AppNavigationContent(
         }
     }
 
-    val connectedMsg = stringResource(R.string.status_connected)
+    val noConnectedMsg = stringResource(R.string.snackbar_no_pc_connected)
+    val setupConnectionLabel = stringResource(R.string.snackbar_setup_connection)
 
     fun navigateToConnection() {
         navController.navigate(Screen.Connection.route) {
@@ -310,28 +298,22 @@ private fun AppNavigationContent(
     fun navigateTo(route: String) {
         if (!isConnected && route in connectionRequiredRoutes) {
             scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = context.getString(R.string.connection_required_context),
-                    duration = SnackbarDuration.Short
-                )
+                val result =
+                        snackbarHostState.showSnackbar(
+                                message = noConnectedMsg,
+                                actionLabel = setupConnectionLabel,
+                                withDismissAction = true
+                        )
+                if (result == SnackbarResult.ActionPerformed) {
+                    navigateToConnection()
+                }
             }
-            navigateToConnection()
-        } else {
-            navController.navigate(route) {
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
-            }
+            // Still navigate to the screen so they can preview it
         }
-    }
-
-    // Show success snackbar when connected
-    LaunchedEffect(isConnected) {
-        if (isConnected) {
-            snackbarHostState.showSnackbar(
-                message = connectedMsg,
-                duration = SnackbarDuration.Short
-            )
+        navController.navigate(route) {
+            popUpTo(navController.graph.startDestinationId) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
         }
     }
 
@@ -362,25 +344,11 @@ private fun AppNavigationContent(
                             }
                         }
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                AnimatedVisibility(
-                    visible = showDisconnectionBanner && showNav && currentRoute != Screen.Connection.route,
-                    enter = slideInVertically { -it } + fadeIn(),
-                    exit = slideOutVertically { -it } + fadeOut()
-                ) {
-                    NotConnectedBanner(
-                        isConnected = false, // If we're showing it, it's because we're not connected
-                        onNavigateToConnection = { navigateToConnection() },
-                        useDelay = false
-                    )
-                }
-                
-                Box(modifier = Modifier.weight(1f)) {
-                    NavHost(
-                            navController = navController,
-                            startDestination = startDestination,
-                            modifier = Modifier.fillMaxSize()
-                    ) {
+            NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
+                    modifier = Modifier.fillMaxSize()
+            ) {
                 composable(Screen.Splash.route) {
                     SplashScreen(
                             onFinished = {
