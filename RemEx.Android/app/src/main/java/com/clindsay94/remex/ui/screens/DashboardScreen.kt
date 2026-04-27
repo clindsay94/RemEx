@@ -1008,6 +1008,39 @@ private fun TelemetryCardContent(
                             fontWeight = FontWeight.Bold
                     )
                 }
+                TelemetryDisplayMode.BAR, TelemetryDisplayMode.AREA -> {
+                    Box(
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                    ) { Sparkline(history = history) }
+                    Text(
+                            valueText,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                    )
+                }
+                TelemetryDisplayMode.CIRCLE_GAUGE -> {
+                    val percent = (sensor?.value ?: 0.0).toFloat().coerceIn(0f, 100f) / 100f
+                    val animatedProgress by
+                            animateFloatAsState(
+                                    targetValue = percent,
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                                    label = "circle_gauge_bounce"
+                            )
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                        CircularProgressIndicator(
+                                progress = { animatedProgress },
+                                modifier = Modifier.size(64.dp),
+                                strokeWidth = 6.dp,
+                                strokeCap = StrokeCap.Round
+                        )
+                        Text(
+                                "${(percent * 100).roundToInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }
