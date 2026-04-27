@@ -130,11 +130,14 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
     }
 
-    public (int Width, int Height) GetScreenSize()
+    public (int Width, int Height, int Left, int Top) GetScreenSize()
     {
         if (_dxgi.IsAvailable && _dxgi.Width > 0 && _dxgi.Height > 0)
-            return (_dxgi.Width, _dxgi.Height);
-        return (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+            return (_dxgi.Width, _dxgi.Height, _dxgi.DesktopLeft, _dxgi.DesktopTop);
+        
+        // GDI captures primary monitor (always at 0,0 in Windows virtual space if it's the anchor)
+        // Actually, primary monitor is not ALWAYS at 0,0 if virtual desk is weird, but it usually is.
+        return (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), 0, 0);
     }
 
     public void Dispose() => _dxgi.Dispose();

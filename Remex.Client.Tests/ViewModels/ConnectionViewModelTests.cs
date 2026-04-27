@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Remex.Client.ViewModels;
 using Remex.Core;
+using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.Network;
 using Xunit;
@@ -208,5 +212,114 @@ public class ConnectionViewModelTests : IDisposable
             .ReturnsAsync(new List<string>());
         await _viewModel.DiscoverHostsCommand.ExecuteAsync(null);
         _viewModel.StatusText.Should().NotBeNullOrEmpty();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Correlated command infrastructure tests
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// Tests for the <c>_pendingCommands</c> correlation dictionary and Cleanup behaviour.
+/// <para>
+/// NOTE — tests that require an open WebSocket (timeout cancellation, concurrent
+/// correlated round-trips) are skipped here because <see cref="ConnectionViewModel"/>
+/// uses <see cref="System.Net.WebSockets.ClientWebSocket"/> directly with no
+/// injectable abstraction.  To enable those tests in the future:
+/// <list type="bullet">
+///   <item>Extract an <c>IWebSocketSender</c> interface from <c>MessageSerializer.SendAsync</c>.</item>
+///   <item>Inject it into <see cref="ConnectionViewModel"/> so tests can provide a mock.</item>
+///   <item>Expose <c>CommandTimeoutSeconds</c> as a constructor parameter so tests do not
+///         have to wait 10 s for a timeout to fire.</item>
+/// </list>
+/// </para>
+/// </summary>
+public class ConnectionViewModelCorrelationTests : IDisposable
+{
+    private readonly ConnectionViewModel _viewModel;
+
+    // Reflection helpers
+    private static readonly FieldInfo PendingCommandsField =
+        typeof(ConnectionViewModel).GetField(
+            "_pendingCommands",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private static readonly MethodInfo CleanupMethod =
+        typeof(ConnectionViewModel).GetMethod(
+            "Cleanup",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> GetPendingCommands()
+        => (ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>>)
+            PendingCommandsField.GetValue(_viewModel)!;
+
+    private void InvokeCleanup() => CleanupMethod.Invoke(_viewModel, null);
+
+    public ConnectionViewModelCorrelationTests()
+    {
+        _viewModel = new ConnectionViewModel(null, null, null);
+    }
+
+    public void Dispose() => _viewModel.Dispose();
+
+    /// <summary>
+    /// Cleanup() must cancel every pending command TCS so callers do not hang after disconnect.
+    /// </summary>
+    [Fact]
+    public async Task Cleanup_WithPendingCommands_ShouldCancelAllAwaiters()
+    {
+        var tcs1 = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs2 = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var dict = GetPendingCommands();
+        dict["id-1"] = tcs1;
+        dict["id-2"] = tcs2;
+
+        InvokeCleanup();
+
+        // Both tasks must be faulted/cancelled — awaiting them should throw
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tcs1.Task);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tcs2.Task);
+    }
+
+    /// <summary>
+    /// Cleanup() must leave the dictionary empty so no stale entries remain.
+    /// </summary>
+    [Fact]
+    public void Cleanup_WithPendingCommands_ShouldDrainDictionary()
+    {
+        var dict = GetPendingCommands();
+        dict["id-1"] = new TaskCompletionSource<RemexMessage>();
+        dict["id-2"] = new TaskCompletionSource<RemexMessage>();
+
+        InvokeCleanup();
+
+        dict.Should().BeEmpty();
+    }
+
+    // DONE_WITH_CONCERNS: The following two tests describe the intended behaviour but
+    // cannot be wired up without a WebSocket abstraction + injectable timeout.
+
+    [Fact(Skip =
+        "DONE_WITH_CONCERNS: Requires injectable CommandTimeoutSeconds and IWebSocketSender. " +
+        "When those exist, remove [Skip] and provide a mock sender that never delivers a response.")]
+    public async Task SendCommandAndWaitAsync_WhenHostNeverResponds_ShouldThrowOperationCanceledException()
+    {
+        // Arrange: inject a mock sender that accepts the message but never replies.
+        // Act:     await SendCommandAndWaitAsync (via KillProcessWithResponseAsync or via reflection).
+        // Assert:  OperationCanceledException within CommandTimeoutSeconds.
+        await Task.CompletedTask; // placeholder
+    }
+
+    [Fact(Skip =
+        "DONE_WITH_CONCERNS: Requires IWebSocketSender mock that can replay correlated responses. " +
+        "When available, fire two concurrent SendCommandAndWaitAsync calls, deliver matching " +
+        "responses for each correlation ID, and assert each caller gets its own response.")]
+    public async Task SendCommandAndWaitAsync_ConcurrentCalls_EachReceivesCorrectResponse()
+    {
+        // Arrange: mock sender that records outbound CorrelationIds.
+        // Act:     launch two concurrent tasks, reply to each with matching CorrelationId.
+        // Assert:  task-1 gets response-1, task-2 gets response-2.
+        await Task.CompletedTask; // placeholder
     }
 }

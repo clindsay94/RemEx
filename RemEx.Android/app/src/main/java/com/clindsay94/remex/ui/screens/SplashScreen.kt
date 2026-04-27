@@ -248,7 +248,7 @@ fun SplashScreen(onFinished: () -> Unit) {
 
         LaunchedEffect(Unit) {
                 // Particle + stream-particle update loop (~60 fps)
-                scope.launch {
+                scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                         val rng = java.util.Random(99L)
                         while (!isSkipping) {
                                 val dt = 0.016f
@@ -298,7 +298,10 @@ fun SplashScreen(onFinished: () -> Unit) {
                                         sp.t += sp.speed
                                         if (sp.t > 1f) sp.t -= 1f
                                 }
-                                particleFrame++
+                                // We increment the frame trigger on the main thread to trigger recomposition
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    particleFrame++
+                                }
                                 delay(16L)
                         }
                 }

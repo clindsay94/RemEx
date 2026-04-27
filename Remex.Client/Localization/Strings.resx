@@ -1325,7 +1325,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>About</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>REMOTE PC CONTROL</value>
+    <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>Desktop Client</value>
@@ -1334,15 +1334,62 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC Host</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ If you like RemEx, star us on GitHub!</value>
+    <value>⭐ Consider giving a star on GitHub!</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
-    <value>Open source and free forever. Your support helps us grow.</value>
+    <value>Open source and free. (pls give a star, they have my cat!)</value>
   </data>
   <data name="About_ViewGitHub" xml:space="preserve">
     <value>View Source on GitHub</value>
   </data>
   <data name="About_MadeWith" xml:space="preserve">
-    <value>Made with ❤️ for the community</value>
+    <value>Made with ❤️ in Denver, Colorado</value>
+  </data>
+
+  <!-- Confirmation dialogs -->
+  <data name="Confirm_Shutdown_Title" xml:space="preserve">
+    <value>Shut Down — Are you sure?</value>
+  </data>
+  <data name="Confirm_Shutdown_Message" xml:space="preserve">
+    <value>The remote PC will shut down. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_Shutdown_Btn" xml:space="preserve">
+    <value>Shut Down</value>
+  </data>
+  <data name="Confirm_Restart_Title" xml:space="preserve">
+    <value>Restart — Are you sure?</value>
+  </data>
+  <data name="Confirm_Restart_Message" xml:space="preserve">
+    <value>The remote PC will restart. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_Restart_Btn" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
+    <value>Force Shutdown — Are you sure?</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
+    <value>This will immediately shut down the remote PC. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
+    <value>Force Shutdown</value>
+  </data>
+  <data name="Confirm_ForceRestart_Title" xml:space="preserve">
+    <value>Force Restart — Are you sure?</value>
+  </data>
+  <data name="Confirm_ForceRestart_Message" xml:space="preserve">
+    <value>This will immediately restart the remote PC. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
+    <value>Force Restart</value>
+  </data>
+  <data name="Confirm_RebootUefi_Title" xml:space="preserve">
+    <value>Reboot to UEFI — Are you sure?</value>
+  </data>
+  <data name="Confirm_RebootUefi_Message" xml:space="preserve">
+    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
+    <value>Reboot to UEFI</value>
   </data>
 </root>

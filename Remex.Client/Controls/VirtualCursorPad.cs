@@ -22,15 +22,103 @@ public class VirtualCursorPad : Control
     private const int RepeatIntervalMs = 60;
     private const int LongPressMs = 500;
 
-    private static readonly IBrush BackgroundBrush = new SolidColorBrush(Color.FromArgb(160, 20, 20, 50));
-    private static readonly IBrush HoveredBrush = new SolidColorBrush(Color.FromArgb(180, 50, 50, 100));
-    private static readonly IBrush CenterBrush = new SolidColorBrush(Color.FromArgb(200, 40, 40, 80));
-    private static readonly IBrush CenterPressedBrush = new SolidColorBrush(Color.FromArgb(230, 80, 80, 160));
-    private static readonly IPen BorderPen = new Pen(new SolidColorBrush(Color.FromArgb(120, 128, 128, 255)), 2);
-    private static readonly IPen OuterGlowPen = new Pen(new SolidColorBrush(Color.FromArgb(40, 128, 128, 255)), 4);
+    // StyledProperties — default values replicate the original hardcoded brushes; themes
+    // can override these via style selectors and {DynamicResource} bindings.
+    public static readonly StyledProperty<IBrush> PadBackgroundBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadBackgroundBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(160, 20, 20, 50)));
 
-    private static readonly IBrush ArrowBrush = new SolidColorBrush(Color.FromArgb(220, 192, 192, 255));
-    private static readonly IBrush ClickLabelBrush = new SolidColorBrush(Color.FromArgb(220, 107, 255, 107));
+    public static readonly StyledProperty<IBrush> PadHoveredBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadHoveredBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(180, 50, 50, 100)));
+
+    public static readonly StyledProperty<IBrush> PadCenterBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadCenterBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(200, 40, 40, 80)));
+
+    public static readonly StyledProperty<IBrush> PadCenterPressedBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadCenterPressedBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(230, 80, 80, 160)));
+
+    public static readonly StyledProperty<IBrush> PadBorderBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadBorderBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(120, 128, 128, 255)));
+
+    public static readonly StyledProperty<IBrush> PadOuterGlowBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadOuterGlowBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(40, 128, 128, 255)));
+
+    public static readonly StyledProperty<IBrush> PadArrowBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadArrowBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(220, 192, 192, 255)));
+
+    public static readonly StyledProperty<IBrush> PadClickLabelBrushProperty =
+        AvaloniaProperty.Register<VirtualCursorPad, IBrush>(nameof(PadClickLabelBrush),
+            defaultValue: new SolidColorBrush(Color.FromArgb(220, 107, 255, 107)));
+
+    public IBrush PadBackgroundBrush
+    {
+        get => GetValue(PadBackgroundBrushProperty);
+        set => SetValue(PadBackgroundBrushProperty, value);
+    }
+
+    public IBrush PadHoveredBrush
+    {
+        get => GetValue(PadHoveredBrushProperty);
+        set => SetValue(PadHoveredBrushProperty, value);
+    }
+
+    public IBrush PadCenterBrush
+    {
+        get => GetValue(PadCenterBrushProperty);
+        set => SetValue(PadCenterBrushProperty, value);
+    }
+
+    public IBrush PadCenterPressedBrush
+    {
+        get => GetValue(PadCenterPressedBrushProperty);
+        set => SetValue(PadCenterPressedBrushProperty, value);
+    }
+
+    public IBrush PadBorderBrush
+    {
+        get => GetValue(PadBorderBrushProperty);
+        set => SetValue(PadBorderBrushProperty, value);
+    }
+
+    public IBrush PadOuterGlowBrush
+    {
+        get => GetValue(PadOuterGlowBrushProperty);
+        set => SetValue(PadOuterGlowBrushProperty, value);
+    }
+
+    public IBrush PadArrowBrush
+    {
+        get => GetValue(PadArrowBrushProperty);
+        set => SetValue(PadArrowBrushProperty, value);
+    }
+
+    public IBrush PadClickLabelBrush
+    {
+        get => GetValue(PadClickLabelBrushProperty);
+        set => SetValue(PadClickLabelBrushProperty, value);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == PadBackgroundBrushProperty ||
+            change.Property == PadHoveredBrushProperty ||
+            change.Property == PadCenterBrushProperty ||
+            change.Property == PadCenterPressedBrushProperty ||
+            change.Property == PadBorderBrushProperty ||
+            change.Property == PadOuterGlowBrushProperty ||
+            change.Property == PadArrowBrushProperty ||
+            change.Property == PadClickLabelBrushProperty)
+        {
+            InvalidateVisual();
+        }
+    }
 
     private enum Region { None, Up, Down, Left, Right, Center }
 
@@ -58,12 +146,14 @@ public class VirtualCursorPad : Control
         base.Render(context);
 
         var center = new Point(OuterRadius, OuterRadius);
+        var borderPen = new Pen(PadBorderBrush, 2);
+        var outerGlowPen = new Pen(PadOuterGlowBrush, 4);
 
         // Outer glow ring
-        context.DrawEllipse(null, OuterGlowPen, center, OuterRadius + 1, OuterRadius + 1);
+        context.DrawEllipse(null, outerGlowPen, center, OuterRadius + 1, OuterRadius + 1);
 
         // Outer circle
-        context.DrawEllipse(BackgroundBrush, BorderPen, center, OuterRadius, OuterRadius);
+        context.DrawEllipse(PadBackgroundBrush, borderPen, center, OuterRadius, OuterRadius);
 
         // Divider lines (X shape from center circle to outer edge)
         var pen = new Pen(new SolidColorBrush(Color.FromArgb(60, 128, 128, 255)), 1);
@@ -74,8 +164,8 @@ public class VirtualCursorPad : Control
         DrawQuadrantHighlight(context, center);
 
         // Center circle
-        var centerBrush = _pressedRegion == Region.Center ? CenterPressedBrush : CenterBrush;
-        context.DrawEllipse(centerBrush, BorderPen, center, InnerRadius, InnerRadius);
+        var centerBrush = _pressedRegion == Region.Center ? PadCenterPressedBrush : PadCenterBrush;
+        context.DrawEllipse(centerBrush, borderPen, center, InnerRadius, InnerRadius);
 
         // Directional arrows
         DrawArrow(context, center, Region.Up);
@@ -85,7 +175,7 @@ public class VirtualCursorPad : Control
 
         // Center label
         var labelText = new FormattedText("●", System.Globalization.CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight, Typeface.Default, 18, ClickLabelBrush);
+            FlowDirection.LeftToRight, Typeface.Default, 18, PadClickLabelBrush);
         context.DrawText(labelText, new Point(center.X - labelText.Width / 2, center.Y - labelText.Height / 2));
     }
 
@@ -133,7 +223,7 @@ public class VirtualCursorPad : Control
                 break;
         }
 
-        context.DrawGeometry(HoveredBrush, null, geo);
+        context.DrawGeometry(PadHoveredBrush, null, geo);
     }
 
     private void DrawArrow(DrawingContext context, Point center, Region direction)
@@ -176,7 +266,7 @@ public class VirtualCursorPad : Control
         ctx.LineTo(left);
         ctx.LineTo(right);
         ctx.EndFigure(true);
-        context.DrawGeometry(ArrowBrush, null, geo);
+        context.DrawGeometry(PadArrowBrush, null, geo);
     }
 
     private Region HitTest(Point pos)

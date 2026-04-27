@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,18 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private ObservableCollection<AppEntry> _launchers = new();
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    public IEnumerable<AppEntry> FilteredApps =>
+        string.IsNullOrWhiteSpace(SearchText)
+            ? Launchers
+            : Launchers.Where(a => a.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+    partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(FilteredApps));
+
+    partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => OnPropertyChanged(nameof(FilteredApps));
 
     public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService)
     {
@@ -229,7 +242,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task MoveUpAsync(AppEntry entry)
+    private async Task MoveLeftAsync(AppEntry entry)
     {
         if (entry == null) return;
         var index = Launchers.IndexOf(entry);
@@ -239,7 +252,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task MoveDownAsync(AppEntry entry)
+    private async Task MoveRightAsync(AppEntry entry)
     {
         if (entry == null) return;
         var index = Launchers.IndexOf(entry);

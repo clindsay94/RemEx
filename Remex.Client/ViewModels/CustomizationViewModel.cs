@@ -5,6 +5,7 @@ using Remex.Client.Models;
 using Remex.Core.Models;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Remex.Client.ViewModels;
 
@@ -26,6 +27,54 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz"
     };
 
+    /// <summary>User-saved custom accent colours shown after the built-in swatches.</summary>
+    public ObservableCollection<string> CustomAccentColors { get; } = new();
+
+    /// <summary>Controls the visibility of the hex input flyout for custom accent entry.</summary>
+    [ObservableProperty]
+    private bool _isCustomAccentPickerOpen;
+
+    /// <summary>Hex value being typed by the user in the custom accent flyout.</summary>
+    [ObservableProperty]
+    private string _customAccentHex = string.Empty;
+
+    [RelayCommand]
+    private void OpenCustomAccentPicker() => IsCustomAccentPickerOpen = true;
+
+    [RelayCommand]
+    private void CloseCustomAccentPicker()
+    {
+        IsCustomAccentPickerOpen = false;
+        CustomAccentHex = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ConfirmCustomAccent()
+    {
+        var hex = CustomAccentHex.Trim();
+        if (!hex.StartsWith('#')) hex = '#' + hex;
+        if (hex.Length is not (7 or 9)) return; // must be #RRGGBB or #AARRGGBB
+
+        AccentColor = hex;
+
+        if (!CustomAccentColors.Contains(hex))
+        {
+            CustomAccentColors.Add(hex);
+
+            // Persist custom colours in the profile (up to 8)
+            var saved = CustomAccentColors.Take(8).ToList();
+            var profile = _layoutService.CurrentProfile;
+            var updated = profile with
+            {
+                Customization = profile.Customization with { CustomAccentColors = saved }
+            };
+            _layoutService.RequestSave(updated);
+        }
+
+        IsCustomAccentPickerOpen = false;
+        CustomAccentHex = string.Empty;
+    }
+
     public CustomizationViewModel(ShellViewModel shell, DashboardLayoutService layoutService, ThemeService themeService)
     {
         _shell = shell;
@@ -43,6 +92,12 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _accentColor = settings.AccentColor;
         _schemeVariant = settings.SchemeVariant;
         _canvasBackgroundType = settings.BackgroundMaterial;
+
+        // Load saved custom accent colours
+        var profile = _layoutService.CurrentProfile;
+        var colors = profile.Customization.CustomAccentColors ?? Array.Empty<string>();
+        foreach (var hex in colors.Take(8))
+            CustomAccentColors.Add(hex);
 
         // Load available background types
         RefreshBackgroundTypes();
@@ -74,6 +129,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private AppTheme _selectedTheme;
 
+    /// <summary>String representation of <see cref="SelectedTheme"/> used for Classes.selected bindings in AXAML.</summary>
+    public string SelectedThemePreset => SelectedTheme.ToString();
+
     [ObservableProperty]
     private double _cornerRadius;
 
@@ -98,7 +156,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _canvasBackgroundType;
 
-    partial void OnSelectedThemeChanged(AppTheme value) => ApplyAndSave();
+    partial void OnSelectedThemeChanged(AppTheme value)
+    {
+        OnPropertyChanged(nameof(SelectedThemePreset));
+        ApplyAndSave();
+    }
     partial void OnCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnRemoteCardCornerRadiusChanged(double value) => ApplyAndSave();
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
@@ -128,7 +190,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             GlowStrength = GlowStrength,
             AccentColor = AccentColor,
             SchemeVariant = SchemeVariant,
-            BackgroundMaterial = CanvasBackgroundType
+            BackgroundMaterial = CanvasBackgroundType,
+            CustomAccentColors = CustomAccentColors.Take(8).ToList()
         };
 
         // Update the current profile object

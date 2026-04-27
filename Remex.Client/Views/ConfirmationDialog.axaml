@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Remex.Client.Views.ConfirmationDialog"
+        Title="Confirm"
+        Width="440"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="32">
+
+    <Grid RowDefinitions="Auto,Auto,Auto" Margin="28,40,28,28">
+
+        <!-- Dialog title -->
+        <TextBlock x:Name="TitleText"
+                   Grid.Row="0"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"/>
+
+        <!-- Descriptive message -->
+        <TextBlock x:Name="MessageText"
+                   Grid.Row="1"
+                   FontSize="13"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,28"/>
+
+        <!-- Buttons: Cancel (left) | Confirm action (right) -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto">
+            <Button x:Name="CancelBtn"
+                    Grid.Column="1"
+                    Classes="glass-button"
+                    Foreground="{DynamicResource TextSecondaryBrush}"
+                    MinWidth="90"
+                    Margin="0,0,10,0"
+                    Click="OnCancelClicked"/>
+            <Button x:Name="ConfirmBtn"
+                    Grid.Column="2"
+                    MinWidth="130"
+                    CornerRadius="8"
+                    Padding="16,10"
+                    FontWeight="SemiBold"
+                    FontSize="13"
+                    Background="{DynamicResource SystemErrorBrush}"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Click="OnConfirmClicked">
+                <Button.Styles>
+                    <Style Selector="Button:pointerover /template/ ContentPresenter">
+                        <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
+                    </Style>
+                    <Style Selector="Button:pressed">
+                        <Setter Property="RenderTransform" Value="scale(0.97)"/>
+                    </Style>
+                </Button.Styles>
+            </Button>
+        </Grid>
+
+    </Grid>
+</Window>

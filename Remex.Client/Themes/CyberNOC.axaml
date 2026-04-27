@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- ═══ CYBER NOC THEME ═══ -->
-    
+
     <!-- Colors -->
     <Color x:Key="GlassBaseDark">#D90A0A10</Color>
     <Color x:Key="GlassBaseMedium">#F212121E</Color>
@@ -15,7 +15,7 @@
     <Color x:Key="CardBackgroundHover">#26FFFFFF</Color>
     <Color x:Key="CardBorder">#2AFFFFFF</Color>
     <Color x:Key="TextPrimary">#F8FAFC</Color>
-    <Color x:Key="TextSecondary">#00F3FF</Color>
+    <Color x:Key="TextSecondary">#4ECFCF</Color>
     <Color x:Key="TextMuted">#4F5E66</Color>
 
     <!-- Brushes -->
@@ -31,8 +31,12 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
     <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
     <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
+    <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
     <!-- Semi-transparent dark overlay for toolbars and floating panels -->
     <SolidColorBrush x:Key="GlassOverlayBrush" Color="#33000000"/>
 
@@ -46,7 +50,7 @@
         <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
         <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
     </LinearGradientBrush>
-    
+
     <!-- UI Geometry -->
     <CornerRadius x:Key="CardCornerRadius">2</CornerRadius>
     <Thickness x:Key="CardBorderThickness">1</Thickness>

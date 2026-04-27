@@ -391,4 +391,16 @@ Linux: ip addr atau hostname -I</value></data>
 <data name="Home_QrCodeButton" xml:space="preserve"><value>Kode QR</value></data>
 <data name="Home_QrCodeScanHint" xml:space="preserve"><value>Pindai dengan aplikasi RemEx Android</value></data>
 <data name="Home_QrCodeTooltip" xml:space="preserve"><value>Buat kode QR untuk menghubungkan aplikasi RemEx Android</value></data>
+  <data name="About_GitHubStar" xml:space="preserve">
+    <value>⭐ Pertimbangkan untuk memberi bintang di GitHub!</value>
+  </data>
+  <data name="About_GitHubDesc" xml:space="preserve">
+    <value>Sumber terbuka dan gratis. (tolong beri bintang, mereka menyandera kucing saya!)</value>
+  </data>
+  <data name="About_ViewGitHub" xml:space="preserve">
+    <value>Lihat Sumber di GitHub</value>
+  </data>
+  <data name="About_MadeWith" xml:space="preserve">
+    <value>Dibuat dengan ❤️ di Denver, Colorado</value>
+  </data>
 </root>

@@ -45,13 +45,23 @@ import com.google.android.material.color.utilities.SchemeVibrant
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    surfaceContainerHighest = Color(0xFF36343B),
+    surfaceContainerHigh = Color(0xFF2B2930),
+    surfaceContainer = Color(0xFF211F26),
+    surfaceContainerLow = Color(0xFF1D1B20),
+    surfaceContainerLowest = Color(0xFF0F0D13)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
-    tertiary = Pink40
+    tertiary = Pink40,
+    surfaceContainerHighest = Color(0xFFE6E1E5),
+    surfaceContainerHigh = Color(0xFFECE6EA),
+    surfaceContainer = Color(0xFFF3EDF1),
+    surfaceContainerLow = Color(0xFFF7F2F7),
+    surfaceContainerLowest = Color(0xFFFFFFFF)
 )
 
 val remexShapes = Shapes(
@@ -184,6 +194,46 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
     return MorphPolygonShape(morph, progress)
 }
 
+fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
+    val shapeIndex = shapePreset.toInt()
+    val progress = shapePreset - shapeIndex
+
+    // Define "safety" of each shape. 1.0 = safe (square), 0.0 = very unsafe (extreme clipping)
+    val shapeSafety = listOf(
+        0.55f, // Circle (corners cut off significantly)
+        1.00f, // Square (perfectly safe)
+        0.30f, // Triangle (extreme corner clipping)
+        0.45f, // Diamond (heavy corner clipping)
+        0.65f, // Pentagon
+        0.75f, // Arch
+        0.65f, // Semi-Circle
+        0.85f, // Pill
+        0.80f, // Slanted
+        0.70f, // Fan
+        0.65f, // Clam Shell
+        0.55f, // Gem
+        0.40f, // Heart (top-center and bottom-center clipping)
+        0.50f, // Flower
+        0.65f, // Puffy
+        0.55f, // Puffy Diamond
+        0.65f, // Ghostish
+        0.65f, // Oval
+        0.55f, // 4-Leaf Clover
+        0.55f, // 8-Leaf Clover
+        0.45f, // Sunny
+        0.55f, // Soft Burst
+        0.65f, // Soft Boom
+        0.75f  // Pixel Circle
+    )
+
+    val currentSafety = shapeSafety.getOrElse(shapeIndex) { 0.6f }
+    val nextSafety = shapeSafety.getOrElse(shapeIndex + 1) { currentSafety }
+    val safety = currentSafety + (nextSafety - currentSafety) * progress
+
+    // Base padding is 8dp, max padding for unsafe shapes is 24dp
+    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety)
+}
+
 fun colorSchemeFromSeed(
     seedColor: Color,
     darkTheme: Boolean,
@@ -226,6 +276,11 @@ fun colorSchemeFromSeed(
             onSurface = Color(m3.onSurface().getArgb(scheme)),
             surfaceVariant = Color(m3.surfaceVariant().getArgb(scheme)),
             onSurfaceVariant = Color(m3.onSurfaceVariant().getArgb(scheme)),
+            surfaceContainerHighest = Color(m3.surfaceContainerHighest().getArgb(scheme)),
+            surfaceContainerHigh = Color(m3.surfaceContainerHigh().getArgb(scheme)),
+            surfaceContainer = Color(m3.surfaceContainer().getArgb(scheme)),
+            surfaceContainerLow = Color(m3.surfaceContainerLow().getArgb(scheme)),
+            surfaceContainerLowest = Color(m3.surfaceContainerLowest().getArgb(scheme)),
             outline = Color(m3.outline().getArgb(scheme)),
             outlineVariant = Color(m3.outlineVariant().getArgb(scheme)),
             scrim = Color(m3.scrim().getArgb(scheme)),
@@ -257,6 +312,11 @@ fun colorSchemeFromSeed(
             onSurface = Color(m3.onSurface().getArgb(scheme)),
             surfaceVariant = Color(m3.surfaceVariant().getArgb(scheme)),
             onSurfaceVariant = Color(m3.onSurfaceVariant().getArgb(scheme)),
+            surfaceContainerHighest = Color(m3.surfaceContainerHighest().getArgb(scheme)),
+            surfaceContainerHigh = Color(m3.surfaceContainerHigh().getArgb(scheme)),
+            surfaceContainer = Color(m3.surfaceContainer().getArgb(scheme)),
+            surfaceContainerLow = Color(m3.surfaceContainerLow().getArgb(scheme)),
+            surfaceContainerLowest = Color(m3.surfaceContainerLowest().getArgb(scheme)),
             outline = Color(m3.outline().getArgb(scheme)),
             outlineVariant = Color(m3.outlineVariant().getArgb(scheme)),
             scrim = Color(m3.scrim().getArgb(scheme)),

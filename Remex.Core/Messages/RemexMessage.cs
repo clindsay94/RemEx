@@ -77,6 +77,15 @@ public sealed record RemexMessage
     /// <summary>Human-readable error/diagnostic text sent by the host.</summary>
     [JsonPropertyName("errorText")]
     public string? ErrorText { get; init; }
+
+    /// <summary>
+    /// Correlation identifier used to match a command response to its originating request.
+    /// The client embeds a generated ID when sending a command; the host echoes it back in
+    /// the response so the client can complete the correct awaiter.
+    /// Null for messages that do not participate in request-response pairing.
+    /// </summary>
+    [JsonPropertyName("correlationId")]
+    public string? CorrelationId { get; init; }
 }
 
 /// <summary>

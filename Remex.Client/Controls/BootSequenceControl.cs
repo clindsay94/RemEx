@@ -154,6 +154,8 @@ public class BootSequenceControl : Control
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        // Defensive stop: ensures the timer is halted if the control is removed
+        // before the animation completes (e.g. navigation away mid-sequence).
         _timer.Stop();
         _stopwatch.Stop();
     }
@@ -173,6 +175,8 @@ public class BootSequenceControl : Control
         _stopwatch.Restart();
         _elapsed += dt;
 
+        // Timer auto-stops when _elapsed >= 6.0 to prevent resource leak;
+        // this ensures the timer halts even if SequenceCompleted has no subscribers.
         if (_elapsed >= 6.0 && !_completed)
         {
             _completed = true;

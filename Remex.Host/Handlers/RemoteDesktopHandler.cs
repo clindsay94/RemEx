@@ -27,8 +27,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
 
     private int _quality = 50;
-    private double _scale = 0.5;
-    private int _targetFps = 10;
+    private double _scale = 0.6;
+    private int _targetFps = 30;
+
+    private int _desktopLeft = 0;
+    private int _desktopTop = 0;
 
 
     public RemoteDesktopHandler(
@@ -110,7 +113,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                         _logger.LogInformation("Desktop streaming started (quality={Q}, scale={S}, fps={F}).", _quality, _scale, _targetFps);
 
                         // Send screen metadata
-                        var (sw, sh) = _screenCapture.GetScreenSize();
+                        var (sw, sh, sl, st) = _screenCapture.GetScreenSize();
+                        _desktopLeft = sl;
+                        _desktopTop = st;
+
                         var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
                         var metaMsg = new RemexMessage
                         {
@@ -119,6 +125,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                             {
                                 ScreenWidth = sw,
                                 ScreenHeight = sh,
+                                DesktopLeft = sl,
+                                DesktopTop = st,
                                 HostInstanceId = HostBootstrapper.InstanceId,
                                 CursorX = cursorX,
                                 CursorY = cursorY,
@@ -380,7 +388,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 // Only send update if cursor moved (reduce network traffic)
                 if (cursorX != lastX || cursorY != lastY)
                 {
-                    var (sw, sh) = _screenCapture.GetScreenSize();
+                    var (sw, sh, _, _) = _screenCapture.GetScreenSize();
                     var metaMsg = new RemexMessage
                     {
                         Type = MessageTypes.DesktopMeta,
@@ -462,14 +470,14 @@ public sealed class RemoteDesktopHandler : IDisposable
             switch (input.EventType)
             {
                 case InputEventTypes.MouseMove when input.X.HasValue && input.Y.HasValue:
-                    _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    _inputSimulation.MoveMouse(input.X.Value + _desktopLeft, input.Y.Value + _desktopTop);
                     break;
                 case InputEventTypes.MouseMove when input.DeltaX.HasValue || input.DeltaY.HasValue:
                     _inputSimulation.MouseMoveRelative(input.DeltaX ?? 0, input.DeltaY ?? 0);
                     break;
                 case InputEventTypes.MouseDown when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                        _inputSimulation.MoveMouse(input.X.Value + _desktopLeft, input.Y.Value + _desktopTop);
                     _inputSimulation.MouseDown(input.Button.Value);
                     break;
                 case InputEventTypes.MouseUp when input.Button.HasValue:
@@ -477,7 +485,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                     break;
                 case InputEventTypes.MouseClick when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                        _inputSimulation.MoveMouse(input.X.Value + _desktopLeft, input.Y.Value + _desktopTop);
                     _inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:

@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -25,7 +28,230 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     private DashboardProfile? _pendingSyncProfile;
     private bool _isRefreshingSensorActivation;
 
+    // ═══════════════ Undo / Redo ═══════════════
+
+    private readonly Stack<ICanvasOperation> _undoStack = new();
+    private readonly Stack<ICanvasOperation> _redoStack = new();
+    private readonly Dictionary<string, (double X, double Y)> _dragStartPositions = new();
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UndoCommand))]
+    private bool _canUndo;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RedoCommand))]
+    private bool _canRedo;
+
+    // ═══════════════ Sensor Alerts ═══════════════
+
+    private readonly Dictionary<string, SensorAlert> _sensorAlerts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _subscribedSensorNames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Raised when a sensor crosses its configured threshold.</summary>
+    public event Action<SensorAlert>? SensorAlertFired;
+
+    /// <summary>Raised when the view should open the "Set Alert" dialog for a sensor.</summary>
+    public event Action<string, SensorAlert?>? ShowSetAlertRequested;
+
+    // ═══════════════ Minimap ═══════════════
+
+    [ObservableProperty]
+    private bool _isMinimapVisible;
+
+    [ObservableProperty]
+    private Rect _minimapViewportRect;
+
     public ConnectionViewModel Connection { get; }
+
+    /// <summary>Raised when the view should reset the canvas pan/zoom to origin.</summary>
+    public event EventHandler? ResetViewRequested;
+
+    [RelayCommand]
+    private void ResetView() => ResetViewRequested?.Invoke(this, EventArgs.Empty);
+
+    // ═══════════════ Undo / Redo Commands ═══════════════
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        if (_undoStack.Count == 0) return;
+        var op = _undoStack.Pop();
+        op.Undo();
+        _redoStack.Push(op);
+        UpdateUndoRedoState();
+        TriggerSave();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void Redo()
+    {
+        if (_redoStack.Count == 0) return;
+        var op = _redoStack.Pop();
+        op.Execute();
+        _undoStack.Push(op);
+        UpdateUndoRedoState();
+        TriggerSave();
+    }
+
+    private void PushOperation(ICanvasOperation op)
+    {
+        _undoStack.Push(op);
+        _redoStack.Clear();
+        UpdateUndoRedoState();
+    }
+
+    private void UpdateUndoRedoState()
+    {
+        CanUndo = _undoStack.Count > 0;
+        CanRedo = _redoStack.Count > 0;
+    }
+
+    /// <summary>
+    /// Records the drag-start position for a card (and all currently selected cards).
+    /// Called by DraggableCard before a drag begins.
+    /// </summary>
+    public void BeginCardDrag(CanvasCardViewModel card)
+    {
+        _dragStartPositions[card.CardId] = (card.PositionX, card.PositionY);
+        foreach (var sel in SelectedCards)
+            _dragStartPositions[sel.CardId] = (sel.PositionX, sel.PositionY);
+    }
+
+    /// <summary>
+    /// After a drop, compares final positions with recorded start positions and pushes
+    /// a MoveCardOperation (or GroupMoveOperation) onto the undo stack if anything moved.
+    /// </summary>
+    public void RecordMoveIfChanged(CanvasCardViewModel primaryCard, double dragStartX, double dragStartY)
+    {
+        var moved = new List<MoveCardOperation>();
+
+        // Check the primary card using the caller-supplied start position
+        if (Math.Abs(primaryCard.PositionX - dragStartX) > 1 ||
+            Math.Abs(primaryCard.PositionY - dragStartY) > 1)
+        {
+            moved.Add(new MoveCardOperation(primaryCard, dragStartX, dragStartY,
+                primaryCard.PositionX, primaryCard.PositionY));
+        }
+
+        // Check selected cards from the dictionary
+        foreach (var sel in SelectedCards)
+        {
+            if (sel == primaryCard) continue;
+            if (!_dragStartPositions.TryGetValue(sel.CardId, out var start)) continue;
+            if (Math.Abs(sel.PositionX - start.X) > 1 || Math.Abs(sel.PositionY - start.Y) > 1)
+            {
+                moved.Add(new MoveCardOperation(sel, start.X, start.Y,
+                    sel.PositionX, sel.PositionY));
+            }
+        }
+
+        _dragStartPositions.Clear();
+
+        if (moved.Count == 0) return;
+        PushOperation(moved.Count == 1 ? (ICanvasOperation)moved[0] : new GroupMoveOperation(moved));
+    }
+
+    // ═══════════════ Minimap ═══════════════
+
+    [RelayCommand]
+    private void ToggleMinimap() => IsMinimapVisible = !IsMinimapVisible;
+
+    /// <summary>
+    /// Called by the view whenever the ZoomableCanvas pan/zoom state changes.
+    /// Recomputes the minimap viewport rectangle.
+    /// </summary>
+    public void UpdateMinimapViewport(double offsetX, double offsetY, double zoom,
+                                      double viewportWidth, double viewportHeight)
+    {
+        if (zoom <= 0 || viewportWidth <= 0 || viewportHeight <= 0) return;
+
+        const double worldW = 4000, worldH = 4000;
+        const double mmW = 200, mmH = 160;
+
+        double worldLeft  = -offsetX / zoom;
+        double worldTop   = -offsetY / zoom;
+        double worldViewW = viewportWidth  / zoom;
+        double worldViewH = viewportHeight / zoom;
+
+        double x = Math.Max(0, worldLeft  * mmW / worldW);
+        double y = Math.Max(0, worldTop   * mmH / worldH);
+        double w = Math.Min(mmW - x, worldViewW * mmW / worldW);
+        double h = Math.Min(mmH - y, worldViewH * mmH / worldH);
+
+        MinimapViewportRect = new Rect(x, y, Math.Max(1, w), Math.Max(1, h));
+    }
+
+    /// <summary>
+    /// Raised when the minimap was clicked; the view should pan the ZoomableCanvas
+    /// so that (WorldX, WorldY) is centred in the viewport.
+    /// </summary>
+    public event Action<double, double>? MinimapPanRequested;
+
+    /// <summary>Called by the CanvasMinimap control when the user clicks inside it.</summary>
+    public void OnMinimapClicked(double worldX, double worldY)
+        => MinimapPanRequested?.Invoke(worldX, worldY);
+
+    // ═══════════════ Sensor Alerts ═══════════════
+
+    [RelayCommand]
+    private void SetAlert(CanvasCardViewModel? card)
+    {
+        if (card?.Sensor is null) return;
+        var sensorName = card.Sensor.Name;
+        _sensorAlerts.TryGetValue(sensorName, out var existing);
+        ShowSetAlertRequested?.Invoke(sensorName, existing);
+    }
+
+    /// <summary>
+    /// Applies an alert result returned from the SetAlertDialog.
+    /// Pass null to remove the alert; pass a SensorAlert with empty SensorName to clear.
+    /// </summary>
+    public void ApplySensorAlert(string sensorName, SensorAlert? result)
+    {
+        if (result is null || string.IsNullOrEmpty(result.SensorName))
+        {
+            // Clear alert
+            _sensorAlerts.Remove(sensorName);
+            ApplyAlertToSensors(sensorName, null);
+        }
+        else
+        {
+            _sensorAlerts[sensorName] = result;
+            ApplyAlertToSensors(sensorName, result);
+        }
+        TriggerSave();
+    }
+
+    private void ApplyAlertToSensors(string sensorName, SensorAlert? alert)
+    {
+        foreach (var card in Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" &&
+                   string.Equals(c.Sensor?.Name, sensorName, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (card.Sensor is not null)
+                card.Sensor.Alert = alert;
+        }
+    }
+
+    private void OnSensorAlertTriggered(SensorAlert alert)
+    {
+        // Flash all canvas cards for the sensor
+        var affected = Cards
+            .Where(c => c.CardType == "Sensor" &&
+                   string.Equals(c.Sensor?.Name, alert.SensorName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var c in affected) c.IsAlertActive = true;
+
+        SensorAlertFired?.Invoke(alert);
+
+        // Auto-reset the flash after 2 s
+        _ = Task.Delay(2000).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                foreach (var c in affected) c.IsAlertActive = false;
+            }));
+    }
 
     /// <summary>Cards currently placed on the canvas.</summary>
     public ObservableCollection<CanvasCardViewModel> Cards { get; } = new();
@@ -93,7 +319,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async void OnLayoutProfileReceived(DashboardProfile profile)
+    private void OnLayoutProfileReceived(DashboardProfile profile)
+        => _ = OnLayoutProfileReceivedAsync(profile).ContinueWith(
+            t => Debug.WriteLine($"[Remex] OnLayoutProfileReceivedAsync failed: {t.Exception?.GetBaseException().Message}"),
+            TaskContinuationOptions.OnlyOnFaulted);
+
+    private async Task OnLayoutProfileReceivedAsync(DashboardProfile profile)
     {
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -150,8 +381,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
 
+            // Restore sensor alerts from profile.
+            foreach (var alert in _profile.SensorAlerts ?? Enumerable.Empty<SensorAlert>())
+                _sensorAlerts[alert.SensorName] = alert;
+
             // Restore non-sensor cards from profile.
-            foreach (var state in _profile.Cards.Where(c => c.CardType != "Sensor"))
+            foreach (var state in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType != "Sensor"))
             {
                 var card = CanvasCardViewModel.FromCardState(state);
                 card.CardTitle = state.CardType;
@@ -164,7 +399,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             // Create default cards if this is a fresh profile.
             EnsureDefaultCards();
 
-            // If we're already connected, maybe the host is empty? 
+            // If we're already connected, maybe the host is empty?
             // We should probably push our local layout if the host didn't send anything.
             // But for now, let's just ensure we stay in sync.
 
@@ -308,6 +543,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     /// </summary>
     public void ReturnToStaging(CanvasCardViewModel card)
     {
+        PushOperation(new RemoveCardOperation(Cards, card));
         Cards.Remove(card);
 
         // Sensor templates remain in staging; removing from canvas is enough.
@@ -373,6 +609,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         card.ZIndex = _nextZIndex++;
 
         Cards.Add(card);
+        PushOperation(new AddCardOperation(Cards, card));
         TriggerSave();
     }
 
@@ -388,6 +625,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         if (string.IsNullOrWhiteSpace(sensorName)) return;
 
         card.IsPinnedToHome = !card.IsPinnedToHome;
+
+        if (_profile.PinnedSensorIds == null)
+        {
+            _profile = _profile with { PinnedSensorIds = new() };
+        }
 
         if (card.IsPinnedToHome)
         {
@@ -435,6 +677,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _layoutStatus = string.Empty;
+
+    // ═══════════════ P8-I: Snapshot Export Status ═══════════════
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSnapshotStatus))]
+    private string _snapshotStatus = string.Empty;
+
+    public bool HasSnapshotStatus => !string.IsNullOrEmpty(SnapshotStatus);
+
+    /// <summary>Called by the view after a successful snapshot export or clipboard copy.</summary>
+    public void SetSnapshotStatus(string message)
+    {
+        SnapshotStatus = message;
+        _ = Task.Delay(4000).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() => SnapshotStatus = string.Empty));
+    }
 
     /// <summary>
     /// Explicitly saves the current layout to disk and pushes it to the host (if connected).
@@ -510,6 +768,14 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 {
                     var sensor = new SensorViewModel();
 
+                    // Apply any persisted alert for this sensor.
+                    if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
+                        sensor.Alert = existingAlert;
+
+                    // Subscribe once per sensor name to prevent duplicate firings on reconnect.
+                    if (_subscribedSensorNames.Add(sensorName))
+                        sensor.AlertTriggered += OnSensorAlertTriggered;
+
                     // Keep one reusable template in staging so users can add more cards.
                     var staged = new CanvasCardViewModel
                     {
@@ -523,7 +789,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     StagedCards.Add(staged);
 
                     // Restore every persisted card for this sensor.
-                    foreach (var saved in _profile.Cards.Where(c => c.CardType == "Sensor" && c.SensorId == sensorName))
+                    foreach (var saved in (_profile.Cards ?? Enumerable.Empty<CardState>()).Where(c => c.CardType == "Sensor" && c.SensorId == sensorName))
                     {
                         if (Cards.Any(c => c.CardId == saved.CardId))
                         {
@@ -533,7 +799,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         var restored = CanvasCardViewModel.FromCardState(saved);
                         restored.CardTitle = sensorName;
                         restored.Sensor = sensor;
-                        restored.IsPinnedToHome = _profile.PinnedSensorIds.Contains(sensorName);
+                        var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+                        restored.IsPinnedToHome = pinnedIds.Contains(sensorName);
                         restored.RequestPinToggle = () => TogglePinToHome(restored);
                         Cards.Add(restored);
                         TrackZIndex(saved.ZIndex);
@@ -554,7 +821,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     private void TriggerSave()
     {
-        // Use the current profile from the layout service as the base to avoid overwriting 
+        // Use the current profile from the layout service as the base to avoid overwriting
         // global flags (like HasCompletedTutorial) set by other components.
         var baseProfile = _layoutService.CurrentProfile ?? _profile;
 
@@ -570,6 +837,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 .Select(c => c.Sensor!.Name)
                 .Distinct()
                 .ToList(),
+            SensorAlerts = _sensorAlerts.Values.ToList(),
         };
 
         _profile = profile;
@@ -700,7 +968,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         IsSnapToGridEnabled = profile.IsSnapToGridEnabled;
         GridSize = profile.GridSize;
 
-        var profileCardIds = profile.Cards
+        var profileCardIds = (profile.Cards ?? Enumerable.Empty<CardState>())
             .Select(c => c.CardId)
             .Where(id => !string.IsNullOrWhiteSpace(id))
             .ToHashSet(StringComparer.Ordinal);
@@ -710,7 +978,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             Cards.Remove(existing);
         }
 
-        foreach (var state in profile.Cards)
+        foreach (var state in profile.Cards ?? Enumerable.Empty<CardState>())
         {
             var existing = Cards.FirstOrDefault(c => c.CardId == state.CardId);
 
@@ -721,7 +989,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 existing.Width = state.Width;
                 existing.Height = state.Height;
                 existing.ZIndex = state.ZIndex;
-                existing.IsPinnedToHome = profile.PinnedSensorIds.Contains(existing.Sensor?.Name ?? state.SensorId ?? "");
+                var pinnedIds = profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+                existing.IsPinnedToHome = pinnedIds.Contains(existing.Sensor?.Name ?? state.SensorId ?? "");
                 existing.RequestPinToggle = () => TogglePinToHome(existing);
                 continue;
             }
@@ -749,7 +1018,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             var restored = CanvasCardViewModel.FromCardState(state);
             restored.CardTitle = state.SensorId ?? "Sensor";
             restored.Sensor = sensor;
-            restored.IsPinnedToHome = profile.PinnedSensorIds.Contains(state.SensorId ?? "");
+            var pinnedIds2 = profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+            restored.IsPinnedToHome = pinnedIds2.Contains(state.SensorId ?? "");
             restored.RequestPinToggle = () => TogglePinToHome(restored);
             Cards.Add(restored);
             TrackZIndex(restored.ZIndex);

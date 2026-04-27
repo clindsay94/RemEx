@@ -56,6 +56,10 @@ public partial class CanvasCardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDragging;
 
+    /// <summary>True while the card's sensor has an active threshold alert.</summary>
+    [ObservableProperty]
+    private bool _isAlertActive;
+
     // ═══════════════ Content References ═══════════════
 
     /// <summary>The sensor VM for sensor-type cards (null for non-sensor).</summary>

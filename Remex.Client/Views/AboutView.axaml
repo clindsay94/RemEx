@@ -50,7 +50,8 @@
 
             <!-- App Logo and Name -->
             <StackPanel Spacing="12" HorizontalAlignment="Center">
-                <Border Width="100" Height="100" CornerRadius="50" Background="{DynamicResource AccentPrimaryBrush}" Opacity="0.2" HorizontalAlignment="Center">
+                <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
+                    <Image Source="avares://Remex.Client/Assets/icon.png" Stretch="UniformToFill"/>
                 </Border>
 
                 <TextBlock Text="{local:Localize App_Name}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
@@ -64,7 +65,7 @@
                     <!-- Desktop Client Version -->
                     <StackPanel Spacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <TextBlock Text="💻" FontSize="18"/>
+                            <Path Data="{StaticResource IconLaptop}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
                             <TextBlock Text="{local:Localize About_DesktopClient}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding ClientVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
@@ -76,7 +77,7 @@
                     <!-- PC Host Version -->
                     <StackPanel Spacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <TextBlock Text="🖥️" FontSize="18"/>
+                            <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
                             <TextBlock Text="{local:Localize About_PCHost}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>

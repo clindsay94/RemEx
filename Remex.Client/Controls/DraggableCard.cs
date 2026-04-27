@@ -42,6 +42,15 @@ public class DraggableCard : ContentControl
     private const double CardMinWidth = 120;
     private const double CardMinHeight = 80;
 
+    // ═══════════════ IsSelected tracking ═══════════════
+
+    private CanvasCardViewModel? _trackedCardVm;
+
+    // ═══════════════ Undo/redo drag tracking ═══════════════
+
+    private double _dragStartX;
+    private double _dragStartY;
+
     // ═══════════════ Styled Properties ═══════════════
 
     public static readonly StyledProperty<bool> IsDraggingProperty =
@@ -60,18 +69,33 @@ public class DraggableCard : ContentControl
         RenderTransform = new ScaleTransform(1, 1);
 
         // Sync the .selected pseudo-class with the ViewModel's IsSelected property.
-        DataContextChanged += (_, _) =>
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (_trackedCardVm != null)
         {
-            if (DataContext is CanvasCardViewModel cardVm)
-            {
-                cardVm.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected))
-                        UpdateSelectedClass(cardVm.IsSelected);
-                };
-                UpdateSelectedClass(cardVm.IsSelected);
-            }
-        };
+            _trackedCardVm.PropertyChanged -= OnCardViewModelPropertyChanged;
+            _trackedCardVm = null;
+        }
+
+        if (DataContext is CanvasCardViewModel cardVm)
+        {
+            _trackedCardVm = cardVm;
+            cardVm.PropertyChanged += OnCardViewModelPropertyChanged;
+            UpdateSelectedClass(cardVm.IsSelected);
+        }
+    }
+
+    private void OnCardViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (sender is not CanvasCardViewModel cardVm) return;
+
+        if (e.PropertyName == nameof(CanvasCardViewModel.IsSelected))
+            UpdateSelectedClass(cardVm.IsSelected);
+        else if (e.PropertyName == nameof(CanvasCardViewModel.IsAlertActive))
+            UpdateAlertClass(cardVm.IsAlertActive);
     }
 
     private void UpdateSelectedClass(bool isSelected)
@@ -80,6 +104,14 @@ public class DraggableCard : ContentControl
             Classes.Add("selected");
         else
             Classes.Remove("selected");
+    }
+
+    private void UpdateAlertClass(bool isAlertActive)
+    {
+        if (isAlertActive)
+            Classes.Add("alert-active");
+        else
+            Classes.Remove("alert-active");
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -172,6 +204,8 @@ public class DraggableCard : ContentControl
         // Record starting canvas position for delta-based group drag.
         if (_stableParent != null && DataContext is CanvasCardViewModel vm0)
         {
+            _dragStartX = vm0.PositionX;
+            _dragStartY = vm0.PositionY;
             _lastCanvasX = vm0.PositionX;
             _lastCanvasY = vm0.PositionY;
         }
@@ -285,6 +319,7 @@ public class DraggableCard : ContentControl
                     ? e.GetPosition(zoomable).X
                     : 0;
                 dashboard.OnCardDropped(vm, dropX);
+                dashboard.RecordMoveIfChanged(vm, _dragStartX, _dragStartY);
             }
         }
 

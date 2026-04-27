@@ -259,8 +259,37 @@ public class ZoomableCanvas : Panel
 
     // ═══════════════ Transform ═══════════════
 
+    /// <summary>
+    /// Raised after every pan/zoom change with the new (offsetX, offsetY, zoom) state.
+    /// Used by the CanvasMinimap to keep the viewport indicator up to date.
+    /// </summary>
+    public event Action<double, double, double>? ViewportChanged;
+
     private void UpdateTransform()
     {
         _childTransform.Matrix = new Matrix(_zoom, 0, 0, _zoom, _offsetX, _offsetY);
+        ViewportChanged?.Invoke(_offsetX, _offsetY, _zoom);
+    }
+
+    /// <summary>Resets pan and zoom to the default 1:1 origin.</summary>
+    public void ResetView()
+    {
+        _zoom = 1.0;
+        _offsetX = 0;
+        _offsetY = 0;
+        UpdateTransform();
+        InvalidateArrange();
+    }
+
+    /// <summary>
+    /// Pans the viewport so that the given world-space point is centred in the view.
+    /// </summary>
+    public void PanTo(double worldX, double worldY)
+    {
+        var b = Bounds;
+        _offsetX = b.Width  / 2 - worldX * _zoom;
+        _offsetY = b.Height / 2 - worldY * _zoom;
+        UpdateTransform();
+        InvalidateArrange();
     }
 }

@@ -74,14 +74,6 @@ public partial class RemoteDesktopView : UserControl
         if (cursorPad is not null)
             cursorPad.InputRequested += OnCursorPadInput;
 
-        var scaleCombo = this.FindControl<ComboBox>("ScaleComboBox");
-        if (scaleCombo is not null)
-            scaleCombo.SelectionChanged += OnScaleChanged;
-
-        var fpsCombo = this.FindControl<ComboBox>("FpsComboBox");
-        if (fpsCombo is not null)
-            fpsCombo.SelectionChanged += OnFpsChanged;
-
         this.KeyDown += OnViewKeyDown;
         this.KeyUp += OnViewKeyUp;
 
@@ -104,14 +96,6 @@ public partial class RemoteDesktopView : UserControl
         if (cursorPad is not null)
             cursorPad.InputRequested -= OnCursorPadInput;
 
-        var scaleCombo = this.FindControl<ComboBox>("ScaleComboBox");
-        if (scaleCombo is not null)
-            scaleCombo.SelectionChanged -= OnScaleChanged;
-
-        var fpsCombo = this.FindControl<ComboBox>("FpsComboBox");
-        if (fpsCombo is not null)
-            fpsCombo.SelectionChanged -= OnFpsChanged;
-
         this.KeyDown -= OnViewKeyDown;
         this.KeyUp -= OnViewKeyUp;
 
@@ -119,35 +103,6 @@ public partial class RemoteDesktopView : UserControl
             vm.ViewportZoomResetRequested -= ResetViewport;
 
         base.OnDetachedFromVisualTree(e);
-    }
-
-    // ═══════════════ Combo box helpers ═══════════════
-
-    private void OnScaleChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox combo && combo.SelectedItem is ComboBoxItem item && item.Tag is string tag)
-        {
-            if (double.TryParse(tag, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double scale)
-                && DataContext is RemoteDesktopViewModel vm)
-            {
-                vm.Scale = scale;
-                if (vm.IsStreaming)
-                    _ = vm.ApplySettingsCommand.ExecuteAsync(null);
-            }
-        }
-    }
-
-    private void OnFpsChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox combo && combo.SelectedItem is ComboBoxItem item && item.Tag is string tag)
-        {
-            if (int.TryParse(tag, out int fps) && DataContext is RemoteDesktopViewModel vm)
-            {
-                vm.TargetFps = fps;
-                if (vm.IsStreaming)
-                    _ = vm.ApplySettingsCommand.ExecuteAsync(null);
-            }
-        }
     }
 
     // ═══════════════ Virtual cursor pad callback ═══════════════
@@ -234,11 +189,11 @@ public partial class RemoteDesktopView : UserControl
         // Since the TransformContainer and ViewportBorder are the same size (filling the Panel),
         // but the TransformContainer is scaled/panned, we must calculate where the cursor
         // appears in the scaled coordinate space so it matches physical finger position.
-        
+
         // We want the indicator to be exactly where the user is touching.
         // But the indicator is inside the TransformContainer.
         // So we need the pointer position relative to the UNTRANSFORMED TransformContainer.
-        
+
         vm.CursorIndicatorX = (viewportPoint.X - _viewportOffsetX) / _viewportZoom;
         vm.CursorIndicatorY = (viewportPoint.Y - _viewportOffsetY) / _viewportZoom;
         vm.IsCursorVisible = true;
@@ -400,7 +355,7 @@ public partial class RemoteDesktopView : UserControl
         if (coords is null) return;
 
         _longPressFired = true;
-        _isTouchDragging = true; 
+        _isTouchDragging = true;
 
         ShowCursorAt(pos);
 

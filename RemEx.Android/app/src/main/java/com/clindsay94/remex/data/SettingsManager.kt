@@ -99,38 +99,38 @@ class SettingsManager(private val context: Context) {
             val fontScale: Float = 1.0f,
             val cardCornerRadius: Int = 20,
             val cardOpacity: Float = 1.0f,
-            val pcCardShapePreset: Float = 0f,
-            val telemetryCardShapePreset: Float = 0f,
-            val appLauncherCardShapePreset: Float = 0f,
-            val taskManagerCardShapePreset: Float = 0f,
-            val remoteDesktopCardShapePreset: Float = 0f,
-            val remoteControlCardShapePreset: Float = 0f,
-            val remoteMouseCardShapePreset: Float = 0f
+            val pcCardShapePreset: Float = 18.0f,
+            val telemetryCardShapePreset: Float = 18.0f,
+            val appLauncherCardShapePreset: Float = 18.0f,
+            val taskManagerCardShapePreset: Float = 18.0f,
+            val remoteDesktopCardShapePreset: Float = 18.0f,
+            val remoteControlCardShapePreset: Float = 18.0f,
+            val remoteMouseCardShapePreset: Float = 18.0f
     )
 
     val appLauncherCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val taskManagerCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val remoteDesktopCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val remoteControlCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val remoteMouseCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val floatingMouseIslandXFlow: Flow<Float> =
@@ -220,12 +220,12 @@ class SettingsManager(private val context: Context) {
 
     val pcCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[PC_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[PC_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val telemetryCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
-                preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: 0f
+                preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: 18.0f
             }
 
     val connectionPreferencesFlow: Flow<ConnectionPreferences> =
@@ -268,19 +268,19 @@ class SettingsManager(private val context: Context) {
                         fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
                         cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
                         cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
-                        pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: 0f,
+                        pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
                         telemetryCardShapePreset = preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY]
-                                        ?: 0f,
+                                        ?: 18.0f,
                         appLauncherCardShapePreset = preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY]
-                                        ?: 0f,
+                                        ?: 18.0f,
                         taskManagerCardShapePreset = preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY]
-                                        ?: 0f,
+                                        ?: 18.0f,
                         remoteDesktopCardShapePreset =
-                                preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 0f,
+                                preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
                         remoteControlCardShapePreset =
-                                preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 0f,
+                                preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
                         remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY]
-                                        ?: 0f
+                                        ?: 18.0f
                 )
             }
 

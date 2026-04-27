@@ -37,6 +37,16 @@ public class ThemeService : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyBaseThemeInternal(theme));
     }
 
+    /// <summary>
+    /// Applies the base theme synchronously on the current (UI) thread.
+    /// Safe to call from <c>OnFrameworkInitializationCompleted</c> before the
+    /// event loop starts, so the correct theme is loaded before any window is shown.
+    /// </summary>
+    public void ApplyThemeSync(AppTheme theme)
+    {
+        ApplyBaseThemeInternal(theme);
+    }
+
     public void ApplyCustomization(CustomizationSettings settings)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -46,7 +56,13 @@ public class ThemeService : IDisposable
                 ApplyBaseThemeInternal(themeEnum);
             }
 
-            // Clear previous overrides to ensure a clean slate
+            // ── Batch resource updates ──────────────────────────────────────
+            // Build all new values first, then detach the override dictionary,
+            // repopulate it (no change-notifications fire while detached), and
+            // reattach — triggering exactly ONE ResourcesChanged notification
+            // instead of one per key (~25 previously).
+            var merged = Application.Current?.Resources.MergedDictionaries;
+            merged?.Remove(_overrideResources);
             _overrideResources.Clear();
 
             SetResourceOverrideInternal("CardCornerRadius", new CornerRadius(settings.CornerRadius));
@@ -118,6 +134,9 @@ public class ThemeService : IDisposable
             }
 
             SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
+
+            // Reattach the override dictionary — fires one ResourcesChanged for all updates.
+            merged?.Add(_overrideResources);
 
             CustomizationApplied?.Invoke(settings);
         });

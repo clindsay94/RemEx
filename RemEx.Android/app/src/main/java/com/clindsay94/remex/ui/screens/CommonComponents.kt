@@ -55,15 +55,18 @@ import kotlinx.coroutines.delay
 fun NotConnectedBanner(
         isConnected: Boolean,
         onNavigateToConnection: () -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        useDelay: Boolean = true
 ) {
     val view = LocalView.current
     var showBanner by remember { mutableStateOf(false) }
 
-    // Debounce: only show banner if disconnected for 3+ seconds
+    // Debounce: only show banner if disconnected for 3+ seconds (if requested)
     LaunchedEffect(isConnected) {
         if (!isConnected) {
-            delay(3000)
+            if (useDelay) {
+                delay(3000)
+            }
             showBanner = !isConnected // Check again after delay
         } else {
             showBanner = false

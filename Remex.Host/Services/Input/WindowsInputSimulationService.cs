@@ -18,18 +18,17 @@ public class WindowsInputSimulationService : IInputSimulationService
 
     public void MoveMouse(int x, int y)
     {
-        // Map to the primary monitor only (matching what CaptureScreenAsync captures).
-        // Without MOUSEEVENTF_VIRTUALDESK, MOUSEEVENTF_ABSOLUTE maps 0-65535 to the
-        // primary monitor — exactly what we need since the Android client sends
-        // coordinates relative to the primary screen dimensions from DesktopMeta.
-        int primaryW = GetSystemMetrics(SM_CXSCREEN);
-        int primaryH = GetSystemMetrics(SM_CYSCREEN);
+        // Map to the virtual desktop to support multiple monitors correctly.
+        // Coordinate (0,0) in Win32 SendInput with VIRTUALDESK is the top-left of the entire desktop.
+        // Normalized coordinates 0-65535 map across the virtual screen bounds.
+        int vLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        int vTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        int vWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        int vHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
-        x = Math.Clamp(x, 0, primaryW - 1);
-        y = Math.Clamp(y, 0, primaryH - 1);
-
-        int absX = (int)((x * 65535.0) / Math.Max(1, primaryW - 1));
-        int absY = (int)((y * 65535.0) / Math.Max(1, primaryH - 1));
+        // Normalize X and Y to the 0-65535 range across the virtual screen
+        int absX = (int)(((x - vLeft) * 65535.0) / Math.Max(1, vWidth - 1));
+        int absY = (int)(((y - vTop) * 65535.0) / Math.Max(1, vHeight - 1));
 
         var input = new INPUT
         {
@@ -40,7 +39,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 {
                     dx = absX,
                     dy = absY,
-                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE,
+                    dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
                 }
             }
         };

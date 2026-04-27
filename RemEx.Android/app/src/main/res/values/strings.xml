@@ -14,6 +14,7 @@
     <!-- ═══ Navigation ═══ -->
     <string name="snackbar_no_pc_connected">No PC connected</string>
     <string name="snackbar_setup_connection">Set up connection</string>
+    <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">More</string>
     <string name="cd_settings_fab">Settings</string>
 
@@ -30,6 +31,24 @@
     <string name="button_dismiss">Dismiss</string>
     <string name="button_done">Done</string>
     <string name="cd_refresh">Refresh</string>
+    <string name="cd_phone">Phone</string>
+    <string name="cd_terminal">Terminal</string>
+    <string name="cd_launch_icon">Launch</string>
+    <string name="cd_trackpad_icon">Trackpad</string>
+    <string name="cd_monitor_icon">Monitor</string>
+    <string name="cd_play_icon">Play</string>
+    <string name="cd_camera_icon">Camera</string>
+    <string name="cd_section_icon">Section Icon</string>
+    <string name="cd_card_enabled">Card Enabled</string>
+    <string name="cd_connection_icon">Connection</string>
+    <string name="cd_error_icon">Error</string>
+    <string name="cd_wifi_icon">Wi-Fi</string>
+    <string name="cd_search_icon">Search</string>
+    <string name="cd_qr_scanner_icon">QR Scanner</string>
+    <string name="cd_success_icon">Success</string>
+    <string name="cd_help_icon">Help</string>
+    <string name="cd_expand_icon">Expand</string>
+    <string name="cd_category_icon">Category</string>
 
     <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Skip</string>
@@ -83,6 +102,7 @@
     <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">Task Manager</string>
     <string name="task_manager_search_hint">Search process name or PID</string>
+    <string name="sort_by">Sort by:</string>
     <string name="sort_name">Name</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>

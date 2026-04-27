@@ -119,6 +119,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             StreamFps = _profile.StreamFps;
             UpdateHostCapabilitySummary();
             RefreshSensors();
+
+            // Seed connection history from the persisted profile
+            _connection.ConnectionHistory.Clear();
+            foreach (var entry in _profile.ConnectionHistory ?? Enumerable.Empty<ConnectionProfile>())
+                _connection.ConnectionHistory.Add(entry);
         });
 
         _ = RefreshServiceStatusAsync();
@@ -152,7 +157,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         foreach (var card in sensorCards)
         {
             var name = card.Sensor!.Name;
-            var isPinned = _profile.PinnedSensorIds.Contains(name);
+            var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
+            var isPinned = pinnedIds.Contains(name);
             var source = card.Sensor.RawReading?.Source ?? "Unknown";
             var item = new SensorPinItem(name, isPinned, source);
             item.PinChanged += OnSensorPinChanged;
@@ -173,6 +179,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         // Update profile
+        if (_profile.PinnedSensorIds == null)
+        {
+            // We can't assign to _profile.PinnedSensorIds directly because it's init-only.
+            // But _profile is a local field of type DashboardProfile (record).
+            // We should use 'with' or just ensure the list is initialized if it's a List<T>.
+            // Wait, DashboardProfile.PinnedSensorIds is public List<string> PinnedSensorIds { get; init; } = new();
+            // If it's null, we need to replace the profile instance or the property.
+            _profile = _profile with { PinnedSensorIds = new() };
+        }
+
         if (isPinned && !_profile.PinnedSensorIds.Contains(item.SensorName))
             _profile.PinnedSensorIds.Add(item.SensorName);
         else if (!isPinned)
@@ -219,6 +235,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isDiscovering;
 
+    /// <summary>Hosts found by the last mDNS discovery run; bound to the host picker ComboBox.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<string> DiscoveredHosts => _connection.DiscoveredHosts;
+
+    /// <summary>Recently used connection addresses; bound to the history picker ComboBox.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<Remex.Core.Models.ConnectionProfile> ConnectionHistory => _connection.ConnectionHistory;
+
     [RelayCommand]
     private async Task DiscoverHostAsync()
     {
@@ -246,7 +268,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         SavedStatus = LocalizationService.Instance["Settings_SavedStatus"];
 
         // Clear status after 3 seconds
-        _ = Task.Delay(3000).ContinueWith(_ => SavedStatus = string.Empty);
+        _ = Task.Delay(3000).ContinueWith(_ =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => SavedStatus = string.Empty));
     }
 
     [RelayCommand]
@@ -840,69 +863,76 @@ WantedBy=multi-user.target";
     {
         if (OperatingSystem.IsAndroid())
         {
-            IsServiceSectionVisible = false;
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => IsServiceSectionVisible = false);
             return;
         }
 
-        IsServiceSectionVisible = true;
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => IsServiceSectionVisible = true);
 
         if (OperatingSystem.IsLinux())
         {
+            bool installed = false;
+            bool running = false;
+            string statusText = LocalizationService.Instance["Service_Checking"];
             try
             {
-                // Basic check for remex-host service
-                IsServiceInstalled = File.Exists("/etc/systemd/system/remex-host.service");
-                if (IsServiceInstalled)
+                installed = File.Exists("/etc/systemd/system/remex-host.service");
+                if (installed)
                 {
                     var processes = Process.GetProcessesByName("Remex.Host");
-                    IsServiceRunning = processes.Length > 0;
-                    ServiceStatusText = IsServiceRunning
+                    running = processes.Length > 0;
+                    statusText = running
                         ? LocalizationService.Instance["Service_Running"]
                         : LocalizationService.Instance["Service_Stopped"];
                 }
                 else
                 {
-                    ServiceStatusText = LocalizationService.Instance["Service_NotInstalled"];
+                    statusText = LocalizationService.Instance["Service_NotInstalled"];
                 }
             }
-            catch { IsServiceInstalled = false; ServiceStatusText = LocalizationService.Instance["Service_Checking"]; }
+            catch
+            {
+                installed = false;
+                statusText = LocalizationService.Instance["Service_Checking"];
+            }
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsServiceInstalled = installed;
+                IsServiceRunning = running;
+                ServiceStatusText = statusText;
+            });
             return;
         }
 
+        // Windows path — compute values off the UI thread, then dispatch all assignments together.
         try
         {
             var output = await RunLocalAsync("sc.exe", $"query {ServiceName}");
 
             if (output.Contains("does not exist") || output.Contains("FAILED 1060"))
             {
-                IsServiceInstalled = false;
-                IsServiceRunning = false;
-                ServiceStatusText = LocalizationService.Instance["Service_NotInstalled"];
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    IsServiceInstalled = false;
+                    IsServiceRunning = false;
+                    ServiceStatusText = LocalizationService.Instance["Service_NotInstalled"];
+                });
             }
             else
             {
-                IsServiceInstalled = true;
-
+                bool serviceRunning = output.Contains("RUNNING");
+                string statusText;
                 if (output.Contains("RUNNING"))
-                {
-                    IsServiceRunning = true;
-                    ServiceStatusText = LocalizationService.Instance["Service_Running"];
-                }
+                    statusText = LocalizationService.Instance["Service_Running"];
                 else if (output.Contains("STOPPED"))
-                {
-                    IsServiceRunning = false;
-                    ServiceStatusText = LocalizationService.Instance["Service_Stopped"];
-                }
+                    statusText = LocalizationService.Instance["Service_Stopped"];
                 else if (output.Contains("PENDING"))
-                {
-                    ServiceStatusText = LocalizationService.Instance["Service_Pending"];
-                }
+                    statusText = LocalizationService.Instance["Service_Pending"];
                 else
-                {
-                    IsServiceRunning = false;
-                    ServiceStatusText = LocalizationService.Instance["Service_Installed"];
-                }
+                    statusText = LocalizationService.Instance["Service_Installed"];
 
+                string? serviceUsername = null;
                 var qcOut = await RunLocalAsync("sc.exe", $"qc {ServiceName}");
                 foreach (var line in qcOut.Split('\n'))
                 {
@@ -910,15 +940,25 @@ WantedBy=multi-user.target";
                     {
                         var colon = line.IndexOf(':');
                         if (colon >= 0 && colon < line.Length - 1)
-                            ServiceUsername = line[(colon + 1)..].Trim();
+                            serviceUsername = line[(colon + 1)..].Trim();
                         break;
                     }
                 }
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    IsServiceInstalled = true;
+                    IsServiceRunning = serviceRunning;
+                    ServiceStatusText = statusText;
+                    if (serviceUsername != null)
+                        ServiceUsername = serviceUsername;
+                });
             }
         }
         catch (Exception ex)
         {
-            ServiceStatusText = $"Error: {ex.Message}";
+            var msg = $"Error: {ex.Message}";
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => ServiceStatusText = msg);
         }
     }
 

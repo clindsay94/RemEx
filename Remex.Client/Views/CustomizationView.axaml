@@ -4,6 +4,20 @@
     xmlns:models="using:Remex.Client.Models"
     xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.CustomizationView" x:DataType="vm:CustomizationViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="Button.accent-picker">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.accent-picker:pointerover">
+            <Setter Property="BorderBrush" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24">
 
@@ -18,7 +32,7 @@
             <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="5">
                 <!-- Dynamic -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectDynamic">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="Dynamic" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Dynamic}">
                     <StackPanel Spacing="8">
                         <Border Height="40" CornerRadius="20" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2">
                             <Border.Background>
@@ -31,35 +45,35 @@
                         </Border>
                         <TextBlock Text="{local:Localize Custom_PresetDynamic}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Base Dark Glass -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectBaseDark">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="BaseDarkGlass" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=BaseDarkGlass}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
                         <TextBlock Text="{local:Localize Custom_PresetStandardGlass}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Cyber-NOC -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectCyberNOC">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="CyberNOC" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=CyberNOC}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
                         <TextBlock Text="{local:Localize Custom_PresetCyberNOC}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Solar-Flare -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectSolarFlare">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="SolarFlare" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=SolarFlare}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
                         <TextBlock Text="{local:Localize Custom_PresetSolarFlare}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
                 <!-- Monolith -->
-                <Border Classes="glass-card interactive" Margin="4" Padding="16" Cursor="Hand" PointerPressed="OnSelectMonolith">
+                <Button Classes="theme-tile" Margin="4" Padding="16" Command="{Binding SelectThemeCommand}" CommandParameter="Monolith" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Monolith}">
                     <StackPanel Spacing="8">
                         <Border Height="40" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
                         <TextBlock Text="{local:Localize Custom_PresetMonolith}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     </StackPanel>
-                </Border>
+                </Button>
             </UniformGrid>
 
             <!-- ═══ Section 2: Advanced Overrides ═══ -->
@@ -70,7 +84,13 @@
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center"/>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center"/>
+                                <Grid ColumnDefinitions="*,*" Width="200">
+                                    <TextBlock Text="Square" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Round" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
                             <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
@@ -86,7 +106,13 @@
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center"/>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center"/>
+                                <Grid ColumnDefinitions="*,*" Width="200">
+                                    <TextBlock Text="Clear" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Frosted" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
                             <TextBlock Text="{Binding GlassOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
@@ -94,7 +120,13 @@
                     <Grid ColumnDefinitions="*,2*">
                         <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center"/>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center"/>
+                                <Grid ColumnDefinitions="*,*" Width="200">
+                                    <TextBlock Text="None" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Intense" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
                             <TextBlock Text="{Binding GlowStrength, StringFormat={}{0:F0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
@@ -110,6 +142,36 @@
                             <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800"/>
                             <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E"/>
                             <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E"/>
+
+                            <!-- Saved custom swatches -->
+                            <ItemsControl ItemsSource="{Binding CustomAccentColors}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Classes="accent-picker" Background="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- + button to open custom hex input -->
+                            <Button Width="24" Height="24" CornerRadius="12" Padding="0" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextMutedBrush}" FontSize="14" Content="+" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Command="{Binding OpenCustomAccentPickerCommand}" ToolTip.Tip="Add custom colour">
+                                <Button.Flyout>
+                                    <Flyout IsOpen="{Binding IsCustomAccentPickerOpen}" Placement="Bottom">
+                                        <StackPanel Spacing="8" Width="180" Margin="4">
+                                            <TextBlock Text="Custom accent colour" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBox Text="{Binding CustomAccentHex}" Watermark="#RRGGBB" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                                <Button Content="Cancel" Command="{Binding CloseCustomAccentPickerCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="8,4" FontSize="12" CornerRadius="6"/>
+                                                <Button Content="Apply" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="8,4" FontSize="12" FontWeight="SemiBold" CornerRadius="6"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
@@ -142,17 +204,4 @@
         </StackPanel>
     </ScrollViewer>
 
-    <UserControl.Styles>
-        <Style Selector="Button.accent-picker">
-            <Setter Property="Width" Value="24"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-        </Style>
-        <Style Selector="Button.accent-picker:pointerover">
-            <Setter Property="BorderBrush" Value="White"/>
-        </Style>
-    </UserControl.Styles>
 </UserControl>

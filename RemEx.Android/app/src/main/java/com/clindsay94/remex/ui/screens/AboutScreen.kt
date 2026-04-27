@@ -25,14 +25,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,9 +40,9 @@ import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.ui.components.RemexScreenHeader
 import org.json.JSONObject
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen() {
     val context = LocalContext.current
@@ -79,12 +72,17 @@ fun AboutScreen() {
         "Unknown"
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        RemexScreenHeader(title = stringResource(R.string.screen_about_title))
-
+    Scaffold(
+        topBar = {
+            LargeTopAppBar(
+                title = { Text(stringResource(R.string.screen_about_title)) }
+            )
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -100,7 +98,7 @@ fun AboutScreen() {
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier.size(80.dp)
                 )
             }
@@ -126,14 +124,14 @@ fun AboutScreen() {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 )
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Smartphone,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_phone),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -145,12 +143,15 @@ fun AboutScreen() {
                         )
                     }
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Terminal,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_terminal),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.secondary
                         )

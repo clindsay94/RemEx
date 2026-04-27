@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsAotCompatible>true</IsAotCompatible>
@@ -26,9 +26,7 @@
     <LinkerArg Include="-Wl,--allow-multiple-definition" />
   </ItemGroup>
 
-  <Target Name="NormalizeAndroidNativeAotTrimmerCustomData"
-          Condition="'$(TargetFramework)' == 'net10.0-android'"
-          AfterTargets="_PrepareLinking">
+  <Target Name="NormalizeAndroidNativeAotTrimmerCustomData" Condition="'$(TargetFramework)' == 'net10.0-android'" AfterTargets="_PrepareLinking">
     <ItemGroup>
       <_TrimmerCustomData Remove="AndroidHttpClientHandlerType" />
       <_TrimmerCustomData Remove="AndroidCustomViewMapFile" />

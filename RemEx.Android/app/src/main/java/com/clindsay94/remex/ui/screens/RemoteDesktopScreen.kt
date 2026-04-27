@@ -52,6 +52,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.RemexClientManager
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -87,6 +88,19 @@ private data class TapContext(
         val isStylus: Boolean
 )
 
+data class RemoteDesktopUiState(
+    val isStreaming: Boolean = false,
+    val capabilityState: RemoteDesktopCapabilityState = RemoteDesktopCapabilityState(),
+    val desktopError: String? = null,
+    val directTouch: Boolean = false,
+    val pointerSpeed: Float = 1.0f,
+    val vScrollSensitivity: Float = 1.0f,
+    val hScrollSensitivity: Float = 1.0f,
+    val hostCursorX: Float = -1f,
+    val hostCursorY: Float = -1f,
+    val isFullscreen: Boolean = false
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
@@ -103,12 +117,76 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
     val hostCursorX by viewModel.hostCursorX.collectAsState()
     val hostCursorY by viewModel.hostCursorY.collectAsState()
 
+    var isFullscreen by rememberSaveable { mutableStateOf(false) }
+
+    val uiState = RemoteDesktopUiState(
+        isStreaming = isStreaming,
+        capabilityState = capabilityState,
+        desktopError = desktopError,
+        directTouch = directTouch,
+        pointerSpeed = pointerSpeed,
+        vScrollSensitivity = vScrollSensitivity,
+        hScrollSensitivity = hScrollSensitivity,
+        hostCursorX = hostCursorX,
+        hostCursorY = hostCursorY,
+        isFullscreen = isFullscreen
+    )
+
+    RemoteDesktopScreenContent(
+        uiState = uiState,
+        currentBitmap = currentBitmap,
+        config = config,
+        onSetFullscreen = { isFullscreen = it },
+        onStartStreaming = { viewModel.startStreaming() },
+        onStopStreaming = { viewModel.stopStreaming() },
+        onSendText = { viewModel.sendText(it) },
+        onSendKeyPress = { viewModel.sendKeyPress(it) },
+        onSendMouseDown = { b, x, y -> viewModel.sendMouseDown(b, x, y) },
+        onSendMouseUp = { b -> viewModel.sendMouseUp(b) },
+        onSendMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
+        onSendMouseAbsolute = { x, y -> viewModel.sendMouseAbsolute(x, y) },
+        onSendMouseAbsoluteClick = { b, x, y -> viewModel.sendMouseAbsoluteClick(b, x, y) },
+        onSendMouseScroll = { x, y -> viewModel.sendMouseScroll(x, y) },
+        onUpdateQuality = { viewModel.updateQuality(it) },
+        onUpdateTargetFps = { viewModel.updateTargetFps(it) },
+        onUpdateDirectTouch = { viewModel.updateDirectTouch(it) },
+        onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
+        onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
+        getHostScreenSize = { viewModel.getHostScreenSize() },
+        currentFrameTimestamp = currentFrame?.timestamp
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RemoteDesktopScreenContent(
+    uiState: RemoteDesktopUiState,
+    currentBitmap: android.graphics.Bitmap?,
+    config: RemoteDesktopConfigState,
+    onSetFullscreen: (Boolean) -> Unit,
+    onStartStreaming: () -> Unit,
+    onStopStreaming: () -> Unit,
+    onSendText: (String) -> Unit,
+    onSendKeyPress: (Int) -> Unit,
+    onSendMouseDown: (Int, Int, Int) -> Unit,
+    onSendMouseUp: (Int) -> Unit,
+    onSendMouseMove: (Float, Float) -> Unit,
+    onSendMouseAbsolute: (Int, Int) -> Unit,
+    onSendMouseAbsoluteClick: (Int, Int, Int) -> Unit,
+    onSendMouseScroll: (Int, Int) -> Unit,
+    onUpdateQuality: (Int) -> Unit,
+    onUpdateTargetFps: (Int) -> Unit,
+    onUpdateDirectTouch: (Boolean) -> Unit,
+    onUpdatePointerSpeed: (Float) -> Unit,
+    onUpdateScrollSensitivity: (Float, Float) -> Unit,
+    getHostScreenSize: () -> Pair<Int, Int>,
+    currentFrameTimestamp: Long?
+) {
     val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val view = LocalView.current
 
-    var isFullscreen by rememberSaveable { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
@@ -154,14 +232,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
     val inertiaMinVelPx = with(density) { INERTIA_MIN_VELOCITY.dp.toPx() }
     val inertiaStopVelPx = with(density) { INERTIA_STOP_VELOCITY.dp.toPx() }
 
-    DisposableEffect(activity, isFullscreen) {
+    DisposableEffect(activity, uiState.isFullscreen) {
         if (activity == null) {
             onDispose {}
         } else {
             val window = activity.window
             val controller = WindowInsetsControllerCompat(window, window.decorView)
-            WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
-            if (isFullscreen) {
+            WindowCompat.setDecorFitsSystemWindows(window, !uiState.isFullscreen)
+            if (uiState.isFullscreen) {
                 controller.hide(WindowInsetsCompat.Type.systemBars())
                 controller.systemBarsBehavior =
                         WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -179,7 +257,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
     fun mapLocalToHost(localOffset: Offset): Offset {
         if (imageSize.width == 0 || imageSize.height == 0) return Offset.Zero
-        val (hostW, hostH) = viewModel.getHostScreenSize()
+        val (hostW, hostH) = getHostScreenSize()
 
         val centerX = imageSize.width / 2f
         val centerY = imageSize.height / 2f
@@ -216,7 +294,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
     Scaffold(
             topBar = {
-                if (!isFullscreen) {
+                if (!uiState.isFullscreen) {
                     TopAppBar(
                             title = {
                                 Text(
@@ -252,15 +330,15 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                     stringResource(R.string.cd_settings)
                                     )
                                 }
-                                IconButton(onClick = { isFullscreen = !isFullscreen }) {
+                                IconButton(onClick = { onSetFullscreen(!uiState.isFullscreen) }) {
                                     Icon(
                                             Icons.Default.Fullscreen,
                                             contentDescription =
                                                     stringResource(R.string.cd_toggle_fullscreen)
                                     )
                                 }
-                                if (isStreaming) {
-                                    IconButton(onClick = { viewModel.stopStreaming() }) {
+                                if (uiState.isStreaming) {
+                                    IconButton(onClick = { onStopStreaming() }) {
                                         Icon(
                                                 Icons.Default.Stop,
                                                 contentDescription =
@@ -270,14 +348,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     }
                                 } else {
                                     IconButton(
-                                            onClick = { viewModel.startStreaming() },
-                                            enabled = capabilityState.supportsRemoteDesktop
+                                            onClick = { onStartStreaming() },
+                                            enabled = uiState.capabilityState.supportsRemoteDesktop
                                     ) {
                                         Icon(
                                                 Icons.Default.PlayArrow,
                                                 contentDescription = null,
                                                 tint =
-                                                        if (capabilityState.supportsRemoteDesktop)
+                                                        if (uiState.capabilityState.supportsRemoteDesktop)
                                                                 MaterialTheme.colorScheme.primary
                                                         else
                                                                 MaterialTheme.colorScheme
@@ -293,7 +371,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         Column(
                 modifier =
                         Modifier.fillMaxSize()
-                                .padding(if (isFullscreen) PaddingValues(0.dp) else padding)
+                                .padding(if (uiState.isFullscreen) PaddingValues(0.dp) else padding)
                                 .background(Color.Black)
         ) {
 
@@ -309,25 +387,25 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                             val added = newText.substring(oldText.length)
                             val parts = added.split('\n')
                             parts.forEachIndexed { index, part ->
-                                if (part.isNotEmpty()) viewModel.sendText(part)
-                                if (index < parts.size - 1) viewModel.sendKeyPress(13)
+                                if (part.isNotEmpty()) onSendText(part)
+                                if (index < parts.size - 1) onSendKeyPress(13)
                             }
                         } else if (newText.length < oldText.length) {
                             // Characters removed — send backspaces
                             val removed = oldText.length - newText.length
-                            repeat(removed) { viewModel.sendKeyPress(8) }
+                            repeat(removed) { onSendKeyPress(8) }
                         } else if (newText != oldText) {
                             // Same length but different (IME replacement)
                             val removed = oldText.length
-                            repeat(removed) { viewModel.sendKeyPress(8) }
-                            viewModel.sendText(newText)
+                            repeat(removed) { onSendKeyPress(8) }
+                            onSendText(newText)
                         }
 
                         // Reset buffer to avoid unbounded growth and stale IME state
                         textValue = TextFieldValue("")
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { viewModel.sendKeyPress(13) }),
+                    keyboardActions = KeyboardActions(onSend = { onSendKeyPress(13) }),
                     modifier =
                             Modifier.size(1.dp)
                                     .graphicsLayer { alpha = 0f }
@@ -340,8 +418,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     .fillMaxWidth()
                                     .onGloballyPositioned { imageSize = it.size }
                                     // ═══ STYLUS HOVER HANDLING ═══
-                                    .pointerInput(isStreaming) {
-                                        if (!isStreaming) return@pointerInput
+                                    .pointerInput(uiState.isStreaming) {
+                                        if (!uiState.isStreaming) return@pointerInput
                                         awaitPointerEventScope {
                                             var lastHoverTime = 0L
                                             while (true) {
@@ -361,7 +439,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                     mapLocalToHost(
                                                                             stylusChange.position
                                                                     )
-                                                            viewModel.sendMouseAbsolute(
+                                                            onSendMouseAbsolute(
                                                                     hostPos.x.toInt(),
                                                                     hostPos.y.toInt()
                                                             )
@@ -377,8 +455,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     }
                                     // ═══ UNIFIED GESTURE STATE MACHINE ═══
                                     // Key on directTouch so the handler restarts when mode changes
-                                    .pointerInput(isStreaming, inputResetTrigger, directTouch) {
-                                        if (!isStreaming) return@pointerInput
+                                    .pointerInput(uiState.isStreaming, inputResetTrigger, uiState.directTouch) {
+                                        if (!uiState.isStreaming) return@pointerInput
 
                                         // Detect taps to show/hide controls
                                         awaitEachGesture {
@@ -393,8 +471,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                             }
                                         }
                                     }
-                                    .pointerInput(isStreaming, inputResetTrigger, directTouch) {
-                                        if (!isStreaming) return@pointerInput
+                                    .pointerInput(uiState.isStreaming, inputResetTrigger, uiState.directTouch) {
+                                        if (!uiState.isStreaming) return@pointerInput
 
                                         awaitPointerEventScope {
                                             // ── Persistent gesture state ──
@@ -457,7 +535,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
                                             fun cancelDrag() {
                                                 if (isDragging) {
-                                                    viewModel.sendMouseUp(dragButton)
+                                                    onSendMouseUp(dragButton)
                                                     isDragging = false
                                                     dragButton = 0
                                                 }
@@ -577,11 +655,11 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                             scrollAccumX +=
                                                                                     moveDelta.x *
                                                                                             0.5f *
-                                                                                            hScrollSensitivity
+                                                                                            uiState.hScrollSensitivity
                                                                             scrollAccumY +=
                                                                                     moveDelta.y *
                                                                                             0.5f *
-                                                                                            vScrollSensitivity
+                                                                                            uiState.vScrollSensitivity
                                                                             val sx =
                                                                                     scrollAccumX
                                                                                             .toInt()
@@ -590,8 +668,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                             .toInt()
                                                                             if (sx != 0 || sy != 0
                                                                             ) {
-                                                                                viewModel
-                                                                                        .sendMouseScroll(
+                                                                                onSendMouseScroll(
                                                                                                 -sx,
                                                                                                 -sy
                                                                                         )
@@ -640,7 +717,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
                                                     val isStylus = change.type == PointerType.Stylus
                                                     val now = change.uptimeMillis
-                                                    val useAbsolute = isStylus || directTouch
+                                                    val useAbsolute = isStylus || uiState.directTouch
 
                                                     when (event.type) {
                                                         PointerEventType.Press -> {
@@ -737,19 +814,18 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                     // Double-tap-then-drag: second
                                                                     // press has started moving —
                                                                     // immediately enter left drag
-                                                                    // from original press position
                                                                     if (useAbsolute) {
                                                                         val hostPress =
                                                                                 mapLocalToHost(
                                                                                         pressPos
                                                                                 )
-                                                                        viewModel.sendMouseDown(
+                                                                        onSendMouseDown(
                                                                                 0,
                                                                                 hostPress.x.toInt(),
                                                                                 hostPress.y.toInt()
                                                                         )
                                                                     } else {
-                                                                        viewModel.sendMouseDown(0)
+                                                                        onSendMouseDown(0, -1, -1)
                                                                     }
                                                                     isDragging = true
                                                                     dragButton = 0
@@ -763,7 +839,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                     // (trackpad): enter left drag
                                                                     // now that user has started
                                                                     // moving after 500ms hold
-                                                                    viewModel.sendMouseDown(0)
+                                                                    onSendMouseDown(0, -1, -1)
                                                                     isDragging = true
                                                                     dragButton = 0
                                                                     longPressArmed = false
@@ -777,7 +853,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                             mapLocalToHost(
                                                                                     pressPos
                                                                             )
-                                                                    viewModel.sendMouseDown(
+                                                                    onSendMouseDown(
                                                                             0,
                                                                             hostPress.x.toInt(),
                                                                             hostPress.y.toInt()
@@ -795,7 +871,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                             mapLocalToHost(
                                                                                     change.position
                                                                             )
-                                                                    viewModel.sendMouseAbsolute(
+                                                                    onSendMouseAbsolute(
                                                                             hostPos.x.toInt(),
                                                                             hostPos.y.toInt()
                                                                     )
@@ -807,20 +883,20 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                             change.position -
                                                                                     change.previousPosition
                                                                     val scaledX =
-                                                                            diff.x * pointerSpeed
+                                                                            diff.x * uiState.pointerSpeed
                                                                     val scaledY =
-                                                                            diff.y * pointerSpeed
+                                                                            diff.y * uiState.pointerSpeed
 
                                                                     if (isDragging) {
                                                                         // Dragging with button held
-                                                                        viewModel.sendMouseMove(
+                                                                        onSendMouseMove(
                                                                                 scaledX,
                                                                                 scaledY
                                                                         )
                                                                     } else {
                                                                         // Normal trackpad cursor
                                                                         // movement — NO mouseDown
-                                                                        viewModel.sendMouseMove(
+                                                                        onSendMouseMove(
                                                                                 scaledX,
                                                                                 scaledY
                                                                         )
@@ -847,7 +923,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
                                                             if (isDragging) {
                                                                 // End drag
-                                                                viewModel.sendMouseUp(dragButton)
+                                                                onSendMouseUp(dragButton)
                                                                 isDragging = false
                                                                 dragButton = 0
                                                             } else if (!hasMovedBeyondSlop) {
@@ -861,8 +937,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                 mapLocalToHost(
                                                                                         pressPos
                                                                                 )
-                                                                        viewModel
-                                                                                .sendMouseAbsoluteClick(
+                                                                        onSendMouseAbsoluteClick(
                                                                                         0,
                                                                                         hostPos.x
                                                                                                 .toInt(),
@@ -870,7 +945,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                                 .toInt()
                                                                                 )
                                                                     } else {
-                                                                        viewModel.sendMouseClick(0)
+                                                                        onSendMouseAbsoluteClick(0, -1, -1)
                                                                     }
                                                                     lastTap =
                                                                             TapContext(
@@ -887,8 +962,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                 mapLocalToHost(
                                                                                         pressPos
                                                                                 )
-                                                                        viewModel
-                                                                                .sendMouseAbsoluteClick(
+                                                                        onSendMouseAbsoluteClick(
                                                                                         2,
                                                                                         hostPos.x
                                                                                                 .toInt(),
@@ -896,7 +970,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                                 .toInt()
                                                                                 )
                                                                     } else {
-                                                                        viewModel.sendMouseClick(2)
+                                                                        onSendMouseAbsoluteClick(2, -1, -1)
                                                                     }
                                                                     lastTap = null // Long press is
                                                                     // not a tap for
@@ -937,8 +1011,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                                                                                             vy
                                                                                     ) >
                                                                                             inertiaStopVelPx) {
-                                                                                        viewModel
-                                                                                                .sendMouseMove(
+                                                                                        onSendMouseMove(
                                                                                                         vx,
                                                                                                         vy
                                                                                                 )
@@ -966,7 +1039,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                             } finally {
                                                 // Scope cancelled — release any held buttons
                                                 if (isDragging) {
-                                                    viewModel.sendMouseUp(dragButton)
+                                                    onSendMouseUp(dragButton)
                                                 }
                                                 inertiaJob?.cancel()
                                                 longPressJob?.cancel()
@@ -979,7 +1052,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
                 if (safeFrame != null && !safeFrame.isRecycled) {
                     // Force Image to redraw when frame changes by using key(timestamp)
-                    key(currentFrame?.timestamp) {
+                    key(currentFrameTimestamp) {
                         Image(
                                 bitmap = safeFrame.asImageBitmap(),
                                 contentDescription =
@@ -999,31 +1072,31 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                     // provides cursor position (trackpad mode)
                     // Sentinel -1f from ViewModel means "no cursor reported yet".
                     // (0,0) is a valid on-screen position (top-left corner).
-                    val hasHostCursor = hostCursorX >= 0f && hostCursorY >= 0f
+                    val hasHostCursor = uiState.hostCursorX >= 0f && uiState.hostCursorY >= 0f
                     val showCursor =
-                            isStreaming &&
-                                    (cursorVisible && (directTouch || isStylusActive) ||
-                                            (!directTouch && hasHostCursor))
+                            uiState.isStreaming &&
+                                    (cursorVisible && (uiState.directTouch || isStylusActive) ||
+                                            (!uiState.directTouch && hasHostCursor))
 
                     if (showCursor) {
                         val cursorSizeDp = if (isStylusActive) 6.dp else 12.dp
 
                         // Use local cursor position if in touch mode, otherwise map host cursor to
                         // screen
-                        val (hostWidth, hostHeight) = viewModel.getHostScreenSize()
+                        val (hostWidth, hostHeight) = getHostScreenSize()
                         val displayCursorX =
-                                if (directTouch || isStylusActive) {
+                                if (uiState.directTouch || isStylusActive) {
                                     cursorX
                                 } else {
                                     // Map host cursor coordinates to screen coordinates using
                                     // actual host dimensions
-                                    imageSize.width * (hostCursorX / hostWidth.toFloat())
+                                    imageSize.width * (uiState.hostCursorX / hostWidth.toFloat())
                                 }
                         val displayCursorY =
-                                if (directTouch || isStylusActive) {
+                                if (uiState.directTouch || isStylusActive) {
                                     cursorY
                                 } else {
-                                    imageSize.height * (hostCursorY / hostHeight.toFloat())
+                                    imageSize.height * (uiState.hostCursorY / hostHeight.toFloat())
                                 }
 
                         Box(
@@ -1060,37 +1133,34 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                                 imageVector = Icons.Default.Monitor,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.cd_monitor_icon),
                                 modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                                 text =
                                         when {
-                                            desktopError != null -> desktopError ?: ""
-                                            !capabilityState.supportsRemoteDesktop ->
-                                                    capabilityState.unavailableReason
+                                            uiState.desktopError != null -> uiState.desktopError!!
+                                            !uiState.capabilityState.supportsRemoteDesktop ->
+                                                    uiState.capabilityState.unavailableReason
                                                             ?: stringResource(
                                                                     R.string
                                                                             .remote_desktop_unavailable
                                                             )
-                                            isStreaming ->
+                                            uiState.isStreaming ->
                                                     stringResource(R.string.remote_desktop_waiting)
                                             else -> stringResource(R.string.remote_desktop_stopped)
                                         },
-                                color =
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                alpha = 0.6f
-                                        ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyLarge
                         )
-                        if (!isStreaming && capabilityState.supportsRemoteDesktop) {
+                        if (!uiState.isStreaming && uiState.capabilityState.supportsRemoteDesktop) {
                             Spacer(modifier = Modifier.height(16.dp))
-                            FilledTonalButton(onClick = { viewModel.startStreaming() }) {
+                            FilledTonalButton(onClick = { onStartStreaming() }) {
                                 Icon(
                                         Icons.Default.PlayArrow,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.cd_play_icon),
                                         modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -1100,17 +1170,15 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                     }
                 }
 
-                if (isFullscreen) {
+                if (uiState.isFullscreen) {
                     FilledTonalIconButton(
-                            onClick = { isFullscreen = false },
+                            onClick = { onSetFullscreen(false) },
                             modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                             colors =
                                     IconButtonDefaults.filledTonalIconButtonColors(
                                             containerColor =
                                                     MaterialTheme.colorScheme
-                                                            .surfaceContainerHighest.copy(
-                                                            alpha = 0.7f
-                                                    )
+                                                            .surfaceContainerHighest
                                     )
                     ) {
                         Icon(
@@ -1121,29 +1189,26 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 }
 
                 // ═══ UNIFIED AUTO-HIDING CONTROL BAR ═══
-                if (isStreaming) {
+                if (uiState.isStreaming) {
                     androidx.compose.animation.AnimatedVisibility(
-                            visible = controlsVisible || !isFullscreen,
+                            visible = controlsVisible || !uiState.isFullscreen,
                             enter = fadeIn() + slideInVertically { it },
                             exit = fadeOut() + slideOutVertically { it },
                             modifier = Modifier.align(Alignment.BottomCenter)
                     ) {
                         Surface(
                                 tonalElevation = 8.dp,
-                                color =
-                                        MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                                                alpha = 0.85f
-                                        ),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
                                 modifier =
                                         Modifier.fillMaxWidth().let {
-                                            if (isFullscreen)
+                                            if (uiState.isFullscreen)
                                                     it.windowInsetsPadding(
                                                             WindowInsets.navigationBars
                                                     )
                                             else it
                                         },
                                 shape =
-                                        if (isFullscreen) MaterialTheme.shapes.medium
+                                        if (uiState.isFullscreen) MaterialTheme.shapes.medium
                                         else RoundedCornerShape(0.dp)
                         ) {
                             Column(
@@ -1164,7 +1229,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     // Scroll controls
                                     RepeatingIconButton(
                                             onClick = {
-                                                viewModel.sendMouseScroll(0, 120)
+                                                onSendMouseScroll(0, 120)
                                                 showControlsWithTimer()
                                             },
                                             icon = Icons.Default.KeyboardDoubleArrowUp,
@@ -1172,7 +1237,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     )
                                     RepeatingIconButton(
                                             onClick = {
-                                                viewModel.sendMouseScroll(0, -120)
+                                                onSendMouseScroll(0, -120)
                                                 showControlsWithTimer()
                                             },
                                             icon = Icons.Default.KeyboardDoubleArrowDown,
@@ -1243,7 +1308,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     // Left Click
                                     FilledTonalButton(
                                             onClick = {
-                                                viewModel.sendMouseClick(0)
+                                                onSendMouseAbsoluteClick(0, -1, -1)
                                                 showControlsWithTimer()
                                             },
                                             modifier = Modifier.weight(1f)
@@ -1258,7 +1323,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     // Middle Click
                                     FilledTonalButton(
                                             onClick = {
-                                                viewModel.sendMouseClick(1)
+                                                onSendMouseAbsoluteClick(1, -1, -1)
                                                 showControlsWithTimer()
                                             },
                                             modifier = Modifier.weight(1f)
@@ -1273,7 +1338,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                     // Right Click
                                     FilledTonalButton(
                                             onClick = {
-                                                viewModel.sendMouseClick(2)
+                                                onSendMouseAbsoluteClick(2, -1, -1)
                                                 showControlsWithTimer()
                                             },
                                             modifier = Modifier.weight(1f)
@@ -1316,7 +1381,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                             )
                             Slider(
                                     value = config.quality.toFloat(),
-                                    onValueChange = { viewModel.updateQuality(it.toInt()) },
+                                    onValueChange = { onUpdateQuality(it.toInt()) },
                                     valueRange = 1f..100f
                             )
                         }
@@ -1332,7 +1397,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                             )
                             Slider(
                                     value = config.targetFps.toFloat(),
-                                    onValueChange = { viewModel.updateTargetFps(it.toInt()) },
+                                    onValueChange = { onUpdateTargetFps(it.toInt()) },
                                     valueRange = 1f..120f
                             )
                         }
@@ -1357,8 +1422,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                 )
                             }
                             Switch(
-                                    checked = directTouch,
-                                    onCheckedChange = { viewModel.updateDirectTouch(it) }
+                                    checked = uiState.directTouch,
+                                    onCheckedChange = { onUpdateDirectTouch(it) }
                             )
                         }
 
@@ -1369,13 +1434,13 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                             stringResource(
                                                     R.string.remote_desktop_pointer_speed_label
                                             ),
-                                            pointerSpeed
+                                            uiState.pointerSpeed
                                     ),
                                     fontWeight = FontWeight.SemiBold
                             )
                             Slider(
-                                    value = pointerSpeed,
-                                    onValueChange = { viewModel.updatePointerSpeed(it) },
+                                    value = uiState.pointerSpeed,
+                                    onValueChange = { onUpdatePointerSpeed(it) },
                                     valueRange = 0.25f..3.0f,
                                     steps = 10
                             )
@@ -1388,14 +1453,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                             stringResource(
                                                     R.string.remote_desktop_v_scroll_sensitivity_label
                                             ),
-                                            vScrollSensitivity
+                                            uiState.vScrollSensitivity
                                     ),
                                     fontWeight = FontWeight.SemiBold
                             )
                             Slider(
-                                    value = vScrollSensitivity,
+                                    value = uiState.vScrollSensitivity,
                                     onValueChange = {
-                                        viewModel.updateScrollSensitivity(it, hScrollSensitivity)
+                                        onUpdateScrollSensitivity(it, uiState.hScrollSensitivity)
                                     },
                                     valueRange = 0.1f..5.0f,
                                     steps = 20
@@ -1409,14 +1474,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                                             stringResource(
                                                     R.string.remote_desktop_h_scroll_sensitivity_label
                                             ),
-                                            hScrollSensitivity
+                                            uiState.hScrollSensitivity
                                     ),
                                     fontWeight = FontWeight.SemiBold
                             )
                             Slider(
-                                    value = hScrollSensitivity,
+                                    value = uiState.hScrollSensitivity,
                                     onValueChange = {
-                                        viewModel.updateScrollSensitivity(vScrollSensitivity, it)
+                                        onUpdateScrollSensitivity(uiState.vScrollSensitivity, it)
                                     },
                                     valueRange = 0.1f..5.0f,
                                     steps = 20

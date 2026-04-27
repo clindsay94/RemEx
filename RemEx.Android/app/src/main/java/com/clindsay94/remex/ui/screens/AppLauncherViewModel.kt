@@ -12,6 +12,7 @@ import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -88,13 +89,19 @@ class AppLauncherViewModel(
         }
     }
 
+    private val _isRefreshing = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     fun refreshApps() {
         viewModelScope.launch(Dispatchers.IO) {
             if (remexCoreClient.isLibraryLoaded) {
+                _isRefreshing.value = true
                 val request = JSONObject().apply {
                     put("type", "launcher_sync_request")
                 }
                 remexCoreClient.SendMessage(request.toString())
+                kotlinx.coroutines.delay(1000)
+                _isRefreshing.value = false
             }
         }
     }

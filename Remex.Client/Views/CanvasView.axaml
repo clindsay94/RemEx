@@ -15,6 +15,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- ═══ Sensor alert flash ═══ -->
+        <Style Selector="ctrl|DraggableCard.alert-active">
+            <Setter Property="BorderBrush" Value="#FF4444"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#FF4444" BlurRadius="20" Opacity="0.85"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- ═══ DraggableCard chrome ═══ -->
         <Style Selector="ctrl|DraggableCard">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
@@ -142,28 +152,65 @@
 
         <!-- ═══ Toolbar ═══ -->
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                 <Button Classes="back-btn" Content="{local:Localize Canvas_Header}" IsHitTestVisible="False" Background="Transparent"/>
                 <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <Button Grid.Column="3" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
+                <Button Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="Undo (Ctrl+Z)" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="Undo" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="4" Classes="back-btn" Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="Redo" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="5" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="💾" FontSize="14"/>
+                        <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Save}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="4" Classes="back-btn" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
+                <Button Grid.Column="6" Classes="back-btn" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="🔄" FontSize="14"/>
+                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="5" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}">
+                <Button Grid.Column="7" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="📥" FontSize="14"/>
+                        <Path Data="{StaticResource IconImport}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding StagedCards.Count, StringFormat=Sensors ({0})}" FontSize="12"/>
                     </StackPanel>
                 </Button>
+                <Button Grid.Column="8" Classes="back-btn" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="Reset View" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="9" Classes="back-btn" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="Toggle Minimap">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="&#9741;" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="Map" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <!-- P8-I: Snapshot export -->
+                <Button Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="Save canvas as PNG to Pictures folder" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="Export" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
+                    <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="Copy canvas snapshot to clipboard" Padding="8,4">
+                        <TextBlock Text="Copy" FontSize="12"/>
+                    </Button>
+                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="#4ADE80" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -171,7 +218,8 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
 
             <!-- ═══ CANVAS ═══ -->
-            <ctrl:ZoomableCanvas Grid.Column="0" Background="Transparent">
+            <Grid Grid.Column="0">
+                <ctrl:ZoomableCanvas x:Name="MainCanvas" Background="Transparent">
                 <ItemsControl ItemsSource="{Binding Cards}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -205,6 +253,8 @@
                                                 <TextBlock Text="📌" IsVisible="{Binding IsPinnedToHome}"/>
                                             </MenuItem.Icon>
                                         </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="Set Alert..." Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).SetAlertCommand}" CommandParameter="{Binding}"/>
 
                                     </ContextMenu>
                                 </ctrl:DraggableCard.ContextMenu>
@@ -214,7 +264,7 @@
                                     <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
                                         <TextBlock Text="{local:Localize Canvas_Connection}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Ellipse Width="10" Height="10">
+                                            <Ellipse Width="10" Height="10" AutomationProperties.Name="{Binding Connection.StatusText}">
                                                 <Ellipse.Fill>
                                                     <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
                                                 </Ellipse.Fill>
@@ -296,6 +346,17 @@
                 </ItemsControl>
             </ctrl:ZoomableCanvas>
 
+            <!-- Minimap overlay -->
+            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12"
+                    IsVisible="{Binding IsMinimapVisible}"
+                    CornerRadius="8" ClipToBounds="True"
+                    BoxShadow="0 4 24 0 #50000000">
+                <ctrl:CanvasMinimap x:Name="Minimap" Width="200" Height="160"
+                                    Cards="{Binding Cards}"
+                                    ViewportRect="{Binding MinimapViewportRect}"/>
+            </Border>
+        </Grid>
+
             <!-- ═══ STAGING DRAWER ═══ -->
             <Border Grid.Column="1" Background="{DynamicResource GlassBaseMediumBrush}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" Padding="12">
                 <DockPanel>
@@ -304,8 +365,15 @@
 
                         <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
                             <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding SensorActivationItems}">
-                                    <ItemsControl.ItemTemplate>
+                                <ListBox ItemsSource="{Binding SensorActivationItems}" Background="Transparent" BorderThickness="0" Padding="0">
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem">
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </ListBox.Styles>
+                                    <ListBox.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SensorActivationItem">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
                                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -314,8 +382,8 @@
                                                 <Button Grid.Column="3" Classes="stage-mini-btn" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
                                             </Grid>
                                         </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
                             </ScrollViewer>
                         </Border>
 
@@ -323,8 +391,15 @@
                     </StackPanel>
 
                     <ScrollViewer>
-                        <ItemsControl ItemsSource="{Binding StagedCards}">
-                            <ItemsControl.ItemTemplate>
+                        <ListBox ItemsSource="{Binding StagedCards}" Background="Transparent" BorderThickness="0" Padding="0">
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CanvasCardViewModel">
                                     <Border Classes="glass-card interactive" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
@@ -340,12 +415,12 @@
                                                 </TextBlock>
                                                 <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             </StackPanel>
-                                            <Button Classes="stage-btn" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ItemsControl].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
+                                            <Button Classes="stage-btn" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ListBox].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </ScrollViewer>
                 </DockPanel>
             </Border>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -74,6 +75,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
+    /// <summary>Hosts discovered via mDNS; populated after <see cref="DiscoverHostsCommand"/> completes.</summary>
+    public ObservableCollection<string> DiscoveredHosts { get; } = new();
+
+    /// <summary>Recently used connection addresses (most-recent first, max 10).</summary>
+    public ObservableCollection<Remex.Core.Models.ConnectionProfile> ConnectionHistory { get; } = new();
+
     private readonly IMdnsDiscoveryService? _discoveryService;
     private readonly Remex.Client.Services.DashboardLayoutService? _layoutService;
     private readonly ILogger<ConnectionViewModel> _logger;
@@ -116,26 +123,32 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         StatusText = LocalizationService.Instance["Status_SearchingHosts"];
         var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
+        var defaultAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
-        if (foundHosts.Any())
+        Dispatcher.UIThread.Post(() =>
         {
-            var firstHost = foundHosts.First();
-            // Only overwrite if current address is default or empty
-            var defaultAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
-            if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
+            DiscoveredHosts.Clear();
+            foreach (var host in foundHosts)
+                DiscoveredHosts.Add(host);
+
+            if (foundHosts.Any())
             {
-                HostAddress = firstHost;
-                StatusText = string.Format(LocalizationService.Instance["Status_FoundHostFormat"], firstHost);
+                var firstHost = foundHosts.First();
+                if (string.IsNullOrWhiteSpace(HostAddress) || HostAddress == defaultAddress)
+                {
+                    HostAddress = firstHost;
+                    StatusText = string.Format(LocalizationService.Instance["Status_FoundHostFormat"], firstHost);
+                }
+                else
+                {
+                    StatusText = string.Format(LocalizationService.Instance["Status_FoundMultipleHostsFormat"], foundHosts.Count);
+                }
             }
             else
             {
-                StatusText = string.Format(LocalizationService.Instance["Status_FoundMultipleHostsFormat"], foundHosts.Count);
+                StatusText = LocalizationService.Instance["Status_NoHostsFound"];
             }
-        }
-        else
-        {
-            StatusText = LocalizationService.Instance["Status_NoHostsFound"];
-        }
+        });
     }
 
     public event Action<System.Collections.Generic.List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
@@ -193,21 +206,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
             CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
         };
-        var tcs = new TaskCompletionSource<RemexMessage>();
-        _pendingCommandResponse = tcs;
         try
         {
-            await MessageSerializer.SendAsync(_webSocket, msg);
-            var response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var response = await SendCommandAndWaitAsync(msg);
             return new Remex.Core.Models.IPC.CommandResponse(response.CommandSuccess ?? false, response.CommandMessage ?? "", null);
         }
-        catch
+        catch (OperationCanceledException)
         {
             return new Remex.Core.Models.IPC.CommandResponse(false, "Timeout waiting for server response", null);
-        }
-        finally
-        {
-            _pendingCommandResponse = null;
         }
     }
 
@@ -265,18 +271,39 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     }
 
     private bool CanConnect() => !IsConnected && !IsConnecting;
-    private bool CanDisconnect() => IsConnected || IsConnecting;
 
-    private System.Threading.Tasks.TaskCompletionSource<RemexMessage>? _pendingCommandResponse;
+    private void SaveConnectionToHistory()
+    {
+        const int MaxHistoryEntries = 10;
+        var address = HostAddress;
+
+        var existing = ConnectionHistory.FirstOrDefault(h => h.HostAddress == address);
+        if (existing != null)
+            ConnectionHistory.Remove(existing);
+
+        ConnectionHistory.Insert(0, new Remex.Core.Models.ConnectionProfile
+        {
+            Name = address,
+            HostAddress = address,
+            LastConnected = DateTime.Now
+        });
+
+        while (ConnectionHistory.Count > MaxHistoryEntries)
+            ConnectionHistory.RemoveAt(ConnectionHistory.Count - 1);
+
+        if (_layoutService != null)
+        {
+            var profile = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+            _layoutService.RequestSave(profile with { ConnectionHistory = ConnectionHistory.ToList() });
+        }
+    }
+    private bool CanDisconnect() => IsConnected || IsConnecting;
 
     public System.Net.WebSockets.WebSocket? GetWebSocket() => _webSocket;
     public async Task<(bool Success, string Message)> SendCommandAsync(string action, System.Collections.Generic.Dictionary<string, string>? parameters = null)
     {
         if (_webSocket?.State != WebSocketState.Open)
             return (false, LocalizationService.Instance["Status_NotConnected"]);
-
-        var tcs = new System.Threading.Tasks.TaskCompletionSource<RemexMessage>();
-        _pendingCommandResponse = tcs;
 
         try
         {
@@ -287,12 +314,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 CommandParameters = parameters,
                 Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
             };
-            await MessageSerializer.SendAsync(_webSocket, msg, System.Threading.CancellationToken.None);
-
-            using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
-            cts.Token.Register(() => tcs.TrySetCanceled());
-
-            var response = await tcs.Task;
+            var response = await SendCommandAndWaitAsync(msg);
             return (response.CommandSuccess ?? false, response.CommandMessage ?? LocalizationService.Instance["Status_NoMessage"]);
         }
         catch (OperationCanceledException)
@@ -310,13 +332,53 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             return (false, $"Invalid operation: {ex.Message}");
         }
         // Let unexpected exceptions propagate
-        finally
-        {
-            _pendingCommandResponse = null;
-        }
     }
 
     private bool CanSendPing() => IsConnected;
+
+    // ---------------------------------------------------------------------------
+    // Correlated command/response infrastructure
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// How long to wait for a command response before giving up.
+    /// </summary>
+    private const int CommandTimeoutSeconds = 10;
+
+    /// <summary>
+    /// Pending command awaiters keyed by correlation ID.
+    /// Replaces the former single <c>_pendingCommandResponse</c> field so concurrent
+    /// callers no longer overwrite each other.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _pendingCommands = new();
+
+    /// <summary>
+    /// Stamps a correlation ID onto <paramref name="msg"/>, registers a TCS, sends the
+    /// message, and awaits the matching response with a <see cref="CommandTimeoutSeconds"/>
+    /// timeout.  Cleans up the dictionary entry regardless of outcome.
+    /// </summary>
+    private async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)
+    {
+        var correlationId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCommands[correlationId] = tcs;
+        try
+        {
+            await MessageSerializer.SendAsync(_webSocket!, msg with { CorrelationId = correlationId }, ct);
+            try
+            {
+                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(CommandTimeoutSeconds), ct);
+            }
+            catch (TimeoutException)
+            {
+                throw new OperationCanceledException("Command timed out.");
+            }
+        }
+        finally
+        {
+            _pendingCommands.TryRemove(correlationId, out _);
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
@@ -356,6 +418,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             IsConnecting = false;
             StatusText = LocalizationService.Instance["Status_Connected"];
             LatencyText = "—";
+
+            SaveConnectionToHistory();
 
             // Start background receive loop.
             _ = ReceiveLoopAsync(_receiveCts.Token);
@@ -519,7 +583,33 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                         break;
 
                     case MessageTypes.CommandResponse:
-                        _pendingCommandResponse?.TrySetResult(message);
+                        if (message.CorrelationId is string cid
+                            && _pendingCommands.TryGetValue(cid, out var matchedTcs))
+                        {
+                            // Normal path: correlation ID present and matches a pending request
+                            matchedTcs.TrySetResult(message);
+                        }
+                        else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
+                        {
+                            // Fallback for hosts that do not echo correlation IDs back in their
+                            // CommandResponse messages (i.e. unpatched / older host versions).
+                            // LIMITATION: With multiple concurrent in-flight commands this path
+                            // delivers the response to at most one caller (the first whose TCS
+                            // accepts it); all remaining concurrent callers will eventually time
+                            // out.  Upgrade the host so it echoes CorrelationId to avoid this.
+                            if (_pendingCommands.Count > 1)
+                                Debug.WriteLine(
+                                    "[ConnectionViewModel] WARNING: Fallback correlation path taken with " +
+                                    $"{_pendingCommands.Count} concurrent in-flight commands. " +
+                                    "Only one caller will receive this response; the rest will time out. " +
+                                    "Upgrade the host to a version that echoes CorrelationId.");
+
+                            foreach (var entry in _pendingCommands)
+                            {
+                                if (entry.Value.TrySetResult(message))
+                                    break;
+                            }
+                        }
                         break;
 
                     case MessageTypes.LauncherSync when message.LauncherEntries is not null:
@@ -688,6 +778,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         _webSocket?.Dispose();
         _webSocket = null;
+
+        // Cancel all in-flight command awaiters so callers don't hang after disconnect
+        foreach (var (_, pendingTcs) in _pendingCommands)
+            pendingTcs.TrySetCanceled();
+        _pendingCommands.Clear();
 
         IsConnected = false;
         HostCapabilities = null;

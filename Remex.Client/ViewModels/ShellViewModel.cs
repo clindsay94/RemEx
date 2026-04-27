@@ -1,12 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
+using Remex.Client.Models;
 using Remex.Client.Services;
 using Remex.Core.Guards;
+using Remex.Core.Models;
 
 namespace Remex.Client.ViewModels;
 
@@ -20,10 +25,26 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
     private readonly IImmersiveModeService? _immersiveMode;
+    private readonly IServiceProvider _services;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
     private readonly PropertyChangedEventHandler _onConnectionChanged;
     private static readonly Random _rng = new();
     private bool _welcomeSplashStarted;
+
+    /// <summary>All tutorial pages in order; each declares which platforms display it.</summary>
+    private static readonly IReadOnlyList<TutorialPage> _tutorialPages = new[]
+    {
+        new TutorialPage(0, "Welcome",          "Welcome to Remex.",                       PlatformFlags.All),
+        new TutorialPage(1, "Connect",          "Connect to your host.",                   PlatformFlags.All),
+        new TutorialPage(2, "Windows Service",  "Install the Windows background service.", PlatformFlags.Windows),
+        new TutorialPage(3, "Linux Service",    "Install the Linux systemd service.",      PlatformFlags.Linux),
+        new TutorialPage(4, "HWiNFO",          "Monitor hardware sensors.",               PlatformFlags.Windows),
+        new TutorialPage(5, "Dashboard",        "Customize your dashboard.",               PlatformFlags.All),
+        new TutorialPage(6, "Remote Control",   "Control your remote machine.",            PlatformFlags.All),
+        new TutorialPage(7, "Remote Desktop",   "Stream your remote desktop.",             PlatformFlags.All),
+        new TutorialPage(8, "Customization",    "Personalize the app look and feel.",      PlatformFlags.All),
+        new TutorialPage(9, "Finish",           "You're all set — let's go!",             PlatformFlags.All),
+    };
 
     /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
     public DashboardLayoutService LayoutService => _layoutService;
@@ -60,6 +81,71 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isSettingsPanelOpen;
 
+    // ═══════════════ Sensor Alert Notifications ═══════════════
+
+    /// <summary>Number of sensor alerts fired in this session (badge count).</summary>
+    [ObservableProperty]
+    private int _alertBadgeCount;
+
+    /// <summary>Whether there are any unacknowledged sensor alerts.</summary>
+    public bool HasAlerts => AlertBadgeCount > 0;
+
+    partial void OnAlertBadgeCountChanged(int value) => OnPropertyChanged(nameof(HasAlerts));
+
+    /// <summary>Recent sensor alert notifications (most recent first).</summary>
+    public ObservableCollection<SensorAlertNotification> AlertNotifications { get; } = new();
+
+    [RelayCommand]
+    private void DismissAlerts()
+    {
+        AlertBadgeCount = 0;
+        AlertNotifications.Clear();
+    }
+
+    // ═══════════════ Tray Tooltip Summary ═══════════════
+
+    /// <summary>
+    /// Formatted one-liner shown as the tray icon tooltip.
+    /// Example: "Remex — CPU: 54°C · RAM: 67% · Connected"
+    /// </summary>
+    [ObservableProperty]
+    private string _trayStatusSummary = "Remex";
+
+    /// <summary>Recomputes <see cref="TrayStatusSummary"/> from the latest telemetry snapshot.</summary>
+    public void UpdateTrayStatus(Remex.Core.Messages.TelemetryPayload? telemetry)
+    {
+        var connectionLabel = Connection.IsConnected ? "Connected" : "Disconnected";
+
+        if (telemetry?.Sensors is not { Count: > 0 })
+        {
+            TrayStatusSummary = $"Remex — {connectionLabel}";
+            return;
+        }
+
+        var pinned = _layoutService.CurrentProfile?.PinnedSensorIds
+                     ?? Enumerable.Empty<string>();
+
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (var id in pinned)
+        {
+            if (parts.Count >= 2) break;
+            var r = telemetry.Sensors.FirstOrDefault(s => s.Name == id);
+            if (r != null)
+                parts.Add($"{r.Name.Split(' ')[0]}: {r.Value:F0}{r.Unit}");
+        }
+
+        if (parts.Count == 0)
+        {
+            // Fall back to the first two sensors in the payload
+            foreach (var r in telemetry.Sensors.Take(2))
+                parts.Add($"{r.Name.Split(' ')[0]}: {r.Value:F0}{r.Unit}");
+        }
+
+        TrayStatusSummary = parts.Count > 0
+            ? $"Remex — {string.Join(" · ", parts)} · {connectionLabel}"
+            : $"Remex — {connectionLabel}";
+    }
+
     /// <summary>Index of the active navigation item (for highlight).</summary>
     [ObservableProperty]
     private int _activeNavIndex;
@@ -85,7 +171,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private int _tutorialPageIndex;
 
     /// <summary>Total number of tutorial pages.</summary>
-    public int TutorialPageCount => 10;
+    public int TutorialPageCount => _tutorialPages.Count;
 
     /// <summary>User preference to not show tutorial again.</summary>
     [ObservableProperty]
@@ -102,8 +188,34 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _connectionBannerMessage = string.Empty;
 
+    /// <summary>
+    /// When true, a dismissible banner is shown informing the user that the
+    /// layout profile could not be loaded and defaults were applied.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showLayoutLoadWarning;
+
+    /// <summary>Message shown in the layout load warning banner.</summary>
+    [ObservableProperty]
+    private string _layoutLoadWarningMessage = string.Empty;
+
+    /// <summary>
+    /// When true, all infinite/decorative animations are suppressed for users
+    /// who prefer reduced motion.  Persisted in the layout profile.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isReducedMotion;
+
+    partial void OnIsReducedMotionChanged(bool value)
+    {
+        var current = _layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
+        var updated = current with { IsReducedMotion = value };
+        _layoutService.RequestSave(updated);
+    }
+
     // ═══════════════ Child VMs (lazy-created, cached) ═══════════════
 
+    private int _lastSensorCardCount = -1;
     private HomeViewModel? _homeViewModel;
     private CanvasDashboardViewModel? _canvasViewModel;
     private SettingsViewModel? _settingsViewModel;
@@ -117,11 +229,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
 
-    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IImmersiveModeService? immersiveMode = null)
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null)
     {
         _layoutService = Guard.NotNull(layoutService);
         _themeService = Guard.NotNull(themeService);
         Connection = Guard.NotNull(connectionViewModel);
+        _services = Guard.NotNull(services);
         _immersiveMode = immersiveMode; // Intentionally optional
 
         _onCustomizationApplied = settings => Customization = settings;
@@ -129,6 +242,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         if (_layoutService.CurrentProfile?.Customization != null)
         {
             Customization = _layoutService.CurrentProfile.Customization;
+        }
+
+        // Load reduced-motion preference
+        if (_layoutService.CurrentProfile is { } profile)
+            _isReducedMotion = profile.IsReducedMotion;
+
+        // Surface any layout load failure to the user via a dismissible banner.
+        if (!string.IsNullOrEmpty(_layoutService.LoadFailureWarning))
+        {
+            _layoutLoadWarningMessage = _layoutService.LoadFailureWarning;
+            _showLayoutLoadWarning = true;
         }
 
         // Auto-hide the connection banner when the host connects
@@ -142,6 +266,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // Initialize background/shared VMs
         _canvasViewModel = new CanvasDashboardViewModel(Connection, _layoutService, this);
         _ = _canvasViewModel.InitializeAsync();
+        _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
     }
 
     public void Dispose()
@@ -151,7 +276,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         // Dispose child ViewModels
         _homeViewModel?.Dispose();
-        _canvasViewModel?.Dispose();
+        if (_canvasViewModel != null)
+        {
+            _canvasViewModel.SensorAlertFired -= OnSensorAlertFired;
+            _canvasViewModel.Dispose();
+        }
         _settingsViewModel?.Dispose();
         _remoteViewModel?.Dispose();
         _appLauncherViewModel?.Dispose();
@@ -198,38 +327,28 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void TutorialNext()
     {
+        var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
+                     : OperatingSystem.IsLinux()   ? PlatformFlags.Linux
+                     : PlatformFlags.Android;
+
         int nextIndex = TutorialPageIndex + 1;
+        while (nextIndex < _tutorialPages.Count && (_tutorialPages[nextIndex].SupportedPlatforms & platform) == 0)
+            nextIndex++;
 
-        // Skip OS-specific pages
-        if (OperatingSystem.IsWindows())
-        {
-            if (nextIndex == 3) nextIndex = 4; // Skip Linux Service page
-        }
-        else if (OperatingSystem.IsLinux())
-        {
-            if (nextIndex == 2) nextIndex = 3; // Skip Windows Service page
-            if (nextIndex == 4) nextIndex = 5; // Skip HWInfo page (Windows only)
-        }
-
-        if (nextIndex < TutorialPageCount)
+        if (nextIndex < _tutorialPages.Count)
             TutorialPageIndex = nextIndex;
     }
 
     [RelayCommand]
     public void TutorialPrevious()
     {
-        int prevIndex = TutorialPageIndex - 1;
+        var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
+                     : OperatingSystem.IsLinux()   ? PlatformFlags.Linux
+                     : PlatformFlags.Android;
 
-        // Skip OS-specific pages
-        if (OperatingSystem.IsWindows())
-        {
-            if (prevIndex == 3) prevIndex = 2; // Skip Linux Service page
-        }
-        else if (OperatingSystem.IsLinux())
-        {
-            if (prevIndex == 4) prevIndex = 3; // Skip HWInfo page (Windows only)
-            if (prevIndex == 2) prevIndex = 1; // Skip Windows Service page
-        }
+        int prevIndex = TutorialPageIndex - 1;
+        while (prevIndex >= 0 && (_tutorialPages[prevIndex].SupportedPlatforms & platform) == 0)
+            prevIndex--;
 
         if (prevIndex >= 0)
             TutorialPageIndex = prevIndex;
@@ -250,6 +369,29 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     public void DismissConnectionBanner() => ShowConnectionBanner = false;
+
+    // ═══════════════ Canvas Undo / Redo (routed from MainWindow key bindings) ═══════════════
+
+    [RelayCommand]
+    private void CanvasUndo() => _canvasViewModel?.UndoCommand.Execute(null);
+
+    [RelayCommand]
+    private void CanvasRedo() => _canvasViewModel?.RedoCommand.Execute(null);
+
+    // ═══════════════ Sensor Alert Notifications ═══════════════
+
+    private void OnSensorAlertFired(SensorAlert alert)
+    {
+        AlertBadgeCount++;
+        AlertNotifications.Insert(0, new SensorAlertNotification(
+            alert.SensorName, alert.Severity, DateTime.Now));
+        // Cap the list at 20 entries
+        while (AlertNotifications.Count > 20)
+            AlertNotifications.RemoveAt(AlertNotifications.Count - 1);
+    }
+
+    [RelayCommand]
+    public void DismissLayoutLoadWarning() => ShowLayoutLoadWarning = false;
 
     /// <summary>
     /// Shows the connection banner if the host is not connected.
@@ -277,6 +419,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
     private void SetTransitionAndNavigate(int targetIndex, ObservableObject viewModel)
     {
+        // Clear app launcher search when navigating away
+        if (CurrentView is AppLauncherViewModel alvm && viewModel != alvm)
+            alvm.SearchText = string.Empty;
+
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
 
         // Material 3 style:
@@ -304,7 +450,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToHome()
     {
-        _homeViewModel ??= Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<HomeViewModel>(App.Services);
+        _homeViewModel ??= _services.GetRequiredService<HomeViewModel>();
         _homeViewModel.RefreshPinnedSensors();
         SetTransitionAndNavigate(0, _homeViewModel);
     }
@@ -322,7 +468,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         NotifyIfDisconnected("Remote Control");
         _remoteViewModel ??= new RemoteViewModel(
             Connection, this,
-            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(App.Services),
+            _services.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(),
             _layoutService);
         SetTransitionAndNavigate(2, _remoteViewModel);
     }
@@ -333,7 +479,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         NotifyIfDisconnected("App Launcher");
         if (_appLauncherViewModel is null)
         {
-            _appLauncherViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppLauncherViewModel>(App.Services);
+            _appLauncherViewModel = _services.GetRequiredService<AppLauncherViewModel>();
         }
         SetTransitionAndNavigate(3, _appLauncherViewModel);
     }
@@ -380,6 +526,34 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    public void DismissOverlays()
+    {
+        IsSettingsPanelOpen = false;
+        IsDrawerOpen = false;
+        ShowTutorialOverlay = false;
+        ShowConnectionBanner = false;
+    }
+
+    [RelayCommand]
+    public void OpenCommandPalette()
+    {
+        var vm = new CommandPaletteViewModel(this);
+        var window = new Remex.Client.Views.CommandPaletteWindow(vm);
+
+        // Find the main window to use as owner for centering
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow is { } mainWindow)
+        {
+            window.ShowDialog(mainWindow);
+        }
+        else
+        {
+            window.Show();
+        }
+    }
+
+    [RelayCommand]
     public void ToggleDrawer()
     {
         IsDrawerOpen = !IsDrawerOpen;
@@ -390,19 +564,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToSettings()
     {
-        // Now opens the settings overlay instead of navigating
+        IsSettingsPanelOpen = false;
         EnsureSettingsVm();
-        EnsureCustomizationVm();
-        IsSettingsPanelOpen = true;
+        CurrentView = _settingsViewModel;
     }
 
     [RelayCommand]
     public void NavigateToCustomization()
     {
-        // Now opens the settings overlay instead of navigating
-        EnsureSettingsVm();
+        IsSettingsPanelOpen = false;
         EnsureCustomizationVm();
-        IsSettingsPanelOpen = true;
+        CurrentView = _customizationViewModel;
     }
 
     private void EnsureSettingsVm()
@@ -410,9 +582,19 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         if (_settingsViewModel is null)
         {
             _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this);
-            _ = _settingsViewModel.InitializeAsync();
+            _ = _settingsViewModel.InitializeAsync(); // InitializeAsync calls RefreshSensors itself
+            _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
+            return;
         }
-        _settingsViewModel.RefreshSensors();
+
+        // Only rebuild the sensor list when the canvas sensor card count changes,
+        // avoiding 50+ CollectionChanged events on every Settings panel open.
+        var currentCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
+        if (currentCount != _lastSensorCardCount)
+        {
+            _lastSensorCardCount = currentCount;
+            _settingsViewModel.RefreshSensors();
+        }
     }
 
     private void EnsureCustomizationVm()
@@ -446,3 +628,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         }
     }
 }
+
+/// <summary>A single entry in the shell's sensor-alert notification feed.</summary>
+public sealed record SensorAlertNotification(string SensorName, AlertSeverity Severity, DateTime Time);

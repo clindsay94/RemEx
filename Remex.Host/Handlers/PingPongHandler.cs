@@ -118,6 +118,9 @@ public sealed class PingPongHandler(
 
                     case MessageTypes.Command when message.CommandAction is not null:
                         var cmdResponse = await ExecuteCommandAsync(message);
+                        // Echo the correlation ID so the client can match the response to the request
+                        if (message.CorrelationId is not null)
+                            cmdResponse = cmdResponse with { CorrelationId = message.CorrelationId };
                         await MessageSerializer.SendAsync(webSocket, cmdResponse, ct);
                         logger.LogDebug("Sent command response for {Action}.", message.CommandAction);
                         break;

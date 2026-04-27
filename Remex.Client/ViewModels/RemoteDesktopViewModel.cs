@@ -42,9 +42,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private int _quality = 50;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedScaleIndex))]
     private double _scale = 0.5;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedFpsIndex))]
     private int _targetFps = 10;
 
     [ObservableProperty]
@@ -140,7 +142,69 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             Quality = profile.StreamQuality;
             TargetFps = profile.StreamFps;
+            Scale = SnapScale(profile.StreamScale);
         }
+    }
+
+    // ═══════════════ ComboBox index helpers ═══════════════
+
+    /// <summary>Snaps a scale value to the nearest valid option (0.25, 0.50, 0.75, 1.0).</summary>
+    private static double SnapScale(double value) => value switch
+    {
+        < 0.375 => 0.25,
+        < 0.625 => 0.50,
+        < 0.875 => 0.75,
+        _ => 1.0,
+    };
+
+    /// <summary>Zero-based index of the current Scale value in the Scale ComboBox (25%, 50%, 75%, 100%).</summary>
+    public int SelectedScaleIndex
+    {
+        get => Scale switch
+        {
+            <= 0.25 => 0,
+            <= 0.5 => 1,
+            <= 0.75 => 2,
+            _ => 3,
+        };
+        set => Scale = value switch
+        {
+            0 => 0.25,
+            1 => 0.5,
+            2 => 0.75,
+            3 => 1.0,
+            _ => 0.5,
+        };
+    }
+
+    /// <summary>Zero-based index of the current TargetFps value in the FPS ComboBox (5/10/15/20/30/60/120/240/360).</summary>
+    public int SelectedFpsIndex
+    {
+        get => TargetFps switch
+        {
+            <= 5 => 0,
+            <= 10 => 1,
+            <= 15 => 2,
+            <= 20 => 3,
+            <= 30 => 4,
+            <= 60 => 5,
+            <= 120 => 6,
+            <= 240 => 7,
+            _ => 8,
+        };
+        set => TargetFps = value switch
+        {
+            0 => 5,
+            1 => 10,
+            2 => 15,
+            3 => 20,
+            4 => 30,
+            5 => 60,
+            6 => 120,
+            7 => 240,
+            8 => 360,
+            _ => 10,
+        };
     }
 
     // ═══════════════ Commands ═══════════════
@@ -235,6 +299,18 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             TargetFps = TargetFps,
         };
         await _desktopService.SendConfigAsync(config);
+        PersistStreamSettings();
+    }
+
+    private void PersistStreamSettings()
+    {
+        var updated = _shell.LayoutService.CurrentProfile with
+        {
+            StreamQuality = Quality,
+            StreamFps = TargetFps,
+            StreamScale = Scale,
+        };
+        _shell.LayoutService.RequestSave(updated);
     }
 
     [RelayCommand]

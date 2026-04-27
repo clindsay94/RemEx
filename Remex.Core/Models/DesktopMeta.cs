@@ -10,6 +10,12 @@ public record DesktopMeta
     [JsonPropertyName("screenHeight")]
     public int ScreenHeight { get; init; }
 
+    [JsonPropertyName("desktopLeft")]
+    public int DesktopLeft { get; init; }
+
+    [JsonPropertyName("desktopTop")]
+    public int DesktopTop { get; init; }
+
     /// <summary>
     /// Unique identifier for the host process instance.
     /// Used to detect self-connections (infinite mirror prevention).

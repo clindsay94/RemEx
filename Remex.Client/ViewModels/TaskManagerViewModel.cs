@@ -17,6 +17,9 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     private readonly ConnectionViewModel _connection;
     private CancellationTokenSource? _pollingCts;
 
+    /// <summary>Exposes the connection state for view bindings.</summary>
+    public ConnectionViewModel Connection => _connection;
+
     private static readonly HashSet<string> ExcludedProcesses = new(StringComparer.OrdinalIgnoreCase)
     {
         "svchost", "System Idle Process", "System", "Registry",

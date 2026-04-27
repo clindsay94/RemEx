@@ -10,6 +10,7 @@ namespace Remex.Client.Views;
 public partial class ShellView : UserControl
 {
     private TransitioningContentControl? _pageHost;
+    private Border? _settingsPanel;
 
     public ShellView()
     {
@@ -21,6 +22,7 @@ public partial class ShellView : UserControl
     {
         base.OnLoaded(e);
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
+        _settingsPanel = this.FindControl<Border>("SettingsPanel");
 
         if (DataContext is ShellViewModel vm)
             vm.BeginWelcomeSplash();
@@ -56,6 +58,14 @@ public partial class ShellView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ShellViewModel.IsSettingsPanelOpen) && _settingsPanel != null && sender is ShellViewModel settingsVm)
+        {
+            if (settingsVm.IsSettingsPanelOpen)
+                _settingsPanel.Classes.Add("open");
+            else
+                _settingsPanel.Classes.Remove("open");
+        }
+
         if (e.PropertyName == nameof(ShellViewModel.TransitionType) && _pageHost != null && sender is ShellViewModel vm)
         {
 
@@ -87,30 +97,5 @@ public partial class ShellView : UserControl
     {
         if (DataContext is ShellViewModel vm)
             vm.IsSettingsPanelOpen = false;
-    }
-
-    private void OnSelectBaseDark(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("BaseDarkGlass");
-    }
-
-    private void OnSelectCyberNOC(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("CyberNOC");
-    }
-
-    private void OnSelectSolarFlare(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("SolarFlare");
-    }
-
-    private void OnSelectMonolith(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("Monolith");
-    }
-
-    private void OnSelectDynamic(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is ShellViewModel vm) vm.CustomizationVm?.SelectThemeCommand.Execute("Dynamic");
     }
 }

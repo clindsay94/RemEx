@@ -104,14 +104,41 @@ public record DashboardProfile
     /// <summary>Whether the user has completed the first-run tutorial.</summary>
     public bool HasCompletedTutorial { get; init; }
 
+    /// <summary>Whether infinite/decorative animations should be suppressed for accessibility.</summary>
+    public bool IsReducedMotion { get; init; }
+
     /// <summary>Host screen capture JPEG quality (10–100). Applies to the stream sent to mobile clients.</summary>
     public int StreamQuality { get; init; } = 75;
 
     /// <summary>Host screen capture target frames per second (5–120).</summary>
     public int StreamFps { get; init; } = 30;
 
+    /// <summary>Host screen capture scale factor sent to the desktop client (0.25–1.0).</summary>
+    public double StreamScale { get; init; } = 0.5;
+
     /// <summary>Visual aesthetic and theme overrides.</summary>
     public CustomizationSettings Customization { get; init; } = new();
+
+    /// <summary>Configured sensor threshold alerts.</summary>
+    public List<SensorAlert> SensorAlerts { get; init; } = new();
+
+    /// <summary>Recently used connection endpoints (most-recent first, capped at 10).</summary>
+    public List<ConnectionProfile> ConnectionHistory { get; init; } = new();
+}
+
+/// <summary>
+/// A single entry in the connection history list.
+/// </summary>
+public record ConnectionProfile
+{
+    /// <summary>Display name (defaults to the host address).</summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>WebSocket host address (e.g. "ws://192.168.1.10:5005/ws").</summary>
+    public string HostAddress { get; init; } = string.Empty;
+
+    /// <summary>When this host was last successfully connected to.</summary>
+    public System.DateTime LastConnected { get; init; }
 }
 
 /// <summary>
@@ -146,6 +173,9 @@ public record CustomizationSettings
 
     /// <summary>Primary brand/accent colour in Hex (e.g. "#6C4CFF").</summary>
     public string AccentColor { get; init; } = "#6C4CFF";
+
+    /// <summary>User-defined custom accent colours (hex strings) saved via the colour picker.</summary>
+    public IReadOnlyList<string> CustomAccentColors { get; init; } = Array.Empty<string>();
 
     /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
     public string SchemeVariant { get; init; } = "TonalSpot";

@@ -47,7 +47,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
             => Task.FromResult(FakeJpeg);
 
-        public (int Width, int Height) GetScreenSize() => (1920, 1080);
+        public (int Width, int Height, int Left, int Top) GetScreenSize() => (1920, 1080, 0, 0);
     }
 
     private class MockInputSimulationService : IInputSimulationService
