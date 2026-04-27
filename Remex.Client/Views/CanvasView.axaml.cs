@@ -104,7 +104,10 @@ public partial class CanvasView : UserControl
             var dialog = new SetAlertDialog(sensorName, existing, r => result = r);
             await dialog.ShowDialog(ownerWindow);
 
-            vm.ApplySensorAlert(sensorName, result);
+            // null means cancelled/dismissed — don't touch the existing alert.
+            // ClearAlert passes a non-null sentinel (empty SensorName) for explicit removal.
+            if (result != null)
+                vm.ApplySensorAlert(sensorName, result);
         }
         catch (Exception ex)
         {

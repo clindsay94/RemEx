@@ -236,11 +236,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
             hr = QueryInterface(output, IID_IDXGIOutput1, out output1);
             if (hr != S_OK) throw new InvalidOperationException($"QI IDXGIOutput1 hr=0x{hr:X8}");
 
-            // Read output position from IDXGIOutput::GetDesc (slot 8)
+            // Read output position from IDXGIOutput::GetDesc (slot 7)
+            // Slot layout: IUnknown (0-2) + IDXGIObject (3-6) → IDXGIOutput::GetDesc = 7
             IntPtr outputDescPtr = Marshal.AllocHGlobal(Marshal.SizeOf<DXGI_OUTPUT_DESC>());
             try
             {
-                GetSlot<GetDescFn>(output, 8)(output, outputDescPtr);
+                GetSlot<GetDescFn>(output, 7)(output, outputDescPtr);
                 var desc = Marshal.PtrToStructure<DXGI_OUTPUT_DESC>(outputDescPtr);
                 DesktopLeft = desc.DesktopCoordinates.Left;
                 DesktopTop  = desc.DesktopCoordinates.Top;
