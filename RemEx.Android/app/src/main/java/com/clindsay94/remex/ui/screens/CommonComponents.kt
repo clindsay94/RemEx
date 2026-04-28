@@ -3,6 +3,11 @@ package com.clindsay94.remex.ui.screens
 import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -191,5 +196,39 @@ fun DisconnectedFullScreen(
                 modifier = Modifier.graphicsLayer(scaleX = ctaScale, scaleY = ctaScale),
                 shape = ButtonDefaults.shape
         ) { Text(stringResource(R.string.button_setup_connection)) }
+    }
+}
+
+/** Small persistent pill showing PC connection state. Intended to float in a corner via the caller's Modifier. */
+@Composable
+fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
+    Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.92f),
+            modifier = modifier
+    ) {
+        Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Box(
+                    modifier =
+                            Modifier.size(6.dp)
+                                    .background(
+                                            color =
+                                                    if (isConnected) Color(0xFF4CAF50)
+                                                    else MaterialTheme.colorScheme.outline,
+                                            shape = CircleShape
+                                    )
+            )
+            Text(
+                    text =
+                            if (isConnected) stringResource(R.string.status_connected)
+                            else stringResource(R.string.snackbar_no_pc_connected),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }

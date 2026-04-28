@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,6 +66,7 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AboutScreen
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
+import com.clindsay94.remex.ui.screens.ConnectionStatusChip
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
 import com.clindsay94.remex.ui.screens.DashboardScreen
 import com.clindsay94.remex.ui.screens.FaqScreen
@@ -389,6 +391,20 @@ private fun AppNavigationContent(
                 }
                 composable(Screen.Faq.route) { FaqScreen() }
                 composable(Screen.About.route) { AboutScreen() }
+            }
+
+            // Persistent connection chip — floats in top-end corner on every app screen
+            val showChip = currentRoute != null &&
+                    currentRoute != Screen.Splash.route &&
+                    currentRoute != Screen.Tutorial.route
+            if (showChip) {
+                ConnectionStatusChip(
+                        isConnected = isConnected,
+                        modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .statusBarsPadding()
+                                .padding(end = 12.dp, top = 4.dp)
+                )
             }
 
             if (showMouseOverlay) {

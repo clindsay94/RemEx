@@ -74,6 +74,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _desktopError = MutableStateFlow<String?>(null)
     val desktopError: StateFlow<String?> = _desktopError.asStateFlow()
 
+    private val frameTimestampsMs = ArrayDeque<Long>()
+    private val _fps = MutableStateFlow(0f)
+    val fps: StateFlow<Float> = _fps.asStateFlow()
+
+    private fun recordFrameTimestamp() {
+        val now = System.currentTimeMillis()
+        frameTimestampsMs.addLast(now)
+        // TODO(human): Compute FPS from frameTimestampsMs and assign to _fps.value
+        // frameTimestampsMs is a deque of timestamps (ms) for each decoded frame, newest at the end.
+        // Consider: sliding window (remove entries older than N seconds), rolling count, or EMA.
+    }
+
     private val _configState = MutableStateFlow(RemoteDesktopConfigState())
     val configState: StateFlow<RemoteDesktopConfigState> = _configState.asStateFlow()
 
@@ -224,6 +236,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 reusableBitmap = decoded
                 // Wrap bitmap with a unique timestamp to bypass StateFlow equality checks
                 _currentFrame.value = DesktopFrame(decoded)
+                recordFrameTimestamp()
             } else {
                 Log.e(TAG, "decodeFrame: BitmapFactory returned null for ${bytes.size} bytes")
                 // Fallback: Reset reuse if decoding failed
@@ -238,6 +251,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
                     reusableBitmap = decoded
                     _currentFrame.value = DesktopFrame(decoded)
+                    recordFrameTimestamp()
                 }
             } catch (e2: Exception) {
                 Log.e(TAG, "Frame decode failed after fallback", e2)
