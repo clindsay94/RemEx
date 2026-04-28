@@ -33,10 +33,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -229,7 +225,6 @@ private fun AppNavigationContent(
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     val showNav =
@@ -284,9 +279,6 @@ private fun AppNavigationContent(
         }
     }
 
-    val noConnectedMsg = stringResource(R.string.snackbar_no_pc_connected)
-    val setupConnectionLabel = stringResource(R.string.snackbar_setup_connection)
-
     fun navigateToConnection() {
         navController.navigate(Screen.Connection.route) {
             popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -296,20 +288,6 @@ private fun AppNavigationContent(
     }
 
     fun navigateTo(route: String) {
-        if (!isConnected && route in connectionRequiredRoutes) {
-            scope.launch {
-                val result =
-                        snackbarHostState.showSnackbar(
-                                message = noConnectedMsg,
-                                actionLabel = setupConnectionLabel,
-                                withDismissAction = true
-                        )
-                if (result == SnackbarResult.ActionPerformed) {
-                    navigateToConnection()
-                }
-            }
-            // Still navigate to the screen so they can preview it
-        }
         navController.navigate(route) {
             popUpTo(navController.graph.startDestinationId) { saveState = true }
             launchSingleTop = true
@@ -318,16 +296,6 @@ private fun AppNavigationContent(
     }
 
     Scaffold(
-            snackbarHost = {
-                SnackbarHost(hostState = snackbarHostState) { data ->
-                    Snackbar(
-                            snackbarData = data,
-                            containerColor = MaterialTheme.colorScheme.inverseSurface,
-                            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                            actionColor = MaterialTheme.colorScheme.inversePrimary
-                    )
-                }
-            },
             bottomBar = {
                 // Empty - navigation is now a floating overlay
             }
