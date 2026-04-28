@@ -396,8 +396,9 @@ fun PersonalizationScreen(
 
                     shapeConfigs.forEach { (config, setter) ->
                         val (label, current) = config
-                        val shapeIndex = current.toInt().coerceIn(0, materialShapeNames.lastIndex)
+                        val shapeIndex = current.roundToInt().coerceIn(0, materialShapeNames.lastIndex)
                         val shapeName = materialShapeNames[shapeIndex]
+                        var lastHapticIndex by remember { mutableIntStateOf(current.toInt()) }
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -415,11 +416,16 @@ fun PersonalizationScreen(
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 Slider(
                                     value = current,
-                                    onValueChange = setter,
-                                    onValueChangeFinished = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                    onValueChange = { newValue ->
+                                        val newIndex = newValue.roundToInt()
+                                        if (newIndex != lastHapticIndex) {
+                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                            lastHapticIndex = newIndex
+                                        }
+                                        setter(newIndex.toFloat())
                                     },
                                     valueRange = 0f..maxShapes,
+                                    steps = materialShapesList.size - 2,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Box(
