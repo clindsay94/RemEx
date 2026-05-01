@@ -110,7 +110,7 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
             hasCompletedOnboarding = hasCompletedOnboarding,
             splashShown = splashShown,
             isConnected = isConnected,
-            navPrimaryItemsJson = personalization?.navPrimaryItemsJson ?: "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\", \"app_launcher\"]",
+            navPrimaryItemsJson = personalization?.navPrimaryItemsJson ?: SettingsManager.DEFAULT_NAV_ITEMS_JSON,
             onMarkSplashShown = { onMarkSplashShown() },
             onQrScanned = { host, port, key ->
                 connectionViewModel.applyQrResultAndConnect(host, port, key)
