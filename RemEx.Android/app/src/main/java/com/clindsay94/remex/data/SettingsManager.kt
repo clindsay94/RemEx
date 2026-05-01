@@ -286,7 +286,7 @@ class SettingsManager(private val context: Context) {
                         remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY]
                                         ?: 18.0f,
                         navPrimaryItemsJson = preferences[NAV_PRIMARY_ITEMS_JSON_KEY]
-                                ?: "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\", \"app_launcher\"]"
+                                ?: DEFAULT_NAV_ITEMS_JSON
                 )
             }
 
