@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,10 +58,14 @@ private val faqItems = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FaqScreen() {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_faq_title)) }
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_faq_title),
+                scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->

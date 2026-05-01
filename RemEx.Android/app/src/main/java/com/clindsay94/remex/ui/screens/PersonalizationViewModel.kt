@@ -53,7 +53,9 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
                         taskManagerCardShapePreset = prefs.taskManagerCardShapePreset,
                         remoteDesktopCardShapePreset = prefs.remoteDesktopCardShapePreset,
                         remoteControlCardShapePreset = prefs.remoteControlCardShapePreset,
-                        remoteMouseCardShapePreset = prefs.remoteMouseCardShapePreset
+                        remoteMouseCardShapePreset = prefs.remoteMouseCardShapePreset,
+                        navPrimaryItemsJson = prefs.navPrimaryItemsJson,
+                        fabShowsOverflow = prefs.fabShowsOverflow
                     )
                 }
         }
@@ -76,7 +78,9 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
         taskManagerCardShapePreset: Float,
         remoteDesktopCardShapePreset: Float,
         remoteControlCardShapePreset: Float,
-        remoteMouseCardShapePreset: Float
+        remoteMouseCardShapePreset: Float,
+        navPrimaryItemsJson: String,
+        fabShowsOverflow: Boolean
     ) {
         _pendingSave.value = SettingsManager.PersonalizationPreferences(
             themeMode = themeMode,
@@ -95,7 +99,9 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
             taskManagerCardShapePreset = taskManagerCardShapePreset,
             remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
             remoteControlCardShapePreset = remoteControlCardShapePreset,
-            remoteMouseCardShapePreset = remoteMouseCardShapePreset
+            remoteMouseCardShapePreset = remoteMouseCardShapePreset,
+            navPrimaryItemsJson = navPrimaryItemsJson,
+            fabShowsOverflow = fabShowsOverflow
         )
     }
 }

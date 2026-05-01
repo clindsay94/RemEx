@@ -69,6 +69,7 @@ import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.ConnectionStatusChip
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
 import com.clindsay94.remex.ui.screens.DashboardScreen
+import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.screens.FaqScreen
 import com.clindsay94.remex.ui.screens.FloatingMouseIsland
 import com.clindsay94.remex.ui.screens.PersonalizationScreen
@@ -83,6 +84,7 @@ import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
 import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 
 // Routes that require an active PC connection to be useful
 private val connectionRequiredRoutes =
@@ -114,6 +116,9 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
     val savedMouseFabX by mouseViewModel.mouseFabX.collectAsState()
     val savedMouseFabY by mouseViewModel.mouseFabY.collectAsState()
 
+    val personalizationViewModel: PersonalizationViewModel = viewModel()
+    val personalization by personalizationViewModel.personalization.collectAsState()
+
     AppNavigationContent(
             hasCompletedOnboarding = hasCompletedOnboarding,
             splashShown = splashShown,
@@ -124,6 +129,8 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
             savedFabPositionY = savedFabPositionY,
             savedMouseFabX = savedMouseFabX,
             savedMouseFabY = savedMouseFabY,
+            navPrimaryItemsJson = personalization?.navPrimaryItemsJson ?: "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\"]",
+            fabShowsOverflow = personalization?.fabShowsOverflow ?: true,
             onMarkSplashShown = { onMarkSplashShown() },
             onSaveMouseFabPosition = { x, y -> mouseViewModel.saveMouseFabPosition(x, y) },
             onSaveFloatingMouseIslandPosition = { x, y ->
@@ -132,8 +139,8 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
             onQrScanned = { host, port, key ->
                 connectionViewModel.applyQrResultAndConnect(host, port, key)
             },
-            dashboardScreenContent = { onNavigateToConnection ->
-                DashboardScreen(onNavigateToConnection = onNavigateToConnection)
+            dashboardScreenContent = {
+                DashboardScreen()
             },
             remoteControlScreenContent = { onNavigateToConnection ->
                 RemoteControlScreen(onNavigateToConnection = onNavigateToConnection)
@@ -185,11 +192,13 @@ private fun AppNavigationContent(
         savedFabPositionY: Float,
         savedMouseFabX: Float,
         savedMouseFabY: Float,
+        navPrimaryItemsJson: String,
+        fabShowsOverflow: Boolean,
         onMarkSplashShown: () -> Unit,
         onSaveMouseFabPosition: (Float, Float) -> Unit,
         onSaveFloatingMouseIslandPosition: (Float, Float) -> Unit,
         onQrScanned: (String, Int, String) -> Unit,
-        dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        dashboardScreenContent: @Composable () -> Unit,
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         appLauncherScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -207,6 +216,26 @@ private fun AppNavigationContent(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
+
+    val allScreens = listOf(
+        Screen.Dashboard, Screen.RemoteDesktop, Screen.TaskManager,
+        Screen.RemoteControl, Screen.RemoteMouse, Screen.AppLauncher,
+        Screen.Settings, Screen.Faq, Screen.About
+    )
+
+    val currentNavItems = remember(navPrimaryItemsJson) {
+        try {
+            val jsonArray = JSONArray(navPrimaryItemsJson)
+            val routes = (0 until jsonArray.length()).map { jsonArray.getString(it) }
+            routes.mapNotNull { route -> allScreens.find { it.route == route } }
+        } catch (e: Exception) {
+            listOf(Screen.Dashboard, Screen.RemoteDesktop, Screen.TaskManager, Screen.RemoteControl)
+        }
+    }
+
+    val currentSecondaryNavItems = remember(currentNavItems) {
+        allScreens.filter { screen -> !currentNavItems.contains(screen) }
+    }
 
     // While DataStore hasn't loaded yet, show a plain background to avoid a
     // white flash before the correct start destination is chosen.
@@ -344,7 +373,7 @@ private fun AppNavigationContent(
                     )
                 }
                 composable(Screen.Dashboard.route) {
-                    dashboardScreenContent { navigateToConnection() }
+                    dashboardScreenContent()
                 }
                 composable(Screen.Connection.route) {
                     connectionScreenContent { navController.navigate(Screen.QrScanner.route) }
@@ -512,9 +541,9 @@ private fun AppNavigationContent(
                                 verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Navigation indicator state
-                            val selectedIndex = navItems.indexOfFirst { it.route == currentRoute }
+                            val selectedIndex = currentNavItems.indexOfFirst { it.route == currentRoute }
 
-                            navItems.forEachIndexed { index, screen ->
+                            currentNavItems.forEachIndexed { index, screen ->
                                 val isSelected = currentRoute == screen.route
                                 val screenTitle = stringResource(screen.titleRes)
 
@@ -595,113 +624,95 @@ private fun AppNavigationContent(
                             }
 
                             // Overflow button wrapped in Box for proper menu anchor positioning
-                            Box {
-                                val isOverflowSelected =
-                                        secondaryNavItems.any { it.route == currentRoute } ||
-                                                currentRoute == Screen.Personalization.route
+                            if (!fabShowsOverflow) {
+                                Box {
+                                    val isOverflowSelected =
+                                            currentSecondaryNavItems.any { it.route == currentRoute } ||
+                                                    currentRoute == Screen.Personalization.route
 
-                                val overflowContainerColor by
-                                        animateColorAsState(
-                                                targetValue =
-                                                        if (isOverflowSelected)
-                                                                MaterialTheme.colorScheme
-                                                                        .primaryContainer
-                                                        else
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceContainerHighest,
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme
-                                                                .defaultEffectsSpec(),
-                                                label = "overflow_color"
-                                        )
-
-                                FilledTonalIconButton(
-                                        onClick = {
-                                            view.performHapticFeedback(
-                                                    HapticFeedbackConstants.KEYBOARD_TAP
+                                    val overflowContainerColor by
+                                            animateColorAsState(
+                                                    targetValue =
+                                                            if (isOverflowSelected)
+                                                                    MaterialTheme.colorScheme
+                                                                            .primaryContainer
+                                                            else
+                                                                    MaterialTheme.colorScheme
+                                                                            .surfaceContainerHighest,
+                                                    animationSpec =
+                                                            MaterialTheme.motionScheme
+                                                                    .defaultEffectsSpec(),
+                                                    label = "overflow_color"
                                             )
-                                            showOverflowMenu = !showOverflowMenu
-                                            showNavBarWithTimer()
-                                        },
-                                        modifier = Modifier.size(48.dp),
-                                        colors =
-                                                IconButtonDefaults.filledTonalIconButtonColors(
-                                                        containerColor = overflowContainerColor
-                                                )
-                                ) {
-                                    Icon(
-                                            Icons.Default.MoreVert,
-                                            contentDescription =
-                                                    stringResource(R.string.nav_more_label),
-                                            modifier = Modifier.size(24.dp)
-                                    )
-                                }
 
-                                DropdownMenu(
-                                        expanded = showOverflowMenu,
-                                        onDismissRequest = { showOverflowMenu = false },
-                                        offset = DpOffset(0.dp, 8.dp)
-                                ) {
-                                    secondaryNavItems.forEach { screen ->
+                                    FilledTonalIconButton(
+                                            onClick = {
+                                                view.performHapticFeedback(
+                                                        HapticFeedbackConstants.KEYBOARD_TAP
+                                                )
+                                                showOverflowMenu = !showOverflowMenu
+                                                showNavBarWithTimer()
+                                            },
+                                            modifier = Modifier.size(48.dp),
+                                            colors =
+                                                    IconButtonDefaults.filledTonalIconButtonColors(
+                                                            containerColor = overflowContainerColor
+                                                    )
+                                    ) {
+                                        Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription =
+                                                        stringResource(R.string.nav_more_label),
+                                                modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+
+                                    DropdownMenu(
+                                            expanded = showOverflowMenu,
+                                            onDismissRequest = { showOverflowMenu = false },
+                                            offset = DpOffset(0.dp, 8.dp)
+                                    ) {
+                                        currentSecondaryNavItems.forEach { screen ->
+                                            DropdownMenuItem(
+                                                    text = { Text(stringResource(screen.titleRes)) },
+                                                    leadingIcon = {
+                                                        Icon(screen.icon, contentDescription = null)
+                                                    },
+                                                    onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                                        )
+                                                        showOverflowMenu = false
+                                                        navigateTo(screen.route)
+                                                        showNavBarWithTimer()
+                                                    }
+                                            )
+                                        }
                                         DropdownMenuItem(
-                                                text = { Text(stringResource(screen.titleRes)) },
+                                                text = {
+                                                    Text(
+                                                            stringResource(
+                                                                    Screen.Personalization.titleRes
+                                                            )
+                                                    )
+                                                },
                                                 leadingIcon = {
-                                                    Icon(screen.icon, contentDescription = null)
+                                                    Icon(
+                                                            Screen.Personalization.icon,
+                                                            contentDescription = null
+                                                    )
                                                 },
                                                 onClick = {
                                                     view.performHapticFeedback(
                                                             HapticFeedbackConstants.KEYBOARD_TAP
                                                     )
                                                     showOverflowMenu = false
-                                                    navigateTo(screen.route)
+                                                    navigateTo(Screen.Personalization.route)
                                                     showNavBarWithTimer()
                                                 }
                                         )
                                     }
-                                    DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                        stringResource(
-                                                                Screen.Personalization.titleRes
-                                                        )
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                        Screen.Personalization.icon,
-                                                        contentDescription = null
-                                                )
-                                            },
-                                            onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.KEYBOARD_TAP
-                                                )
-                                                showOverflowMenu = false
-                                                navigateTo(Screen.Personalization.route)
-                                                showNavBarWithTimer()
-                                            }
-                                    )
                                 }
-                            }
-                        }
-
-                        // ── Mouse FAB (anchored to the right of toolbar, never overlapping) ──
-                        if (showMouseFab) {
-                            FloatingActionButton(
-                                    onClick = {
-                                        view.performHapticFeedback(
-                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                        )
-                                        showMouseOverlay = !showMouseOverlay
-                                    },
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                            ) {
-                                Icon(
-                                        Icons.Default.UnfoldMore,
-                                        contentDescription =
-                                                stringResource(R.string.screen_remote_mouse_title)
-                                )
                             }
                         }
                     }
@@ -725,6 +736,8 @@ private fun AppNavigationPreview() {
                 savedFabPositionY = Float.NaN,
                 savedMouseFabX = Float.NaN,
                 savedMouseFabY = Float.NaN,
+                navPrimaryItemsJson = "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\"]",
+                fabShowsOverflow = true,
                 onMarkSplashShown = {},
                 onSaveMouseFabPosition = { _, _ -> },
                 onSaveFloatingMouseIslandPosition = { _, _ -> },
@@ -754,6 +767,8 @@ private fun AppNavigationDisconnectedPreview() {
                 savedFabPositionY = Float.NaN,
                 savedMouseFabX = Float.NaN,
                 savedMouseFabY = Float.NaN,
+                navPrimaryItemsJson = "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\"]",
+                fabShowsOverflow = true,
                 onMarkSplashShown = {},
                 onSaveMouseFabPosition = { _, _ -> },
                 onSaveFloatingMouseIslandPosition = { _, _ -> },

@@ -22,16 +22,8 @@ import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.Mouse
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -71,17 +63,30 @@ fun RemoteMouseScreen(
     val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    RemoteMouseScreenContent(
-            isConnected = isConnected,
-            shapePreset = shapePreset,
-            cornerRadius = cornerRadius,
-            vScrollSensitivity = vScrollSensitivity,
-            onNavigateToConnection = onNavigateToConnection,
-            onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
-            onMouseClick = { button -> viewModel.sendMouseClick(button) },
-            onScroll = { amount -> viewModel.sendScroll(amount) },
-            onTextSent = { text -> viewModel.sendText(text) }
-    )
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_remote_mouse_title),
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
+        RemoteMouseScreenContent(
+                isConnected = isConnected,
+                shapePreset = shapePreset,
+                cornerRadius = cornerRadius,
+                vScrollSensitivity = vScrollSensitivity,
+                onNavigateToConnection = onNavigateToConnection,
+                onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
+                onMouseClick = { button -> viewModel.sendMouseClick(button) },
+                onScroll = { amount -> viewModel.sendScroll(amount) },
+                onTextSent = { text -> viewModel.sendText(text) },
+                modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 @Composable
@@ -94,14 +99,14 @@ fun RemoteMouseScreenContent(
         onMouseMove: (Int, Int) -> Unit,
         onMouseClick: (Int) -> Unit,
         onScroll: (Int) -> Unit,
-        onTextSent: (String) -> Unit
+        onTextSent: (String) -> Unit,
+        modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     val focusRequester = remember { FocusRequester() }
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        RemexScreenHeader(title = stringResource(R.string.screen_remote_mouse_title))
+    Column(modifier = modifier.fillMaxSize()) {
         Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)

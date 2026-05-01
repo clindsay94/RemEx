@@ -60,6 +60,9 @@ class SettingsManager(private val context: Context) {
         val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
         val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
 
+        val NAV_PRIMARY_ITEMS_JSON_KEY = stringPreferencesKey("nav_primary_items_json")
+        val FAB_SHOWS_OVERFLOW_KEY = booleanPreferencesKey("fab_shows_overflow")
+
         val FLOATING_MOUSE_ISLAND_X_KEY = floatPreferencesKey("floating_mouse_island_x")
         val FLOATING_MOUSE_ISLAND_Y_KEY = floatPreferencesKey("floating_mouse_island_y")
         val MOUSE_FAB_X_KEY = floatPreferencesKey("mouse_fab_x")
@@ -105,7 +108,9 @@ class SettingsManager(private val context: Context) {
             val taskManagerCardShapePreset: Float = 18.0f,
             val remoteDesktopCardShapePreset: Float = 18.0f,
             val remoteControlCardShapePreset: Float = 18.0f,
-            val remoteMouseCardShapePreset: Float = 18.0f
+            val remoteMouseCardShapePreset: Float = 18.0f,
+            val navPrimaryItemsJson: String = "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\"]",
+            val fabShowsOverflow: Boolean = true
     )
 
     val appLauncherCardShapePresetFlow: Flow<Float> =
@@ -280,7 +285,10 @@ class SettingsManager(private val context: Context) {
                         remoteControlCardShapePreset =
                                 preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
                         remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY]
-                                        ?: 18.0f
+                                        ?: 18.0f,
+                        navPrimaryItemsJson = preferences[NAV_PRIMARY_ITEMS_JSON_KEY]
+                                ?: "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\"]",
+                        fabShowsOverflow = preferences[FAB_SHOWS_OVERFLOW_KEY] ?: true
                 )
             }
 
@@ -380,7 +388,9 @@ class SettingsManager(private val context: Context) {
             taskManagerCardShapePreset: Float,
             remoteDesktopCardShapePreset: Float,
             remoteControlCardShapePreset: Float,
-            remoteMouseCardShapePreset: Float
+            remoteMouseCardShapePreset: Float,
+            navPrimaryItemsJson: String,
+            fabShowsOverflow: Boolean
     ) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE_KEY] = themeMode
@@ -400,6 +410,8 @@ class SettingsManager(private val context: Context) {
             preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] = remoteDesktopCardShapePreset
             preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] = remoteControlCardShapePreset
             preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
+            preferences[NAV_PRIMARY_ITEMS_JSON_KEY] = navPrimaryItemsJson
+            preferences[FAB_SHOWS_OVERFLOW_KEY] = fabShowsOverflow
         }
     }
 }

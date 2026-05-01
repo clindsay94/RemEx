@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -72,10 +74,14 @@ fun AboutScreen() {
         "Unknown"
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.screen_about_title)) }
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_about_title),
+                scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->

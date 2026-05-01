@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,21 +46,41 @@ fun TaskManagerScreen(
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
 
-    TaskManagerScreenContent(
-        processes = processes,
-        searchQuery = searchQuery,
-        sortField = sortField,
-        sortDescending = sortDescending,
-        shapePreset = shapePreset,
-        cornerRadius = cornerRadius,
-        isConnected = isConnected,
-        isRefreshing = isRefreshing,
-        onRefreshProcesses = { viewModel.refreshProcesses() },
-        onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
-        onUpdateSortField = { viewModel.updateSortField(it) },
-        onKillProcess = { viewModel.killProcess(it) },
-        onNavigateToConnection = onNavigateToConnection
-    )
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_task_manager_title),
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    IconButton(onClick = {
+                        viewModel.refreshProcesses()
+                    }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        TaskManagerScreenContent(
+            processes = processes,
+            searchQuery = searchQuery,
+            sortField = sortField,
+            sortDescending = sortDescending,
+            shapePreset = shapePreset,
+            cornerRadius = cornerRadius,
+            isConnected = isConnected,
+            isRefreshing = isRefreshing,
+            onRefreshProcesses = { viewModel.refreshProcesses() },
+            onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
+            onUpdateSortField = { viewModel.updateSortField(it) },
+            onKillProcess = { viewModel.killProcess(it) },
+            onNavigateToConnection = onNavigateToConnection,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,21 +101,8 @@ fun TaskManagerScreenContent(
     onNavigateToConnection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
-
+    // TaskManagerScreenContent uses Scaffold padding now
     Column(modifier = modifier.fillMaxSize()) {
-        RemexScreenHeader(
-            title = stringResource(R.string.screen_task_manager_title),
-            actions = {
-                IconButton(onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onRefreshProcesses()
-                }) {
-                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
-                }
-            }
-        )
-
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefreshProcesses,

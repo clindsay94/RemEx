@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 
 private enum class CommandCategory(@param:StringRes val labelRes: Int) {
     SESSION(R.string.rc_category_session),
@@ -146,6 +148,8 @@ fun RemoteControlScreen(
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     val uiState = RemoteControlUiState(
         commandStatus = commandStatus,
         shapePreset = shapePreset,
@@ -153,13 +157,24 @@ fun RemoteControlScreen(
         isConnected = isConnected
     )
 
-    RemoteControlScreenContent(
-        uiState = uiState,
-        onNavigateToConnection = onNavigateToConnection,
-        onWakePc = { viewModel.wakePc() },
-        onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
-        onClearCommandStatus = { viewModel.clearCommandStatus() }
-    )
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_remote_control_title),
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
+        RemoteControlScreenContent(
+            uiState = uiState,
+            onNavigateToConnection = onNavigateToConnection,
+            onWakePc = { viewModel.wakePc() },
+            onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
+            onClearCommandStatus = { viewModel.clearCommandStatus() },
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -169,105 +184,107 @@ fun RemoteControlScreenContent(
     onNavigateToConnection: () -> Unit,
     onWakePc: () -> Unit,
     onSendSystemCommand: (String, Int) -> Unit,
-    onClearCommandStatus: () -> Unit
+    onClearCommandStatus: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_remote_control_title)) }
+    Column(modifier = modifier.fillMaxSize()) {
+        if (!uiState.isConnected) {
+            DisconnectedFullScreen(
+                screenName = stringResource(R.string.screen_remote_control_title),
+                onNavigateToConnection = onNavigateToConnection
             )
-        }
-    ) { innerPadding ->
-        val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
+        } else {
+            val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
 
-        LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentPadding = PaddingValues(16.dp)
-        ) {
-            item(span = { GridItemSpan(2) }) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.remote_control_section_header),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+            LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp)
+            ) {
+                item(span = { GridItemSpan(2) }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.remote_control_section_header),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                    Text(
-                        text = stringResource(R.string.remote_control_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        Text(
+                            text = stringResource(R.string.remote_control_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                    if (!uiState.commandStatus.isNullOrBlank()) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                        if (!uiState.commandStatus.isNullOrBlank()) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius)
                             ) {
-                                Text(
-                                    text = uiState.commandStatus,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                TextButton(onClick = { onClearCommandStatus() }) {
-                                    Text(stringResource(R.string.button_dismiss))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = uiState.commandStatus,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    TextButton(onClick = { onClearCommandStatus() }) {
+                                        Text(stringResource(R.string.button_dismiss))
+                                    }
                                 }
                             }
                         }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
 
-            CommandCategory.entries.forEach { category ->
-                val categoryCards = cardsByCategory[category].orEmpty()
-                item(span = { GridItemSpan(2) }) {
-                    CommandCategoryHeader(
-                        label = stringResource(category.labelRes),
-                        category = category
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
-                items(categoryCards) { cmdCard ->
-                    CommandCard(
-                        card = cmdCard,
-                        isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
-                        timerText = timerInputs[cmdCard.id].orEmpty(),
-                        shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius),
-                        onTimerTextChanged = { timerInputs[cmdCard.id] = it },
-                        onPrimaryClick = {
-                            if (cmdCard.action == "WakeOnLan") {
-                                onWakePc()
-                            } else if (cmdCard.requiresConfirmation) {
-                                activeConfirmationId = if (activeConfirmationId == cmdCard.id) null else cmdCard.id
-                            } else {
-                                onSendSystemCommand(cmdCard.action, 0)
+
+                CommandCategory.entries.forEach { category ->
+                    val categoryCards = cardsByCategory[category].orEmpty()
+                    item(span = { GridItemSpan(2) }) {
+                        CommandCategoryHeader(
+                            label = stringResource(category.labelRes),
+                            category = category
+                        )
+                    }
+                    items(categoryCards) { cmdCard ->
+                        CommandCard(
+                            card = cmdCard,
+                            isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
+                            timerText = timerInputs[cmdCard.id].orEmpty(),
+                            shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius),
+                            onTimerTextChanged = { timerInputs[cmdCard.id] = it },
+                            onPrimaryClick = {
+                                if (cmdCard.action == "WakeOnLan") {
+                                    onWakePc()
+                                } else if (cmdCard.requiresConfirmation) {
+                                    activeConfirmationId = if (activeConfirmationId == cmdCard.id) null else cmdCard.id
+                                } else {
+                                    onSendSystemCommand(cmdCard.action, 0)
+                                }
+                            },
+                            onConfirm = {
+                                val delay = timerInputs[cmdCard.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
+                                onSendSystemCommand(cmdCard.action, delay)
+                                activeConfirmationId = null
+                            },
+                            onCancel = {
+                                activeConfirmationId = null
+                                timerInputs[cmdCard.id] = ""
                             }
-                        },
-                        onConfirm = {
-                            val delay = timerInputs[cmdCard.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
-                            onSendSystemCommand(cmdCard.action, delay)
-                            activeConfirmationId = null
-                        },
-                        onCancel = {
-                            activeConfirmationId = null
-                            timerInputs[cmdCard.id] = ""
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

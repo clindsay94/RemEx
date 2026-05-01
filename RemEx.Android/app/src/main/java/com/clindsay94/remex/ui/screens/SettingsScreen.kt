@@ -15,7 +15,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,11 +53,15 @@ fun SettingsScreen(
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.screen_settings_title)) }
+                RemexScreenHeader(
+                    title = stringResource(R.string.screen_settings_title),
+                    scrollBehavior = scrollBehavior
                 )
                 PrimaryTabRow(
                     selectedTabIndex = pagerState.currentPage,

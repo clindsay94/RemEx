@@ -20,20 +20,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -43,18 +30,8 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.FilterCenterFocus
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -90,10 +67,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
 // Wrapper that isolates AnimatedVisibility from outer ColumnScope receiver.
-// When the transformable Box lives inside a Column, Kotlin's overload resolution
-// binds to ColumnScope.AnimatedVisibility and then fails because @LayoutScopeMarker
-// blocks the outer ColumnScope implicit receiver. Calling AnimatedVisibility from
-// a plain composable body resolves to the top-level overload cleanly.
 @Composable
 private fun PlainAnimatedVisibility(
         visible: Boolean,
@@ -114,8 +87,7 @@ private fun defaultCardSizeFor(id: String): CardSizeDp {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-        viewModel: DashboardViewModel = viewModel(),
-        onNavigateToConnection: () -> Unit = {}
+        viewModel: DashboardViewModel = viewModel()
 ) {
         val isConnected by viewModel.isConnected.collectAsState()
         val isConnecting by viewModel.isConnecting.collectAsState()
@@ -128,29 +100,54 @@ fun DashboardScreen(
         val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
         val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
 
-        DashboardScreenContent(
-                isConnected = isConnected,
-                isConnecting = isConnecting,
-                telemetrySensors = telemetrySensors,
-                telemetryHistory = telemetryHistory,
-                cards = cards,
-                enabledCards = enabledCards,
-                cornerRadius = cornerRadius,
-                cardOpacity = cardOpacity,
-                pcCardShapePreset = pcCardShapePreset,
-                telemetryCardShapePreset = telemetryCardShapePreset,
-                onNavigateToConnection = onNavigateToConnection,
-                onMoveCard = { cardId, dx, dy -> viewModel.moveCard(cardId, dx, dy) },
-                onResizeCard = { cardId, dw, dh -> viewModel.resizeCard(cardId, dw, dh) },
-                onSaveCardLayout = { viewModel.saveCardLayout() },
-                onToggleConnection = { viewModel.toggleConnection() },
-                onWakePc = { viewModel.wakePc() },
-                onCycleTelemetryDisplayMode = { cardId ->
-                        viewModel.cycleTelemetryDisplayMode(cardId)
-                },
-                onPlaceCardAt = { cardId, x, y -> viewModel.placeCardAt(cardId, x, y) },
-                onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) }
-        )
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                RemexScreenHeader(
+                        title = stringResource(R.string.screen_dashboard_title),
+                        scrollBehavior = scrollBehavior,
+                        actions = {
+                                IconButton(
+                                        onClick = {
+                                                viewModel.saveCardLayout()
+                                        }
+                                ) {
+                                        Icon(
+                                                Icons.Default.Tune,
+                                                contentDescription =
+                                                        stringResource(R.string.cd_customize_cards)
+                                        )
+                                }
+                        }
+                )
+            }
+        ) { innerPadding ->
+            DashboardScreenContent(
+                    isConnected = isConnected,
+                    isConnecting = isConnecting,
+                    telemetrySensors = telemetrySensors,
+                    telemetryHistory = telemetryHistory,
+                    cards = cards,
+                    enabledCards = enabledCards,
+                    cornerRadius = cornerRadius,
+                    cardOpacity = cardOpacity,
+                    pcCardShapePreset = pcCardShapePreset,
+                    telemetryCardShapePreset = telemetryCardShapePreset,
+                    onMoveCard = { cardId, dx, dy -> viewModel.moveCard(cardId, dx, dy) },
+                    onResizeCard = { cardId, dw, dh -> viewModel.resizeCard(cardId, dw, dh) },
+                    onSaveCardLayout = { viewModel.saveCardLayout() },
+                    onToggleConnection = { viewModel.toggleConnection() },
+                    onWakePc = { viewModel.wakePc() },
+                    onCycleTelemetryDisplayMode = { cardId ->
+                            viewModel.cycleTelemetryDisplayMode(cardId)
+                    },
+                    onPlaceCardAt = { cardId, x, y -> viewModel.placeCardAt(cardId, x, y) },
+                    onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) },
+                    modifier = Modifier.padding(innerPadding)
+            )
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -166,7 +163,6 @@ fun DashboardScreenContent(
         cardOpacity: Float,
         pcCardShapePreset: Float,
         telemetryCardShapePreset: Float,
-        onNavigateToConnection: () -> Unit,
         onMoveCard: (String, Float, Float) -> Unit,
         onResizeCard: (String, Float, Float) -> Unit,
         onSaveCardLayout: () -> Unit,
@@ -174,7 +170,8 @@ fun DashboardScreenContent(
         onWakePc: () -> Unit,
         onCycleTelemetryDisplayMode: (String) -> Unit,
         onPlaceCardAt: (String, Float, Float) -> Unit,
-        onSetCardEnabled: (String, Boolean) -> Unit
+        onSetCardEnabled: (String, Boolean) -> Unit,
+        modifier: Modifier = Modifier
 ) {
         val view = LocalView.current
 
@@ -214,8 +211,6 @@ fun DashboardScreenContent(
         var draggingCardId by remember { mutableStateOf<String?>(null) }
         var draggingPointerPx by remember { mutableStateOf(Offset.Zero) }
 
-        // Pinch-to-zoom: use a State object so pointerInput lambdas can read the
-        // current value without needing it as a restart key (review fix).
         val canvasScaleState = remember { mutableFloatStateOf(1f) }
         var canvasScale by canvasScaleState
         @Suppress("DEPRECATION")
@@ -239,7 +234,6 @@ fun DashboardScreenContent(
                         x = draggingPointerPx.x - canvasTopLeftPx.x,
                         y = draggingPointerPx.y - canvasTopLeftPx.y
                 )
-        // Drop target positions must account for the canvas scale
         val dropTargetXDp =
                 draggingCardSize?.let { size ->
                         ((dragPointerCanvasPx.x / (density * canvasScaleState.floatValue)) -
@@ -257,8 +251,6 @@ fun DashboardScreenContent(
 
         val visibleCards = cards.filter { enabledCards.contains(it.id) }
 
-        // Base canvas dimensions — independent of scale.
-        // graphicsLayer handles the visual zoom without relayout.
         val canvasWidthDp =
                 remember(visibleCards) {
                         val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
@@ -273,268 +265,216 @@ fun DashboardScreenContent(
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
 
-        Column(modifier = Modifier.fillMaxSize()) {
-                RemexScreenHeader(
-                        title = stringResource(R.string.screen_dashboard_title),
-                        actions = {
-                                if (canvasScale != 1f) {
-                                        IconButton(
-                                                onClick = {
-                                                        view.performHapticFeedback(
-                                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                                        )
-                                                        canvasScale = 1f
-                                                }
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.FilterCenterFocus,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_reset_zoom
-                                                                )
-                                                )
-                                        }
-                                }
-                                IconButton(
-                                        onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.KEYBOARD_TAP
-                                                )
-                                                showCardDrawer = !showCardDrawer
-                                        }
-                                ) {
-                                        Icon(
-                                                Icons.Default.Tune,
-                                                contentDescription =
-                                                        stringResource(R.string.cd_customize_cards)
-                                        )
-                                }
-                        }
-                )
-                Box(modifier = Modifier.fillMaxSize().transformable(state = transformableState)) {
+        Box(modifier = modifier.fillMaxSize().transformable(state = transformableState)) {
+                Box(
+                        modifier =
+                                Modifier.fillMaxSize()
+                                        .horizontalScroll(hScrollState)
+                                        .verticalScroll(vScrollState)
+                ) {
                         Box(
                                 modifier =
-                                        Modifier.fillMaxSize()
-                                                .horizontalScroll(hScrollState)
-                                                .verticalScroll(vScrollState)
+                                        Modifier.width(canvasWidthDp.dp)
+                                                .height(canvasHeightDp.dp)
+                                                .onGloballyPositioned {
+                                                        canvasTopLeftPx =
+                                                                it.positionInRoot()
+                                                }
+                                                .background(
+                                                        MaterialTheme.colorScheme.background
+                                                )
+                                                .graphicsLayer {
+                                                        scaleX = canvasScaleState.floatValue
+                                                        scaleY = canvasScaleState.floatValue
+                                                        transformOrigin =
+                                                                androidx.compose.ui.graphics
+                                                                        .TransformOrigin(
+                                                                                0f,
+                                                                                0f
+                                                                        )
+                                                }
                         ) {
-                                Box(
-                                        modifier =
-                                                Modifier.width(canvasWidthDp.dp)
-                                                        .height(canvasHeightDp.dp)
-                                                        .onGloballyPositioned {
-                                                                canvasTopLeftPx =
-                                                                        it.positionInRoot()
+                                visibleCards.forEach { card ->
+                                        val xPx = (card.xDp * density).roundToInt()
+                                        val yPx = (card.yDp * density).roundToInt()
+                                        val cardShapePreset =
+                                                when {
+                                                        card.id == "pc_status" ->
+                                                                pcCardShapePreset
+                                                        card.id.startsWith("sensor:") ->
+                                                                telemetryCardShapePreset
+                                                        else -> 0f
+                                                }
+
+                                        Card(
+                                                modifier =
+                                                        Modifier.offset {
+                                                                IntOffset(xPx, yPx)
                                                         }
-                                                        .background(
-                                                                MaterialTheme.colorScheme.background
-                                                        )
-                                                        // Use graphicsLayer for zoom to avoid
-                                                        // expensive relayout on
-                                                        // every frame during pinch gestures (review
-                                                        // fix).
-                                                        .graphicsLayer {
-                                                                scaleX = canvasScaleState.floatValue
-                                                                scaleY = canvasScaleState.floatValue
-                                                                transformOrigin =
-                                                                        androidx.compose.ui.graphics
-                                                                                .TransformOrigin(
-                                                                                        0f,
-                                                                                        0f
+                                                                .width(card.widthDp.dp)
+                                                                .height(card.heightDp.dp)
+                                                                .pointerInput(card.id) {
+                                                                        detectDragGestures(
+                                                                                onDrag = {
+                                                                                        change,
+                                                                                        dragAmount
+                                                                                        ->
+                                                                                        change.consume()
+                                                                                        val currentScale =
+                                                                                                canvasScaleState
+                                                                                                        .floatValue
+                                                                                        onMoveCard(
+                                                                                                card.id,
+                                                                                                dragAmount
+                                                                                                        .x /
+                                                                                                        (density *
+                                                                                                                currentScale),
+                                                                                                dragAmount
+                                                                                                        .y /
+                                                                                                        (density *
+                                                                                                                currentScale)
+                                                                                        )
+                                                                                },
+                                                                                onDragEnd = {
+                                                                                        onSaveCardLayout()
+                                                                                }
+                                                                        )
+                                                                },
+                                                shape =
+                                                        cardShape(
+                                                                cardShapePreset,
+                                                                cornerRadius
+                                                        ),
+                                                colors =
+                                                        CardDefaults.cardColors(
+                                                                containerColor =
+                                                                        MaterialTheme
+                                                                                .colorScheme
+                                                                                .surfaceVariant
+                                                                                .copy(
+                                                                                        alpha =
+                                                                                                cardOpacity
                                                                                 )
-                                                        }
-                                ) {
-                                        visibleCards.forEach { card ->
-                                                val xPx = (card.xDp * density).roundToInt()
-                                                val yPx = (card.yDp * density).roundToInt()
-                                                val cardShapePreset =
-                                                        when {
-                                                                card.id == "pc_status" ->
-                                                                        pcCardShapePreset
-                                                                card.id.startsWith("sensor:") ->
-                                                                        telemetryCardShapePreset
-                                                                else -> 0f
+                                                        )
+                                        ) {
+                                                Box(
+                                                        modifier =
+                                                                Modifier.fillMaxSize()
+                                                                        .padding(4.dp)
+                                                ) {
+                                                        when (card.type.name) {
+                                                                "PC_STATUS" -> {
+                                                                        ConnectionOrbCard(
+                                                                                isConnected =
+                                                                                        isConnected,
+                                                                                isConnecting =
+                                                                                        isConnecting,
+                                                                                shapePreset =
+                                                                                        pcCardShapePreset,
+                                                                                cornerRadius =
+                                                                                        cornerRadius,
+                                                                                onToggle = {
+                                                                                        view.performHapticFeedback(
+                                                                                                HapticFeedbackConstants
+                                                                                                        .CONFIRM
+                                                                                        )
+                                                                                        onToggleConnection()
+                                                                                }
+                                                                        )
+                                                                }
+                                                                "WAKE_ON_LAN" -> {
+                                                                        WakeOnLanCard(
+                                                                                onWake = {
+                                                                                        onWakePc()
+                                                                                }
+                                                                        )
+                                                                }
+                                                                "TELEMETRY" -> {
+                                                                        val sensor =
+                                                                                sensorMap[
+                                                                                        card.sensorId]
+                                                                        val history =
+                                                                                telemetryHistory[
+                                                                                                card.sensorId]
+                                                                                        .orEmpty()
+                                                                        TelemetryCardContent(
+                                                                                title =
+                                                                                        card.title,
+                                                                                sensor =
+                                                                                        sensor,
+                                                                                history =
+                                                                                        history,
+                                                                                mode =
+                                                                                        card.displayMode,
+                                                                                onCycleDisplayMode = {
+                                                                                        onCycleTelemetryDisplayMode(
+                                                                                                card.id
+                                                                                        )
+                                                                                },
+                                                                                isExpressiveShape =
+                                                                                        cardShapePreset >
+                                                                                                0
+                                                                        )
+                                                                }
                                                         }
 
-                                                Card(
-                                                        modifier =
-                                                                Modifier.offset {
-                                                                        IntOffset(xPx, yPx)
-                                                                }
-                                                                        .width(card.widthDp.dp)
-                                                                        .height(card.heightDp.dp)
-                                                                        // pointerInput uses stable
-                                                                        // card.id key — reads
-                                                                        // canvasScaleState.floatValue directly (review
-                                                                        // fix).
-                                                                        .pointerInput(card.id) {
-                                                                                detectDragGestures(
-                                                                                        onDrag = {
-                                                                                                change,
-                                                                                                dragAmount
-                                                                                                ->
-                                                                                                change.consume()
-                                                                                                val currentScale =
-                                                                                                        canvasScaleState
-                                                                                                                .floatValue
-                                                                                                onMoveCard(
-                                                                                                        card.id,
-                                                                                                        dragAmount
-                                                                                                                .x /
-                                                                                                                (density *
-                                                                                                                        currentScale),
-                                                                                                        dragAmount
-                                                                                                                .y /
-                                                                                                                (density *
-                                                                                                                        currentScale)
-                                                                                                )
-                                                                                        },
-                                                                                        onDragEnd = {
-                                                                                                onSaveCardLayout()
-                                                                                        }
-                                                                                )
-                                                                        },
-                                                        shape =
-                                                                cardShape(
-                                                                        cardShapePreset,
-                                                                        cornerRadius
-                                                                ),
-                                                        colors =
-                                                                CardDefaults.cardColors(
-                                                                        containerColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .surfaceVariant
-                                                                                        .copy(
-                                                                                                alpha =
-                                                                                                        cardOpacity
-                                                                                        )
-                                                                )
-                                                ) {
                                                         Box(
                                                                 modifier =
-                                                                        Modifier.fillMaxSize()
-                                                                                .padding(4.dp)
-                                                        ) {
-                                                                when (card.type.name) {
-                                                                        "PC_STATUS" -> {
-                                                                                ConnectionOrbCard(
-                                                                                        isConnected =
-                                                                                                isConnected,
-                                                                                        isConnecting =
-                                                                                                isConnecting,
-                                                                                        shapePreset =
-                                                                                                pcCardShapePreset,
-                                                                                        cornerRadius =
-                                                                                                cornerRadius,
-                                                                                        onToggle = {
-                                                                                                view.performHapticFeedback(
-                                                                                                        HapticFeedbackConstants
-                                                                                                                .CONFIRM
+                                                                        Modifier.align(
+                                                                                        Alignment
+                                                                                                .BottomEnd
+                                                                                )
+                                                                                .padding(
+                                                                                        12.dp
+                                                                                )
+                                                                                .size(24.dp)
+                                                                                .clip(
+                                                                                        CircleShape
+                                                                                )
+                                                                                .background(
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .primary
+                                                                                                .copy(
+                                                                                                        alpha =
+                                                                                                                0.7f
                                                                                                 )
-                                                                                                onToggleConnection()
-                                                                                        },
-                                                                                        onNavigateToConnection =
-                                                                                                onNavigateToConnection
                                                                                 )
-                                                                        }
-                                                                        "WAKE_ON_LAN" -> {
-                                                                                WakeOnLanCard(
-                                                                                        onWake = {
-                                                                                                onWakePc()
-                                                                                        }
-                                                                                )
-                                                                        }
-                                                                        "TELEMETRY" -> {
-                                                                                val sensor =
-                                                                                        sensorMap[
-                                                                                                card.sensorId]
-                                                                                val history =
-                                                                                        telemetryHistory[
-                                                                                                        card.sensorId]
-                                                                                                .orEmpty()
-                                                                                TelemetryCardContent(
-                                                                                        title =
-                                                                                                card.title,
-                                                                                        sensor =
-                                                                                                sensor,
-                                                                                        history =
-                                                                                                history,
-                                                                                        mode =
-                                                                                                card.displayMode,
-                                                                                        onCycleDisplayMode = {
-                                                                                                onCycleTelemetryDisplayMode(
-                                                                                                        card.id
-                                                                                                )
-                                                                                        },
-                                                                                        isExpressiveShape =
-                                                                                                cardShapePreset >
-                                                                                                        0
-                                                                                )
-                                                                        }
-                                                                }
-
-                                                                // Resize handle — bottom-right
-                                                                // corner
-                                                                Box(
-                                                                        modifier =
-                                                                                Modifier.align(
-                                                                                                Alignment
-                                                                                                        .BottomEnd
-                                                                                        )
-                                                                                        .padding(
-                                                                                                12.dp
-                                                                                        )
-                                                                                        .size(24.dp)
-                                                                                        .clip(
-                                                                                                CircleShape
-                                                                                        )
-                                                                                        .background(
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .primary
-                                                                                                        .copy(
-                                                                                                                alpha =
-                                                                                                                        0.7f
-                                                                                                        )
-                                                                                        )
-                                                                                        .pointerInput(
-                                                                                                "resize_${card.id}"
-                                                                                        ) {
-                                                                                                detectDragGestures(
-                                                                                                        onDrag = {
-                                                                                                                change,
+                                                                                .pointerInput(
+                                                                                        "resize_${card.id}"
+                                                                                ) {
+                                                                                        detectDragGestures(
+                                                                                                onDrag = {
+                                                                                                        change,
+                                                                                                        dragAmount
+                                                                                                        ->
+                                                                                                        change.consume()
+                                                                                                        val currentScale =
+                                                                                                                canvasScaleState
+                                                                                                                        .floatValue
+                                                                                                        onResizeCard(
+                                                                                                                card.id,
                                                                                                                 dragAmount
-                                                                                                                ->
-                                                                                                                change.consume()
-                                                                                                                val currentScale =
-                                                                                                                        canvasScaleState
-                                                                                                                                .floatValue
-                                                                                                                onResizeCard(
-                                                                                                                        card.id,
-                                                                                                                        dragAmount
-                                                                                                                                .x /
-                                                                                                                                (density *
-                                                                                                                                        currentScale),
-                                                                                                                        dragAmount
-                                                                                                                                .y /
-                                                                                                                                (density *
-                                                                                                                                        currentScale)
-                                                                                                                )
-                                                                                                        },
-                                                                                                        onDragEnd = {
-                                                                                                                onSaveCardLayout()
-                                                                                                        }
-                                                                                                )
-                                                                                        }
-                                                                )
-                                                        }
+                                                                                                                        .x /
+                                                                                                                        (density *
+                                                                                                                                currentScale),
+                                                                                                                dragAmount
+                                                                                                                        .y /
+                                                                                                                        (density *
+                                                                                                                                currentScale)
+                                                                                                        )
+                                                                                                },
+                                                                                                onDragEnd = {
+                                                                                                        onSaveCardLayout()
+                                                                                                }
+                                                                                        )
+                                                                                }
+                                                        )
                                                 }
                                         }
                                 }
                         }
 
-                        // Card drawer — slides in from the right
                         PlainAnimatedVisibility(
                                 visible = showCardDrawer,
                                 modifier = Modifier.align(Alignment.CenterEnd)
@@ -576,7 +516,6 @@ fun DashboardScreenContent(
                                                                 )
                                                 )
 
-                                                // Scrollable list with always-visible scrollbar
                                                 val drawerScrollState = rememberScrollState()
                                                 val scrollbarColor =
                                                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -591,8 +530,7 @@ fun DashboardScreenContent(
                                                                         Modifier.fillMaxSize()
                                                                                 .padding(
                                                                                         end = 12.dp
-                                                                                ) // room for
-                                                                                // scrollbar
+                                                                                )
                                                                                 .verticalScroll(
                                                                                         drawerScrollState
                                                                                 ),
@@ -816,7 +754,6 @@ fun DashboardScreenContent(
                                                                 }
                                                         }
 
-                                                        // Always-visible scrollbar track + thumb
                                                         val scrollFraction =
                                                                 if (drawerScrollState.maxValue > 0
                                                                 ) {
@@ -856,7 +793,6 @@ fun DashboardScreenContent(
                                                                                                 4.dp
                                                                                 )
                                                         ) {
-                                                                // Track
                                                                 drawRoundRect(
                                                                         color = scrollbarTrackColor,
                                                                         cornerRadius =
@@ -869,7 +805,6 @@ fun DashboardScreenContent(
                                                                                         size.height
                                                                                 )
                                                                 )
-                                                                // Thumb
                                                                 val thumbHeight =
                                                                         (size.height *
                                                                                         thumbFraction)
@@ -911,7 +846,6 @@ fun DashboardScreenContent(
                                 }
                         }
 
-                        // Drag-from-drawer ghost preview
                         if (draggingCard != null && draggingCardSize != null) {
                                 if (canDropOnCanvas) {
                                         Box(
@@ -1014,8 +948,7 @@ private fun ConnectionOrbCard(
         isConnecting: Boolean,
         shapePreset: Float,
         cornerRadius: Int,
-        onToggle: () -> Unit,
-        onNavigateToConnection: () -> Unit = {}
+        onToggle: () -> Unit
 ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(
@@ -1091,18 +1024,11 @@ private fun ConnectionOrbCard(
                                                 )
                                                 .clickable {
                                                         when {
-                                                                // Already connected — toggle
-                                                                // (reconnect logic in
-                                                                // RemexClientManager)
                                                                 isConnected -> onToggle()
-                                                                // Already trying — wait, don't
-                                                                // double-trigger
                                                                 isConnecting -> {
                                                                         /* do nothing */
                                                                 }
-                                                                // Offline — send user to the
-                                                                // connection screen
-                                                                else -> onNavigateToConnection()
+                                                                else -> onToggle()
                                                         }
                                                 },
                                 contentAlignment = Alignment.Center
@@ -1177,9 +1103,6 @@ private fun TelemetryCardContent(
 ) {
         val view = LocalView.current
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                // Give extra padding for organic/expressive shapes so content doesn't clip into the
-                // shape
-                // edges
                 val paddingFactor = if (isExpressiveShape) 0.22f else 0.12f
                 val dynamicPadding =
                         (minOf(maxWidth, maxHeight) * paddingFactor).coerceAtLeast(16.dp)
@@ -1324,7 +1247,7 @@ private fun TelemetryCardContent(
                                 }
                         }
                 }
-        }
+            }
 }
 
 @Composable

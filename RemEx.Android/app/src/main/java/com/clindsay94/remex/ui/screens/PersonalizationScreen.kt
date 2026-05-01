@@ -15,10 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +26,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.navigation.Screen
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapeNames
@@ -87,12 +89,15 @@ fun PersonalizationScreen(
     var remoteControlCardShapePreset by remember { mutableFloatStateOf(settings.remoteControlCardShapePreset) }
     var remoteMouseCardShapePreset by remember { mutableFloatStateOf(settings.remoteMouseCardShapePreset) }
     var taskManagerCardShapePreset by remember { mutableFloatStateOf(settings.taskManagerCardShapePreset) }
+    var navPrimaryItemsJson by remember { mutableStateOf(settings.navPrimaryItemsJson) }
+    var fabShowsOverflow by remember { mutableStateOf(settings.fabShowsOverflow) }
 
     LaunchedEffect(
         themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius,
         cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset,
         remoteDesktopCardShapePreset, remoteControlCardShapePreset,
-        remoteMouseCardShapePreset, taskManagerCardShapePreset
+        remoteMouseCardShapePreset, taskManagerCardShapePreset,
+        navPrimaryItemsJson, fabShowsOverflow
     ) {
         viewModel.save(
             themeMode = themeMode,
@@ -111,14 +116,22 @@ fun PersonalizationScreen(
             taskManagerCardShapePreset = taskManagerCardShapePreset,
             remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
             remoteControlCardShapePreset = remoteControlCardShapePreset,
-            remoteMouseCardShapePreset = remoteMouseCardShapePreset
+            remoteMouseCardShapePreset = remoteMouseCardShapePreset,
+            navPrimaryItemsJson = navPrimaryItemsJson,
+            fabShowsOverflow = fabShowsOverflow
         )
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (showHeader) {
-                TopAppBar(title = { Text(stringResource(R.string.screen_personalization_title)) })
+                RemexScreenHeader(
+                    title = stringResource(R.string.screen_personalization_title),
+                    scrollBehavior = scrollBehavior
+                )
             }
         }
     ) { innerPadding ->
@@ -398,7 +411,7 @@ fun PersonalizationScreen(
                         val (label, current) = config
                         val shapeIndex = current.roundToInt().coerceIn(0, materialShapeNames.lastIndex)
                         val shapeName = materialShapeNames[shapeIndex]
-                        var lastHapticIndex by remember { mutableIntStateOf(current.toInt()) }
+                        var lastHapticIndex by remember { mutableIntStateOf(current.roundToInt()) }
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -422,10 +435,12 @@ fun PersonalizationScreen(
                                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                                             lastHapticIndex = newIndex
                                         }
-                                        setter(newIndex.toFloat())
+                                        setter(newValue)
+                                    },
+                                    onValueChangeFinished = {
+                                        setter(current.roundToInt().toFloat())
                                     },
                                     valueRange = 0f..maxShapes,
-                                    steps = materialShapesList.size - 2,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Box(
@@ -434,6 +449,89 @@ fun PersonalizationScreen(
                                         .clip(cardShape(current, cornerRadius))
                                         .background(MaterialTheme.colorScheme.primary)
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ═══ Navigation Island ═══
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                modifier = Modifier.animateContentSize()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SectionHeader(stringResource(R.string.personalization_section_navigation), Icons.AutoMirrored.Filled.DirectionsRun)
+
+                    Text(stringResource(R.string.personalization_fab_function), style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (fabShowsOverflow) stringResource(R.string.personalization_fab_overflow) else stringResource(R.string.personalization_fab_mouse),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Switch(
+                            checked = fabShowsOverflow,
+                            onCheckedChange = {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                fabShowsOverflow = it
+                            }
+                        )
+                    }
+
+                    Text(
+                        stringResource(R.string.personalization_navigation_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Reorder List
+                    val allScreens = listOf(
+                        Screen.Dashboard, Screen.RemoteDesktop, Screen.TaskManager,
+                        Screen.RemoteControl, Screen.RemoteMouse, Screen.AppLauncher,
+                        Screen.Settings, Screen.Faq, Screen.About
+                    )
+
+                    val currentRoutes = remember(navPrimaryItemsJson) {
+                        try {
+                            val jsonArray = org.json.JSONArray(navPrimaryItemsJson)
+                            (0 until jsonArray.length()).map { jsonArray.getString(it) }
+                        } catch (e: Exception) {
+                            listOf("dashboard", "remote_desktop", "task_manager", "remote_control")
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        allScreens.forEach { screen ->
+                            val isPrimary = currentRoutes.contains(screen.route)
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isPrimary) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    val newRoutes = if (isPrimary) {
+                                        currentRoutes.filter { it != screen.route }
+                                    } else {
+                                        (currentRoutes + screen.route).take(5)
+                                    }
+                                    navPrimaryItemsJson = org.json.JSONArray(newRoutes).toString()
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(screen.icon, contentDescription = null, modifier = Modifier.size(24.dp))
+                                    Text(stringResource(screen.titleRes), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    if (isPrimary) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
                             }
                         }
                     }

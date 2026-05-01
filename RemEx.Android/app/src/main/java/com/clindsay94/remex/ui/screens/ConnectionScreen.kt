@@ -18,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,23 +55,36 @@ fun ConnectionScreen(
     val isDiscovering by viewModel.isDiscovering.collectAsState()
     val discoveredHost by viewModel.discoveredHost.collectAsState()
 
-    ConnectionScreenContent(
-        connectionPrefs = connectionPrefs,
-        desktopPrefs = desktopPrefs,
-        isConnecting = isConnecting,
-        isConnected = isConnected,
-        status = status,
-        connectionError = connectionError,
-        capabilitySummary = capabilitySummary,
-        isDiscovering = isDiscovering,
-        discoveredHost = discoveredHost,
-        onNavigateToQrScanner = onNavigateToQrScanner,
-        onConnect = { host, port, mac, broadcast, subnet, key, quality, fps, scale ->
-            viewModel.connect(host, port, mac, broadcast, subnet, key, quality, fps, scale)
-        },
-        onClearError = { viewModel.clearError() },
-        onDiscoverHost = { viewModel.discoverHost() }
-    )
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_connection_title),
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
+        ConnectionScreenContent(
+            connectionPrefs = connectionPrefs,
+            desktopPrefs = desktopPrefs,
+            isConnecting = isConnecting,
+            isConnected = isConnected,
+            status = status,
+            connectionError = connectionError,
+            capabilitySummary = capabilitySummary,
+            isDiscovering = isDiscovering,
+            discoveredHost = discoveredHost,
+            onNavigateToQrScanner = onNavigateToQrScanner,
+            onConnect = { host, port, mac, broadcast, subnet, key, quality, fps, scale ->
+                viewModel.connect(host, port, mac, broadcast, subnet, key, quality, fps, scale)
+            },
+            onClearError = { viewModel.clearError() },
+            onDiscoverHost = { viewModel.discoverHost() },
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,7 +102,8 @@ fun ConnectionScreenContent(
     onNavigateToQrScanner: () -> Unit,
     onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
     onClearError: () -> Unit,
-    onDiscoverHost: () -> Unit
+    onDiscoverHost: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     val context = LocalContext.current
@@ -192,27 +208,19 @@ fun ConnectionScreenContent(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_connection_title), fontWeight = FontWeight.Bold) }
-            )
+    if (connectionPrefs == null || desktopPrefs == null) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
-    ) { padding ->
-        if (connectionPrefs == null || desktopPrefs == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+    } else {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
                 Icon(
                     imageVector = Icons.Default.SettingsEthernet,
                     contentDescription = null,
@@ -658,7 +666,6 @@ fun ConnectionScreenContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
     }
 }
 

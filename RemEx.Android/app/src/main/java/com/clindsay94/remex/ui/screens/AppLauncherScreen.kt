@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons.Default
 import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.clindsay94.remex.ui.components.RemexScreenHeader
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -53,6 +55,7 @@ data class AppLauncherUiState(
     val isRefreshing: Boolean = false
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppLauncherScreen(
     onNavigateToConnection: () -> Unit = {},
@@ -74,6 +77,8 @@ fun AppLauncherScreen(
     val isConnected by RemexClientManager.isConnected.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     val uiState = AppLauncherUiState(
         apps = apps,
         shapePreset = shapePreset,
@@ -82,12 +87,28 @@ fun AppLauncherScreen(
         isRefreshing = isRefreshing
     )
 
-    AppLauncherScreenContent(
-        uiState = uiState,
-        onRefreshApps = { viewModel.refreshApps() },
-        onLaunchApp = { viewModel.launchApp(it) },
-        onNavigateToConnection = onNavigateToConnection
-    )
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            RemexScreenHeader(
+                title = stringResource(R.string.screen_app_launcher_title),
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    IconButton(onClick = { viewModel.refreshApps() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        AppLauncherScreenContent(
+            uiState = uiState,
+            onRefreshApps = { viewModel.refreshApps() },
+            onLaunchApp = { viewModel.launchApp(it) },
+            onNavigateToConnection = onNavigateToConnection,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -100,28 +121,13 @@ fun AppLauncherScreenContent(
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_app_launcher_title)) },
-                actions = {
-                    IconButton(onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onRefreshApps()
-                    }, enabled = uiState.isConnected) {
-                        Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = onRefreshApps,
-            modifier = modifier.fillMaxSize().padding(innerPadding)
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (!uiState.isConnected && uiState.apps.isEmpty()) {
+    PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = onRefreshApps,
+        modifier = modifier.fillMaxSize()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!uiState.isConnected && uiState.apps.isEmpty()) {
                     DisconnectedFullScreen(
                         screenName = stringResource(R.string.screen_app_launcher_title),
                         onNavigateToConnection = onNavigateToConnection,
@@ -177,7 +183,6 @@ fun AppLauncherScreenContent(
                 }
             }
         }
-    }
 }
 
 @Composable
