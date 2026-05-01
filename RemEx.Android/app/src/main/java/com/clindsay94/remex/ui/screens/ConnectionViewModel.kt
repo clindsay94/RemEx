@@ -114,7 +114,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                                 android.util.Log.w("ConnectionVM", "Foreground service could not be started, connection will work without background persistence", e)
                             }
                         }
-                    } catch (_: Exception) { /* non-JSON result is fine */ }
+                    } catch (e: Exception) {
+                        android.util.Log.w("ConnectionVM", "InitRemex returned non-JSON result: $result", e)
+                    }
                 } else {
                     _connectionError.value = res.getString(R.string.status_native_lib_not_loaded)
                     _connectionStatus.value = res.getString(R.string.status_native_lib_not_loaded)

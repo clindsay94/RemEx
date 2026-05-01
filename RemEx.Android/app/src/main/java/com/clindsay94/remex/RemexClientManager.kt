@@ -125,6 +125,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 }
                 val result = RemexCoreClient.InitRemex(initRequest.toString())
                 if (result.isBlank()) {
+                    Log.w("RemexManager", "InitRemex returned blank — possible native-side failure for $host:$port")
                     _isConnecting.value = false
                 } else {
                     val json = JSONObject(result)
