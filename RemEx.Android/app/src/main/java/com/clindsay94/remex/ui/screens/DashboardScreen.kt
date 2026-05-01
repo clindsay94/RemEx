@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.FilterCenterFocus
+import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -427,18 +428,14 @@ fun DashboardScreenContent(
                                                                                 .padding(
                                                                                         12.dp
                                                                                 )
-                                                                                .size(24.dp)
+                                                                                .size(36.dp)
                                                                                 .clip(
                                                                                         CircleShape
                                                                                 )
                                                                                 .background(
                                                                                         MaterialTheme
                                                                                                 .colorScheme
-                                                                                                .primary
-                                                                                                .copy(
-                                                                                                        alpha =
-                                                                                                                0.7f
-                                                                                                )
+                                                                                                .primaryContainer
                                                                                 )
                                                                                 .pointerInput(
                                                                                         "resize_${card.id}"
@@ -469,7 +466,14 @@ fun DashboardScreenContent(
                                                                                                 }
                                                                                         )
                                                                                 }
-                                                        )
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.OpenInFull,
+                                                                contentDescription = "Resize card",
+                                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                modifier = Modifier.size(16.dp).align(Alignment.Center)
+                                                            )
+                                                        }
                                                 }
                                         }
                                 }

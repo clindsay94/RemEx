@@ -391,7 +391,7 @@ fun ConnectionScreenContent(
                             showHelpSection = !showHelpSection
                         },
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {

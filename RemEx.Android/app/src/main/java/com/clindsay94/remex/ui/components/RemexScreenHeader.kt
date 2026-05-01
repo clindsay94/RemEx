@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -15,7 +16,7 @@ fun RemexScreenHeader(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    LargeTopAppBar(
+    MediumTopAppBar(
         modifier = modifier,
         title = {
             Column {
@@ -37,9 +38,9 @@ fun RemexScreenHeader(
         },
         actions = actions,
         scrollBehavior = scrollBehavior,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f)
         )
     )
 }

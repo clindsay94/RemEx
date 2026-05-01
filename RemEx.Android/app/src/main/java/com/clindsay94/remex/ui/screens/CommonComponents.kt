@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
-import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -217,7 +216,7 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                             Modifier.size(6.dp)
                                     .background(
                                             color =
-                                                    if (isConnected) Color(0xFF4CAF50)
+                                                    if (isConnected) MaterialTheme.colorScheme.primary
                                                     else MaterialTheme.colorScheme.outline,
                                             shape = CircleShape
                                     )

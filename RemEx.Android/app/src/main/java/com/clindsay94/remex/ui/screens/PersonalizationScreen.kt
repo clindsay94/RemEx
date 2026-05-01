@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,13 +27,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import kotlin.math.roundToInt
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
@@ -90,14 +95,13 @@ fun PersonalizationScreen(
     var remoteMouseCardShapePreset by remember { mutableFloatStateOf(settings.remoteMouseCardShapePreset) }
     var taskManagerCardShapePreset by remember { mutableFloatStateOf(settings.taskManagerCardShapePreset) }
     var navPrimaryItemsJson by remember { mutableStateOf(settings.navPrimaryItemsJson) }
-    var fabShowsOverflow by remember { mutableStateOf(settings.fabShowsOverflow) }
 
     LaunchedEffect(
         themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius,
         cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset,
         remoteDesktopCardShapePreset, remoteControlCardShapePreset,
         remoteMouseCardShapePreset, taskManagerCardShapePreset,
-        navPrimaryItemsJson, fabShowsOverflow
+        navPrimaryItemsJson
     ) {
         viewModel.save(
             themeMode = themeMode,
@@ -117,8 +121,7 @@ fun PersonalizationScreen(
             remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
             remoteControlCardShapePreset = remoteControlCardShapePreset,
             remoteMouseCardShapePreset = remoteMouseCardShapePreset,
-            navPrimaryItemsJson = navPrimaryItemsJson,
-            fabShowsOverflow = fabShowsOverflow
+            navPrimaryItemsJson = navPrimaryItemsJson
         )
     }
 
@@ -463,73 +466,162 @@ fun PersonalizationScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     SectionHeader(stringResource(R.string.personalization_section_navigation), Icons.AutoMirrored.Filled.DirectionsRun)
 
-                    Text(stringResource(R.string.personalization_fab_function), style = MaterialTheme.typography.labelMedium)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (fabShowsOverflow) stringResource(R.string.personalization_fab_overflow) else stringResource(R.string.personalization_fab_mouse),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Switch(
-                            checked = fabShowsOverflow,
-                            onCheckedChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                fabShowsOverflow = it
-                            }
-                        )
-                    }
-
-                    Text(
-                        stringResource(R.string.personalization_navigation_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    // Reorder List
-                    val allScreens = listOf(
+                    val allNavScreens = listOf(
                         Screen.Dashboard, Screen.RemoteDesktop, Screen.TaskManager,
                         Screen.RemoteControl, Screen.RemoteMouse, Screen.AppLauncher,
                         Screen.Settings, Screen.Faq, Screen.About
                     )
 
-                    val currentRoutes = remember(navPrimaryItemsJson) {
-                        try {
-                            val jsonArray = org.json.JSONArray(navPrimaryItemsJson)
-                            (0 until jsonArray.length()).map { jsonArray.getString(it) }
-                        } catch (e: Exception) {
-                            listOf("dashboard", "remote_desktop", "task_manager", "remote_control")
-                        }
+                    var primaryRoutes by remember(navPrimaryItemsJson) {
+                        mutableStateOf(
+                            try {
+                                val jsonArray = org.json.JSONArray(navPrimaryItemsJson)
+                                (0 until jsonArray.length()).map { jsonArray.getString(it) }
+                            } catch (e: Exception) {
+                                listOf("dashboard", "remote_desktop", "task_manager", "remote_control", "app_launcher")
+                            }
+                        )
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        allScreens.forEach { screen ->
-                            val isPrimary = currentRoutes.contains(screen.route)
+                    fun commitRoutes(routes: List<String>) {
+                        primaryRoutes = routes
+                        navPrimaryItemsJson = org.json.JSONArray(routes).toString()
+                    }
+
+                    // Drag state
+                    var draggedIndex by remember { mutableIntStateOf(-1) }
+                    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+                    val itemHeightPx = remember { mutableFloatStateOf(120f) }
+
+                    // ── Primary items (drag to reorder) ──
+                    Text(stringResource(R.string.personalization_navigation_hint),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        primaryRoutes.forEachIndexed { index, route ->
+                            val screen = allNavScreens.find { it.route == route } ?: return@forEachIndexed
+                            val isBeingDragged = index == draggedIndex
+                            val yTranslation = if (isBeingDragged) dragOffsetY else 0f
+
                             Card(
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (isPrimary) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                    containerColor = if (isBeingDragged)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
                                 ),
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    val newRoutes = if (isPrimary) {
-                                        currentRoutes.filter { it != screen.route }
-                                    } else {
-                                        (currentRoutes + screen.route).take(5)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onGloballyPositioned { coords ->
+                                        itemHeightPx.floatValue = coords.size.height.toFloat()
                                     }
-                                    navPrimaryItemsJson = org.json.JSONArray(newRoutes).toString()
-                                }
+                                    .zIndex(if (isBeingDragged) 1f else 0f)
+                                    .graphicsLayer { translationY = yTranslation }
+                                    .pointerInput(index) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = {
+                                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                                draggedIndex = index
+                                                dragOffsetY = 0f
+                                            },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragOffsetY += dragAmount.y
+                                                val itemH = itemHeightPx.floatValue + 6f // card + spacing
+                                                val swapTarget = (index + (dragOffsetY / itemH).roundToInt())
+                                                    .coerceIn(0, primaryRoutes.size - 1)
+                                                if (swapTarget != draggedIndex) {
+                                                    val newRoutes = primaryRoutes.toMutableList()
+                                                    val item = newRoutes.removeAt(draggedIndex)
+                                                    newRoutes.add(swapTarget, item)
+                                                    primaryRoutes = newRoutes
+                                                    dragOffsetY = 0f
+                                                    draggedIndex = swapTarget
+                                                }
+                                            },
+                                            onDragEnd = {
+                                                commitRoutes(primaryRoutes)
+                                                draggedIndex = -1
+                                                dragOffsetY = 0f
+                                            },
+                                            onDragCancel = {
+                                                draggedIndex = -1
+                                                dragOffsetY = 0f
+                                            }
+                                        )
+                                    }
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(screen.icon, contentDescription = null, modifier = Modifier.size(24.dp))
-                                    Text(stringResource(screen.titleRes), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                                    if (isPrimary) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.DragHandle, contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp))
+                                    Icon(screen.icon, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    Text(stringResource(screen.titleRes),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f))
+                                    IconButton(
+                                        onClick = {
+                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                            commitRoutes(primaryRoutes.filter { it != route })
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = "Remove",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Available items to add (tap to add to island) ──
+                    val secondaryScreens = allNavScreens.filter { !primaryRoutes.contains(it.route) }
+                    if (secondaryScreens.isNotEmpty()) {
+                        val canAdd = primaryRoutes.size < 5
+                        Text(
+                            text = if (canAdd) "Tap to add to island (${primaryRoutes.size}/5)"
+                                   else "Island full (5/5) — remove an item above to add another",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            secondaryScreens.forEach { screen ->
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                                    ),
+                                    onClick = {
+                                        if (canAdd) {
+                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                            commitRoutes(primaryRoutes + screen.route)
+                                        }
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(screen.icon, contentDescription = null,
+                                            tint = if (canAdd) MaterialTheme.colorScheme.onSurface
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(22.dp))
+                                        Text(stringResource(screen.titleRes),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (canAdd) MaterialTheme.colorScheme.onSurface
+                                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.weight(1f))
+                                        if (canAdd) {
+                                            Icon(Icons.Default.Add, contentDescription = "Add",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp))
+                                        }
                                     }
                                 }
                             }
