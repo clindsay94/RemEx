@@ -81,9 +81,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private fun recordFrameTimestamp() {
         val now = System.currentTimeMillis()
         frameTimestampsMs.addLast(now)
-        // TODO(human): Compute FPS from frameTimestampsMs and assign to _fps.value
-        // frameTimestampsMs is a deque of timestamps (ms) for each decoded frame, newest at the end.
-        // Consider: sliding window (remove entries older than N seconds), rolling count, or EMA.
+        while (frameTimestampsMs.size > 1 && now - frameTimestampsMs.first() > 2000L) {
+            frameTimestampsMs.removeFirst()
+        }
+        if (frameTimestampsMs.size >= 2) {
+            val elapsedSec = (now - frameTimestampsMs.first()) / 1000f
+            _fps.value = (frameTimestampsMs.size - 1) / elapsedSec
+        }
     }
 
     private val _configState = MutableStateFlow(RemoteDesktopConfigState())

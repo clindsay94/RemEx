@@ -116,8 +116,10 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
     val hScrollSensitivity by viewModel.horizontalScrollSensitivity.collectAsState()
     val hostCursorX by viewModel.hostCursorX.collectAsState()
     val hostCursorY by viewModel.hostCursorY.collectAsState()
+    val fps by viewModel.fps.collectAsState()
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
+    var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
 
     val uiState = RemoteDesktopUiState(
         isStreaming = isStreaming,
@@ -153,7 +155,10 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
         onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
         getHostScreenSize = { viewModel.getHostScreenSize() },
-        currentFrameTimestamp = currentFrame?.timestamp
+        currentFrameTimestamp = currentFrame?.timestamp,
+        fps = fps,
+        showFpsOverlay = showFpsOverlay,
+        onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay }
     )
 }
 
@@ -180,7 +185,10 @@ fun RemoteDesktopScreenContent(
     onUpdatePointerSpeed: (Float) -> Unit,
     onUpdateScrollSensitivity: (Float, Float) -> Unit,
     getHostScreenSize: () -> Pair<Int, Int>,
-    currentFrameTimestamp: Long?
+    currentFrameTimestamp: Long?,
+    fps: Float = 0f,
+    showFpsOverlay: Boolean = false,
+    onToggleFpsOverlay: () -> Unit = {}
 ) {
     val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
@@ -1170,6 +1178,21 @@ fun RemoteDesktopScreenContent(
                     }
                 }
 
+                if (uiState.isStreaming && showFpsOverlay) {
+                    Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = Color.Black.copy(alpha = 0.55f),
+                            modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
+                    ) {
+                        Text(
+                                text = "${fps.toInt()} FPS",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
                 if (uiState.isFullscreen) {
                     FilledTonalIconButton(
                             onClick = { onSetFullscreen(false) },
@@ -1288,6 +1311,23 @@ fun RemoteDesktopScreenContent(
                                                 Icons.Default.Add,
                                                 contentDescription =
                                                         stringResource(R.string.cd_zoom_in)
+                                        )
+                                    }
+
+                                    HorizontalDivider(
+                                            modifier = Modifier.width(1.dp).height(32.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+
+                                    IconButton(onClick = { onToggleFpsOverlay(); showControlsWithTimer() }) {
+                                        Text(
+                                                text = if (showFpsOverlay) "${fps.toInt()}" else "FPS",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (showFpsOverlay)
+                                                    MaterialTheme.colorScheme.primary
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                 }
