@@ -109,7 +109,7 @@ class SettingsManager(private val context: Context) {
             val remoteDesktopCardShapePreset: Float = 18.0f,
             val remoteControlCardShapePreset: Float = 18.0f,
             val remoteMouseCardShapePreset: Float = 18.0f,
-            val navPrimaryItemsJson: String = "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\", \"app_launcher\"]"
+            val navPrimaryItemsJson: String = DEFAULT_NAV_ITEMS_JSON
     )
 
     val appLauncherCardShapePresetFlow: Flow<Float> =
