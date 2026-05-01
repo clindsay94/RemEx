@@ -61,6 +61,7 @@ class SettingsManager(private val context: Context) {
         val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
 
         val NAV_PRIMARY_ITEMS_JSON_KEY = stringPreferencesKey("nav_primary_items_json")
+        const val DEFAULT_NAV_ITEMS_JSON = "[\"dashboard\", \"remote_desktop\", \"task_manager\", \"remote_control\", \"app_launcher\"]"
 
         val FLOATING_MOUSE_ISLAND_X_KEY = floatPreferencesKey("floating_mouse_island_x")
         val FLOATING_MOUSE_ISLAND_Y_KEY = floatPreferencesKey("floating_mouse_island_y")
