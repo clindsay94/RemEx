@@ -478,7 +478,7 @@ fun PersonalizationScreen(
                                 val jsonArray = org.json.JSONArray(navPrimaryItemsJson)
                                 (0 until jsonArray.length()).map { jsonArray.getString(it) }
                             } catch (e: Exception) {
-                                listOf("dashboard", "remote_desktop", "task_manager", "remote_control", "app_launcher")
+                                listOf(Screen.Dashboard.route, Screen.RemoteDesktop.route, Screen.TaskManager.route, Screen.RemoteControl.route, Screen.AppLauncher.route)
                             }
                         )
                     }
