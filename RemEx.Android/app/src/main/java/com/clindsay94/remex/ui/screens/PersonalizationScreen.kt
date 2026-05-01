@@ -528,7 +528,7 @@ fun PersonalizationScreen(
                                             onDrag = { change, dragAmount ->
                                                 change.consume()
                                                 dragOffsetY += dragAmount.y
-                                                val itemH = itemHeightPx.floatValue + 6f // card + spacing
+                                                val itemH = itemHeightPx.floatValue + with(androidx.compose.ui.platform.LocalDensity.current) { 6.dp.toPx() } // card + spacing
                                                 val swapTarget = (index + (dragOffsetY / itemH).roundToInt())
                                                     .coerceIn(0, primaryRoutes.size - 1)
                                                 if (swapTarget != draggedIndex) {
