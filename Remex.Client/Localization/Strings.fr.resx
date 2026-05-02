@@ -50,6 +50,8 @@
   <data name="Settings_HostAddress" xml:space="preserve"><value>Adresse de l'hôte</value></data>
   <data name="Settings_AccessKey" xml:space="preserve"><value>Clé d'accès</value></data>
   <data name="Settings_SaveReconnect" xml:space="preserve"><value>Enregistrer et reconnecter</value></data>
+  <data name="Settings_RemoteDesktop" xml:space="preserve"><value>BUREAU À DISTANCE</value></data>
+  <data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Fréquence d'images par défaut pour les nouveaux flux</value></data>
   <data name="Settings_Layout" xml:space="preserve"><value>MISE EN PAGE</value></data>
   <data name="Settings_SnapToGrid" xml:space="preserve"><value>Aligner sur la grille</value></data>
   <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Les cartes s'alignent sur la ligne de grille la plus proche lors du déplacement</value></data>

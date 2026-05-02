@@ -114,3 +114,8 @@ docs/android-ui-refactor-prd-notes.md
 .gitignore
 docs/android-ui-refactor-tech.md
 docs/ui-evaluation-report.md
+/.claude
+AGENTS.md
+CLAUDE.md
+.claude/settings.local.json
+.claude/settings.local.json

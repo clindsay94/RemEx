@@ -9,15 +9,8 @@ using Avalonia.Threading;
 
 namespace Remex.Client.Controls;
 
-/// <summary>
-/// Full-screen cinematic boot sequence control.
-/// Runs a 5-second animation across 4 phases then fires SequenceCompleted.
-/// Frame-driven at ~60fps via DispatcherTimer + Stopwatch.
-/// </summary>
 public class BootSequenceControl : Control
 {
-    // ═══════════════ Styled Properties ═══════════════
-
     public static readonly StyledProperty<Color> AccentColorProperty =
         AvaloniaProperty.Register<BootSequenceControl, Color>(
             nameof(AccentColor), Color.Parse("#00F0FF"));
@@ -28,101 +21,27 @@ public class BootSequenceControl : Control
         set => SetValue(AccentColorProperty, value);
     }
 
-    // ═══════════════ Event ═══════════════
-
-    /// <summary>Fired once when the sequence finishes (elapsed >= 5.0s).</summary>
     public event Action? SequenceCompleted;
-
-    // ═══════════════ Timing ═══════════════
 
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _stopwatch = new();
     private double _elapsed;
     private bool _completed;
 
-    // ═══════════════ Animation State ═══════════════
+    private readonly Random _rng = new(42);
 
-    // Particle embers (Phase 1 + early Phase 2)
-    private struct Particle
-    {
-        public double X, Y, Vx, Vy, Alpha, Lifetime, MaxLifetime;
-    }
-    private const int ParticleCount = 15;
-    private readonly Particle[] _particles = new Particle[ParticleCount];
+    private struct Particle { public double X, Y, Vx, Vy, Lifetime, MaxLifetime, Alpha; }
+    private Particle[] _particles = new Particle[25];
 
-    // Pulse rings from core (Phase 2+)
-    private struct PulseRing
-    {
-        public double Radius, Alpha, Birth;
-        public bool Active;
-    }
-    private const int MaxPulseRings = 2;
-    private readonly PulseRing[] _pulseRings = new PulseRing[MaxPulseRings];
-    private double _lastPulseRingSpawn = -999.0;
+    private struct StreamParticle { public double T, Speed, Radius, Alpha; }
+    private StreamParticle[] _streamParticles = new StreamParticle[12];
 
-    // Orbiting client nodes (Phase 2)
-    private struct ClientNode
-    {
-        public double OrbitalAngle;   // Current angle on the middle ring
-        public double StartX, StartY; // Spiral-in origin (random grid position)
-        public double SettledAngle;   // 0, 120, 240 deg (in radians)
-        public bool Settled;
-    }
-    private readonly ClientNode[] _nodes = new ClientNode[3];
-
-    // Node comet trail positions (3 nodes × 5 trail positions)
-    private readonly Point[] _nodeTrails = new Point[15];
-
-    // Data packet
-    private double _dataPacketProgress = -1.0;
-    private int _dataPacketNode;
-    private double _lastPacketTime = -999.0;
-
-    // Ring rotation angles
-    private double _outerAngle;
-    private double _middleAngle;
-    private double _innerAngle;
-
-    // Electric arc flicker
-    private double _lastArcFlicker = -999.0;
-    private bool _arcFlickerVisible;
-    private double _arcFlickerAngle;
-    private int _arcFlickerCount = 2;
-
-    // Text display
-    private string _cachedRemexSubstring = "";
-    private FormattedText? _cachedRemexText;
-    private int _cachedRemexCharCount = -1;
-
-    // Dash offset for connection trace arcs
-    private double _dashOffset;
-
-    // Random for procedural elements
-    private readonly Random _rng;
-
-    // ═══════════════ Cached Brushes & Pens ═══════════════
-
-    private ImmutableSolidColorBrush _accentBrush = null!;
-    private ImmutableSolidColorBrush _accentBrush70 = null!;
-    private ImmutableSolidColorBrush _accentBrush60 = null!;
-    private ImmutableSolidColorBrush _accentBrush40 = null!;
-    private ImmutableSolidColorBrush _accentBrush30 = null!;
-    private ImmutableSolidColorBrush _accentBrush25 = null!;
-    private ImmutableSolidColorBrush _accentBrush15 = null!;
-    private ImmutableSolidColorBrush _substrateBrush = null!;
-    private ImmutableSolidColorBrush _whiteBrush = null!;
-    private Pen _gridPen = null!;
-    private Pen _gridBrightPen = null!;
-    private Pen _scanLinePen = null!;
-    private Pen _outerRingPen = null!;
-    private Pen _middleRingPen = null!;
-    private Pen _innerRingPen = null!;
-    private Pen _tracePen = null!;
-
-    // 8 pre-created particle alpha brushes (indices 0-7 → alpha 5%..80%)
-    private readonly ImmutableSolidColorBrush[] _particleAlphaBrushes = new ImmutableSolidColorBrush[8];
-
-    // ═══════════════ Constructor ═══════════════
+    private double _scanProgress;
+    private double _waveProgress;
+    private double _connectionGlow;
+    private double _zoomScale = 1.0;
+    private double _zoomProgress = 0.0;
+    private double _fadeOverlay = 0.0;
 
     static BootSequenceControl()
     {
@@ -131,18 +50,33 @@ public class BootSequenceControl : Control
 
     public BootSequenceControl()
     {
-        _rng = new Random(42); // deterministic seed for reproducible layout
-        RebuildBrushes();
-        InitParticles(800, 600);
-        InitNodes(400, 300);
+        for (int i = 0; i < 25; i++)
+        {
+            _particles[i] = new Particle
+            {
+                X = _rng.NextDouble(),
+                Y = _rng.NextDouble(),
+                Vx = (_rng.NextDouble() - 0.5) * 0.005,
+                Vy = -(0.01 + _rng.NextDouble() * 0.02),
+                Lifetime = _rng.NextDouble() * 2.0,
+                MaxLifetime = 2.0 + _rng.NextDouble() * 2.0,
+                Alpha = 0
+            };
+        }
 
-        _timer = new DispatcherTimer(
-            TimeSpan.FromMilliseconds(16),
-            DispatcherPriority.Render,
-            OnTick);
+        for (int i = 0; i < 12; i++)
+        {
+            _streamParticles[i] = new StreamParticle
+            {
+                T = _rng.NextDouble(),
+                Speed = 0.008 + _rng.NextDouble() * 0.012,
+                Radius = 1.0 + _rng.NextDouble() * 2.5,
+                Alpha = 0.3 + _rng.NextDouble() * 0.6
+            };
+        }
+
+        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, OnTick);
     }
-
-    // ═══════════════ Lifecycle ═══════════════
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -154,20 +88,9 @@ public class BootSequenceControl : Control
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        // Defensive stop: ensures the timer is halted if the control is removed
-        // before the animation completes (e.g. navigation away mid-sequence).
         _timer.Stop();
         _stopwatch.Stop();
     }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-        if (change.Property == AccentColorProperty)
-            RebuildBrushes();
-    }
-
-    // ═══════════════ Timer Tick ═══════════════
 
     private void OnTick(object? sender, EventArgs e)
     {
@@ -175,703 +98,264 @@ public class BootSequenceControl : Control
         _stopwatch.Restart();
         _elapsed += dt;
 
-        // Timer auto-stops when _elapsed >= 6.0 to prevent resource leak;
-        // this ensures the timer halts even if SequenceCompleted has no subscribers.
-        if (_elapsed >= 6.0 && !_completed)
+        // Particle updates
+        for (int i = 0; i < 25; i++)
+        {
+            _particles[i].Lifetime += dt;
+            _particles[i].X += _particles[i].Vx;
+            _particles[i].Y += _particles[i].Vy * dt;
+            double t = _particles[i].Lifetime / _particles[i].MaxLifetime;
+            if (t < 0.2) _particles[i].Alpha = (t / 0.2) * 0.7;
+            else if (t < 0.8) _particles[i].Alpha = 0.7;
+            else _particles[i].Alpha = (1.0 - (t - 0.8) / 0.2) * 0.7;
+
+            if (_particles[i].Lifetime >= _particles[i].MaxLifetime)
+            {
+                _particles[i].X = _rng.NextDouble();
+                _particles[i].Y = 0.4 + _rng.NextDouble() * 0.6;
+                _particles[i].Vx = (_rng.NextDouble() - 0.5) * 0.016;
+                _particles[i].Vy = -(0.02 + _rng.NextDouble() * 0.02);
+                _particles[i].Lifetime = 0;
+                _particles[i].MaxLifetime = 1.5 + _rng.NextDouble() * 1.5;
+            }
+        }
+
+        for (int i = 0; i < 12; i++)
+        {
+            _streamParticles[i].T += _streamParticles[i].Speed * dt * 60;
+            if (_streamParticles[i].T > 1.0) _streamParticles[i].T -= 1.0;
+        }
+
+        // Animation logic (Complimentary: Monitor scans first, Phone waves)
+        _scanProgress = Math.Clamp(_elapsed / 2.0, 0, 1.2);
+
+        if (_elapsed > 0.8)
+            _waveProgress = Math.Clamp((_elapsed - 0.8) / 2.0, 0, 1.2);
+
+        if (_elapsed > 1.6)
+            _connectionGlow = Math.Clamp((_elapsed - 1.6) / 0.4, 0, 1);
+
+        if (_elapsed > 2.0)
+        {
+            double zt = Math.Clamp((_elapsed - 2.0) / 0.7, 0, 1);
+            double ease = zt < 0.5 ? 4 * zt * zt * zt : 1 - Math.Pow(-2 * zt + 2, 3) / 2;
+            _zoomScale = 1.0 + ease * 5.0;
+            _zoomProgress = ease;
+        }
+
+        if (_elapsed > 2.3)
+            _fadeOverlay = Math.Clamp((_elapsed - 2.3) / 0.4, 0, 1);
+
+        if (_elapsed >= 3.0 && !_completed)
         {
             _completed = true;
             _timer.Stop();
-            InvalidateVisual();
             SequenceCompleted?.Invoke();
-            return;
         }
-
-        UpdateParticles(dt);
-        UpdateRotations(dt);
-        UpdateNodes(dt);
-        UpdatePulseRings(dt);
-        UpdateDataPacket(dt);
-        UpdateArcFlicker();
-        _dashOffset -= dt * 12.0; // flow inward
 
         InvalidateVisual();
     }
 
-    // ═══════════════ Brush Building ═══════════════
-
-    private void RebuildBrushes()
-    {
-        var a = AccentColor;
-        byte r = a.R, g = a.G, b = a.B;
-
-        _accentBrush = new ImmutableSolidColorBrush(a);
-        _accentBrush70 = new ImmutableSolidColorBrush(new Color(178, r, g, b));
-        _accentBrush60 = new ImmutableSolidColorBrush(new Color(153, r, g, b));
-        _accentBrush40 = new ImmutableSolidColorBrush(new Color(102, r, g, b));
-        _accentBrush30 = new ImmutableSolidColorBrush(new Color(76, r, g, b));
-        _accentBrush25 = new ImmutableSolidColorBrush(new Color(64, r, g, b));
-        _accentBrush15 = new ImmutableSolidColorBrush(new Color(38, r, g, b));
-        _substrateBrush = new ImmutableSolidColorBrush(Color.Parse("#050508"));
-        _whiteBrush = new ImmutableSolidColorBrush(Colors.White);
-
-        _gridPen = new Pen(_accentBrush15, 1.0);
-        _gridBrightPen = new Pen(_accentBrush40, 1.5);
-        _scanLinePen = new Pen(new ImmutableSolidColorBrush(new Color(204, r, g, b)), 2.0);
-        _outerRingPen = new Pen(_accentBrush40, 1.5);
-        _middleRingPen = new Pen(_accentBrush70, 2.5);
-        _innerRingPen = new Pen(_accentBrush25, 1.0);
-        _tracePen = new Pen(_accentBrush30, 1.0);
-
-        // 8 particle alpha brushes: 5%, 10%, 15%, 25%, 40%, 55%, 65%, 80%
-        byte[] alphas = { 13, 26, 38, 64, 102, 140, 166, 204 };
-        for (int i = 0; i < 8; i++)
-            _particleAlphaBrushes[i] = new ImmutableSolidColorBrush(new Color(alphas[i], r, g, b));
-    }
-
-    // ═══════════════ Initialization ═══════════════
-
-    private void InitParticles(double width, double height)
-    {
-        for (int i = 0; i < ParticleCount; i++)
-            SpawnParticle(ref _particles[i], width, height, forceSpawn: true);
-    }
-
-    private void SpawnParticle(ref Particle p, double width, double height, bool forceSpawn = false)
-    {
-        p.X = _rng.NextDouble() * width;
-        p.Y = height * 0.4 + _rng.NextDouble() * height * 0.6;
-        p.Vx = (_rng.NextDouble() - 0.5) * 16.0;
-        p.Vy = -20.0 - _rng.NextDouble() * 20.0;
-        p.MaxLifetime = 1.5 + _rng.NextDouble() * 1.5;
-        p.Lifetime = forceSpawn ? _rng.NextDouble() * p.MaxLifetime : 0.0;
-        p.Alpha = 0.0;
-    }
-
-    private void InitNodes(double cx, double cy)
-    {
-        double[] settledAngles = { -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI / 3, -Math.PI / 2 + 4 * Math.PI / 3 };
-        for (int i = 0; i < 3; i++)
-        {
-            _nodes[i].SettledAngle = settledAngles[i];
-            _nodes[i].OrbitalAngle = settledAngles[i];
-            _nodes[i].StartX = cx + (_rng.NextDouble() - 0.5) * 300;
-            _nodes[i].StartY = cy + (_rng.NextDouble() - 0.5) * 200;
-            _nodes[i].Settled = false;
-        }
-    }
-
-    // ═══════════════ Per-Frame Updates ═══════════════
-
-    private void UpdateParticles(double dt)
-    {
-        bool canRespawn = _elapsed < 2.0;
-        var b = Bounds;
-        double w = b.Width, h = b.Height;
-        for (int i = 0; i < ParticleCount; i++)
-        {
-            ref var p = ref _particles[i];
-            p.Lifetime += dt;
-            p.X += p.Vx * dt;
-            p.Y += p.Vy * dt;
-            double t = p.Lifetime / p.MaxLifetime;
-            p.Alpha = t < 0.2 ? t / 0.2 : t < 0.8 ? 1.0 : 1.0 - (t - 0.8) / 0.2;
-            p.Alpha = Math.Clamp(p.Alpha * 0.7, 0, 1);
-
-            if (p.Lifetime >= p.MaxLifetime)
-            {
-                if (canRespawn)
-                    SpawnParticle(ref p, w, h);
-                else
-                    p.Alpha = 0;
-            }
-        }
-    }
-
-    private void UpdateRotations(double dt)
-    {
-        _outerAngle += 0.20 * dt;
-        _middleAngle -= 0.35 * dt;
-        _innerAngle += 0.50 * dt;
-    }
-
-    private void UpdateNodes(double dt)
-    {
-        if (_elapsed < 1.2) return;
-        double phase2t = Math.Clamp((_elapsed - 1.2) / 1.6, 0, 1);
-
-        for (int i = 0; i < 3; i++)
-        {
-            ref var node = ref _nodes[i];
-            if (!node.Settled)
-            {
-                if (phase2t >= 1.0)
-                    node.Settled = true;
-            }
-            else
-            {
-                node.OrbitalAngle += 0.4 * dt;
-            }
-        }
-    }
-
-    private void UpdatePulseRings(double dt)
-    {
-        if (_elapsed < 1.8) return;
-        if (_elapsed - _lastPulseRingSpawn > 1.5)
-        {
-            // Find inactive slot
-            for (int i = 0; i < MaxPulseRings; i++)
-            {
-                if (!_pulseRings[i].Active)
-                {
-                    _pulseRings[i] = new PulseRing { Radius = 5.0, Alpha = 0.6, Birth = _elapsed, Active = true };
-                    _lastPulseRingSpawn = _elapsed;
-                    break;
-                }
-            }
-        }
-
-        for (int i = 0; i < MaxPulseRings; i++)
-        {
-            if (!_pulseRings[i].Active) continue;
-            double age = _elapsed - _pulseRings[i].Birth;
-            double t = age / 0.8;
-            if (t >= 1.0)
-            {
-                _pulseRings[i].Active = false;
-                continue;
-            }
-            _pulseRings[i].Radius = 5.0 + 30.0 * t;
-            _pulseRings[i].Alpha = 0.6 * (1.0 - t);
-        }
-    }
-
-    private void UpdateDataPacket(double dt)
-    {
-        if (_elapsed < 2.0) return;
-        if (_dataPacketProgress >= 1.0 || _dataPacketProgress < 0)
-        {
-            if (_elapsed - _lastPacketTime > 2.0)
-            {
-                _dataPacketProgress = 0.0;
-                _dataPacketNode = _rng.Next(3);
-                _lastPacketTime = _elapsed;
-            }
-        }
-        else
-        {
-            _dataPacketProgress = Math.Min(_dataPacketProgress + dt / 0.3, 1.0);
-        }
-    }
-
-    private void UpdateArcFlicker()
-    {
-        if (_elapsed < 1.2 || _elapsed > 2.8) { _arcFlickerVisible = false; return; }
-        if (_elapsed - _lastArcFlicker > 0.1)
-        {
-            _lastArcFlicker = _elapsed;
-            _arcFlickerVisible = true;
-            _arcFlickerAngle = _rng.NextDouble() * Math.PI * 2;
-            _arcFlickerCount = _rng.Next(2, 4);
-        }
-        else if (_elapsed - _lastArcFlicker > 0.033)
-        {
-            _arcFlickerVisible = false;
-        }
-    }
-
-    // ═══════════════ Master Render ═══════════════
-
     public override void Render(DrawingContext ctx)
     {
         base.Render(ctx);
-
         var bounds = Bounds;
         if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
         double w = bounds.Width;
         double h = bounds.Height;
-        double cx = w / 2;
-        double cy = h / 2;
 
-        // Re-init particles/nodes if size is different from defaults
-        // (deferred init from constructor gets corrected here once we have real bounds)
-        // This is safe since _rng is seeded and particles will redistribute each frame anyway.
+        Color primary = AccentColor;
+        Color secondary = new Color(255, primary.B, primary.R, primary.G);
+        Color tertiary = new Color(255, primary.G, primary.B, primary.R);
+        Color substrate = Color.Parse("#050508");
+        Color surface = new Color(255, 30, 30, 30);
+        Color surfaceVariant = new Color(255, 45, 45, 45);
 
-        // Substrate background
-        ctx.DrawRectangle(_substrateBrush, null, bounds);
+        ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, bounds);
 
-        double elapsed = _elapsed;
+        double s = _zoomScale;
+        double monCxT = w * 0.22;
+        double monCyT = h * 0.20;
+        double targetDx = (w / 2.0 - monCxT) * (s - 1.0);
+        double targetDy = (h / 2.0 - monCyT) * (s - 1.0);
 
-        if (elapsed < 1.2)
+        var matrix = Matrix.CreateScale(s, s) * Matrix.CreateTranslation(targetDx * _zoomProgress, targetDy * _zoomProgress);
+        using var transform = ctx.PushTransform(matrix);
+
+        // Geometry
+        double monitorW = w * 0.52;
+        double monitorH = monitorW * 0.62;
+        double monitorX = w * 0.22 - monitorW / 2.0;
+        double monitorY = h * 0.20 - monitorH / 2.0;
+        double monitorCx = monitorX + monitorW / 2.0;
+        double monitorCy = monitorY + monitorH / 2.0;
+
+        double phoneW = w * 0.22;
+        double phoneH = phoneW * 1.8;
+        double phoneX = w * 0.75 - phoneW / 2.0;
+        double phoneY = h * 0.72 - phoneH / 2.0;
+        double phoneCx = phoneX + phoneW / 2.0;
+        double phoneCy = phoneY + phoneH / 2.0;
+
+        // Centers (Complimentary logic: Monitor is scan center, Phone is wave center)
+        Point scanCenter = new Point(monitorCx, monitorCy);
+        Point waveCenter = new Point(phoneCx, phoneCy);
+
+        double maxRadiusPx = Math.Sqrt(w * w + h * h);
+        double scanRadius = maxRadiusPx * _scanProgress;
+        double waveRadius = maxRadiusPx * _waveProgress;
+
+        // Background traces
+        var traceRng = new Random(55);
+        for (int i = 0; i < 20; i++)
         {
-            // Phase 1: Grid Awakening
-            RenderPhase1(ctx, w, h, cx, cy, elapsed);
-        }
-        else if (elapsed < 2.8)
-        {
-            // Phase 1 → Phase 2 overlap
-            double gridT = Math.Clamp((elapsed - 1.2) / 0.5, 0, 1);
-            double gridAlpha = 1.0 - EaseOut(gridT);
-
-            if (gridAlpha > 0.01)
-            {
-                double gridScale = 1.0 - EaseOut(gridT) * 0.85;
-                var scaleMatrix = Matrix.CreateScale(gridScale, gridScale)
-                                * Matrix.CreateTranslation(cx * (1 - gridScale), cy * (1 - gridScale));
-                using var _ = ctx.PushTransform(scaleMatrix);
-                using var __ = ctx.PushOpacity(gridAlpha);
-                RenderGridOnly(ctx, w, h, cx, cy, 1.2); // fully revealed grid
-            }
-
-            RenderParticles(ctx, Math.Max(0, 1.0 - gridT));
-            RenderPhase2(ctx, w, h, cx, cy, elapsed);
-        }
-        else if (elapsed < 3.8)
-        {
-            // Phase 2 + Phase 3
-            RenderPhase2(ctx, w, h, cx, cy, elapsed);
-            RenderPhase3(ctx, w, h, cx, cy, elapsed);
-        }
-        else
-        {
-            // Phase 4: Dissolve Reveal
-            double fadeProgress = Math.Clamp((elapsed - 3.8) / 1.2, 0, 1);
-            double scale = 1.0 + 0.15 * fadeProgress;
-            var scaleMatrix = Matrix.CreateScale(scale, scale)
-                            * Matrix.CreateTranslation(cx * (1 - scale), cy * (1 - scale));
-
-            // Vertical smear layers (drawn at reduced alpha behind)
-            double smearAlpha = 0.30 * (1.0 - fadeProgress);
-            if (smearAlpha > 0.005)
-            {
-                double[] yOffsets = { 4, 8, -4 };
-                double[] smearMult = { 1.0, 0.5, 0.5 };
-                foreach (var (yOff, mult) in System.Linq.Enumerable.Zip(yOffsets, smearMult))
-                {
-                    var smearMatrix = Matrix.CreateScale(scale, scale)
-                                    * Matrix.CreateTranslation(cx * (1 - scale), cy * (1 - scale) + yOff);
-                    using var st = ctx.PushTransform(smearMatrix);
-                    using var sa = ctx.PushOpacity(smearAlpha * mult);
-                    RenderLogoAndUI(ctx, w, h, cx, cy, elapsed);
-                }
-            }
-
-            using var mainT = ctx.PushTransform(scaleMatrix);
-            using var mainO = ctx.PushOpacity(1.0 - fadeProgress);
-            RenderLogoAndUI(ctx, w, h, cx, cy, elapsed);
-        }
-    }
-
-    // ═══════════════ Phase 1: Grid Awakening ═══════════════
-
-    private void RenderPhase1(DrawingContext ctx, double w, double h, double cx, double cy, double elapsed)
-    {
-        double scanY = h * (elapsed / 1.2);
-        RenderGrid(ctx, w, h, cx, cy, scanY, elapsed);
-        RenderScanLine(ctx, w, scanY);
-        RenderParticles(ctx, 1.0);
-    }
-
-    private void RenderGridOnly(DrawingContext ctx, double w, double h, double cx, double cy, double passedTime)
-    {
-        double scanY = h * (passedTime / 1.2); // fully revealed
-        RenderGrid(ctx, w, h, cx, cy, scanY, passedTime);
-    }
-
-    private void RenderGrid(DrawingContext ctx, double w, double h, double cx, double cy, double scanY, double elapsed)
-    {
-        double maxRadius = Math.Min(cx, cy) * 0.9;
-        double[] radii = { 0.1, 0.2, 0.35, 0.55, 0.8 };
-
-        // Radial concentric rings
-        foreach (var rf in radii)
-        {
-            double rad = rf * maxRadius;
-            double ringY = cy;
-            double alpha = Smoothstep(ringY - rad, ringY + rad, scanY);
-            if (alpha <= 0.005) continue;
-
-            double freshness = Math.Clamp((scanY - (ringY + rad)) / (h * 0.08), 0, 1);
-            var pen = freshness < 0.5 ? _gridBrightPen : _gridPen;
-
-            using var op = ctx.PushOpacity(alpha);
-            ctx.DrawEllipse(null, pen, new Point(cx, cy), rad, rad);
-        }
-
-        // 12 radial lines (30° apart)
-        for (int i = 0; i < 12; i++)
-        {
-            double angle = i * Math.PI / 6.0;
-            double ex = cx + maxRadius * Math.Cos(angle);
-            double ey = cy + maxRadius * Math.Sin(angle);
-
-            double lineAlpha = Smoothstep(Math.Min(cy, ey) - 10, Math.Max(cy, ey) + 10, scanY);
-            if (lineAlpha <= 0.005) continue;
-
-            double freshness = Math.Clamp((scanY - Math.Max(cy, ey)) / (h * 0.08), 0, 1);
-            var pen = freshness < 0.5 ? _gridBrightPen : _gridPen;
-
-            using var op = ctx.PushOpacity(lineAlpha);
-            ctx.DrawLine(pen, new Point(cx, cy), new Point(ex, ey));
-        }
-    }
-
-    private void RenderScanLine(DrawingContext ctx, double w, double scanY)
-    {
-        if (scanY < 0 || scanY > 999999) return;
-        // Center line (accent 80%, 2px)
-        ctx.DrawLine(_scanLinePen, new Point(0, scanY), new Point(w, scanY));
-        // ±2px glow at 40% alpha
-        using var g1 = ctx.PushOpacity(0.4);
-        ctx.DrawLine(new Pen(_accentBrush, 1.0), new Point(0, scanY - 2), new Point(w, scanY - 2));
-        ctx.DrawLine(new Pen(_accentBrush, 1.0), new Point(0, scanY + 2), new Point(w, scanY + 2));
-        // ±5px glow at 15% alpha
-        using var g2 = ctx.PushOpacity(0.15 / 0.4); // relative to outer scope
-        ctx.DrawLine(new Pen(_accentBrush, 1.0), new Point(0, scanY - 5), new Point(w, scanY - 5));
-        ctx.DrawLine(new Pen(_accentBrush, 1.0), new Point(0, scanY + 5), new Point(w, scanY + 5));
-    }
-
-    // ═══════════════ Particles ═══════════════
-
-    private void RenderParticles(DrawingContext ctx, double masterAlpha)
-    {
-        if (masterAlpha <= 0.005) return;
-        using var op = ctx.PushOpacity(masterAlpha);
-        for (int i = 0; i < ParticleCount; i++)
-        {
-            ref var p = ref _particles[i];
-            if (p.Alpha <= 0.005) continue;
-            // Map alpha to one of 8 pre-created brushes
-            int brushIdx = Math.Clamp((int)(p.Alpha * 7.99), 0, 7);
-            ctx.DrawEllipse(_particleAlphaBrushes[brushIdx], null,
-                new Point(p.X, p.Y), 1.5, 1.5);
-        }
-    }
-
-    // ═══════════════ Phase 2: Nexus Formation ═══════════════
-
-    private void RenderPhase2(DrawingContext ctx, double w, double h, double cx, double cy, double elapsed)
-    {
-        double phase2t = Math.Clamp((elapsed - 1.2) / 1.6, 0, 1); // 0→1 over 1.2→2.8s
-
-        // Logo formation alpha
-        using var logoOp = ctx.PushOpacity(EaseOut(phase2t));
-        RenderLogoAndUI(ctx, w, h, cx, cy, elapsed);
-    }
-
-    /// <summary>Renders the fully-formed logo system (rings, nodes, core, etc.).</summary>
-    private void RenderLogoAndUI(DrawingContext ctx, double w, double h, double cx, double cy, double elapsed)
-    {
-        double phase2t = Math.Clamp((elapsed - 1.2) / 1.6, 0, 1);
-
-        // How far each ring arc has formed (0→full circle in the first half of phase2)
-        double ringFormT = Math.Clamp(phase2t * 2.0, 0, 1);
-        double outerArcDeg = ringFormT * 360.0;
-        double middleArcDeg = ringFormT * 360.0;
-        double innerArcDeg = ringFormT * 360.0;
-
-        const double outerR = 80.0;
-        const double middleR = 55.0;
-        const double innerR = 30.0;
-
-        // Connection trace arcs (node→core) with animated dash
-        RenderTraceArcs(ctx, cx, cy, middleR, phase2t, elapsed);
-
-        // Outer ring
-        RenderRing(ctx, cx, cy, outerR, _outerRingPen, outerArcDeg, _outerAngle, false, 0, elapsed);
-
-        // Outer ring tick marks (N/E/S/W) — only when ring is complete
-        if (outerArcDeg >= 359.9)
-            RenderOuterTicks(ctx, cx, cy, outerR, _outerAngle);
-
-        // Middle ring + electric arc flicker
-        RenderRing(ctx, cx, cy, middleR, _middleRingPen, middleArcDeg, _middleAngle, _arcFlickerVisible && ringFormT < 1.0, _arcFlickerAngle, elapsed);
-
-        // Inner ring
-        RenderRing(ctx, cx, cy, innerR, _innerRingPen, innerArcDeg, _innerAngle, false, 0, elapsed);
-
-        // Core reactor
-        RenderCore(ctx, cx, cy, elapsed);
-
-        // Orbiting client nodes
-        RenderNodes(ctx, cx, cy, middleR, phase2t, elapsed);
-    }
-
-    private void RenderRing(DrawingContext ctx, double cx, double cy, double radius, Pen pen,
-        double arcDeg, double rotationAngle, bool flicker, double flickerAngle, double elapsed)
-    {
-        if (arcDeg >= 359.9)
-        {
-            // Full circle — use DrawEllipse (more efficient)
-            ctx.DrawEllipse(null, pen, new Point(cx, cy), radius, radius);
-        }
-        else
-        {
-            // Partial arc using StreamGeometry
-            double startAngle = rotationAngle;
-            double endAngle = rotationAngle + arcDeg * Math.PI / 180.0;
+            double sx = traceRng.NextDouble() * w;
+            double sy = traceRng.NextDouble() * h;
+            double seg1 = 30 + traceRng.NextDouble() * 80;
+            double seg2 = 20 + traceRng.NextDouble() * 60;
+            bool horiz = traceRng.NextDouble() > 0.5;
+            double d1 = traceRng.NextDouble() > 0.5 ? 1 : -1;
+            double d2 = traceRng.NextDouble() > 0.5 ? 1 : -1;
+            
+            double tx, ty, ex, ey;
+            if (horiz) { tx = sx + seg1 * d1; ty = sy; ex = tx; ey = ty + seg2 * d2; }
+            else { tx = sx; ty = sy + seg1 * d1; ex = tx + seg2 * d2; ey = ty; }
 
             var geo = new StreamGeometry();
             using (var gctx = geo.Open())
             {
-                double sx = cx + radius * Math.Cos(startAngle);
-                double sy = cy + radius * Math.Sin(startAngle);
-                double ex = cx + radius * Math.Cos(endAngle);
-                double ey = cy + radius * Math.Sin(endAngle);
-
                 gctx.BeginFigure(new Point(sx, sy), false);
-                gctx.ArcTo(new Point(ex, ey),
-                    new Size(radius, radius), 0,
-                    arcDeg > 180, SweepDirection.Clockwise);
+                gctx.LineTo(new Point(tx, ty));
+                gctx.LineTo(new Point(ex, ey));
                 gctx.EndFigure(false);
             }
-            ctx.DrawGeometry(null, pen, geo);
+            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(new Color(15, surface.R, surface.G, surface.B)), 1.5), geo);
+            ctx.DrawEllipse(new ImmutableSolidColorBrush(new Color(15, surface.R, surface.G, surface.B)), null, new Point(tx, ty), 4, 4);
+        }
 
-            // Electric arc flicker at the drawing edge
-            if (flicker)
+        // Radial grid
+        var radBrush = new ImmutableSolidColorBrush(new Color(8, surfaceVariant.R, surfaceVariant.G, surfaceVariant.B));
+        var radPen = new Pen(radBrush, 1.0);
+        double maxRad = Math.Min(w, h) * 0.45;
+        foreach (var rf in new[] { 0.25, 0.45, 0.65, 0.85 })
+            ctx.DrawEllipse(null, radPen, new Point(w/2, h/2), rf * maxRad, rf * maxRad);
+
+        for (int i = 0; i < 8; i++)
+        {
+            double a = i * Math.PI / 4.0;
+            ctx.DrawLine(radPen, new Point(w/2, h/2), new Point(w/2 + maxRad * Math.Cos(a), h/2 + maxRad * Math.Sin(a)));
+        }
+
+        // Wireframe (clipped by scan)
+        if (scanRadius > 0)
+        {
+            var scanGeo = new StreamGeometry();
+            using (var gctx = scanGeo.Open())
             {
-                for (int i = 0; i < _arcFlickerCount; i++)
-                {
-                    double jitterAngle = endAngle + (i - 1) * 0.15;
-                    double ex2 = cx + radius * Math.Cos(jitterAngle);
-                    double ey2 = cy + radius * Math.Sin(jitterAngle);
-                    double len = 4.0 + _rng.NextDouble() * 4.0;
-                    double nx = -Math.Sin(jitterAngle); // perpendicular
-                    double ny = Math.Cos(jitterAngle);
-                    ctx.DrawLine(new Pen(_accentBrush, 1.0),
-                        new Point(ex2, ey2),
-                        new Point(ex2 + nx * len, ey2 + ny * len));
-                }
+                gctx.BeginFigure(new Point(scanCenter.X + scanRadius, scanCenter.Y), true);
+                gctx.ArcTo(new Point(scanCenter.X - scanRadius, scanCenter.Y), new Size(scanRadius, scanRadius), 0, false, SweepDirection.Clockwise);
+                gctx.ArcTo(new Point(scanCenter.X + scanRadius, scanCenter.Y), new Size(scanRadius, scanRadius), 0, false, SweepDirection.Clockwise);
+                gctx.EndFigure(true);
             }
+            using var clip = ctx.PushGeometryClip(scanGeo);
+
+            var primPen = new Pen(new ImmutableSolidColorBrush(primary), 3.0);
+            var secPen = new Pen(new ImmutableSolidColorBrush(secondary), 2.0);
+            
+            ctx.DrawRectangle(null, primPen, new Rect(monitorX, monitorY, monitorW, monitorH), monitorW * 0.06, monitorW * 0.06);
+            ctx.DrawLine(primPen, new Point(monitorCx, monitorY + monitorH), new Point(monitorCx, monitorY + monitorH + monitorH * 0.18));
+            
+            ctx.DrawRectangle(null, secPen, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
+
+            DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
+            DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
+            DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
         }
-    }
 
-    private void RenderOuterTicks(DrawingContext ctx, double cx, double cy, double radius, double rotAngle)
-    {
-        for (int i = 0; i < 4; i++)
+        // Solid (clipped by wave)
+        if (waveRadius > 0)
         {
-            double angle = rotAngle + i * Math.PI / 2.0;
-            double ix = cx + (radius - 3) * Math.Cos(angle);
-            double iy = cy + (radius - 3) * Math.Sin(angle);
-            double ox = cx + (radius + 3) * Math.Cos(angle);
-            double oy = cy + (radius + 3) * Math.Sin(angle);
-            ctx.DrawLine(_outerRingPen, new Point(ix, iy), new Point(ox, oy));
-        }
-    }
-
-    private void RenderTraceArcs(DrawingContext ctx, double cx, double cy, double middleR, double phase2t, double elapsed)
-    {
-        if (phase2t < 0.3) return;
-        double traceAlpha = Math.Min((phase2t - 0.3) / 0.3, 1.0);
-        using var op = ctx.PushOpacity(traceAlpha);
-
-        // Create animated dash pen (new each frame — only 3 pens, acceptable per spec)
-        var dashPen = new Pen(_accentBrush30, 1.0,
-            new DashStyle(new double[] { 4, 4 }, _dashOffset));
-
-        double[] nodeAngles = { _nodes[0].SettledAngle, _nodes[1].SettledAngle, _nodes[2].SettledAngle };
-        for (int i = 0; i < 3; i++)
-        {
-            double angle = _nodes[i].Settled ? _nodes[i].OrbitalAngle : _nodes[i].SettledAngle;
-            double nx = cx + middleR * Math.Cos(angle);
-            double ny = cy + middleR * Math.Sin(angle);
-
-            // Curved arc from node toward center
-            var geo = new StreamGeometry();
-            using (var gctx = geo.Open())
+            var waveGeo = new StreamGeometry();
+            using (var gctx = waveGeo.Open())
             {
-                gctx.BeginFigure(new Point(nx, ny), false);
-                // Arc to center (use a tiny offset to avoid degenerate arc)
-                gctx.ArcTo(new Point(cx + 2, cy),
-                    new Size(middleR, middleR), 0, false,
-                    i % 2 == 0 ? SweepDirection.Clockwise : SweepDirection.CounterClockwise);
+                gctx.BeginFigure(new Point(waveCenter.X + waveRadius, waveCenter.Y), true);
+                gctx.ArcTo(new Point(waveCenter.X - waveRadius, waveCenter.Y), new Size(waveRadius, waveRadius), 0, false, SweepDirection.Clockwise);
+                gctx.ArcTo(new Point(waveCenter.X + waveRadius, waveCenter.Y), new Size(waveRadius, waveRadius), 0, false, SweepDirection.Clockwise);
+                gctx.EndFigure(true);
+            }
+            using var clip = ctx.PushGeometryClip(waveGeo);
+
+            ctx.DrawRectangle(new ImmutableSolidColorBrush(new Color(255, (byte)(primary.R*0.3), (byte)(primary.G*0.3), (byte)(primary.B*0.3))), null, new Rect(monitorX, monitorY, monitorW, monitorH), monitorW * 0.06, monitorW * 0.06);
+            ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(monitorX + monitorW*0.04, monitorY + monitorW*0.04, monitorW - monitorW*0.08, monitorH - monitorW*0.08), monitorW * 0.03, monitorW * 0.03);
+            ctx.DrawRectangle(new ImmutableSolidColorBrush(Colors.White), null, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
+            ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(phoneX + phoneW*0.08, phoneY + phoneW*0.12, phoneW - phoneW*0.16, phoneH - phoneW*0.2), phoneW * 0.08, phoneW * 0.08);
+
+            DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
+            DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
+            DrawText(ctx, "ote", new Point(w * 0.50 + 25, h * 0.48 - 35), 24, primary, false);
+            DrawText(ctx, "ecution", new Point(w * 0.50 + 35, h * 0.48 + 15), 24, primary, false);
+            DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+
+            // Connection Stream
+            Point connStart = new Point(monitorCx + monitorW * 0.3, monitorCy + monitorH * 0.3);
+            Point connEnd = new Point(phoneCx, phoneCy - phoneH * 0.35);
+            Point connCtrl1 = new Point(monitorCx + w * 0.2, monitorCy + h * 0.15);
+            Point connCtrl2 = new Point(phoneCx - w * 0.15, phoneCy - h * 0.25);
+
+            var streamGeo = new StreamGeometry();
+            using (var gctx = streamGeo.Open())
+            {
+                gctx.BeginFigure(connStart, false);
+                gctx.CubicBezierTo(connCtrl1, connCtrl2, connEnd);
                 gctx.EndFigure(false);
             }
-            ctx.DrawGeometry(null, dashPen, geo);
+
+            double glowAlpha = 0.08 + _connectionGlow * 0.25;
+            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(new Color((byte)(glowAlpha*255), secondary.R, secondary.G, secondary.B)), 6 + _connectionGlow * 18), streamGeo);
+            
+            var corePen = new Pen(new ImmutableSolidColorBrush(new Color((byte)((0.25 + _connectionGlow * 0.6)*255), secondary.R, secondary.G, secondary.B)), 1.5 + _connectionGlow * 2);
+            corePen.DashStyle = new DashStyle(new double[] { 10, 10 }, _elapsed * -60);
+            ctx.DrawGeometry(null, corePen, streamGeo);
+
+            foreach (var sp in _streamParticles)
+            {
+                Point pos = CubicBezier(connStart, connCtrl1, connCtrl2, connEnd, sp.T);
+                ctx.DrawEllipse(new ImmutableSolidColorBrush(new Color((byte)(sp.Alpha*255), secondary.R, secondary.G, secondary.B)), null, pos, sp.Radius, sp.Radius);
+            }
+        }
+
+        // Render Rings (radar edges)
+        if (scanRadius > 0 && scanRadius < maxRadiusPx * 1.2)
+            ctx.DrawEllipse(null, new Pen(new ImmutableSolidColorBrush(new Color(50, primary.R, primary.G, primary.B)), 18), scanCenter, scanRadius, scanRadius);
+        
+        if (waveRadius > 0 && waveRadius < maxRadiusPx * 1.2)
+            ctx.DrawEllipse(null, new Pen(new ImmutableSolidColorBrush(new Color(45, secondary.R, secondary.G, secondary.B)), 14), waveCenter, waveRadius, waveRadius);
+
+        // Fade overlay
+        if (_fadeOverlay > 0)
+        {
+            ctx.DrawRectangle(new ImmutableSolidColorBrush(new Color((byte)(_fadeOverlay * 255), substrate.R, substrate.G, substrate.B)), null, bounds);
         }
     }
 
-    private void RenderCore(DrawingContext ctx, double cx, double cy, double elapsed)
+    private void DrawText(DrawingContext ctx, string text, Point pos, double size, Color color, bool bold)
     {
-        double breathe = 15.0 + 5.0 * Math.Sin(elapsed * 3.0);
-
-        // Radial glow using nested ellipses
-        for (int i = 4; i >= 1; i--)
-        {
-            double r = breathe * i / 4.0;
-            byte alpha = (byte)(30 + 20 * (4 - i));
-            var glowBrush = new ImmutableSolidColorBrush(new Color(alpha, AccentColor.R, AccentColor.G, AccentColor.B));
-            ctx.DrawEllipse(glowBrush, null, new Point(cx, cy), r, r);
-        }
-
-        // Pulse rings
-        for (int i = 0; i < MaxPulseRings; i++)
-        {
-            if (!_pulseRings[i].Active) continue;
-            var pr = _pulseRings[i];
-            byte alpha = (byte)(pr.Alpha * 255);
-            var pulseB = new ImmutableSolidColorBrush(new Color(alpha, AccentColor.R, AccentColor.G, AccentColor.B));
-            ctx.DrawEllipse(null, new Pen(pulseB, 1.5), new Point(cx, cy), pr.Radius, pr.Radius);
-        }
-
-        // Center dot (3px radius solid accent)
-        ctx.DrawEllipse(_accentBrush, null, new Point(cx, cy), 3.0, 3.0);
+        var tf = new Typeface(FontFamily.Default, FontStyle.Normal, bold ? FontWeight.Black : FontWeight.Medium);
+        var fmt = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, size, new ImmutableSolidColorBrush(color));
+        ctx.DrawText(fmt, pos);
     }
 
-    private void RenderNodes(DrawingContext ctx, double cx, double cy, double middleR, double phase2t, double elapsed)
+    private Point CubicBezier(Point p0, Point p1, Point p2, Point p3, double t)
     {
-        double phase2t2 = Math.Clamp((elapsed - 1.2) / 1.6, 0, 1);
-
-        for (int i = 0; i < 3; i++)
-        {
-            ref var node = ref _nodes[i];
-            Point pos;
-
-            if (!node.Settled)
-            {
-                // Spiral in from start position toward orbital position
-                double t = EaseOut(phase2t2);
-                double destX = cx + middleR * Math.Cos(node.SettledAngle);
-                double destY = cy + middleR * Math.Sin(node.SettledAngle);
-                pos = LerpPt(new Point(node.StartX, node.StartY), new Point(destX, destY), t);
-            }
-            else
-            {
-                double angle = node.OrbitalAngle;
-                pos = new Point(cx + middleR * Math.Cos(angle), cy + middleR * Math.Sin(angle));
-            }
-
-            // Comet tail (5 positions behind using stored trail)
-            // For simplicity we compute trail analytically based on angle offset
-            double orbitAngle = node.Settled ? node.OrbitalAngle : node.SettledAngle;
-            double[] tailRadii = { 3, 2, 1.5, 1, 0.5 };
-            double[] tailAlphas = { 0.60, 0.40, 0.25, 0.15, 0.05 };
-            for (int t2 = 0; t2 < 5; t2++)
-            {
-                double pastAngle = orbitAngle - (t2 + 1) * 0.12; // angular offset behind
-                double tx = cx + middleR * Math.Cos(pastAngle);
-                double ty = cy + middleR * Math.Sin(pastAngle);
-                byte alpha = (byte)(tailAlphas[t2] * 255);
-                var tailBrush = new ImmutableSolidColorBrush(new Color(alpha, AccentColor.R, AccentColor.G, AccentColor.B));
-                ctx.DrawEllipse(tailBrush, null, new Point(tx, ty), tailRadii[t2], tailRadii[t2]);
-            }
-
-            // Node dot (4px filled)
-            ctx.DrawEllipse(_accentBrush, null, pos, 4.0, 4.0);
-
-            // Data packet
-            if (_dataPacketProgress >= 0 && _dataPacketProgress < 1.0 && _dataPacketNode == i)
-            {
-                double destX = cx;
-                double destY = cy;
-                double px = pos.X + (destX - pos.X) * _dataPacketProgress;
-                double py = pos.Y + (destY - pos.Y) * _dataPacketProgress;
-                ctx.DrawEllipse(_accentBrush, null, new Point(px, py), 2.0, 2.0);
-            }
-        }
+        double u = 1 - t;
+        double tt = t * t;
+        double uu = u * u;
+        double uuu = uu * u;
+        double ttt = tt * t;
+        return new Point(
+            uuu * p0.X + 3 * uu * t * p1.X + 3 * u * tt * p2.X + ttt * p3.X,
+            uuu * p0.Y + 3 * uu * t * p1.Y + 3 * u * tt * p2.Y + ttt * p3.Y
+        );
     }
-
-    // ═══════════════ Phase 3: System Online ═══════════════
-
-    private void RenderPhase3(DrawingContext ctx, double w, double h, double cx, double cy, double elapsed)
-    {
-        double phase3t = Math.Clamp((elapsed - 2.8) / 1.0, 0, 1);
-
-        // "REMEX" typewriter — ~0.2s per char = 5 chars × 0.2 = 1.0s total
-        int charCount = Math.Min(5, (int)(phase3t * 1.0 / 0.2));
-        string remexStr = "REMEX".Substring(0, charCount);
-
-        if (_cachedRemexCharCount != charCount || _cachedRemexText == null)
-        {
-            _cachedRemexCharCount = charCount;
-            _cachedRemexSubstring = remexStr;
-            if (charCount > 0)
-            {
-                var typeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Bold);
-                _cachedRemexText = new FormattedText(
-                    remexStr,
-                    CultureInfo.InvariantCulture,
-                    FlowDirection.LeftToRight,
-                    typeface, 36.0, _accentBrush);
-            }
-            else
-            {
-                _cachedRemexText = null;
-            }
-        }
-
-        if (_cachedRemexText != null)
-        {
-            double tx = cx - _cachedRemexText.Width / 2.0;
-            double ty = cy + 110.0;
-            ctx.DrawText(_cachedRemexText, new Point(tx, ty));
-        }
-
-        // "COMMAND YOUR PC" subtitle fades in
-        if (phase3t > 0.5)
-        {
-            double subtitleAlpha = Math.Clamp((phase3t - 0.5) / 0.5, 0, 1);
-            using var sop = ctx.PushOpacity(subtitleAlpha * 0.6);
-            var subTypeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
-            string subtitle = "COMMAND YOUR PC";
-            double letterSpacing = 4.0;
-            // Measure total width including extra spacing
-            var tempText = new FormattedText(subtitle, CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight, subTypeface, 11.0, _accentBrush60);
-            double totalW = tempText.Width + (subtitle.Length - 1) * letterSpacing;
-            double startX = cx - totalW / 2.0;
-            double charY = cy + 152.0;
-
-            foreach (char c in subtitle)
-            {
-                var charText = new FormattedText(c.ToString(), CultureInfo.InvariantCulture,
-                    FlowDirection.LeftToRight, subTypeface, 11.0, _accentBrush60);
-                ctx.DrawText(charText, new Point(startX, charY));
-                startX += charText.Width + letterSpacing;
-            }
-        }
-
-        // Status text
-        double statusAlpha;
-        string statusStr;
-        if (phase3t < 0.3)
-        {
-            statusStr = "INITIALIZING...";
-            statusAlpha = 0.7;
-        }
-        else if (phase3t < 0.6)
-        {
-            // Rapid flicker
-            statusStr = "INITIALIZING...";
-            statusAlpha = (Math.Sin(elapsed * 40.0) > 0) ? 0.8 : 0.2;
-        }
-        else
-        {
-            statusStr = "SYSTEMS ONLINE";
-            statusAlpha = 0.9;
-        }
-
-        var statusTypeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal);
-        var statusText = new FormattedText(statusStr, CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight, statusTypeface, 10.0, _accentBrush40);
-        using var statOp = ctx.PushOpacity(statusAlpha);
-        ctx.DrawText(statusText, new Point(cx - statusText.Width / 2.0, cy + 170.0));
-    }
-
-    // ═══════════════ Easing Helpers ═══════════════
-
-    private static double EaseOut(double t)
-        => 1.0 - Math.Pow(1.0 - Math.Clamp(t, 0, 1), 3);
-
-    private static double Smoothstep(double edge0, double edge1, double x)
-    {
-        x = Math.Clamp((x - edge0) / (edge1 - edge0), 0, 1);
-        return x * x * (3 - 2 * x);
-    }
-
-    private static double Lerp(double a, double b, double t) => a + (b - a) * t;
-
-    private static Point LerpPt(Point a, Point b, double t)
-        => new(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t);
 }

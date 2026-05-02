@@ -92,8 +92,13 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                             search,
                             field,
                             descending ->
+                        // Dedupe by PID: hosts can occasionally emit multiple entries with
+                        // the same id (kernel threads, container/host views), and Compose's
+                        // LazyColumn throws on duplicate keys.
+                        val deduped = processes.distinctBy { it.id }
+
                         val excluded =
-                                processes.filter { proc ->
+                                deduped.filter { proc ->
                                     !EXCLUDED_PROCESSES.contains(proc.name.lowercase())
                                 }
 

@@ -6,23 +6,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.widget.WidgetDataCache
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        RemexClientManager.initialize(this)
+        WidgetDataCache.startCaching(this)
         setContent {
             val personalizationViewModel: PersonalizationViewModel = viewModel()
             val personalization by personalizationViewModel.personalization.collectAsState()
             
-            var splashShown by rememberSaveable { mutableStateOf(false) }
+            var splashShown by remember { mutableStateOf(false) }
             
             if (personalization != null) {
                 val prefs = personalization!!

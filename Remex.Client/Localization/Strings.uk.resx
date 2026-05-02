@@ -43,6 +43,8 @@
 <data name="Settings_HostAddress" xml:space="preserve"><value>Адреса хоста</value></data>
 <data name="Settings_AccessKey" xml:space="preserve"><value>Ключ доступу</value></data>
 <data name="Settings_SaveReconnect" xml:space="preserve"><value>Зберегти &amp; Перепідключити</value></data>
+<data name="Settings_RemoteDesktop" xml:space="preserve"><value>ВІДДАЛЕНИЙ РОБОЧИЙ СТІЛ</value></data>
+<data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Стандартна частота кадрів для нових потоків</value></data>
 <data name="Settings_Layout" xml:space="preserve"><value>МАКЕТ</value></data>
 <data name="Settings_SnapToGrid" xml:space="preserve"><value>Прив'язати до сітки</value></data>
 <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Картки прив'язуються до найближчої лінії сітки при опусканні</value></data>

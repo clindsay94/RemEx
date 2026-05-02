@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -32,21 +33,19 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.graphics.shapes.Morph
-import androidx.graphics.shapes.RoundedPolygon
-import com.clindsay94.remex.ui.theme.materialShapesList
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
@@ -54,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.RoundedPolygon
+import com.clindsay94.remex.ui.theme.materialShapesList
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -95,17 +97,18 @@ private class StreamParticle(var t: Float, var speed: Float, var radius: Float, 
  * A highly animated technical splash screen using Jetpack Compose Canvas.
  *
  * Visual Stages:
- * 1.  Substrate reveals: Circuit board traces and radial grids appear in the background.
- * 2.  The Phone (source) emits a "Scan" radar (primary color).
- * 3.  The Scan reveals the "Wireframe" of the system (Monitor, Phone, and partial text).
- * 4.  The Monitor (target) emits a "Wave" radar (secondary color).
- * 5.  The Wave reveals the "Solid" surfaces, the connection stream, and the full "RemEx" brand.
- * 6.  Connection Established: Energy flows from Phone to Monitor.
- * 7.  Final Transition: The camera pulls into the Monitor screen to enter the app.
+ * 1. Substrate reveals: Circuit board traces and radial grids appear in the background.
+ * 2. The Phone (source) emits a "Scan" radar (primary color).
+ * 3. The Scan reveals the "Wireframe" of the system (Monitor, Phone, and partial text).
+ * 4. The Monitor (target) emits a "Wave" radar (secondary color).
+ * 5. The Wave reveals the "Solid" surfaces, the connection stream, and the full "RemEx" brand.
+ * 6. Connection Established: Energy flows from Phone to Monitor.
+ * 7. Final Transition: The camera pulls into the Monitor screen to enter the app.
  */
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
         val scope = rememberCoroutineScope()
+        val view = LocalView.current
 
         // Colors from theme
         val background = MaterialTheme.colorScheme.background
@@ -135,9 +138,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                         initialValue = 0f,
                         targetValue = 1f,
                         animationSpec =
-                                infiniteRepeatable(
-                                        animation = tween(1500, easing = LinearEasing)
-                                ),
+                                infiniteRepeatable(animation = tween(1500, easing = LinearEasing)),
                         label = "offset"
                 )
 
@@ -240,8 +241,9 @@ fun SplashScreen(onFinished: () -> Unit) {
         fun skipSplash() {
                 if (isSkipping) return
                 isSkipping = true
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                 scope.launch {
-                        skipAlpha.animateTo(0f, tween(300))
+                        skipAlpha.animateTo(0f, tween(200, easing = FastOutSlowInEasing))
                         onFinished()
                 }
         }
@@ -280,13 +282,13 @@ fun SplashScreen(onFinished: () -> Unit) {
                                         s.rotation += s.rotationSpeed
                                         s.morphProgress += s.morphSpeed
                                         if (s.morphProgress > 1f) {
-                                            s.morphProgress = 0f
-                                            val shapes = materialShapesList
-                                            val startShape = s.currentEndShape
-                                            val nextIdx = rng.nextInt(shapes.size)
-                                            val endShape = shapes[nextIdx]
-                                            s.morph = Morph(startShape, endShape)
-                                            s.currentEndShape = endShape
+                                                s.morphProgress = 0f
+                                                val shapes = materialShapesList
+                                                val startShape = s.currentEndShape
+                                                val nextIdx = rng.nextInt(shapes.size)
+                                                val endShape = shapes[nextIdx]
+                                                s.morph = Morph(startShape, endShape)
+                                                s.currentEndShape = endShape
                                         }
                                         if (s.x < -0.1f) s.x = 1.1f
                                         if (s.x > 1.1f) s.x = -0.1f
@@ -298,10 +300,11 @@ fun SplashScreen(onFinished: () -> Unit) {
                                         sp.t += sp.speed
                                         if (sp.t > 1f) sp.t -= 1f
                                 }
-                                // We increment the frame trigger on the main thread to trigger recomposition
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                    particleFrame++
-                                }
+                                // We increment the frame trigger on the main thread to trigger
+                                // recomposition
+                                kotlinx.coroutines.withContext(
+                                        kotlinx.coroutines.Dispatchers.Main
+                                ) { particleFrame++ }
                                 delay(16L)
                         }
                 }
@@ -552,15 +555,18 @@ fun SplashScreen(onFinished: () -> Unit) {
                                 val morphPath = Path()
                                 var first = true
                                 shape.morph.forEachCubic(shape.morphProgress) { bezier ->
-                                    if (first) {
-                                        morphPath.moveTo(bezier.anchor0X, bezier.anchor0Y)
-                                        first = false
-                                    }
-                                    morphPath.cubicTo(
-                                        bezier.control0X, bezier.control0Y,
-                                        bezier.control1X, bezier.control1Y,
-                                        bezier.anchor1X, bezier.anchor1Y
-                                    )
+                                        if (first) {
+                                                morphPath.moveTo(bezier.anchor0X, bezier.anchor0Y)
+                                                first = false
+                                        }
+                                        morphPath.cubicTo(
+                                                bezier.control0X,
+                                                bezier.control0Y,
+                                                bezier.control1X,
+                                                bezier.control1Y,
+                                                bezier.anchor1X,
+                                                bezier.anchor1Y
+                                        )
                                 }
                                 morphPath.close()
 
@@ -575,7 +581,11 @@ fun SplashScreen(onFinished: () -> Unit) {
                                 matrix.translate(-bounds.center.x, -bounds.center.y)
                                 morphPath.transform(matrix)
 
-                                drawPath(morphPath, shape.color.copy(alpha = shape.alpha), style = Stroke(2.dp.toPx()))
+                                drawPath(
+                                        morphPath,
+                                        shape.color.copy(alpha = shape.alpha),
+                                        style = Stroke(2.dp.toPx())
+                                )
                                 // Subtle fill to make them feel more "Material"
                                 drawPath(morphPath, shape.color.copy(alpha = shape.alpha * 0.3f))
                         }
@@ -606,23 +616,33 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val baseLogoAlpha = 0.08f // Lowered for better reveal contrast
 
                         fun getLogoEffect(pos: Offset): Float {
-                                val sDist = hypot(pos.x - phoneScanCenter.x, pos.y - phoneScanCenter.y)
-                                val wDist = hypot(pos.x - monitorWaveCenter.x, pos.y - monitorWaveCenter.y)
+                                val sDist =
+                                        hypot(pos.x - phoneScanCenter.x, pos.y - phoneScanCenter.y)
+                                val wDist =
+                                        hypot(
+                                                pos.x - monitorWaveCenter.x,
+                                                pos.y - monitorWaveCenter.y
+                                        )
                                 val thickness = 90.dp.toPx()
 
-                                // Scan impact: peak as scan line passes, then settle into persistent glow
+                                // Scan impact: peak as scan line passes, then settle into
+                                // persistent glow
                                 val sDiff = abs(sDist - scanRadius)
-                                val sImpact = if (sDiff < thickness) (1f - sDiff / thickness) else 0f
+                                val sImpact =
+                                        if (sDiff < thickness) (1f - sDiff / thickness) else 0f
                                 val sPersistent = if (scanRadius > sDist) 0.30f else 0f
                                 val sEffect = maxOf(sImpact, sPersistent)
 
                                 // Wave impact: stronger peak and higher persistent glow
                                 val wDiff = abs(wDist - waveRadius)
-                                val wImpact = if (wDiff < thickness) (1f - wDiff / thickness) * 1.6f else 0f
+                                val wImpact =
+                                        if (wDiff < thickness) (1f - wDiff / thickness) * 1.6f
+                                        else 0f
                                 val wPersistent = if (waveRadius > wDist) 0.75f else 0f
                                 val wEffect = maxOf(wImpact, wPersistent)
 
-                                // Total effect is the strongest of either, allowing wave to overtake scan
+                                // Total effect is the strongest of either, allowing wave to
+                                // overtake scan
                                 return maxOf(sEffect, wEffect).coerceIn(0f, 2f)
                         }
 
@@ -636,22 +656,80 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val winColor = primary.copy(alpha = winAlpha)
 
                         scale(1f + winEffect * 0.12f, 1f + winEffect * 0.12f, winCenter) {
-                            val winGap = winSize * 0.08f
-                            val winHalf = winSize / 2f
-                            listOf(
-                                Rect(winTop.x, winTop.y, winTop.x + winHalf - winGap, winTop.y + winHalf - winGap),
-                                Rect(winTop.x + winHalf + winGap, winTop.y - 2.dp.toPx(), winTop.x + winSize, winTop.y + winHalf - winGap),
-                                Rect(winTop.x, winTop.y + winHalf + winGap, winTop.x + winHalf - winGap, winTop.y + winSize),
-                                Rect(winTop.x + winHalf + winGap, winTop.y + winHalf + winGap, winTop.x + winSize, winTop.y + winSize + 2.dp.toPx())
-                            ).forEach { r ->
-                                drawRect(winColor, r.topLeft, r.size, style = Stroke(winStrokeWidth))
-                                if (winEffect > 0.1f) {
-                                    drawRect(winColor.copy(alpha = (winEffect * 0.25f).coerceAtMost(1f)), r.topLeft, r.size, style = Stroke(winStrokeWidth * 3.5f))
-                                    if (winEffect > 0.8f) { // Extra glow layer for wave phase
-                                        drawRect(winColor.copy(alpha = (winEffect * 0.1f).coerceAtMost(1f)), r.topLeft, r.size, style = Stroke(winStrokeWidth * 7f))
-                                    }
-                                }
-                            }
+                                val winGap = winSize * 0.08f
+                                val winHalf = winSize / 2f
+                                listOf(
+                                                Rect(
+                                                        winTop.x,
+                                                        winTop.y,
+                                                        winTop.x + winHalf - winGap,
+                                                        winTop.y + winHalf - winGap
+                                                ),
+                                                Rect(
+                                                        winTop.x + winHalf + winGap,
+                                                        winTop.y - 2.dp.toPx(),
+                                                        winTop.x + winSize,
+                                                        winTop.y + winHalf - winGap
+                                                ),
+                                                Rect(
+                                                        winTop.x,
+                                                        winTop.y + winHalf + winGap,
+                                                        winTop.x + winHalf - winGap,
+                                                        winTop.y + winSize
+                                                ),
+                                                Rect(
+                                                        winTop.x + winHalf + winGap,
+                                                        winTop.y + winHalf + winGap,
+                                                        winTop.x + winSize,
+                                                        winTop.y + winSize + 2.dp.toPx()
+                                                )
+                                        )
+                                        .forEach { r ->
+                                                drawRect(
+                                                        winColor,
+                                                        r.topLeft,
+                                                        r.size,
+                                                        style = Stroke(winStrokeWidth)
+                                                )
+                                                if (winEffect > 0.1f) {
+                                                        drawRect(
+                                                                winColor.copy(
+                                                                        alpha =
+                                                                                (winEffect * 0.25f)
+                                                                                        .coerceAtMost(
+                                                                                                1f
+                                                                                        )
+                                                                ),
+                                                                r.topLeft,
+                                                                r.size,
+                                                                style =
+                                                                        Stroke(
+                                                                                winStrokeWidth *
+                                                                                        3.5f
+                                                                        )
+                                                        )
+                                                        if (winEffect > 0.8f
+                                                        ) { // Extra glow layer for wave phase
+                                                                drawRect(
+                                                                        winColor.copy(
+                                                                                alpha =
+                                                                                        (winEffect *
+                                                                                                        0.1f)
+                                                                                                .coerceAtMost(
+                                                                                                        1f
+                                                                                                )
+                                                                        ),
+                                                                        r.topLeft,
+                                                                        r.size,
+                                                                        style =
+                                                                                Stroke(
+                                                                                        winStrokeWidth *
+                                                                                                7f
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                        }
                         }
 
                         // 2. Linux Penguin Silhouette (Top-Right, next to Windows)
@@ -664,21 +742,68 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val tuxColor = primary.copy(alpha = tuxAlpha)
 
                         scale(1f + tuxEffect * 0.12f, 1f + tuxEffect * 0.12f, tuxCenter) {
-                            val tuxPath = Path().apply {
-                                addOval(Rect(tuxTop.x + tuxSize * 0.3f, tuxTop.y, tuxTop.x + tuxSize * 0.7f, tuxTop.y + tuxSize * 0.35f))
-                                addOval(Rect(tuxTop.x + tuxSize * 0.15f, tuxTop.y + tuxSize * 0.3f, tuxTop.x + tuxSize * 0.85f, tuxTop.y + tuxSize * 0.9f))
-                                moveTo(tuxTop.x + tuxSize * 0.15f, tuxTop.y + tuxSize * 0.5f)
-                                lineTo(tuxTop.x, tuxTop.y + tuxSize * 0.7f)
-                                moveTo(tuxTop.x + tuxSize * 0.85f, tuxTop.y + tuxSize * 0.5f)
-                                lineTo(tuxTop.x + tuxSize, tuxTop.y + tuxSize * 0.7f)
-                            }
-                            drawPath(tuxPath, tuxColor, style = Stroke(tuxStrokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
-                            if (tuxEffect > 0.1f) {
-                                drawPath(tuxPath, tuxColor.copy(alpha = (tuxEffect * 0.25f).coerceAtMost(1f)), style = Stroke(tuxStrokeWidth * 3.5f))
-                                if (tuxEffect > 0.8f) {
-                                    drawPath(tuxPath, tuxColor.copy(alpha = (tuxEffect * 0.1f).coerceAtMost(1f)), style = Stroke(tuxStrokeWidth * 7f))
+                                val tuxPath =
+                                        Path().apply {
+                                                addOval(
+                                                        Rect(
+                                                                tuxTop.x + tuxSize * 0.3f,
+                                                                tuxTop.y,
+                                                                tuxTop.x + tuxSize * 0.7f,
+                                                                tuxTop.y + tuxSize * 0.35f
+                                                        )
+                                                )
+                                                addOval(
+                                                        Rect(
+                                                                tuxTop.x + tuxSize * 0.15f,
+                                                                tuxTop.y + tuxSize * 0.3f,
+                                                                tuxTop.x + tuxSize * 0.85f,
+                                                                tuxTop.y + tuxSize * 0.9f
+                                                        )
+                                                )
+                                                moveTo(
+                                                        tuxTop.x + tuxSize * 0.15f,
+                                                        tuxTop.y + tuxSize * 0.5f
+                                                )
+                                                lineTo(tuxTop.x, tuxTop.y + tuxSize * 0.7f)
+                                                moveTo(
+                                                        tuxTop.x + tuxSize * 0.85f,
+                                                        tuxTop.y + tuxSize * 0.5f
+                                                )
+                                                lineTo(
+                                                        tuxTop.x + tuxSize,
+                                                        tuxTop.y + tuxSize * 0.7f
+                                                )
+                                        }
+                                drawPath(
+                                        tuxPath,
+                                        tuxColor,
+                                        style =
+                                                Stroke(
+                                                        tuxStrokeWidth,
+                                                        cap = StrokeCap.Round,
+                                                        join = StrokeJoin.Round
+                                                )
+                                )
+                                if (tuxEffect > 0.1f) {
+                                        drawPath(
+                                                tuxPath,
+                                                tuxColor.copy(
+                                                        alpha = (tuxEffect * 0.25f).coerceAtMost(1f)
+                                                ),
+                                                style = Stroke(tuxStrokeWidth * 3.5f)
+                                        )
+                                        if (tuxEffect > 0.8f) {
+                                                drawPath(
+                                                        tuxPath,
+                                                        tuxColor.copy(
+                                                                alpha =
+                                                                        (tuxEffect * 0.1f)
+                                                                                .coerceAtMost(1f)
+                                                        ),
+                                                        style = Stroke(tuxStrokeWidth * 7f)
+                                                )
+                                        }
                                 }
-                            }
                         }
 
                         // 3. Android Logo (Bottom-Left)
@@ -691,20 +816,60 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val andColor = secondary.copy(alpha = andAlpha)
 
                         scale(1f + andEffect * 0.12f, 1f + andEffect * 0.12f, andCenter) {
-                            val andPath = Path().apply {
-                                addArc(Rect(andTop.x, andTop.y, andTop.x + andSize, andTop.y + andSize), 180f, 180f)
-                                moveTo(andTop.x + andSize * 0.25f, andTop.y + andSize * 0.1f)
-                                lineTo(andTop.x + andSize * 0.1f, andTop.y - andSize * 0.15f)
-                                moveTo(andTop.x + andSize * 0.75f, andTop.y + andSize * 0.1f)
-                                lineTo(andTop.x + andSize * 0.9f, andTop.y - andSize * 0.15f)
-                            }
-                            drawPath(andPath, andColor, style = Stroke(andStrokeWidth, cap = StrokeCap.Round))
-                            if (andEffect > 0.1f) {
-                                 drawPath(andPath, andColor.copy(alpha = (andEffect * 0.25f).coerceAtMost(1f)), style = Stroke(andStrokeWidth * 3.5f))
-                                 if (andEffect > 0.8f) {
-                                     drawPath(andPath, andColor.copy(alpha = (andEffect * 0.1f).coerceAtMost(1f)), style = Stroke(andStrokeWidth * 7f))
-                                 }
-                            }
+                                val andPath =
+                                        Path().apply {
+                                                addArc(
+                                                        Rect(
+                                                                andTop.x,
+                                                                andTop.y,
+                                                                andTop.x + andSize,
+                                                                andTop.y + andSize
+                                                        ),
+                                                        180f,
+                                                        180f
+                                                )
+                                                moveTo(
+                                                        andTop.x + andSize * 0.25f,
+                                                        andTop.y + andSize * 0.1f
+                                                )
+                                                lineTo(
+                                                        andTop.x + andSize * 0.1f,
+                                                        andTop.y - andSize * 0.15f
+                                                )
+                                                moveTo(
+                                                        andTop.x + andSize * 0.75f,
+                                                        andTop.y + andSize * 0.1f
+                                                )
+                                                lineTo(
+                                                        andTop.x + andSize * 0.9f,
+                                                        andTop.y - andSize * 0.15f
+                                                )
+                                        }
+                                drawPath(
+                                        andPath,
+                                        andColor,
+                                        style = Stroke(andStrokeWidth, cap = StrokeCap.Round)
+                                )
+                                if (andEffect > 0.1f) {
+                                        drawPath(
+                                                andPath,
+                                                andColor.copy(
+                                                        alpha = (andEffect * 0.25f).coerceAtMost(1f)
+                                                ),
+                                                style = Stroke(andStrokeWidth * 3.5f)
+                                        )
+                                        if (andEffect > 0.8f) {
+                                                drawPath(
+                                                        andPath,
+                                                        andColor.copy(
+                                                                alpha =
+                                                                        (andEffect * 0.1f)
+                                                                                .coerceAtMost(1f)
+                                                        ),
+                                                        style = Stroke(andStrokeWidth * 7f)
+                                                )
+                                        }
+                                }
                         }
 
                         // 4. RemEx App Logo (Bottom-Left, under Android)
@@ -717,34 +882,69 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val rxColor = secondary.copy(alpha = rxAlpha)
 
                         scale(1f + rxEffect * 0.12f, 1f + rxEffect * 0.12f, rxCenter) {
-                            val rxPath = Path().apply {
-                                moveTo(rxTop.x, rxTop.y + rxSize)
-                                lineTo(rxTop.x, rxTop.y)
-                                arcTo(
-                                    Rect(rxTop.x, rxTop.y, rxTop.x + rxSize * 0.7f, rxTop.y + rxSize * 0.5f),
-                                    270f,
-                                    180f,
-                                    false
+                                val rxPath =
+                                        Path().apply {
+                                                moveTo(rxTop.x, rxTop.y + rxSize)
+                                                lineTo(rxTop.x, rxTop.y)
+                                                arcTo(
+                                                        Rect(
+                                                                rxTop.x,
+                                                                rxTop.y,
+                                                                rxTop.x + rxSize * 0.7f,
+                                                                rxTop.y + rxSize * 0.5f
+                                                        ),
+                                                        270f,
+                                                        180f,
+                                                        false
+                                                )
+                                                lineTo(rxTop.x + rxSize * 0.6f, rxTop.y + rxSize)
+
+                                                // Stylized 'X'
+                                                moveTo(rxTop.x + rxSize * 0.9f, rxTop.y)
+                                                lineTo(rxTop.x + rxSize * 1.5f, rxTop.y + rxSize)
+                                                moveTo(rxTop.x + rxSize * 1.5f, rxTop.y)
+                                                lineTo(rxTop.x + rxSize * 0.9f, rxTop.y + rxSize)
+
+                                                // Terminal cursor underscore
+                                                moveTo(
+                                                        rxTop.x + rxSize * 0.9f,
+                                                        rxTop.y + rxSize + 3.dp.toPx()
+                                                )
+                                                lineTo(
+                                                        rxTop.x + rxSize * 1.3f,
+                                                        rxTop.y + rxSize + 3.dp.toPx()
+                                                )
+                                        }
+                                drawPath(
+                                        rxPath,
+                                        rxColor,
+                                        style =
+                                                Stroke(
+                                                        rxStrokeWidth,
+                                                        cap = StrokeCap.Round,
+                                                        join = StrokeJoin.Round
+                                                )
                                 )
-                                lineTo(rxTop.x + rxSize * 0.6f, rxTop.y + rxSize)
-
-                                // Stylized 'X'
-                                moveTo(rxTop.x + rxSize * 0.9f, rxTop.y)
-                                lineTo(rxTop.x + rxSize * 1.5f, rxTop.y + rxSize)
-                                moveTo(rxTop.x + rxSize * 1.5f, rxTop.y)
-                                lineTo(rxTop.x + rxSize * 0.9f, rxTop.y + rxSize)
-
-                                // Terminal cursor underscore
-                                moveTo(rxTop.x + rxSize * 0.9f, rxTop.y + rxSize + 3.dp.toPx())
-                                lineTo(rxTop.x + rxSize * 1.3f, rxTop.y + rxSize + 3.dp.toPx())
-                            }
-                            drawPath(rxPath, rxColor, style = Stroke(rxStrokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
-                            if (rxEffect > 0.1f) {
-                                drawPath(rxPath, rxColor.copy(alpha = (rxEffect * 0.25f).coerceAtMost(1f)), style = Stroke(rxStrokeWidth * 3.5f))
-                                if (rxEffect > 0.8f) {
-                                    drawPath(rxPath, rxColor.copy(alpha = (rxEffect * 0.1f).coerceAtMost(1f)), style = Stroke(rxStrokeWidth * 7f))
+                                if (rxEffect > 0.1f) {
+                                        drawPath(
+                                                rxPath,
+                                                rxColor.copy(
+                                                        alpha = (rxEffect * 0.25f).coerceAtMost(1f)
+                                                ),
+                                                style = Stroke(rxStrokeWidth * 3.5f)
+                                        )
+                                        if (rxEffect > 0.8f) {
+                                                drawPath(
+                                                        rxPath,
+                                                        rxColor.copy(
+                                                                alpha =
+                                                                        (rxEffect * 0.1f)
+                                                                                .coerceAtMost(1f)
+                                                        ),
+                                                        style = Stroke(rxStrokeWidth * 7f)
+                                                )
+                                        }
                                 }
-                            }
                         }
 
                         // Particle embers — tertiary

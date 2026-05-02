@@ -42,6 +42,8 @@
   <data name="Settings_HostAddress" xml:space="preserve"><value>Adres hosta</value></data>
   <data name="Settings_AccessKey" xml:space="preserve"><value>Klucz dostępu</value></data>
   <data name="Settings_SaveReconnect" xml:space="preserve"><value>Zapisz &amp; Połącz ponownie</value></data>
+  <data name="Settings_RemoteDesktop" xml:space="preserve"><value>PULPIT ZDALNY</value></data>
+  <data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Domyślna liczba klatek na sekundę dla nowych strumieni</value></data>
   <data name="Settings_Layout" xml:space="preserve"><value>UKŁAD</value></data>
   <data name="Settings_SnapToGrid" xml:space="preserve"><value>Przyciągaj do siatki</value></data>
   <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Karty przyciągają do najbliższej linii siatki przy upuszczaniu</value></data>

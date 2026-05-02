@@ -17,6 +17,9 @@
     <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">More</string>
     <string name="cd_settings_fab">Settings</string>
+    <string name="exit_dialog_title">Exit RemEx?</string>
+    <string name="exit_dialog_message">Are you sure you want to exit?</string>
+    <string name="button_exit">Exit</string>
 
     <!-- ═══ Common Components ═══ -->
     <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
@@ -49,6 +52,7 @@
     <string name="cd_help_icon">Help</string>
     <string name="cd_expand_icon">Expand</string>
     <string name="cd_category_icon">Category</string>
+    <string name="cd_resize_cards">Resize cards</string>
 
     <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Skip</string>

@@ -43,6 +43,8 @@
 <data name="Settings_HostAddress" xml:space="preserve"><value>Endereço do Host</value></data>
 <data name="Settings_AccessKey" xml:space="preserve"><value>Chave de Acesso</value></data>
 <data name="Settings_SaveReconnect" xml:space="preserve"><value>Salvar &amp; Reconectar</value></data>
+<data name="Settings_RemoteDesktop" xml:space="preserve"><value>ÁREA DE TRABALHO REMOTA</value></data>
+<data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Taxa de quadros padrão para novos streams</value></data>
 <data name="Settings_Layout" xml:space="preserve"><value>LAYOUT</value></data>
 <data name="Settings_SnapToGrid" xml:space="preserve"><value>Encaixar na Grade</value></data>
 <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Cartões encaixam na linha de grade mais próxima ao soltar</value></data>

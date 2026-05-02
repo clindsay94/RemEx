@@ -1,10 +1,8 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,72 +20,84 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.launch
 
 /**
- * Unified Settings screen that merges Connection, Personalization,
- * and Help into a single tabbed page.
+ * Unified Settings screen that merges Connection, Personalization, and Help into a single tabbed
+ * page.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onReplayTutorial: (() -> Unit)? = null,
-    onNavigateToAbout: (() -> Unit)? = null
+        onReplayTutorial: (() -> Unit)? = null,
+        onNavigateToAbout: (() -> Unit)? = null
 ) {
-    val tabs = listOf(
-        stringResource(R.string.settings_tab_connection),
-        stringResource(R.string.settings_tab_personalization),
-        stringResource(R.string.settings_tab_input),
-        stringResource(R.string.settings_tab_help)
-    )
+    val tabs =
+            listOf(
+                    stringResource(R.string.settings_tab_connection),
+                    stringResource(R.string.settings_tab_personalization),
+                    stringResource(R.string.settings_tab_input),
+                    stringResource(R.string.settings_tab_help)
+            )
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
 
+    val scrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.screen_settings_title)) }
-                )
-                PrimaryTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    val view = LocalView.current
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
-                            onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                            },
-                            text = { Text(title) }
-                        )
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                Column {
+                    RemexFlexibleTopBar(
+                            title = stringResource(R.string.screen_settings_title),
+                            scrollBehavior = scrollBehavior
+                    )
+                    PrimaryTabRow(
+                            selectedTabIndex = pagerState.currentPage,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        val view = LocalView.current
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                    selected = pagerState.currentPage == index,
+                                    onClick = {
+                                        view.performHapticFeedback(
+                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                        )
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
+                                    },
+                                    text = { Text(title) }
+                            )
+                        }
                     }
                 }
             }
-        }
     ) { innerPadding ->
         HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
+                state = pagerState,
+                modifier = Modifier.fillMaxSize().padding(innerPadding)
         ) { page ->
             when (page) {
                 0 -> ConnectionScreen()
                 1 -> PersonalizationScreen(showHeader = false)
                 2 -> InputTab()
-                3 -> HelpTab(
-                    onReplayTutorial = onReplayTutorial,
-                    onNavigateToAbout = onNavigateToAbout
-                )
+                3 ->
+                        HelpTab(
+                                onReplayTutorial = onReplayTutorial,
+                                onNavigateToAbout = onNavigateToAbout
+                        )
             }
         }
     }
@@ -110,14 +120,13 @@ private fun InputTab() {
     ) {
         Text(
                 text = stringResource(R.string.settings_tab_input),
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.titleLarge
         )
 
         Card(
                 colors =
                         CardDefaults.cardColors(
-                                containerColor =
-                                        MaterialTheme.colorScheme.surfaceContainerLow
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         )
         ) {
             Column(
@@ -129,7 +138,9 @@ private fun InputTab() {
                     Text(
                             text =
                                     String.format(
-                                            stringResource(R.string.remote_desktop_pointer_speed_label),
+                                            stringResource(
+                                                    R.string.remote_desktop_pointer_speed_label
+                                            ),
                                             preferences.pointerSpeed
                                     ),
                             style = MaterialTheme.typography.labelLarge,
@@ -156,7 +167,8 @@ private fun InputTab() {
                             text =
                                     String.format(
                                             stringResource(
-                                                    R.string.remote_desktop_v_scroll_sensitivity_label
+                                                    R.string
+                                                            .remote_desktop_v_scroll_sensitivity_label
                                             ),
                                             preferences.verticalScrollSensitivity
                                     ),
@@ -187,7 +199,8 @@ private fun InputTab() {
                             text =
                                     String.format(
                                             stringResource(
-                                                    R.string.remote_desktop_h_scroll_sensitivity_label
+                                                    R.string
+                                                            .remote_desktop_h_scroll_sensitivity_label
                                             ),
                                             preferences.horizontalScrollSensitivity
                                     ),
@@ -217,69 +230,60 @@ private fun InputTab() {
 }
 
 @Composable
-private fun HelpTab(
-    onReplayTutorial: (() -> Unit)?,
-    onNavigateToAbout: (() -> Unit)?
-) {
+private fun HelpTab(onReplayTutorial: (() -> Unit)?, onNavigateToAbout: (() -> Unit)?) {
     val view = LocalView.current
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.settings_help_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+                text = stringResource(R.string.settings_help_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         if (onReplayTutorial != null) {
             OutlinedButton(
-                onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    scope.launch {
-                        // Reset onboarding flag so the tutorial shows
-                        settingsManager.resetOnboarding()
-                        onReplayTutorial()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.settings_replay_tutorial))
-            }
+                    onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        scope.launch {
+                            // Reset onboarding flag so the tutorial shows
+                            settingsManager.resetOnboarding()
+                            onReplayTutorial()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+            ) { Text(stringResource(R.string.settings_replay_tutorial)) }
 
             Text(
-                text = stringResource(R.string.settings_replay_tutorial_body),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.settings_replay_tutorial_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Text(
-            text = stringResource(R.string.settings_faq_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = stringResource(R.string.settings_faq_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         if (onNavigateToAbout != null) {
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
-                onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onNavigateToAbout()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.screen_about_title))
-            }
+                    onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        onNavigateToAbout()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+            ) { Text(stringResource(R.string.screen_about_title)) }
         }
     }
 }

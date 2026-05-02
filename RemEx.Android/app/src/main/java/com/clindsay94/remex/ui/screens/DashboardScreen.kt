@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -41,20 +42,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.FilterCenterFocus
+import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -273,6 +277,9 @@ fun DashboardScreenContent(
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
 
+        // Surface establishes LocalContentColor from the theme so that header title text
+        // and other non-card content inherits the correct on-surface color.
+        Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
                 RemexScreenHeader(
                         title = stringResource(R.string.screen_dashboard_title),
@@ -401,14 +408,25 @@ fun DashboardScreenContent(
                                                                 ),
                                                         colors =
                                                                 CardDefaults.cardColors(
+                                                                        // M3: surfaceContainerLow
+                                                                        // for card container —
+                                                                        // appropriate tonal depth.
+                                                                        // contentColor must be
+                                                                        // explicit because
+                                                                        // .copy(alpha=) breaks
+                                                                        // contentColorFor() lookup.
                                                                         containerColor =
                                                                                 MaterialTheme
                                                                                         .colorScheme
-                                                                                        .surfaceVariant
+                                                                                        .surfaceContainerLow
                                                                                         .copy(
                                                                                                 alpha =
                                                                                                         cardOpacity
-                                                                                        )
+                                                                                        ),
+                                                                        contentColor =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurface
                                                                 )
                                                 ) {
                                                         Box(
@@ -476,7 +494,16 @@ fun DashboardScreenContent(
 
                                                                 // Resize handle — bottom-right
                                                                 // corner
-                                                                Box(
+                                                                Surface(
+                                                                        shape = CircleShape,
+                                                                        // M3: use solid primary
+                                                                        // token, tonal elevation
+                                                                        // for depth
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .primary,
+                                                                        tonalElevation = 2.dp,
                                                                         modifier =
                                                                                 Modifier.align(
                                                                                                 Alignment
@@ -486,18 +513,6 @@ fun DashboardScreenContent(
                                                                                                 12.dp
                                                                                         )
                                                                                         .size(24.dp)
-                                                                                        .clip(
-                                                                                                CircleShape
-                                                                                        )
-                                                                                        .background(
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .primary
-                                                                                                        .copy(
-                                                                                                                alpha =
-                                                                                                                        0.7f
-                                                                                                        )
-                                                                                        )
                                                                                         .pointerInput(
                                                                                                 "resize_${card.id}"
                                                                                         ) {
@@ -527,29 +542,51 @@ fun DashboardScreenContent(
                                                                                                         }
                                                                                                 )
                                                                                         }
-                                                                )
+                                                                ) {
+                                                                        Icon(
+                                                                                Icons.Default
+                                                                                        .OpenInFull,
+                                                                                contentDescription =
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .cd_resize_cards
+                                                                                        ),
+                                                                                tint =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .onPrimary,
+                                                                                modifier =
+                                                                                        Modifier.size(
+                                                                                                        12.dp
+                                                                                                )
+                                                                                                .padding(
+                                                                                                        2.dp
+                                                                                                )
+                                                                        )
+                                                                }
                                                         }
                                                 }
                                         }
                                 }
                         }
 
-                        // Card drawer — slides in from the right
-                        PlainAnimatedVisibility(
-                                visible = showCardDrawer,
-                                modifier = Modifier.align(Alignment.CenterEnd)
-                        ) {
-                                Surface(
-                                        tonalElevation = 10.dp,
-                                        shadowElevation = 8.dp,
-                                        modifier =
-                                                Modifier.fillMaxHeight()
-                                                        .onGloballyPositioned {
-                                                                drawerLeftPx = it.positionInRoot().x
-                                                        }
-                                                        .width(300.dp)
+                        // M3: ModalBottomSheet replaces side-panel drawer for standard M3 sheet UX
+                        if (showCardDrawer) {
+                                ModalBottomSheet(
+                                        onDismissRequest = { showCardDrawer = false },
+                                        sheetState =
+                                                rememberModalBottomSheetState(
+                                                        skipPartiallyExpanded = true
+                                                )
                                 ) {
-                                        Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+                                        Column(
+                                                modifier =
+                                                        Modifier.fillMaxWidth()
+                                                                .padding(
+                                                                        horizontal = 12.dp,
+                                                                        vertical = 8.dp
+                                                                )
+                                        ) {
                                                 Text(
                                                         text =
                                                                 stringResource(
@@ -585,7 +622,7 @@ fun DashboardScreenContent(
                                                         MaterialTheme.colorScheme.surfaceVariant
                                                                 .copy(alpha = 0.3f)
 
-                                                Box(modifier = Modifier.weight(1f)) {
+                                                Box(modifier = Modifier.heightIn(max = 400.dp)) {
                                                         Column(
                                                                 modifier =
                                                                         Modifier.fillMaxSize()
@@ -1005,6 +1042,7 @@ fun DashboardScreenContent(
                         }
                 }
         }
+        } // Surface
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -1136,19 +1174,13 @@ private fun ConnectionOrbCard(
 private fun WakeOnLanCard(onWake: () -> Unit) {
         val view = LocalView.current
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Button(
+                // M3: FilledTonalButton is the semantic match for secondary-container colors
+                FilledTonalButton(
                         onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                 onWake()
                         },
-                        modifier = Modifier.padding(16.dp),
-                        colors =
-                                ButtonDefaults.buttonColors(
-                                        containerColor =
-                                                MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor =
-                                                MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                        modifier = Modifier.padding(16.dp)
                 ) {
                         Icon(
                                 Icons.Default.PowerSettingsNew,

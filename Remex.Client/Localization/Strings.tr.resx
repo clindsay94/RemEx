@@ -43,6 +43,8 @@
 <data name="Settings_HostAddress" xml:space="preserve"><value>Host Adresi</value></data>
 <data name="Settings_AccessKey" xml:space="preserve"><value>Erişim Anahtarı</value></data>
 <data name="Settings_SaveReconnect" xml:space="preserve"><value>Kaydet &amp; Yeniden Bağlan</value></data>
+<data name="Settings_RemoteDesktop" xml:space="preserve"><value>UZAK MASAÜSTÜ</value></data>
+<data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Yeni akışlar için varsayılan kare hızı</value></data>
 <data name="Settings_Layout" xml:space="preserve"><value>DÜZEN</value></data>
 <data name="Settings_SnapToGrid" xml:space="preserve"><value>Kılavuza Yapıştır</value></data>
 <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Kartlar bırakıldığında en yakın kılavuz çizgisine yapışır</value></data>

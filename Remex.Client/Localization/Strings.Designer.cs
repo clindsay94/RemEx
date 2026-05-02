@@ -87,6 +87,8 @@ namespace Remex.Client.Localization {
         public static string Settings_HostAddress => ResourceManager.GetString("Settings_HostAddress", resourceCulture)!;
         public static string Settings_AccessKey => ResourceManager.GetString("Settings_AccessKey", resourceCulture)!;
         public static string Settings_SaveReconnect => ResourceManager.GetString("Settings_SaveReconnect", resourceCulture)!;
+        public static string Settings_RemoteDesktop => ResourceManager.GetString("Settings_RemoteDesktop", resourceCulture)!;
+        public static string Settings_StreamFpsDesc => ResourceManager.GetString("Settings_StreamFpsDesc", resourceCulture)!;
         public static string Settings_Layout => ResourceManager.GetString("Settings_Layout", resourceCulture)!;
         public static string Settings_SnapToGrid => ResourceManager.GetString("Settings_SnapToGrid", resourceCulture)!;
         public static string Settings_SnapToGridDesc => ResourceManager.GetString("Settings_SnapToGridDesc", resourceCulture)!;

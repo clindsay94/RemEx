@@ -13,8 +13,13 @@
       "Bash(grep -v \"\\\\.class$\")",
       "Bash(grep -v \"\\\\.so$\")",
       "Bash(dotnet build *)",
-      "Bash(./gradlew compileDebugKotlin)"
+      "Bash(./gradlew compileDebugKotlin)",
+      "mcp__gitnexus__query",
+      "mcp__gitnexus__context",
+      "Bash(magick '~/Downloads/wordmark_dark.png' -crop 255x270+0+0 +repage -fuzz 15% -transparent '#162342' -trim +repage -gravity center -background none -extent 300x300 /tmp/remex_mark_clean.png)",
+      "Bash(magick identify *)",
+      "Bash(npx gitnexus *)"
     ]
   },
-  "outputStyle": "Learning"
+  "outputStyle": "default"
 }

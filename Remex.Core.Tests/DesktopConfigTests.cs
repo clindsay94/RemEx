@@ -40,12 +40,14 @@ public class DesktopConfigTests
     }
 
     [Theory]
-    [InlineData(0, 1)]    // below minimum
-    [InlineData(-5, 1)]   // negative
-    [InlineData(1, 1)]    // at minimum
-    [InlineData(30, 30)]  // normal
-    [InlineData(60, 60)]  // at maximum
-    [InlineData(120, 60)] // above maximum
+    [InlineData(0, 1)]      // below minimum
+    [InlineData(-5, 1)]     // negative
+    [InlineData(1, 1)]      // at minimum
+    [InlineData(30, 30)]    // normal
+    [InlineData(60, 60)]    // common value
+    [InlineData(120, 120)]  // common value
+    [InlineData(360, 360)]  // at maximum
+    [InlineData(400, 360)]  // above maximum
     public void TargetFps_Is_Clamped(int input, int expected)
     {
         var config = new DesktopConfig { TargetFps = input };
@@ -67,11 +69,11 @@ public class DesktopConfigTests
     [Fact]
     public void Json_Deserialization_Clamps_OutOfRange()
     {
-        var json = """{"quality":999,"scale":5.0,"targetFps":200}""";
+        var json = """{"quality":999,"scale":5.0,"targetFps":999}""";
         var config = System.Text.Json.JsonSerializer.Deserialize<DesktopConfig>(json);
         Assert.NotNull(config);
         Assert.Equal(100, config.Quality);
         Assert.Equal(1.0, config.Scale, precision: 5);
-        Assert.Equal(60, config.TargetFps);
+        Assert.Equal(360, config.TargetFps);
     }
 }

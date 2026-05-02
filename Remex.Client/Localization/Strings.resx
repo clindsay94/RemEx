@@ -152,6 +152,12 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Save &amp; Reconnect</value>
   </data>
+  <data name="Settings_RemoteDesktop" xml:space="preserve">
+    <value>REMOTE DESKTOP</value>
+  </data>
+  <data name="Settings_StreamFpsDesc" xml:space="preserve">
+    <value>Default frame rate for new streams</value>
+  </data>
   <data name="Settings_Layout" xml:space="preserve">
     <value>LAYOUT</value>
   </data>

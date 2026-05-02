@@ -168,6 +168,45 @@
                 </StackPanel>
             </Border>
 
+            <!-- ═══ Remote Desktop Section ═══ -->
+            <Border Classes="glass-card" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{local:Localize Settings_RemoteDesktop}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+
+                    <!-- Stream Quality -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{local:Localize RemoteDesktop_Quality}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="1" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding StreamQuality, StringFormat={}{0}%}"/>
+                        </Grid>
+                        <Slider Minimum="10" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding StreamQuality}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                        <Grid ColumnDefinitions="*,*">
+                            <TextBlock Text="Low" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="High" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Stream FPS -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                            <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedStreamFpsIndex}" MinWidth="70" VerticalAlignment="Center">
+                            <ComboBoxItem Content="5"/>
+                            <ComboBoxItem Content="10"/>
+                            <ComboBoxItem Content="15"/>
+                            <ComboBoxItem Content="20"/>
+                            <ComboBoxItem Content="30"/>
+                            <ComboBoxItem Content="60"/>
+                            <ComboBoxItem Content="120"/>
+                            <ComboBoxItem Content="240"/>
+                            <ComboBoxItem Content="360"/>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- ═══ Layout Section ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="16">

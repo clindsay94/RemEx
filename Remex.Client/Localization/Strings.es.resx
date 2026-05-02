@@ -42,6 +42,8 @@
   <data name="Settings_HostAddress" xml:space="preserve"><value>Dirección del Host</value></data>
   <data name="Settings_AccessKey" xml:space="preserve"><value>Clave de Acceso</value></data>
   <data name="Settings_SaveReconnect" xml:space="preserve"><value>Guardar &amp; Reconectar</value></data>
+  <data name="Settings_RemoteDesktop" xml:space="preserve"><value>ESCRITORIO REMOTO</value></data>
+  <data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Velocidad de fotogramas predeterminada para nuevas transmisiones</value></data>
   <data name="Settings_Layout" xml:space="preserve"><value>DISEÑO</value></data>
   <data name="Settings_SnapToGrid" xml:space="preserve"><value>Ajustar a Cuadrícula</value></data>
   <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Las tarjetas se ajustan a la línea de cuadrícula más cercana al soltar</value></data>

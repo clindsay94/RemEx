@@ -47,6 +47,8 @@
 <data name="Settings_HostAddress" xml:space="preserve"><value>होस्ट पता</value></data>
 <data name="Settings_AccessKey" xml:space="preserve"><value>एक्सेस कुंजी</value></data>
 <data name="Settings_SaveReconnect" xml:space="preserve"><value>सहेजें &amp; पुनः कनेक्ट करें</value></data>
+<data name="Settings_RemoteDesktop" xml:space="preserve"><value>रिमोट डेस्कटॉप</value></data>
+<data name="Settings_StreamFpsDesc" xml:space="preserve"><value>नए स्ट्रीम के लिए डिफ़ॉल्ट फ्रेम दर</value></data>
 <data name="Settings_Layout" xml:space="preserve"><value>लेआउट</value></data>
 <data name="Settings_SnapToGrid" xml:space="preserve"><value>ग्रिड पर स्नैप</value></data>
 <data name="Settings_SnapToGridDesc" xml:space="preserve"><value>छोड़ने पर कार्ड निकटतम ग्रिड रेखा पर स्नैप होते हैं</value></data>

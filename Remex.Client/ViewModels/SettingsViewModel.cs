@@ -68,10 +68,40 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Host target frames-per-second for the screen stream.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedStreamFpsIndex))]
     private int _streamFps = 30;
 
     partial void OnStreamQualityChanged(int value) => Save();
     partial void OnStreamFpsChanged(int value) => Save();
+
+    /// <summary>Zero-based ComboBox index for StreamFps (5/10/15/20/30/60/120/240/360).</summary>
+    public int SelectedStreamFpsIndex
+    {
+        get => StreamFps switch
+        {
+            <= 5   => 0,
+            <= 10  => 1,
+            <= 15  => 2,
+            <= 20  => 3,
+            <= 30  => 4,
+            <= 60  => 5,
+            <= 120 => 6,
+            <= 240 => 7,
+            _      => 8,
+        };
+        set => StreamFps = value switch
+        {
+            0 => 5,
+            1 => 10,
+            2 => 15,
+            3 => 20,
+            4 => 30,
+            5 => 60,
+            6 => 120,
+            7 => 240,
+            _ => 360,
+        };
+    }
 
     /// <summary>Available sensors with checkboxes for pinning to Home.</summary>
     public ObservableCollection<SensorPinItem> AvailableSensors { get; } = new();

@@ -305,7 +305,7 @@ class SettingsManager(private val context: Context) {
     suspend fun saveRemoteDesktopDefaults(quality: Int, targetFps: Int, scale: Float) {
         context.dataStore.edit { preferences ->
             preferences[DESKTOP_QUALITY_KEY] = quality.coerceIn(1, 100)
-            preferences[DESKTOP_TARGET_FPS_KEY] = targetFps.coerceIn(1, 120)
+            preferences[DESKTOP_TARGET_FPS_KEY] = targetFps.coerceIn(1, 360)
             preferences[DESKTOP_SCALE_KEY] = scale.coerceIn(0.25f, 1.0f)
         }
     }

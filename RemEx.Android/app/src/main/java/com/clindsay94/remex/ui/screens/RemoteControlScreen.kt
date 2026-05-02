@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
@@ -12,14 +13,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 
 private enum class CommandCategory(@param:StringRes val labelRes: Int) {
     SESSION(R.string.rc_category_session),
@@ -129,13 +132,13 @@ private val remoteCommandCards =
         )
 
 data class RemoteControlUiState(
-    val commandStatus: String? = null,
-    val shapePreset: Float = 0f,
-    val cornerRadius: Int = 8,
-    val isConnected: Boolean = false
+        val commandStatus: String? = null,
+        val shapePreset: Float = 0f,
+        val cornerRadius: Int = 8,
+        val isConnected: Boolean = false
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RemoteControlScreen(
         onNavigateToConnection: () -> Unit = {},
@@ -146,40 +149,56 @@ fun RemoteControlScreen(
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
 
-    val uiState = RemoteControlUiState(
-        commandStatus = commandStatus,
-        shapePreset = shapePreset,
-        cornerRadius = cornerRadius,
-        isConnected = isConnected
-    )
+    val uiState =
+            RemoteControlUiState(
+                    commandStatus = commandStatus,
+                    shapePreset = shapePreset,
+                    cornerRadius = cornerRadius,
+                    isConnected = isConnected
+            )
 
     RemoteControlScreenContent(
-        uiState = uiState,
-        onNavigateToConnection = onNavigateToConnection,
-        onWakePc = { viewModel.wakePc() },
-        onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
-        onClearCommandStatus = { viewModel.clearCommandStatus() }
+            uiState = uiState,
+            onNavigateToConnection = onNavigateToConnection,
+            onWakePc = { viewModel.wakePc() },
+            onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
+            onClearCommandStatus = { viewModel.clearCommandStatus() }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RemoteControlScreenContent(
-    uiState: RemoteControlUiState,
-    onNavigateToConnection: () -> Unit,
-    onWakePc: () -> Unit,
-    onSendSystemCommand: (String, Int) -> Unit,
-    onClearCommandStatus: () -> Unit
+        uiState: RemoteControlUiState,
+        onNavigateToConnection: () -> Unit,
+        onWakePc: () -> Unit,
+        onSendSystemCommand: (String, Int) -> Unit,
+        onClearCommandStatus: () -> Unit
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
     val timerInputs = remember { mutableStateMapOf<String, String>() }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.screen_remote_control_title)) }
+    LaunchedEffect(uiState.commandStatus) {
+        if (!uiState.commandStatus.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(
+                    message = uiState.commandStatus,
+                    duration = SnackbarDuration.Short
             )
+            onClearCommandStatus()
         }
+    }
+
+    val scrollBehavior = rememberRemexTopBarScrollBehavior()
+    Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                RemexFlexibleTopBar(
+                        title = stringResource(R.string.screen_remote_control_title),
+                        scrollBehavior = scrollBehavior
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
 
@@ -193,43 +212,17 @@ fun RemoteControlScreenContent(
             item(span = { GridItemSpan(2) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
-                        text = stringResource(R.string.remote_control_section_header),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                            text = stringResource(R.string.remote_control_section_header),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
                     )
 
                     Text(
-                        text = stringResource(R.string.remote_control_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = stringResource(R.string.remote_control_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    if (!uiState.commandStatus.isNullOrBlank()) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = uiState.commandStatus,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                TextButton(onClick = { onClearCommandStatus() }) {
-                                    Text(stringResource(R.string.button_dismiss))
-                                }
-                            }
-                        }
-                    }
-                    
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -238,35 +231,47 @@ fun RemoteControlScreenContent(
                 val categoryCards = cardsByCategory[category].orEmpty()
                 item(span = { GridItemSpan(2) }) {
                     CommandCategoryHeader(
-                        label = stringResource(category.labelRes),
-                        category = category
+                            label = stringResource(category.labelRes),
+                            category = category
                     )
                 }
                 items(categoryCards) { cmdCard ->
                     CommandCard(
-                        card = cmdCard,
-                        isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
-                        timerText = timerInputs[cmdCard.id].orEmpty(),
-                        shape = com.clindsay94.remex.ui.theme.cardShape(uiState.shapePreset, uiState.cornerRadius),
-                        onTimerTextChanged = { timerInputs[cmdCard.id] = it },
-                        onPrimaryClick = {
-                            if (cmdCard.action == "WakeOnLan") {
-                                onWakePc()
-                            } else if (cmdCard.requiresConfirmation) {
-                                activeConfirmationId = if (activeConfirmationId == cmdCard.id) null else cmdCard.id
-                            } else {
-                                onSendSystemCommand(cmdCard.action, 0)
+                            card = cmdCard,
+                            isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
+                            timerText = timerInputs[cmdCard.id].orEmpty(),
+                            shape =
+                                    com.clindsay94.remex.ui.theme.cardShape(
+                                            uiState.shapePreset,
+                                            uiState.cornerRadius
+                                    ),
+                            onTimerTextChanged = { timerInputs[cmdCard.id] = it },
+                            onPrimaryClick = {
+                                if (cmdCard.action == "WakeOnLan") {
+                                    onWakePc()
+                                } else if (cmdCard.requiresConfirmation) {
+                                    activeConfirmationId =
+                                            if (activeConfirmationId == cmdCard.id) null
+                                            else cmdCard.id
+                                } else {
+                                    onSendSystemCommand(cmdCard.action, 0)
+                                }
+                            },
+                            onConfirm = {
+                                val delay =
+                                        timerInputs[cmdCard.id]
+                                                .orEmpty()
+                                                .trim()
+                                                .toIntOrNull()
+                                                ?.coerceAtLeast(0)
+                                                ?: 0
+                                onSendSystemCommand(cmdCard.action, delay)
+                                activeConfirmationId = null
+                            },
+                            onCancel = {
+                                activeConfirmationId = null
+                                timerInputs[cmdCard.id] = ""
                             }
-                        },
-                        onConfirm = {
-                            val delay = timerInputs[cmdCard.id].orEmpty().trim().toIntOrNull()?.coerceAtLeast(0) ?: 0
-                            onSendSystemCommand(cmdCard.action, delay)
-                            activeConfirmationId = null
-                        },
-                        onCancel = {
-                            activeConfirmationId = null
-                            timerInputs[cmdCard.id] = ""
-                        }
                     )
                 }
             }
@@ -285,12 +290,9 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
 
     val backgroundColor =
             when (category) {
-                CommandCategory.SESSION ->
-                        MaterialTheme.colorScheme.primaryContainer
-                CommandCategory.POWER ->
-                        MaterialTheme.colorScheme.errorContainer
-                CommandCategory.ENERGY ->
-                        MaterialTheme.colorScheme.tertiaryContainer
+                CommandCategory.SESSION -> MaterialTheme.colorScheme.primaryContainer
+                CommandCategory.POWER -> MaterialTheme.colorScheme.errorContainer
+                CommandCategory.ENERGY -> MaterialTheme.colorScheme.tertiaryContainer
             }
 
     val contentColor =
@@ -331,6 +333,7 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CommandCard(
         card: RemoteCommandCard,
@@ -346,8 +349,12 @@ private fun CommandCard(
     val localizedTitle = stringResource(card.titleRes)
 
     Card(
+            // M3: animateContentSize replaces fixed height toggle for organic transitions
             modifier =
-                    Modifier.fillMaxWidth().height(if (isAwaitingConfirmation) 220.dp else 140.dp),
+                    Modifier.fillMaxWidth()
+                            .animateContentSize(
+                                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                            ),
             shape = shape,
             colors =
                     CardDefaults.cardColors(
@@ -388,11 +395,17 @@ private fun CommandCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // M3: error colors for destructive confirmation button
                     Button(
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                 onConfirm()
                             },
+                            colors =
+                                    ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
+                                    ),
                             modifier = Modifier.weight(1f)
                     ) { Text(stringResource(R.string.button_confirm)) }
                     TextButton(
@@ -404,7 +417,8 @@ private fun CommandCard(
                     ) { Text(stringResource(R.string.button_cancel)) }
                 }
             } else {
-                Button(
+                // M3: FilledTonalButton for lower-emphasis non-destructive actions
+                FilledTonalButton(
                         onClick = {
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onPrimaryClick()
