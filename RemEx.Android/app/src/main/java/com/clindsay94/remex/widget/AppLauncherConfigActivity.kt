@@ -176,7 +176,7 @@ class AppLauncherConfigActivity : AppCompatActivity() {
                     path = obj.optString("targetPath", ""),
                     iconBase64 = obj.optString("iconBase64").takeIf { it.isNotEmpty() }
                 )
-            }
+            }.distinctBy { it.path }
         } catch (e: Exception) {
             Log.w("AppLauncherConfig", "Failed to parse cached launcher data", e)
             emptyList()

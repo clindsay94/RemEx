@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -151,22 +153,6 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                 }
             }
         }
-
-        // Double-fetch on init: first primes CPU trackers, second shows real values
-        viewModelScope.launch {
-            delay(500) // Let connection stabilize
-            refreshProcesses()
-            delay(1500) // Wait for host to calculate CPU deltas
-            refreshProcesses()
-        }
-
-        // Periodic auto-refresh every 4 seconds
-        viewModelScope.launch {
-            while (true) {
-                delay(4000)
-                refreshProcesses()
-            }
-        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -189,19 +175,69 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
     private val _killError = MutableStateFlow<String?>(null)
     val killError: StateFlow<String?> = _killError.asStateFlow()
 
+    private var initialRefreshJob: Job? = null
+    private var autoRefreshJob: Job? = null
+
     fun clearKillError() { _killError.value = null }
+
+    fun setAutoRefreshEnabled(enabled: Boolean) {
+        if (enabled) {
+            startAutoRefresh()
+        } else {
+            stopAutoRefresh()
+        }
+    }
+
+    private fun startAutoRefresh() {
+        if (autoRefreshJob?.isActive == true) {
+            return
+        }
+
+        initialRefreshJob?.cancel()
+        initialRefreshJob =
+                viewModelScope.launch {
+                    delay(500)
+                    refreshProcesses()
+                    delay(1500)
+                    refreshProcesses()
+                }
+
+        autoRefreshJob =
+                viewModelScope.launch {
+                    while (isActive) {
+                        delay(4000)
+                        refreshProcesses()
+                    }
+                }
+    }
+
+    private fun stopAutoRefresh() {
+        initialRefreshJob?.cancel()
+        initialRefreshJob = null
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
+        _isRefreshing.value = false
+    }
+
+    override fun onCleared() {
+        stopAutoRefresh()
+        super.onCleared()
+    }
 
     fun refreshProcesses() {
         viewModelScope.launch {
-            if (RemexCoreClient.isLibraryLoaded) {
-                _isRefreshing.value = true
-                val request = JSONObject().apply { put("type", "process_list_request") }
-                RemexCoreClient.SendMessage(request.toString())
-                // Spinner cleared by processList collector when data arrives.
-                // Safety net: clear after 5s in case host doesn't respond.
-                delay(5000)
+            if (!RemexClientManager.isConnected.value || !RemexCoreClient.isLibraryLoaded) {
                 _isRefreshing.value = false
+                return@launch
             }
+
+            _isRefreshing.value = true
+            val request = JSONObject().apply { put("type", "process_list_request") }
+            RemexCoreClient.SendMessage(request.toString())
+            // Spinner cleared by processList collector when data arrives.
+            // Safety net: clear after 5s in case host doesn't respond.
+            delay(5000)
+            _isRefreshing.value = false
         }
     }
 

@@ -56,6 +56,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -98,6 +99,7 @@ import kotlinx.coroutines.launch
 // M3 Expressive motion easing curves
 private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
 private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+private const val PrimaryNavRoute = "primary_nav"
 
 // Routes that suppress the navigation chrome (full-screen / flow screens)
 private val noNavRoutes =
@@ -139,8 +141,11 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
                 appLauncherScreenContent = { onNav ->
                         AppLauncherScreen(onNavigateToConnection = onNav)
                 },
-                taskManagerScreenContent = { onNav ->
-                        TaskManagerScreen(onNavigateToConnection = onNav)
+                taskManagerScreenContent = { onNav, isVisible ->
+                        TaskManagerScreen(
+                                onNavigateToConnection = onNav,
+                                isVisible = isVisible,
+                        )
                 },
                 connectionScreenContent = { onQr ->
                         ConnectionScreen(
@@ -167,7 +172,9 @@ private fun AppNavigationContent(
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         appLauncherScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
-        taskManagerScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
+        taskManagerScreenContent:
+                @Composable
+                (onNavigateToConnection: () -> Unit, isVisible: Boolean) -> Unit,
         connectionScreenContent: @Composable (onNavigateToQrScanner: () -> Unit) -> Unit,
 ) {
         // Hold a blank surface while DataStore loads to avoid a white flash
@@ -187,10 +194,10 @@ private fun AppNavigationContent(
         val currentBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = currentBackStackEntry?.destination?.route
 
-        // Pager state for horizontal swipe navigation between primary screens
+        // Keep primary destinations under one route owner so connected screens do not
+        // re-create route-scoped ViewModels during tab changes.
         val pagerState = rememberPagerState(pageCount = { navItems.size })
-        val currentPageIndex =
-                navItems.indexOfFirst { it.route == currentRoute }.takeIf { it >= 0 } ?: 0
+        var selectedPrimaryIndex by rememberSaveable { mutableIntStateOf(0) }
 
         val view = LocalView.current
         val scope = rememberCoroutineScope()
@@ -217,45 +224,48 @@ private fun AppNavigationContent(
         // Close more sheet on route change
         LaunchedEffect(currentRoute) { showMoreSheet = false }
 
-        // Back handler: show exit confirmation when at a root destination
-        val isAtRoot = navItems.any { it.route == currentRoute }
+        LaunchedEffect(currentRoute, selectedPrimaryIndex) {
+                if (
+                        currentRoute == PrimaryNavRoute &&
+                                pagerState.currentPage != selectedPrimaryIndex
+                ) {
+                        pagerState.animateScrollToPage(selectedPrimaryIndex)
+                }
+        }
+
+        LaunchedEffect(currentRoute, pagerState.currentPage) {
+                if (currentRoute == PrimaryNavRoute && selectedPrimaryIndex != pagerState.currentPage) {
+                        selectedPrimaryIndex = pagerState.currentPage
+                }
+        }
+
+        // Back handler: show exit confirmation when at the primary root destination
+        val isAtRoot = currentRoute == PrimaryNavRoute
         BackHandler(enabled = isAtRoot) { showExitDialog = true }
 
         // ─── Navigation helpers ───────────────────────────────────────────────────
         fun navigateTo(route: String) {
                 navController.navigate(route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        popUpTo(PrimaryNavRoute) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                 }
         }
 
-        // Only sync pager when we're on a primary nav screen that uses the pager
-        val isOnPrimaryNavScreen = navItems.any { it.route == currentRoute }
-
-        // Sync pager state with navigation
-        LaunchedEffect(currentRoute) {
-                if (isOnPrimaryNavScreen) {
-                        val index = navItems.indexOfFirst { it.route == currentRoute }
-                        if (index >= 0 && pagerState.currentPage != index) {
-                                pagerState.animateScrollToPage(index)
-                        }
-                }
-        }
-
-        // Navigate when user swipes the pager
-        LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
-                if (isOnPrimaryNavScreen && !pagerState.isScrollInProgress) {
-                        val targetRoute = navItems.getOrNull(pagerState.currentPage)?.route
-                        if (targetRoute != null && targetRoute != currentRoute) {
-                                navigateTo(targetRoute)
+        fun navigateToPrimary(index: Int) {
+                selectedPrimaryIndex = index.coerceIn(0, navItems.lastIndex)
+                if (currentRoute != PrimaryNavRoute) {
+                        navController.navigate(PrimaryNavRoute) {
+                                popUpTo(PrimaryNavRoute) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                         }
                 }
         }
 
         fun navigateToConnection() {
                 navController.navigate(Screen.Connection.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        popUpTo(PrimaryNavRoute) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                 }
@@ -263,7 +273,12 @@ private fun AppNavigationContent(
 
         fun onNavItemClick(route: String) {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                navigateTo(route)
+                val primaryIndex = navItems.indexOfFirst { it.route == route }
+                if (primaryIndex >= 0) {
+                        navigateToPrimary(primaryIndex)
+                } else {
+                        navigateTo(route)
+                }
         }
 
         // ─── Adaptive layout shell ────────────────────────────────────────────────
@@ -285,6 +300,7 @@ private fun AppNavigationContent(
                                         taskManagerScreenContent = taskManagerScreenContent,
                                         connectionScreenContent = connectionScreenContent,
                                         onNavigateToConnection = { navigateToConnection() },
+                                        onSelectPrimaryPage = { selectedPrimaryIndex = it },
                                         pagerState = if (showNav) pagerState else null,
                                         modifier = Modifier.fillMaxSize(),
                                 )
@@ -308,8 +324,10 @@ private fun AppNavigationContent(
                         ) {
                                 NavigationBar(modifier = Modifier.navigationBarsPadding()) {
                                         // Primary 4 nav items
-                                        navItems.forEach { screen ->
-                                                val isSelected = currentRoute == screen.route
+                                        navItems.forEachIndexed { index, screen ->
+                                                val isSelected =
+                                                        currentRoute == PrimaryNavRoute &&
+                                                                selectedPrimaryIndex == index
                                                 NavigationBarItem(
                                                         selected = isSelected,
                                                         onClick = { onNavItemClick(screen.route) },
@@ -415,9 +433,12 @@ private fun AppNavigationContent(
                                         Spacer(modifier = Modifier.height(16.dp))
 
                                         // Primary items — top of rail
-                                        navItems.forEach { screen ->
+                                        navItems.forEachIndexed { index, screen ->
                                                 NavigationRailItem(
-                                                        selected = currentRoute == screen.route,
+                                                        selected =
+                                                                currentRoute == PrimaryNavRoute &&
+                                                                        selectedPrimaryIndex ==
+                                                                                index,
                                                         onClick = { onNavItemClick(screen.route) },
                                                         icon = {
                                                                 if (screen == Screen.Dashboard &&
@@ -510,6 +531,7 @@ private fun AppNavigationContent(
                                         taskManagerScreenContent = taskManagerScreenContent,
                                         connectionScreenContent = connectionScreenContent,
                                         onNavigateToConnection = { navigateToConnection() },
+                                        onSelectPrimaryPage = { selectedPrimaryIndex = it },
                                         pagerState = if (showNav) pagerState else null,
                                         modifier = Modifier.fillMaxSize(),
                                 )
@@ -606,9 +628,10 @@ private fun RemexNavHost(
         remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (() -> Unit) -> Unit,
         appLauncherScreenContent: @Composable (() -> Unit) -> Unit,
-        taskManagerScreenContent: @Composable (() -> Unit) -> Unit,
+        taskManagerScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
         connectionScreenContent: @Composable (() -> Unit) -> Unit,
         onNavigateToConnection: () -> Unit,
+        onSelectPrimaryPage: (Int) -> Unit,
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
         modifier: Modifier = Modifier,
 ) {
@@ -650,8 +673,9 @@ private fun RemexNavHost(
                         SplashScreen(
                                 onFinished = {
                                         onMarkSplashShown()
+                                        onSelectPrimaryPage(0)
                                         navController.navigate(
-                                                if (hasCompletedOnboarding) Screen.Dashboard.route
+                                                if (hasCompletedOnboarding) PrimaryNavRoute
                                                 else Screen.Tutorial.route
                                         ) {
                                                 popUpTo(Screen.Splash.route) { inclusive = true }
@@ -668,7 +692,8 @@ private fun RemexNavHost(
                 ) {
                         TutorialScreen(
                                 onFinished = {
-                                        navController.navigate(Screen.Dashboard.route) {
+                                        onSelectPrimaryPage(0)
+                                        navController.navigate(PrimaryNavRoute) {
                                                 popUpTo(Screen.Tutorial.route) { inclusive = true }
                                                 launchSingleTop = true
                                         }
@@ -676,40 +701,17 @@ private fun RemexNavHost(
                         )
                 }
 
-                // Helper composable for primary nav screens with pager support
-                val primaryNavContent: @Composable () -> Unit = {
+                composable(PrimaryNavRoute) {
                         if (pagerState != null) {
-                                // Wrap primary nav screens in HorizontalPager for swipe navigation
-                                HorizontalPager(
-                                        state = pagerState,
+                                PrimaryDestinationsPager(
+                                        pagerState = pagerState,
+                                        dashboardScreenContent = dashboardScreenContent,
+                                        remoteControlScreenContent = remoteControlScreenContent,
+                                        appLauncherScreenContent = appLauncherScreenContent,
+                                        taskManagerScreenContent = taskManagerScreenContent,
+                                        onNavigateToConnection = onNavigateToConnection,
                                         modifier = Modifier.fillMaxSize(),
-                                        userScrollEnabled = true
-                                ) { page ->
-                                        when (navItems[page].route) {
-                                                Screen.Dashboard.route ->
-                                                        dashboardScreenContent {
-                                                                onNavigateToConnection()
-                                                        }
-                                                Screen.RemoteControl.route ->
-                                                        remoteControlScreenContent {
-                                                                onNavigateToConnection()
-                                                        }
-                                                Screen.AppLauncher.route ->
-                                                        appLauncherScreenContent {
-                                                                onNavigateToConnection()
-                                                        }
-                                                Screen.TaskManager.route ->
-                                                        taskManagerScreenContent {
-                                                                onNavigateToConnection()
-                                                        }
-                                        }
-                                }
-                        }
-                }
-
-                composable(Screen.Dashboard.route) {
-                        if (pagerState != null) {
-                                primaryNavContent()
+                                )
                         } else {
                                 dashboardScreenContent { onNavigateToConnection() }
                         }
@@ -736,8 +738,9 @@ private fun RemexNavHost(
                         QrScannerScreen(
                                 onScanned = { host, port, key ->
                                         onQrScanned(host, port, key)
-                                        navController.navigate(Screen.Dashboard.route) {
-                                                popUpTo(Screen.Dashboard.route) { inclusive = true }
+                                        onSelectPrimaryPage(0)
+                                        navController.navigate(PrimaryNavRoute) {
+                                                popUpTo(PrimaryNavRoute) { inclusive = true }
                                                 launchSingleTop = true
                                         }
                                 },
@@ -745,32 +748,8 @@ private fun RemexNavHost(
                         )
                 }
 
-                composable(Screen.RemoteControl.route) {
-                        if (pagerState != null) {
-                                primaryNavContent()
-                        } else {
-                                remoteControlScreenContent { onNavigateToConnection() }
-                        }
-                }
-
                 composable(Screen.RemoteMouse.route) {
                         remoteMouseScreenContent { onNavigateToConnection() }
-                }
-
-                composable(Screen.AppLauncher.route) {
-                        if (pagerState != null) {
-                                primaryNavContent()
-                        } else {
-                                appLauncherScreenContent { onNavigateToConnection() }
-                        }
-                }
-
-                composable(Screen.TaskManager.route) {
-                        if (pagerState != null) {
-                                primaryNavContent()
-                        } else {
-                                taskManagerScreenContent { onNavigateToConnection() }
-                        }
                 }
 
                 composable(
@@ -805,6 +784,39 @@ private fun RemexNavHost(
         }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PrimaryDestinationsPager(
+        pagerState: androidx.compose.foundation.pager.PagerState,
+        dashboardScreenContent: @Composable (() -> Unit) -> Unit,
+        remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
+        appLauncherScreenContent: @Composable (() -> Unit) -> Unit,
+        taskManagerScreenContent: @Composable ((() -> Unit), Boolean) -> Unit,
+        onNavigateToConnection: () -> Unit,
+        modifier: Modifier = Modifier,
+) {
+        HorizontalPager(
+                state = pagerState,
+                modifier = modifier,
+                beyondViewportPageCount = 0,
+                userScrollEnabled = true,
+        ) { page ->
+                when (navItems[page].route) {
+                        Screen.Dashboard.route -> dashboardScreenContent { onNavigateToConnection() }
+                        Screen.RemoteControl.route ->
+                                remoteControlScreenContent { onNavigateToConnection() }
+                        Screen.AppLauncher.route ->
+                                appLauncherScreenContent { onNavigateToConnection() }
+                        Screen.TaskManager.route ->
+                                taskManagerScreenContent(
+                                        { onNavigateToConnection() },
+                                        page == pagerState.currentPage &&
+                                                !pagerState.isScrollInProgress,
+                                )
+                }
+        }
+}
+
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
@@ -822,7 +834,7 @@ private fun AppNavigationPreview() {
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
                         appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
-                        taskManagerScreenContent = { Box(Modifier.fillMaxSize()) },
+                        taskManagerScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
                         connectionScreenContent = { Box(Modifier.fillMaxSize()) },
                 )
         }
@@ -843,7 +855,7 @@ private fun AppNavigationDisconnectedPreview() {
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
                         appLauncherScreenContent = { Box(Modifier.fillMaxSize()) },
-                        taskManagerScreenContent = { Box(Modifier.fillMaxSize()) },
+                        taskManagerScreenContent = { _, _ -> Box(Modifier.fillMaxSize()) },
                         connectionScreenContent = { Box(Modifier.fillMaxSize()) },
                 )
         }

@@ -60,7 +60,7 @@ class AppLauncherViewModel(
                     path = obj.getString("targetPath"),
                     iconBase64 = obj.optString("iconBase64").takeIf { it.isNotEmpty() }
                 )
-            }
+            }.distinctBy { it.name + it.path }
         } catch (e: JSONException) {
             Log.e("AppLauncherViewModel", "Failed to parse launcher entries", e)
             emptyList()

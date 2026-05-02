@@ -35,6 +35,7 @@ import com.clindsay94.remex.ui.theme.cardShape
 @Composable
 fun TaskManagerScreen(
         onNavigateToConnection: () -> Unit = {},
+        isVisible: Boolean = true,
         viewModel: TaskManagerViewModel = viewModel()
 ) {
     val processes by viewModel.processes.collectAsState()
@@ -46,6 +47,14 @@ fun TaskManagerScreen(
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val killError by viewModel.killError.collectAsState()
+
+        LaunchedEffect(viewModel, isVisible, isConnected) {
+                viewModel.setAutoRefreshEnabled(isVisible && isConnected)
+        }
+
+        DisposableEffect(viewModel) {
+                onDispose { viewModel.setAutoRefreshEnabled(false) }
+        }
 
     TaskManagerScreenContent(
             processes = processes,
