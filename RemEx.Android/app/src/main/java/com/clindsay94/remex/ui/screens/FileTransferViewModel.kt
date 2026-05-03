@@ -72,7 +72,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun navigateInto(entry: RemoteFileEntry) {
         if (!entry.isDirectory) return
-        val current = _remotePath.value.trimEnd('/', '\\')
+        // Normalize to forward slashes so the same logic works for both Windows and Unix hosts
+        val current = _remotePath.value.replace('\\', '/').trimEnd('/')
         val newPath = if (entry.name == "..") {
             val parent = current.substringBeforeLast('/')
             if (parent.isEmpty()) "/" else parent

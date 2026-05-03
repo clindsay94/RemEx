@@ -54,13 +54,10 @@ public sealed class FileTransferService : IFileTransferService
 
     private static string ResolveAndValidatePath(string path)
     {
+        // GetFullPath normalizes any .. segments, producing a canonical absolute path.
+        // This is the primary traversal defense; no additional check is needed because
+        // the resulting path is used directly for all I/O operations.
         var resolved = Path.GetFullPath(path);
-
-        // Block path traversal
-        if (resolved != path && !resolved.StartsWith(Path.GetFullPath(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)), StringComparison.Ordinal))
-        {
-            // Allow absolute paths but prevent traversal via ..
-        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading.Channels;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Client.ViewModels;
@@ -17,6 +18,7 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _browseWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
     private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
+    private readonly ConcurrentDictionary<string, Channel<byte[]>> _downloadChannels = new();
 
     public FileTransferClient(ConnectionViewModel connection)
     {
@@ -54,20 +56,13 @@ public sealed class FileTransferClient : IDisposable
         await using var fileStream = new FileStream(localPath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
         var totalBytes = fileStream.Length;
 
-        string sha256Base64;
-        using (var hasher = SHA256.Create())
-        {
-            var hashBytes = await hasher.ComputeHashAsync(fileStream, ct);
-            sha256Base64 = Convert.ToBase64String(hashBytes);
-            fileStream.Seek(0, SeekOrigin.Begin);
-        }
-
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         _transferEndWaiters[transferId] = tcs;
         _progressReporters[transferId] = progress;
 
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
+        // Send Start with empty hash — hash is computed incrementally and sent in End
         await _connection.SendAsync(new RemexMessage
         {
             Type = MessageTypes.FileTransferStart,
@@ -78,7 +73,7 @@ public sealed class FileTransferClient : IDisposable
                 RemotePath = remotePath,
                 FileName = Path.GetFileName(localPath),
                 TotalBytes = totalBytes,
-                Sha256Base64 = sha256Base64
+                Sha256Base64 = string.Empty
             }
         });
 
@@ -87,8 +82,11 @@ public sealed class FileTransferClient : IDisposable
         int read;
         long offset = 0;
 
+        using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+
         while ((read = await fileStream.ReadAsync(buffer.AsMemory(0, chunkSize), ct)) > 0)
         {
+            hasher.AppendData(buffer, 0, read);
             await _connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferChunk,
@@ -96,16 +94,18 @@ public sealed class FileTransferClient : IDisposable
                 {
                     TransferId = transferId,
                     Offset = offset,
-                    DataBase64 = Convert.ToBase64String(buffer[..read])
+                    DataBase64 = Convert.ToBase64String(buffer.AsSpan(0, read))
                 }
             });
             offset += read;
         }
 
+        var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+
         await _connection.SendAsync(new RemexMessage
         {
             Type = MessageTypes.FileTransferEnd,
-            FileTransferEnd = new FileTransferEnd { TransferId = transferId, Success = true }
+            FileTransferEnd = new FileTransferEnd { TransferId = transferId, Success = true, Sha256Base64 = sha256Base64 }
         });
 
         var result = await tcs.Task;
@@ -135,10 +135,16 @@ public sealed class FileTransferClient : IDisposable
 
         await using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
 
-        // Install a chunk handler for this transfer
-        var chunkWaiters = new ConcurrentDictionary<string, FileStream>();
-        chunkWaiters[transferId] = fileStream;
-        _downloadStreams[transferId] = fileStream;
+        // Unbounded channel ensures chunk ordering: the consumer writes sequentially,
+        // eliminating the race condition that would exist with fire-and-forget WriteAsync.
+        var channel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
+        _downloadChannels[transferId] = channel;
+
+        var writeTask = Task.Run(async () =>
+        {
+            await foreach (var data in channel.Reader.ReadAllAsync())
+                await fileStream.WriteAsync(data);
+        }, ct);
 
         await _connection.SendAsync(new RemexMessage
         {
@@ -155,7 +161,13 @@ public sealed class FileTransferClient : IDisposable
         });
 
         var result = await tcs.Task;
-        _downloadStreams.TryRemove(transferId, out _);
+
+        // Signal the consumer that no more chunks are coming, then wait for all writes to complete
+        // before the fileStream is disposed — prevents ObjectDisposedException on pending writes.
+        channel.Writer.TryComplete();
+        try { await writeTask; } catch (OperationCanceledException) { }
+
+        _downloadChannels.TryRemove(transferId, out _);
         _transferEndWaiters.TryRemove(transferId, out _);
         _progressReporters.TryRemove(transferId, out _);
 
@@ -165,8 +177,6 @@ public sealed class FileTransferClient : IDisposable
             throw new IOException($"Download failed: {result.FileTransferEnd.ErrorMessage}");
         }
     }
-
-    private readonly ConcurrentDictionary<string, FileStream> _downloadStreams = new();
 
     private void OnFileTransferMessage(RemexMessage message)
     {
@@ -178,11 +188,8 @@ public sealed class FileTransferClient : IDisposable
                 break;
 
             case MessageTypes.FileTransferChunk when message.FileTransferChunk is { } chunk:
-                if (_downloadStreams.TryGetValue(chunk.TransferId, out var stream))
-                {
-                    var data = Convert.FromBase64String(chunk.DataBase64);
-                    _ = stream.WriteAsync(data).AsTask();
-                }
+                if (_downloadChannels.TryGetValue(chunk.TransferId, out var ch))
+                    ch.Writer.TryWrite(Convert.FromBase64String(chunk.DataBase64));
                 break;
 
             case MessageTypes.FileTransferProgress when message.FileTransferProgress is { } prog:

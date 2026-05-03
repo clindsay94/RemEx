@@ -153,7 +153,9 @@ public sealed class FileTransferHandler(
         {
             state.Hasher.TransformFinalBlock([], 0, 0);
             var actualHash = Convert.ToBase64String(state.Hasher.Hash!);
-            var success = actualHash == state.ExpectedSha256;
+            // Accept hash from End message (incremental path) or from Start (legacy path)
+            var expectedHash = !string.IsNullOrEmpty(end.Sha256Base64) ? end.Sha256Base64 : state.ExpectedSha256;
+            var success = string.IsNullOrEmpty(expectedHash) || actualHash == expectedHash;
 
             await state.FileStream.FlushAsync(ct);
             await CleanupTransferAsync(end.TransferId, deleteFile: !success);

@@ -189,14 +189,15 @@ private fun RemoteFileRow(
         }
 
         if (!entry.isDirectory) {
+            // Download disabled until SAF integration is complete; streaming to /dev/null wastes bandwidth.
             IconButton(
-                onClick = onDownload,
-                enabled = !isTransferring,
+                onClick = {},
+                enabled = false,
             ) {
                 Icon(
                     imageVector = Icons.Default.Download,
-                    contentDescription = "Download",
-                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = "Download (not yet available)",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (entry.name != "..") {
