@@ -74,6 +74,66 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     [ObservableProperty]
     private HostCapabilities? _hostCapabilities;
 
+    /// <summary>
+    /// Active pairing PIN published by the in-process host. Null when no pairing is in progress.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasActivePairingPin))]
+    private string? _activePairingPin;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasActivePairingPin))]
+    private DateTimeOffset? _activePairingExpiresAt;
+
+    public bool HasActivePairingPin => !string.IsNullOrEmpty(ActivePairingPin);
+
+    /// <summary>
+    /// LAN address phones on the same network should use to reach this PC's host.
+    /// Computed lazily from the loopback host address.
+    /// </summary>
+    public string? LanHostAddress
+    {
+        get
+        {
+            try
+            {
+                var uri = new Uri(HostAddress);
+                if (uri.Host is "localhost" or "127.0.0.1" or "::1")
+                {
+                    var ip = GetLocalIpv4Address();
+                    if (ip is null) return null;
+                    var port = uri.Port > 0 ? uri.Port : RemexConstants.DefaultPort;
+                    return $"{uri.Scheme}://{ip}:{port}{uri.AbsolutePath}";
+                }
+                return HostAddress;
+            }
+            catch { return null; }
+        }
+    }
+
+    partial void OnHostAddressChanged(string value) => OnPropertyChanged(nameof(LanHostAddress));
+
+    /// <summary>
+    /// Subscribes to pairing-pin events on the in-process host's PairingService so the
+    /// desktop UI can show the user the PIN their phone is asking for.
+    /// </summary>
+    public void AttachEmbeddedPairingService(IPairingService service)
+    {
+        Guard.NotNull(service);
+        service.PinDisplayed += (pin, expires) =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                ActivePairingPin = pin;
+                ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(expires);
+            });
+        service.PinCleared += () =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                ActivePairingPin = null;
+                ActivePairingExpiresAt = null;
+            });
+    }
+
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();
 
@@ -418,6 +478,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
             var uri = BuildWebSocketUri(HostAddress, string.Empty);
             await _webSocket.ConnectAsync(uri, linkedCts.Token);
+
+            // Loopback connections target the in-process embedded host on the same machine.
+            // Pairing exists to bootstrap trust with a *remote* host, so it adds no security
+            // here — and would prompt the user for a PIN their own desktop generated.
+            if (IsLoopbackHost(uri))
+                _isPairedWithCurrentHost = true;
 
             if (!_isPairedWithCurrentHost)
             {
@@ -918,6 +984,9 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             return null;
         }
     }
+
+    private static bool IsLoopbackHost(Uri uri) =>
+        uri.Host is "localhost" or "127.0.0.1" or "::1";
 
     /// <summary>
     /// Builds the WebSocket URI, appending the access key as a query parameter if set.

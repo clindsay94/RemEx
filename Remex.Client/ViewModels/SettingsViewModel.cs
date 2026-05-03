@@ -115,6 +115,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
 
+    /// <summary>Live connection view-model — bound directly from the Connection settings card.</summary>
+    public ConnectionViewModel Connection => _connection;
+
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -331,7 +334,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(ConnectionViewModel.HostCapabilities)
-            or nameof(ConnectionViewModel.IsConnected))
+            or nameof(ConnectionViewModel.IsConnected)
+            or nameof(ConnectionViewModel.IsConnecting)
+            or nameof(ConnectionViewModel.IsAutoReconnecting))
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHostCapabilitySummary);
         }

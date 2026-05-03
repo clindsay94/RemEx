@@ -29,6 +29,12 @@ public partial class App : Application
     public static Func<Task>? StopEmbeddedHostAsync { get; set; }
     public static string? EmbeddedHostInstanceId { get; set; }
 
+    /// <summary>
+    /// Service provider of the in-process embedded host (desktop only). Used by the
+    /// Avalonia UI to subscribe to host-side events (e.g. pairing PIN display).
+    /// </summary>
+    public static IServiceProvider? EmbeddedHostServices { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -133,6 +139,14 @@ public partial class App : Application
             else if (profile != null && !string.IsNullOrWhiteSpace(profile.HostAddress))
             {
                 viewModel.Connection.HostAddress = profile.HostAddress;
+            }
+
+            // Wire the embedded host's pairing service so the desktop UI can display
+            // the PIN that the user's phone is asking for.
+            if (EmbeddedHostServices?.GetService(typeof(Remex.Core.Services.Security.IPairingService))
+                is Remex.Core.Services.Security.IPairingService pairingService)
+            {
+                viewModel.Connection.AttachEmbeddedPairingService(pairingService);
             }
 
             _ = viewModel.Connection.AutoConnectAsync();

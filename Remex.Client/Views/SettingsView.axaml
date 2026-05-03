@@ -130,21 +130,54 @@
 
             <!-- ═══ Connection Section ═══ -->
             <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="12">
+                <StackPanel Spacing="14">
                     <TextBlock Text="{local:Localize Settings_Connection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
 
-                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="{Binding HostRuntimeText}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{Binding HostCapabilityText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    <!-- ── Live status row (color dot + text + current address) ── -->
+                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                                    <Ellipse.Fill>
+                                        <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding HostRuntimeText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                            <TextBlock Text="{Binding HostCapabilityText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="ws://host:port/ws" ToolTip.Tip="{local:Localize Settings_HostAddressTooltip}"/>
-                        <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip.Tip="{local:Localize Settings_DiscoverTooltip}"/>
-                    </Grid>
+                    <!-- ── Pairing PIN banner (shows when phone is asking for it) ── -->
+                    <Border Background="#1F2D1F" BorderBrush="#4ADE80" BorderThickness="2" CornerRadius="8" Padding="16,14" IsVisible="{Binding Connection.HasActivePairingPin}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="PHONE PAIRING — ENTER THIS PIN ON YOUR PHONE" FontSize="11" FontWeight="Bold" LetterSpacing="2" Foreground="#4ADE80"/>
+                            <TextBlock Text="{Binding Connection.ActivePairingPin}" FontSize="42" FontWeight="Black" Foreground="#4ADE80" FontFamily="Consolas, monospace" LetterSpacing="6" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Expires soon — start pairing on your phone again if it times out." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ── Address field ── -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="wss://host:port/ws" ToolTip.Tip="{local:Localize Settings_HostAddressTooltip}"/>
+                            <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip.Tip="{local:Localize Settings_DiscoverTooltip}"/>
+                        </Grid>
+                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap">
+                            <Run Text="On this device, use "/><Run Text="wss://localhost:5005/ws" FontFamily="Consolas, monospace"/><Run Text=". Phones on your LAN should use the address below."/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- ── LAN address hint for phones ── -->
+                    <Border Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" IsVisible="{Binding Connection.LanHostAddress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="ADDRESS FOR YOUR PHONE" FontSize="10" FontWeight="SemiBold" LetterSpacing="2" Foreground="{DynamicResource TextMutedBrush}"/>
+                            <TextBlock Text="{Binding Connection.LanHostAddress}" FontSize="13" FontFamily="Consolas, monospace" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
                     <ComboBox IsVisible="{Binding DiscoveredHosts.Count}" ItemsSource="{Binding DiscoveredHosts}" SelectedItem="{Binding HostAddress}" HorizontalAlignment="Stretch" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12,4" FontSize="12" FontFamily="Consolas, monospace" ToolTip.Tip="Select a discovered host"/>
 
                     <!-- Recent connection history picker -->
@@ -159,9 +192,12 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Settings_SaveReconnectTooltip}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" ToolTip.Tip="{local:Localize Settings_SaveReconnectTooltip}"/>
+                        <Button Content="Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold"/>
+                    </StackPanel>
 
-                    <TextBlock Text="{local:Localize Settings_AutoSaveHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" Margin="0,8,0,0"/>
+                    <TextBlock Text="{local:Localize Settings_AutoSaveHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic"/>
                 </StackPanel>
             </Border>
 
