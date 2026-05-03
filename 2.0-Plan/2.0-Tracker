@@ -1,0 +1,50 @@
+# RemEx 2.0 — Execution Tracker
+
+Last updated: 2026-05-03T01:05:00-06:00
+
+## Phase 0 — Foundation
+
+| Track | ID | Status | Agent | Notes |
+|---|---|---|---|---|
+| Version Bump | 0A-version-bump | ✅ COMPLETE | Opus 4.6 | Version → 2.0.0 across all projects |
+| Message Types | 0B-message-types | ✅ COMPLETE | Opus 4.6 | ProtocolVersion=2, 11 new message types, 2 new model files |
+| Interfaces | 0C-interfaces | ✅ COMPLETE | Opus 4.6 | IPairingService, ICertificateService, IFileTransferService |
+
+## Phase 1 — Security Backbone
+
+| Track | ID | Status | Agent | Notes |
+|---|---|---|---|---|
+| Host TLS | 1A-host-tls | ✅ COMPLETE | Opus 4.6 | Kestrel TLS 1.3, CertificateService, SPKI hash |
+| Pairing Protocol | 1B-pairing | ✅ COMPLETE | Opus 4.6 | PairingService, PairingHandler, HMAC verification |
+| Desktop Client TLS | 1C-desktop-client-tls | ✅ COMPLETE | Antigravity | Removed legacy AccessKey, updated UI, fixed localization |
+| Android Client TLS | 1D-android-tls | ✅ COMPLETE | Antigravity | Removed accessKey, added PairingScreen & PinnedHostStore |
+ AOT Exports | 1E-aot-exports | ✅ COMPLETE | Antigravity | Added pairing JNI exports, updated RemexNativeClient for TLS |
+
+## Phase 2 — Parallel Tracks
+
+| Track | ID | Status | Agent | Notes |
+|---|---|---|---|---|
+| File Transfer | 2A-file-transfer | ⏳ PENDING | — | Blocked on Phase 1 |
+| Critical Fixes | 2B-critical-fixes | ⏳ PENDING | — | Blocked on Phase 1 |
+| Material3 Stable | 2C-material3 | ⏳ PENDING | — | Blocked on Phase 1 |
+| Release Eng | 2D-release-eng | ⏳ PENDING | — | Blocked on Phase 1 |
+| JNI Hardening | 2E-jni-hardening | ⏳ PENDING | — | Blocked on Phase 1 |
+| Crashlytics | 2F-crashlytics | ⏳ PENDING | — | Blocked on Phase 1 |
+| Battery Opt | 2G-battery-opt | ⏳ PENDING | — | Blocked on Phase 1 |
+| Haptic Feedback | 2H-haptic | ⏳ PENDING | — | Blocked on Phase 1 |
+| Quick Settings | 2I-quick-settings | ⏳ PENDING | — | Blocked on Phase 1 |
+
+## Phase 3 — Polish
+
+| Track | ID | Status | Agent | Notes |
+|---|---|---|---|---|
+| Localization | 3A-localization | ⏳ PENDING | — | Blocked on Phase 2 |
+| Docs | 3B-docs | ⏳ PENDING | — | Blocked on Phase 2 |
+| Installer | 3C-installer | ⏳ PENDING | — | Blocked on Phase 2 |
+| Final Tests | 3D-tests | ⏳ PENDING | — | Blocked on Phase 2 |
+
+## Issues Log
+
+| Date | Track | Severity | Description | Resolution |
+|---|---|---|---|---|
+| — | — | — | — | — |

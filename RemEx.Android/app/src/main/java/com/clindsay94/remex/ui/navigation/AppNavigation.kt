@@ -126,8 +126,8 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
                 splashShown = splashShown,
                 isConnected = isConnected,
                 onMarkSplashShown = onMarkSplashShown,
-                onQrScanned = { host, port, key ->
-                        connectionViewModel.applyQrResultAndConnect(host, port, key)
+                onQrScanned = { host, port ->
+                        connectionViewModel.applyQrResultAndConnect(host, port)
                 },
                 dashboardScreenContent = { onNav ->
                         DashboardScreen(onNavigateToConnection = onNav)
@@ -167,7 +167,7 @@ private fun AppNavigationContent(
         splashShown: Boolean,
         isConnected: Boolean,
         onMarkSplashShown: () -> Unit,
-        onQrScanned: (String, Int, String) -> Unit,
+        onQrScanned: (String, Int) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -242,6 +242,14 @@ private fun AppNavigationContent(
         // Back handler: show exit confirmation when at the primary root destination
         val isAtRoot = currentRoute == PrimaryNavRoute
         BackHandler(enabled = isAtRoot) { showExitDialog = true }
+
+        LaunchedEffect(Unit) {
+                RemexClientManager.pairingRequired.collect { (host, port) ->
+                        navController.navigate("${Screen.Pairing.route}/$host/$port") {
+                                launchSingleTop = true
+                        }
+                }
+        }
 
         // ─── Navigation helpers ───────────────────────────────────────────────────
         fun navigateTo(route: String) {
@@ -623,7 +631,7 @@ private fun RemexNavHost(
         startDestination: String,
         hasCompletedOnboarding: Boolean,
         onMarkSplashShown: () -> Unit,
-        onQrScanned: (String, Int, String) -> Unit,
+        onQrScanned: (String, Int) -> Unit,
         dashboardScreenContent: @Composable (() -> Unit) -> Unit,
         remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (() -> Unit) -> Unit,
@@ -736,8 +744,8 @@ private fun RemexNavHost(
                         },
                 ) {
                         QrScannerScreen(
-                                onScanned = { host, port, key ->
-                                        onQrScanned(host, port, key)
+                                onScanned = { host, port ->
+                                        onQrScanned(host, port)
                                         onSelectPrimaryPage(0)
                                         navController.navigate(PrimaryNavRoute) {
                                                 popUpTo(PrimaryNavRoute) { inclusive = true }
@@ -745,6 +753,35 @@ private fun RemexNavHost(
                                         }
                                 },
                                 onBack = { navController.popBackStack() },
+                        )
+                }
+
+                composable(
+                        route = "${Screen.Pairing.route}/{host}/{port}",
+                        arguments = listOf(
+                                androidx.navigation.navArgument("host") { type = androidx.navigation.NavType.StringType },
+                                androidx.navigation.navArgument("port") { type = androidx.navigation.NavType.IntType }
+                        ),
+                        enterTransition = {
+                                slideInVertically(tween(350, easing = EmphasizedDecelerate)) { it } + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                        },
+                        exitTransition = {
+                                slideOutVertically(tween(250, easing = EmphasizedAccelerate)) { it } + fadeOut(tween(250, easing = EmphasizedAccelerate))
+                        }
+                ) { backStackEntry ->
+                        val host = backStackEntry.arguments?.getString("host") ?: ""
+                        val port = backStackEntry.arguments?.getInt("port") ?: 5005
+                        com.clindsay94.remex.ui.screens.PairingScreen(
+                                host = host,
+                                port = port,
+                                onPairSuccess = {
+                                        navController.popBackStack()
+                                        // Attempt auto connect again after successful pairing
+                                        RemexClientManager.toggleConnection()
+                                },
+                                onCancel = {
+                                        navController.popBackStack()
+                                }
                         )
                 }
 
@@ -829,7 +866,7 @@ private fun AppNavigationPreview() {
                         splashShown = true,
                         isConnected = true,
                         onMarkSplashShown = {},
-                        onQrScanned = { _, _, _ -> },
+                        onQrScanned = { _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
@@ -850,7 +887,7 @@ private fun AppNavigationDisconnectedPreview() {
                         splashShown = true,
                         isConnected = false,
                         onMarkSplashShown = {},
-                        onQrScanned = { _, _, _ -> },
+                        onQrScanned = { _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },

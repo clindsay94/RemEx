@@ -1570,7 +1570,7 @@ fun RemoteDesktopScreenContent(
                                                                 when {
                                                                         uiState.desktopError !=
                                                                                 null ->
-                                                                                uiState.desktopError!!
+                                                                            uiState.desktopError
                                                                         !uiState.capabilityState
                                                                                 .supportsRemoteDesktop ->
                                                                                 uiState.capabilityState

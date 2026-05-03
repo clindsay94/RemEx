@@ -1,10 +1,15 @@
 using System.Diagnostics;
+using System.Security.Authentication;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Remex.Core;
 using Remex.Core.Services;
+using Remex.Core.Services.Security;
 using Remex.Host.Handlers;
 using Remex.Host.Services;
+using Remex.Host.Services.Security;
 using Remex.Host.Services.Telemetry;
 using Remex.Host.Services.ProcessMonitor;
 
@@ -75,6 +80,12 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Host.Services.AppLauncherService>();
         builder.Services.AddHostedService<IpcHostServer>();
 
+        // ── 2.0 Security Services ──
+        builder.Services.AddSingleton<ICertificateService, CertificateService>();
+        builder.Services.AddSingleton<PairingService>();
+        builder.Services.AddSingleton<IPairingService>(sp => sp.GetRequiredService<PairingService>());
+        builder.Services.AddTransient<PairingHandler>();
+
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
         // Try the requested port first; if it's unavailable, probe fallback ports.
         int actualPort = port;
@@ -97,7 +108,30 @@ public static class HostBootstrapper
                 // Port in use, try next
             }
         }
-        builder.WebHost.UseUrls($"http://0.0.0.0:{actualPort}");
+        // ── 2.0 TLS Configuration ──
+        // Generate or load the self-signed certificate synchronously during startup.
+        var certService = new CertificateService(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddConsole())
+                .CreateLogger<CertificateService>());
+        var tlsCert = certService.GetOrCreateCertificateAsync(CancellationToken.None)
+            .GetAwaiter().GetResult();
+
+        // Replace the default CertificateService singleton with the pre-initialized one.
+        builder.Services.AddSingleton<ICertificateService>(certService);
+
+        builder.WebHost.ConfigureKestrel(kestrel =>
+        {
+            kestrel.ListenAnyIP(actualPort, listenOptions =>
+            {
+                listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+                listenOptions.UseHttps(httpsOptions =>
+                {
+                    httpsOptions.ServerCertificate = tlsCert;
+                    httpsOptions.SslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12;
+                });
+            });
+        });
+
         builder.Configuration["Host:Port"] = actualPort.ToString();
 
         var app = builder.Build();
@@ -112,10 +146,6 @@ public static class HostBootstrapper
                 "Configure the service to 'Log on as' your Windows user account.");
         }
 
-        // Read the access key from configuration (supports appsettings.json, env vars, CLI args).
-        // Env var: Remex__AccessKey   CLI: --Remex:AccessKey=<value>
-        var accessKey = app.Configuration["Remex:AccessKey"] ?? "";
-
         // Enable WebSocket support.
         app.UseWebSockets();
 
@@ -129,6 +159,18 @@ public static class HostBootstrapper
             capabilities = hostCapabilitiesProvider.GetCurrent(),
         }));
 
+        app.MapGet("/pairing-qr", (ICertificateService certService, IConfiguration config) =>
+        {
+            var port = int.Parse(config["Host:Port"] ?? "5005");
+            return Results.Ok(new
+            {
+                host = "0.0.0.0", // Client should substitute with actual host address
+                port = port,
+                hostId = HostBootstrapper.InstanceId,
+                spkiHashBase64 = certService.GetSpkiSha256Base64()
+            });
+        });
+
         // WebSocket hub
         app.Map(RemexConstants.WebSocketPath, async (HttpContext context) =>
         {
@@ -139,27 +181,21 @@ public static class HostBootstrapper
                 return;
             }
 
-            if (!ValidateAccessKey(context, accessKey))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Invalid or missing access key.");
-                return;
-            }
-
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<TelemetryBackgroundService>();
             var handler = new PingPongHandler(
-                logger, 
-                telemetry, 
-                context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(), 
-                context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(), 
-                context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(), 
+                logger,
+                telemetry,
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Network.IWakeOnLanService>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.ILauncherStorageService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IAppLauncherService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IDashboardProfileStorageService>(),
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>(),
                 context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
-                context.RequestServices.GetRequiredService<IInputSimulationService>());
+                context.RequestServices.GetRequiredService<IInputSimulationService>(),
+                context.RequestServices.GetRequiredService<PairingHandler>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });
 
@@ -173,13 +209,6 @@ public static class HostBootstrapper
                 return;
             }
 
-            if (!ValidateAccessKey(context, accessKey))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Invalid or missing access key.");
-                return;
-            }
-
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             using var handler = new RemoteDesktopHandler(
                 context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
@@ -190,24 +219,5 @@ public static class HostBootstrapper
         });
 
         return app;
-    }
-
-    /// <summary>
-    /// Validates the access key from the <c>key</c> query-string parameter.
-    /// Returns <c>true</c> when no key is configured (feature disabled) or
-    /// when the supplied key matches using a constant-time comparison.
-    /// </summary>
-    private static bool ValidateAccessKey(HttpContext context, string configuredKey)
-    {
-        if (string.IsNullOrEmpty(configuredKey))
-            return true; // Access key not configured — open access.
-
-        var suppliedKey = context.Request.Query["key"].ToString();
-        if (string.IsNullOrEmpty(suppliedKey))
-            return false;
-
-        return CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(configuredKey),
-            Encoding.UTF8.GetBytes(suppliedKey));
     }
 }

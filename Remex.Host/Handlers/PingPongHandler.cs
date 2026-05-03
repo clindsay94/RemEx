@@ -22,7 +22,8 @@ public sealed class PingPongHandler(
     Remex.Core.Services.IDashboardProfileStorageService profileStorage,
     Remex.Core.Services.IProcessMonitorService processMonitorService,
     IHostCapabilitiesProvider hostCapabilitiesProvider,
-    IInputSimulationService inputSimulation)
+    IInputSimulationService inputSimulation,
+    PairingHandler pairingHandler)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
@@ -156,6 +157,19 @@ public sealed class PingPongHandler(
 
                     case MessageTypes.DesktopInput when message.InputEvent is not null:
                         DispatchInput(message.InputEvent);
+                        break;
+
+                    // ── 2.0 Pairing ──
+                    case MessageTypes.PairingRequest:
+                        var pairingResponse = await pairingHandler.HandlePairingRequestAsync(message, ct);
+                        if (pairingResponse is not null)
+                            await MessageSerializer.SendAsync(webSocket, pairingResponse, ct);
+                        break;
+
+                    case MessageTypes.PairingComplete:
+                        var completeResponse = await pairingHandler.HandlePairingCompleteAsync(message, ct);
+                        if (completeResponse is not null)
+                            await MessageSerializer.SendAsync(webSocket, completeResponse, ct);
                         break;
 
                     default:

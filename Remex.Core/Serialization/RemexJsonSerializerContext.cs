@@ -39,6 +39,19 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(RemexMessage))]
 [JsonSerializable(typeof(SensorReading))]
 [JsonSerializable(typeof(TelemetryPayload))]
+// ── 2.0 Pairing ──
+[JsonSerializable(typeof(PairingRequest))]
+[JsonSerializable(typeof(PairingResponse))]
+[JsonSerializable(typeof(PairingComplete))]
+// ── 2.0 File Transfer ──
+[JsonSerializable(typeof(FileTransferStart))]
+[JsonSerializable(typeof(FileTransferChunk))]
+[JsonSerializable(typeof(FileTransferEnd))]
+[JsonSerializable(typeof(FileTransferCancel))]
+[JsonSerializable(typeof(FileTransferProgress))]
+[JsonSerializable(typeof(FileBrowseRequest))]
+[JsonSerializable(typeof(FileBrowseResponse))]
+[JsonSerializable(typeof(FileEntry))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
 }

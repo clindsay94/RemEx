@@ -217,12 +217,10 @@ class LaunchAppCallback : ActionCallback {
         val path = parameters[APP_PATH_PARAM] ?: return
         if (RemexCoreClient.isLibraryLoaded) {
             val settings = SettingsManager(context)
-            val accessKey = settings.accessKeyFlow.first()
             val request = JSONObject().apply {
                 put("action", "LaunchApp")
                 put("parameters", JSONObject().apply {
                     put("TargetPath", path)
-                    if (accessKey.isNotBlank()) put("AccessKey", accessKey)
                 })
             }
             RemexCoreClient.SendCommand(request.toString())

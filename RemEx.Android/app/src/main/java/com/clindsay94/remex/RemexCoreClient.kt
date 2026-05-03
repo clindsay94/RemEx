@@ -174,6 +174,22 @@ object RemexCoreClient {
     @JvmName("StopDesktopStreamNative")
     private external fun StopDesktopStreamNative()
 
+    @JvmStatic
+    @JvmName("StartPairingNative")
+    external fun StartPairingNative(hostUrl: String, clientName: String, clientVersion: String): String
+
+    @JvmStatic
+    @JvmName("SubmitPairingPinNative")
+    external fun SubmitPairingPinNative(pin: String): String
+
+    @JvmStatic
+    @JvmName("GetPinnedHostHashNative")
+    external fun GetPinnedHostHashNative(hostId: String): String
+
+    @JvmStatic
+    @JvmName("SetPinnedHostHashNative")
+    external fun SetPinnedHostHashNative(hostId: String, spkiHashBase64: String): String
+
     /**
      * Frees unmanaged memory previously allocated on the native heap and returned
      * as a pointer. Reserved for future use if [Export] is changed to use
