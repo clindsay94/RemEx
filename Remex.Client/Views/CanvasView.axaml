@@ -206,8 +206,8 @@
                     </StackPanel>
                 </Button>
                 <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
-                    <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="Copy canvas snapshot to clipboard" Padding="8,4">
-                        <TextBlock Text="Copy" FontSize="12"/>
+                    <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="Save snapshot and copy file path to clipboard" Padding="8,4">
+                        <TextBlock Text="Copy Path" FontSize="12"/>
                     </Button>
                     <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="#4ADE80" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
                 </StackPanel>

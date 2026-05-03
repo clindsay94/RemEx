@@ -40,3 +40,31 @@ fun Modifier.hapticClickable(
 fun triggerHaptic(view: android.view.View, type: Int = HapticFeedbackConstants.KEYBOARD_TAP) {
     view.performHapticFeedback(type)
 }
+
+/**
+ * Fired when a command is dispatched to the host (light "sent" tick).
+ */
+fun android.view.View.hapticCommandSent() =
+    performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+
+/**
+ * Fired when the host acknowledges a command successfully.
+ * Falls back to VIRTUAL_KEY on API < 30.
+ */
+fun android.view.View.hapticCommandAcknowledged() {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+        performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+    else
+        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+}
+
+/**
+ * Fired when a command fails or times out.
+ * Falls back to LONG_PRESS on API < 30.
+ */
+fun android.view.View.hapticCommandFailed() {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+        performHapticFeedback(HapticFeedbackConstants.REJECT)
+    else
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+}

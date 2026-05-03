@@ -38,8 +38,7 @@ androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-# Material3 1.5.0-alpha required: MaterialShapes, MotionScheme.expressive(), ExperimentalMaterial3ExpressiveApi used in Theme.kt
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha17" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.4.0" }
 androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 androidx-compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version = "1.7.8" }

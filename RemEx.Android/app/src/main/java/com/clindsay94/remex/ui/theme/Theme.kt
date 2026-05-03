@@ -5,10 +5,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MaterialShapes
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -74,51 +71,28 @@ val remexShapes = Shapes(
 
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 val materialShapesList: List<RoundedPolygon> = listOf(
     // Geometric — clean, always readable
-    MaterialShapes.Circle,
-    MaterialShapes.Square,
-    MaterialShapes.Triangle,
-    MaterialShapes.Diamond,
-    MaterialShapes.Pentagon,
-
-    // Expressive / Organic — usable interior area
-    MaterialShapes.Arch,
-    MaterialShapes.SemiCircle,
-    MaterialShapes.Pill,
-    MaterialShapes.Slanted,
-    MaterialShapes.Fan,
-    MaterialShapes.ClamShell,
-    MaterialShapes.Gem,
-    MaterialShapes.Heart,
-    MaterialShapes.Flower,
-    MaterialShapes.Puffy,
-    MaterialShapes.PuffyDiamond,
-    MaterialShapes.Ghostish,
-    MaterialShapes.Oval,
-
-    // Decorative — kept only where interior is still usable for data cards
-    MaterialShapes.Clover4Leaf,
-    MaterialShapes.Clover8Leaf,
-    MaterialShapes.Sunny,       // gentle star — acceptable
-    MaterialShapes.SoftBurst,   // soft star — usable
-    MaterialShapes.SoftBoom,    // soft balloon — usable
-    MaterialShapes.PixelCircle, // fun but legible
-
-    // Removed: Cookie4/6/7/9/12Sided (scalloped edges clip content),
-    //          VerySunny / Burst / Boom (too many spikes), PixelTriangle (awkward aspect),
-    //          Arrow (directional, terrible for data cards)
+    RoundedPolygon.circle(numVertices = 32),
+    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.1f)),
+    RoundedPolygon(numVertices = 3, rounding = CornerRounding(0.1f)),
+    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.05f)).transformed(
+        Matrix().apply { rotateZ(45f) }),
+    RoundedPolygon(numVertices = 5, rounding = CornerRounding(0.1f)),
+    RoundedPolygon(numVertices = 6, rounding = CornerRounding(0.1f)),
+    RoundedPolygon(numVertices = 8, rounding = CornerRounding(0.1f)),
+    RoundedPolygon.rectangle(width = 2f, height = 1f, rounding = CornerRounding(0.4f)),
+    star(numVerticesPerRadius = 4, innerRadius = 0.5f, rounding = CornerRounding(0.1f)),
+    star(numVerticesPerRadius = 5, innerRadius = 0.55f, rounding = CornerRounding(0.1f)),
+    star(numVerticesPerRadius = 6, innerRadius = 0.65f, rounding = CornerRounding(0.1f)),
+    star(numVerticesPerRadius = 8, innerRadius = 0.75f, rounding = CornerRounding(0.1f)),
 )
 
 /** Human-readable names that correspond 1-to-1 with [materialShapesList]. */
 val materialShapeNames: List<String> = listOf(
     "Circle", "Square", "Triangle", "Diamond", "Pentagon",
-    "Arch", "Semi-Circle", "Pill", "Slanted", "Fan",
-    "Clam Shell", "Gem", "Heart", "Flower", "Puffy",
-    "Puffy Diamond", "Ghostish", "Oval",
-    "4-Leaf Clover", "8-Leaf Clover", "Sunny",
-    "Soft Burst", "Soft Boom", "Pixel Circle"
+    "Hexagon", "Octagon", "Pill",
+    "Star 4", "Star 5", "Star 6", "Star 8"
 )
 class MorphPolygonShape(
     private val morph: Morph,
@@ -200,30 +174,18 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
 
     // Define "safety" of each shape. 1.0 = safe (square), 0.0 = very unsafe (extreme clipping)
     val shapeSafety = listOf(
-        0.55f, // Circle (corners cut off significantly)
-        1.00f, // Square (perfectly safe)
-        0.30f, // Triangle (extreme corner clipping)
-        0.45f, // Diamond (heavy corner clipping)
+        0.55f, // Circle
+        1.00f, // Square
+        0.30f, // Triangle
+        0.45f, // Diamond
         0.65f, // Pentagon
-        0.75f, // Arch
-        0.65f, // Semi-Circle
+        0.75f, // Hexagon
+        0.80f, // Octagon
         0.85f, // Pill
-        0.80f, // Slanted
-        0.70f, // Fan
-        0.65f, // Clam Shell
-        0.55f, // Gem
-        0.40f, // Heart (top-center and bottom-center clipping)
-        0.50f, // Flower
-        0.65f, // Puffy
-        0.55f, // Puffy Diamond
-        0.65f, // Ghostish
-        0.65f, // Oval
-        0.55f, // 4-Leaf Clover
-        0.55f, // 8-Leaf Clover
-        0.45f, // Sunny
-        0.55f, // Soft Burst
-        0.65f, // Soft Boom
-        0.75f  // Pixel Circle
+        0.50f, // Star 4
+        0.55f, // Star 5
+        0.60f, // Star 6
+        0.65f  // Star 8
     )
 
     val currentSafety = shapeSafety.getOrElse(shapeIndex) { 0.6f }
@@ -374,12 +336,10 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
-    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typographyForFontFamily(fontFamilyKey),
         shapes = remexShapes,
-        motionScheme = MotionScheme.expressive(),
         content = content
     )
 }

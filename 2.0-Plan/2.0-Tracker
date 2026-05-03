@@ -1,6 +1,6 @@
 # RemEx 2.0 — Execution Tracker
 
-Last updated: 2026-05-03T01:05:00-06:00
+Last updated: 2026-05-03T12:00:00-06:00
 
 ## Phase 0 — Foundation
 
@@ -24,15 +24,15 @@ Last updated: 2026-05-03T01:05:00-06:00
 
 | Track | ID | Status | Agent | Notes |
 |---|---|---|---|---|
-| File Transfer | 2A-file-transfer | ⏳ PENDING | — | Blocked on Phase 1 |
-| Critical Fixes | 2B-critical-fixes | ⏳ PENDING | — | Blocked on Phase 1 |
-| Material3 Stable | 2C-material3 | ⏳ PENDING | — | Blocked on Phase 1 |
-| Release Eng | 2D-release-eng | ⏳ PENDING | — | Blocked on Phase 1 |
-| JNI Hardening | 2E-jni-hardening | ⏳ PENDING | — | Blocked on Phase 1 |
-| Crashlytics | 2F-crashlytics | ⏳ PENDING | — | Blocked on Phase 1 |
-| Battery Opt | 2G-battery-opt | ⏳ PENDING | — | Blocked on Phase 1 |
-| Haptic Feedback | 2H-haptic | ⏳ PENDING | — | Blocked on Phase 1 |
-| Quick Settings | 2I-quick-settings | ⏳ PENDING | — | Blocked on Phase 1 |
+| File Transfer | 2A-file-transfer | ✅ COMPLETE | Sonnet 4.6 | Host service, .NET desktop client+UI, Android screen+VM+nav; SHA-256 verified chunked transfer; JNI callback onFileTransferMessage wired |
+| Critical Fixes | 2B-critical-fixes | ✅ COMPLETE | Sonnet 4.6 | C-1 to C-4 and H-1 to H-7 bug fixes applied |
+| Material3 Stable | 2C-material3 | ✅ COMPLETE | Sonnet 4.6 | Downgraded 1.5.0-alpha17 → 1.4.0; replaced MaterialShapes with RoundedPolygon; removed MotionScheme.expressive() |
+| Release Eng | 2D-release-eng | ✅ COMPLETE | Sonnet 4.6 | AAB + arm64-v8a ABI filter, cleartext disabled, network security config, R8 rules, backup exclusions |
+| JNI Hardening | 2E-jni-hardening | ✅ COMPLETE | Sonnet 4.6 | RuntimeException catch on all native calls; private native methods with public wrappers |
+| Crashlytics | 2F-crashlytics | ⛔ BLOCKED | Sonnet 4.6 | Requires google-services.json — not present in repo; deferred to post-release |
+| Battery Opt | 2G-battery-opt | ✅ COMPLETE | Sonnet 4.6 | REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission + tutorial onboarding page |
+| Haptic Feedback | 2H-haptic | ✅ COMPLETE | Sonnet 4.6 | Two-stage haptics: CONTEXT_CLICK (sent), CONFIRM/REJECT (ack/fail) with API level guards |
+| Quick Settings | 2I-quick-settings | ✅ COMPLETE | Sonnet 4.6 | RemexLockTileService + BIND_QUICK_SETTINGS_TILE manifest entry + ic_lock drawable |
 
 ## Phase 3 — Polish
 
@@ -47,4 +47,6 @@ Last updated: 2026-05-03T01:05:00-06:00
 
 | Date | Track | Severity | Description | Resolution |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| 2026-05-03 | 2C | LOW | MaterialShapes.* not available in Material3 1.4.0 stable | Replaced with RoundedPolygon shapes from androidx.graphics.shapes 1.1.0 |
+| 2026-05-03 | 2F | HIGH | google-services.json missing from repo | Crashlytics deferred; noted as blocked |
+| 2026-05-03 | 2A | LOW | Android download destination not implemented (SAF) | File download POSTs to host; receiving chunks requires Android SAF integration in future sprint |

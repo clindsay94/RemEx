@@ -371,4 +371,20 @@
     <string name="widget_config_no_sensors_hint">Connect to your PC first to discover sensors.</string>
     <string name="widget_config_remote_control_title">Configure Remote Control</string>
     <string name="widget_config_remote_control_hint">Select the commands to show on your widget:</string>
+    <string name="tutorial_battery_title">Keep RemEx Running</string>
+    <string name="tutorial_battery_body">Android may put RemEx to sleep to save battery, which can interrupt your remote session.\n\nTap "Whitelist RemEx" below to exempt the app from battery optimization and keep your connection stable.</string>
+    <string name="tutorial_battery_action">Whitelist RemEx</string>
+    <string name="tile_lock_label">Lock PC</string>
+
+    <!-- ═══ File Transfer Screen ═══ -->
+    <string name="screen_file_transfer_title">File Transfer</string>
+    <string name="file_transfer_local">Local (Phone)</string>
+    <string name="file_transfer_remote">Remote (PC)</string>
+    <string name="file_transfer_browse">Browse</string>
+    <string name="file_transfer_upload">Upload ↑</string>
+    <string name="file_transfer_download">Download ↓</string>
+    <string name="file_transfer_cancel">Cancel</string>
+    <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
+    <string name="file_transfer_loading">Loading…</string>
+    <string name="file_transfer_empty">No files found.</string>
 </resources>

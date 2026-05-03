@@ -79,6 +79,7 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AboutScreen
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
+import com.clindsay94.remex.ui.screens.FileTransferScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
 import com.clindsay94.remex.ui.screens.ConnectionStatusChip
 import com.clindsay94.remex.ui.screens.ConnectionViewModel
@@ -818,6 +819,10 @@ private fun RemexNavHost(
                 composable(Screen.Faq.route) { FaqScreen() }
 
                 composable(Screen.About.route) { AboutScreen() }
+
+                composable(Screen.FileTransfer.route) {
+                    FileTransferScreen(onNavigateToConnection = { navigateToConnection() })
+                }
         }
 }
 

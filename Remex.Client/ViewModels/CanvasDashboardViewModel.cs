@@ -1038,8 +1038,23 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         RefreshSensorActivationItems();
     }
 
+    public void CleanupSensorSubscriptions()
+    {
+        var sensorVms = Cards.Concat(StagedCards)
+            .Where(c => c.Sensor is not null)
+            .Select(c => c.Sensor!)
+            .Distinct()
+            .ToList();
+
+        foreach (var sensor in sensorVms)
+            sensor.AlertTriggered -= OnSensorAlertTriggered;
+
+        _subscribedSensorNames.Clear();
+    }
+
     public void Dispose()
     {
+        CleanupSensorSubscriptions();
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
         Connection.LayoutProfileReceived -= OnLayoutProfileReceived;
         Cards.CollectionChanged -= OnCardsCollectionChanged;

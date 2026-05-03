@@ -150,6 +150,14 @@
                                             </StackPanel>
                                         </Button>
 
+                                        <!-- File Transfer -->
+                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" AutomationProperties.Name="Files" ToolTip.Tip="File Transfer">
+                                            <StackPanel Orientation="Horizontal" Spacing="14">
+                                                <Path Data="{StaticResource IconFiles}" Fill="#34D399" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
+                                                <TextBlock Text="Files" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                            </StackPanel>
+                                        </Button>
+
                                         <!-- Separator -->
                                         <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="16,8" Opacity="0.3"/>
 
@@ -252,6 +260,9 @@
                                 </DataTemplate>
                                 <DataTemplate DataType="vm:AboutViewModel">
                                     <views:AboutView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:FileTransferViewModel">
+                                    <views:FileTransferView />
                                 </DataTemplate>
                                 <DataTemplate DataType="vm:SettingsViewModel">
                                     <views:SettingsView />

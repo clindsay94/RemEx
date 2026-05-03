@@ -58,6 +58,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.launch
@@ -71,6 +74,8 @@ private data class TutorialPage(
     val bodyRes: Int,
     val linkLabelRes: Int? = null,
     val linkUrl: String? = null,
+    val actionLabelRes: Int? = null,
+    val batteryAction: Boolean = false,
     val illustration: TutorialIllustration = TutorialIllustration.NONE
 )
 
@@ -129,6 +134,13 @@ private val tutorialPages = listOf(
         titleRes = R.string.tutorial_page6_title,
         bodyRes = R.string.tutorial_page6_body,
         illustration = TutorialIllustration.READY
+    ),
+    TutorialPage(
+        emoji = "🔋",
+        titleRes = R.string.tutorial_battery_title,
+        bodyRes = R.string.tutorial_battery_body,
+        actionLabelRes = R.string.tutorial_battery_action,
+        batteryAction = true
     )
 )
 
@@ -318,6 +330,18 @@ private fun TutorialPageContent(page: TutorialPage) {
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
+
+        if (page.batteryAction && page.actionLabelRes != null) {
+            val context = LocalContext.current
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                intent.data = Uri.parse("package:" + context.packageName)
+                context.startActivity(intent)
+            }) {
+                Text(text = stringResource(page.actionLabelRes))
+            }
+        }
 
         if (page.linkLabelRes != null && page.linkUrl != null) {
             Spacer(modifier = Modifier.height(16.dp))

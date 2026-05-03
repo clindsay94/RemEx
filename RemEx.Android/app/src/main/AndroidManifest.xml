@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <application
         android:allowBackup="true"
@@ -23,7 +24,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RemEx"
         android:localeConfig="@xml/locales_config"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+
+        <service
+            android:name=".tile.RemexLockTileService"
+            android:exported="true"
+            android:label="@string/tile_lock_label"
+            android:icon="@drawable/ic_lock"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
 
         <!-- Service for backwards compatibility of per-app languages -->
         <service

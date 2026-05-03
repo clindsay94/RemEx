@@ -184,7 +184,7 @@ public partial class CanvasView : UserControl
 
             _ = topLevel.Clipboard.SetTextAsync(tempPath);
 
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Copied to clipboard");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Path copied");
         }
         catch (Exception ex)
         {

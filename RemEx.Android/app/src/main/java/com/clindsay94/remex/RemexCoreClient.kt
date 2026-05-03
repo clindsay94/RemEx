@@ -27,6 +27,7 @@ object RemexCoreClient {
         fun onHostInfoUpdate(hostInfoData: String)
         fun onDesktopError(errorText: String)
         fun onDesktopMeta(metaData: String)
+        fun onFileTransferMessage(json: String)
     }
 
     init {
@@ -62,6 +63,9 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "InitRemexNative not linked", e)
                 "{\"success\":false,\"message\":\"Native method not linked.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "InitRemexNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
             }
         } else {
             "{\"success\":false,\"message\":\"Library not loaded.\"}"
@@ -80,6 +84,9 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "WakePcNative not linked", e)
                 "{\"success\":false,\"message\":\"Native method not linked.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "WakePcNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
             }
         } else {
             "{\"success\":false,\"message\":\"Library not loaded.\"}"
@@ -98,6 +105,9 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "GetTelemetryNative not linked", e)
                 "{\"success\":false,\"message\":\"Native method not linked.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "GetTelemetryNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
             }
         } else {
             "{\"success\":false,\"message\":\"Library not loaded.\"}"
@@ -116,6 +126,9 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SendMessageNative not linked", e)
                 "{\"success\":false,\"message\":\"Native method not linked.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SendMessageNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
             }
         } else {
             "{\"success\":false,\"message\":\"Library not loaded.\"}"
@@ -134,6 +147,9 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SendCommandNative not linked", e)
                 "{\"success\":false,\"message\":\"Native method not linked.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SendCommandNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
             }
         } else {
             "{\"success\":false,\"message\":\"Library not loaded.\"}"
@@ -151,6 +167,8 @@ object RemexCoreClient {
                 StartDesktopStreamNative(configJson)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StartDesktopStreamNative not linked", e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "StartDesktopStreamNative crashed", e)
             }
         }
     }
@@ -166,6 +184,8 @@ object RemexCoreClient {
                 StopDesktopStreamNative()
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StopDesktopStreamNative not linked", e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "StopDesktopStreamNative crashed", e)
             }
         }
     }
@@ -176,19 +196,87 @@ object RemexCoreClient {
 
     @JvmStatic
     @JvmName("StartPairingNative")
-    external fun StartPairingNative(hostUrl: String, clientName: String, clientVersion: String): String
+    private external fun StartPairingNative(hostUrl: String, clientName: String, clientVersion: String): String
+
+    @JvmStatic
+    fun StartPairing(hostUrl: String, clientName: String, clientVersion: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                StartPairingNative(hostUrl, clientName, clientVersion)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "StartPairingNative not loaded", e)
+                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "StartPairingNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
 
     @JvmStatic
     @JvmName("SubmitPairingPinNative")
-    external fun SubmitPairingPinNative(pin: String): String
+    private external fun SubmitPairingPinNative(pin: String): String
+
+    @JvmStatic
+    fun SubmitPairingPin(pin: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                SubmitPairingPinNative(pin)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "SubmitPairingPinNative not loaded", e)
+                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SubmitPairingPinNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
 
     @JvmStatic
     @JvmName("GetPinnedHostHashNative")
-    external fun GetPinnedHostHashNative(hostId: String): String
+    private external fun GetPinnedHostHashNative(hostId: String): String
+
+    @JvmStatic
+    fun GetPinnedHostHash(hostId: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                GetPinnedHostHashNative(hostId)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "GetPinnedHostHashNative not loaded", e)
+                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "GetPinnedHostHashNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
 
     @JvmStatic
     @JvmName("SetPinnedHostHashNative")
-    external fun SetPinnedHostHashNative(hostId: String, spkiHashBase64: String): String
+    private external fun SetPinnedHostHashNative(hostId: String, spkiHashBase64: String): String
+
+    @JvmStatic
+    fun SetPinnedHostHash(hostId: String, spkiHashBase64: String): String {
+        return if (isLibraryLoaded) {
+            try {
+                SetPinnedHostHashNative(hostId, spkiHashBase64)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "SetPinnedHostHashNative not loaded", e)
+                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SetPinnedHostHashNative crashed", e)
+                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+            }
+        } else {
+            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+        }
+    }
 
     /**
      * Frees unmanaged memory previously allocated on the native heap and returned

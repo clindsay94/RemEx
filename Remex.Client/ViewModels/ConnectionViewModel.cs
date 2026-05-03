@@ -217,6 +217,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     public event Action<TelemetryPayload>? TelemetryReceived;
     public event Action<Remex.Core.Models.DashboardProfile>? LayoutProfileReceived;
     public event Action<System.Collections.Generic.List<Remex.Core.Models.ProcessInfo>>? ProcessListReceived;
+    public event Action<Remex.Core.Messages.RemexMessage>? FileTransferMessageReceived;
 
     [ObservableProperty]
     private ObservableCollection<Remex.Core.Models.ProcessInfo> _processes = new();
@@ -623,6 +624,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         }
     }
 
+    public async Task SendAsync(RemexMessage message)
+    {
+        if (_webSocket?.State != WebSocketState.Open) return;
+        await MessageSerializer.SendAsync(_webSocket, message);
+    }
+
     public async Task SendLayoutUpdateAsync(Remex.Core.Models.DashboardProfile profile)
     {
         if (_webSocket?.State != WebSocketState.Open) return;
@@ -736,6 +743,13 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
                     case MessageTypes.LayoutSync when message.DashboardProfile is not null:
                         Dispatcher.UIThread.Post(() => LayoutProfileReceived?.Invoke(message.DashboardProfile));
+                        break;
+
+                    case MessageTypes.FileBrowseResponse:
+                    case MessageTypes.FileTransferChunk:
+                    case MessageTypes.FileTransferEnd:
+                    case MessageTypes.FileTransferProgress:
+                        FileTransferMessageReceived?.Invoke(message);
                         break;
                 }
             }
