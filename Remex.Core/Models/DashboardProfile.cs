@@ -77,6 +77,9 @@ public record DashboardProfile
     /// <summary>Persisted WebSocket host address for the remote connection.</summary>
     public string HostAddress { get; init; } = "ws://localhost:5005/ws";
 
+    /// <summary>Shared access key for WebSocket authentication. Empty = disabled.</summary>
+    public string AccessKey { get; init; } = string.Empty;
+
     /// <summary>Persisted path to the Remex.Host.exe binary or its containing directory.</summary>
     public string HostPath { get; init; } = string.Empty;
 

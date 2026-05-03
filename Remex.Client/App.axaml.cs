@@ -12,7 +12,6 @@ using Remex.Client.Models;
 using Remex.Client.Services;
 using Remex.Client.ViewModels;
 using Remex.Client.Views;
-using Remex.Client.Services.Security;
 using Remex.Core.Services;
 using Remex.Core.Services.Network;
 
@@ -28,12 +27,6 @@ public partial class App : Application
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
     public static Func<Task>? StopEmbeddedHostAsync { get; set; }
     public static string? EmbeddedHostInstanceId { get; set; }
-
-    /// <summary>
-    /// Service provider of the in-process embedded host (desktop only). Used by the
-    /// Avalonia UI to subscribe to host-side events (e.g. pairing PIN display).
-    /// </summary>
-    public static IServiceProvider? EmbeddedHostServices { get; set; }
 
     public override void Initialize()
     {
@@ -54,7 +47,6 @@ public partial class App : Application
         collection.AddSingleton<DashboardLayoutService>();
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
-        collection.AddSingleton<PinnedCertStore>();
 
         collection.AddSingleton<ConnectionViewModel>();
         collection.AddTransient<AppLauncherViewModel>();
@@ -134,19 +126,11 @@ public partial class App : Application
 
             if (OverrideHostPort.HasValue)
             {
-                viewModel.Connection.HostAddress = $"wss://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
+                viewModel.Connection.HostAddress = $"ws://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
             }
             else if (profile != null && !string.IsNullOrWhiteSpace(profile.HostAddress))
             {
                 viewModel.Connection.HostAddress = profile.HostAddress;
-            }
-
-            // Wire the embedded host's pairing service so the desktop UI can display
-            // the PIN that the user's phone is asking for.
-            if (EmbeddedHostServices?.GetService(typeof(Remex.Core.Services.Security.IPairingService))
-                is Remex.Core.Services.Security.IPairingService pairingService)
-            {
-                viewModel.Connection.AttachEmbeddedPairingService(pairingService);
             }
 
             _ = viewModel.Connection.AutoConnectAsync();

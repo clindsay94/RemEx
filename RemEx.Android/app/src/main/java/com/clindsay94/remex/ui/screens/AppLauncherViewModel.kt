@@ -25,7 +25,7 @@ import org.json.JSONObject
 data class AppEntry(
     val name: String,
     val path: String,
-    val iconBase64: String? = null,
+    val iconBase64: String? = null
 )
 
 class AppLauncherViewModel(
@@ -73,13 +73,10 @@ class AppLauncherViewModel(
                 val accessKey = settingsManager.accessKeyFlow.first()
                 val request = JSONObject().apply {
                     put("action", "LaunchApp")
-                    put(
-                        "parameters",
-                        JSONObject().apply {
-                            put("TargetPath", app.path)
-                            if (accessKey.isNotBlank()) put("AccessKey", accessKey)
-                        }
-                    )
+                    put("parameters", JSONObject().apply {
+                        put("TargetPath", app.path)
+                        if (accessKey.isNotBlank()) put("AccessKey", accessKey)
+                    })
                 }
                 remexCoreClient.SendCommand(request.toString())
             } else {
@@ -92,7 +89,7 @@ class AppLauncherViewModel(
         }
     }
 
-    private val _isRefreshing = kotlinx.coroutines.flow.MutableStateFlow(value = false)
+    private val _isRefreshing = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {

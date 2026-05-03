@@ -1,7 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
-import android.os.Build
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,7 +36,7 @@ import com.clindsay94.remex.ui.theme.cardShape
 fun TaskManagerScreen(
         onNavigateToConnection: () -> Unit = {},
         isVisible: Boolean = true,
-        viewModel: TaskManagerViewModel = viewModel(),
+        viewModel: TaskManagerViewModel = viewModel()
 ) {
     val processes by viewModel.processes.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
@@ -53,7 +53,7 @@ fun TaskManagerScreen(
         }
 
         DisposableEffect(viewModel) {
-                onDispose { viewModel.setAutoRefreshEnabled(enabled = false) }
+                onDispose { viewModel.setAutoRefreshEnabled(false) }
         }
 
     TaskManagerScreenContent(
@@ -86,14 +86,14 @@ fun TaskManagerScreenContent(
         cornerRadius: Int,
         isConnected: Boolean,
         isRefreshing: Boolean,
+        killError: String? = null,
         onRefreshProcesses: () -> Unit,
         onUpdateSearchQuery: (String) -> Unit,
         onUpdateSortField: (ProcessSortField) -> Unit,
         onKillProcess: (Int) -> Unit,
-        onNavigateToConnection: () -> Unit,
-        modifier: Modifier = Modifier,
-        killError: String? = null,
         onClearKillError: () -> Unit = {},
+        onNavigateToConnection: () -> Unit,
+        modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
 
@@ -321,11 +321,7 @@ private fun ProcessCard(
                 confirmButton = {
                     Button(
                             onClick = {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                    view.performHapticFeedback(HapticFeedbackConstants.REJECT)
-                                } else {
-                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                }
+                                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
                                 onKill()
                                 showConfirm = false
                             },

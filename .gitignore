@@ -107,11 +107,16 @@ build/tmp-host-verify/
 *.lscache
 *.lscache
 Remex.Client.Desktop/Remex.Client.Desktop.csproj.lscache
+/.claude/agents
+/.claude/agent-memory
 docs/android-ui-refactor-prd-notes.md
 .gitignore
 .gitignore
 docs/android-ui-refactor-tech.md
 docs/ui-evaluation-report.md
+/.claude
+AGENTS.md
+CLAUDE.md
 .claude/settings.local.json
 
 #Installer output

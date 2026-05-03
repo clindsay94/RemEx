@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -32,9 +30,6 @@ public static class AndroidNativeExports
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
     private static AndroidNativeInitRequest _lastInitRequest = new();
-    private static ClientWebSocket? _pairingWebSocket;
-    private static PairingResponse? _activePairingResponse;
-    private static readonly ConcurrentDictionary<string, string> _pinnedHashes = new();
 
     static AndroidNativeExports()
     {
@@ -94,7 +89,7 @@ public static class AndroidNativeExports
             _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
             _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
             _onDesktopMetaMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
-
+            
             // Clean up the local class ref
             JniHelper.DeleteLocalRef(env, clazz);
         }
@@ -127,7 +122,7 @@ public static class AndroidNativeExports
         var config = string.IsNullOrWhiteSpace(configJson)
             ? new DesktopConfig()
             : RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
-
+        
         _ = Task.Run(async () =>
         {
             try
@@ -162,93 +157,6 @@ public static class AndroidNativeExports
         }
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartPairingNative")]
-    public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr)
-    {
-        var hostUrl = JniHelper.ReadJString(env, hostUrlPtr);
-        var clientName = JniHelper.ReadJString(env, clientNamePtr);
-        var clientVersion = JniHelper.ReadJString(env, clientVersionPtr);
-
-        return Export(env, () =>
-        {
-            try
-            {
-                if (_pairingWebSocket != null)
-                {
-                    _pairingWebSocket.Dispose();
-                    _pairingWebSocket = null;
-                }
-
-                _pairingWebSocket = new ClientWebSocket();
-                // For initial pairing, we trust the cert because the PIN/QR is the out-of-band trust
-                _pairingWebSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
-
-                _pairingWebSocket.ConnectAsync(new Uri(hostUrl), CancellationToken.None).GetAwaiter().GetResult();
-
-                var client = new PairingClient(_pairingWebSocket);
-                _activePairingResponse = client.StartPairingAsync(clientName, clientVersion, CancellationToken.None).GetAwaiter().GetResult();
-
-                return _activePairingResponse != null ? "OK" : "ERROR: Pairing failed to start";
-            }
-            catch (Exception ex)
-            {
-                return $"ERROR: {ex.Message}";
-            }
-        });
-    }
-
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SubmitPairingPinNative")]
-    public static IntPtr SubmitPairingPinNative(IntPtr env, IntPtr thiz, IntPtr pinPtr)
-    {
-        var pin = JniHelper.ReadJString(env, pinPtr);
-
-        return Export(env, () =>
-        {
-            try
-            {
-                if (_pairingWebSocket == null || _activePairingResponse == null)
-                    return "ERROR: No active pairing session";
-
-                var client = new PairingClient(_pairingWebSocket);
-                var success = client.CompletePairingAsync(pin, _activePairingResponse.PinHmacBase64, null, CancellationToken.None).GetAwaiter().GetResult();
-
-                if (success)
-                {
-                    var result = $"OK:{_activePairingResponse.HostId}|{_activePairingResponse.CertificateSpkiHashBase64}";
-                    _pairingWebSocket.Dispose();
-                    _pairingWebSocket = null;
-                    _activePairingResponse = null;
-                    return result;
-                }
-
-                return "ERROR: Pairing verification failed";
-            }
-            catch (Exception ex)
-            {
-                return $"ERROR: {ex.Message}";
-            }
-        });
-    }
-
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetPinnedHostHashNative")]
-    public static IntPtr GetPinnedHostHashNative(IntPtr env, IntPtr thiz, IntPtr hostIdPtr)
-    {
-        var hostId = JniHelper.ReadJString(env, hostIdPtr);
-        return Export(env, () => _pinnedHashes.TryGetValue(hostId ?? "", out var hash) ? hash : "");
-    }
-
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SetPinnedHostHashNative")]
-    public static IntPtr SetPinnedHostHashNative(IntPtr env, IntPtr thiz, IntPtr hostIdPtr, IntPtr spkiHashPtr)
-    {
-        var hostId = JniHelper.ReadJString(env, hostIdPtr);
-        var hash = JniHelper.ReadJString(env, spkiHashPtr);
-        if (!string.IsNullOrEmpty(hostId) && !string.IsNullOrEmpty(hash))
-        {
-            _pinnedHashes[hostId] = hash;
-        }
-        return Export(env, () => "OK");
-    }
-
     private static string HandleInitialize(string? initJson)
     {
         var initRequest = string.IsNullOrWhiteSpace(initJson)
@@ -264,7 +172,7 @@ public static class AndroidNativeExports
         {
             try
             {
-                await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port, initRequest.SpkiHash);
+                await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port, initRequest.AccessKey);
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"ConnectAsync failed: {ex.Message}"); }
         });
@@ -359,8 +267,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), spkiHash);
+                        var (host, port, accessKey) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), accessKey);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopStart failed: {ex.Message}"); }
                 });
@@ -371,8 +279,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, spkiHash);
+                        var (host, port, accessKey) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, accessKey);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopInput failed: {ex.Message}"); }
                 });
@@ -383,8 +291,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, spkiHash);
+                        var (host, port, accessKey) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, accessKey);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopConfig failed: {ex.Message}"); }
                 });
@@ -499,12 +407,12 @@ public static class AndroidNativeExports
                 JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
                 JniHelper.CallVoidMethod(env, callback, methodId, jArray);
             }
-            finally
+            finally 
             {
                 JniHelper.DeleteLocalRef(env, jArray);
             }
         }
-        finally
+        finally 
         {
             JniHelper.DetachCurrentThread(vm);
         }
@@ -520,11 +428,11 @@ public static class AndroidNativeExports
         }
     }
 
-    private static (string Host, int Port, string SpkiHash) GetDesktopEndpoint()
+    private static (string Host, int Port, string AccessKey) GetDesktopEndpoint()
     {
         lock (SyncRoot)
         {
-            return (_lastInitRequest.Host, _lastInitRequest.Port, _lastInitRequest.SpkiHash);
+            return (_lastInitRequest.Host, _lastInitRequest.Port, _lastInitRequest.AccessKey);
         }
     }
 
@@ -551,12 +459,12 @@ public static class AndroidNativeExports
             {
                 JniHelper.CallVoidMethod(env, callback, methodId, jString);
             }
-            finally
+            finally 
             {
                 JniHelper.DeleteLocalRef(env, jString);
             }
         }
-        finally
+        finally 
         {
             JniHelper.DetachCurrentThread(vm);
         }
@@ -583,7 +491,7 @@ public static class AndroidNativeExports
         {
             JniHelper.CallVoidMethod(env, callback, methodId, isConnected);
         }
-        finally
+        finally 
         {
             JniHelper.DetachCurrentThread(vm);
         }
@@ -621,7 +529,7 @@ public sealed record AndroidNativeInitRequest
 {
     public string Host { get; init; } = "localhost";
     public int Port { get; init; } = 5005;
-    public string SpkiHash { get; init; } = string.Empty;
+    public string AccessKey { get; init; } = string.Empty;
     public int TelemetryPollIntervalMs { get; init; } = 1000;
     public bool StartTelemetryPolling { get; init; } = true;
     public bool WarmupTelemetry { get; init; } = true;

@@ -368,8 +368,8 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SaveConnection()
     {
-        // Connection.HostAddress is already bound via XAML
-        // and auto-persists through ConnectionViewModel's property change handlers.
+        // Connection.HostAddress and Connection.AccessKey are already bound via XAML
+        // and auto-persist through ConnectionViewModel's property change handlers.
         ShowConnectionPanel = false;
         StatusText = LocalizationService.Instance["Status_ConnectionSaved"];
     }

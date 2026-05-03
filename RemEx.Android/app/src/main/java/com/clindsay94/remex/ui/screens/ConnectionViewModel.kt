@@ -96,6 +96,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     val initRequest = JSONObject().apply {
                         put("host", newHost)
                         put("port", newPort)
+                        put("accessKey", accessKey)
                         put("startTelemetryPolling", true)
                     }
                     val result = RemexCoreClient.InitRemex(initRequest.toString())
@@ -156,7 +157,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun applyQrResultAndConnect(host: String, port: Int) {
+    fun applyQrResultAndConnect(host: String, port: Int, key: String) {
         val cp = connectionPreferences.value
         val dp = remoteDesktopPreferences.value
         connect(
@@ -165,7 +166,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             macAddress = cp?.macAddress ?: "",
             broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
             subnetMask = cp?.subnetMask ?: "255.255.255.0",
-            accessKey = cp?.accessKey ?: "",
+            accessKey = key,
             desktopQuality = dp?.quality ?: 50,
             desktopTargetFps = dp?.targetFps ?: 30,
             desktopScale = dp?.scale ?: 0.6f
