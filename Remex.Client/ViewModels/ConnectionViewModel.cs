@@ -40,6 +40,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     private CancellationTokenSource? _reconnectCts;
     private bool _userDisconnected;
     private bool _isPairedWithCurrentHost;
+    private string? _cachedLocalIpv4;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
@@ -100,7 +101,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 var uri = new Uri(HostAddress);
                 if (uri.Host is "localhost" or "127.0.0.1" or "::1")
                 {
-                    var ip = GetLocalIpv4Address();
+                    var ip = _cachedLocalIpv4 ??= GetLocalIpv4Address();
                     if (ip is null) return null;
                     var port = uri.Port > 0 ? uri.Port : RemexConstants.DefaultPort;
                     return $"{uri.Scheme}://{ip}:{port}{uri.AbsolutePath}";
