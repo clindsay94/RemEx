@@ -12,6 +12,7 @@ using Remex.Client.Models;
 using Remex.Client.Services;
 using Remex.Client.ViewModels;
 using Remex.Client.Views;
+using Remex.Client.Services.Security;
 using Remex.Core.Services;
 using Remex.Core.Services.Network;
 
@@ -47,6 +48,7 @@ public partial class App : Application
         collection.AddSingleton<DashboardLayoutService>();
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
+        collection.AddSingleton<PinnedCertStore>();
 
         collection.AddSingleton<ConnectionViewModel>();
         collection.AddTransient<AppLauncherViewModel>();
@@ -126,7 +128,7 @@ public partial class App : Application
 
             if (OverrideHostPort.HasValue)
             {
-                viewModel.Connection.HostAddress = $"ws://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
+                viewModel.Connection.HostAddress = $"wss://localhost:{OverrideHostPort.Value}{Remex.Core.RemexConstants.WebSocketPath}";
             }
             else if (profile != null && !string.IsNullOrWhiteSpace(profile.HostAddress))
             {

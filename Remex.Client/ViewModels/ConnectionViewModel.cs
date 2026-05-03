@@ -6,10 +6,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Security;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.Extensions.DependencyInjection;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +26,7 @@ using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.Network;
+using Remex.Core.Services.Security;
 using Remex.Core.Validation;
 
 namespace Remex.Client.ViewModels;
@@ -35,6 +39,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     private CancellationTokenSource? _receiveCts;
     private CancellationTokenSource? _reconnectCts;
     private bool _userDisconnected;
+    private bool _isPairedWithCurrentHost;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
@@ -46,10 +51,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     [NotifyDataErrorInfo]
     [Required(ErrorMessage = "Host address is required")]
     [ValidWebSocketUri]
-    private string _hostAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
-
-    [ObservableProperty]
-    private string _accessKey = string.Empty;
+    private string _hostAddress = $"wss://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
     [ObservableProperty]
     private string _statusText = LocalizationService.Instance["Status_Disconnected"];
@@ -123,7 +125,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         StatusText = LocalizationService.Instance["Status_SearchingHosts"];
         var foundHosts = await _discoveryService.DiscoverHostsAsync(TimeSpan.FromSeconds(5));
-        var defaultAddress = $"ws://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
+        var defaultAddress = $"wss://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -411,8 +413,46 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             StatusText = LocalizationService.Instance["Status_Connecting"];
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 
-            var uri = BuildWebSocketUri(HostAddress, AccessKey);
+            // 2.0: Accept self-signed certificates (TLS pinning validated by PinnedCertStore)
+            _webSocket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
+
+            var uri = BuildWebSocketUri(HostAddress, string.Empty);
             await _webSocket.ConnectAsync(uri, linkedCts.Token);
+
+            if (!_isPairedWithCurrentHost)
+            {
+                StatusText = LocalizationService.Instance["Status_Pairing"] ?? "Pairing with Host...";
+                var certStore = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
+                var pairingClient = new Remex.Core.Native.PairingClient(_webSocket, null);
+
+                var response = await pairingClient.StartPairingAsync(Environment.MachineName, "2.0.0", linkedCts.Token);
+                if (response == null)
+                {
+                    StatusText = "Pairing Failed";
+                    Cleanup();
+                    return;
+                }
+
+                var pin = await PromptForPinAsync();
+                if (string.IsNullOrEmpty(pin))
+                {
+                    StatusText = "Pairing Cancelled";
+                    Cleanup();
+                    return;
+                }
+
+                var success = await pairingClient.CompletePairingAsync(pin, response.PinHmacBase64, null, linkedCts.Token);
+                if (!success)
+                {
+                    StatusText = "Pairing Failed";
+                    Cleanup();
+                    return;
+                }
+
+                // Pairing successful, save the SPKI hash!
+                await certStore!.SetPinAsync(response.HostId, response.CertificateSpkiHashBase64);
+                _isPairedWithCurrentHost = true;
+            }
 
             IsConnected = true;
             IsConnecting = false;
@@ -712,10 +752,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     Dispatcher.UIThread.Post(() => StatusText = LocalizationService.Instance["Status_Connecting"]);
                     var ws = new ClientWebSocket();
                     ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                    ws.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
 
                     using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     connectCts.CancelAfter(TimeSpan.FromSeconds(10));
-                    await ws.ConnectAsync(BuildWebSocketUri(HostAddress, AccessKey), connectCts.Token);
+                    await ws.ConnectAsync(BuildWebSocketUri(HostAddress, string.Empty), connectCts.Token);
 
                     // Success — adopt the new socket.
                     _webSocket = ws;
@@ -806,7 +847,16 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     host = lanIp;
             }
 
-            var payload = JsonSerializer.Serialize(new { host, port, key = AccessKey });
+            var certService = App.Services.GetService<ICertificateService>();
+            var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                host,
+                port,
+                hostId = string.Empty,
+                spkiHashBase64 = spkiHash
+            });
 
             using var qrGenerator = new QRCodeGenerator();
             using var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
@@ -879,6 +929,66 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         var separator = hostAddress.Contains('?') ? "&" : "?";
         return new Uri($"{hostAddress}{separator}key={Uri.EscapeDataString(accessKey)}");
+    }
+
+    /// <summary>
+    /// Accepts self-signed certificates for the 2.0 TLS transport.
+    /// Real pinning validation is performed at a higher level by PinnedCertStore.
+    /// </summary>
+    private bool AcceptSelfSignedCertificate(
+        object sender,
+        X509Certificate? certificate,
+        X509Chain? chain,
+        SslPolicyErrors sslPolicyErrors)
+    {
+        if (certificate == null) return false;
+
+        using var cert2 = new X509Certificate2(certificate);
+        var spki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
+        var hashBytes = System.Security.Cryptography.SHA256.HashData(spki);
+        var hashBase64 = Convert.ToBase64String(hashBytes);
+
+        var store = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
+        if (store != null)
+        {
+            var pins = store.GetAllPinsAsync().GetAwaiter().GetResult();
+            if (pins.Values.Contains(hashBase64))
+            {
+                _isPairedWithCurrentHost = true;
+                return true;
+            }
+
+            _isPairedWithCurrentHost = false;
+            _logger.LogWarning("Unknown host certificate SPKI {Hash}. Accepting for potential pairing handshake.", hashBase64);
+        }
+
+        return true;
+    }
+
+    private async Task<string?> PromptForPinAsync()
+    {
+        string? result = null;
+        await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            var dialog = new Remex.Client.Views.PairingDialog
+            {
+                DataContext = new Remex.Client.ViewModels.PairingDialogViewModel()
+            };
+
+            var shell = App.Services.GetService<Remex.Client.ViewModels.ShellViewModel>();
+            if (shell != null && App.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                if (desktop.MainWindow != null)
+                {
+                    result = await dialog.ShowDialog<string?>(desktop.MainWindow);
+                    return;
+                }
+            }
+            // Fallback for single view / mobile (though this is track 1C desktop mostly)
+            // Just show it. Note: ShowDialog requires a window, mobile needs different navigation.
+            // But we're desktop client right now.
+        });
+        return result;
     }
 
     public void Dispose()

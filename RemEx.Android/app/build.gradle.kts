@@ -669,6 +669,7 @@ dependencies {
     implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)

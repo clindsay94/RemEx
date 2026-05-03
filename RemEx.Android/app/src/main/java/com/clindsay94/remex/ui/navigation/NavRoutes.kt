@@ -64,6 +64,8 @@ sealed class Screen(val route: String, @param:StringRes val titleRes: Int, val i
         object About : Screen("about", R.string.screen_about_title, Icons.Default.Info)
         object QrScanner :
                 Screen("qr_scanner", R.string.screen_qr_scanner_title, Icons.Default.QrCodeScanner)
+        object Pairing :
+                Screen("pairing", R.string.pairing_title, Icons.Default.QrCodeScanner)
 }
 
 /** Primary navigation destinations — shown in NavigationBar / NavigationRail / NavigationDrawer. */

@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "com.clindsay94.remex",
+  "variantName": "debug",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 15,
+      "versionName": "2.0.0",
+      "outputFile": "RemEx-V2.0.0-debug.apk"
+    }
+  ],
+  "elementType": "File",
+  "minSdkVersionForDexing": 26
+}

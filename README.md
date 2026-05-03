@@ -7,7 +7,7 @@
 ![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-![Version](https://img.shields.io/badge/Version-1.13.0-FF6B6B)
+![Version](https://img.shields.io/badge/Version-2.0.0-FF6B6B)
 
 A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · QR Pairing · App launcher · Process manager\
@@ -21,7 +21,7 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 
 ### Windows Desktop Client (Installer)
 
-1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-v1.11.0-Setup.exe`.
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-v2.0.0-Setup.exe`.
 2. Run the installer and follow the wizard:
    - Choose **Client only** or **Client + Windows Service** (service starts automatically at boot).
 3. Launch **RemEx** from the Start Menu or desktop shortcut.
@@ -47,13 +47,13 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 
 ### Native Android App
 
-1. Go to the **Releases** page and download the latest `RemEx-v1.13.0.apk`.
+1. Go to the **Releases** page and download the latest `RemEx-v2.0.0.apk`.
 2. Open the downloaded `.apk` file to install.
 3. Use the new **QR Scanner** on the connection screen to pair instantly with your PC!
 
 ---
 
-## 💎 Key Features (v1.13.0)
+## 💎 Key Features (v2.0.0)
 
 ### ✨ Enhanced User Experience (New in v1.11.0)
 - **Haptic Feedback:** Tactile vibration feedback for all Android interactions.

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Remex.Core.Models;
 
 namespace Remex.Core.Messages;
 
@@ -13,6 +14,13 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("type")]
     public required string Type { get; init; }
+
+    /// <summary>
+    /// Protocol version for forward/backward compatibility.
+    /// Defaults to 2 in RemEx 2.0; host rejects messages with ProtocolVersion &lt; 2.
+    /// </summary>
+    [JsonPropertyName("protocolVersion")]
+    public int ProtocolVersion { get; init; } = 2;
 
     /// <summary>
     /// UTC ticks at the time the message was created, used for latency measurement.
@@ -86,6 +94,40 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("correlationId")]
     public string? CorrelationId { get; init; }
+
+    // ── 2.0 Pairing ──
+
+    [JsonPropertyName("pairingRequest")]
+    public PairingRequest? PairingRequest { get; init; }
+
+    [JsonPropertyName("pairingResponse")]
+    public PairingResponse? PairingResponse { get; init; }
+
+    [JsonPropertyName("pairingComplete")]
+    public PairingComplete? PairingComplete { get; init; }
+
+    // ── 2.0 File Transfer ──
+
+    [JsonPropertyName("fileTransferStart")]
+    public FileTransferStart? FileTransferStart { get; init; }
+
+    [JsonPropertyName("fileTransferChunk")]
+    public FileTransferChunk? FileTransferChunk { get; init; }
+
+    [JsonPropertyName("fileTransferEnd")]
+    public FileTransferEnd? FileTransferEnd { get; init; }
+
+    [JsonPropertyName("fileTransferCancel")]
+    public FileTransferCancel? FileTransferCancel { get; init; }
+
+    [JsonPropertyName("fileTransferProgress")]
+    public FileTransferProgress? FileTransferProgress { get; init; }
+
+    [JsonPropertyName("fileBrowseRequest")]
+    public FileBrowseRequest? FileBrowseRequest { get; init; }
+
+    [JsonPropertyName("fileBrowseResponse")]
+    public FileBrowseResponse? FileBrowseResponse { get; init; }
 }
 
 /// <summary>
@@ -114,4 +156,19 @@ public static class MessageTypes
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
     public const string DesktopError = "desktop_error";
+
+    // ── 2.0 Pairing ──
+    public const string PairingRequest = "pairing_request";
+    public const string PairingResponse = "pairing_response";
+    public const string PairingComplete = "pairing_complete";
+    public const string PairingError = "pairing_error";
+
+    // ── 2.0 File Transfer ──
+    public const string FileTransferStart = "file_transfer_start";
+    public const string FileTransferChunk = "file_transfer_chunk";
+    public const string FileTransferEnd = "file_transfer_end";
+    public const string FileTransferCancel = "file_transfer_cancel";
+    public const string FileTransferProgress = "file_transfer_progress";
+    public const string FileBrowseRequest = "file_browse_request";
+    public const string FileBrowseResponse = "file_browse_response";
 }

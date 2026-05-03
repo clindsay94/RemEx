@@ -186,7 +186,7 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
 
 **ID:** `0A-version-bump`
 **GOAL:** Bump every version reference to 2.0.0 / versionCode 15, and add the version source-of-truth tooling assertion.
-**PRE-CONDITIONS:** Working tree clean on `main` (or branch off `main`).
+**PRE-CONDITIONS:** Working tree clean on `2.0` (or branch off `main`).
 **FILES TO MODIFY:**
 
 1. `/home/connorl/RemEx/Directory.Build.props` line 3:

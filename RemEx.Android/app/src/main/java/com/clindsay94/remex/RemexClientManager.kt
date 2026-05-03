@@ -108,19 +108,30 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         }
     }
 
+    private val _pairingRequired = MutableSharedFlow<Pair<String, Int>>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val pairingRequired = _pairingRequired.asSharedFlow()
+
     private suspend fun connect() {
         val settings = settingsManager ?: return
         val host = settings.hostFlow.first()
         val port = settings.portFlow.first()
-        val key = settings.accessKeyFlow.first()
 
         _isConnecting.value = true
         try {
             if (RemexCoreClient.isLibraryLoaded) {
+                // If not pinned, emit event to UI and abort auto-connect
+                val context = settings.context
+                val spkiHash = com.clindsay94.remex.security.PinnedHostStore.getPin(context, host)
+                if (spkiHash == null) {
+                    _isConnecting.value = false
+                    _pairingRequired.tryEmit(Pair(host, port))
+                    return
+                }
+
                 val initRequest = JSONObject().apply {
                     put("host", host)
                     put("port", port)
-                    put("accessKey", key)
+                    put("spkiHash", spkiHash)
                     put("startTelemetryPolling", true)
                 }
                 val result = RemexCoreClient.InitRemex(initRequest.toString())

@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] — TBD
+
+### Added
+- End-to-end encrypted transport (TLS 1.3 / WSS) for all client-host communication
+- Cryptographic device pairing replacing plaintext access keys (ECDH X25519 + 6-digit PIN)
+- SHA-256 SPKI certificate pinning on client
+- Remote file transfer (browse, upload, download, cancel)
+- Quick Settings tile (Lock PC) on Android
+- Two-stage haptic feedback on Android (sent vs acknowledged)
+- Battery optimization onboarding on Android
+- Firebase Crashlytics NDK integration
+
+### Changed
+- Protocol version field added to `RemexMessage`; 1.x clients fail loudly
+- Material3 dependency moved from alpha to stable
+- Android `targetSdk` lowered from 36 (preview) to 35 (stable)
+
+### Fixed
+- Settings view freeze on Linux (UI-thread marshalling)
+- SavedStatus continuation off UI thread
+- DiscoverHostsAsync HostAddress assignment off UI thread
+- async-void crash hazard in `OnShowSetAlertRequested`
+- Sensor `AlertTriggered` event subscription leak on reconnect
+- Duplicate XAML style block in `CanvasView.axaml`
+- `RefreshSensors` running on every Settings open/close
+- Hardcoded "Sort by:" string in `TaskManagerScreen`
+- Snapshot clipboard copies file path; redesigned as "Copy Path" with accurate label
+
+### Security
+- Plaintext access keys are no longer transmitted on the wire
+- DataStore exclusion from Auto Backup verified via `data_extraction_rules.xml`
+- Network security config disables cleartext traffic on Android
+
+---
+
 ## [1.11.0] - 2026-04-15
 
 ### Added

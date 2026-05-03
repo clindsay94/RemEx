@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class SettingsManager(private val context: Context) {
+class SettingsManager(val context: Context) {
 
     companion object {
         val HOST_KEY = stringPreferencesKey("host")
@@ -22,7 +22,7 @@ class SettingsManager(private val context: Context) {
         val MAC_KEY = stringPreferencesKey("mac_address")
         val BROADCAST_IP_KEY = stringPreferencesKey("broadcast_ip")
         val SUBNET_MASK_KEY = stringPreferencesKey("subnet_mask")
-        val ACCESS_KEY = stringPreferencesKey("access_key")
+        val ACCESS_KEY_KEY = stringPreferencesKey("access_key")
 
         val DESKTOP_QUALITY_KEY = intPreferencesKey("desktop_quality")
         val DESKTOP_TARGET_FPS_KEY = intPreferencesKey("desktop_target_fps")
@@ -108,6 +108,9 @@ class SettingsManager(private val context: Context) {
             val remoteMouseCardShapePreset: Float = 18.0f
     )
 
+    val accessKeyFlow: Flow<String> =
+            context.dataStore.data.map { preferences -> preferences[ACCESS_KEY_KEY] ?: "" }
+
     val appLauncherCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
                 preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 18.0f
@@ -182,9 +185,6 @@ class SettingsManager(private val context: Context) {
     // Removed individual unused flows (subnetMaskFlow, desktopQualityFlow, etc.)
     // as they are covered by connectionPreferencesFlow and remoteDesktopPreferencesFlow.
 
-    val accessKeyFlow: Flow<String> =
-            context.dataStore.data.map { preferences -> preferences[ACCESS_KEY] ?: "" }
-
     val homeLayoutJsonFlow: Flow<String> =
             context.dataStore.data.map { preferences -> preferences[HOME_LAYOUT_JSON_KEY] ?: "" }
 
@@ -236,7 +236,7 @@ class SettingsManager(private val context: Context) {
                         macAddress = preferences[MAC_KEY] ?: "",
                         broadcastIp = preferences[BROADCAST_IP_KEY] ?: "255.255.255.255",
                         subnetMask = preferences[SUBNET_MASK_KEY] ?: "255.255.255.0",
-                        accessKey = preferences[ACCESS_KEY] ?: ""
+                        accessKey = preferences[ACCESS_KEY_KEY] ?: ""
                 )
             }
 
@@ -290,7 +290,7 @@ class SettingsManager(private val context: Context) {
             mac: String,
             broadcast: String,
             subnetMask: String,
-            accessKey: String = ""
+            accessKey: String
     ) {
         context.dataStore.edit { preferences ->
             preferences[HOST_KEY] = host
@@ -298,7 +298,7 @@ class SettingsManager(private val context: Context) {
             preferences[MAC_KEY] = mac
             preferences[BROADCAST_IP_KEY] = broadcast
             preferences[SUBNET_MASK_KEY] = subnetMask
-            preferences[ACCESS_KEY] = accessKey
+            preferences[ACCESS_KEY_KEY] = accessKey
         }
     }
 

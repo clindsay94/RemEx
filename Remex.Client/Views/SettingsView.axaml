@@ -159,9 +159,6 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <TextBlock Text="{local:Localize Settings_AccessKey}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/>
-                    <TextBox PasswordChar="●" Text="{Binding AccessKey}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas, monospace" Watermark="{local:Localize Settings_AccessKeyWatermark}" ToolTip.Tip="{local:Localize Settings_AccessKeyTooltip}"/>
-
                     <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Settings_SaveReconnectTooltip}"/>
 
                     <TextBlock Text="{local:Localize Settings_AutoSaveHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" Margin="0,8,0,0"/>

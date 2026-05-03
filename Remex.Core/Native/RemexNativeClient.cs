@@ -2,7 +2,9 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net.Security;
 using System.Net.WebSockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -38,15 +40,28 @@ public sealed class RemexNativeClient : IDisposable
 
     private RemexNativeClient() { }
 
-    public async Task ConnectAsync(string host, int port, string? accessKey = null, CancellationToken ct = default)
+    public async Task ConnectAsync(string host, int port, string? spkiHash = null, CancellationToken ct = default)
     {
         await DisconnectAsync();
 
         _connectionCts = new CancellationTokenSource();
         var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_connectionCts.Token, ct);
 
-        var wsUri = BuildUri($"ws://{host}:{port}{RemexConstants.WebSocketPath}", accessKey);
+        // Force wss:// for 2.0
+        var wsUri = new Uri($"wss://{host}:{port}{RemexConstants.WebSocketPath}");
         _webSocket = new ClientWebSocket();
+
+        if (!string.IsNullOrEmpty(spkiHash))
+        {
+            _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                if (cert == null) return false;
+                using var cert2 = new X509Certificate2(cert);
+                var actualSpki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
+                var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(actualSpki));
+                return actualHash == spkiHash;
+            };
+        }
 
         try
         {
@@ -203,14 +218,5 @@ public sealed class RemexNativeClient : IDisposable
     public void Dispose()
     {
         DisconnectAsync().GetAwaiter().GetResult();
-    }
-
-    private static Uri BuildUri(string baseUrl, string? accessKey)
-    {
-        if (string.IsNullOrEmpty(accessKey))
-            return new Uri(baseUrl);
-
-        var separator = baseUrl.Contains('?') ? "&" : "?";
-        return new Uri($"{baseUrl}{separator}key={Uri.EscapeDataString(accessKey)}");
     }
 }
