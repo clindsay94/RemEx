@@ -1,11 +1,8 @@
 using System;
 using System.IO;
-using System.Net.Security;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using System.Security.Cryptography.X509Certificates;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Remex.Core.Messages;
@@ -37,7 +34,7 @@ public class RemoteDesktopService : IDisposable
         Disconnect();
 
         // Derive the desktop WS URL from the main host address
-        // e.g. "wss://localhost:5005/ws" → "wss://localhost:5005/ws/desktop"
+        // e.g. "ws://localhost:5005/ws" → "ws://localhost:5005/ws/desktop"
         var desktopUrl = hostAddress.TrimEnd('/');
         if (desktopUrl.EndsWith("/ws"))
             desktopUrl += "/desktop";
@@ -45,8 +42,6 @@ public class RemoteDesktopService : IDisposable
             desktopUrl += "/ws/desktop";
 
         _webSocket = new ClientWebSocket();
-        // 2.0: Accept self-signed certificates
-        _webSocket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
         await _webSocket.ConnectAsync(new Uri(desktopUrl), ct);
 
         _receiveCts = new CancellationTokenSource();
@@ -213,34 +208,6 @@ public class RemoteDesktopService : IDisposable
         {
             Disconnected?.Invoke();
         }
-    }
-
-    private bool AcceptSelfSignedCertificate(
-        object sender,
-        X509Certificate? certificate,
-        X509Chain? chain,
-        SslPolicyErrors sslPolicyErrors)
-    {
-        if (certificate == null) return false;
-
-        using var cert2 = new X509Certificate2(certificate);
-        var spki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-        var hashBytes = System.Security.Cryptography.SHA256.HashData(spki);
-        var hashBase64 = Convert.ToBase64String(hashBytes);
-
-        var store = App.Services?.GetService(typeof(Remex.Client.Services.Security.PinnedCertStore)) as Remex.Client.Services.Security.PinnedCertStore;
-        if (store != null)
-        {
-            var pins = store.GetAllPinsAsync().GetAwaiter().GetResult();
-            if (pins.Values.Contains(hashBase64))
-            {
-                return true;
-            }
-
-            // Fallback for RemoteDesktop connecting.
-        }
-
-        return true;
     }
 
     public void Dispose()

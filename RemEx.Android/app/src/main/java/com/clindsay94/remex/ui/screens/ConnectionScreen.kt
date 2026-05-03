@@ -39,7 +39,6 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.SettingsManager
-import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 
@@ -70,8 +69,8 @@ fun ConnectionScreen(
             isDiscovering = isDiscovering,
             discoveredHost = discoveredHost,
             onNavigateToQrScanner = onNavigateToQrScanner,
-            onConnect = { host, port, mac, broadcast, subnet, accessKey, quality, fps, scale ->
-                viewModel.connect(host, port, mac, broadcast, subnet, accessKey, quality, fps, scale)
+            onConnect = { host, port, mac, broadcast, subnet, key, quality, fps, scale ->
+                viewModel.connect(host, port, mac, broadcast, subnet, key, quality, fps, scale)
             },
             onClearError = { viewModel.clearError() },
             onDiscoverHost = { viewModel.discoverHost() }
@@ -675,13 +674,14 @@ fun ConnectionScreenContent(
                         label = { Text(stringResource(R.string.connection_label_access_key)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null) },
+                        leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
                         keyboardOptions =
                                 androidx.compose.foundation.text.KeyboardOptions(
-                                        keyboardType = KeyboardType.Password,
                                         imeAction = ImeAction.Done
                                 ),
-                        supportingText = { Text(stringResource(R.string.connection_hint_access_key)) }
+                        supportingText = {
+                            Text(stringResource(R.string.connection_hint_access_key))
+                        }
                 )
 
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -772,62 +772,19 @@ fun ConnectionScreenContent(
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.connection_status_label, status),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (status == "Connected") MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = capabilitySummary,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                Text(
+                        text = stringResource(R.string.connection_status_label, status),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color =
+                                if (status == "Connected") MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-                    var isPaired by remember(hostInput) {
-                        mutableStateOf(PinnedHostStore.getPin(context, hostInput) != null)
-                    }
-
-                    if (isPaired) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = androidx.compose.ui.graphics.Color(0xFF4CAF50),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.connection_paired),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = androidx.compose.ui.graphics.Color(0xFF4CAF50)
-                            )
-                            TextButton(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    PinnedHostStore.removePin(context, hostInput)
-                                    isPaired = false
-                                },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text(
-                                    stringResource(R.string.connection_unpair),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        }
-                    }
-                }
+                Text(
+                        text = capabilitySummary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

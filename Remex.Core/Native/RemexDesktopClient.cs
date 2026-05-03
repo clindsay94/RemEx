@@ -1,7 +1,6 @@
+using System;
 using System.Buffers;
-using System.Net.Security;
 using System.Net.WebSockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Remex.Core.Messages;
@@ -31,44 +30,31 @@ public sealed class RemexDesktopClient : IDisposable
 
     private RemexDesktopClient() { }
 
-    public async Task ConnectAsync(string host, int port, string? spkiHash = null, CancellationToken ct = default)
+    public async Task ConnectAsync(string host, int port, string? accessKey = null, CancellationToken ct = default)
     {
         await DisconnectAsync();
 
-        var wsUri = new Uri($"wss://{host}:{port}{RemexConstants.WebSocketPath}/desktop");
+        var wsUri = BuildUri($"ws://{host}:{port}{RemexConstants.WebSocketPath}/desktop", accessKey);
         _webSocket = new ClientWebSocket();
-
-        if (!string.IsNullOrEmpty(spkiHash))
-        {
-            _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
-            {
-                if (cert == null) return false;
-                using var cert2 = new X509Certificate2(cert);
-                var actualSpki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-                var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(actualSpki));
-                return actualHash == spkiHash;
-            };
-        }
-
         await _webSocket.ConnectAsync(wsUri, ct);
 
         _receiveCts = new CancellationTokenSource();
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
     }
 
-    public async Task EnsureConnectedAsync(string host, int port, string? spkiHash = null, CancellationToken ct = default)
+    public async Task EnsureConnectedAsync(string host, int port, string? accessKey = null, CancellationToken ct = default)
     {
         if (IsConnected)
         {
             return;
         }
 
-        await ConnectAsync(host, port, spkiHash, ct);
+        await ConnectAsync(host, port, accessKey, ct);
     }
 
-    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? spkiHash = null, CancellationToken ct = default)
+    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? accessKey = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, accessKey, ct);
 
         var resolvedConfig = config ?? DefaultConfig;
 
@@ -102,13 +88,13 @@ public sealed class RemexDesktopClient : IDisposable
         _isStreaming = false;
     }
 
-    public async Task SendInputAsync(string host, int port, InputEvent input, string? spkiHash = null, CancellationToken ct = default)
+    public async Task SendInputAsync(string host, int port, InputEvent input, string? accessKey = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, accessKey, ct);
 
         if (!_isStreaming)
         {
-            await StartStreamAsync(host, port, DefaultConfig, spkiHash, ct);
+            await StartStreamAsync(host, port, DefaultConfig, accessKey, ct);
         }
 
         await SendMessageAsync(new RemexMessage
@@ -220,5 +206,14 @@ public sealed class RemexDesktopClient : IDisposable
     public void Dispose()
     {
         DisconnectAsync().GetAwaiter().GetResult();
+    }
+
+    private static Uri BuildUri(string baseUrl, string? accessKey)
+    {
+        if (string.IsNullOrEmpty(accessKey))
+            return new Uri(baseUrl);
+
+        var separator = baseUrl.Contains('?') ? "&" : "?";
+        return new Uri($"{baseUrl}{separator}key={Uri.EscapeDataString(accessKey)}");
     }
 }

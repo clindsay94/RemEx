@@ -1398,13 +1398,4 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reboot to UEFI</value>
   </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with Host</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the host machine:</value>
-  </data>
-  <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
-  </data>
 </root>

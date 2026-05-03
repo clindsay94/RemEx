@@ -9,7 +9,6 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.clindsay94.remex.R
-import com.clindsay94.remex.security.PinnedHostStore
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -38,13 +36,12 @@ import java.util.concurrent.Executors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScannerScreen(
-    onScanned: (host: String, port: Int) -> Unit,
+    onScanned: (host: String, port: Int, key: String) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scannedOnce = remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -161,18 +158,12 @@ fun QrScannerScreen(
                                                 val raw = barcode.rawValue ?: continue
                                                 try {
                                                     val json = JSONObject(raw)
-                                                    if (json.has("spkiHashBase64")) {
-                                                        val host = json.getString("host")
-                                                        val port = json.getInt("port")
-                                                        val spkiHash = json.getString("spkiHashBase64")
-
-                                                        if (!scannedOnce.value) {
-                                                            scannedOnce.value = true
-                                                            PinnedHostStore.setPin(context, host, spkiHash)
-                                                            onScanned(host, port)
-                                                        }
-                                                    } else if (json.has("accessKey")) {
-                                                        errorMessage = context.getString(R.string.qr_error_old_format)
+                                                    val host = json.getString("host")
+                                                    val port = json.getInt("port")
+                                                    val key = json.optString("key", "")
+                                                    if (!scannedOnce.value) {
+                                                        scannedOnce.value = true
+                                                        onScanned(host, port, key)
                                                     }
                                                 } catch (_: Exception) {
                                                     // Not a RemEx QR code — keep scanning
@@ -202,24 +193,6 @@ fun QrScannerScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-
-                // Error message overlay
-                AnimatedVisibility(
-                    visible = errorMessage != null,
-                    modifier = Modifier.align(Alignment.Center)
-                ) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        Text(
-                            text = errorMessage ?: "",
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
 
                 // Scanning hint overlay
                 Box(

@@ -36,7 +36,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private int _gridSize = 50;
 
     [ObservableProperty]
-    private string _hostAddress = "wss://localhost:5005/ws";
+    private string _hostAddress = "ws://localhost:5005/ws";
+
+    [ObservableProperty]
+    private string _accessKey = string.Empty;
 
     [ObservableProperty]
     private string _language = "en";
@@ -115,9 +118,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
 
-    /// <summary>Live connection view-model — bound directly from the Connection settings card.</summary>
-    public ConnectionViewModel Connection => _connection;
-
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -141,6 +141,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             IsSnapToGridEnabled = _profile.IsSnapToGridEnabled;
             GridSize = _profile.GridSize;
             HostAddress = _profile.HostAddress;
+            AccessKey = _profile.AccessKey;
             HostPath = _profile.HostPath;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
             Services.LocalizationService.Instance.SetCulture(Language);
@@ -249,6 +250,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         Save();
     }
 
+    partial void OnAccessKeyChanged(string value)
+    {
+        _connection.AccessKey = value;
+        Save();
+    }
+
     partial void OnLanguageChanged(string value)
     {
         Services.LocalizationService.Instance.SetCulture(value);
@@ -334,9 +341,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(ConnectionViewModel.HostCapabilities)
-            or nameof(ConnectionViewModel.IsConnected)
-            or nameof(ConnectionViewModel.IsConnecting)
-            or nameof(ConnectionViewModel.IsAutoReconnecting))
+            or nameof(ConnectionViewModel.IsConnected))
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHostCapabilitySummary);
         }
@@ -570,7 +575,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             {
                 ServiceStatusText = LocalizationService.Instance["Service_InstalledStarted"];
                 // Point the client at the service and reconnect.
-                var serviceAddr = $"wss://localhost:{Remex.Core.RemexConstants.DefaultPort}{Remex.Core.RemexConstants.WebSocketPath}";
+                var serviceAddr = $"ws://localhost:{Remex.Core.RemexConstants.DefaultPort}{Remex.Core.RemexConstants.WebSocketPath}";
                 _connection.HostAddress = serviceAddr;
                 AppendLog($"Reconnecting client to {serviceAddr}…");
                 _ = _connection.AutoConnectAsync();
@@ -1175,6 +1180,7 @@ WantedBy=multi-user.target";
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
             HostAddress = HostAddress,
+            AccessKey = AccessKey,
             HostPath = HostPath,
             Language = Language,
             StreamQuality = StreamQuality,

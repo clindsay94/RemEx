@@ -268,16 +268,6 @@
     <string name="connection_scale_label">Scale: %1$s</string>
     <string name="button_save_connect">Save &amp; Connect</string>
     <string name="connection_status_label">Status: %1$s</string>
-    <string name="connection_paired">Paired</string>
-    <string name="connection_unpair">Unpair</string>
-
-    <!-- ═══ Pairing Screen ═══ -->
-    <string name="pairing_title">Security Pairing</string>
-    <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
-    <string name="pairing_submit">Pair</string>
-    <string name="pairing_cancel">Cancel</string>
-    <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
-    <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
 
     <!-- ═══ QR Scanner Screen ═══ -->
     <string name="qr_scanner_title">Scan QR Code</string>
@@ -285,8 +275,6 @@
     <string name="qr_scanner_hint">Point camera at the QR code shown on your PC</string>
     <string name="qr_scanner_permission_required">Camera permission is required to scan QR codes</string>
     <string name="qr_scanner_grant_permission">Grant Permission</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
-    <string name="qr_error_invalid">Invalid RemEx QR code</string>
 
     <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>

@@ -59,7 +59,6 @@ class Program
         {
             App.OverrideHostPort = EmbeddedHostPort.Value;
             App.EmbeddedHostInstanceId = HostBootstrapper.InstanceId;
-            App.EmbeddedHostServices = _hostApp?.Services;
         }
 
         App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;
