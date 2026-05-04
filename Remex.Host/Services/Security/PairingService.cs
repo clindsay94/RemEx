@@ -33,6 +33,9 @@ public sealed class PairingService : IPairingService
     private const int PinLength = 6;
     private const int PairingTimeoutSeconds = 120;
 
+    public event Action<string, long>? PinDisplayed;
+    public event Action? PinCleared;
+
     public PairingService(
         ILogger<PairingService> logger,
         ICertificateService certificateService)
@@ -64,6 +67,9 @@ public sealed class PairingService : IPairingService
 
             _logger.LogInformation("Pairing session started. PIN: {Pin}, Expires at: {Expiry}",
                 _activePin, DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
+
+            try { PinDisplayed?.Invoke(_activePin, _expiresAtUnixMs); }
+            catch (Exception ex) { _logger.LogWarning(ex, "PinDisplayed handler threw."); }
 
             return new PairingState(_hostPublicKeyBase64, _activePin, _expiresAtUnixMs);
         }
@@ -126,6 +132,9 @@ public sealed class PairingService : IPairingService
         _hostPublicKeyBase64 = null;
         _expiresAtUnixMs = 0;
         _logger.LogInformation("Pairing session cancelled/consumed.");
+
+        try { PinCleared?.Invoke(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "PinCleared handler threw."); }
     }
 
     /// <summary>

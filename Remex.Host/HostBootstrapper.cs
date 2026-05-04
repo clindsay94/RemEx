@@ -83,6 +83,7 @@ public static class HostBootstrapper
         // ── 2.0 Security Services ──
         builder.Services.AddSingleton<ICertificateService, CertificateService>();
         builder.Services.AddSingleton<PairingService>();
+        builder.Services.AddSingleton<IPairingService>(sp => sp.GetRequiredService<PairingService>());
         builder.Services.AddTransient<PairingHandler>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
