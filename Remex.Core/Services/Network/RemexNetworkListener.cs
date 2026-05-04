@@ -2,8 +2,10 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -14,6 +16,7 @@ using Remex.Core.Exceptions;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
+using Remex.Core.Services.Security;
 
 namespace Remex.Core.Services.Network;
 
@@ -23,21 +26,25 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     private readonly ILogger<RemexNetworkListener> _logger;
     private readonly ISystemCommandService _commandService;
     private readonly IWakeOnLanService _wakeOnLanService;
+    private readonly ICertificateService? _certificateService;
     private const int MaxPayloadSize = 10 * 1024 * 1024; // 10MB limit for JSON commands
     private TcpListener? _tcpListener;
     private CancellationTokenSource? _cts;
     private Task? _listenTask;
+    private X509Certificate2? _serverCert;
 
     public RemexNetworkListener(
         IConfiguration configuration,
         ILogger<RemexNetworkListener> logger,
         ISystemCommandService commandService,
-        IWakeOnLanService wakeOnLanService)
+        IWakeOnLanService wakeOnLanService,
+        ICertificateService? certificateService = null)
     {
         _configuration = configuration;
         _logger = logger;
         _commandService = commandService;
         _wakeOnLanService = wakeOnLanService;
+        _certificateService = certificateService;
         // Access key removed in 2.0 — TLS + pairing protocol provides authentication
     }
 
@@ -47,6 +54,20 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         if (!int.TryParse(portStr, out int port) || port < 1 || port > 65535)
         {
             port = 8338;
+        }
+
+        // Load TLS certificate for secure TCP connections (Phase 1 Track 1A)
+        if (_certificateService != null)
+        {
+            try
+            {
+                _serverCert = await _certificateService.GetOrCreateCertificateAsync(cancellationToken);
+                _logger.LogInformation("Loaded TLS certificate for TCP command port");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load TLS certificate for TCP command port - connections will fail");
+            }
         }
 
         const int maxPortAttempts = 5;
@@ -187,59 +208,89 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         try
         {
             using (client)
-            using (var stream = client.GetStream())
             {
-                // 1. Read 4-byte length prefix
-                var lengthBuffer = new byte[4];
-                await stream.ReadExactlyAsync(lengthBuffer, 0, 4, token);
-                var length = BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
-
-                // 2. Validate length
-                if (length <= 0 || length > MaxPayloadSize)
+                Stream stream;
+                
+                // Phase 1 Track 1A: Wrap TCP socket in SslStream for TLS 1.3 transport
+                if (_serverCert != null)
                 {
-                    _logger.LogWarning($"Received invalid payload length: {length}. Closing connection.");
-                    return;
-                }
-
-                // 3. Read payload
-                var buffer = new byte[length];
-                await stream.ReadExactlyAsync(buffer, 0, length, token);
-
-                var json = Encoding.UTF8.GetString(buffer);
-                CommandRequest? request = null;
-                try
-                {
-                    request = RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.CommandRequest);
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to deserialize command request - invalid JSON format");
-                }
-                catch (NotSupportedException ex)
-                {
-                    _logger.LogWarning(ex, "Failed to deserialize command request - unsupported JSON structure");
-                }
-
-                CommandResponse response;
-                if (request == null)
-                {
-                    response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
+                    var sslStream = new SslStream(client.GetStream(), false);
+                    try
+                    {
+                        await sslStream.AuthenticateAsServerAsync(
+                            _serverCert,
+                            clientCertificateRequired: false,
+                            checkCertificateRevocation: false);
+                        stream = sslStream;
+                        _logger.LogDebug("TLS handshake completed with TCP client");
+                    }
+                    catch (IOException ex)
+                    {
+                        _logger.LogWarning(ex, "TLS handshake failed with TCP client - rejecting connection");
+                        await sslStream.DisposeAsync();
+                        return;
+                    }
                 }
                 else
                 {
-                    // Access key validation removed in 2.0 — TLS + pairing replaces it.
-                    // TCP command port requires prior pairing via WSS handshake.
-                    response = await ExecuteCommandAsync(request);
+                    stream = client.GetStream();
+                    _logger.LogWarning("TCP command port accepting plaintext connection - no TLS certificate available");
                 }
 
-                // 4. Send length-prefixed response
-                var responseJson = RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
-                var responseBytes = Encoding.UTF8.GetBytes(responseJson);
-                var responseLengthBuffer = new byte[4];
-                BinaryPrimitives.WriteInt32BigEndian(responseLengthBuffer, responseBytes.Length);
+                using (stream)
+                {
+                    // 1. Read 4-byte length prefix
+                    var lengthBuffer = new byte[4];
+                    await stream.ReadExactlyAsync(lengthBuffer, 0, 4, token);
+                    var length = BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
 
-                await stream.WriteAsync(responseLengthBuffer, token);
-                await stream.WriteAsync(responseBytes, token);
+                    // 2. Validate length
+                    if (length <= 0 || length > MaxPayloadSize)
+                    {
+                        _logger.LogWarning($"Received invalid payload length: {length}. Closing connection.");
+                        return;
+                    }
+
+                    // 3. Read payload
+                    var buffer = new byte[length];
+                    await stream.ReadExactlyAsync(buffer, 0, length, token);
+
+                    var json = Encoding.UTF8.GetString(buffer);
+                    CommandRequest? request = null;
+                    try
+                    {
+                        request = RemexJson.Deserialize(json, RemexJsonSerializerContext.Default.CommandRequest);
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize command request - invalid JSON format");
+                    }
+                    catch (NotSupportedException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize command request - unsupported JSON structure");
+                    }
+
+                    CommandResponse response;
+                    if (request == null)
+                    {
+                        response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
+                    }
+                    else
+                    {
+                        // Access key validation removed in 2.0 — TLS + pairing replaces it.
+                        // Phase 1: TLS handshake enforced, pairing verification deferred to later track.
+                        response = await ExecuteCommandAsync(request);
+                    }
+
+                    // 4. Send length-prefixed response
+                    var responseJson = RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
+                    var responseBytes = Encoding.UTF8.GetBytes(responseJson);
+                    var responseLengthBuffer = new byte[4];
+                    BinaryPrimitives.WriteInt32BigEndian(responseLengthBuffer, responseBytes.Length);
+
+                    await stream.WriteAsync(responseLengthBuffer, token);
+                    await stream.WriteAsync(responseBytes, token);
+                }
             }
         }
         catch (EndOfStreamException)
@@ -342,6 +393,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     {
         StopListening();
         _cts?.Dispose();
+        _serverCert?.Dispose();
     }
 
     private static int ParseDelaySeconds(Dictionary<string, string>? parameters)

@@ -789,6 +789,12 @@
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
     <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
   </data>
+  <data name="Status_Pairing" xml:space="preserve">
+    <value>Pairing with host...</value>
+  </data>
+  <data name="Pairing_InvalidPin" xml:space="preserve">
+    <value>PIN must be exactly 6 digits.</value>
+  </data>
 
   <!-- WoL Status -->
   <data name="Wol_EnterMac" xml:space="preserve">

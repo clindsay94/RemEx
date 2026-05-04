@@ -478,7 +478,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             // 2.0: Accept self-signed certificates (TLS pinning validated by PinnedCertStore)
             _webSocket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
 
-            var uri = BuildWebSocketUri(HostAddress, string.Empty);
+            var uri = new Uri(HostAddress);
             await _webSocket.ConnectAsync(uri, linkedCts.Token);
 
             // Loopback connections target the in-process embedded host on the same machine.
@@ -509,7 +509,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     return;
                 }
 
-                var success = await pairingClient.CompletePairingAsync(pin, response.PinHmacBase64, null, linkedCts.Token);
+                var success = await pairingClient.CompletePairingAsync(pin, response, linkedCts.Token);
                 if (!success)
                 {
                     StatusText = "Pairing Failed";
@@ -1002,18 +1002,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     private static bool IsLoopbackHost(Uri uri) =>
         uri.Host is "localhost" or "127.0.0.1" or "::1";
-
-    /// <summary>
-    /// Builds the WebSocket URI, appending the access key as a query parameter if set.
-    /// </summary>
-    private static Uri BuildWebSocketUri(string hostAddress, string accessKey)
-    {
-        if (string.IsNullOrEmpty(accessKey))
-            return new Uri(hostAddress);
-
-        var separator = hostAddress.Contains('?') ? "&" : "?";
-        return new Uri($"{hostAddress}{separator}key={Uri.EscapeDataString(accessKey)}");
-    }
 
     /// <summary>
     /// Accepts self-signed certificates for the 2.0 TLS transport.

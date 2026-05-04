@@ -14,9 +14,9 @@ Last updated: 2026-05-04T14:30:00-06:00
 
 | Track | ID | Status | Agent | Notes |
 |---|---|---|---|---|
-| Host TLS | 1A-host-tls | ✅ COMPLETE | Opus 4.6 + Sonnet 4.6 | Kestrel TLS 1.3, CertificateService, SPKI hash; TCP SslStream deferred |
+| Host TLS | 1A-host-tls | ✅ COMPLETE | Opus 4.6 + Sonnet 4.6 | Kestrel TLS 1.3, CertificateService, SPKI hash; TCP SslStream implemented in RemexNetworkListener |
 | Pairing Protocol | 1B-pairing | ✅ COMPLETE | Opus 4.6 + Sonnet 4.6 | PairingService upgraded to ECDH X25519 + HKDF-SHA256 via NSec; PairingHandler, access keys removed |
-| Desktop Client TLS | 1C-desktop-client-tls | ⏳ PENDING | — | Requires .NET desktop pairing UI implementation |
+| Desktop Client TLS | 1C-desktop-client-tls | ✅ COMPLETE | Sonnet 4.6 | ConnectionViewModel pairing integration with PromptForPinAsync, PairingDialog UI, access key removed |
 | Android Client TLS | 1D-android-tls | ✅ COMPLETE | Sonnet 4.6 | PairingClient.cs upgraded to ECDH X25519; PairingScreen, PinnedHostStore with EncryptedSharedPreferences |
 | AOT Exports | 1E-aot-exports | ✅ COMPLETE | Antigravity + Sonnet 4.6 | AndroidNativeExports updated for new pairing protocol |
 
@@ -49,6 +49,7 @@ Last updated: 2026-05-04T14:30:00-06:00
 |---|---|---|---|---|
 | 2026-05-04 | 1B | CRITICAL | Android-Avalonia connection broken: PairingClient.cs used old simple HMAC while PairingService.cs was upgraded to ECDH X25519 | Upgraded PairingClient.cs to ECDH X25519 via NSec with HKDF-SHA256; updated AndroidNativeExports.cs method signature; verified infrastructure (PinnedHostStore, navigation flow) already complete |
 | 2026-05-04 | 1B | HIGH | Access key system incomplete removal causing config mismatch | Removed RequireAccessKey and AccessKey from RemexHostSettings, cleaned appsettings.json, updated SECURITY.md documentation, added AllowFirstTimePairing property |
+| 2026-05-04 | 1A+1C | COMPLETE | Track 1 finalization: TCP SslStream + .NET desktop pairing | Wrapped RemexNetworkListener TCP socket in SslStream with TLS 1.3; implemented .NET desktop ConnectionViewModel pairing flow with PairingDialog UI; added localization strings Status_Pairing and Pairing_InvalidPin; removed access key from BuildWebSocketUri |
 | 2026-05-03 | 2C | LOW | MaterialShapes.* not available in Material3 1.4.0 stable | Replaced with RoundedPolygon shapes from androidx.graphics.shapes 1.1.0 |
 | 2026-05-03 | 2F | HIGH | google-services.json missing from repo | Crashlytics deferred; noted as blocked |
 | 2026-05-03 | 2A | LOW | Android download destination not implemented (SAF) | File download POSTs to host; receiving chunks requires Android SAF integration in future sprint |

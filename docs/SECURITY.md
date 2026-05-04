@@ -39,14 +39,14 @@ RemEx 2.0 uses **TLS 1.3 with certificate pinning** and **ECDH X25519 key exchan
   - **.NET Desktop:** `LocalApplicationData/Remex/pinned_hosts.json` (JSON dictionary of hostId → SPKI hash)
   - **Android:** `EncryptedSharedPreferences` via androidx.security:security-crypto
 
-**TCP Command Port Limitation (Port 8338):**
+**TCP Command Port (Port 8338):**
 
-The TCP command port (used for fire-and-forget commands like Wake-on-LAN) does **not** enforce TLS or pairing verification in 2.0. It accepts plaintext TCP connections and processes commands without authentication. This is intentional for Phase 1 simplicity, as these commands are low-risk (WoL, basic system commands).
+The TCP command port (used for fire-and-forget commands like Wake-on-LAN) now uses TLS 1.3 for transport encryption but does **not yet** enforce pairing verification in Phase 1. It accepts TLS connections without validating the client's paired status. This is intentional for Phase 1 simplicity, as these commands are low-risk (WoL, basic system commands).
 
 **Mitigation:**
 - Bind the TCP port to localhost only by setting `RemexHost:Security:LocalhostOnly = true` in `appsettings.json`
 - Use firewall rules to restrict access to port 8338 to known local devices
-- Track 2.x will add TLS + paired-client verification to the TCP port
+- Track 1B will add paired-client verification to the TCP port (require client cert or paired SPKI validation)
 
 ### 1.x Security Model (Legacy, EOL after 2026-10-01)
 
