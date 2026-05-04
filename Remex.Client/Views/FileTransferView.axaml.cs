@@ -11,9 +11,10 @@ public partial class FileTransferView : UserControl
         InitializeComponent();
     }
 
-    protected override void OnDoubleTapped(TappedEventArgs e)
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
-        base.OnDoubleTapped(e);
+        base.OnPointerPressed(e);
+        if (e.ClickCount != 2) return;
         if (DataContext is not FileTransferViewModel vm) return;
 
         // Navigate into directories on double-click for both panels

@@ -53,12 +53,12 @@ if (isPublishBuild) {
 
 android {
     namespace = "com.clindsay94.remex"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.clindsay94.remex"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = remexVersionCode
         versionName = remexVersionName
 

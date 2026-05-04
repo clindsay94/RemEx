@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (6221 symbols, 12786 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (6745 symbols, 13772 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -39,25 +39,5 @@ This project is indexed by GitNexus as **RemEx** (6221 symbols, 12786 relationsh
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the ViewModels area (239 symbols) | `.claude/skills/generated/viewmodels/SKILL.md` |
-| Work in the Screens area (171 symbols) | `.claude/skills/generated/screens/SKILL.md` |
-| Work in the Native area (72 symbols) | `.claude/skills/generated/native/SKILL.md` |
-| Work in the Services area (68 symbols) | `.claude/skills/generated/services/SKILL.md` |
-| Work in the Command area (67 symbols) | `.claude/skills/generated/command/SKILL.md` |
-| Work in the Controls area (55 symbols) | `.claude/skills/generated/controls/SKILL.md` |
-| Work in the Input area (49 symbols) | `.claude/skills/generated/input/SKILL.md` |
-| Work in the ScreenCapture area (42 symbols) | `.claude/skills/generated/screencapture/SKILL.md` |
-| Work in the Network area (33 symbols) | `.claude/skills/generated/network/SKILL.md` |
-| Work in the Widget area (32 symbols) | `.claude/skills/generated/widget/SKILL.md` |
-| Work in the Views area (29 symbols) | `.claude/skills/generated/views/SKILL.md` |
-| Work in the Remex.Core.Tests area (23 symbols) | `.claude/skills/generated/remex-core-tests/SKILL.md` |
-| Work in the Converters area (21 symbols) | `.claude/skills/generated/converters/SKILL.md` |
-| Work in the Telemetry area (21 symbols) | `.claude/skills/generated/telemetry/SKILL.md` |
-| Work in the Handlers area (19 symbols) | `.claude/skills/generated/handlers/SKILL.md` |
-| Work in the Remex.Client area (18 symbols) | `.claude/skills/generated/remex-client/SKILL.md` |
-| Work in the Remex area (17 symbols) | `.claude/skills/generated/remex/SKILL.md` |
-| Work in the ProcessMonitor area (15 symbols) | `.claude/skills/generated/processmonitor/SKILL.md` |
-| Work in the Remex.Host.Tests area (15 symbols) | `.claude/skills/generated/remex-host-tests/SKILL.md` |
-| Work in the Crypto area (9 symbols) | `.claude/skills/generated/crypto/SKILL.md` |
 
 <!-- gitnexus:end -->

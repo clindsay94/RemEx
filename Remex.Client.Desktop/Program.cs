@@ -1,13 +1,12 @@
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
-using Remex.Client;
-using Remex.Client.Services;
-using Remex.Core;
-using Remex.Host;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Remex.Core;
+using Remex.Client.Services;
+using Remex.Host;
 
 namespace Remex.Client.Desktop;
 
