@@ -680,7 +680,7 @@ dependencies {
     implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.security.crypto)
+    implementation(libs.tink.android)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)

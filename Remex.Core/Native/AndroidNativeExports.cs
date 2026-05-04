@@ -182,6 +182,13 @@ public static class AndroidNativeExports
                     _pairingWebSocket = null;
                 }
 
+                if (string.IsNullOrEmpty(hostUrl))
+                    return "ERROR: Host URL is required";
+                if (string.IsNullOrEmpty(clientName))
+                    return "ERROR: Client name is required";
+                if (string.IsNullOrEmpty(clientVersion))
+                    return "ERROR: Client version is required";
+
                 _pairingWebSocket = new ClientWebSocket();
                 // For initial pairing, we trust the cert because the PIN/QR is the out-of-band trust
                 _pairingWebSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
@@ -209,6 +216,8 @@ public static class AndroidNativeExports
         {
             try
             {
+                if (string.IsNullOrEmpty(pin))
+                    return "ERROR: PIN is required";
                 if (_pairingWebSocket == null || _activePairingResponse == null)
                     return "ERROR: No active pairing session";
 

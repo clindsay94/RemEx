@@ -25,7 +25,7 @@ public sealed class PairingService : IPairingService
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // Pairing session state (only one active session at a time)
-    private byte[]? _sharedSecret; // ECDH-derived shared secret
+    private SharedSecret? _sharedSecret; // ECDH-derived shared secret
     private byte[]? _sessionKey;   // HKDF-derived session key
     private string? _activePin;
     private long _expiresAtUnixMs;
@@ -140,6 +140,7 @@ public sealed class PairingService : IPairingService
     public void CancelPairing()
     {
         _activePin = null;
+        _sharedSecret?.Dispose();
         _sharedSecret = null;
         _sessionKey = null;
         _hostPublicKeyBase64 = null;
@@ -173,7 +174,12 @@ public sealed class PairingService : IPairingService
             var clientPublicKey = PublicKey.Import(keyAgreementAlgorithm, clientPubBytes, KeyBlobFormat.RawPublicKey);
 
             // Perform X25519 key agreement
-            _sharedSecret = SharedSecret.Import(keyAgreementAlgorithm.Agree(_hostPrivateKey, clientPublicKey));
+            _sharedSecret = keyAgreementAlgorithm.Agree(_hostPrivateKey, clientPublicKey);
+            if (_sharedSecret == null)
+            {
+                _logger.LogError("Key agreement failed - shared secret is null.");
+                throw new InvalidOperationException("ECDH key agreement failed.");
+            }
 
             // Derive session key via HKDF-SHA256
             // Salt = certificate SPKI hash (binds to the TLS cert)

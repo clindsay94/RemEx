@@ -17,10 +17,10 @@ navigationCompose = "2.9.8"
 androidxDatastorePreferences = "1.1.1"
 mlkitBarcode = "17.3.0"
 camerax = "1.6.0"
-securityCrypto = "1.1.0"
+tink = "1.15.0"
 
 [libraries]
-androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version = "2.9.8" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version = "1.2.1" }

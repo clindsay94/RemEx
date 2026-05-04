@@ -42,6 +42,7 @@ import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,33 +50,43 @@ fun ConnectionScreen(
         viewModel: ConnectionViewModel = viewModel(),
         onNavigateToQrScanner: () -> Unit = {}
 ) {
-    val connectionPrefs by viewModel.connectionPreferences.collectAsState()
-    val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsState()
-    val isConnecting by viewModel.isConnecting.collectAsState()
-    val isConnected by RemexClientManager.isConnected.collectAsState()
-    val status by viewModel.connectionStatus.collectAsState()
-    val connectionError by viewModel.connectionError.collectAsState()
-    val capabilitySummary by viewModel.capabilitySummary.collectAsState()
-    val isDiscovering by viewModel.isDiscovering.collectAsState()
-    val discoveredHost by viewModel.discoveredHost.collectAsState()
+        val connectionPrefs by viewModel.connectionPreferences.collectAsState()
+        val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsState()
+        val isConnecting by viewModel.isConnecting.collectAsState()
+        val isConnected by RemexClientManager.isConnected.collectAsState()
+        val status by viewModel.connectionStatus.collectAsState()
+        val connectionError by viewModel.connectionError.collectAsState()
+        val capabilitySummary by viewModel.capabilitySummary.collectAsState()
+        val isDiscovering by viewModel.isDiscovering.collectAsState()
+        val discoveredHost by viewModel.discoveredHost.collectAsState()
 
-    ConnectionScreenContent(
-            connectionPrefs = connectionPrefs,
-            desktopPrefs = desktopPrefs,
-            isConnecting = isConnecting,
-            isConnected = isConnected,
-            status = status,
-            connectionError = connectionError,
-            capabilitySummary = capabilitySummary,
-            isDiscovering = isDiscovering,
-            discoveredHost = discoveredHost,
-            onNavigateToQrScanner = onNavigateToQrScanner,
-            onConnect = { host, port, mac, broadcast, subnet, accessKey, quality, fps, scale ->
-                viewModel.connect(host, port, mac, broadcast, subnet, accessKey, quality, fps, scale)
-            },
-            onClearError = { viewModel.clearError() },
-            onDiscoverHost = { viewModel.discoverHost() }
-    )
+        ConnectionScreenContent(
+                connectionPrefs = connectionPrefs,
+                desktopPrefs = desktopPrefs,
+                isConnecting = isConnecting,
+                isConnected = isConnected,
+                status = status,
+                connectionError = connectionError,
+                capabilitySummary = capabilitySummary,
+                isDiscovering = isDiscovering,
+                discoveredHost = discoveredHost,
+                onNavigateToQrScanner = onNavigateToQrScanner,
+                onConnect = { host, port, mac, broadcast, subnet, accessKey, quality, fps, scale ->
+                        viewModel.connect(
+                                host,
+                                port,
+                                mac,
+                                broadcast,
+                                subnet,
+                                accessKey,
+                                quality,
+                                fps,
+                                scale
+                        )
+                },
+                onClearError = { viewModel.clearError() },
+                onDiscoverHost = { viewModel.discoverHost() }
+        )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,785 +106,1134 @@ fun ConnectionScreenContent(
         onClearError: () -> Unit,
         onDiscoverHost: () -> Unit
 ) {
-    val view = LocalView.current
-    val context = LocalContext.current
+        val view = LocalView.current
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
 
-    var hostInput by remember { mutableStateOf("") }
-    var portInput by remember { mutableStateOf("") }
-    var macInput by remember { mutableStateOf("") }
-    var broadcastInput by remember { mutableStateOf("") }
-    var subnetInput by remember { mutableStateOf("") }
-    var accessKeyInput by remember { mutableStateOf("") }
-    var qualityInput by remember { mutableFloatStateOf(50f) }
-    var targetFpsInput by remember { mutableFloatStateOf(30f) }
-    var scaleInput by remember { mutableFloatStateOf(0.6f) }
-    var showHelpSection by remember { mutableStateOf(false) }
+        var hostInput by remember { mutableStateOf("") }
+        var portInput by remember { mutableStateOf("") }
+        var macInput by remember { mutableStateOf("") }
+        var broadcastInput by remember { mutableStateOf("") }
+        var subnetInput by remember { mutableStateOf("") }
+        var accessKeyInput by remember { mutableStateOf("") }
+        var qualityInput by remember { mutableFloatStateOf(50f) }
+        var targetFpsInput by remember { mutableFloatStateOf(30f) }
+        var scaleInput by remember { mutableFloatStateOf(0.6f) }
+        var showHelpSection by remember { mutableStateOf(false) }
 
-    // Pending flags for deferred actions after permission grants
-    var pendingConnect by remember { mutableStateOf(false) }
-    var pendingDiscover by remember { mutableStateOf(false) }
+        // Pending flags for deferred actions after permission grants
+        var pendingConnect by remember { mutableStateOf(false) }
+        var pendingDiscover by remember { mutableStateOf(false) }
 
-    // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES)
-    val connectPermissions = remember {
-        buildList {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        add(Manifest.permission.POST_NOTIFICATIONS)
-                        add(Manifest.permission.NEARBY_WIFI_DEVICES)
-                    }
+        // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES)
+        val connectPermissions = remember {
+                buildList {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        add(Manifest.permission.POST_NOTIFICATIONS)
+                                        add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                                }
+                        }
+                        .toTypedArray()
+        }
+
+        fun hasNearbyWifiPermission(): Boolean {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+                return ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.NEARBY_WIFI_DEVICES
+                ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        fun hasAllConnectPermissions(): Boolean {
+                return connectPermissions.all {
+                        ContextCompat.checkSelfPermission(context, it) ==
+                                PackageManager.PERMISSION_GRANTED
                 }
-                .toTypedArray()
-    }
-
-    fun hasNearbyWifiPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
-        return ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.NEARBY_WIFI_DEVICES
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    fun hasAllConnectPermissions(): Boolean {
-        return connectPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
-    }
 
-    fun doConnect() {
-        val p = portInput.toIntOrNull() ?: 5005
-        onConnect(
-                hostInput.trim(),
-                p,
-                macInput.trim(),
-                broadcastInput.trim().ifEmpty { "255.255.255.255" },
-                subnetInput.trim().ifEmpty { "255.255.255.0" },
-                accessKeyInput.trim(),
-                qualityInput.toInt(),
-                targetFpsInput.toInt().coerceIn(1, 360),
-                scaleInput
-        )
-    }
-
-    // Permission launcher for "Save & Connect" — requests both POST_NOTIFICATIONS +
-    // NEARBY_WIFI_DEVICES
-    val connectPermissionLauncher =
-            rememberLauncherForActivityResult(
-                    ActivityResultContracts.RequestMultiplePermissions()
-            ) { _ ->
-                if (pendingConnect) {
-                    pendingConnect = false
-                    doConnect()
-                }
-            }
-
-    // Separate permission launcher for "Discover" — only needs NEARBY_WIFI_DEVICES
-    val discoverPermissionLauncher =
-            rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted
-                ->
-                if (pendingDiscover) {
-                    pendingDiscover = false
-                    if (granted) {
-                        onDiscoverHost()
-                    }
-                }
-            }
-
-    // Initialize inputs from saved values only once they are loaded
-    LaunchedEffect(connectionPrefs, desktopPrefs) {
-        val cp = connectionPrefs
-        val dp = desktopPrefs
-        if (cp != null && dp != null) {
-            if (hostInput.isEmpty() && cp.host.isNotEmpty()) hostInput = cp.host
-            if (portInput.isEmpty()) portInput = cp.port.toString()
-            if (macInput.isEmpty()) macInput = cp.macAddress
-            if (broadcastInput.isEmpty()) broadcastInput = cp.broadcastIp
-            if (subnetInput.isEmpty()) subnetInput = cp.subnetMask
-            if (accessKeyInput.isEmpty()) accessKeyInput = cp.accessKey
-            if (qualityInput == 50f && dp.quality != 50) qualityInput = dp.quality.toFloat()
-            if (targetFpsInput == 30f && dp.targetFps != 30) targetFpsInput = dp.targetFps.toFloat()
-            if (scaleInput == 0.6f && dp.scale != 0.6f) scaleInput = dp.scale
-        }
-    }
-
-    // Auto-fill host/port when a host is discovered
-    LaunchedEffect(discoveredHost) {
-        discoveredHost?.let {
-            hostInput = it.host
-            portInput = it.port.toString()
-        }
-    }
-
-    val scrollBehavior = rememberRemexTopBarScrollBehavior()
-    val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(discoveredHost) {
-        if (discoveredHost != null) {
-            snackbarHostState.showSnackbar("Host discovered: ${discoveredHost.host}")
-        }
-    }
-    Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                RemexFlexibleTopBar(
-                        title = stringResource(R.string.screen_connection_title),
-                        scrollBehavior = scrollBehavior
+        fun doConnect() {
+                val p = portInput.toIntOrNull() ?: 5005
+                onConnect(
+                        hostInput.trim(),
+                        p,
+                        macInput.trim(),
+                        broadcastInput.trim().ifEmpty { "255.255.255.255" },
+                        subnetInput.trim().ifEmpty { "255.255.255.0" },
+                        accessKeyInput.trim(),
+                        qualityInput.toInt(),
+                        targetFpsInput.toInt().coerceIn(1, 360),
+                        scaleInput
                 )
-            },
-            snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        if (connectionPrefs == null || desktopPrefs == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            Column(
-                    modifier =
-                            Modifier.fillMaxSize()
-                                    .padding(padding)
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // --- Error display ---
-                AnimatedVisibility(
-                        visible = connectionError != null,
-                        enter =
-                                expandVertically(
-                                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
-                                ) +
-                                        fadeIn(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme.fastEffectsSpec()
-                                        ),
-                        exit =
-                                shrinkVertically(
-                                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
-                                ) +
-                                        fadeOut(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme.fastEffectsSpec()
-                                        )
-                ) {
-                    Card(
-                            colors =
-                                    CardDefaults.cardColors(
-                                            containerColor =
-                                                    MaterialTheme.colorScheme.errorContainer
-                                    ),
-                            modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                    Icons.Default.ErrorOutline,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Text(
-                                    text = connectionError ?: "",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                    onClick = {
-                                        view.performHapticFeedback(
-                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                        )
-                                        onClearError()
-                                    }
-                            ) {
-                                Icon(
-                                        Icons.Default.Close,
-                                        contentDescription =
-                                                stringResource(R.string.button_dismiss),
-                                        tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
+        }
+
+        // Permission launcher for "Save & Connect" — requests both POST_NOTIFICATIONS +
+        // NEARBY_WIFI_DEVICES
+        val connectPermissionLauncher =
+                rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestMultiplePermissions()
+                ) { _ ->
+                        if (pendingConnect) {
+                                pendingConnect = false
+                                doConnect()
                         }
-                    }
                 }
 
-                // --- Auto-discovery (primary action) ---
-                Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors =
-                                CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                )
-                ) {
-                    Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                    Icons.Default.Wifi,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                    stringResource(R.string.connection_auto_discover_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        Text(
-                                stringResource(R.string.connection_auto_discover_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Button(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    if (isDiscovering) return@Button
-                                    if (!hasNearbyWifiPermission()) {
-                                        pendingDiscover = true
-                                        discoverPermissionLauncher.launch(
-                                                Manifest.permission.NEARBY_WIFI_DEVICES
-                                        )
-                                    } else {
+        // Separate permission launcher for "Discover" — only needs NEARBY_WIFI_DEVICES
+        val discoverPermissionLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                        granted ->
+                        if (pendingDiscover) {
+                                pendingDiscover = false
+                                if (granted) {
                                         onDiscoverHost()
-                                    }
-                                },
-                                enabled = !isDiscovering,
-                                modifier = Modifier.fillMaxWidth()
+                                }
+                        }
+                }
+
+        // Initialize inputs from saved values only once they are loaded
+        LaunchedEffect(connectionPrefs, desktopPrefs) {
+                val cp = connectionPrefs
+                val dp = desktopPrefs
+                if (cp != null && dp != null) {
+                        if (hostInput.isEmpty() && cp.host.isNotEmpty()) hostInput = cp.host
+                        if (portInput.isEmpty()) portInput = cp.port.toString()
+                        if (macInput.isEmpty()) macInput = cp.macAddress
+                        if (broadcastInput.isEmpty()) broadcastInput = cp.broadcastIp
+                        if (subnetInput.isEmpty()) subnetInput = cp.subnetMask
+                        if (accessKeyInput.isEmpty()) accessKeyInput = cp.accessKey
+                        if (qualityInput == 50f && dp.quality != 50)
+                                qualityInput = dp.quality.toFloat()
+                        if (targetFpsInput == 30f && dp.targetFps != 30)
+                                targetFpsInput = dp.targetFps.toFloat()
+                        if (scaleInput == 0.6f && dp.scale != 0.6f) scaleInput = dp.scale
+                }
+        }
+
+        // Auto-fill host/port when a host is discovered
+        LaunchedEffect(discoveredHost) {
+                discoveredHost?.let {
+                        hostInput = it.host
+                        portInput = it.port.toString()
+                }
+        }
+
+        val scrollBehavior = rememberRemexTopBarScrollBehavior()
+        val snackbarHostState = remember { SnackbarHostState() }
+        LaunchedEffect(discoveredHost) {
+                if (discoveredHost != null) {
+                        snackbarHostState.showSnackbar("Host discovered: ${discoveredHost.host}")
+                }
+        }
+        Scaffold(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                topBar = {
+                        RemexFlexibleTopBar(
+                                title = stringResource(R.string.screen_connection_title),
+                                scrollBehavior = scrollBehavior
+                        )
+                },
+                snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { padding ->
+                if (connectionPrefs == null || desktopPrefs == null) {
+                        Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator() }
+                } else {
+                        Column(
+                                modifier =
+                                        Modifier.fillMaxSize()
+                                                .padding(padding)
+                                                .verticalScroll(rememberScrollState())
+                                                .padding(24.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            if (isDiscovering) {
-                                CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.connection_searching))
-                            } else {
-                                Icon(Icons.Default.Search, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
+                                // --- Error display ---
+                                AnimatedVisibility(
+                                        visible = connectionError != null,
+                                        enter =
+                                                expandVertically(
+                                                        animationSpec =
+                                                                MaterialTheme.motionScheme
+                                                                        .fastSpatialSpec()
+                                                ) +
+                                                        fadeIn(
+                                                                animationSpec =
+                                                                        MaterialTheme.motionScheme
+                                                                                .fastEffectsSpec()
+                                                        ),
+                                        exit =
+                                                shrinkVertically(
+                                                        animationSpec =
+                                                                MaterialTheme.motionScheme
+                                                                        .fastSpatialSpec()
+                                                ) +
+                                                        fadeOut(
+                                                                animationSpec =
+                                                                        MaterialTheme.motionScheme
+                                                                                .fastEffectsSpec()
+                                                        )
+                                ) {
+                                        Card(
+                                                colors =
+                                                        CardDefaults.cardColors(
+                                                                containerColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .errorContainer
+                                                        ),
+                                                modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                                Row(
+                                                        modifier = Modifier.padding(12.dp),
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically,
+                                                        horizontalArrangement =
+                                                                Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.ErrorOutline,
+                                                                contentDescription = null,
+                                                                tint =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onErrorContainer
+                                                        )
+                                                        Text(
+                                                                text = connectionError ?: "",
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodyMedium,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onErrorContainer,
+                                                                modifier = Modifier.weight(1f)
+                                                        )
+                                                        IconButton(
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .KEYBOARD_TAP
+                                                                        )
+                                                                        onClearError()
+                                                                }
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Close,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .button_dismiss
+                                                                                ),
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onErrorContainer
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                // --- Auto-discovery (primary action) ---
+                                Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors =
+                                                CardDefaults.cardColors(
+                                                        containerColor =
+                                                                MaterialTheme.colorScheme
+                                                                        .primaryContainer
+                                                )
+                                ) {
+                                        Column(
+                                                modifier = Modifier.padding(16.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                                Row(
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.Wifi,
+                                                                contentDescription = null,
+                                                                tint =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onPrimaryContainer
+                                                        )
+                                                        Spacer(Modifier.width(8.dp))
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_auto_discover_title
+                                                                ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .titleSmall,
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onPrimaryContainer
+                                                        )
+                                                }
+                                                Text(
+                                                        stringResource(
+                                                                R.string
+                                                                        .connection_auto_discover_hint
+                                                        ),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .onPrimaryContainer
+                                                )
+                                                Button(
+                                                        onClick = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .KEYBOARD_TAP
+                                                                )
+                                                                if (isDiscovering) return@Button
+                                                                if (!hasNearbyWifiPermission()) {
+                                                                        pendingDiscover = true
+                                                                        discoverPermissionLauncher
+                                                                                .launch(
+                                                                                        Manifest.permission
+                                                                                                .NEARBY_WIFI_DEVICES
+                                                                                )
+                                                                } else {
+                                                                        onDiscoverHost()
+                                                                }
+                                                        },
+                                                        enabled = !isDiscovering,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                        if (isDiscovering) {
+                                                                CircularProgressIndicator(
+                                                                        modifier =
+                                                                                Modifier.size(
+                                                                                        18.dp
+                                                                                ),
+                                                                        strokeWidth = 2.dp,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onPrimary
+                                                                )
+                                                                Spacer(
+                                                                        modifier =
+                                                                                Modifier.width(8.dp)
+                                                                )
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_searching
+                                                                        )
+                                                                )
+                                                        } else {
+                                                                Icon(
+                                                                        Icons.Default.Search,
+                                                                        contentDescription = null
+                                                                )
+                                                                Spacer(
+                                                                        modifier =
+                                                                                Modifier.width(8.dp)
+                                                                )
+                                                                Text(
+                                                                        if (discoveredHost != null
+                                                                        ) {
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_found_host,
+                                                                                        discoveredHost
+                                                                                                .host
+                                                                                )
+                                                                        } else {
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_discover_button
+                                                                                )
+                                                                        }
+                                                                )
+                                                        }
+                                                }
+
+                                                OutlinedButton(
+                                                        onClick = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .CONFIRM
+                                                                )
+                                                                onNavigateToQrScanner()
+                                                        },
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        colors =
+                                                                ButtonDefaults.outlinedButtonColors(
+                                                                        contentColor =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onPrimaryContainer
+                                                                )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.QrCodeScanner,
+                                                                contentDescription = null
+                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_scan_qr_code
+                                                                )
+                                                        )
+                                                }
+
+                                                AnimatedVisibility(
+                                                        visible = discoveredHost != null,
+                                                        enter =
+                                                                expandVertically(
+                                                                        animationSpec =
+                                                                                MaterialTheme
+                                                                                        .motionScheme
+                                                                                        .fastSpatialSpec()
+                                                                ) +
+                                                                        fadeIn(
+                                                                                animationSpec =
+                                                                                        MaterialTheme
+                                                                                                .motionScheme
+                                                                                                .fastEffectsSpec()
+                                                                        ),
+                                                        exit =
+                                                                shrinkVertically(
+                                                                        animationSpec =
+                                                                                MaterialTheme
+                                                                                        .motionScheme
+                                                                                        .fastSpatialSpec()
+                                                                ) +
+                                                                        fadeOut(
+                                                                                animationSpec =
+                                                                                        MaterialTheme
+                                                                                                .motionScheme
+                                                                                                .fastEffectsSpec()
+                                                                        )
+                                                ) {
+                                                        Row(
+                                                                verticalAlignment =
+                                                                        Alignment.CenterVertically,
+                                                                horizontalArrangement =
+                                                                        Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.CheckCircle,
+                                                                        contentDescription = null,
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .primary,
+                                                                        modifier =
+                                                                                Modifier.size(16.dp)
+                                                                )
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_host_found
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodySmall,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onPrimaryContainer
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                // --- How to connect help section ---
+                                Card(
+                                        modifier =
+                                                Modifier.fillMaxWidth()
+                                                        .animateContentSize()
+                                                        .clickable {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .KEYBOARD_TAP
+                                                                )
+                                                                showHelpSection = !showHelpSection
+                                                        },
+                                        colors =
+                                                CardDefaults.cardColors(
+                                                        containerColor =
+                                                                MaterialTheme.colorScheme
+                                                                        .surfaceVariant.copy(
+                                                                        alpha = 0.6f
+                                                                )
+                                                )
+                                ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                                Row(
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically,
+                                                        horizontalArrangement =
+                                                                Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                        Row(
+                                                                verticalAlignment =
+                                                                        Alignment.CenterVertically,
+                                                                horizontalArrangement =
+                                                                        Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.AutoMirrored.Filled
+                                                                                .Help,
+                                                                        contentDescription = null,
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_help_title
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .titleSmall,
+                                                                        fontWeight =
+                                                                                FontWeight.SemiBold,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                        }
+                                                        Icon(
+                                                                if (showHelpSection)
+                                                                        Icons.Default.ExpandLess
+                                                                else Icons.Default.ExpandMore,
+                                                                contentDescription = null,
+                                                                tint =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSurfaceVariant
+                                                        )
+                                                }
+
+                                                AnimatedVisibility(
+                                                        visible = showHelpSection,
+                                                        enter =
+                                                                expandVertically(
+                                                                        animationSpec =
+                                                                                MaterialTheme
+                                                                                        .motionScheme
+                                                                                        .fastSpatialSpec()
+                                                                ) +
+                                                                        fadeIn(
+                                                                                animationSpec =
+                                                                                        MaterialTheme
+                                                                                                .motionScheme
+                                                                                                .fastEffectsSpec()
+                                                                        ),
+                                                        exit =
+                                                                shrinkVertically(
+                                                                        animationSpec =
+                                                                                MaterialTheme
+                                                                                        .motionScheme
+                                                                                        .fastSpatialSpec()
+                                                                ) +
+                                                                        fadeOut(
+                                                                                animationSpec =
+                                                                                        MaterialTheme
+                                                                                                .motionScheme
+                                                                                                .fastEffectsSpec()
+                                                                        )
+                                                ) {
+                                                        Column(
+                                                                modifier =
+                                                                        Modifier.padding(
+                                                                                top = 12.dp
+                                                                        ),
+                                                                verticalArrangement =
+                                                                        Arrangement.spacedBy(12.dp)
+                                                        ) {
+                                                                HelpStep(
+                                                                        number = "1",
+                                                                        title =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step1_title
+                                                                                ),
+                                                                        body =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step1_body
+                                                                                )
+                                                                )
+                                                                HelpStep(
+                                                                        number = "2",
+                                                                        title =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step2_title
+                                                                                ),
+                                                                        body =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step2_body
+                                                                                )
+                                                                )
+                                                                HelpStep(
+                                                                        number = "3",
+                                                                        title =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step3_title
+                                                                                ),
+                                                                        body = null
+                                                                )
+                                                                // Platform-specific IP instructions
+                                                                Surface(
+                                                                        shape =
+                                                                                MaterialTheme.shapes
+                                                                                        .small,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .surface,
+                                                                        modifier =
+                                                                                Modifier.fillMaxWidth()
+                                                                ) {
+                                                                        Column(
+                                                                                modifier =
+                                                                                        Modifier.padding(
+                                                                                                12.dp
+                                                                                        ),
+                                                                                verticalArrangement =
+                                                                                        Arrangement
+                                                                                                .spacedBy(
+                                                                                                        8.dp
+                                                                                                )
+                                                                        ) {
+                                                                                IpInstructionRow(
+                                                                                        platform =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_platform_windows
+                                                                                                ),
+                                                                                        icon =
+                                                                                                Icons.Default
+                                                                                                        .Computer,
+                                                                                        instruction =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_ip_windows
+                                                                                                )
+                                                                                )
+                                                                                HorizontalDivider()
+                                                                                IpInstructionRow(
+                                                                                        platform =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_platform_macos
+                                                                                                ),
+                                                                                        icon =
+                                                                                                Icons.Default
+                                                                                                        .Laptop,
+                                                                                        instruction =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_ip_macos
+                                                                                                )
+                                                                                )
+                                                                                HorizontalDivider()
+                                                                                IpInstructionRow(
+                                                                                        platform =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_platform_linux
+                                                                                                ),
+                                                                                        icon =
+                                                                                                Icons.Default
+                                                                                                        .Terminal,
+                                                                                        instruction =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_ip_linux
+                                                                                                )
+                                                                                )
+                                                                        }
+                                                                }
+                                                                HelpStep(
+                                                                        number = "4",
+                                                                        title =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step4_title
+                                                                                ),
+                                                                        body =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_help_step4_body
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                // --- Manual host fields ---
                                 Text(
-                                        if (discoveredHost != null) {
-                                            stringResource(
-                                                    R.string.connection_found_host,
-                                                    discoveredHost.host
-                                            )
-                                        } else {
-                                            stringResource(R.string.connection_discover_button)
+                                        text =
+                                                stringResource(
+                                                        R.string.connection_or_enter_manually
+                                                ),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.align(Alignment.Start)
+                                )
+
+                                OutlinedTextField(
+                                        value = hostInput,
+                                        onValueChange = { hostInput = it },
+                                        label = {
+                                                Text(stringResource(R.string.connection_label_host))
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                                Icon(Icons.Default.Dns, contentDescription = null)
+                                        },
+                                        keyboardOptions =
+                                                androidx.compose.foundation.text.KeyboardOptions(
+                                                        keyboardType = KeyboardType.Decimal,
+                                                        imeAction = ImeAction.Next
+                                                ),
+                                        supportingText = {
+                                                Text(stringResource(R.string.connection_hint_host))
                                         }
                                 )
-                            }
-                        }
 
-                        OutlinedButton(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                    onNavigateToQrScanner()
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors =
-                                        ButtonDefaults.outlinedButtonColors(
-                                                contentColor =
-                                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                        ) {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.connection_scan_qr_code))
-                        }
-
-                        AnimatedVisibility(
-                                visible = discoveredHost != null,
-                                enter =
-                                        expandVertically(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme.fastSpatialSpec()
-                                        ) +
-                                                fadeIn(
-                                                        animationSpec =
-                                                                MaterialTheme.motionScheme
-                                                                        .fastEffectsSpec()
-                                                ),
-                                exit =
-                                        shrinkVertically(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme.fastSpatialSpec()
-                                        ) +
-                                                fadeOut(
-                                                        animationSpec =
-                                                                MaterialTheme.motionScheme
-                                                                        .fastEffectsSpec()
+                                OutlinedTextField(
+                                        value = portInput,
+                                        onValueChange = {
+                                                portInput = it.filter { c -> c.isDigit() }
+                                        },
+                                        label = {
+                                                Text(stringResource(R.string.connection_label_port))
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                                Icon(
+                                                        Icons.Default.Numbers,
+                                                        contentDescription = null
                                                 )
-                        ) {
-                            Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                        Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
+                                        },
+                                        keyboardOptions =
+                                                androidx.compose.foundation.text.KeyboardOptions(
+                                                        keyboardType = KeyboardType.Number,
+                                                        imeAction = ImeAction.Next
+                                                ),
+                                        supportingText = {
+                                                Text(stringResource(R.string.connection_hint_port))
+                                        }
                                 )
-                                Text(
-                                        stringResource(R.string.connection_host_found),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                    }
-                }
 
-                // --- How to connect help section ---
-                Card(
-                        modifier =
-                                Modifier.fillMaxWidth().animateContentSize().clickable {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    showHelpSection = !showHelpSection
-                                },
-                        colors =
-                                CardDefaults.cardColors(
-                                        containerColor =
-                                                MaterialTheme.colorScheme.surfaceVariant.copy(
-                                                        alpha = 0.6f
+                                OutlinedTextField(
+                                        value = macInput,
+                                        onValueChange = { macInput = it.uppercase() },
+                                        label = {
+                                                Text(stringResource(R.string.connection_label_mac))
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                                Icon(
+                                                        Icons.Default.Memory,
+                                                        contentDescription = null
                                                 )
+                                        },
+                                        keyboardOptions =
+                                                androidx.compose.foundation.text.KeyboardOptions(
+                                                        capitalization =
+                                                                KeyboardCapitalization.Characters,
+                                                        imeAction = ImeAction.Next
+                                                ),
+                                        placeholder = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_placeholder_mac
+                                                        ),
+                                                        style = MaterialTheme.typography.bodySmall
+                                                )
+                                        },
+                                        supportingText = {
+                                                Text(stringResource(R.string.connection_hint_mac))
+                                        }
                                 )
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                        Icons.AutoMirrored.Filled.Help,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                        stringResource(R.string.connection_help_title),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                    if (showHelpSection) Icons.Default.ExpandLess
-                                    else Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
 
-                        AnimatedVisibility(
-                                visible = showHelpSection,
-                                enter =
-                                        expandVertically(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme.fastSpatialSpec()
-                                        ) +
-                                                fadeIn(
-                                                        animationSpec =
-                                                                MaterialTheme.motionScheme
-                                                                        .fastEffectsSpec()
-                                                ),
-                                exit =
-                                        shrinkVertically(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme.fastSpatialSpec()
-                                        ) +
-                                                fadeOut(
-                                                        animationSpec =
-                                                                MaterialTheme.motionScheme
-                                                                        .fastEffectsSpec()
+                                OutlinedTextField(
+                                        value = broadcastInput,
+                                        onValueChange = { broadcastInput = it },
+                                        label = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_label_broadcast
+                                                        )
                                                 )
-                        ) {
-                            Column(
-                                    modifier = Modifier.padding(top = 12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                HelpStep(
-                                        number = "1",
-                                        title =
-                                                stringResource(
-                                                        R.string.connection_help_step1_title
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                                Icon(
+                                                        Icons.Default.Router,
+                                                        contentDescription = null
+                                                )
+                                        },
+                                        keyboardOptions =
+                                                androidx.compose.foundation.text.KeyboardOptions(
+                                                        keyboardType = KeyboardType.Decimal,
+                                                        imeAction = ImeAction.Next
                                                 ),
-                                        body = stringResource(R.string.connection_help_step1_body)
+                                        supportingText = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_hint_broadcast
+                                                        )
+                                                )
+                                        }
                                 )
-                                HelpStep(
-                                        number = "2",
-                                        title =
-                                                stringResource(
-                                                        R.string.connection_help_step2_title
+
+                                OutlinedTextField(
+                                        value = subnetInput,
+                                        onValueChange = { subnetInput = it },
+                                        label = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_label_subnet
+                                                        )
+                                                )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                                Icon(Icons.Default.Lan, contentDescription = null)
+                                        },
+                                        keyboardOptions =
+                                                androidx.compose.foundation.text.KeyboardOptions(
+                                                        keyboardType = KeyboardType.Decimal,
+                                                        imeAction = ImeAction.Next
                                                 ),
-                                        body = stringResource(R.string.connection_help_step2_body)
+                                        supportingText = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_hint_subnet
+                                                        )
+                                                )
+                                        }
                                 )
-                                HelpStep(
-                                        number = "3",
-                                        title =
-                                                stringResource(
-                                                        R.string.connection_help_step3_title
+
+                                OutlinedTextField(
+                                        value = accessKeyInput,
+                                        onValueChange = { accessKeyInput = it },
+                                        label = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_label_access_key
+                                                        )
+                                                )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                                Icon(
+                                                        Icons.Default.VpnKey,
+                                                        contentDescription = null
+                                                )
+                                        },
+                                        keyboardOptions =
+                                                androidx.compose.foundation.text.KeyboardOptions(
+                                                        keyboardType = KeyboardType.Password,
+                                                        imeAction = ImeAction.Done
                                                 ),
-                                        body = null
+                                        supportingText = {
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_hint_access_key
+                                                        )
+                                                )
+                                        }
                                 )
-                                // Platform-specific IP instructions
-                                Surface(
-                                        shape = MaterialTheme.shapes.small,
-                                        color = MaterialTheme.colorScheme.surface,
+
+                                Card(modifier = Modifier.fillMaxWidth()) {
+                                        Column(
+                                                modifier = Modifier.padding(16.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                                Text(
+                                                        text =
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_desktop_defaults_title
+                                                                ),
+                                                        style =
+                                                                MaterialTheme.typography
+                                                                        .titleMedium,
+                                                        fontWeight = FontWeight.SemiBold
+                                                )
+
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_quality_label,
+                                                                qualityInput.toInt()
+                                                        )
+                                                )
+                                                Slider(
+                                                        value = qualityInput,
+                                                        onValueChange = { qualityInput = it },
+                                                        onValueChangeFinished = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .CLOCK_TICK
+                                                                )
+                                                        },
+                                                        valueRange = 1f..100f,
+                                                        modifier =
+                                                                Modifier.minimumInteractiveComponentSize()
+                                                )
+
+                                                Spacer(modifier = Modifier.height(16.dp))
+
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_fps_label,
+                                                                targetFpsInput.toInt()
+                                                        )
+                                                )
+                                                Slider(
+                                                        value = targetFpsInput,
+                                                        onValueChange = { targetFpsInput = it },
+                                                        onValueChangeFinished = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .CLOCK_TICK
+                                                                )
+                                                        },
+                                                        valueRange = 1f..360f,
+                                                        modifier =
+                                                                Modifier.minimumInteractiveComponentSize()
+                                                )
+
+                                                Spacer(modifier = Modifier.height(16.dp))
+
+                                                Text(
+                                                        stringResource(
+                                                                R.string.connection_scale_label,
+                                                                "%.2f".format(scaleInput)
+                                                        )
+                                                )
+                                                Slider(
+                                                        value = scaleInput,
+                                                        onValueChange = { scaleInput = it },
+                                                        onValueChangeFinished = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .CLOCK_TICK
+                                                                )
+                                                        },
+                                                        valueRange = 0.25f..1.0f,
+                                                        modifier =
+                                                                Modifier.minimumInteractiveComponentSize()
+                                                )
+                                        }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Button(
+                                        onClick = {
+                                                view.performHapticFeedback(
+                                                        HapticFeedbackConstants.KEYBOARD_TAP
+                                                )
+                                                if (connectPermissions.isNotEmpty() &&
+                                                                !hasAllConnectPermissions()
+                                                ) {
+                                                        pendingConnect = true
+                                                        connectPermissionLauncher.launch(
+                                                                connectPermissions
+                                                        )
+                                                } else {
+                                                        doConnect()
+                                                }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        enabled = !isConnecting && hostInput.isNotEmpty()
+                                ) {
+                                        if (isConnecting) {
+                                                CircularProgressIndicator(
+                                                        modifier = Modifier.size(24.dp),
+                                                        color = MaterialTheme.colorScheme.onPrimary,
+                                                        strokeWidth = 2.dp
+                                                )
+                                        } else {
+                                                Text(stringResource(R.string.button_save_connect))
+                                        }
+                                }
+
+                                Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Column(
-                                            modifier = Modifier.padding(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        IpInstructionRow(
-                                                platform =
-                                                        stringResource(
-                                                                R.string.connection_platform_windows
-                                                        ),
-                                                icon = Icons.Default.Computer,
-                                                instruction =
-                                                        stringResource(
-                                                                R.string.connection_ip_windows
+                                        Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                        text =
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_status_label,
+                                                                        status
+                                                                ),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color =
+                                                                if (status == "Connected")
+                                                                        MaterialTheme.colorScheme
+                                                                                .primary
+                                                                else
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSurfaceVariant
+                                                )
+                                                Text(
+                                                        text = capabilitySummary,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .onSurfaceVariant
+                                                )
+                                        }
+
+                                        var isPaired by
+                                                remember(hostInput) { mutableStateOf(false) }
+                                        LaunchedEffect(hostInput) {
+                                                isPaired =
+                                                        PinnedHostStore.getPin(
+                                                                context,
+                                                                hostInput
+                                                        ) != null
+                                        }
+
+                                        if (isPaired) {
+                                                Row(
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically,
+                                                        horizontalArrangement =
+                                                                Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.CheckCircle,
+                                                                contentDescription = null,
+                                                                tint =
+                                                                        androidx.compose.ui.graphics
+                                                                                .Color(0xFF4CAF50),
+                                                                modifier = Modifier.size(16.dp)
                                                         )
-                                        )
-                                        HorizontalDivider()
-                                        IpInstructionRow(
-                                                platform =
-                                                        stringResource(
-                                                                R.string.connection_platform_macos
-                                                        ),
-                                                icon = Icons.Default.Laptop,
-                                                instruction =
-                                                        stringResource(R.string.connection_ip_macos)
-                                        )
-                                        HorizontalDivider()
-                                        IpInstructionRow(
-                                                platform =
-                                                        stringResource(
-                                                                R.string.connection_platform_linux
-                                                        ),
-                                                icon = Icons.Default.Terminal,
-                                                instruction =
-                                                        stringResource(R.string.connection_ip_linux)
-                                        )
-                                    }
+                                                        Text(
+                                                                text =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_paired
+                                                                        ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodySmall,
+                                                                color =
+                                                                        androidx.compose.ui.graphics
+                                                                                .Color(0xFF4CAF50)
+                                                        )
+                                                        TextButton(
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .KEYBOARD_TAP
+                                                                        )
+                                                                        scope.launch {
+                                                                                PinnedHostStore
+                                                                                        .removePin(
+                                                                                                context,
+                                                                                                hostInput
+                                                                                        )
+                                                                        }
+                                                                        isPaired = false
+                                                                },
+                                                                contentPadding =
+                                                                        PaddingValues(
+                                                                                horizontal = 8.dp,
+                                                                                vertical = 0.dp
+                                                                        ),
+                                                                modifier = Modifier.height(32.dp)
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_unpair
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .labelSmall
+                                                                )
+                                                        }
+                                                }
+                                        }
                                 }
-                                HelpStep(
-                                        number = "4",
-                                        title =
-                                                stringResource(
-                                                        R.string.connection_help_step4_title
-                                                ),
-                                        body = stringResource(R.string.connection_help_step4_body)
-                                )
-                            }
                         }
-                    }
                 }
-
-                // --- Manual host fields ---
-                Text(
-                        text = stringResource(R.string.connection_or_enter_manually),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.Start)
-                )
-
-                OutlinedTextField(
-                        value = hostInput,
-                        onValueChange = { hostInput = it },
-                        label = { Text(stringResource(R.string.connection_label_host)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Dns, contentDescription = null) },
-                        keyboardOptions =
-                                androidx.compose.foundation.text.KeyboardOptions(
-                                        keyboardType = KeyboardType.Decimal,
-                                        imeAction = ImeAction.Next
-                                ),
-                        supportingText = { Text(stringResource(R.string.connection_hint_host)) }
-                )
-
-                OutlinedTextField(
-                        value = portInput,
-                        onValueChange = { portInput = it.filter { c -> c.isDigit() } },
-                        label = { Text(stringResource(R.string.connection_label_port)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
-                        keyboardOptions =
-                                androidx.compose.foundation.text.KeyboardOptions(
-                                        keyboardType = KeyboardType.Number,
-                                        imeAction = ImeAction.Next
-                                ),
-                        supportingText = { Text(stringResource(R.string.connection_hint_port)) }
-                )
-
-                OutlinedTextField(
-                        value = macInput,
-                        onValueChange = { macInput = it.uppercase() },
-                        label = { Text(stringResource(R.string.connection_label_mac)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Memory, contentDescription = null) },
-                        keyboardOptions =
-                                androidx.compose.foundation.text.KeyboardOptions(
-                                        capitalization = KeyboardCapitalization.Characters,
-                                        imeAction = ImeAction.Next
-                                ),
-                        placeholder = {
-                            Text(
-                                    stringResource(R.string.connection_placeholder_mac),
-                                    style = MaterialTheme.typography.bodySmall
-                            )
-                        },
-                        supportingText = { Text(stringResource(R.string.connection_hint_mac)) }
-                )
-
-                OutlinedTextField(
-                        value = broadcastInput,
-                        onValueChange = { broadcastInput = it },
-                        label = { Text(stringResource(R.string.connection_label_broadcast)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Router, contentDescription = null) },
-                        keyboardOptions =
-                                androidx.compose.foundation.text.KeyboardOptions(
-                                        keyboardType = KeyboardType.Decimal,
-                                        imeAction = ImeAction.Next
-                                ),
-                        supportingText = {
-                            Text(stringResource(R.string.connection_hint_broadcast))
-                        }
-                )
-
-                OutlinedTextField(
-                        value = subnetInput,
-                        onValueChange = { subnetInput = it },
-                        label = { Text(stringResource(R.string.connection_label_subnet)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null) },
-                        keyboardOptions =
-                                androidx.compose.foundation.text.KeyboardOptions(
-                                        keyboardType = KeyboardType.Decimal,
-                                        imeAction = ImeAction.Next
-                                ),
-                        supportingText = { Text(stringResource(R.string.connection_hint_subnet)) }
-                )
-
-                OutlinedTextField(
-                        value = accessKeyInput,
-                        onValueChange = { accessKeyInput = it },
-                        label = { Text(stringResource(R.string.connection_label_access_key)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null) },
-                        keyboardOptions =
-                                androidx.compose.foundation.text.KeyboardOptions(
-                                        keyboardType = KeyboardType.Password,
-                                        imeAction = ImeAction.Done
-                                ),
-                        supportingText = { Text(stringResource(R.string.connection_hint_access_key)) }
-                )
-
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                                text = stringResource(R.string.connection_desktop_defaults_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                                stringResource(
-                                        R.string.connection_quality_label,
-                                        qualityInput.toInt()
-                                )
-                        )
-                        Slider(
-                                value = qualityInput,
-                                onValueChange = { qualityInput = it },
-                                onValueChangeFinished = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                },
-                                valueRange = 1f..100f,
-                                modifier = Modifier.minimumInteractiveComponentSize()
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(stringResource(R.string.connection_fps_label, targetFpsInput.toInt()))
-                        Slider(
-                                value = targetFpsInput,
-                                onValueChange = { targetFpsInput = it },
-                                onValueChangeFinished = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                },
-                                valueRange = 1f..360f,
-                                modifier = Modifier.minimumInteractiveComponentSize()
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                                stringResource(
-                                        R.string.connection_scale_label,
-                                        "%.2f".format(scaleInput)
-                                )
-                        )
-                        Slider(
-                                value = scaleInput,
-                                onValueChange = { scaleInput = it },
-                                onValueChangeFinished = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                },
-                                valueRange = 0.25f..1.0f,
-                                modifier = Modifier.minimumInteractiveComponentSize()
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                            if (connectPermissions.isNotEmpty() && !hasAllConnectPermissions()) {
-                                pendingConnect = true
-                                connectPermissionLauncher.launch(connectPermissions)
-                            } else {
-                                doConnect()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isConnecting && hostInput.isNotEmpty()
-                ) {
-                    if (isConnecting) {
-                        CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(stringResource(R.string.button_save_connect))
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.connection_status_label, status),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (status == "Connected") MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = capabilitySummary,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    var isPaired by remember(hostInput) {
-                        mutableStateOf(PinnedHostStore.getPin(context, hostInput) != null)
-                    }
-
-                    if (isPaired) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = androidx.compose.ui.graphics.Color(0xFF4CAF50),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.connection_paired),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = androidx.compose.ui.graphics.Color(0xFF4CAF50)
-                            )
-                            TextButton(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    PinnedHostStore.removePin(context, hostInput)
-                                    isPaired = false
-                                },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text(
-                                    stringResource(R.string.connection_unpair),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        }
-                    }
-                }
-            }
         }
-    }
 }
 
 @Composable
 private fun HelpStep(number: String, title: String, body: String?) {
-    ListItem(
-            headlineContent = {
-                Text(
-                        title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                )
-            },
-            supportingContent =
-                    body?.let {
-                        {
-                            Text(
-                                    it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-            leadingContent = {
-                Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
+        ListItem(
+                headlineContent = {
                         Text(
-                                number,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.Bold
+                                title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
                         )
-                    }
-                }
-            },
-            colors =
-                    ListItemDefaults.colors(
-                            containerColor = androidx.compose.ui.graphics.Color.Transparent
-                    )
-    )
+                },
+                supportingContent =
+                        body?.let {
+                                {
+                                        Text(
+                                                it,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                }
+                        },
+                leadingContent = {
+                        Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                        ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                                number,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onPrimary,
+                                                fontWeight = FontWeight.Bold
+                                        )
+                                }
+                        }
+                },
+                colors =
+                        ListItemDefaults.colors(
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                        )
+        )
 }
 
 @Composable
@@ -882,31 +1242,31 @@ private fun IpInstructionRow(
         icon: androidx.compose.ui.graphics.vector.ImageVector,
         instruction: String
 ) {
-    ListItem(
-            headlineContent = {
-                Text(
-                        platform,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                )
-            },
-            supportingContent = {
-                Text(
-                        instruction,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            leadingContent = {
-                Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            colors =
-                    ListItemDefaults.colors(
-                            containerColor = androidx.compose.ui.graphics.Color.Transparent
-                    )
-    )
+        ListItem(
+                headlineContent = {
+                        Text(
+                                platform,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                        )
+                },
+                supportingContent = {
+                        Text(
+                                instruction,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                },
+                leadingContent = {
+                        Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                },
+                colors =
+                        ListItemDefaults.colors(
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                        )
+        )
 }

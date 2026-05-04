@@ -78,6 +78,11 @@ public class PairingClient
 
             var keyAgreementAlgorithm = KeyAgreementAlgorithm.X25519;
             using var sharedSecret = keyAgreementAlgorithm.Agree(_clientPrivateKey, hostPublicKey);
+            if (sharedSecret == null)
+            {
+                _log?.Invoke("Key agreement failed - shared secret is null.");
+                return false;
+            }
 
             // Derive session key via HKDF-SHA256(sharedSecret, salt=certSpkiHash, info="remex-pair-v1")
             var certSpkiHash = Convert.FromBase64String(pairingResponse.CertificateSpkiHashBase64);
@@ -107,7 +112,7 @@ public class PairingClient
             var comp = new RemexMessage
             {
                 Type = MessageTypes.PairingComplete,
-                CorrelationId = pairingResponse.CorrelationId,
+                ProtocolVersion = 2,
                 PairingComplete = new PairingComplete
                 {
                     ClientPinHmacBase64 = clientAckHmacBase64

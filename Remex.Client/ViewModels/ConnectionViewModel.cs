@@ -837,7 +837,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
                     using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     connectCts.CancelAfter(TimeSpan.FromSeconds(10));
-                    await ws.ConnectAsync(BuildWebSocketUri(HostAddress, string.Empty), connectCts.Token);
+                    await ws.ConnectAsync(new Uri(HostAddress), connectCts.Token);
 
                     // Success — adopt the new socket.
                     _webSocket = ws;

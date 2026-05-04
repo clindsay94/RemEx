@@ -210,7 +210,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             using (client)
             {
                 Stream stream;
-                
+
                 // Phase 1 Track 1A: Wrap TCP socket in SslStream for TLS 1.3 transport
                 if (_serverCert != null)
                 {
