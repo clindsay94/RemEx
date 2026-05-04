@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.clindsay94.remex.R
+import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.security.PinnedHostStore
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -171,26 +172,35 @@ fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> 
                                                                     val json = JSONObject(raw)
                                                                     if (json.has("spkiHashBase64")
                                                                     ) {
-                                                                        val host =
-                                                                                json.getString(
-                                                                                        "host"
-                                                                                )
-                                                                        val port =
-                                                                                json.getInt("port")
-                                                                        val spkiHash =
-                                                                                json.getString(
-                                                                                        "spkiHashBase64"
-                                                                                )
+                                                                        val host = json.getString("host")
+                                                                        val port = json.getInt("port")
+                                                                        val spkiHash = json.getString("spkiHashBase64")
+                                                                        val pin = if (json.has("pin")) json.getString("pin") else null
 
                                                                         if (!scannedOnce.value) {
                                                                             scannedOnce.value = true
                                                                             scope.launch {
-                                                                                PinnedHostStore
-                                                                                        .setPin(
-                                                                                                context,
-                                                                                                host,
-                                                                                                spkiHash
-                                                                                        )
+                                                                                if (pin != null) {
+                                                                                    val hostUrl = "wss://$host:$port/remex"
+                                                                                    val startResult = RemexCoreClient.StartPairing(hostUrl, "Android Client", "2.0.0")
+                                                                                    if (startResult == "OK") {
+                                                                                        val submitResult = RemexCoreClient.SubmitPairingPin(pin)
+                                                                                        if (submitResult.startsWith("OK:")) {
+                                                                                            val parts = submitResult.substring(3).split("|")
+                                                                                            if (parts.size >= 2) {
+                                                                                                PinnedHostStore.setPin(context, parts[0], parts[1])
+                                                                                            } else {
+                                                                                                PinnedHostStore.setPin(context, host, spkiHash)
+                                                                                            }
+                                                                                        } else {
+                                                                                            PinnedHostStore.setPin(context, host, spkiHash)
+                                                                                        }
+                                                                                    } else {
+                                                                                        PinnedHostStore.setPin(context, host, spkiHash)
+                                                                                    }
+                                                                                } else {
+                                                                                    PinnedHostStore.setPin(context, host, spkiHash)
+                                                                                }
                                                                             }
                                                                             onScanned(host, port)
                                                                         }

@@ -35,6 +35,7 @@ public sealed class RemexNativeClient : IDisposable
     public event Action<List<Remex.Core.Models.ProcessInfo>>? ProcessListReceived;
     public event Action<bool>? ConnectionStateChanged;
     public event Action<RemexMessage>? MessageReceived;
+    public event Action<string>? ConnectionFailed;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
 
@@ -69,9 +70,10 @@ public sealed class RemexNativeClient : IDisposable
             ConnectionStateChanged?.Invoke(true);
             _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_connectionCts.Token));
         }
-        catch
+        catch (Exception ex)
         {
             ConnectionStateChanged?.Invoke(false);
+            ConnectionFailed?.Invoke(ex.Message);
             throw;
         }
     }

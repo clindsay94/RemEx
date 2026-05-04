@@ -210,4 +210,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     override fun onFileTransferMessage(json: String) {
         _fileTransferMessages.tryEmit(json)
     }
+
+    override fun onConnectionError(reason: String) {
+        _connectionError.tryEmit(reason)
+    }
 }

@@ -114,6 +114,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     partial void OnHostAddressChanged(string value) => OnPropertyChanged(nameof(LanHostAddress));
 
+    private IPairingService? _pairingService;
+
     /// <summary>
     /// Subscribes to pairing-pin events on the in-process host's PairingService so the
     /// desktop UI can show the user the PIN their phone is asking for.
@@ -121,6 +123,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     public void AttachEmbeddedPairingService(IPairingService service)
     {
         Guard.NotNull(service);
+        _pairingService = service;
         service.PinDisplayed += (pin, expires) =>
             Dispatcher.UIThread.Post(() =>
             {
@@ -911,7 +914,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     }
 
     [RelayCommand]
-    private void GenerateQrCode()
+    private async Task GenerateQrCodeAsync()
     {
         try
         {
@@ -931,12 +934,24 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             var certService = App.Services.GetService<ICertificateService>();
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
 
+            string? pin = null;
+            long? expiresAtUnixMs = null;
+
+            if (_pairingService != null)
+            {
+                var state = await _pairingService.StartPairingAsync(CancellationToken.None);
+                pin = state.Pin;
+                expiresAtUnixMs = state.ExpiresAtUnixMs;
+            }
+
             var payload = JsonSerializer.Serialize(new
             {
                 host,
                 port,
                 hostId = string.Empty,
-                spkiHashBase64 = spkiHash
+                spkiHashBase64 = spkiHash,
+                pin = pin,
+                expiresAtUnixMs = expiresAtUnixMs
             });
 
             using var qrGenerator = new QRCodeGenerator();

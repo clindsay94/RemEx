@@ -95,7 +95,7 @@ fun PairingScreen(
     LaunchedEffect(Unit) {
         // Build the URL to pass to StartPairing
         val protocol = "wss" // We only use wss now
-        val hostUrl = "$protocol://$host:$port"
+        val hostUrl = "$protocol://$host:$port/remex"
         viewModel.startPairing(hostUrl, "Android Client", "2.0.0")
     }
 

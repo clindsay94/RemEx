@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
-using NSec.Cryptography;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Serialization;
@@ -15,7 +14,7 @@ public class PairingClient
 {
     private readonly ClientWebSocket _webSocket;
     private readonly Action<string>? _log;
-    private Key? _clientPrivateKey;
+    private ECDiffieHellman? _clientEcdh;
     private byte[]? _sessionKey;
 
     // Constructor intentionally avoids any dependency on Microsoft.Extensions.Logging
@@ -30,12 +29,11 @@ public class PairingClient
 
     public async Task<PairingResponse?> StartPairingAsync(string clientName, string clientVersion, CancellationToken ct)
     {
-        // Generate ephemeral X25519 keypair for client
-        var keyAgreementAlgorithm = KeyAgreementAlgorithm.X25519;
-        _clientPrivateKey = Key.Create(keyAgreementAlgorithm, new KeyCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextExport });
+        // Generate ephemeral P-256 ECDH keypair for client
+        _clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
 
-        var clientPublicKeyBytes = _clientPrivateKey.Export(KeyBlobFormat.RawPublicKey);
-        var clientPublicKeyBase64 = Convert.ToBase64String(clientPublicKeyBytes);
+        var pubDer = _clientEcdh.PublicKey.ExportSubjectPublicKeyInfo();
+        var clientPublicKeyBase64 = Convert.ToBase64String(pubDer);
 
         var req = new RemexMessage
         {
@@ -50,7 +48,7 @@ public class PairingClient
         };
 
         await MessageSerializer.SendAsync(_webSocket, req);
-        _log?.Invoke("Sent PairingRequest with client X25519 public key to host.");
+        _log?.Invoke("Sent PairingRequest with client ECDH P-256 public key to host.");
 
         var response = await ReceiveMessageAsync(ct);
         if (response?.Type != MessageTypes.PairingResponse || response.PairingResponse is null)
@@ -64,7 +62,7 @@ public class PairingClient
 
     public async Task<bool> CompletePairingAsync(string pin, PairingResponse pairingResponse, CancellationToken ct)
     {
-        if (_clientPrivateKey == null)
+        if (_clientEcdh == null)
         {
             _log?.Invoke("No client keypair - must call StartPairingAsync first.");
             return false;
@@ -72,24 +70,18 @@ public class PairingClient
 
         try
         {
-            // Perform X25519 key agreement with host's public key
-            var hostPublicKeyBytes = Convert.FromBase64String(pairingResponse.HostPublicKeyBase64);
-            var hostPublicKey = PublicKey.Import(KeyAgreementAlgorithm.X25519, hostPublicKeyBytes, KeyBlobFormat.RawPublicKey);
-
-            var keyAgreementAlgorithm = KeyAgreementAlgorithm.X25519;
-            using var sharedSecret = keyAgreementAlgorithm.Agree(_clientPrivateKey, hostPublicKey);
-            if (sharedSecret == null)
-            {
-                _log?.Invoke("Key agreement failed - shared secret is null.");
-                return false;
-            }
+            // Agree + KDF on receive
+            using var hostPeer = ECDiffieHellman.Create();
+            hostPeer.ImportSubjectPublicKeyInfo(Convert.FromBase64String(pairingResponse.HostPublicKeyBase64), out _);
+            
+            byte[] ss = _clientEcdh.DeriveRawSecretAgreement(hostPeer.PublicKey);
 
             // Derive session key via HKDF-SHA256(sharedSecret, salt=certSpkiHash, info="remex-pair-v1")
             var certSpkiHash = Convert.FromBase64String(pairingResponse.CertificateSpkiHashBase64);
-            var kdf = KeyDerivationAlgorithm.HkdfSha256;
             var info = Encoding.UTF8.GetBytes("remex-pair-v1");
 
-            _sessionKey = kdf.DeriveBytes(sharedSecret, certSpkiHash, info, 32);
+            _sessionKey = HKDF.DeriveKey(HashAlgorithmName.SHA256, ss, outputLength: 32, salt: certSpkiHash, info: info);
+            CryptographicOperations.ZeroMemory(ss);
 
             // Verify host's PIN HMAC
             var expectedHostHmac = HMACSHA256.HashData(_sessionKey, Encoding.UTF8.GetBytes(pin));
@@ -134,11 +126,11 @@ public class PairingClient
         finally
         {
             // Clean up ephemeral key material
-            _clientPrivateKey?.Dispose();
-            _clientPrivateKey = null;
+            _clientEcdh?.Dispose();
+            _clientEcdh = null;
             if (_sessionKey != null)
             {
-                Array.Clear(_sessionKey, 0, _sessionKey.Length);
+                CryptographicOperations.ZeroMemory(_sessionKey);
                 _sessionKey = null;
             }
         }

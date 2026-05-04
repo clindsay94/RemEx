@@ -29,6 +29,7 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopErrorMethodId;
     private static IntPtr _onDesktopMetaMethodId;
     private static IntPtr _onFileTransferMessageMethodId;
+    private static IntPtr _onConnectionErrorMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -44,6 +45,7 @@ public static class AndroidNativeExports
         RemexNativeClient.Current.LauncherEntriesReceived += OnNativeLauncherEntriesReceived;
         RemexNativeClient.Current.ProcessListReceived += OnNativeProcessListReceived;
         RemexNativeClient.Current.MessageReceived += OnNativeMessageReceived;
+        RemexNativeClient.Current.ConnectionFailed += OnNativeConnectionFailed;
 
         RemexDesktopClient.Current.FrameReceived += OnNativeFrameReceived;
         RemexDesktopClient.Current.ErrorReceived += OnNativeDesktopError;
@@ -63,6 +65,7 @@ public static class AndroidNativeExports
         _onDesktopErrorMethodId = IntPtr.Zero;
         _onDesktopMetaMethodId = IntPtr.Zero;
         _onFileTransferMessageMethodId = IntPtr.Zero;
+        _onConnectionErrorMethodId = IntPtr.Zero;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
@@ -97,6 +100,7 @@ public static class AndroidNativeExports
             _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
             _onDesktopMetaMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
             _onFileTransferMessageMethodId = JniHelper.GetMethodID(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
+            _onConnectionErrorMethodId = JniHelper.GetMethodID(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
 
             // Clean up the local class ref
             JniHelper.DeleteLocalRef(env, clazz);
@@ -477,6 +481,11 @@ public static class AndroidNativeExports
     private static void OnNativeDesktopError(string errorText)
     {
         NotifyJavaData(_onDesktopErrorMethodId, errorText);
+    }
+
+    private static void OnNativeConnectionFailed(string reason)
+    {
+        NotifyJavaData(_onConnectionErrorMethodId, reason);
     }
 
     private static void OnNativeMetaReceived(DesktopMeta meta)
