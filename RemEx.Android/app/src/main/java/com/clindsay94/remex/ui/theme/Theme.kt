@@ -1,11 +1,13 @@
 package com.clindsay94.remex.ui.theme
 
-import android.graphics.Matrix as AndroidMatrix
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -17,25 +19,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
-import androidx.graphics.shapes.circle
-import androidx.graphics.shapes.star
-import androidx.graphics.shapes.transformed
-import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.Hct
+import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeExpressive
 import com.google.android.material.color.utilities.SchemeMonochrome
 import com.google.android.material.color.utilities.SchemeNeutral
 import com.google.android.material.color.utilities.SchemeTonalSpot
 import com.google.android.material.color.utilities.SchemeVibrant
+
+import com.clindsay94.remex.R
 
 // Standard M3 colors are already defined in Color.kt
 
@@ -71,28 +70,53 @@ val remexShapes = Shapes(
 
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 val materialShapesList: List<RoundedPolygon> = listOf(
     // Geometric — clean, always readable
-    RoundedPolygon.circle(numVertices = 32),
-    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.1f)),
-    RoundedPolygon(numVertices = 3, rounding = CornerRounding(0.1f)),
-    RoundedPolygon(numVertices = 4, rounding = CornerRounding(0.05f)).transformed(
-        Matrix().apply { rotateZ(45f) }),
-    RoundedPolygon(numVertices = 5, rounding = CornerRounding(0.1f)),
-    RoundedPolygon(numVertices = 6, rounding = CornerRounding(0.1f)),
-    RoundedPolygon(numVertices = 8, rounding = CornerRounding(0.1f)),
-    RoundedPolygon.rectangle(width = 2f, height = 1f, rounding = CornerRounding(0.4f)),
-    star(numVerticesPerRadius = 4, innerRadius = 0.5f, rounding = CornerRounding(0.1f)),
-    star(numVerticesPerRadius = 5, innerRadius = 0.55f, rounding = CornerRounding(0.1f)),
-    star(numVerticesPerRadius = 6, innerRadius = 0.65f, rounding = CornerRounding(0.1f)),
-    star(numVerticesPerRadius = 8, innerRadius = 0.75f, rounding = CornerRounding(0.1f)),
+    MaterialShapes.Circle,
+    MaterialShapes.Square,
+    MaterialShapes.Triangle,
+    MaterialShapes.Diamond,
+    MaterialShapes.Pentagon,
+
+    // Expressive / Organic — usable interior area
+    MaterialShapes.Arch,
+    MaterialShapes.SemiCircle,
+    MaterialShapes.Pill,
+    MaterialShapes.Slanted,
+    MaterialShapes.Fan,
+    MaterialShapes.ClamShell,
+    MaterialShapes.Gem,
+    MaterialShapes.Heart,
+    MaterialShapes.Flower,
+    MaterialShapes.Puffy,
+    MaterialShapes.PuffyDiamond,
+    MaterialShapes.Ghostish,
+    MaterialShapes.Oval,
+
+    // Decorative — kept only where interior is still usable for data cards
+    MaterialShapes.Clover4Leaf,
+    MaterialShapes.Clover8Leaf,
+    MaterialShapes.Sunny,       // gentle star — acceptable
+    MaterialShapes.SoftBurst,   // soft star — usable
+    MaterialShapes.SoftBoom,    // soft balloon — usable
+    MaterialShapes.PixelCircle, // fun but legible
+
+    // Removed: Cookie4/6/7/9/12Sided (scalloped edges clip content),
+    //          VerySunny / Burst / Boom (too many spikes), PixelTriangle (awkward aspect),
+    //          Arrow (directional, terrible for data cards)
 )
 
-/** Human-readable names that correspond 1-to-1 with [materialShapesList]. */
-val materialShapeNames: List<String> = listOf(
-    "Circle", "Square", "Triangle", "Diamond", "Pentagon",
-    "Hexagon", "Octagon", "Pill",
-    "Star 4", "Star 5", "Star 6", "Star 8"
+/** Human-readable name resource IDs that correspond 1-to-1 with [materialShapesList]. */
+val materialShapeNames: List<Int> = listOf(
+    R.string.shape_circle, R.string.shape_square, R.string.shape_triangle,
+    R.string.shape_diamond, R.string.shape_pentagon, R.string.shape_arch,
+    R.string.shape_semi_circle, R.string.shape_pill, R.string.shape_slanted,
+    R.string.shape_fan, R.string.shape_clam_shell, R.string.shape_gem,
+    R.string.shape_heart, R.string.shape_flower, R.string.shape_puffy,
+    R.string.shape_puffy_diamond, R.string.shape_ghostish, R.string.shape_oval,
+    R.string.shape_clover_4_leaf, R.string.shape_clover_8_leaf, R.string.shape_sunny,
+    R.string.shape_soft_burst, R.string.shape_soft_boom, R.string.shape_pixel_circle
 )
 class MorphPolygonShape(
     private val morph: Morph,
@@ -130,7 +154,7 @@ class MorphPolygonShape(
         matrix.reset()
         matrix.scale(scaleX, scaleY)
         matrix.translate(-bounds.left, -bounds.top)
-        
+
         composePath.transform(matrix)
 
         return Outline.Generic(composePath)
@@ -174,18 +198,30 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
 
     // Define "safety" of each shape. 1.0 = safe (square), 0.0 = very unsafe (extreme clipping)
     val shapeSafety = listOf(
-        0.55f, // Circle
-        1.00f, // Square
-        0.30f, // Triangle
-        0.45f, // Diamond
+        0.55f, // Circle (corners cut off significantly)
+        1.00f, // Square (perfectly safe)
+        0.30f, // Triangle (extreme corner clipping)
+        0.45f, // Diamond (heavy corner clipping)
         0.65f, // Pentagon
-        0.75f, // Hexagon
-        0.80f, // Octagon
+        0.75f, // Arch
+        0.65f, // Semi-Circle
         0.85f, // Pill
-        0.50f, // Star 4
-        0.55f, // Star 5
-        0.60f, // Star 6
-        0.65f  // Star 8
+        0.80f, // Slanted
+        0.70f, // Fan
+        0.65f, // Clam Shell
+        0.55f, // Gem
+        0.40f, // Heart (top-center and bottom-center clipping)
+        0.50f, // Flower
+        0.65f, // Puffy
+        0.55f, // Puffy Diamond
+        0.65f, // Ghostish
+        0.65f, // Oval
+        0.55f, // 4-Leaf Clover
+        0.55f, // 8-Leaf Clover
+        0.45f, // Sunny
+        0.55f, // Soft Burst
+        0.65f, // Soft Boom
+        0.75f  // Pixel Circle
     )
 
     val currentSafety = shapeSafety.getOrElse(shapeIndex) { 0.6f }
@@ -336,10 +372,12 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typographyForFontFamily(fontFamilyKey),
         shapes = remexShapes,
+        motionScheme = MotionScheme.expressive(),
         content = content
     )
 }

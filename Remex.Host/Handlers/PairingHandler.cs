@@ -45,7 +45,12 @@ public sealed class PairingHandler
                 message.PairingRequest.ClientName,
                 message.PairingRequest.ClientVersion);
 
+            // Start pairing session (generates host keypair and PIN)
             var state = await _pairingService.StartPairingAsync(ct);
+
+            // Derive session key from client's public key
+            var pinHmacBase64 = await _pairingService.DeriveSessionKeyAsync(
+                message.PairingRequest.ClientPublicKeyBase64, ct);
 
             var response = new RemexMessage
             {
@@ -57,7 +62,7 @@ public sealed class PairingHandler
                     HostId = Environment.MachineName,
                     HostName = Environment.MachineName,
                     CertificateSpkiHashBase64 = _certificateService.GetSpkiSha256Base64(),
-                    PinHmacBase64 = _pairingService.ComputeHostHmac(),
+                    PinHmacBase64 = pinHmacBase64,
                 },
             };
 

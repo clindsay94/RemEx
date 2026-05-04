@@ -7,6 +7,7 @@ import java.util.zip.ZipFile
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-parcelize")
 }
 
 val repoRootDir: File = rootProject.projectDir.parentFile
@@ -53,12 +54,12 @@ if (isPublishBuild) {
 
 android {
     namespace = "com.clindsay94.remex"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.clindsay94.remex"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = remexVersionCode
         versionName = remexVersionName
 
@@ -117,7 +118,7 @@ android {
             useLegacyPackaging = false
         }
     }
-    buildToolsVersion = "36.0.0"
+    buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
 
     sourceSets {
@@ -679,7 +680,7 @@ dependencies {
     implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
@@ -690,6 +691,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)

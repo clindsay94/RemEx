@@ -7,6 +7,7 @@ namespace Remex.Core.Services.Security;
 public interface IPairingService
 {
     Task<PairingState> StartPairingAsync(CancellationToken ct);
+    Task<string> DeriveSessionKeyAsync(string clientPublicKeyBase64, CancellationToken ct);
     string GetActivePin();
     bool IsPairingActive { get; }
     Task<bool> VerifyClientHmacAsync(string clientHmacBase64, CancellationToken ct);

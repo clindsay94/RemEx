@@ -42,8 +42,7 @@ import kotlin.math.roundToInt
 
 @OptIn(
         ExperimentalMaterial3Api::class,
-        ExperimentalLayoutApi::class,
-        ExperimentalMaterial3ExpressiveApi::class
+        ExperimentalLayoutApi::class
 )
 @Composable
 fun PersonalizationScreen(
@@ -404,22 +403,20 @@ fun PersonalizationScreen(
                             enter =
                                     expandVertically(
                                             animationSpec =
-                                                    MaterialTheme.motionScheme.fastSpatialSpec()
+                                                    androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                                     ) +
                                             fadeIn(
                                                     animationSpec =
-                                                            MaterialTheme.motionScheme
-                                                                    .fastEffectsSpec()
+                                                            androidx.compose.animation.core.tween(durationMillis = 200)
                                             ),
                             exit =
                                     shrinkVertically(
                                             animationSpec =
-                                                    MaterialTheme.motionScheme.fastSpatialSpec()
+                                                    androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                                     ) +
                                             fadeOut(
                                                     animationSpec =
-                                                            MaterialTheme.motionScheme
-                                                                    .fastEffectsSpec()
+                                                            androidx.compose.animation.core.tween(durationMillis = 200)
                                             )
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -638,7 +635,7 @@ fun PersonalizationScreen(
                                 animateFloatAsState(
                                         targetValue = current,
                                         animationSpec =
-                                                MaterialTheme.motionScheme.fastSpatialSpec(),
+                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
                                         label = "shape_morph_$label"
                                 )
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -653,7 +650,7 @@ fun PersonalizationScreen(
                                         fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                        shapeName,
+                                        stringResource(shapeName),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.SemiBold
@@ -772,7 +769,6 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TonalRow(hct: Hct) {
     val tones = listOf(10, 30, 50, 70, 90, 95)
@@ -784,7 +780,7 @@ private fun TonalRow(hct: Hct) {
             val animatedColor by
                     animateColorAsState(
                             targetValue = targetColor,
-                            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
                             label = "TonalColorAnimation"
                     )
             Box(
@@ -798,7 +794,6 @@ private fun TonalRow(hct: Hct) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MiniCardPreview(
         seedColor: String,
@@ -817,7 +812,7 @@ private fun MiniCardPreview(
     val animatedColor by
             animateColorAsState(
                     targetValue = baseColor,
-                    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
                     label = "MiniCardColorAnimation"
             )
 

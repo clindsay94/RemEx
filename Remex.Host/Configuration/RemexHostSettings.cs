@@ -67,17 +67,20 @@ public class TelemetrySettings
 public class SecuritySettings
 {
     /// <summary>
-    /// Require access key for connections (default: true)
-    /// </summary>
-    public bool RequireAccessKey { get; set; } = true;
-
-    /// <summary>
-    /// Access key for client authentication (leave empty to generate on startup)
-    /// </summary>
-    public string AccessKey { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Allow connections from localhost only (default: false)
+    /// Allow connections from localhost only (default: false).
+    /// When true, non-loopback clients are rejected before pairing handshake.
     /// </summary>
     public bool LocalhostOnly { get; set; } = false;
+
+    /// <summary>
+    /// Allow first-time pairing (default: true).
+    /// When false, only previously paired clients can connect.
+    /// </summary>
+    public bool AllowFirstTimePairing { get; set; } = true;
+
+    /// <summary>
+    /// Pairing timeout in seconds (default: 120).
+    /// Client must complete pairing handshake within this window.
+    /// </summary>
+    public int PairingTimeoutSeconds { get; set; } = 120;
 }

@@ -4,17 +4,19 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NSec.Cryptography;
 using Remex.Core.Services.Security;
 
 namespace Remex.Host.Services.Security;
 
 /// <summary>
-/// Implements the 2.0 pairing protocol:
+/// Implements the 2.0 pairing protocol with ECDH X25519:
 /// 1. Client sends PairingRequest with its ECDH public key.
-/// 2. Host generates ephemeral ECDH keypair, derives shared secret, generates 6-digit PIN.
-/// 3. Host responds with PairingResponse (host pub key, HMAC(shared_secret, pin)).
-/// 4. User reads the PIN displayed on the host and enters it on the client.
-/// 5. Client sends PairingComplete with HMAC(shared_secret, pin) — host verifies match.
+/// 2. Host generates ephemeral ECDH keypair, derives shared secret via X25519.
+/// 3. Host generates 6-digit PIN, computes pinHmac = HMAC-SHA256(sessionKey, PIN).
+/// 4. Host responds with PairingResponse (host pub key, pinHmac, certSpki).
+/// 5. User enters PIN on client; client verifies pinHmac, sends PairingComplete with clientPinHmac.
+/// 6. Host verifies clientPinHmac, records client as paired.
 /// </summary>
 public sealed class PairingService : IPairingService
 {
@@ -23,12 +25,13 @@ public sealed class PairingService : IPairingService
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // Pairing session state (only one active session at a time)
-#pragma warning disable CS0414 // Assigned for future ECDH derivation
-    private byte[]? _sharedSecret;
-#pragma warning restore CS0414
+    private byte[]? _sharedSecret; // ECDH-derived shared secret
+    private byte[]? _sessionKey;   // HKDF-derived session key
     private string? _activePin;
     private long _expiresAtUnixMs;
+    private NSec.Cryptography.Key? _hostPrivateKey; // X25519 private key
     private string? _hostPublicKeyBase64;
+    private string? _clientPublicKeyBase64;
 
     private const int PinLength = 6;
     private const int PairingTimeoutSeconds = 120;
@@ -52,18 +55,22 @@ public sealed class PairingService : IPairingService
         await _lock.WaitAsync(ct);
         try
         {
-            // Generate ephemeral ECDH keypair (X25519 via ECDiffieHellman with Curve25519)
-            using var ecdh = ECDiffieHellman.Create(ECCurve.CreateFromFriendlyName("x25519"));
-            var hostPubBytes = ecdh.PublicKey.ExportSubjectPublicKeyInfo();
+            // Generate ephemeral X25519 keypair via NSec
+            var keyAgreementAlgorithm = KeyAgreementAlgorithm.X25519;
+            _hostPrivateKey = NSec.Cryptography.Key.Create(keyAgreementAlgorithm, new KeyCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextExport });
+
+            // Export public key
+            var hostPubBytes = _hostPrivateKey.PublicKey.Export(KeyBlobFormat.RawPublicKey);
             _hostPublicKeyBase64 = Convert.ToBase64String(hostPubBytes);
 
             // Generate a 6-digit PIN
             _activePin = GeneratePin();
             _expiresAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(PairingTimeoutSeconds).ToUnixTimeMilliseconds();
 
-            // Store the private key material for the shared secret derivation
-            // (will be completed when we receive the client's public key)
-            _sharedSecret = null; // Will be populated during VerifyClientHmacAsync
+            // Shared secret and session key will be derived when client public key arrives
+            _sharedSecret = null;
+            _sessionKey = null;
+            _clientPublicKeyBase64 = null;
 
             _logger.LogInformation("Pairing session started. PIN: {Pin}, Expires at: {Expiry}",
                 _activePin, DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
@@ -94,12 +101,17 @@ public sealed class PairingService : IPairingService
             return Task.FromResult(false);
         }
 
+        if (_sessionKey is null)
+        {
+            _logger.LogWarning("Pairing verification attempted but session key not yet derived (client public key not received).");
+            return Task.FromResult(false);
+        }
+
         try
         {
-            // For Phase 1, we do a simple HMAC comparison using the PIN as the key.
-            // In production, this would use the ECDH-derived shared secret.
-            var pinBytes = Encoding.UTF8.GetBytes(_activePin);
-            var expectedHmac = ComputeHmac(pinBytes, Encoding.UTF8.GetBytes("remex-pairing-v2"));
+            // Compute expected HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
+            var ackMessage = Encoding.UTF8.GetBytes("ack:" + _activePin);
+            var expectedHmac = HMACSHA256.HashData(_sessionKey, ackMessage);
             var expectedBase64 = Convert.ToBase64String(expectedHmac);
 
             var match = CryptographicOperations.FixedTimeEquals(
@@ -129,7 +141,11 @@ public sealed class PairingService : IPairingService
     {
         _activePin = null;
         _sharedSecret = null;
+        _sessionKey = null;
         _hostPublicKeyBase64 = null;
+        _clientPublicKeyBase64 = null;
+        _hostPrivateKey?.Dispose();
+        _hostPrivateKey = null;
         _expiresAtUnixMs = 0;
         _logger.LogInformation("Pairing session cancelled/consumed.");
 
@@ -138,22 +154,61 @@ public sealed class PairingService : IPairingService
     }
 
     /// <summary>
+    /// Derives the session key from the client's public key and the host's private key.
+    /// Must be called after receiving the client's PairingRequest and before sending PairingResponse.
+    /// </summary>
+    public async Task<string> DeriveSessionKeyAsync(string clientPublicKeyBase64, CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            if (_hostPrivateKey is null || _activePin is null)
+                throw new InvalidOperationException("No active pairing session.");
+
+            _clientPublicKeyBase64 = clientPublicKeyBase64;
+
+            // Import client public key
+            var clientPubBytes = Convert.FromBase64String(clientPublicKeyBase64);
+            var keyAgreementAlgorithm = KeyAgreementAlgorithm.X25519;
+            var clientPublicKey = PublicKey.Import(keyAgreementAlgorithm, clientPubBytes, KeyBlobFormat.RawPublicKey);
+
+            // Perform X25519 key agreement
+            _sharedSecret = SharedSecret.Import(keyAgreementAlgorithm.Agree(_hostPrivateKey, clientPublicKey));
+
+            // Derive session key via HKDF-SHA256
+            // Salt = certificate SPKI hash (binds to the TLS cert)
+            // Info = "remex-pair-v1" (domain separation)
+            var certSpkiHash = Convert.FromBase64String(_certificateService.GetSpkiSha256Base64());
+            var kdf = KeyDerivationAlgorithm.HkdfSha256;
+            var sessionKeyBytes = kdf.DeriveBytes(
+                _sharedSecret,
+                certSpkiHash,
+                Encoding.UTF8.GetBytes("remex-pair-v1"),
+                32);
+            _sessionKey = sessionKeyBytes;
+
+            _logger.LogInformation("Session key derived from ECDH X25519.");
+            return ComputeHostHmac();
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>
     /// Compute the host-side HMAC for the PairingResponse.
-    /// Uses the PIN as the key with a domain-separated message.
+    /// Uses the ECDH-derived session key and the PIN.
     /// </summary>
     public string ComputeHostHmac()
     {
-        if (_activePin is null)
-            throw new InvalidOperationException("No active pairing session.");
+        if (_activePin is null || _sessionKey is null)
+            throw new InvalidOperationException("No active pairing session or session key not derived.");
 
+        // Compute HMAC-SHA256(sessionKey, PIN)
         var pinBytes = Encoding.UTF8.GetBytes(_activePin);
-        var hmac = ComputeHmac(pinBytes, Encoding.UTF8.GetBytes("remex-pairing-v2"));
+        var hmac = HMACSHA256.HashData(_sessionKey, pinBytes);
         return Convert.ToBase64String(hmac);
-    }
-
-    private static byte[] ComputeHmac(byte[] key, byte[] message)
-    {
-        return HMACSHA256.HashData(key, message);
     }
 
     private static string GeneratePin()

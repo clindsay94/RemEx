@@ -7,7 +7,7 @@ Android is the primary target for 2.0's release engineering. It must achieve sta
 
 ## Assigned 2.0 Tracks
 - **Track 1D**: Android TLS support and `EncryptedSharedPreferences` for pins.
-- **Track 2C**: Material 3 stabilization (`targetSdk 35`).
+- **Track 2C**: Material 3 stabilization (`targetSdk 37`).
 - **Track 2D**: Release Engineering (R8, AAB, network security config).
 - **Track 2G**: Battery optimization onboarding.
 - **Track 2I**: Quick Settings tile (Lock PC).
@@ -23,4 +23,4 @@ Use `gitnexus_context` to manage the Kotlin-to-C# bridge and UI:
 - [ ] `./gradlew assembleDebug` passes with exit code 0.
 - [ ] `apktool d` verification: `android:usesCleartextTraffic="false"` in manifest.
 - [ ] `EncryptedSharedPreferences` correctly stores host SPKI hashes.
-- [ ] Target SDK is locked at `35`.
+- [ ] Target SDK is locked at `37`.

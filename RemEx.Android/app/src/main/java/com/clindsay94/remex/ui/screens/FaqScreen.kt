@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,7 +62,7 @@ private val faqItems =
                 FaqItem(questionRes = R.string.faq_q10, answerRes = R.string.faq_a10)
         )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FaqScreen() {
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
@@ -97,7 +96,6 @@ fun FaqScreen() {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FaqCard(item: FaqItem) {
     var expanded by remember { mutableStateOf(false) }
@@ -141,19 +139,19 @@ private fun FaqCard(item: FaqItem) {
                     visible = expanded,
                     enter =
                             expandVertically(
-                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                                    animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                             ) +
                                     fadeIn(
                                             animationSpec =
-                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                                    androidx.compose.animation.core.tween(durationMillis = 200)
                                     ),
                     exit =
                             shrinkVertically(
-                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                                    animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                             ) +
                                     fadeOut(
                                             animationSpec =
-                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                                    androidx.compose.animation.core.tween(durationMillis = 200)
                                     )
             ) {
                 Column {

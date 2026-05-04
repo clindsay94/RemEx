@@ -387,4 +387,30 @@
     <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
     <string name="file_transfer_loading">Loading…</string>
     <string name="file_transfer_empty">No files found.</string>
+
+    <!-- ═══ Material Shapes ═══ -->
+    <string name="shape_circle">Circle</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_triangle">Triangle</string>
+    <string name="shape_diamond">Diamond</string>
+    <string name="shape_pentagon">Pentagon</string>
+    <string name="shape_arch">Arch</string>
+    <string name="shape_semi_circle">Semi-Circle</string>
+    <string name="shape_pill">Pill</string>
+    <string name="shape_slanted">Slanted</string>
+    <string name="shape_fan">Fan</string>
+    <string name="shape_clam_shell">Clam Shell</string>
+    <string name="shape_gem">Gem</string>
+    <string name="shape_heart">Heart</string>
+    <string name="shape_flower">Flower</string>
+    <string name="shape_puffy">Puffy</string>
+    <string name="shape_puffy_diamond">Puffy Diamond</string>
+    <string name="shape_ghostish">Ghostish</string>
+    <string name="shape_oval">Oval</string>
+    <string name="shape_clover_4_leaf">4-Leaf Clover</string>
+    <string name="shape_clover_8_leaf">8-Leaf Clover</string>
+    <string name="shape_sunny">Sunny</string>
+    <string name="shape_soft_burst">Soft Burst</string>
+    <string name="shape_soft_boom">Soft Boom</string>
+    <string name="shape_pixel_circle">Pixel Circle</string>
 </resources>

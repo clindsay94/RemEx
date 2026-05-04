@@ -213,7 +213,7 @@ public static class AndroidNativeExports
                     return "ERROR: No active pairing session";
 
                 var client = new PairingClient(_pairingWebSocket);
-                var success = client.CompletePairingAsync(pin, _activePairingResponse.PinHmacBase64, null, CancellationToken.None).GetAwaiter().GetResult();
+                var success = client.CompletePairingAsync(pin, _activePairingResponse, CancellationToken.None).GetAwaiter().GetResult();
 
                 if (success)
                 {

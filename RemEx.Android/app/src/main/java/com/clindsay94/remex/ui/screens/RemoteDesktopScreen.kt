@@ -183,7 +183,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteDesktopScreenContent(
         uiState: RemoteDesktopUiState,
@@ -1639,14 +1639,12 @@ fun RemoteDesktopScreenContent(
                                         enter =
                                                 fadeIn(
                                                         animationSpec =
-                                                                MaterialTheme.motionScheme
-                                                                        .defaultEffectsSpec()
+                                                                androidx.compose.animation.core.tween(durationMillis = 200)
                                                 ),
                                         exit =
                                                 fadeOut(
                                                         animationSpec =
-                                                                MaterialTheme.motionScheme
-                                                                        .defaultEffectsSpec()
+                                                                androidx.compose.animation.core.tween(durationMillis = 200)
                                                 )
                                 ) {
                                         AssistChip(
@@ -1703,21 +1701,17 @@ fun RemoteDesktopScreenContent(
                                                 visible = controlsVisible || !uiState.isFullscreen,
                                                 enter =
                                                         slideInVertically(
-                                                                MaterialTheme.motionScheme
-                                                                        .defaultSpatialSpec()
+                                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                                                         ) { it } +
                                                                 fadeIn(
-                                                                        MaterialTheme.motionScheme
-                                                                                .defaultEffectsSpec()
+                                                                        androidx.compose.animation.core.tween(durationMillis = 200)
                                                                 ),
                                                 exit =
                                                         slideOutVertically(
-                                                                MaterialTheme.motionScheme
-                                                                        .defaultSpatialSpec()
+                                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                                                         ) { it } +
                                                                 fadeOut(
-                                                                        MaterialTheme.motionScheme
-                                                                                .defaultEffectsSpec()
+                                                                        androidx.compose.animation.core.tween(durationMillis = 200)
                                                                 ),
                                                 modifier = Modifier.align(Alignment.BottomCenter)
                                         ) {

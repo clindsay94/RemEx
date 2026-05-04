@@ -141,7 +141,7 @@ data class RemoteControlUiState(
         val isConnected: Boolean = false
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlScreen(
         onNavigateToConnection: () -> Unit = {},
@@ -169,7 +169,7 @@ fun RemoteControlScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteControlScreenContent(
         uiState: RemoteControlUiState,
@@ -336,7 +336,6 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CommandCard(
         card: RemoteCommandCard,
@@ -356,7 +355,7 @@ private fun CommandCard(
             modifier =
                     Modifier.fillMaxWidth()
                             .animateContentSize(
-                                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                                    animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
                             ),
             shape = shape,
             colors =
