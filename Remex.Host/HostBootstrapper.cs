@@ -12,6 +12,8 @@ using Remex.Host.Services;
 using Remex.Host.Services.Security;
 using Remex.Host.Services.Telemetry;
 using Remex.Host.Services.ProcessMonitor;
+using Remex.Core.Services.FileTransfer;
+using Remex.Host.Services.FileTransfer;
 
 namespace Remex.Host;
 
@@ -85,6 +87,8 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<PairingService>();
         builder.Services.AddSingleton<IPairingService>(sp => sp.GetRequiredService<PairingService>());
         builder.Services.AddTransient<PairingHandler>();
+        builder.Services.AddSingleton<IFileTransferService, FileTransferService>();
+        builder.Services.AddTransient<FileTransferHandler>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
         // Try the requested port first; if it's unavailable, probe fallback ports.

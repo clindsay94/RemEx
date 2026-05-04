@@ -1,6 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import com.clindsay94.remex.ui.components.hapticCommandSent
+import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
+import com.clindsay94.remex.ui.components.hapticCommandFailed
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
@@ -398,7 +401,7 @@ private fun CommandCard(
                     // M3: error colors for destructive confirmation button
                     Button(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                view.hapticCommandAcknowledged()
                                 onConfirm()
                             },
                             colors =
@@ -410,7 +413,7 @@ private fun CommandCard(
                     ) { Text(stringResource(R.string.button_confirm)) }
                     TextButton(
                             onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                                view.hapticCommandFailed()
                                 onCancel()
                             },
                             modifier = Modifier.weight(1f)
@@ -420,7 +423,7 @@ private fun CommandCard(
                 // M3: FilledTonalButton for lower-emphasis non-destructive actions
                 FilledTonalButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            view.hapticCommandSent()
                             onPrimaryClick()
                         },
                         modifier = Modifier.fillMaxWidth()

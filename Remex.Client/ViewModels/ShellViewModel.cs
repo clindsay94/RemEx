@@ -225,6 +225,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
+    private FileTransferViewModel? _fileTransferViewModel;
 
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
@@ -288,6 +289,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _remoteDesktopViewModel?.Dispose();
         _taskManagerViewModel?.Dispose();
         _aboutViewModel?.Dispose();
+        _fileTransferViewModel?.Dispose();
 
         // Dispose shared connection ViewModel
         Connection.Dispose();
@@ -504,6 +506,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         _aboutViewModel ??= new AboutViewModel(Connection, this);
         SetTransitionAndNavigate(6, _aboutViewModel);
+    }
+
+    [RelayCommand]
+    public void NavigateToFileTransfer()
+    {
+        NotifyIfDisconnected("File Transfer");
+        _fileTransferViewModel ??= new FileTransferViewModel(Connection);
+        SetTransitionAndNavigate(7, _fileTransferViewModel);
     }
 
     [RelayCommand]

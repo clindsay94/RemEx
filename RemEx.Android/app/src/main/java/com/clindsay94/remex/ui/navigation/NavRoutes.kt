@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.Palette
@@ -66,6 +67,12 @@ sealed class Screen(val route: String, @param:StringRes val titleRes: Int, val i
                 Screen("qr_scanner", R.string.screen_qr_scanner_title, Icons.Default.QrCodeScanner)
         object Pairing :
                 Screen("pairing", R.string.pairing_title, Icons.Default.QrCodeScanner)
+        object FileTransfer :
+                Screen(
+                        "file_transfer",
+                        R.string.screen_file_transfer_title,
+                        Icons.Default.FolderOpen,
+                )
 }
 
 /** Primary navigation destinations — shown in NavigationBar / NavigationRail / NavigationDrawer. */
@@ -83,6 +90,7 @@ val navItems =
  */
 val moreItems =
         listOf(
+                Screen.FileTransfer,
                 Screen.RemoteDesktop,
                 Screen.RemoteMouse,
                 Screen.Settings,

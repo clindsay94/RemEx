@@ -53,16 +53,26 @@ if (isPublishBuild) {
 
 android {
     namespace = "com.clindsay94.remex"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.clindsay94.remex"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = remexVersionCode
         versionName = remexVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
+    }
+
+    bundle {
+        language { enableSplit = true }
+        density  { enableSplit = true }
+        abi      { enableSplit = true }
     }
 
     signingConfigs {

@@ -27,3 +27,20 @@
 -keep class * implements androidx.startup.Initializer {
     <init>();
 }
+
+# Keep NSec.Cryptography (cryptography library can be reflectively invoked)
+-keep class com.nsec.** { *; }
+
+# Keep pairing native bridge methods
+-keepclassmembers class com.clindsay94.remex.RemexCoreClient {
+    public static native <methods>;
+    private static native <methods>;
+}
+-keepclassmembers class com.clindsay94.remex.security.PinnedHostStore { *; }
+-keepclassmembers class com.clindsay94.remex.security.PairingViewModel { *; }
+
+# Keep file-transfer native bridge callbacks
+-keepclassmembers class com.clindsay94.remex.RemexCoreClient$RemexCallback {
+    void onFileTransferProgress(java.lang.String);
+    void onFileTransferComplete(java.lang.String);
+}

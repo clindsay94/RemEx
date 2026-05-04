@@ -24,6 +24,9 @@ public sealed record FileTransferEnd
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
     [JsonPropertyName("success")] public required bool Success { get; init; }
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+    /// <summary>SHA-256 hash of the uploaded file, sent by the client in the End message
+    /// so the hash can be computed incrementally during chunking rather than with a double pass.</summary>
+    [JsonPropertyName("sha256")] public string? Sha256Base64 { get; init; }
 }
 
 public sealed record FileTransferCancel

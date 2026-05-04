@@ -23,7 +23,8 @@ public sealed class PingPongHandler(
     Remex.Core.Services.IProcessMonitorService processMonitorService,
     IHostCapabilitiesProvider hostCapabilitiesProvider,
     IInputSimulationService inputSimulation,
-    PairingHandler pairingHandler)
+    PairingHandler pairingHandler,
+    FileTransferHandler fileTransferHandler)
 {
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
@@ -172,6 +173,27 @@ public sealed class PingPongHandler(
                             await MessageSerializer.SendAsync(webSocket, completeResponse, ct);
                         break;
 
+                    // ── 2.0 File Transfer ──
+                    case MessageTypes.FileBrowseRequest:
+                        await fileTransferHandler.HandleFileBrowseRequestAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileTransferStart:
+                        await fileTransferHandler.HandleFileTransferStartAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileTransferChunk:
+                        await fileTransferHandler.HandleFileTransferChunkAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileTransferEnd:
+                        await fileTransferHandler.HandleFileTransferEndAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileTransferCancel:
+                        await fileTransferHandler.HandleFileTransferCancelAsync(message);
+                        break;
+
                     default:
                         logger.LogWarning("Unknown message type: {Type}", message.Type);
                         break;
@@ -186,6 +208,9 @@ public sealed class PingPongHandler(
         {
             logger.LogWarning(ex, "WebSocket error.");
         }
+
+        // Clean up any active file transfers for this connection
+        await fileTransferHandler.CleanupAllTransfersAsync();
 
         // Cancel background stream
         streamCts.Cancel();

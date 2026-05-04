@@ -45,7 +45,7 @@ class PairingViewModel : ViewModel() {
             // or simply call it here. The actual hook into native will be added next.
             // For now, this is a placeholder where the native call will be made.
             
-            val result = RemexCoreClient.SubmitPairingPinNative(pin)
+            val result = RemexCoreClient.SubmitPairingPin(pin)
             if (result.startsWith("OK:")) {
                 val parts = result.substring(3).split("|")
                 if (parts.size >= 2) {
@@ -65,7 +65,7 @@ class PairingViewModel : ViewModel() {
     fun startPairing(hostUrl: String, clientName: String, clientVersion: String) {
         viewModelScope.launch {
             _uiState.value = PairingUiState(isLoading = true)
-            val result = RemexCoreClient.StartPairingNative(hostUrl, clientName, clientVersion)
+            val result = RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion)
             if (result != "OK") {
                 _uiState.value = PairingUiState(isLoading = false, pairingError = "Failed to start pairing: $result")
             } else {
@@ -88,7 +88,7 @@ fun PairingScreen(
     var pin by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        // Build the URL to pass to StartPairingNative
+        // Build the URL to pass to StartPairing
         val protocol = "wss" // We only use wss now
         val hostUrl = "$protocol://$host:$port"
         viewModel.startPairing(hostUrl, "Android Client", "2.0.0")

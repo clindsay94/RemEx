@@ -28,6 +28,7 @@ public static class AndroidNativeExports
     private static IntPtr _onHostInfoUpdateMethodId;
     private static IntPtr _onDesktopErrorMethodId;
     private static IntPtr _onDesktopMetaMethodId;
+    private static IntPtr _onFileTransferMessageMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -61,6 +62,7 @@ public static class AndroidNativeExports
         _onHostInfoUpdateMethodId = IntPtr.Zero;
         _onDesktopErrorMethodId = IntPtr.Zero;
         _onDesktopMetaMethodId = IntPtr.Zero;
+        _onFileTransferMessageMethodId = IntPtr.Zero;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
@@ -94,6 +96,7 @@ public static class AndroidNativeExports
             _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
             _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
             _onDesktopMetaMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
+            _onFileTransferMessageMethodId = JniHelper.GetMethodID(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
 
             // Clean up the local class ref
             JniHelper.DeleteLocalRef(env, clazz);
@@ -517,6 +520,14 @@ public static class AndroidNativeExports
             NotifyJavaData(
                 _onHostInfoUpdateMethodId,
                 RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Default.HostCapabilities));
+        }
+
+        if (msg.Type is MessageTypes.FileBrowseResponse or MessageTypes.FileTransferChunk
+                       or MessageTypes.FileTransferProgress or MessageTypes.FileTransferEnd)
+        {
+            NotifyJavaData(
+                _onFileTransferMessageMethodId,
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Default.RemexMessage));
         }
     }
 

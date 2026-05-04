@@ -111,6 +111,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _pairingRequired = MutableSharedFlow<Pair<String, Int>>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val pairingRequired = _pairingRequired.asSharedFlow()
 
+    private val _connectionError = MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val connectionError = _connectionError.asSharedFlow()
+
+    private val _fileTransferMessages = MutableSharedFlow<String>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val fileTransferMessages = _fileTransferMessages.asSharedFlow()
+
     private suspend fun connect() {
         val settings = settingsManager ?: return
         val host = settings.hostFlow.first()
@@ -147,6 +153,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             } else {
                 _isConnecting.value = false
             }
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e("RemexManager", "JNI link failure during connect", e)
+            _connectionError.tryEmit("Native library not linked: ${e.message}")
+            _isConnecting.value = false
         } catch (e: Exception) {
             Log.e("RemexManager", "Connect failed", e)
             _isConnecting.value = false
@@ -195,5 +205,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onDesktopMeta(metaData: String) {
         _desktopMeta.tryEmit(metaData)
+    }
+
+    override fun onFileTransferMessage(json: String) {
+        _fileTransferMessages.tryEmit(json)
     }
 }
