@@ -879,9 +879,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     private void StopReconnecting()
     {
-        _reconnectCts?.Cancel();
-        _reconnectCts?.Dispose();
-        _reconnectCts = null;
+        CancelAndDispose(ref _reconnectCts);
         IsAutoReconnecting = false;
     }
 
@@ -895,14 +893,44 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         MaxLatency = LatencyHistory.Max();
     }
 
+    private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
+    {
+        var current = Interlocked.Exchange(ref cancellationTokenSource, null);
+        if (current is null)
+            return;
+
+        try
+        {
+            current.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Another teardown path already disposed this source.
+        }
+
+        current.Dispose();
+    }
+
+    private static void DisposeWebSocket(ref ClientWebSocket? webSocket)
+    {
+        var current = Interlocked.Exchange(ref webSocket, null);
+        if (current is null)
+            return;
+
+        try
+        {
+            current.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Another teardown path already disposed this socket.
+        }
+    }
+
     private void Cleanup()
     {
-        _receiveCts?.Cancel();
-        _receiveCts?.Dispose();
-        _receiveCts = null;
-
-        _webSocket?.Dispose();
-        _webSocket = null;
+        CancelAndDispose(ref _receiveCts);
+        DisposeWebSocket(ref _webSocket);
 
         // Cancel all in-flight command awaiters so callers don't hang after disconnect
         foreach (var (_, pendingTcs) in _pendingCommands)
@@ -1081,8 +1109,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     public void Dispose()
     {
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
-        _receiveCts?.Dispose();
-        _reconnectCts?.Dispose();
-        _webSocket?.Dispose();
+        CancelAndDispose(ref _receiveCts);
+        CancelAndDispose(ref _reconnectCts);
+        DisposeWebSocket(ref _webSocket);
     }
 }

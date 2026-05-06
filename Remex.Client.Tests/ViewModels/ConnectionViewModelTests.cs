@@ -244,9 +244,24 @@ public class ConnectionViewModelCorrelationTests : IDisposable
             "_pendingCommands",
             BindingFlags.NonPublic | BindingFlags.Instance)!;
 
+    private static readonly FieldInfo ReceiveCtsField =
+        typeof(ConnectionViewModel).GetField(
+            "_receiveCts",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private static readonly FieldInfo ReconnectCtsField =
+        typeof(ConnectionViewModel).GetField(
+            "_reconnectCts",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
     private static readonly MethodInfo CleanupMethod =
         typeof(ConnectionViewModel).GetMethod(
             "Cleanup",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private static readonly MethodInfo StopReconnectingMethod =
+        typeof(ConnectionViewModel).GetMethod(
+            "StopReconnecting",
             BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     private ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> GetPendingCommands()
@@ -254,6 +269,14 @@ public class ConnectionViewModelCorrelationTests : IDisposable
             PendingCommandsField.GetValue(_viewModel)!;
 
     private void InvokeCleanup() => CleanupMethod.Invoke(_viewModel, null);
+
+    private void SetReceiveCts(CancellationTokenSource cancellationTokenSource)
+        => ReceiveCtsField.SetValue(_viewModel, cancellationTokenSource);
+
+    private void SetReconnectCts(CancellationTokenSource cancellationTokenSource)
+        => ReconnectCtsField.SetValue(_viewModel, cancellationTokenSource);
+
+    private void InvokeStopReconnecting() => StopReconnectingMethod.Invoke(_viewModel, null);
 
     public ConnectionViewModelCorrelationTests()
     {
@@ -295,6 +318,30 @@ public class ConnectionViewModelCorrelationTests : IDisposable
         InvokeCleanup();
 
         dict.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Cleanup_WithAlreadyDisposedReceiveTokenSource_ShouldNotThrow()
+    {
+        using var receiveCts = new CancellationTokenSource();
+        receiveCts.Dispose();
+        SetReceiveCts(receiveCts);
+
+        var act = () => InvokeCleanup();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void StopReconnecting_WithAlreadyDisposedTokenSource_ShouldNotThrow()
+    {
+        using var reconnectCts = new CancellationTokenSource();
+        reconnectCts.Dispose();
+        SetReconnectCts(reconnectCts);
+
+        var act = () => InvokeStopReconnecting();
+
+        act.Should().NotThrow();
     }
 
     // DONE_WITH_CONCERNS: The following two tests describe the intended behaviour but
