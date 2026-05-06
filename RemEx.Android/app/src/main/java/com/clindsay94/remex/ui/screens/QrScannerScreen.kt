@@ -34,9 +34,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -174,42 +172,93 @@ fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> 
                                                                     val json = JSONObject(raw)
                                                                     if (json.has("spkiHashBase64")
                                                                     ) {
-                                                                        val host = json.getString("host")
-                                                                        val port = json.getInt("port")
-                                                                        val spkiHash = json.getString("spkiHashBase64")
-                                                                        val pin = if (json.has("pin")) json.getString("pin") else null
+                                                                        val host =
+                                                                                json.getString(
+                                                                                        "host"
+                                                                                )
+                                                                        val port =
+                                                                                json.getInt("port")
+                                                                        val hostId =
+                                                                                json.optString(
+                                                                                                "hostId"
+                                                                                        )
+                                                                                        .takeIf {
+                                                                                            it.isNotBlank()
+                                                                                        }
+                                                                        val spkiHash =
+                                                                                json.getString(
+                                                                                        "spkiHashBase64"
+                                                                                )
 
                                                                         if (!scannedOnce.value) {
                                                                             scannedOnce.value = true
                                                                             scope.launch {
-                                                                                if (pin != null) {
-                                                                                    // Path must match RemexConstants.WebSocketPath ("/ws").
-                                                                                    val hostUrl = "wss://$host:$port/ws"
-                                                                                    val startResult = withContext(Dispatchers.IO) {
-                                                                                        RemexCoreClient.StartPairing(hostUrl, "Android Client", "2.0.0")
+                                                                                try {
+                                                                                    if (spkiHash.isBlank()
+                                                                                    ) {
+                                                                                        throw IllegalStateException(
+                                                                                                "QR code is missing the host certificate hash"
+                                                                                        )
                                                                                     }
-                                                                                    if (startResult == "OK") {
-                                                                                        val submitResult = withContext(Dispatchers.IO) {
-                                                                                            RemexCoreClient.SubmitPairingPin(pin)
-                                                                                        }
-                                                                                        if (submitResult.startsWith("OK:")) {
-                                                                                            val parts = submitResult.substring(3).split("|")
-                                                                                            if (parts.size >= 2) {
-                                                                                                PinnedHostStore.setPin(context, parts[0], parts[1])
-                                                                                            } else {
-                                                                                                PinnedHostStore.setPin(context, host, spkiHash)
-                                                                                            }
-                                                                                        } else {
-                                                                                            PinnedHostStore.setPin(context, host, spkiHash)
-                                                                                        }
-                                                                                    } else {
-                                                                                        PinnedHostStore.setPin(context, host, spkiHash)
+
+                                                                                    // QR itself is
+                                                                                    // the
+                                                                                    // out-of-band
+                                                                                    // trust
+                                                                                    // bootstrap.
+                                                                                    // Do not start
+                                                                                    // a second
+                                                                                    // pairing
+                                                                                    // session here;
+                                                                                    // that would
+                                                                                    // rotate the
+                                                                                    // host PIN and
+                                                                                    // invalidate
+                                                                                    // the QR
+                                                                                    // payload.
+                                                                                    if (!hostId.isNullOrBlank()
+                                                                                    ) {
+                                                                                        RemexCoreClient
+                                                                                                .SetPinnedHostHash(
+                                                                                                        hostId,
+                                                                                                        spkiHash
+                                                                                                )
+                                                                                        PinnedHostStore
+                                                                                                .setPin(
+                                                                                                        context,
+                                                                                                        hostId,
+                                                                                                        spkiHash
+                                                                                                )
                                                                                     }
-                                                                                } else {
-                                                                                    PinnedHostStore.setPin(context, host, spkiHash)
+
+                                                                                    RemexCoreClient
+                                                                                            .SetPinnedHostHash(
+                                                                                                    host,
+                                                                                                    spkiHash
+                                                                                            )
+                                                                                    PinnedHostStore
+                                                                                            .setPin(
+                                                                                                    context,
+                                                                                                    host,
+                                                                                                    spkiHash
+                                                                                            )
+                                                                                    errorMessage =
+                                                                                            null
+                                                                                    onScanned(
+                                                                                            host,
+                                                                                            port
+                                                                                    )
+                                                                                } catch (
+                                                                                        e:
+                                                                                                Exception) {
+                                                                                    errorMessage =
+                                                                                            e.message
+                                                                                                    ?: "QR setup failed"
+                                                                                    scannedOnce
+                                                                                            .value =
+                                                                                            false
                                                                                 }
                                                                             }
-                                                                            onScanned(host, port)
                                                                         }
                                                                     }
                                                                 } catch (_: Exception) {

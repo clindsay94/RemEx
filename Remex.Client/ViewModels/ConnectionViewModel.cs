@@ -962,24 +962,17 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             var certService = App.Services.GetService<ICertificateService>();
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
 
-            string? pin = null;
-            long? expiresAtUnixMs = null;
-
-            if (_pairingService != null)
-            {
-                var state = await _pairingService.StartPairingAsync(CancellationToken.None);
-                pin = state.Pin;
-                expiresAtUnixMs = state.ExpiresAtUnixMs;
-            }
+            // QR bootstrap is the out-of-band trust exchange: it carries the host endpoint and
+            // the certificate SPKI hash the phone should pin. Manual PIN pairing remains available
+            // for discovery/manual connection flows, but QR should not create a host pairing
+            // session because any later PairingRequest would rotate that PIN and invalidate it.
 
             var payload = JsonSerializer.Serialize(new
             {
                 host,
                 port,
-                hostId = string.Empty,
+                hostId = Environment.MachineName,
                 spkiHashBase64 = spkiHash,
-                pin = pin,
-                expiresAtUnixMs = expiresAtUnixMs
             });
 
             using var qrGenerator = new QRCodeGenerator();

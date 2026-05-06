@@ -405,16 +405,33 @@ public static class AndroidNativeExports
             ? new AndroidNativeInitRequest()
             : RemexJson.Deserialize(initJson, RemexJsonSerializerContext.Default.AndroidNativeInitRequest) ?? new AndroidNativeInitRequest();
 
+        var effectiveSpkiHash = initRequest.SpkiHash;
+        if (string.IsNullOrWhiteSpace(effectiveSpkiHash)
+            && !string.IsNullOrWhiteSpace(initRequest.Host)
+            && _pinnedHashes.TryGetValue(initRequest.Host, out var cachedHash)
+            && !string.IsNullOrWhiteSpace(cachedHash))
+        {
+            effectiveSpkiHash = cachedHash;
+            JniHelper.AndroidLogE("RemexNative", $"InitRemex resolved SPKI hash for {initRequest.Host} from native cache");
+        }
+
+        var effectiveInitRequest = string.IsNullOrWhiteSpace(effectiveSpkiHash)
+            ? initRequest
+            : initRequest with { SpkiHash = effectiveSpkiHash };
+
         lock (SyncRoot)
         {
-            _lastInitRequest = initRequest;
+            _lastInitRequest = effectiveInitRequest;
         }
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await RemexNativeClient.Current.ConnectAsync(initRequest.Host, initRequest.Port, initRequest.SpkiHash);
+                await RemexNativeClient.Current.ConnectAsync(
+                    effectiveInitRequest.Host,
+                    effectiveInitRequest.Port,
+                    effectiveInitRequest.SpkiHash);
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"ConnectAsync failed: {ex.Message}"); }
         });

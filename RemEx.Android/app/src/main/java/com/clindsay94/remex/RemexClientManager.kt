@@ -36,11 +36,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _processList = MutableSharedFlow<String>(replay = 1)
     val processList = _processList.asSharedFlow()
 
-    private val _frames = MutableSharedFlow<ByteArray>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    private val _frames =
+            MutableSharedFlow<ByteArray>(
+                    replay = 0,
+                    extraBufferCapacity = 1,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
     val frames = _frames.asSharedFlow()
 
     private val _hostCapabilities = MutableSharedFlow<String>(replay = 1)
@@ -82,7 +83,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     continue
                 }
 
-                val settings = settingsManager ?: run { delay(baseDelayMs); continue }
+                val settings =
+                        settingsManager
+                                ?: run {
+                                    delay(baseDelayMs)
+                                    continue
+                                }
                 val host = settings.hostFlow.first()
 
                 if (host.isBlank()) {
@@ -92,8 +98,15 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
                 // 2^20 * 5000ms ≈ 87 minutes, which already exceeds maxDelayMs (5 min),
                 // so coerceAtMost(20) safely avoids Int overflow on the shift.
-                val backoffMs = minOf(baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)), maxDelayMs)
-                Log.i("RemexManager", "Heartbeat auto-connect to $host (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)")
+                val backoffMs =
+                        minOf(
+                                baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)),
+                                maxDelayMs
+                        )
+                Log.i(
+                        "RemexManager",
+                        "Heartbeat auto-connect to $host (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)"
+                )
                 connect(null, true)
                 consecutiveFailures++
                 delay(backoffMs)
@@ -104,18 +117,28 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     fun toggleConnection(pairingPin: String? = null) {
         if (_isConnecting.value) return
         _isConnecting.value = true
-        managerScope.launch {
-            connect(pairingPin)
-        }
+        managerScope.launch { connect(pairingPin) }
     }
 
-    private val _pairingRequired = MutableSharedFlow<Pair<String, Int>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val _pairingRequired =
+            MutableSharedFlow<Pair<String, Int>>(
+                    extraBufferCapacity = 1,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
     val pairingRequired = _pairingRequired.asSharedFlow()
 
-    private val _connectionError = MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val _connectionError =
+            MutableSharedFlow<String>(
+                    extraBufferCapacity = 1,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
     val connectionError = _connectionError.asSharedFlow()
 
-    private val _fileTransferMessages = MutableSharedFlow<String>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val _fileTransferMessages =
+            MutableSharedFlow<String>(
+                    extraBufferCapacity = 8,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
     val fileTransferMessages = _fileTransferMessages.asSharedFlow()
 
     private suspend fun connect(pairingPin: String? = null, isAutoConnect: Boolean = false) {
@@ -128,24 +151,41 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             if (RemexCoreClient.isLibraryLoaded) {
                 // If not pinned, emit event to UI and abort auto-connect
                 val context = settings.context
-                var spkiHash = com.clindsay94.remex.security.PinnedHostStore.getPin(context, host)
-                
-                // If the user manually provided a PIN, they explicitly want to pair. 
+                var spkiHash =
+                        com.clindsay94.remex.security.PinnedHostStore.getPin(context, host)
+                                ?.takeIf { it.isNotBlank() }
+
+                if (spkiHash.isNullOrBlank()) {
+                    val cachedHash =
+                            RemexCoreClient.GetPinnedHostHash(host).takeIf {
+                                it.isNotBlank() && !it.startsWith("{\"success\":false")
+                            }
+                    if (cachedHash != null) {
+                        spkiHash = cachedHash
+                        Log.i("RemexManager", "Using native cached SPKI hash for $host")
+                    }
+                }
+
+                // If the user manually provided a PIN, they explicitly want to pair.
                 // This clears any stale SPKI hashes and forces a re-pair.
                 if (!pairingPin.isNullOrBlank() && pairingPin.length == 6) {
                     spkiHash = null
                 }
-                
-                if (spkiHash == null) {
+
+                if (spkiHash.isNullOrBlank()) {
                     if (pairingPin != null && pairingPin.length == 6) {
                         // Attempt automatic pairing with the provided PIN
-                        Log.i("RemexManager", "Attempting automatic pairing for $host with provided PIN")
-                        val pairResult = RemexCoreClient.StartPairing(
-                            "wss://$host:$port/ws",
-                            "Android Client",
-                            "2.0.0"
+                        Log.i(
+                                "RemexManager",
+                                "Attempting automatic pairing for $host with provided PIN"
                         )
-                        
+                        val pairResult =
+                                RemexCoreClient.StartPairing(
+                                        "wss://$host:$port/ws",
+                                        "Android Client",
+                                        "2.0.0"
+                                )
+
                         if (pairResult == "OK") {
                             val submitResult = RemexCoreClient.SubmitPairingPin(pairingPin)
                             if (submitResult.startsWith("OK:")) {
@@ -153,14 +193,28 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                 if (parts.size >= 2) {
                                     val hostId = parts[0]
                                     val newHash = parts[1]
-                                    // Pin by both Unique ID (for discovery) and IP (for manual connection)
-                                    com.clindsay94.remex.security.PinnedHostStore.setPin(context, hostId, newHash)
-                                    com.clindsay94.remex.security.PinnedHostStore.setPin(context, host, newHash)
+                                    // Pin by both Unique ID (for discovery) and IP (for manual
+                                    // connection)
+                                    RemexCoreClient.SetPinnedHostHash(hostId, newHash)
+                                    RemexCoreClient.SetPinnedHostHash(host, newHash)
+                                    com.clindsay94.remex.security.PinnedHostStore.setPin(
+                                            context,
+                                            hostId,
+                                            newHash
+                                    )
+                                    com.clindsay94.remex.security.PinnedHostStore.setPin(
+                                            context,
+                                            host,
+                                            newHash
+                                    )
                                     spkiHash = newHash
                                     Log.i("RemexManager", "Automatic pairing successful for $host")
                                 }
                             } else {
-                                Log.e("RemexManager", "Automatic pairing PIN submission failed: $submitResult")
+                                Log.e(
+                                        "RemexManager",
+                                        "Automatic pairing PIN submission failed: $submitResult"
+                                )
                                 _connectionError.tryEmit("Pairing failed: $submitResult")
                                 _isConnecting.value = false
                                 return
@@ -180,15 +234,19 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     }
                 }
 
-                val initRequest = JSONObject().apply {
-                    put("host", host)
-                    put("port", port)
-                    put("spkiHash", spkiHash)
-                    put("startTelemetryPolling", true)
-                }
+                val initRequest =
+                        JSONObject().apply {
+                            put("host", host)
+                            put("port", port)
+                            put("spkiHash", spkiHash)
+                            put("startTelemetryPolling", true)
+                        }
                 val result = RemexCoreClient.InitRemex(initRequest.toString())
                 if (result.isBlank()) {
-                    Log.w("RemexManager", "InitRemex returned blank — possible native-side failure for $host:$port")
+                    Log.w(
+                            "RemexManager",
+                            "InitRemex returned blank — possible native-side failure for $host:$port"
+                    )
                     _isConnecting.value = false
                 } else {
                     val json = JSONObject(result)

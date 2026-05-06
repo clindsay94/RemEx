@@ -199,6 +199,8 @@ fun PairingScreen(
                             coroutineScope.launch {
                                 val paired =
                                         viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
+                                            RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
+                                            RemexCoreClient.SetPinnedHostHash(host, spkiHash)
                                             PinnedHostStore.setPin(context, hostId, spkiHash)
                                             PinnedHostStore.setPin(context, host, spkiHash)
                                         }
