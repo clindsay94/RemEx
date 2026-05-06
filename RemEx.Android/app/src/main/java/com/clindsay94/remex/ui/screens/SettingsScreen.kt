@@ -77,7 +77,8 @@ enum class SettingsCategory : Parcelable {
 @Composable
 fun SettingsScreen(
     onReplayTutorial: (() -> Unit)? = null,
-    onNavigateToAbout: (() -> Unit)? = null
+    onNavigateToAbout: (() -> Unit)? = null,
+    onNavigateToQrScanner: (() -> Unit)? = null
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<SettingsCategory>()
     val scope = rememberCoroutineScope()
@@ -102,7 +103,8 @@ fun SettingsScreen(
                 SettingsDetailContent(
                     category = category,
                     onReplayTutorial = onReplayTutorial,
-                    onNavigateToAbout = onNavigateToAbout
+                    onNavigateToAbout = onNavigateToAbout,
+                    onNavigateToQrScanner = onNavigateToQrScanner
                 )
             }
         }
@@ -150,11 +152,14 @@ private fun SettingsCategoryList(
 private fun SettingsDetailContent(
     category: SettingsCategory,
     onReplayTutorial: (() -> Unit)?,
-    onNavigateToAbout: (() -> Unit)?
+    onNavigateToAbout: (() -> Unit)?,
+    onNavigateToQrScanner: (() -> Unit)?
 ) {
     // Each tab provides its own layout/scrolling
     when (category) {
-        SettingsCategory.CONNECTION -> ConnectionScreen()
+        SettingsCategory.CONNECTION -> ConnectionScreen(
+            onNavigateToQrScanner = onNavigateToQrScanner ?: {}
+        )
         SettingsCategory.PERSONALIZATION -> PersonalizationScreen(showHeader = true)
         SettingsCategory.INPUT -> InputTab()
         SettingsCategory.HELP -> HelpTab(

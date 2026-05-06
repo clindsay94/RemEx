@@ -1,0 +1,1103 @@
+5/6/26 2:42 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Server.Kestrel.Connections[34]
+5/6/26 2:42 AM	Remex.Client.Desktop	      Connection id "0HNLB971GEECI", Request id "0HNLB971GEECI:00000001": the application aborted the connection.
+5/6/26 2:42 AM	Remex.Client.Desktop	info: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:42 AM	Remex.Client.Desktop	      Client disconnected.
+5/6/26 2:42 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+5/6/26 2:42 AM	Remex.Client.Desktop	      Executed endpoint '/ws'
+5/6/26 2:42 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+5/6/26 2:42 AM	Remex.Client.Desktop	      Request finished HTTP/1.1 GET https://localhost:5005/ws - 101 - - 730123.4670ms
+5/6/26 2:42 AM	Remex.Client.Desktop	warn: Remex.Client.ViewModels.ConnectionViewModel[0]
+5/6/26 2:42 AM	Remex.Client.Desktop	      WebSocket connection lost in receive loop
+5/6/26 2:42 AM	Remex.Client.Desktop	      System.Net.WebSockets.WebSocketException (2): The remote party closed the WebSocket connection without completing the close handshake. ---> System.IO.IOException: Unable to read data from the transport connection: Operation canceled.
+5/6/26 2:42 AM	Remex.Client.Desktop	       ---> System.Net.Sockets.SocketException (125): Operation canceled
+5/6/26 2:42 AM	Remex.Client.Desktop	         --- End of inner exception stack trace ---
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource<System.Int32>.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.Security.SslStream.EnsureFullTlsFrameAsync[TIOAdapter](CancellationToken cancellationToken, Int32 estimatedSize)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.Security.SslStream.ReadAsyncInternal[TIOAdapter](Memory`1 buffer, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.Http.HttpConnection.ReadBufferedAsyncCore(Memory`1 destination)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.Http.HttpConnection.RawConnectionStream.ReadAsync(Memory`1 buffer, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.IO.Stream.ReadAtLeastAsyncCore(Memory`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.EnsureBufferContainsAsync(Int32 minimumRequiredBytes, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ReceiveAsyncPrivate[TResult](Memory`1 payloadBuffer, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ReceiveAsyncPrivate[TResult](Memory`1 payloadBuffer, CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	         at System.Threading.Tasks.ValueTask`1.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+5/6/26 2:42 AM	Remex.Client.Desktop	      --- End of stack trace from previous location ---
+5/6/26 2:42 AM	Remex.Client.Desktop	         at Remex.Core.Messages.MessageSerializer.ReceiveAsync(WebSocket webSocket, CancellationToken ct) in /home/connorl/RemEx/Remex.Core/Messages/MessageSerializer.cs:line 65
+5/6/26 2:42 AM	Remex.Client.Desktop	         at Remex.Client.ViewModels.ConnectionViewModel.ReceiveLoopAsync(CancellationToken ct) in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 668
+5/6/26 2:42 AM	Remex.Client.Desktop	Unhandled exception. System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+5/6/26 2:42 AM	Remex.Client.Desktop	   at System.Threading.CancellationTokenSource.Cancel()
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Remex.Client.ViewModels.ConnectionViewModel.Cleanup() in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 900
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Remex.Client.ViewModels.ConnectionViewModel.<ReceiveLoopAsync>b__94_0() in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 794
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.DispatcherOperation.InvokeCore()
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.ExecuteJobsCore(Boolean fromExplicitBackgroundProcessingCallback)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.X11.X11PlatformThreading.RunLoop(CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.DispatcherFrame.Run(IControlledDispatcherImpl impl)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.PushFrame(DispatcherFrame frame)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.MainLoop(CancellationToken cancellationToken)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime.StartCore(String[] args)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime.Start(String[] args)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.ClassicDesktopStyleApplicationLifetimeExtensions.StartWithClassicDesktopLifetime(AppBuilder builder, String[] args, Action`1 lifetimeBuilder)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Remex.Client.Desktop.Program.Main(String[] args) in /home/connorl/RemEx/Remex.Client.Desktop/Program.cs:line 68
+5/6/26 2:42 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:42 AM	Remex.Client.Desktop	      Application is shutting down...
+5/6/26 2:42 AM	Remex.Client.Desktop	Unhandled exception. System.Threading.Tasks.TaskCanceledException: A task was canceled.
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.InvokeImpl(DispatcherOperation operation, CancellationToken cancellationToken, TimeSpan timeout)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.Send(SendOrPostCallback action, Object arg, Nullable`1 priority)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Observer.Emit(Exception exception)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Observer.Dispose(Exception exception, Boolean removeObserver)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Dispose()
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.Connection.Disconnect(Exception disconnectReason, DBusConnection trigger)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Disconnect(Exception ex)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.HandleMessages(Exception exception, Message message)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at System.Threading.Tasks.Task.<>c.<ThrowAsync>b__124_1(Object state)
+5/6/26 2:42 AM	Remex.Client.Desktop	   at System.Threading.ThreadPoolWorkQueue.Dispatch()
+5/6/26 2:42 AM	Remex.Client.Desktop	   at System.Threading.PortableThreadPool.WorkerThread.WorkerThreadStart()
+5/6/26 2:42 AM	Remex.Client.Desktop	   at System.Threading.Thread.StartCallback()
+5/6/26 2:42 AM	systemd-coredump	Process 296815 (Remex.Client.De) of user 1000 dumped core.
+
+Stack trace of thread 299944:
+#0  0x00007fb88d8ae9cb pthread_kill (libc.so.6 + 0xae9cb)
+#1  0x00007fb88d844d08 raise (libc.so.6 + 0x44d08)
+#2  0x00007fb88d825790 abort (libc.so.6 + 0x25790)
+#3  0x00007fb88d637449 n/a (libcoreclr.so + 0x637449)
+#4  0x00007fb88d637369 n/a (libcoreclr.so + 0x637369)
+#5  0x00007fb88d53862a n/a (libcoreclr.so + 0x53862a)
+#6  0x00007fb88d535356 n/a (libcoreclr.so + 0x535356)
+#7  0x00007fb88d534ed9 n/a (libcoreclr.so + 0x534ed9)
+#8  0x00007fb88d4ad6df n/a (libcoreclr.so + 0x4ad6df)
+#9  0x00007fb8134bf269 n/a (n/a + 0x0)
+#10 0x00007fb80e2e0245 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6350 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296815:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8ab9e0 pthread_cond_wait (libc.so.6 + 0xab9e0)
+#4  0x00007fb88d62fc52 n/a (libcoreclr.so + 0x62fc52)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d4209a2 n/a (libcoreclr.so + 0x4209a2)
+#9  0x00007fb88d41c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fb88d5100a9 n/a (libcoreclr.so + 0x5100a9)
+#11 0x00007fb88d421a0d n/a (libcoreclr.so + 0x421a0d)
+#12 0x00007fb88d41aa23 n/a (libcoreclr.so + 0x41aa23)
+#13 0x00007fb88d2e4659 n/a (libcoreclr.so + 0x2e4659)
+#14 0x00007fb815812c3c n/a (n/a + 0x0)
+#15 0x00007fb81549642f n/a (n/a + 0x0)
+#16 0x00007fb80e2dbcc6 n/a (n/a + 0x0)
+#17 0x00007fb815496248 n/a (n/a + 0x0)
+#18 0x00007fb80f0a236c n/a (n/a + 0x0)
+#19 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#20 0x00007fb88d4584a1 n/a (libcoreclr.so + 0x4584a1)
+#21 0x00007fb88d33ee54 n/a (libcoreclr.so + 0x33ee54)
+#22 0x00007fb88d33f2bc n/a (libcoreclr.so + 0x33f2bc)
+#23 0x00007fb88d367c6e n/a (libcoreclr.so + 0x367c6e)
+#24 0x00007fb88d1c9f26 coreclr_execute_assembly (libcoreclr.so + 0x1c9f26)
+#25 0x00007fb88dad801c n/a (libhostpolicy.so + 0x2f01c)
+#26 0x00007fb88dad93e9 corehost_main (libhostpolicy.so + 0x303e9)
+#27 0x00007fb88df913bb n/a (libhostfxr.so + 0x213bb)
+#28 0x00007fb88df8ff13 n/a (libhostfxr.so + 0x1ff13)
+#29 0x00007fb88df8a867 hostfxr_main_startupinfo (libhostfxr.so + 0x1a867)
+#30 0x0000559eed1fc2db n/a (/home/connorl/publishedremex/Remex.Client.Desktop + 0x82db)
+#31 0x0000559eed1fc5ff n/a (/home/connorl/publishedremex/Remex.Client.Desktop + 0x85ff)
+#32 0x00007fb88d827c4e n/a (libc.so.6 + 0x27c4e)
+#33 0x00007fb88d827d8b __libc_start_main (libc.so.6 + 0x27d8b)
+#34 0x0000559eed1fb1ba n/a (/home/connorl/publishedremex/Remex.Client.Desktop + 0x71ba)
+
+Stack trace of thread 296838:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d939e2a read (libc.so.6 + 0x139e2a)
+#3  0x00007f8868515eed n/a (libICE.so.6 + 0x4eed)
+#4  0x00007f886851e950 _IceRead (libICE.so.6 + 0xd950)
+#5  0x00007f8868521f03 IceProcessMessages (libICE.so.6 + 0x10f03)
+#6  0x00007fb812384c7b n/a (n/a + 0x0)
+#7  0x00007fb8123849df n/a (n/a + 0x0)
+#8  0x00007fb81238490a n/a (n/a + 0x0)
+#9  0x00007fb80e2c271e n/a (n/a + 0x0)
+#10 0x00007fb80e2db270 n/a (n/a + 0x0)
+#11 0x00007fb80e2ccc0e n/a (n/a + 0x0)
+#12 0x00007fb80e2d6350 n/a (n/a + 0x0)
+#13 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#14 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#15 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#16 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#17 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#18 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#19 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#20 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#21 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 304207:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6344a4 n/a (libcoreclr.so + 0x6344a4)
+#8  0x00007fb88d4740b1 n/a (libcoreclr.so + 0x4740b1)
+#9  0x00007fb8141c5ae6 n/a (n/a + 0x0)
+#10 0x00007fb8141a5524 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6398 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 305865:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6344a4 n/a (libcoreclr.so + 0x6344a4)
+#8  0x00007fb88d4740b1 n/a (libcoreclr.so + 0x4740b1)
+#9  0x00007fb8141c5ae6 n/a (n/a + 0x0)
+#10 0x00007fb8141a5524 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6398 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 298255:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6344a4 n/a (libcoreclr.so + 0x6344a4)
+#8  0x00007fb88d4740b1 n/a (libcoreclr.so + 0x4740b1)
+#9  0x00007fb8141c5ae6 n/a (n/a + 0x0)
+#10 0x00007fb8141a5524 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6398 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 305175:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6344a4 n/a (libcoreclr.so + 0x6344a4)
+#8  0x00007fb88d4740b1 n/a (libcoreclr.so + 0x4740b1)
+#9  0x00007fb8141c5ae6 n/a (n/a + 0x0)
+#10 0x00007fb8141a5524 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6398 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296823:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8ab9e0 pthread_cond_wait (libc.so.6 + 0xab9e0)
+#4  0x00007fb88d62fc52 n/a (libcoreclr.so + 0x62fc52)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d274334 n/a (libcoreclr.so + 0x274334)
+#9  0x00007fb88d274190 n/a (libcoreclr.so + 0x274190)
+#10 0x00007fb88d273e95 n/a (libcoreclr.so + 0x273e95)
+#11 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#12 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#13 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 303434:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6344a4 n/a (libcoreclr.so + 0x6344a4)
+#8  0x00007fb88d4740b1 n/a (libcoreclr.so + 0x4740b1)
+#9  0x00007fb8141c5ae6 n/a (n/a + 0x0)
+#10 0x00007fb8141a5524 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6398 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296821:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d93963a __poll (libc.so.6 + 0x13963a)
+#3  0x00007fb88d27c258 n/a (libcoreclr.so + 0x27c258)
+#4  0x00007fb88d1f53a9 n/a (libcoreclr.so + 0x1f53a9)
+#5  0x00007fb88d1fa1f2 n/a (libcoreclr.so + 0x1fa1f2)
+#6  0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#7  0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#8  0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296828:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8ab9e0 pthread_cond_wait (libc.so.6 + 0xab9e0)
+#4  0x00007fb88d62fc52 n/a (libcoreclr.so + 0x62fc52)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d4209a2 n/a (libcoreclr.so + 0x4209a2)
+#9  0x00007fb88d41c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fb88d5100a9 n/a (libcoreclr.so + 0x5100a9)
+#11 0x00007fb88d421a0d n/a (libcoreclr.so + 0x421a0d)
+#12 0x00007fb88d41aa23 n/a (libcoreclr.so + 0x41aa23)
+#13 0x00007fb88d2e4659 n/a (libcoreclr.so + 0x2e4659)
+#14 0x00007fb80e2b8f44 n/a (n/a + 0x0)
+#15 0x00007fb80f0d1177 n/a (n/a + 0x0)
+#16 0x00007fb80f0d0d06 n/a (n/a + 0x0)
+#17 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#18 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#19 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#20 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#21 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#22 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#23 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#24 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#25 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296822:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d939411 __open64 (libc.so.6 + 0x139411)
+#3  0x00007fb88d27bc8f n/a (libcoreclr.so + 0x27bc8f)
+#4  0x00007fb88d276a37 n/a (libcoreclr.so + 0x276a37)
+#5  0x00007fb88d275b05 n/a (libcoreclr.so + 0x275b05)
+#6  0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#7  0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#8  0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296820:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d93963a __poll (libc.so.6 + 0x13963a)
+#3  0x00007fb88d63156e n/a (libcoreclr.so + 0x63156e)
+#4  0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#5  0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#6  0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 302710:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6344a4 n/a (libcoreclr.so + 0x6344a4)
+#8  0x00007fb88d4740b1 n/a (libcoreclr.so + 0x4740b1)
+#9  0x00007fb8141c5ae6 n/a (n/a + 0x0)
+#10 0x00007fb8141a5524 n/a (n/a + 0x0)
+#11 0x00007fb80e2d6398 n/a (n/a + 0x0)
+#12 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#13 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#14 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#15 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#16 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#17 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#18 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#19 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#20 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296827:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d939e2a read (libc.so.6 + 0x139e2a)
+#3  0x00007fb88df4b97e SystemNative_Read (libSystem.Native.so + 0xe97e)
+#4  0x00007fb810d23925 n/a (n/a + 0x0)
+#5  0x00007fb810d2780d n/a (n/a + 0x0)
+#6  0x00007fb810d2768d n/a (n/a + 0x0)
+#7  0x00007fb80e2b963d n/a (n/a + 0x0)
+#8  0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#9  0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#10 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#11 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#12 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#13 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#14 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#15 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296830:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8ab9e0 pthread_cond_wait (libc.so.6 + 0xab9e0)
+#4  0x00007fb88d62fc52 n/a (libcoreclr.so + 0x62fc52)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d4209a2 n/a (libcoreclr.so + 0x4209a2)
+#9  0x00007fb88d41c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fb88d5100a9 n/a (libcoreclr.so + 0x5100a9)
+#11 0x00007fb88d421a0d n/a (libcoreclr.so + 0x421a0d)
+#12 0x00007fb88d41aa23 n/a (libcoreclr.so + 0x41aa23)
+#13 0x00007fb88d2e4659 n/a (libcoreclr.so + 0x2e4659)
+#14 0x00007fb8154778b0 n/a (n/a + 0x0)
+#15 0x00007fb80f0d1177 n/a (n/a + 0x0)
+#16 0x00007fb80f0d0d06 n/a (n/a + 0x0)
+#17 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#18 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#19 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#20 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#21 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#22 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#23 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#24 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#25 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296861:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8ab9e0 pthread_cond_wait (libc.so.6 + 0xab9e0)
+#4  0x00007fb88d62fc52 n/a (libcoreclr.so + 0x62fc52)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d4209a2 n/a (libcoreclr.so + 0x4209a2)
+#9  0x00007fb88d41c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fb88d5100a9 n/a (libcoreclr.so + 0x5100a9)
+#11 0x00007fb88d421a0d n/a (libcoreclr.so + 0x421a0d)
+#12 0x00007fb88d41aa23 n/a (libcoreclr.so + 0x41aa23)
+#13 0x00007fb88d2e4659 n/a (libcoreclr.so + 0x2e4659)
+#14 0x00007fb8154778b0 n/a (n/a + 0x0)
+#15 0x00007fb80f0d1177 n/a (n/a + 0x0)
+#16 0x00007fb80f0d0d06 n/a (n/a + 0x0)
+#17 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#18 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#19 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#20 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#21 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#22 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#23 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#24 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#25 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296829:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d939e2a read (libc.so.6 + 0x139e2a)
+#3  0x00007fb88df51b1f n/a (libSystem.Native.so + 0x14b1f)
+#4  0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#5  0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296826:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d9478a1 epoll_wait (libc.so.6 + 0x1478a1)
+#3  0x00007fb88df4f032 SystemNative_WaitForSocketEvents (libSystem.Native.so + 0x12032)
+#4  0x00007fb80f96d4a3 n/a (n/a + 0x0)
+#5  0x00007fb80f98eb3c n/a (n/a + 0x0)
+#6  0x00007fb80e2b963d n/a (n/a + 0x0)
+#7  0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#8  0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#9  0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#10 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#11 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#12 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#13 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#14 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296840:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d420c32 n/a (libcoreclr.so + 0x420c32)
+#9  0x00007fb88d41c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fb88d473bd4 n/a (libcoreclr.so + 0x473bd4)
+#11 0x00007fb814f59da1 n/a (n/a + 0x0)
+#12 0x00007fb80e2d0760 n/a (n/a + 0x0)
+#13 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#14 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#15 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#16 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#17 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#18 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#19 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#20 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#21 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296854:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634aa9 n/a (libcoreclr.so + 0x634aa9)
+#7  0x00007fb88d422018 n/a (libcoreclr.so + 0x422018)
+#8  0x00007fb88d46e0ab n/a (libcoreclr.so + 0x46e0ab)
+#9  0x00007fb814eb96c1 n/a (n/a + 0x0)
+#10 0x00007fb815917257 n/a (n/a + 0x0)
+#11 0x00007fb812a3560e n/a (n/a + 0x0)
+#12 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#13 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#14 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#15 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#16 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#17 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#18 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#19 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296867:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a897f n/a (libc.so.6 + 0xa897f)
+#2  0x00007fb88d93963a __poll (libc.so.6 + 0x13963a)
+#3  0x00007f8849615947 n/a (libnvidia-glcore.so.595.71.05 + 0xa15947)
+#4  0x00007f88495f5a74 n/a (libnvidia-glcore.so.595.71.05 + 0x9f5a74)
+#5  0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#6  0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 306064:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634aa9 n/a (libcoreclr.so + 0x634aa9)
+#7  0x00007fb88d42790a n/a (libcoreclr.so + 0x42790a)
+#8  0x00007fb88d4277c8 n/a (libcoreclr.so + 0x4277c8)
+#9  0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#10 0x00007fb88d4276f0 n/a (libcoreclr.so + 0x4276f0)
+#11 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#12 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#13 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296824:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d491441 n/a (libcoreclr.so + 0x491441)
+#9  0x00007fb88d491537 n/a (libcoreclr.so + 0x491537)
+#10 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#11 0x00007fb88d491aba n/a (libcoreclr.so + 0x491aba)
+#12 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#13 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#14 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 296832:
+#0  0x00007fb88d8b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fb88d8a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fb88d8a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fb88d8abcad pthread_cond_timedwait (libc.so.6 + 0xabcad)
+#4  0x00007fb88d62fbf5 n/a (libcoreclr.so + 0x62fbf5)
+#5  0x00007fb88d62f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fb88d634310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fb88d6345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fb88d420c32 n/a (libcoreclr.so + 0x420c32)
+#9  0x00007fb88d41c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fb88d473bd4 n/a (libcoreclr.so + 0x473bd4)
+#11 0x00007fb814f59da1 n/a (n/a + 0x0)
+#12 0x00007fb80e2d3c40 n/a (n/a + 0x0)
+#13 0x00007fb80e2b9646 n/a (n/a + 0x0)
+#14 0x00007fb88d5f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#15 0x00007fb88d457d75 n/a (libcoreclr.so + 0x457d75)
+#16 0x00007fb88d46e5ab n/a (libcoreclr.so + 0x46e5ab)
+#17 0x00007fb88d42401c n/a (libcoreclr.so + 0x42401c)
+#18 0x00007fb88d46c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#19 0x00007fb88d63b579 n/a (libcoreclr.so + 0x63b579)
+#20 0x00007fb88d8ac6ec n/a (libc.so.6 + 0xac6ec)
+#21 0x00007fb88d9477bc n/a (libc.so.6 + 0x1477bc)
+ELF object binary architecture: AMD x86-64
+
+5/6/26 2:42 AM	drkonqi-coredump-processor	"/home/connorl/publishedremex/Remex.Client.Desktop" 296815 "/var/lib/systemd/coredump/core.Remex\\x2eClient\\x2eDe.1000.08bb35b84ef04f1d8df97bc5dd6128e3.296815.1778056974000000.zst"
+5/6/26 2:42 AM	drkonqi-coredump-launcher	Unable to find file for pid 296815 expected at "kcrash-metadata/Remex.Client.Desktop.08bb35b84ef04f1d8df97bc5dd6128e3.296815.ini"
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.CertificateService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Loading existing certificate from /home/connorl/.local/share/Remex/cert.pfx
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.CertificateService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Certificate loaded. Subject=CN=RemExHost, Expires=05/03/2031 01:04:31
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.CertificateService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Certificate SPKI SHA-256: l6FfeK7JpODp7Pw6eqjHPwQDLCMZ8Anz+P0qQjYay70=
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Telemetry.TelemetryBackgroundService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Telemetry background broadcaster started.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.IpcHostServer[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Starting RemExLocalIPC Named Pipe Server...
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Loaded TLS certificate for TCP command port
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Starting external network listener on port 8338
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Network.MdnsAdvertisingService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Starting mDNS advertising for Akira-OS (_remex._tcp) on port 5005
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Server.Kestrel.Https.Internal.HttpsConnectionMiddleware[9]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Certificate with thumbprint 8AE6C367019FC822609EA5E48A73EC88FE048F47 lacks the subjectAlternativeName (SAN) extension and may not be accepted by browsers.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[14]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Now listening on: https://[::]:5005
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Application started. Press Ctrl+C to shut down.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Hosting environment: Production
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Content root path: /home/connorl/publishedremex/
+5/6/26 2:43 AM	Remex.Client.Desktop	[Remex] Embedded host started on port 5005.
+5/6/26 2:43 AM	Remex.Client.Desktop	Initializing Remex.Client in Server Mode (Direct Execution)
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Starting external network listener on port 8338
+5/6/26 2:43 AM	Remex.Client.Desktop	warn: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Port 8338 is already in use. Trying next port...
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Starting external network listener on port 8339
+5/6/26 2:43 AM	Remex.Client.Desktop	warn: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Primary port 8338 unavailable; fell back to port 8339
+5/6/26 2:43 AM	Remex.Client.Desktop	warn: Remex.Client.ViewModels.ConnectionViewModel[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Unknown host certificate SPKI l6FfeK7JpODp7Pw6eqjHPwQDLCMZ8Anz+P0qQjYay70=. Accepting for potential pairing handshake.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Request starting HTTP/1.1 GET https://localhost:5005/ws - - -
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Executing endpoint '/ws'
+5/6/26 2:43 AM	Remex.Client.Desktop	which: no ydotool in (/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/share/dotnet:/home/connorl/.dotnet/tools:/var/lib/flatpak/exports/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl)
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Input.LinuxInputSimulationService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Linux input backend: Xdotool (/usr/bin/xdotool)
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Client connected.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Client disconnected.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Executed endpoint '/ws'
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Request finished HTTP/1.1 GET https://localhost:5005/ws - 101 - - 19222.3480ms
+5/6/26 2:43 AM	Remex.Client.Desktop	warn: Remex.Client.ViewModels.ConnectionViewModel[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      WebSocket connection lost in receive loop
+5/6/26 2:43 AM	Remex.Client.Desktop	      System.Net.WebSockets.WebSocketException (2): The remote party closed the WebSocket connection without completing the close handshake.
+5/6/26 2:43 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ThrowEOFUnexpected()
+5/6/26 2:43 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.EnsureBufferContainsAsync(Int32 minimumRequiredBytes, CancellationToken cancellationToken)
+5/6/26 2:43 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+5/6/26 2:43 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ReceiveAsyncPrivate[TResult](Memory`1 payloadBuffer, CancellationToken cancellationToken)
+5/6/26 2:43 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:43 AM	Remex.Client.Desktop	         at System.Threading.Tasks.ValueTask`1.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+5/6/26 2:43 AM	Remex.Client.Desktop	      --- End of stack trace from previous location ---
+5/6/26 2:43 AM	Remex.Client.Desktop	         at Remex.Core.Messages.MessageSerializer.ReceiveAsync(WebSocket webSocket, CancellationToken ct) in /home/connorl/RemEx/Remex.Core/Messages/MessageSerializer.cs:line 65
+5/6/26 2:43 AM	Remex.Client.Desktop	         at Remex.Client.ViewModels.ConnectionViewModel.ReceiveLoopAsync(CancellationToken ct) in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 668
+5/6/26 2:43 AM	Remex.Client.Desktop	warn: Remex.Client.ViewModels.ConnectionViewModel[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Unknown host certificate SPKI l6FfeK7JpODp7Pw6eqjHPwQDLCMZ8Anz+P0qQjYay70=. Accepting for potential pairing handshake.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Request starting HTTP/1.1 GET https://localhost:5005/ws - - -
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Executing endpoint '/ws'
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Client connected.
+5/6/26 2:43 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.PairingService[0]
+5/6/26 2:43 AM	Remex.Client.Desktop	      Pairing session started. PIN: 937546, Expires at: 05/06/2026 08:45:55 +00:00
+5/6/26 2:44 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.PairingService[0]
+5/6/26 2:44 AM	Remex.Client.Desktop	      Pairing session started. PIN: 770975, Expires at: 05/06/2026 08:46:41 +00:00
+5/6/26 2:49 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.PairingService[0]
+5/6/26 2:49 AM	Remex.Client.Desktop	      Pairing session started. PIN: 427539, Expires at: 05/06/2026 08:51:11 +00:00
+5/6/26 2:54 AM	Remex.Client.Desktop	warn: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:54 AM	Remex.Client.Desktop	      WebSocket error.
+5/6/26 2:54 AM	Remex.Client.Desktop	      System.Net.WebSockets.WebSocketException (0x80004005): The remote party closed the WebSocket connection without completing the close handshake.
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ThrowEOFUnexpected()
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.EnsureBufferContainsAsync(Int32 minimumRequiredBytes, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ReceiveAsyncPrivate[TResult](Memory`1 payloadBuffer, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Threading.Tasks.ValueTask`1.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+5/6/26 2:54 AM	Remex.Client.Desktop	      --- End of stack trace from previous location ---
+5/6/26 2:54 AM	Remex.Client.Desktop	         at Remex.Core.Messages.MessageSerializer.ReceiveAsync(WebSocket webSocket, CancellationToken ct) in /home/connorl/RemEx/Remex.Core/Messages/MessageSerializer.cs:line 65
+5/6/26 2:54 AM	Remex.Client.Desktop	         at Remex.Host.Handlers.PingPongHandler.HandleAsync(WebSocket webSocket, CancellationToken ct) in /home/connorl/RemEx/Remex.Host/Handlers/PingPongHandler.cs:line 99
+5/6/26 2:54 AM	Remex.Client.Desktop	info: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:54 AM	Remex.Client.Desktop	      Client disconnected.
+5/6/26 2:54 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Server.Kestrel.Connections[34]
+5/6/26 2:54 AM	Remex.Client.Desktop	      Connection id "0HNLB9DV6KKP4", Request id "0HNLB9DV6KKP4:00000001": the application aborted the connection.
+5/6/26 2:54 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+5/6/26 2:54 AM	Remex.Client.Desktop	      Executed endpoint '/ws'
+5/6/26 2:54 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+5/6/26 2:54 AM	Remex.Client.Desktop	      Request finished HTTP/1.1 GET https://localhost:5005/ws - 101 - - 662743.2706ms
+5/6/26 2:54 AM	Remex.Client.Desktop	warn: Remex.Client.ViewModels.ConnectionViewModel[0]
+5/6/26 2:54 AM	Remex.Client.Desktop	      WebSocket connection lost in receive loop
+5/6/26 2:54 AM	Remex.Client.Desktop	      System.Net.WebSockets.WebSocketException (2): The remote party closed the WebSocket connection without completing the close handshake. ---> System.IO.IOException: Unable to read data from the transport connection: Operation canceled.
+5/6/26 2:54 AM	Remex.Client.Desktop	       ---> System.Net.Sockets.SocketException (125): Operation canceled
+5/6/26 2:54 AM	Remex.Client.Desktop	         --- End of inner exception stack trace ---
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource<System.Int32>.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.Security.SslStream.EnsureFullTlsFrameAsync[TIOAdapter](CancellationToken cancellationToken, Int32 estimatedSize)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.Security.SslStream.ReadAsyncInternal[TIOAdapter](Memory`1 buffer, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.Http.HttpConnection.ReadBufferedAsyncCore(Memory`1 destination)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.Http.HttpConnection.RawConnectionStream.ReadAsync(Memory`1 buffer, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.IO.Stream.ReadAtLeastAsyncCore(Memory`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.EnsureBufferContainsAsync(Int32 minimumRequiredBytes, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ReceiveAsyncPrivate[TResult](Memory`1 payloadBuffer, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Net.WebSockets.ManagedWebSocket.ReceiveAsyncPrivate[TResult](Memory`1 payloadBuffer, CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	         at System.Threading.Tasks.ValueTask`1.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+5/6/26 2:54 AM	Remex.Client.Desktop	      --- End of stack trace from previous location ---
+5/6/26 2:54 AM	Remex.Client.Desktop	         at Remex.Core.Messages.MessageSerializer.ReceiveAsync(WebSocket webSocket, CancellationToken ct) in /home/connorl/RemEx/Remex.Core/Messages/MessageSerializer.cs:line 65
+5/6/26 2:54 AM	Remex.Client.Desktop	         at Remex.Client.ViewModels.ConnectionViewModel.ReceiveLoopAsync(CancellationToken ct) in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 668
+5/6/26 2:54 AM	Remex.Client.Desktop	Unhandled exception. System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+5/6/26 2:54 AM	Remex.Client.Desktop	   at System.Threading.CancellationTokenSource.Cancel()
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Remex.Client.ViewModels.ConnectionViewModel.Cleanup() in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 900
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Remex.Client.ViewModels.ConnectionViewModel.<ReceiveLoopAsync>b__94_0() in /home/connorl/RemEx/Remex.Client/ViewModels/ConnectionViewModel.cs:line 794
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Threading.DispatcherOperation.InvokeCore()
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.ExecuteJobsCore(Boolean fromExplicitBackgroundProcessingCallback)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.X11.X11PlatformThreading.RunLoop(CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Threading.DispatcherFrame.Run(IControlledDispatcherImpl impl)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.PushFrame(DispatcherFrame frame)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.MainLoop(CancellationToken cancellationToken)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime.StartCore(String[] args)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime.Start(String[] args)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Avalonia.ClassicDesktopStyleApplicationLifetimeExtensions.StartWithClassicDesktopLifetime(AppBuilder builder, String[] args, Action`1 lifetimeBuilder)
+5/6/26 2:54 AM	Remex.Client.Desktop	   at Remex.Client.Desktop.Program.Main(String[] args) in /home/connorl/RemEx/Remex.Client.Desktop/Program.cs:line 68
+5/6/26 2:54 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:54 AM	Remex.Client.Desktop	      Application is shutting down...
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 1:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 2:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 4: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 5:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 7:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 8:" Invalid entry (second locale!?)
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 9:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 11:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 12:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 13:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 14:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 16:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 17:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 19:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 21:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 22: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 24:" Invalid entry (second locale!?)
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 25:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 27:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 29:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 30:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 31:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 32:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 33:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 35:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 36:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 37:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 38:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 39:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 40:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 41:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 42:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 43:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 44:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 45:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 46:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 47:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 48:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 49: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 50:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 51:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 53:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 54:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 55:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 56:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 57:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 58:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 59:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 60:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 61:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 62:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 63:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 64:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 65: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 65: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 66:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 67: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 69: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 71: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 72: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 72: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 75:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 77:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 79: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 80:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 81:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 84:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 85:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 86: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 87:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 91: Invalid escape sequence: «\ÿ»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 92:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 95: Invalid escape sequence: «\Q»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 95: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 96: Invalid escape sequence: «\H»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 97:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 98:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 99:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 104:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 105:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 106:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 107:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 108:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 109: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 110:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 111:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 113:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 1:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 2:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 4: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 5:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 7:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 8:" Invalid entry (second locale!?)
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 9:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 11:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 12:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 13:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 14:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 16:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 17:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 19:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 21:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 22: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 24:" Invalid entry (second locale!?)
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 25:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 27:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 29:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 30:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 31:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 32:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 33:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 35:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 36:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 37:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 38:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 39:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 40:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 41:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 42:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 43:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 44:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 45:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 46:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 47:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 48:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 49: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 50:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 51:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 53:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 54:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 55:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 56:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 57:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 58:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 59:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 60:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 61:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 62:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 63:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 64:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 65: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 65: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 66:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 67: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 69: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 71: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 72: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 72: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 75:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 77:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 79: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 80:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 81:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 84:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 85:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 86: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 87:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 91: Invalid escape sequence: «\ÿ»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 92:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 95: Invalid escape sequence: «\Q»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 95: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 96: Invalid escape sequence: «\H»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 97:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 98:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 99:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 104:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 105:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 106:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 107:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 108:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 109: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 110:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 111:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 113:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 1:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 2:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 4: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 5:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 7:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 8:" Invalid entry (second locale!?)
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 9:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 11:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 12:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 13:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 14:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 16:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 17:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 19:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 21:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 22: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 24:" Invalid entry (second locale!?)
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 25:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 27:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 29:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 30:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 31:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 32:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 33:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 35:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 36:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 37:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 38:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 39:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 40:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 41:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 42:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 43:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 44:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 45:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 46:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 47:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 48:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 49: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 50:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 51:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 53:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 54:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 55:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 56:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 57:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 58:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 59:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 60:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 61:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 62:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 63:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 64:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 65: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 65: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 66:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 67: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 69: Invalid escape sequence: «\»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 71: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 72: Invalid escape sequence: «\
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 72: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 75:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 77:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 79: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 80:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 81:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 84:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 85:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 86: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 87:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 91: Invalid escape sequence: «\ÿ»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 92:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 95: Invalid escape sequence: «\Q»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 95: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 96: Invalid escape sequence: «\H»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 97:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 98:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 99:" Invalid entry (missing ']')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 104:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 105:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 106:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 107:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 108:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 109: Invalid escape sequence: «\A»
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 110:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 111:" Invalid entry (missing '=')
+5/6/26 2:54 AM	dolphin	"KConfigIni: In file /home/connorl/publishedremex/Remex.Client.Desktop, line 113:" Invalid entry (missing ']')
+5/6/26 2:55 AM	Remex.Client.Desktop	Unhandled exception. System.Threading.Tasks.TaskCanceledException: A task was canceled.
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.InvokeImpl(DispatcherOperation operation, CancellationToken cancellationToken, TimeSpan timeout)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Avalonia.Threading.Dispatcher.Send(SendOrPostCallback action, Object arg, Nullable`1 priority)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Observer.Emit(Exception exception)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Observer.Dispose(Exception exception, Boolean removeObserver)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Dispose()
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.Connection.Disconnect(Exception disconnectReason, DBusConnection trigger)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.Disconnect(Exception ex)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at Tmds.DBus.Protocol.DBusConnection.HandleMessages(Exception exception, Message message)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at System.Threading.Tasks.Task.<>c.<ThrowAsync>b__124_1(Object state)
+5/6/26 2:55 AM	Remex.Client.Desktop	   at System.Threading.ThreadPoolWorkQueue.Dispatch()
+5/6/26 2:55 AM	Remex.Client.Desktop	   at System.Threading.PortableThreadPool.WorkerThread.WorkerThreadStart()
+5/6/26 2:55 AM	Remex.Client.Desktop	   at System.Threading.Thread.StartCallback()
+5/6/26 2:55 AM	systemd-coredump	Process 306298 (Remex.Client.De) of user 1000 dumped core.
+
+Stack trace of thread 315845:
+#0  0x00007fda506ae9cb pthread_kill (libc.so.6 + 0xae9cb)
+#1  0x00007fda50644d08 raise (libc.so.6 + 0x44d08)
+#2  0x00007fda50625790 abort (libc.so.6 + 0x25790)
+#3  0x00007fda50437449 n/a (libcoreclr.so + 0x637449)
+#4  0x00007fda50437369 n/a (libcoreclr.so + 0x637369)
+#5  0x00007fda5033862a n/a (libcoreclr.so + 0x53862a)
+#6  0x00007fda50335356 n/a (libcoreclr.so + 0x535356)
+#7  0x00007fda50334ed9 n/a (libcoreclr.so + 0x534ed9)
+#8  0x00007fda502ad6df n/a (libcoreclr.so + 0x4ad6df)
+#9  0x00007fd9d8dceddd n/a (n/a + 0x0)
+#10 0x00007fd9d10a6350 n/a (n/a + 0x0)
+#11 0x00007fd9d1089646 n/a (n/a + 0x0)
+#12 0x00007fda503f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#13 0x00007fda50257d75 n/a (libcoreclr.so + 0x457d75)
+#14 0x00007fda5026e5ab n/a (libcoreclr.so + 0x46e5ab)
+#15 0x00007fda5022401c n/a (libcoreclr.so + 0x42401c)
+#16 0x00007fda5026c7e1 n/a (libcoreclr.so + 0x46c7e1)
+#17 0x00007fda5043b579 n/a (libcoreclr.so + 0x63b579)
+#18 0x00007fda506ac6ec n/a (libc.so.6 + 0xac6ec)
+#19 0x00007fda507477bc n/a (libc.so.6 + 0x1477bc)
+
+Stack trace of thread 306298:
+#0  0x00007fda506b58b2 n/a (libc.so.6 + 0xb58b2)
+#1  0x00007fda506a88ef n/a (libc.so.6 + 0xa88ef)
+#2  0x00007fda506a8ce7 n/a (libc.so.6 + 0xa8ce7)
+#3  0x00007fda506ab9e0 pthread_cond_wait (libc.so.6 + 0xab9e0)
+#4  0x00007fda5042fc52 n/a (libcoreclr.so + 0x62fc52)
+#5  0x00007fda5042f87f n/a (libcoreclr.so + 0x62f87f)
+#6  0x00007fda50434310 n/a (libcoreclr.so + 0x634310)
+#7  0x00007fda504345f3 n/a (libcoreclr.so + 0x6345f3)
+#8  0x00007fda502209a2 n/a (libcoreclr.so + 0x4209a2)
+#9  0x00007fda5021c114 n/a (libcoreclr.so + 0x41c114)
+#10 0x00007fda503100a9 n/a (libcoreclr.so + 0x5100a9)
+#11 0x00007fda50221a0d n/a (libcoreclr.so + 0x421a0d)
+#12 0x00007fda5021aa23 n/a (libcoreclr.so + 0x41aa23)
+#13 0x00007fda500e4659 n/a (libcoreclr.so + 0x2e4659)
+#14 0x00007fd9d87e3291 n/a (n/a + 0x0)
+#15 0x00007fd9d87b1810 n/a (n/a + 0x0)
+#16 0x00007fd9d10abcc6 n/a (n/a + 0x0)
+#17 0x00007fd9d87a7ca8 n/a (n/a + 0x0)
+#18 0x00007fd9d1e7236c n/a (n/a + 0x0)
+#19 0x00007fda503f9a4c n/a (libcoreclr.so + 0x5f9a4c)
+#20 0x00007fda502584a1 n/a (libcoreclr.so + 0x4584a1)
+#21 0x00007fda5013ee54 n/a (libcoreclr.so + 0x33ee54)
+#22 0x00007fda5013f2bc n/a (libcoreclr.so + 0x33f2bc)
+#23 0x00007fda50167c6e n/a (libcoreclr.so + 0x367c6e)
+#24 0x00007fda4ffc9f26 coreclr_execute_assembly (libcoreclr.so + 0x1c9f26)
+#25 0x00007fda509df01c n/a (libhostpolicy.so + 0x2f01c)
+#26 0x00007fda509e03e9 corehost_main (libhostpolicy.so + 0x303e9)
+#27 0x00007fda50d4c3bb n/a (libhostfxr.so + 0x213bb)
+#28 0x00007fda50d4af13 n/a (libhostfxr.so + 0x1ff13)
+#29 0x00007fda50d45867 hostfxr_main_startupinfo (libhostfxr.so + 0x1a867)
+#30 0x0000557e93f0c2db n/a (/home/connorl/publishedremex/Remex.Client.Desktop (deleted) + 0x82db)
+#31 0x0000557e93f0c5ff n/a (/home/connorl/publishedremex/Remex.Client.Desktop (deleted) + 0x85ff)
+#32 0x00007fda50627c4e n/a (libc.so.6 + 0x27c4e)
+#33 0x00007fda50627d8b __libc_start_main (libc.so.6 + 0x27d8b)
+#34 0x0000557e93f0b1ba n/a (/home/connorl/publishedremex/Remex.Client.Desktop (deleted) + 0x71ba)
+ELF object binary architecture: AMD x86-64
+
+5/6/26 2:55 AM	drkonqi-coredump-processor	"/home/connorl/publishedremex/Remex.Client.Desktop" 306298 "/var/lib/systemd/coredump/core.Remex\\x2eClient\\x2eDe.1000.08bb35b84ef04f1d8df97bc5dd6128e3.306298.1778057747000000.zst"
+5/6/26 2:55 AM	drkonqi-coredump-launcher	Unable to find file for pid 306298 expected at "kcrash-metadata/Remex.Client.Desktop.08bb35b84ef04f1d8df97bc5dd6128e3.306298.ini"
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.CertificateService[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Loading existing certificate from /home/connorl/.local/share/Remex/cert.pfx
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.CertificateService[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Certificate loaded. Subject=CN=RemExHost, Expires=05/03/2031 01:04:31
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.CertificateService[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Certificate SPKI SHA-256: l6FfeK7JpODp7Pw6eqjHPwQDLCMZ8Anz+P0qQjYay70=
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.Telemetry.TelemetryBackgroundService[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Telemetry background broadcaster started.
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Loaded TLS certificate for TCP command port
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.IpcHostServer[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Starting RemExLocalIPC Named Pipe Server...
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Starting external network listener on port 8338
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.Network.MdnsAdvertisingService[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Starting mDNS advertising for Akira-OS (_remex._tcp) on port 5005
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Server.Kestrel.Https.Internal.HttpsConnectionMiddleware[9]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Certificate with thumbprint 8AE6C367019FC822609EA5E48A73EC88FE048F47 lacks the subjectAlternativeName (SAN) extension and may not be accepted by browsers.
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[14]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Now listening on: https://[::]:5005
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Application started. Press Ctrl+C to shut down.
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Hosting environment: Production
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.Hosting.Lifetime[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Content root path: /home/connorl/publishedremex/
+5/6/26 2:55 AM	Remex.Client.Desktop	[Remex] Embedded host started on port 5005.
+5/6/26 2:55 AM	Remex.Client.Desktop	Initializing Remex.Client in Server Mode (Direct Execution)
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Starting external network listener on port 8338
+5/6/26 2:55 AM	Remex.Client.Desktop	warn: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Port 8338 is already in use. Trying next port...
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Starting external network listener on port 8339
+5/6/26 2:55 AM	Remex.Client.Desktop	warn: Remex.Core.Services.Network.RemexNetworkListener[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Primary port 8338 unavailable; fell back to port 8339
+5/6/26 2:55 AM	Remex.Client.Desktop	warn: Remex.Client.ViewModels.ConnectionViewModel[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Unknown host certificate SPKI l6FfeK7JpODp7Pw6eqjHPwQDLCMZ8Anz+P0qQjYay70=. Accepting for potential pairing handshake.
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Request starting HTTP/1.1 GET https://localhost:5005/ws - - -
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Executing endpoint '/ws'
+5/6/26 2:55 AM	Remex.Client.Desktop	which: no ydotool in (/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/share/dotnet:/home/connorl/.dotnet/tools:/var/lib/flatpak/exports/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl)
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Services.Input.LinuxInputSimulationService[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Linux input backend: Xdotool (/usr/bin/xdotool)
+5/6/26 2:55 AM	Remex.Client.Desktop	info: Remex.Host.Handlers.PingPongHandler[0]
+5/6/26 2:55 AM	Remex.Client.Desktop	      Client connected.
+5/6/26 2:56 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.PairingService[0]
+5/6/26 2:56 AM	Remex.Client.Desktop	      Pairing session started. PIN: 391783, Expires at: 05/06/2026 08:58:01 +00:00
+5/6/26 2:56 AM	Remex.Client.Desktop	info: Remex.Host.Services.Security.PairingService[0]
+5/6/26 2:56 AM	Remex.Client.Desktop	      Pairing session started. PIN: 711537, Expires at: 05/06/2026 08:58:50 +00:00

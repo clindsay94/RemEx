@@ -94,21 +94,22 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 // so coerceAtMost(20) safely avoids Int overflow on the shift.
                 val backoffMs = minOf(baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)), maxDelayMs)
                 Log.i("RemexManager", "Heartbeat auto-connect to $host (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)")
-                connect()
+                connect(null, true)
                 consecutiveFailures++
                 delay(backoffMs)
             }
         }
     }
 
-    fun toggleConnection() {
-        if (isConnecting.value) return
+    fun toggleConnection(pairingPin: String? = null) {
+        if (_isConnecting.value) return
+        _isConnecting.value = true
         managerScope.launch {
-            connect()
+            connect(pairingPin)
         }
     }
 
-    private val _pairingRequired = MutableSharedFlow<Pair<String, Int>>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val _pairingRequired = MutableSharedFlow<Pair<String, Int>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val pairingRequired = _pairingRequired.asSharedFlow()
 
     private val _connectionError = MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -117,7 +118,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _fileTransferMessages = MutableSharedFlow<String>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val fileTransferMessages = _fileTransferMessages.asSharedFlow()
 
-    private suspend fun connect() {
+    private suspend fun connect(pairingPin: String? = null, isAutoConnect: Boolean = false) {
         val settings = settingsManager ?: return
         val host = settings.hostFlow.first()
         val port = settings.portFlow.first()
@@ -127,11 +128,56 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             if (RemexCoreClient.isLibraryLoaded) {
                 // If not pinned, emit event to UI and abort auto-connect
                 val context = settings.context
-                val spkiHash = com.clindsay94.remex.security.PinnedHostStore.getPin(context, host)
+                var spkiHash = com.clindsay94.remex.security.PinnedHostStore.getPin(context, host)
+                
+                // If the user manually provided a PIN, they explicitly want to pair. 
+                // This clears any stale SPKI hashes and forces a re-pair.
+                if (!pairingPin.isNullOrBlank() && pairingPin.length == 6) {
+                    spkiHash = null
+                }
+                
                 if (spkiHash == null) {
-                    _isConnecting.value = false
-                    _pairingRequired.tryEmit(Pair(host, port))
-                    return
+                    if (pairingPin != null && pairingPin.length == 6) {
+                        // Attempt automatic pairing with the provided PIN
+                        Log.i("RemexManager", "Attempting automatic pairing for $host with provided PIN")
+                        val pairResult = RemexCoreClient.StartPairing(
+                            "wss://$host:$port/ws",
+                            "Android Client",
+                            "2.0.0"
+                        )
+                        
+                        if (pairResult == "OK") {
+                            val submitResult = RemexCoreClient.SubmitPairingPin(pairingPin)
+                            if (submitResult.startsWith("OK:")) {
+                                val parts = submitResult.substring(3).split("|")
+                                if (parts.size >= 2) {
+                                    val hostId = parts[0]
+                                    val newHash = parts[1]
+                                    // Pin by both Unique ID (for discovery) and IP (for manual connection)
+                                    com.clindsay94.remex.security.PinnedHostStore.setPin(context, hostId, newHash)
+                                    com.clindsay94.remex.security.PinnedHostStore.setPin(context, host, newHash)
+                                    spkiHash = newHash
+                                    Log.i("RemexManager", "Automatic pairing successful for $host")
+                                }
+                            } else {
+                                Log.e("RemexManager", "Automatic pairing PIN submission failed: $submitResult")
+                                _connectionError.tryEmit("Pairing failed: $submitResult")
+                                _isConnecting.value = false
+                                return
+                            }
+                        } else {
+                            Log.e("RemexManager", "Automatic pairing start failed: $pairResult")
+                            _connectionError.tryEmit("Pairing failed: $pairResult")
+                            _isConnecting.value = false
+                            return
+                        }
+                    } else {
+                        _isConnecting.value = false
+                        if (!isAutoConnect) {
+                            _pairingRequired.tryEmit(Pair(host, port))
+                        }
+                        return
+                    }
                 }
 
                 val initRequest = JSONObject().apply {

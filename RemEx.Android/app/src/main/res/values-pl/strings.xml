@@ -182,8 +182,6 @@
     <string name="connection_hint_broadcast">Zwykle 255.255.255.255 — zmień tylko, jeśli WOL zawodzi</string>
     <string name="connection_label_subnet">Maska podsieci</string>
     <string name="connection_hint_subnet">Zwykle 255.255.255.0 dla sieci domowych</string>
-    <string name="connection_label_access_key">Klucz dostępu</string>
-    <string name="connection_hint_access_key">Pozostaw puste, aby wyłączyć uwierzytelnianie</string>
     <string name="connection_desktop_defaults_title">Domyślne ustawienia pulpitu zdalnego</string>
     <string name="connection_quality_label">Jakość: %1$d%%</string>
     <string name="connection_fps_label">Docelowe FPS: %1$d (maks. 120)</string>

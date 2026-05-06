@@ -188,13 +188,9 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
             }
 
             try {
-                val accessKey = settingsManager.accessKeyFlow.first()
                 val parameters = JSONObject()
                 if (delaySeconds > 0) {
                     parameters.put("DelaySeconds", delaySeconds.toString())
-                }
-                if (accessKey.isNotBlank()) {
-                    parameters.put("AccessKey", accessKey)
                 }
 
                 val request =

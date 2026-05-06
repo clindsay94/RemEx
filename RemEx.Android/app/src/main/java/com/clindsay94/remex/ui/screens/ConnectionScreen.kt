@@ -43,6 +43,7 @@ import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,14 +72,14 @@ fun ConnectionScreen(
                 isDiscovering = isDiscovering,
                 discoveredHost = discoveredHost,
                 onNavigateToQrScanner = onNavigateToQrScanner,
-                onConnect = { host, port, mac, broadcast, subnet, accessKey, quality, fps, scale ->
+                onConnect = { host, port, mac, broadcast, subnet, pairingPin, quality, fps, scale ->
                         viewModel.connect(
                                 host,
                                 port,
                                 mac,
                                 broadcast,
                                 subnet,
-                                accessKey,
+                                pairingPin,
                                 quality,
                                 fps,
                                 scale
@@ -115,7 +116,7 @@ fun ConnectionScreenContent(
         var macInput by remember { mutableStateOf("") }
         var broadcastInput by remember { mutableStateOf("") }
         var subnetInput by remember { mutableStateOf("") }
-        var accessKeyInput by remember { mutableStateOf("") }
+        var pairingPinInput by remember { mutableStateOf("") }
         var qualityInput by remember { mutableFloatStateOf(50f) }
         var targetFpsInput by remember { mutableFloatStateOf(30f) }
         var scaleInput by remember { mutableFloatStateOf(0.6f) }
@@ -159,9 +160,9 @@ fun ConnectionScreenContent(
                         macInput.trim(),
                         broadcastInput.trim().ifEmpty { "255.255.255.255" },
                         subnetInput.trim().ifEmpty { "255.255.255.0" },
-                        accessKeyInput.trim(),
-                        qualityInput.toInt(),
-                        targetFpsInput.toInt().coerceIn(1, 360),
+                        pairingPinInput.trim(),
+                        qualityInput.roundToInt(),
+                        targetFpsInput.roundToInt(),
                         scaleInput
                 )
         }
@@ -200,7 +201,6 @@ fun ConnectionScreenContent(
                         if (macInput.isEmpty()) macInput = cp.macAddress
                         if (broadcastInput.isEmpty()) broadcastInput = cp.broadcastIp
                         if (subnetInput.isEmpty()) subnetInput = cp.subnetMask
-                        if (accessKeyInput.isEmpty()) accessKeyInput = cp.accessKey
                         if (qualityInput == 50f && dp.quality != 50)
                                 qualityInput = dp.quality.toFloat()
                         if (targetFpsInput == 30f && dp.targetFps != 30)
@@ -935,12 +935,12 @@ fun ConnectionScreenContent(
                                 )
 
                                 OutlinedTextField(
-                                        value = accessKeyInput,
-                                        onValueChange = { accessKeyInput = it },
+                                        value = pairingPinInput,
+                                        onValueChange = { if (it.length <= 6) pairingPinInput = it },
                                         label = {
                                                 Text(
                                                         stringResource(
-                                                                R.string.connection_label_access_key
+                                                                R.string.connection_label_pairing_pin
                                                         )
                                                 )
                                         },
@@ -954,13 +954,13 @@ fun ConnectionScreenContent(
                                         },
                                         keyboardOptions =
                                                 androidx.compose.foundation.text.KeyboardOptions(
-                                                        keyboardType = KeyboardType.Password,
+                                                        keyboardType = KeyboardType.NumberPassword,
                                                         imeAction = ImeAction.Done
                                                 ),
                                         supportingText = {
                                                 Text(
                                                         stringResource(
-                                                                R.string.connection_hint_access_key
+                                                                R.string.connection_hint_pairing_pin
                                                         )
                                                 )
                                         }

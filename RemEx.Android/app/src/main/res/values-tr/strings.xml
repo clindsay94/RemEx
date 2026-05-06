@@ -182,8 +182,6 @@
     <string name="connection_hint_broadcast">Genellikle 255.255.255.255 — sadece WOL başarısız olursa değiştirin</string>
     <string name="connection_label_subnet">Alt Ağ Maskesi</string>
     <string name="connection_hint_subnet">Ev ağları için genellikle 255.255.255.0</string>
-    <string name="connection_label_access_key">Erişim Anahtarı</string>
-    <string name="connection_hint_access_key">Kimlik doğrulamayı devre dışı bırakmak için boş bırakın</string>
     <string name="connection_desktop_defaults_title">Uzak Masaüstü Varsayılanları</string>
     <string name="connection_quality_label">Kalite: %1$d%%</string>
     <string name="connection_fps_label">Hedef FPS: %1$d (maks 120)</string>

@@ -244,7 +244,6 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
     fun killProcess(pid: Int) {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
-                val accessKey = settingsManager.accessKeyFlow.first()
                 val request =
                         JSONObject().apply {
                             put("action", "KillProcess")
@@ -252,7 +251,6 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                                     "parameters",
                                     JSONObject().apply {
                                         put("ProcessId", pid.toString())
-                                        if (accessKey.isNotBlank()) put("AccessKey", accessKey)
                                     }
                             )
                         }

@@ -182,8 +182,6 @@
     <string name="connection_hint_broadcast">Зазвичай 255.255.255.255 — змінюйте, лише якщо WOL не працює</string>
     <string name="connection_label_subnet">Маска підмережі</string>
     <string name="connection_hint_subnet">Зазвичай 255.255.255.0 для домашніх мереж</string>
-    <string name="connection_label_access_key">Ключ доступу</string>
-    <string name="connection_hint_access_key">Залиште порожнім, щоб вимкнути автентифікацію</string>
     <string name="connection_desktop_defaults_title">Налаштування віддаленого робочого столу</string>
     <string name="connection_quality_label">Якість: %1$d%%</string>
     <string name="connection_fps_label">Цільовий FPS: %1$d (макс. 120)</string>

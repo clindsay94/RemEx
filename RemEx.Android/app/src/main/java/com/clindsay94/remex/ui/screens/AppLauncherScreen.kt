@@ -161,6 +161,9 @@ fun AppLauncherScreenContent(
                         }
                     }
                 } else {
+                    val dedupedApps = remember(uiState.apps) {
+                        uiState.apps.distinctBy { "${it.name}|${it.path}" }
+                    }
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 100.dp),
                         modifier = Modifier.fillMaxSize(),
@@ -168,7 +171,7 @@ fun AppLauncherScreenContent(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(uiState.apps, key = { it.name + it.path }) { app ->
+                        items(dedupedApps, key = { "${it.name}|${it.path}" }) { app ->
                             AppGridItem(
                                 app = app,
                                 shapePreset = uiState.shapePreset,

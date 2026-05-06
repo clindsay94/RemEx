@@ -241,7 +241,7 @@
     <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
     <string name="connection_help_step3_title">Find your PC\'s IP address</string>
     <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; Connect</string>
-    <string name="connection_help_step4_body">The default port is 5005. If you set an access key in the host app, enter it here too.</string>
+    <string name="connection_help_step4_body">The default port is 5005. If you haven\'t paired this device before, enter the 6-digit PIN from the host app.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for "IPv4 Address" under your Wi-Fi adapter.</string>
     <string name="connection_platform_macos">macOS</string>
@@ -260,8 +260,8 @@
     <string name="connection_hint_broadcast">Usually 255.255.255.255 — only change if WOL fails</string>
     <string name="connection_label_subnet">Subnet Mask</string>
     <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
-    <string name="connection_label_access_key">Access Key</string>
-    <string name="connection_hint_access_key">Leave empty to disable authentication</string>
+    <string name="connection_label_pairing_pin">Pairing PIN (6-digits)</string>
+    <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Remote Desktop Defaults</string>
     <string name="connection_quality_label">Quality: %1$d%%</string>
     <string name="connection_fps_label">Target FPS: %1$d (max 120)</string>
@@ -314,11 +314,11 @@
     <string name="faq_q4">What is the default port?</string>
     <string name="faq_a4">The default port is 5005. If Remex.Client.Desktop finds port 5005 in use, it will fall back to 5006. You can see the active port in the desktop client\'s window.\n\nIf you changed the port on the host side, make sure to enter the matching port in the Connection screen on this app.</string>
 
-    <string name="faq_q5">What is the Access Key for?</string>
-    <string name="faq_a5">The Access Key is an optional authentication token. If you set an access key on the host (in Remex.Host settings), you must enter the same key here to connect.\n\nIf you haven\'t configured one on the host, leave this field empty.</string>
+    <string name="faq_q5">How do I pair with my PC?</string>
+    <string name="faq_a5">When you connect to a PC for the first time, you must enter the 6-digit PIN displayed on the PC. This creates a secure, encrypted bond between the devices. You won\'t need to enter the PIN again unless you reset the connection or reinstall the app.</string>
 
     <string name="faq_q6">Can I connect over the internet (not just LAN)?</string>
-    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. If you do this, always enable the Access Key for authentication. A VPN is the recommended approach for remote access.</string>
+    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. A VPN is the recommended approach for remote access.</string>
 
     <string name="faq_q7">Remote Desktop is laggy or not working. What can I do?</string>
     <string name="faq_a7">• Lower the Quality slider in Connection → Remote Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• Make sure your PC supports the screen capture backend: DXGI on Windows, X11/Wayland on Linux.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>

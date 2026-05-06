@@ -182,8 +182,6 @@
     <string name="connection_hint_broadcast">आमतौर पर 255.255.255.255 — केवल तभी बदलें जब WOL विफल हो जाए</string>
     <string name="connection_label_subnet">सबनेट मास्क</string>
     <string name="connection_hint_subnet">घरेलू नेटवर्क के लिए आमतौर पर 255.255.255.0</string>
-    <string name="connection_label_access_key">एक्सेस की (Access Key)</string>
-    <string name="connection_hint_access_key">प्रमाणीकरण अक्षम करने के लिए खाली छोड़ दें</string>
     <string name="connection_desktop_defaults_title">रिमोट डेस्कटॉप डिफ़ॉल्ट</string>
     <string name="connection_quality_label">गुणवत्ता: %1$d%%</string>
     <string name="connection_fps_label">लक्ष्य FPS: %1$d (अधिकतम 120)</string>

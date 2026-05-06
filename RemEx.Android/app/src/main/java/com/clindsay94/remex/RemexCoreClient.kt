@@ -203,16 +203,19 @@ object RemexCoreClient {
     fun StartPairing(hostUrl: String, clientName: String, clientVersion: String): String {
         return if (isLibraryLoaded) {
             try {
-                StartPairingNative(hostUrl, clientName, clientVersion)
+                Log.d(TAG, "StartPairing → native (host=$hostUrl, client=$clientName v$clientVersion)")
+                val result = StartPairingNative(hostUrl, clientName, clientVersion)
+                Log.d(TAG, "StartPairing ← native result: $result")
+                result
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StartPairingNative not loaded", e)
-                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+                "ERROR: Native method not loaded"
             } catch (e: RuntimeException) {
                 Log.e(TAG, "StartPairingNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                "ERROR: Native method crashed: ${e.message}"
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            "ERROR: Library not loaded"
         }
     }
 
@@ -224,16 +227,21 @@ object RemexCoreClient {
     fun SubmitPairingPin(pin: String): String {
         return if (isLibraryLoaded) {
             try {
-                SubmitPairingPinNative(pin)
+                Log.d(TAG, "SubmitPairingPin → native (pin length=${pin.length})")
+                val result = SubmitPairingPinNative(pin)
+                // Don't log the raw OK result — it contains hostId and SPKI hash. Just log shape.
+                val redacted = if (result.startsWith("OK:")) "OK:<hostId>|<spkiHash>" else result
+                Log.d(TAG, "SubmitPairingPin ← native result: $redacted")
+                result
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SubmitPairingPinNative not loaded", e)
-                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+                "ERROR: Native method not loaded"
             } catch (e: RuntimeException) {
                 Log.e(TAG, "SubmitPairingPinNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                "ERROR: Native method crashed: ${e.message}"
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            "ERROR: Library not loaded"
         }
     }
 

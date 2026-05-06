@@ -22,7 +22,6 @@ class SettingsManager(val context: Context) {
         val MAC_KEY = stringPreferencesKey("mac_address")
         val BROADCAST_IP_KEY = stringPreferencesKey("broadcast_ip")
         val SUBNET_MASK_KEY = stringPreferencesKey("subnet_mask")
-        val ACCESS_KEY_KEY = stringPreferencesKey("access_key")
 
         val DESKTOP_QUALITY_KEY = intPreferencesKey("desktop_quality")
         val DESKTOP_TARGET_FPS_KEY = intPreferencesKey("desktop_target_fps")
@@ -74,8 +73,7 @@ class SettingsManager(val context: Context) {
             val port: Int = 5005,
             val macAddress: String = "",
             val broadcastIp: String = "255.255.255.255",
-            val subnetMask: String = "255.255.255.0",
-            val accessKey: String = ""
+            val subnetMask: String = "255.255.255.0"
     )
 
     data class RemoteDesktopPreferences(
@@ -107,9 +105,6 @@ class SettingsManager(val context: Context) {
             val remoteControlCardShapePreset: Float = 18.0f,
             val remoteMouseCardShapePreset: Float = 18.0f
     )
-
-    val accessKeyFlow: Flow<String> =
-            context.dataStore.data.map { preferences -> preferences[ACCESS_KEY_KEY] ?: "" }
 
     val appLauncherCardShapePresetFlow: Flow<Float> =
             context.dataStore.data.map { preferences ->
@@ -235,8 +230,7 @@ class SettingsManager(val context: Context) {
                         port = preferences[PORT_KEY] ?: 5005,
                         macAddress = preferences[MAC_KEY] ?: "",
                         broadcastIp = preferences[BROADCAST_IP_KEY] ?: "255.255.255.255",
-                        subnetMask = preferences[SUBNET_MASK_KEY] ?: "255.255.255.0",
-                        accessKey = preferences[ACCESS_KEY_KEY] ?: ""
+                        subnetMask = preferences[SUBNET_MASK_KEY] ?: "255.255.255.0"
                 )
             }
 
@@ -289,8 +283,7 @@ class SettingsManager(val context: Context) {
             port: Int,
             mac: String,
             broadcast: String,
-            subnetMask: String,
-            accessKey: String
+            subnetMask: String
     ) {
         context.dataStore.edit { preferences ->
             preferences[HOST_KEY] = host
@@ -298,7 +291,6 @@ class SettingsManager(val context: Context) {
             preferences[MAC_KEY] = mac
             preferences[BROADCAST_IP_KEY] = broadcast
             preferences[SUBNET_MASK_KEY] = subnetMask
-            preferences[ACCESS_KEY_KEY] = accessKey
         }
     }
 

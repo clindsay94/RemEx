@@ -34,7 +34,9 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,10 +183,15 @@ fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> 
                                                                             scannedOnce.value = true
                                                                             scope.launch {
                                                                                 if (pin != null) {
-                                                                                    val hostUrl = "wss://$host:$port/remex"
-                                                                                    val startResult = RemexCoreClient.StartPairing(hostUrl, "Android Client", "2.0.0")
+                                                                                    // Path must match RemexConstants.WebSocketPath ("/ws").
+                                                                                    val hostUrl = "wss://$host:$port/ws"
+                                                                                    val startResult = withContext(Dispatchers.IO) {
+                                                                                        RemexCoreClient.StartPairing(hostUrl, "Android Client", "2.0.0")
+                                                                                    }
                                                                                     if (startResult == "OK") {
-                                                                                        val submitResult = RemexCoreClient.SubmitPairingPin(pin)
+                                                                                        val submitResult = withContext(Dispatchers.IO) {
+                                                                                            RemexCoreClient.SubmitPairingPin(pin)
+                                                                                        }
                                                                                         if (submitResult.startsWith("OK:")) {
                                                                                             val parts = submitResult.substring(3).split("|")
                                                                                             if (parts.size >= 2) {
@@ -204,13 +211,6 @@ fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> 
                                                                             }
                                                                             onScanned(host, port)
                                                                         }
-                                                                    } else if (json.has("accessKey")
-                                                                    ) {
-                                                                        errorMessage =
-                                                                                context.getString(
-                                                                                        R.string
-                                                                                                .qr_error_old_format
-                                                                                )
                                                                     }
                                                                 } catch (_: Exception) {
                                                                     // Not a RemEx QR code — keep

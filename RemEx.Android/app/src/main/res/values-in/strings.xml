@@ -182,8 +182,6 @@
     <string name="connection_hint_broadcast">Biasanya 255.255.255.255 — ganti hanya jika WOL gagal</string>
     <string name="connection_label_subnet">Subnet Mask</string>
     <string name="connection_hint_subnet">Biasanya 255.255.255.0 untuk jaringan rumah</string>
-    <string name="connection_label_access_key">Kunci Akses</string>
-    <string name="connection_hint_access_key">Kosongkan untuk menonaktifkan autentikasi</string>
     <string name="connection_desktop_defaults_title">Default Desktop Jarak Jauh</string>
     <string name="connection_quality_label">Kualitas: %1$d%%</string>
     <string name="connection_fps_label">Target FPS: %1$d (maks 120)</string>

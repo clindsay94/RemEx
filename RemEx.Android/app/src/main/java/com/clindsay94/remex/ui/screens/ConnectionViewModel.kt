@@ -5,7 +5,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.NsdDiscoveryManager
 import com.clindsay94.remex.data.SettingsManager
@@ -19,11 +18,19 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val nsdDiscoveryManager = NsdDiscoveryManager(application)
     private val res = application.resources
 
-    val connectionPreferences: StateFlow<SettingsManager.ConnectionPreferences?> = settingsManager.connectionPreferencesFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val connectionPreferences: StateFlow<SettingsManager.ConnectionPreferences?> =
+            settingsManager.connectionPreferencesFlow.stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    null
+            )
 
-    val remoteDesktopPreferences: StateFlow<SettingsManager.RemoteDesktopPreferences?> = settingsManager.remoteDesktopPreferencesFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val remoteDesktopPreferences: StateFlow<SettingsManager.RemoteDesktopPreferences?> =
+            settingsManager.remoteDesktopPreferencesFlow.stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    null
+            )
 
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
@@ -34,7 +41,8 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _connectionError = MutableStateFlow<String?>(null)
     val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
 
-    private val _capabilitySummary = MutableStateFlow(res.getString(R.string.status_awaiting_metadata))
+    private val _capabilitySummary =
+            MutableStateFlow(res.getString(R.string.status_awaiting_metadata))
     val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
 
     private val _isDiscovering = MutableStateFlow(false)
@@ -44,6 +52,12 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     val discoveredHost: StateFlow<DiscoveredHost?> = _discoveredHost.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            RemexClientManager.isConnecting.collect { connecting ->
+                _isConnecting.value = connecting
+            }
+        }
+
         viewModelScope.launch {
             RemexClientManager.isConnected.collect { connected ->
                 if (connected) {
@@ -59,78 +73,58 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 _capabilitySummary.value = buildCapabilitySummary(hostInfo)
             }
         }
+
+        viewModelScope.launch {
+            RemexClientManager.connectionError.collect { error ->
+                _connectionError.value = error
+                _connectionStatus.value = res.getString(R.string.status_disconnected)
+            }
+        }
     }
 
     fun connect(
-        newHost: String,
-        newPort: Int,
-        macAddress: String,
-        broadcastIp: String,
-        subnetMask: String,
-        accessKey: String,
-        desktopQuality: Int,
-        desktopTargetFps: Int,
-        desktopScale: Float
+            newHost: String,
+            newPort: Int,
+            macAddress: String,
+            broadcastIp: String,
+            subnetMask: String,
+            pairingPin: String,
+            desktopQuality: Int,
+            desktopTargetFps: Int,
+            desktopScale: Float
     ) {
         viewModelScope.launch {
+            _connectionError.value = null
+            _isConnecting.value = true
             settingsManager.saveConnectionSettings(
-                host = newHost,
-                port = newPort,
-                mac = macAddress,
-                broadcast = broadcastIp,
-                subnetMask = subnetMask,
-                accessKey = accessKey
+                    host = newHost,
+                    port = newPort,
+                    mac = macAddress,
+                    broadcast = broadcastIp,
+                    subnetMask = subnetMask
             )
             settingsManager.saveRemoteDesktopDefaults(
-                quality = desktopQuality,
-                targetFps = desktopTargetFps,
-                scale = desktopScale
+                    quality = desktopQuality,
+                    targetFps = desktopTargetFps,
+                    scale = desktopScale
             )
 
-            _isConnecting.value = true
             _connectionStatus.value = res.getString(R.string.status_connecting, newHost, newPort)
+            RemexClientManager.toggleConnection(pairingPin.ifBlank { null })
 
+            // Start foreground service to keep connection alive
             try {
-                _connectionError.value = null
-                if (RemexCoreClient.isLibraryLoaded) {
-                    val initRequest = JSONObject().apply {
-                        put("host", newHost)
-                        put("port", newPort)
-                        put("startTelemetryPolling", true)
-                    }
-                    val result = RemexCoreClient.InitRemex(initRequest.toString())
-                    try {
-                        val json = JSONObject(result)
-                        if (!json.optBoolean("success", false)) {
-                            val msg = json.optString("message", "Connection failed")
-                            _connectionError.value = msg
-                            _connectionStatus.value = res.getString(R.string.status_error, msg)
-                        } else {
-                            // Start foreground service to keep connection alive
-                            try {
-                                RemexConnectionService.start(getApplication())
-                            } catch (e: Exception) {
-                                android.util.Log.w("ConnectionVM", "Foreground service could not be started, connection will work without background persistence", e)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.w("ConnectionVM", "InitRemex returned non-JSON result: $result", e)
-                    }
-                } else {
-                    _connectionError.value = res.getString(R.string.status_native_lib_not_loaded)
-                    _connectionStatus.value = res.getString(R.string.status_native_lib_not_loaded)
-                }
+                RemexConnectionService.start(getApplication())
             } catch (e: Exception) {
-                _connectionError.value = e.message
-                _connectionStatus.value = res.getString(R.string.status_error, e.message ?: "")
-            } finally {
-                _isConnecting.value = false
+                android.util.Log.w("ConnectionVM", "Foreground service could not be started", e)
             }
         }
     }
 
     fun updateStatus(isConnected: Boolean) {
-        _connectionStatus.value = if (isConnected) res.getString(R.string.status_connected) else res.getString(R.string.status_disconnected)
+        _connectionStatus.value =
+                if (isConnected) res.getString(R.string.status_connected)
+                else res.getString(R.string.status_disconnected)
     }
 
     fun clearError() {
@@ -149,7 +143,8 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     _connectionError.value = res.getString(R.string.error_no_host_found)
                 }
             } catch (e: Exception) {
-                _connectionError.value = res.getString(R.string.error_discovery_failed, e.message ?: "")
+                _connectionError.value =
+                        res.getString(R.string.error_discovery_failed, e.message ?: "")
             } finally {
                 _isDiscovering.value = false
             }
@@ -160,15 +155,15 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         val cp = connectionPreferences.value
         val dp = remoteDesktopPreferences.value
         connect(
-            newHost = host,
-            newPort = port,
-            macAddress = cp?.macAddress ?: "",
-            broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
-            subnetMask = cp?.subnetMask ?: "255.255.255.0",
-            accessKey = cp?.accessKey ?: "",
-            desktopQuality = dp?.quality ?: 50,
-            desktopTargetFps = dp?.targetFps ?: 30,
-            desktopScale = dp?.scale ?: 0.6f
+                newHost = host,
+                newPort = port,
+                macAddress = cp?.macAddress ?: "",
+                broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
+                subnetMask = cp?.subnetMask ?: "255.255.255.0",
+                pairingPin = "", // QR scanner doesn't provide PIN currently
+                desktopQuality = dp?.quality ?: 50,
+                desktopTargetFps = dp?.targetFps ?: 30,
+                desktopScale = dp?.scale ?: 0.6f
         )
     }
 
@@ -178,11 +173,15 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             val runtimeMode = json.optString("runtimeMode", "unknown")
             val platform = json.optString("platform", "unknown")
             val supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false)
-            val remoteDesktopText = if (supportsRemoteDesktop) {
-                res.getString(R.string.capability_desktop_available)
-            } else {
-                json.optString("remoteDesktopUnavailableReason", res.getString(R.string.capability_desktop_unavailable))
-            }
+            val remoteDesktopText =
+                    if (supportsRemoteDesktop) {
+                        res.getString(R.string.capability_desktop_available)
+                    } else {
+                        json.optString(
+                                "remoteDesktopUnavailableReason",
+                                res.getString(R.string.capability_desktop_unavailable)
+                        )
+                    }
 
             "$platform / $runtimeMode / $remoteDesktopText"
         } catch (_: Exception) {

@@ -1,8 +1,10 @@
 import com.android.build.api.variant.VariantOutputConfiguration
 import com.android.build.api.variant.impl.VariantOutputImpl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
+import org.gradle.kotlin.dsl.kotlin as kotlin1
 
 plugins {
     alias(libs.plugins.android.application)
@@ -37,8 +39,7 @@ if (isPublishBuild) {
     remexVersionCode += 1
     val parts = remexVersionName?.split(".")?.toMutableList() ?: mutableListOf("1", "0", "0")
     if (parts.size >= 3) {
-        parts[1] = (parts[1].toInt() + 1).toString()
-        parts[2] = "0"
+        parts[2] = (parts[2].toInt() + 1).toString()
     }
     remexVersionName = parts.joinToString(".")
 
@@ -102,9 +103,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlin {
+    kotlin1 {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_11)
             freeCompilerArgs.addAll("-Xannotation-default-target=param-property")
         }
     }
@@ -235,7 +236,9 @@ fun getArm64PublishedSoPath(remexCoreProjectDir: File, configuration: String): F
         ?: nativePath
 }
 
-val publishRemexCoreAndroidDebug by tasks.registering(Exec::class) {
+val javaSdkDirTopLevel: String? = project.findProperty("org.gradle.java.home")?.toString() ?: System.getProperty("java.home")
+
+val publishRemexCoreAndroidDebug by project.tasks.registering(Exec::class) {
     group = "remex"
     description = "Builds and links Remex.Core Android arm64 debug native library"
     workingDir = repoRootDir
@@ -250,11 +253,11 @@ val publishRemexCoreAndroidDebug by tasks.registering(Exec::class) {
         "-p:RuntimeIdentifier=android-arm64",
         "-p:AndroidSdkDirectory=$androidSdkDir",
         "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild",
-        "-p:JavaSdkDirectory=${System.getProperty("java.home")}"
+        "-p:JavaSdkDirectory=$javaSdkDirTopLevel"
     )
 }
 
-val publishRemexCoreAndroidRelease by tasks.registering(Exec::class) {
+val publishRemexCoreAndroidRelease by project.tasks.registering(Exec::class) {
     group = "remex"
     description = "Builds and links Remex.Core Android arm64 release native library"
     workingDir = repoRootDir
@@ -269,7 +272,7 @@ val publishRemexCoreAndroidRelease by tasks.registering(Exec::class) {
         "-p:RuntimeIdentifier=android-arm64",
         "-p:AndroidSdkDirectory=$androidSdkDir",
         "-p:AndroidNdkDirectory=$androidNdkDirForMsbuild",
-        "-p:JavaSdkDirectory=${System.getProperty("java.home")}"
+        "-p:JavaSdkDirectory=$javaSdkDirTopLevel"
     )
 }
 
@@ -343,7 +346,7 @@ abstract class SyncRemexCoreSoTask : DefaultTask() {
     }
 }
 
-val syncRemexCoreDebugSo by tasks.registering(SyncRemexCoreSoTask::class) {
+val syncRemexCoreDebugSo by project.tasks.registering(SyncRemexCoreSoTask::class) {
     group = "remex"
     description = "Publishes and synchronizes debug libRemexCore.so into generated jniLibs"
     dependsOn(publishRemexCoreAndroidDebug)
@@ -353,7 +356,7 @@ val syncRemexCoreDebugSo by tasks.registering(SyncRemexCoreSoTask::class) {
     generatedSo.set(remexGeneratedDebugArm64So)
 }
 
-val syncRemexCoreReleaseSo by tasks.registering(SyncRemexCoreSoTask::class) {
+val syncRemexCoreReleaseSo by project.tasks.registering(SyncRemexCoreSoTask::class) {
     group = "remex"
     description = "Publishes and synchronizes release libRemexCore.so into generated jniLibs"
     dependsOn(publishRemexCoreAndroidRelease)
@@ -488,7 +491,7 @@ abstract class VerifyRemexCoreInApkTask : DefaultTask() {
     }
 }
 
-val verifyRemexCoreInDebugApk by tasks.registering(VerifyRemexCoreInApkTask::class) {
+val verifyRemexCoreInDebugApk by project.tasks.registering(VerifyRemexCoreInApkTask::class) {
     group = "remex"
     description = "Verifies debug APK contains the latest libRemexCore.so built from Remex.Core"
     dependsOn("assembleDebug")
@@ -500,7 +503,7 @@ val verifyRemexCoreInDebugApk by tasks.registering(VerifyRemexCoreInApkTask::cla
     apkDirectory.set(layout.buildDirectory.dir("outputs/apk/debug"))
 }
 
-val verifyRemexCoreInReleaseApk by tasks.registering(VerifyRemexCoreInApkTask::class) {
+val verifyRemexCoreInReleaseApk by project.tasks.registering(VerifyRemexCoreInApkTask::class) {
     group = "remex"
     description = "Verifies release APK contains the latest libRemexCore.so built from Remex.Core"
     dependsOn("assembleRelease")
@@ -513,7 +516,7 @@ val verifyRemexCoreInReleaseApk by tasks.registering(VerifyRemexCoreInApkTask::c
 }
 
 
-val remexFreshAssembleDebug by tasks.registering {
+val remexFreshAssembleDebug by project.tasks.registering {
     group = "remex"
     description =
         "Hard reset build for debug: clean Android build, assemble, and verify native freshness"
@@ -522,7 +525,7 @@ val remexFreshAssembleDebug by tasks.registering {
     dependsOn(verifyRemexCoreInDebugApk)
 }
 
-val remexFreshInstallDebug by tasks.registering {
+val remexFreshInstallDebug by project.tasks.registering {
     group = "remex"
     description = "Hard reset build for debug and install APK on a connected device"
     dependsOn(remexFreshAssembleDebug)
@@ -530,7 +533,7 @@ val remexFreshInstallDebug by tasks.registering {
     dependsOn("installDebug")
 }
 
-val remexFreshAssembleRelease by tasks.registering {
+val remexFreshAssembleRelease by project.tasks.registering {
     group = "remex"
     description =
         "Hard reset build for release: clean Android build, assemble, bundle, and verify native freshness"
@@ -540,7 +543,7 @@ val remexFreshAssembleRelease by tasks.registering {
     dependsOn(verifyRemexCoreInReleaseApk)
 }
 
-val remexPublishRelease by tasks.registering {
+val remexPublishRelease by project.tasks.registering {
     group = "remex"
     description =
         "Bump version (versionCode+1, minor+1, patch→0), clean build release APK + AAB, and verify"
@@ -604,7 +607,7 @@ verifyRemexCoreInReleaseApk.configure {
     mustRunAfter("assembleRelease")
 }
 
-val remexUninstallExistingDebugApp by tasks.registering {
+val remexUninstallExistingDebugApp by project.tasks.registering {
     group = "remex"
     description =
         "Uninstalls existing app package from connected device to avoid signature conflicts"

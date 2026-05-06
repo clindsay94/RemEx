@@ -182,8 +182,6 @@
     <string name="connection_hint_broadcast">Geralmente 255.255.255.255 — altere apenas se o WOL falhar</string>
     <string name="connection_label_subnet">Máscara de Sub-rede</string>
     <string name="connection_hint_subnet">Tipicamente 255.255.255.0 para redes domésticas</string>
-    <string name="connection_label_access_key">Chave de Acesso</string>
-    <string name="connection_hint_access_key">Deixe vazio para desativar a autenticação</string>
     <string name="connection_desktop_defaults_title">Padrões da Área de Trabalho Remota</string>
     <string name="connection_quality_label">Qualidade: %1$d%%</string>
     <string name="connection_fps_label">FPS Alvo: %1$d (máx 120)</string>

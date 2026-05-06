@@ -193,12 +193,9 @@ class RemoteCommandCallback : ActionCallback {
                     RemexCoreClient.WakePc(mac, broadcast, 9)
                 }
             } else {
-                val accessKey = settings.accessKeyFlow.first()
                 val request = JSONObject().apply {
                     put("action", action)
-                    put("parameters", JSONObject().apply {
-                        if (accessKey.isNotBlank()) put("AccessKey", accessKey)
-                    })
+                    put("parameters", JSONObject())
                 }
                 RemexCoreClient.SendCommand(request.toString())
             }

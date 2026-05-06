@@ -18,10 +18,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.security.PinnedHostStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class PairingUiState(val isLoading: Boolean = false, val pairingError: String? = null)
 
@@ -29,34 +31,50 @@ class PairingViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PairingUiState())
     val uiState: StateFlow<PairingUiState> = _uiState.asStateFlow()
 
-    fun submitPin(
+    // Reentrancy guards. The pairingRequired SharedFlow has replay=1, so each
+    // PairingScreen recomposition would otherwise re-fire StartPairing in parallel
+    // and race on the static _pairingWebSocket in the native layer.
+    @Volatile private var startPairingInFlight: Boolean = false
+    @Volatile private var startPairingSucceeded: Boolean = false
+
+    suspend fun submitPin(
             host: String,
             port: Int,
             pin: String,
             onSuccess: suspend (String, String) -> Unit
-    ) {
-        viewModelScope.launch {
-            _uiState.value = PairingUiState(isLoading = true)
-            // The JNI integration logic for pairing is handled via RemexCoreClient.
-            // Since submitPin Native is synchronous, we use a coroutine to offload it if needed,
-            // or simply call it here. The actual hook into native will be added next.
-            // For now, this is a placeholder where the native call will be made.
+    ): Boolean {
+        _uiState.value = PairingUiState(isLoading = true)
 
-            val result = RemexCoreClient.SubmitPairingPin(pin)
-            if (result.startsWith("OK:")) {
-                val parts = result.substring(3).split("|")
-                if (parts.size >= 2) {
-                    onSuccess(parts[0], parts[1])
-                    return@launch
-                }
+        val result = withContext(Dispatchers.IO) { RemexCoreClient.SubmitPairingPin(pin) }
+
+        if (result.startsWith("OK:")) {
+            val parts = result.substring(3).split("|")
+            if (parts.size >= 2) {
+                onSuccess(parts[0], parts[1])
+                _uiState.value = PairingUiState(isLoading = false)
+                return true
             }
 
             _uiState.value =
                     PairingUiState(
                             isLoading = false,
-                            pairingError = "Invalid PIN or pairing failed"
+                            pairingError =
+                                    "Pairing succeeded but the native response was malformed."
                     )
+            return false
         }
+
+        // Surface the actual native error rather than masking it; this helps both the user
+        // and the developer reading logcat understand whether the PIN was wrong, the session
+        // expired, or the WebSocket dropped.
+        val message =
+                when {
+                    result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
+                    result.isBlank() -> "Pairing failed (empty native response)"
+                    else -> result
+                }
+        _uiState.value = PairingUiState(isLoading = false, pairingError = message)
+        return false
     }
 
     fun setError(msg: String) {
@@ -64,19 +82,41 @@ class PairingViewModel : ViewModel() {
     }
 
     fun startPairing(hostUrl: String, clientName: String, clientVersion: String) {
+        // Reentrancy guard: don't kick off a second StartPairing while one is in flight,
+        // and don't redo a successful one (the WebSocket is already alive on the native side).
+        if (startPairingInFlight || startPairingSucceeded) return
+        startPairingInFlight = true
+
         viewModelScope.launch {
             _uiState.value = PairingUiState(isLoading = true)
-            val result = RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion)
-            if (result != "OK") {
+            val result =
+                    withContext(Dispatchers.IO) {
+                        RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion)
+                    }
+            startPairingInFlight = false
+            if (result == "OK") {
+                startPairingSucceeded = true
+                _uiState.value = PairingUiState(isLoading = false)
+            } else {
+                val message =
+                        when {
+                            result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
+                            result.isBlank() -> "Could not reach host (empty native response)"
+                            else -> result
+                        }
                 _uiState.value =
                         PairingUiState(
                                 isLoading = false,
-                                pairingError = "Failed to start pairing: $result"
+                                pairingError = "Could not start pairing: $message"
                         )
-            } else {
-                _uiState.value = PairingUiState(isLoading = false)
             }
         }
+    }
+
+    fun resetPairingState() {
+        // Called when the user explicitly retries (taps Retry / Cancel + reopen).
+        startPairingInFlight = false
+        startPairingSucceeded = false
     }
 }
 
@@ -93,9 +133,9 @@ fun PairingScreen(
     var pin by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        // Build the URL to pass to StartPairing
-        val protocol = "wss" // We only use wss now
-        val hostUrl = "$protocol://$host:$port/remex"
+        // Build the URL to pass to StartPairing.
+        // Path must match RemexConstants.WebSocketPath on the host side ("/ws").
+        val hostUrl = "wss://$host:$port/ws"
         viewModel.startPairing(hostUrl, "Android Client", "2.0.0")
     }
 
@@ -157,10 +197,14 @@ fun PairingScreen(
                 Button(
                         onClick = {
                             coroutineScope.launch {
-                                viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
-                                    PinnedHostStore.setPin(context, hostId, spkiHash)
+                                val paired =
+                                        viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
+                                            PinnedHostStore.setPin(context, hostId, spkiHash)
+                                            PinnedHostStore.setPin(context, host, spkiHash)
+                                        }
+                                if (paired) {
+                                    onPairSuccess()
                                 }
-                                onPairSuccess()
                             }
                         },
                         modifier = Modifier.weight(1f),

@@ -50,10 +50,19 @@ public class PairingClient
         await MessageSerializer.SendAsync(_webSocket, req);
         _log?.Invoke("Sent PairingRequest with client ECDH P-256 public key to host.");
 
-        var response = await ReceiveMessageAsync(ct);
-        if (response?.Type != MessageTypes.PairingResponse || response.PairingResponse is null)
+        RemexMessage? response = null;
+        while (!ct.IsCancellationRequested)
         {
-            _log?.Invoke($"Expected PairingResponse, got {response?.Type}");
+            response = await ReceiveMessageAsync(ct);
+            if (response?.Type == MessageTypes.PairingResponse)
+                break;
+            
+            _log?.Invoke($"Ignoring non-pairing message during handshake: {response?.Type}");
+        }
+
+        if (response?.PairingResponse is null)
+        {
+            _log?.Invoke("Handshake cancelled or failed to get PairingResponse.");
             return null;
         }
 
@@ -113,7 +122,16 @@ public class PairingClient
             await MessageSerializer.SendAsync(_webSocket, comp);
             _log?.Invoke("Sent PairingComplete with client ack HMAC. Waiting for host confirmation...");
 
-            var confirm = await ReceiveMessageAsync(ct);
+            RemexMessage? confirm = null;
+            while (!ct.IsCancellationRequested)
+            {
+                confirm = await ReceiveMessageAsync(ct);
+                if (confirm?.Type == MessageTypes.PairingComplete || confirm?.Type == MessageTypes.PairingError)
+                    break;
+                
+                _log?.Invoke($"Ignoring non-pairing message during confirmation: {confirm?.Type}");
+            }
+
             if (confirm != null && confirm.Type == MessageTypes.PairingComplete && confirm.CommandSuccess == true)
             {
                 _log?.Invoke("Pairing successful.");

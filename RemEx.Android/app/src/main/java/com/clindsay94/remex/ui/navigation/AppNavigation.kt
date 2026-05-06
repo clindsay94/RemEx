@@ -47,6 +47,7 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.ExperimentalMaterial3AdaptiveNavigationSuiteApi
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -202,7 +203,7 @@ private fun AppNavigationContent(
         val scope = rememberCoroutineScope()
 
         // ─── Adaptive layout ─────────────────────────────────────────────────────
-        val adaptiveInfo = currentWindowAdaptiveInfo()
+        val adaptiveInfo = currentWindowAdaptiveInfoV2()
         val showNav = currentRoute != null && !noNavRoutes.contains(currentRoute)
 
         // M3: NavigationBar on compact, NavigationRail on medium, NavigationDrawer on expanded
@@ -808,6 +809,11 @@ private fun RemexNavHost(
                                 },
                                 onNavigateToAbout = {
                                         navController.navigate(Screen.About.route) {
+                                                launchSingleTop = true
+                                        }
+                                },
+                                onNavigateToQrScanner = {
+                                        navController.navigate(Screen.QrScanner.route) {
                                                 launchSingleTop = true
                                         }
                                 },

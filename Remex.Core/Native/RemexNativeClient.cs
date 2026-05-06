@@ -52,26 +52,79 @@ public sealed class RemexNativeClient : IDisposable
         var wsUri = new Uri($"wss://{host}:{port}{RemexConstants.WebSocketPath}");
         _webSocket = new ClientWebSocket();
 
+        JniHelper.AndroidLogE("RemexNative", $"Attempting connection to {wsUri}");
+
         if (!string.IsNullOrEmpty(spkiHash))
         {
             _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
-                if (cert == null) return false;
-                using var cert2 = new X509Certificate2(cert);
-                var actualSpki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-                var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(actualSpki));
-                return actualHash == spkiHash;
+                try 
+                {
+                    JniHelper.AndroidLogE("RemexNative", $"SSL Validation Callback triggered. Errors: {errors}");
+                    
+                    if (cert == null) 
+                    {
+                        JniHelper.AndroidLogE("RemexNative", "Certificate validation failed: Remote certificate is null");
+                        return false;
+                    }
+
+                    // Log cert info
+                    JniHelper.AndroidLogE("RemexNative", $"Cert Subject: {cert.Subject}");
+                    JniHelper.AndroidLogE("RemexNative", $"Cert Issuer: {cert.Issuer}");
+
+                    // Use the raw data to avoid potential PAL object mapping issues
+                    byte[] rawData = cert.Export(X509ContentType.Cert);
+                    if (rawData == null || rawData.Length == 0)
+                    {
+                        JniHelper.AndroidLogE("RemexNative", "Failed to export raw certificate data");
+                        return false;
+                    }
+
+                    using var cert2 = X509CertificateLoader.LoadCertificate(rawData);
+                    var spkiInfo = cert2.PublicKey.ExportSubjectPublicKeyInfo();
+                    var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(spkiInfo));
+                    
+                    JniHelper.AndroidLogE("RemexNative", $"Actual SPKI Hash: {actualHash}");
+                    JniHelper.AndroidLogE("RemexNative", $"Expected SPKI Hash: {spkiHash}");
+                    
+                    if (actualHash == spkiHash) 
+                    {
+                        JniHelper.AndroidLogE("RemexNative", "Certificate hash matches! Validation successful.");
+                        return true;
+                    }
+                    
+                    JniHelper.AndroidLogE("RemexNative", "Certificate mismatch! Rejecting connection.");
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    JniHelper.AndroidLogE("RemexNative", $"CRITICAL ERROR in validation callback: {ex.Message}");
+                    JniHelper.AndroidLogE("RemexNative", ex.ToString());
+                    return false;
+                }
             };
         }
 
         try
         {
             await _webSocket.ConnectAsync(wsUri, linkedCts.Token);
+            JniHelper.AndroidLogE("RemexNative", "Successfully connected to remote server");
             ConnectionStateChanged?.Invoke(true);
             _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_connectionCts.Token));
         }
         catch (Exception ex)
         {
+            JniHelper.AndroidLogE("RemexNative", $"ConnectAsync failed: {ex.Message}");
+            
+            var currentEx = ex.InnerException;
+            int depth = 0;
+            while (currentEx != null && depth < 5)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"Inner exception [{depth}]: {currentEx.GetType().Name} - {currentEx.Message}");
+                currentEx = currentEx.InnerException;
+                depth++;
+            }
+
             ConnectionStateChanged?.Invoke(false);
             ConnectionFailed?.Invoke(ex.Message);
             throw;

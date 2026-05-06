@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 26,
-      "versionName": "1.25.0",
-      "outputFile": "RemEx-V1.25.0-release.apk"
+      "versionCode": 15,
+      "versionName": "2.0.0",
+      "outputFile": "RemEx-V2.0.0-release.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/RemEx-V1.25.0-release.dm"
+        "baselineProfiles/1/RemEx-V2.0.0-release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/RemEx-V1.25.0-release.dm"
+        "baselineProfiles/0/RemEx-V2.0.0-release.dm"
       ]
     }
   ],

@@ -7,8 +7,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.crypto.tink.Aead
-import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.RegistryConfiguration
 import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.aead.AesGcmKeyManager
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import java.util.Base64
 import kotlinx.coroutines.flow.first
@@ -33,33 +34,27 @@ object PinnedHostStore {
     private const val TINK_PREFS_FILE = "remex_tink_prefs"
     private const val MASTER_KEY_URI = "android-keystore://remex_pinned_host_key"
 
+    @Volatile
+    private var aeadInstance: Aead? = null
+
     init {
         AeadConfig.register()
     }
 
-    private fun aead(context: Context): Aead =
-            AndroidKeysetManager.Builder()
-                    .withSharedPref(context.applicationContext, KEYSET_NAME, TINK_PREFS_FILE)
-                    .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-                    .withMasterKeyUri(MASTER_KEY_URI)
-                    .build()
-                    .keysetHandle
-                    .getPrimitive(Aead::class.java)
-
-    private fun prefKey(hostId: String) = stringPreferencesKey(hostId)
-
-    suspend fun getPin(context: Context, hostId: String): String? {
-        val prefs = context.applicationContext.pinnedHostDataStore.data.first()
-        val encoded = prefs[prefKey(hostId)] ?: return null
-        return try {
-            val cipher = Base64.getDecoder().decode(encoded)
-            val plain = aead(context).decrypt(cipher, hostId.toByteArray(Charsets.UTF_8))
-            String(plain, Charsets.UTF_8)
-        } catch (_: Exception) {
-            // Corrupted or tampered entry — treat as unpaired.
-            null
+    private fun aead(context: Context): Aead {
+        return aeadInstance ?: synchronized(this) {
+            aeadInstance ?: AndroidKeysetManager.Builder()
+                .withSharedPref(context.applicationContext, KEYSET_NAME, TINK_PREFS_FILE)
+                .withKeyTemplate(AesGcmKeyManager.aes256GcmTemplate())
+                .withMasterKeyUri(MASTER_KEY_URI)
+                .build()
+                .keysetHandle
+                .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+                .also { aeadInstance = it }
         }
     }
+
+    private fun prefKey(hostId: String) = stringPreferencesKey(hostId)
 
     suspend fun setPin(context: Context, hostId: String, spkiHash: String) {
         val cipher =
@@ -71,6 +66,19 @@ object PinnedHostStore {
         val encoded = Base64.getEncoder().encodeToString(cipher)
         context.applicationContext.pinnedHostDataStore.edit { prefs ->
             prefs[prefKey(hostId)] = encoded
+        }
+    }
+
+    suspend fun getPin(context: Context, hostId: String): String? {
+        val prefs = context.applicationContext.pinnedHostDataStore.data.first()
+        val encoded = prefs[prefKey(hostId)] ?: return null
+        return try {
+            val cipher = Base64.getDecoder().decode(encoded)
+            val plain = aead(context).decrypt(cipher, hostId.toByteArray(Charsets.UTF_8))
+            String(plain, Charsets.UTF_8)
+        } catch (_: Exception) {
+            // Corrupted or tampered entry — treat as unpaired.
+            null
         }
     }
 
