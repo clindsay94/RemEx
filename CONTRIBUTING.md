@@ -60,7 +60,7 @@ The Linux build produces `.tar.gz` archives for both the client and host, includ
 Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php). The script publishes the desktop binary, then compiles the installer:
 ```powershell
 # From repo root
-.\installer\build-installer.ps1 -Version 1.10.0
+.\installer\build-installer.ps1 -Version 1.15.0
 ```
 
 ### Native Android App (`RemEx.Android`)
@@ -89,7 +89,7 @@ Managed centrally in `Directory.Build.props`.
 Managed in `RemEx.Android/app/version.properties`:
 ```properties
 versionCode=12
-versionName=1.10.0
+versionName=1.15.0
 ```
 
 Use `.\gradlew remexPublishRelease` from the `RemEx.Android/` directory to auto-increment these values and prepare a release build.
