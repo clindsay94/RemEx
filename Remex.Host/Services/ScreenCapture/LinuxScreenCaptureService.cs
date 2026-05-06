@@ -324,17 +324,55 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var output = proc.StandardOutput.ReadToEnd();
             proc.WaitForExit(3000);
 
-            // Parse connected output lines: "DP-1 connected primary 1920x1080+0+0 ..."
+            foreach (var line in output.Split('\n'))
+            {
+                if (line.StartsWith("Screen ") && line.Contains("current "))
+                {
+                    var parts = line.Split("current ")[1].Split(',');
+                    var dims = parts[0].Trim().Split(" x ");
+                    if (dims.Length == 2 && int.TryParse(dims[0], out int w) && int.TryParse(dims[1], out int h))
+                    {
+                        _screenWidth = w;
+                        _screenHeight = h;
+
+                        int minX = 0, minY = 0;
+                        foreach (var innerLine in output.Split('\n'))
+                        {
+                            if (!innerLine.Contains(" connected") || !innerLine.Contains('x')) continue;
+                            var tokens = innerLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var part in tokens)
+                            {
+                                if (!part.Contains('x') || !part.Contains('+')) continue;
+                                var geom = part.Split('+');
+                                if (geom.Length >= 3 && int.TryParse(geom[1], out int px) && int.TryParse(geom[2], out int py))
+                                {
+                                    minX = Math.Min(minX, px);
+                                    minY = Math.Min(minY, py);
+                                }
+                                break;
+                            }
+                        }
+
+                        _primaryX = minX;
+                        _primaryY = minY;
+                        _primaryWidth = w;
+                        _primaryHeight = h;
+
+                        return true;
+                    }
+                }
+            }
+
+            int minX2 = 0, minY2 = 0;
+            int maxX = 0, maxY = 0;
             bool foundAny = false;
             foreach (var line in output.Split('\n'))
             {
                 if (!line.Contains(" connected") || !line.Contains('x')) continue;
 
-                var isPrimary = line.Contains(" primary ");
                 var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 foreach (var part in parts)
                 {
-                    // Geometry token: WxH+X+Y
                     if (!part.Contains('x') || !part.Contains('+')) continue;
                     var geom = part.Split('+');
                     var wh = geom[0].Split('x');
@@ -345,23 +383,36 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
                     if (!foundAny)
                     {
-                        _screenWidth = w; _screenHeight = h;
+                        minX2 = x;
+                        minY2 = y;
+                        maxX = x + w;
+                        maxY = y + h;
                         foundAny = true;
                     }
-                    if (isPrimary)
+                    else
                     {
-                        _primaryX = x; _primaryY = y;
-                        _primaryWidth = w; _primaryHeight = h;
+                        minX2 = Math.Min(minX2, x);
+                        minY2 = Math.Min(minY2, y);
+                        maxX = Math.Max(maxX, x + w);
+                        maxY = Math.Max(maxY, y + h);
                     }
                     break;
                 }
             }
-            if (foundAny) return true;
+            if (foundAny)
+            {
+                _primaryX = minX2;
+                _primaryY = minY2;
+                _primaryWidth = maxX - minX2;
+                _primaryHeight = maxY - minY2;
+                _screenWidth = _primaryWidth;
+                _screenHeight = _primaryHeight;
+                return true;
+            }
         }
-        catch { /* fall through */ }
+        catch { }
         return false;
     }
-
     private bool TryDetectWithXdpyinfo()
     {
         try

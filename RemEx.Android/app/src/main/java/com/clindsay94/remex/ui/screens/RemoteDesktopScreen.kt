@@ -176,6 +176,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
                 onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
                 getHostScreenSize = { viewModel.getHostScreenSize() },
+                getHostDesktopOffset = { viewModel.getHostDesktopOffset() },
                 currentFrameTimestamp = currentFrame?.timestamp,
                 fps = fps,
                 showFpsOverlay = showFpsOverlay,
@@ -206,6 +207,7 @@ fun RemoteDesktopScreenContent(
         onUpdatePointerSpeed: (Float) -> Unit,
         onUpdateScrollSensitivity: (Float, Float) -> Unit,
         getHostScreenSize: () -> Pair<Int, Int>,
+        getHostDesktopOffset: () -> Pair<Int, Int> = { Pair(0, 0) },
         currentFrameTimestamp: Long?,
         fps: Float = 0f,
         showFpsOverlay: Boolean = false,
@@ -296,6 +298,7 @@ fun RemoteDesktopScreenContent(
         fun mapLocalToHost(localOffset: Offset): Offset {
                 if (imageSize.width == 0 || imageSize.height == 0) return Offset.Zero
                 val (hostW, hostH) = getHostScreenSize()
+                val (hostLeft, hostTop) = getHostDesktopOffset()
 
                 val centerX = imageSize.width / 2f
                 val centerY = imageSize.height / 2f
@@ -327,7 +330,7 @@ fun RemoteDesktopScreenContent(
                 val relativeX = ((adjustedX - letterboxX) / effectiveW).coerceIn(0f, 1f)
                 val relativeY = ((adjustedY - letterboxY) / effectiveH).coerceIn(0f, 1f)
 
-                return Offset(relativeX * hostW, relativeY * hostH)
+                return Offset(relativeX * hostW + hostLeft, relativeY * hostH + hostTop)
         }
 
         Scaffold(
@@ -1474,6 +1477,7 @@ fun RemoteDesktopScreenContent(
                                                 // otherwise map host cursor to
                                                 // screen
                                                 val (hostWidth, hostHeight) = getHostScreenSize()
+                                                val (hostLeft, hostTop) = getHostDesktopOffset()
                                                 val displayCursorX =
                                                         if (uiState.directTouch || isStylusActive) {
                                                                 cursorX
@@ -1482,7 +1486,7 @@ fun RemoteDesktopScreenContent(
                                                                 // screen coordinates using
                                                                 // actual host dimensions
                                                                 imageSize.width *
-                                                                        (uiState.hostCursorX /
+                                                                        ((uiState.hostCursorX - hostLeft) /
                                                                                 hostWidth.toFloat())
                                                         }
                                                 val displayCursorY =
@@ -1490,7 +1494,7 @@ fun RemoteDesktopScreenContent(
                                                                 cursorY
                                                         } else {
                                                                 imageSize.height *
-                                                                        (uiState.hostCursorY /
+                                                                        ((uiState.hostCursorY - hostTop) /
                                                                                 hostHeight
                                                                                         .toFloat())
                                                         }

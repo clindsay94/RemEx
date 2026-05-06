@@ -42,6 +42,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val settingsManager = SettingsManager(application)
 
     private var hostScreenWidth: Int = 1920
+    private var hostDesktopLeft: Int = 0
+    private var hostDesktopTop: Int = 0
     private var hostScreenHeight: Int = 1080
 
     /** Reusable BitmapFactory options to reduce allocation pressure. */
@@ -183,6 +185,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     val json = JSONObject(metaData)
                     hostScreenWidth = json.optInt("screenWidth", 1920)
                     hostScreenHeight = json.optInt("screenHeight", 1080)
+                    hostDesktopLeft = json.optInt("desktopLeft", 0)
+                    hostDesktopTop = json.optInt("desktopTop", 0)
                     // Parse cursor position from host (for trackpad mode)
                     if (json.has("cursorX") && json.has("cursorY")) {
                         _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
@@ -486,6 +490,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun getHostScreenSize(): Pair<Int, Int> = Pair(hostScreenWidth, hostScreenHeight)
+    fun getHostDesktopOffset(): Pair<Int, Int> = Pair(hostDesktopLeft, hostDesktopTop)
 
     private fun pushConfigIfStreaming() {
         if (!_isStreaming.value || !RemexCoreClient.isLibraryLoaded) {
