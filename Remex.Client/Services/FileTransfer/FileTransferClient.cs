@@ -20,6 +20,7 @@ namespace Remex.Client.Services.FileTransfer;
 public sealed class FileTransferClient : IDisposable
 {
     private readonly ConnectionViewModel _connection;
+    private TaskCompletionSource<RemexMessage>? _rootsWaiter;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _browseWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
     private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
@@ -31,7 +32,30 @@ public sealed class FileTransferClient : IDisposable
         _connection.FileTransferMessageReceived += OnFileTransferMessage;
     }
 
-    public async Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string path, CancellationToken ct)
+    public async Task<IReadOnlyList<FileSharedRoot>> ListRemoteRootsAsync(CancellationToken ct)
+    {
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _rootsWaiter = tcs;
+
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileRootsRequest,
+            FileRootsRequest = new FileRootsRequest()
+        });
+
+        var response = await tcs.Task;
+        if (ReferenceEquals(_rootsWaiter, tcs))
+            _rootsWaiter = null;
+
+        if (response.FileRootsResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw new IOException($"Root listing error: {err}");
+
+        return response.FileRootsResponse?.Roots ?? [];
+    }
+
+    public async Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string rootId, string relativePath, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -42,7 +66,13 @@ public sealed class FileTransferClient : IDisposable
         await _connection.SendAsync(new RemexMessage
         {
             Type = MessageTypes.FileBrowseRequest,
-            FileBrowseRequest = new FileBrowseRequest { RequestId = requestId, Path = path }
+            FileBrowseRequest = new FileBrowseRequest
+            {
+                RequestId = requestId,
+                Path = relativePath,
+                RootId = rootId,
+                RelativePath = relativePath,
+            }
         });
 
         var response = await tcs.Task;
@@ -54,7 +84,7 @@ public sealed class FileTransferClient : IDisposable
         return response.FileBrowseResponse?.Entries ?? [];
     }
 
-    public async Task UploadAsync(string localPath, string remotePath, IProgress<double>? progress, CancellationToken ct)
+    public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<double>? progress, CancellationToken ct)
     {
         var transferId = Guid.NewGuid().ToString("N");
 
@@ -75,7 +105,9 @@ public sealed class FileTransferClient : IDisposable
             {
                 TransferId = transferId,
                 Direction = "upload",
-                RemotePath = remotePath,
+                RemotePath = remoteRelativePath,
+                RemoteRootId = remoteRootId,
+                RemoteRelativePath = remoteRelativePath,
                 FileName = Path.GetFileName(localPath),
                 TotalBytes = totalBytes,
                 Sha256Base64 = string.Empty
@@ -121,7 +153,7 @@ public sealed class FileTransferClient : IDisposable
             throw new IOException($"Upload failed: {result.FileTransferEnd.ErrorMessage}");
     }
 
-    public async Task DownloadAsync(string remotePath, string localPath, IProgress<double>? progress, CancellationToken ct)
+    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<double>? progress, CancellationToken ct)
     {
         var transferId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -158,8 +190,10 @@ public sealed class FileTransferClient : IDisposable
             {
                 TransferId = transferId,
                 Direction = "download",
-                RemotePath = remotePath,
-                FileName = Path.GetFileName(remotePath),
+                RemotePath = remoteRelativePath,
+                RemoteRootId = remoteRootId,
+                RemoteRelativePath = remoteRelativePath,
+                FileName = Path.GetFileName(remoteRelativePath),
                 TotalBytes = 0,
                 Sha256Base64 = string.Empty
             }
@@ -187,6 +221,10 @@ public sealed class FileTransferClient : IDisposable
     {
         switch (message.Type)
         {
+            case MessageTypes.FileRootsResponse:
+                _rootsWaiter?.TrySetResult(message);
+                break;
+
             case MessageTypes.FileBrowseResponse when message.FileBrowseResponse is { } resp:
                 if (_browseWaiters.TryGetValue(resp.RequestId, out var browseTcs))
                     browseTcs.TrySetResult(message);

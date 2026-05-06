@@ -29,6 +29,35 @@ public sealed class FileTransferHandler(
 
     private readonly ConcurrentDictionary<string, FileTransferState> _activeTransfers = new();
 
+    public async Task HandleFileRootsRequestAsync(WebSocket ws, CancellationToken ct)
+    {
+        try
+        {
+            var roots = await fileTransferService.ListRootsAsync(ct);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileRootsResponse,
+                FileRootsResponse = new FileRootsResponse
+                {
+                    Roots = [.. roots]
+                }
+            }, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Listing file roots failed.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileRootsResponse,
+                FileRootsResponse = new FileRootsResponse
+                {
+                    Roots = [],
+                    ErrorMessage = ex.Message
+                }
+            }, ct);
+        }
+    }
+
     public async Task HandleFileBrowseRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
     {
         var req = message.FileBrowseRequest;
@@ -37,7 +66,10 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var entries = await fileTransferService.BrowseAsync(req.Path, ct);
+            if (string.IsNullOrWhiteSpace(req.RootId))
+                throw new UnauthorizedAccessException("A shared root is required for remote browsing.");
+
+            var entries = await fileTransferService.BrowseAsync(req.RootId, req.RelativePath ?? string.Empty, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileBrowseResponse,
@@ -45,13 +77,15 @@ public sealed class FileTransferHandler(
                 {
                     RequestId = req.RequestId,
                     Path = req.Path,
+                    RootId = req.RootId,
+                    RelativePath = req.RelativePath ?? string.Empty,
                     Entries = [.. entries]
                 }
             };
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Browse failed for path: {Path}", req.Path);
+            logger.LogWarning(ex, "Browse failed for root {RootId}, path {Path}", req.RootId, req.RelativePath ?? req.Path);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileBrowseResponse,
@@ -59,6 +93,8 @@ public sealed class FileTransferHandler(
                 {
                     RequestId = req.RequestId,
                     Path = req.Path,
+                    RootId = req.RootId,
+                    RelativePath = req.RelativePath ?? string.Empty,
                     Entries = [],
                     ErrorMessage = ex.Message
                 }
@@ -75,17 +111,25 @@ public sealed class FileTransferHandler(
 
         try
         {
+            if (string.IsNullOrWhiteSpace(start.RemoteRootId))
+                throw new UnauthorizedAccessException("A shared root is required for file transfer operations.");
+
+            var remoteRelativePath = start.RemoteRelativePath ?? string.Empty;
             Stream stream = start.Direction == "upload"
-                ? await fileTransferService.OpenForWriteAsync(start.RemotePath, start.TotalBytes, ct)
-                : await fileTransferService.OpenForReadAsync(start.RemotePath, ct);
+                ? await fileTransferService.OpenForWriteAsync(start.RemoteRootId, remoteRelativePath, start.TotalBytes, ct)
+                : await fileTransferService.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, ct);
+
+            var totalBytes = start.Direction == "download" && stream.CanSeek
+                ? stream.Length
+                : start.TotalBytes;
 
             var state = new FileTransferState
             {
                 TransferId = start.TransferId,
                 Direction = start.Direction,
-                RemotePath = start.RemotePath,
+                RemotePath = stream is FileStream fileStream ? fileStream.Name : start.RemotePath,
                 ExpectedSha256 = start.Sha256Base64,
-                TotalBytes = start.TotalBytes,
+                TotalBytes = totalBytes,
                 FileStream = stream,
                 Hasher = SHA256.Create()
             };

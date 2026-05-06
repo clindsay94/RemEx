@@ -116,3 +116,5 @@ docs/ui-evaluation-report.md
 
 #Installer output
 /installer/output/
+/.claude/Agents
+/.claude/skills

@@ -691,7 +691,7 @@ public static class AndroidNativeExports
                 RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Default.HostCapabilities));
         }
 
-        if (msg.Type is MessageTypes.FileBrowseResponse or MessageTypes.FileTransferChunk
+        if (msg.Type is MessageTypes.FileRootsResponse or MessageTypes.FileBrowseResponse or MessageTypes.FileTransferChunk
                        or MessageTypes.FileTransferProgress or MessageTypes.FileTransferEnd)
         {
             NotifyJavaData(

@@ -23,6 +23,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _client = new FileTransferClient(connection);
         LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         RefreshLocal();
+        _ = InitializeAsync();
     }
 
     // ─── Local side ───────────────────────────────────────────────────────────
@@ -78,16 +79,72 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private string _remotePath = "/";
 
+    public ObservableCollection<FileSharedRoot> RemoteRoots { get; } = new();
+
+    [ObservableProperty]
+    private FileSharedRoot? _selectedRemoteRoot;
+
     public ObservableCollection<FileEntry> RemoteEntries { get; } = new();
 
+    partial void OnSelectedRemoteRootChanged(FileSharedRoot? value)
+    {
+        if (value is null)
+        {
+            RemoteEntries.Clear();
+            RemotePath = "/";
+            return;
+        }
+
+        RemotePath = "/";
+        _ = BrowseRemoteAsync();
+    }
+
+    private async Task InitializeAsync()
+    {
+        await LoadRemoteRootsAsync();
+    }
+
     [RelayCommand]
-    private async Task BrowseRemoteAsync()
+    private async Task LoadRemoteRootsAsync()
     {
         try
         {
             IsLoading = true;
             StatusText = string.Empty;
-            var entries = await _client.BrowseRemoteAsync(RemotePath, CancellationToken.None);
+            var roots = await _client.ListRemoteRootsAsync(CancellationToken.None);
+            RemoteRoots.Clear();
+            foreach (var root in roots.OrderBy(root => root.DisplayName))
+                RemoteRoots.Add(root);
+
+            SelectedRemoteRoot ??= RemoteRoots.FirstOrDefault();
+            if (SelectedRemoteRoot is null)
+                StatusText = "The host has not exposed any shared folders yet.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Shared folders unavailable: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task BrowseRemoteAsync()
+    {
+        if (SelectedRemoteRoot is null)
+        {
+            await LoadRemoteRootsAsync();
+            if (SelectedRemoteRoot is null)
+                return;
+        }
+
+        try
+        {
+            IsLoading = true;
+            StatusText = string.Empty;
+            var entries = await _client.BrowseRemoteAsync(SelectedRemoteRoot.RootId, RemotePath, CancellationToken.None);
             RemoteEntries.Clear();
             if (RemotePath != "/" && RemotePath != "\\")
                 RemoteEntries.Add(new FileEntry { Name = "..", IsDirectory = true });
@@ -109,8 +166,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         if (!entry.IsDirectory) return;
         RemotePath = entry.Name == ".."
-            ? Path.GetDirectoryName(RemotePath.TrimEnd('/','\\')) ?? "/"
-            : $"{RemotePath.TrimEnd('/', '\\')}/" + entry.Name;
+            ? GetParentRemotePath(RemotePath)
+            : CombineRemotePath(RemotePath, entry.Name);
         _ = BrowseRemoteAsync();
     }
 
@@ -137,10 +194,10 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [RelayCommand(CanExecute = nameof(CanUpload))]
     private async Task UploadAsync()
     {
-        if (SelectedLocalEntry is null || SelectedLocalEntry.IsDirectory) return;
+        if (SelectedLocalEntry is null || SelectedLocalEntry.IsDirectory || SelectedRemoteRoot is null) return;
 
         var localFile = Path.Combine(LocalPath, SelectedLocalEntry.Name);
-        var remoteFile = $"{RemotePath.TrimEnd('/', '\\')}/" + SelectedLocalEntry.Name;
+        var remoteFile = CombineRemotePath(RemotePath, SelectedLocalEntry.Name);
 
         _transferCts = new CancellationTokenSource();
         IsTransferring = true;
@@ -153,7 +210,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 TransferProgress = p * 100;
                 StatusText = $"Uploading {SelectedLocalEntry.Name}… {p:P0}";
             });
-            await _client.UploadAsync(localFile, remoteFile, progress, _transferCts.Token);
+            await _client.UploadAsync(localFile, SelectedRemoteRoot.RootId, remoteFile, progress, _transferCts.Token);
             StatusText = "Upload complete.";
             TransferProgress = 0;
             await BrowseRemoteAsync();
@@ -174,14 +231,18 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
     }
 
-    private bool CanUpload() => SelectedLocalEntry is { IsDirectory: false } && _connection.IsConnected && !IsTransferring;
+    private bool CanUpload() =>
+        SelectedLocalEntry is { IsDirectory: false }
+        && SelectedRemoteRoot is { IsWritable: true }
+        && _connection.IsConnected
+        && !IsTransferring;
 
     [RelayCommand(CanExecute = nameof(CanDownload))]
     private async Task DownloadAsync()
     {
-        if (SelectedRemoteEntry is null || SelectedRemoteEntry.IsDirectory) return;
+        if (SelectedRemoteEntry is null || SelectedRemoteEntry.IsDirectory || SelectedRemoteRoot is null) return;
 
-        var remoteFile = $"{RemotePath.TrimEnd('/', '\\')}/" + SelectedRemoteEntry.Name;
+        var remoteFile = CombineRemotePath(RemotePath, SelectedRemoteEntry.Name);
         var localFile = Path.Combine(LocalPath, SelectedRemoteEntry.Name);
 
         _transferCts = new CancellationTokenSource();
@@ -195,7 +256,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 TransferProgress = p * 100;
                 StatusText = $"Downloading {SelectedRemoteEntry.Name}… {p:P0}";
             });
-            await _client.DownloadAsync(remoteFile, localFile, progress, _transferCts.Token);
+            await _client.DownloadAsync(SelectedRemoteRoot.RootId, remoteFile, localFile, progress, _transferCts.Token);
             StatusText = "Download complete.";
             TransferProgress = 0;
             RefreshLocal();
@@ -231,5 +292,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _client.Dispose();
         _transferCts?.Cancel();
         _transferCts?.Dispose();
+    }
+
+    private static string CombineRemotePath(string currentPath, string childName)
+    {
+        var normalizedCurrentPath = string.IsNullOrWhiteSpace(currentPath) ? "/" : currentPath.Replace('\\', '/');
+        return normalizedCurrentPath == "/"
+            ? childName
+            : $"{normalizedCurrentPath.TrimEnd('/')}/{childName}";
+    }
+
+    private static string GetParentRemotePath(string currentPath)
+    {
+        var normalizedPath = string.IsNullOrWhiteSpace(currentPath) ? "/" : currentPath.Replace('\\', '/').TrimEnd('/');
+        if (normalizedPath.Length == 0 || normalizedPath == "/")
+            return "/";
+
+        var separatorIndex = normalizedPath.LastIndexOf('/');
+        return separatorIndex <= 0 ? "/" : normalizedPath[..separatorIndex];
     }
 }

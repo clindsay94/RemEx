@@ -123,6 +123,12 @@ public sealed record RemexMessage
     [JsonPropertyName("fileTransferProgress")]
     public FileTransferProgress? FileTransferProgress { get; init; }
 
+    [JsonPropertyName("fileRootsRequest")]
+    public FileRootsRequest? FileRootsRequest { get; init; }
+
+    [JsonPropertyName("fileRootsResponse")]
+    public FileRootsResponse? FileRootsResponse { get; init; }
+
     [JsonPropertyName("fileBrowseRequest")]
     public FileBrowseRequest? FileBrowseRequest { get; init; }
 
@@ -169,6 +175,8 @@ public static class MessageTypes
     public const string FileTransferEnd = "file_transfer_end";
     public const string FileTransferCancel = "file_transfer_cancel";
     public const string FileTransferProgress = "file_transfer_progress";
+    public const string FileRootsRequest = "file_roots_request";
+    public const string FileRootsResponse = "file_roots_response";
     public const string FileBrowseRequest = "file_browse_request";
     public const string FileBrowseResponse = "file_browse_response";
 }

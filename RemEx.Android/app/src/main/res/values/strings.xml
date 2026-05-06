@@ -387,6 +387,10 @@
     <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
     <string name="file_transfer_loading">Loading…</string>
     <string name="file_transfer_empty">No files found.</string>
+    <string name="file_transfer_shared_folder">Shared folder</string>
+    <string name="file_transfer_no_shared_folders">This host is not exposing any shared folders yet.</string>
+    <string name="file_transfer_select_root">Select a remote folder</string>
+    <string name="file_transfer_read_only_root">Read-only</string>
 
     <!-- ═══ Material Shapes ═══ -->
     <string name="shape_circle">Circle</string>

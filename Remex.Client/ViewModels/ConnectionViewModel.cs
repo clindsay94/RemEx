@@ -750,6 +750,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                         break;
 
                     case MessageTypes.FileBrowseResponse:
+                    case MessageTypes.FileRootsResponse:
                     case MessageTypes.FileTransferChunk:
                     case MessageTypes.FileTransferEnd:
                     case MessageTypes.FileTransferProgress:

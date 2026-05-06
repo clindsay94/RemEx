@@ -8,7 +8,8 @@ namespace Remex.Core.Services.FileTransfer;
 
 public interface IFileTransferService
 {
-    Task<IReadOnlyList<FileEntry>> BrowseAsync(string path, CancellationToken ct);
-    Task<Stream> OpenForReadAsync(string remotePath, CancellationToken ct);
-    Task<Stream> OpenForWriteAsync(string remotePath, long expectedBytes, CancellationToken ct);
+    Task<IReadOnlyList<FileSharedRoot>> ListRootsAsync(CancellationToken ct);
+    Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct);
+    Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct);
+    Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct);
 }

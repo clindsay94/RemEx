@@ -174,6 +174,10 @@ public sealed class PingPongHandler(
                         break;
 
                     // ── 2.0 File Transfer ──
+                    case MessageTypes.FileRootsRequest:
+                        await fileTransferHandler.HandleFileRootsRequestAsync(webSocket, ct);
+                        break;
+
                     case MessageTypes.FileBrowseRequest:
                         await fileTransferHandler.HandleFileBrowseRequestAsync(message, webSocket, ct);
                         break;

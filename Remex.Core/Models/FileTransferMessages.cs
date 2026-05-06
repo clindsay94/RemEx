@@ -2,11 +2,31 @@ using System.Text.Json.Serialization;
 
 namespace Remex.Core.Models;
 
+public sealed record FileRootsRequest;
+
+public sealed record FileRootsResponse
+{
+    [JsonPropertyName("roots")] public required FileSharedRoot[] Roots { get; init; }
+    [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+}
+
+public sealed record FileSharedRoot
+{
+    [JsonPropertyName("rootId")] public required string RootId { get; init; }
+    [JsonPropertyName("displayName")] public required string DisplayName { get; init; }
+    [JsonPropertyName("isWritable")] public bool IsWritable { get; init; }
+    [JsonPropertyName("canRename")] public bool CanRename { get; init; }
+    [JsonPropertyName("canMove")] public bool CanMove { get; init; }
+    [JsonPropertyName("canDelete")] public bool CanDelete { get; init; }
+}
+
 public sealed record FileTransferStart
 {
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
     [JsonPropertyName("direction")] public required string Direction { get; init; } // "upload" | "download"
     [JsonPropertyName("remotePath")] public required string RemotePath { get; init; }
+    [JsonPropertyName("remoteRootId")] public string? RemoteRootId { get; init; }
+    [JsonPropertyName("remoteRelativePath")] public string? RemoteRelativePath { get; init; }
     [JsonPropertyName("fileName")] public required string FileName { get; init; }
     [JsonPropertyName("totalBytes")] public required long TotalBytes { get; init; }
     [JsonPropertyName("sha256")] public required string Sha256Base64 { get; init; }
@@ -44,13 +64,17 @@ public sealed record FileTransferProgress
 public sealed record FileBrowseRequest
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
-    [JsonPropertyName("path")] public required string Path { get; init; }
+    [JsonPropertyName("path")] public string? Path { get; init; }
+    [JsonPropertyName("rootId")] public string? RootId { get; init; }
+    [JsonPropertyName("relativePath")] public string? RelativePath { get; init; }
 }
 
 public sealed record FileBrowseResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
-    [JsonPropertyName("path")] public required string Path { get; init; }
+    [JsonPropertyName("path")] public string? Path { get; init; }
+    [JsonPropertyName("rootId")] public string? RootId { get; init; }
+    [JsonPropertyName("relativePath")] public string? RelativePath { get; init; }
     [JsonPropertyName("entries")] public required FileEntry[] Entries { get; init; }
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }

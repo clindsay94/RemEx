@@ -44,6 +44,9 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(PairingResponse))]
 [JsonSerializable(typeof(PairingComplete))]
 // ── 2.0 File Transfer ──
+[JsonSerializable(typeof(FileRootsRequest))]
+[JsonSerializable(typeof(FileRootsResponse))]
+[JsonSerializable(typeof(FileSharedRoot))]
 [JsonSerializable(typeof(FileTransferStart))]
 [JsonSerializable(typeof(FileTransferChunk))]
 [JsonSerializable(typeof(FileTransferEnd))]
