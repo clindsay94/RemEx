@@ -405,4 +405,74 @@ Linux: ip addr veya hostname -I</value></data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Denver, Colorado'da ❤️ ile yapıldı</value>
   </data>
+  <data name="Nav_Files" xml:space="preserve"><value>Dosyalar</value></data>
+  <data name="Nav_FilesTooltip" xml:space="preserve"><value>Dosya Aktarımı — Paylaşılan PC klasörlerine göz atın ve telefon ile host arasında dosya taşıyın</value></data>
+  <data name="Tutorial_P9_Title" xml:space="preserve"><value>Dosya Aktarımı &amp; Paylaşılan Klasörler</value></data>
+  <data name="Tutorial_P9_Body1" xml:space="preserve"><value>Dosya Aktarımı yalnızca PC hostunuzun paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için masaüstü hosttaki Ayarlar'dan yapılandırın.</value></data>
+  <data name="Tutorial_P9_Steps" xml:space="preserve"><value>1. PC hosttaki Ayarlar → Paylaşılan Klasörler bölümünü açın.
+2. Hızlı telefon → PC yüklemeleri için RemEx Transfers'ı yazılabilir bırakın.
+3. Mobil cihazların değişiklik yapmasını istemediğiniz sürece diğer klasörleri salt okunur bırakın.</value></data>
+  <data name="Tutorial_P9_Body2" xml:space="preserve"><value>Telefonunuzda paylaşılan bir klasöre göz atın, bir dosyaya dokunarak indirin veya Android'den yazılabilir herhangi bir klasöre yükleyin.</value></data>
+  <data name="Tutorial_P10_Title" xml:space="preserve"><value>Hazırsınız!</value></data>
+  <data name="Tutorial_P10_Body1" xml:space="preserve"><value>Ana Sayfa, Sensörler, Uzaktan Kumanda, Uygulama Başlatıcı, Görev Yöneticisi ve Uzak Masaüstü arasında gezinmek için kenar çubuğunu kullanın.</value></data>
+  <data name="Tutorial_P10_Body2" xml:space="preserve"><value>Temanızı, bağlantınızı, yayın kalitesini özelleştirmek ve Ana Sayfa'ya sensör sabitlemek için Ayarlar'ı (⚙) açın.</value></data>
+  <data name="Tutorial_P10_Replay" xml:space="preserve"><value>Bu öğreticiyi Ayarlar'dan istediğiniz zaman tekrar izleyebilirsiniz.</value></data>
+  <data name="Settings_FileTransferSection" xml:space="preserve"><value>PAYLAŞILAN KLASÖRLER</value></data>
+  <data name="Settings_FileTransferDesc" xml:space="preserve"><value>Bu PC'deki hangi klasörlerin Dosya Aktarımı'nda görüneceğini seçin. Salt okunur klasörler gezinmeye ve indirmeye izin verir; yazılabilir klasörler ise telefonunuzdan yükleme de kabul eder.</value></data>
+  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve"><value>DOSYA AKTARIMI NASIL ÇALIŞIR</value></data>
+  <data name="Settings_FileTransferTutorialBody" xml:space="preserve"><value>Telefonunuz yalnızca burada listelenen klasörleri görür. Rutin yüklemeleri RemEx Transfers gibi yazılabilir bir klasöre yönlendirin ve geri kalanı, mobil cihazların değiştirmesini istemediğiniz sürece salt okunur bırakın.</value></data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve"><value>1. RemEx aracılığıyla paylaşmak istediğiniz PC klasörlerini ekleyin.
+2. Yalnızca telefondan dosya alması gereken klasörler için yüklemeleri etkinleştirin.
+3. Telefonunuzda Dosya Aktarımı'nı açın ve paylaşılan klasörlere oradan göz atın.</value></data>
+  <data name="Settings_FileTransferAddFolder" xml:space="preserve"><value>+ Klasör Ekle</value></data>
+  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve"><value>Varsayılanları Geri Yükle</value></data>
+  <data name="Settings_FileTransferEmpty" xml:space="preserve"><value>Henüz paylaşılan klasör yapılandırılmamış. Dosya Aktarımı'nı kullanılabilir hale getirmek için en az bir klasör ekleyin.</value></data>
+  <data name="Settings_FileTransferWritable" xml:space="preserve"><value>Yüklemeye izin ver</value></data>
+  <data name="Settings_FileTransferRemove" xml:space="preserve"><value>Kaldır</value></data>
+  <data name="Settings_FileTransferImmediate" xml:space="preserve"><value>Değişiklikler Dosya Aktarımı ekranına hemen uygulanır.</value></data>
+  <data name="Settings_FileTransferPickerTitle" xml:space="preserve"><value>Paylaşılacak klasörü seçin</value></data>
+  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve"><value>Klasör seçici kullanılamıyor.</value></data>
+  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve"><value>Seçilen klasör yerel yol olarak mevcut değil.</value></data>
+  <data name="Settings_FileTransferFolderExists" xml:space="preserve"><value>Bu klasör zaten paylaşılıyor.</value></data>
+  <data name="Settings_FileTransferFolderAdded" xml:space="preserve"><value>Paylaşılan klasör eklendi.</value></data>
+  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve"><value>Paylaşılan klasörler geri yüklendi.</value></data>
+  <data name="Settings_FileTransferSaved" xml:space="preserve"><value>Paylaşılan klasörler güncellendi.</value></data>
+  <data name="FileTransfer_Header" xml:space="preserve"><value>DOSYA AKTARIMI</value></data>
+  <data name="FileTransfer_Subheader" xml:space="preserve"><value>PAYLAŞILAN KLASÖRLER · DOSYA SEÇ · İNDİRME KONUMU</value></data>
+  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve"><value>Paylaşılan Klasör</value></data>
+  <data name="FileTransfer_ReloadTooltip" xml:space="preserve"><value>Paylaşılan klasörleri yenile</value></data>
+  <data name="FileTransfer_ReadOnly" xml:space="preserve"><value>Salt okunur</value></data>
+  <data name="FileTransfer_PathLabel" xml:space="preserve"><value>Yol</value></data>
+  <data name="FileTransfer_UpTooltip" xml:space="preserve"><value>Üst klasöre git</value></data>
+  <data name="FileTransfer_RefreshTooltip" xml:space="preserve"><value>Geçerli klasörü yenile</value></data>
+  <data name="FileTransfer_UploadBtn" xml:space="preserve"><value>Dosya Yükle</value></data>
+  <data name="FileTransfer_UploadTooltip" xml:space="preserve"><value>Yerel bir dosya seçin ve bu uzak klasöre yükleyin</value></data>
+  <data name="FileTransfer_DownloadBtn" xml:space="preserve"><value>Seçileni İndir</value></data>
+  <data name="FileTransfer_DownloadTooltip" xml:space="preserve"><value>Seçilen uzak dosyayı nereye kaydedeceğinizi seçin</value></data>
+  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve"><value>Klasörü Aç</value></data>
+  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve"><value>Seçilen uzak klasörü aç</value></data>
+  <data name="FileTransfer_CancelTooltip" xml:space="preserve"><value>Etkin aktarımı iptal et</value></data>
+  <data name="FileTransfer_Loading" xml:space="preserve"><value>Yükleniyor…</value></data>
+  <data name="FileTransfer_NoSharedFolders" xml:space="preserve"><value>Host henüz paylaşılan klasör sunmamış.</value></data>
+  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve"><value>Paylaşılan klasörler kullanılamıyor: {0}</value></data>
+  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve"><value>Tarama hatası: {0}</value></data>
+  <data name="FileTransfer_PickerUnavailable" xml:space="preserve"><value>Dosya seçici kullanılamıyor.</value></data>
+  <data name="FileTransfer_PickerTitle" xml:space="preserve"><value>Yüklenecek dosyayı seçin</value></data>
+  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve"><value>Seçilen dosya yerel yol olarak mevcut değil.</value></data>
+  <data name="FileTransfer_UploadingFormat" xml:space="preserve"><value>{0} yükleniyor…</value></data>
+  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve"><value>{0} yükleniyor… {1:P0}</value></data>
+  <data name="FileTransfer_UploadComplete" xml:space="preserve"><value>Yükleme tamamlandı.</value></data>
+  <data name="FileTransfer_UploadCancelled" xml:space="preserve"><value>Yükleme iptal edildi.</value></data>
+  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve"><value>Yükleme başarısız: {0}</value></data>
+  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve"><value>Kaydet iletişim kutusu kullanılamıyor.</value></data>
+  <data name="FileTransfer_SavePickerTitle" xml:space="preserve"><value>İndirilen dosyayı kaydet</value></data>
+  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve"><value>Seçilen hedef yerel yol olarak mevcut değil.</value></data>
+  <data name="FileTransfer_DownloadingFormat" xml:space="preserve"><value>{0} indiriliyor…</value></data>
+  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve"><value>{0} indiriliyor… {1:P0}</value></data>
+  <data name="FileTransfer_DownloadComplete" xml:space="preserve"><value>İndirme tamamlandı.</value></data>
+  <data name="FileTransfer_DownloadCancelled" xml:space="preserve"><value>İndirme iptal edildi.</value></data>
+  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve"><value>İndirme başarısız: {0}</value></data>
+  <data name="FileTransfer_HintNoneSelected" xml:space="preserve"><value>Göz atmak için paylaşılan bir klasör seçin.</value></data>
+  <data name="FileTransfer_HintWritableFormat" xml:space="preserve"><value>Bu PC'den yüklemeler {0} klasörüne gider.</value></data>
+  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve"><value>{0} salt okunur. Yükleme yapmak için yazılabilir bir klasör seçin.</value></data>
 </root>

@@ -391,6 +391,16 @@
     <string name="file_transfer_no_shared_folders">This host is not exposing any shared folders yet.</string>
     <string name="file_transfer_select_root">Select a remote folder</string>
     <string name="file_transfer_read_only_root">Read-only</string>
+    <string name="file_transfer_notification_channel_name">File transfers</string>
+    <string name="file_transfer_notification_channel_description">Shows progress for uploads and downloads.</string>
+    <string name="file_transfer_notification_upload_title">Uploading %1$s</string>
+    <string name="file_transfer_notification_download_title">Downloading %1$s</string>
+    <string name="file_transfer_notification_preparing">Preparing transfer…</string>
+    <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
+    <string name="file_transfer_notification_complete_title">Transfer complete</string>
+    <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
+    <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
+    <string name="file_transfer_notification_failed_title">Transfer failed</string>
 
     <!-- ═══ Material Shapes ═══ -->
     <string name="shape_circle">Circle</string>

@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Remex.Client.Services;
 using Remex.Client.Services.FileTransfer;
 
 namespace Remex.Client.ViewModels;
@@ -17,71 +21,30 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private readonly FileTransferClient _client;
     private CancellationTokenSource? _transferCts;
 
+    public Func<FilePickerOpenOptions, Task<IReadOnlyList<IStorageFile>>>? PickUploadFileAsync { get; set; }
+    public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickDownloadDestinationAsync { get; set; }
+
     public FileTransferViewModel(ConnectionViewModel connection)
     {
         _connection = connection;
         _client = new FileTransferClient(connection);
-        LocalPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        RefreshLocal();
+        _connection.PropertyChanged += OnConnectionPropertyChanged;
         _ = InitializeAsync();
-    }
-
-    // ─── Local side ───────────────────────────────────────────────────────────
-
-    [ObservableProperty]
-    private string _localPath;
-
-    public ObservableCollection<FileEntry> LocalEntries { get; } = new();
-
-    [RelayCommand]
-    private void RefreshLocal()
-    {
-        LocalEntries.Clear();
-        try
-        {
-            var dir = new DirectoryInfo(LocalPath);
-            if (!dir.Exists) return;
-
-            if (dir.Parent is not null)
-                LocalEntries.Add(new FileEntry { Name = "..", IsDirectory = true });
-
-            foreach (var fsi in dir.EnumerateFileSystemInfos()
-                .OrderByDescending(f => f is DirectoryInfo)
-                .ThenBy(f => f.Name))
-            {
-                LocalEntries.Add(new FileEntry
-                {
-                    Name = fsi.Name,
-                    IsDirectory = fsi is DirectoryInfo,
-                    SizeBytes = fsi is FileInfo fi ? fi.Length : 0,
-                    ModifiedUnixMs = new DateTimeOffset(fsi.LastWriteTimeUtc).ToUnixTimeMilliseconds()
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusText = $"Local error: {ex.Message}";
-        }
-    }
-
-    [RelayCommand]
-    private void NavigateLocalEntry(FileEntry entry)
-    {
-        if (!entry.IsDirectory) return;
-        LocalPath = entry.Name == ".."
-            ? Path.GetDirectoryName(LocalPath) ?? LocalPath
-            : Path.Combine(LocalPath, entry.Name);
-        RefreshLocal();
     }
 
     // ─── Remote side ──────────────────────────────────────────────────────────
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UploadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NavigateRemoteUpCommand))]
+    [NotifyPropertyChangedFor(nameof(CanNavigateRemoteUp))]
     private string _remotePath = "/";
 
     public ObservableCollection<FileSharedRoot> RemoteRoots { get; } = new();
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UploadCommand))]
+    [NotifyPropertyChangedFor(nameof(RemoteRootHint))]
     private FileSharedRoot? _selectedRemoteRoot;
 
     public ObservableCollection<FileEntry> RemoteEntries { get; } = new();
@@ -112,17 +75,21 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             IsLoading = true;
             StatusText = string.Empty;
             var roots = await _client.ListRemoteRootsAsync(CancellationToken.None);
+            var previousRootId = SelectedRemoteRoot?.RootId;
             RemoteRoots.Clear();
             foreach (var root in roots.OrderBy(root => root.DisplayName))
                 RemoteRoots.Add(root);
 
-            SelectedRemoteRoot ??= RemoteRoots.FirstOrDefault();
+            SelectedRemoteRoot = RemoteRoots.FirstOrDefault(root => root.RootId == previousRootId)
+                ?? RemoteRoots.FirstOrDefault(root => root.IsWritable)
+                ?? RemoteRoots.FirstOrDefault();
+
             if (SelectedRemoteRoot is null)
-                StatusText = "The host has not exposed any shared folders yet.";
+                StatusText = LocalizationService.Instance["FileTransfer_NoSharedFolders"];
         }
         catch (Exception ex)
         {
-            StatusText = $"Shared folders unavailable: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"], ex.Message);
         }
         finally
         {
@@ -153,7 +120,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = $"Browse error: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["FileTransfer_BrowseErrorFormat"], ex.Message);
         }
         finally
         {
@@ -171,12 +138,43 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _ = BrowseRemoteAsync();
     }
 
+    [RelayCommand(CanExecute = nameof(CanNavigateRemoteUp))]
+    private void NavigateRemoteUp()
+    {
+        if (!CanNavigateRemoteUp)
+            return;
+
+        RemotePath = GetParentRemotePath(RemotePath);
+        _ = BrowseRemoteAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanOpenRemoteSelection))]
+    private void OpenSelectedRemote()
+    {
+        if (SelectedRemoteEntry is not null)
+            NavigateRemoteEntry(SelectedRemoteEntry);
+    }
+
+    public bool CanNavigateRemoteUp => RemotePath != "/" && RemotePath != "\\";
+
+    public bool CanOpenRemoteSelection => SelectedRemoteEntry?.IsDirectory == true;
+
+    public string RemoteRootHint => SelectedRemoteRoot switch
+    {
+        null => LocalizationService.Instance["FileTransfer_HintNoneSelected"],
+        { IsWritable: true } root => string.Format(LocalizationService.Instance["FileTransfer_HintWritableFormat"], root.DisplayName),
+        { } root => string.Format(LocalizationService.Instance["FileTransfer_HintReadOnlyFormat"], root.DisplayName),
+    };
+
     // ─── Transfer ─────────────────────────────────────────────────────────────
 
     [ObservableProperty]
     private double _transferProgress;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UploadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
     private bool _isTransferring;
 
     [ObservableProperty]
@@ -186,43 +184,66 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private string _statusText = string.Empty;
 
     [ObservableProperty]
-    private FileEntry? _selectedLocalEntry;
-
-    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DownloadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenSelectedRemoteCommand))]
+    [NotifyPropertyChangedFor(nameof(CanOpenRemoteSelection))]
     private FileEntry? _selectedRemoteEntry;
 
     [RelayCommand(CanExecute = nameof(CanUpload))]
     private async Task UploadAsync()
     {
-        if (SelectedLocalEntry is null || SelectedLocalEntry.IsDirectory || SelectedRemoteRoot is null) return;
+        if (SelectedRemoteRoot is null)
+            return;
 
-        var localFile = Path.Combine(LocalPath, SelectedLocalEntry.Name);
-        var remoteFile = CombineRemotePath(RemotePath, SelectedLocalEntry.Name);
+        if (PickUploadFileAsync is null)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            return;
+        }
+
+        var files = await PickUploadFileAsync(new FilePickerOpenOptions
+        {
+            Title = LocalizationService.Instance["FileTransfer_PickerTitle"],
+            AllowMultiple = false,
+        });
+
+        if (files.Count == 0)
+            return;
+
+        var localFile = GetLocalPath(files[0]);
+        if (string.IsNullOrWhiteSpace(localFile))
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_LocalPathUnavailable"];
+            return;
+        }
+
+        var fileName = Path.GetFileName(localFile);
+        var remoteFile = CombineRemotePath(RemotePath, fileName);
 
         _transferCts = new CancellationTokenSource();
         IsTransferring = true;
-        StatusText = $"Uploading {SelectedLocalEntry.Name}…";
+        StatusText = string.Format(LocalizationService.Instance["FileTransfer_UploadingFormat"], fileName);
 
         try
         {
             var progress = new Progress<double>(p =>
             {
                 TransferProgress = p * 100;
-                StatusText = $"Uploading {SelectedLocalEntry.Name}… {p:P0}";
+                StatusText = string.Format(LocalizationService.Instance["FileTransfer_UploadingProgressFormat"], fileName, p);
             });
             await _client.UploadAsync(localFile, SelectedRemoteRoot.RootId, remoteFile, progress, _transferCts.Token);
-            StatusText = "Upload complete.";
+            StatusText = LocalizationService.Instance["FileTransfer_UploadComplete"];
             TransferProgress = 0;
             await BrowseRemoteAsync();
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Upload cancelled.";
+            StatusText = LocalizationService.Instance["FileTransfer_UploadCancelled"];
             TransferProgress = 0;
         }
         catch (Exception ex)
         {
-            StatusText = $"Upload failed: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["FileTransfer_UploadFailedFormat"], ex.Message);
         }
         finally
         {
@@ -232,8 +253,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     }
 
     private bool CanUpload() =>
-        SelectedLocalEntry is { IsDirectory: false }
-        && SelectedRemoteRoot is { IsWritable: true }
+        SelectedRemoteRoot is { IsWritable: true }
         && _connection.IsConnected
         && !IsTransferring;
 
@@ -242,33 +262,54 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         if (SelectedRemoteEntry is null || SelectedRemoteEntry.IsDirectory || SelectedRemoteRoot is null) return;
 
+        if (PickDownloadDestinationAsync is null)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_SaveDialogUnavailable"];
+            return;
+        }
+
+        var destination = await PickDownloadDestinationAsync(new FilePickerSaveOptions
+        {
+            Title = LocalizationService.Instance["FileTransfer_SavePickerTitle"],
+            SuggestedFileName = SelectedRemoteEntry.Name,
+            ShowOverwritePrompt = true,
+        });
+
+        if (destination is null)
+            return;
+
+        var localFile = GetLocalPath(destination);
+        if (string.IsNullOrWhiteSpace(localFile))
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_SavePathUnavailable"];
+            return;
+        }
+
         var remoteFile = CombineRemotePath(RemotePath, SelectedRemoteEntry.Name);
-        var localFile = Path.Combine(LocalPath, SelectedRemoteEntry.Name);
 
         _transferCts = new CancellationTokenSource();
         IsTransferring = true;
-        StatusText = $"Downloading {SelectedRemoteEntry.Name}…";
+        StatusText = string.Format(LocalizationService.Instance["FileTransfer_DownloadingFormat"], SelectedRemoteEntry.Name);
 
         try
         {
             var progress = new Progress<double>(p =>
             {
                 TransferProgress = p * 100;
-                StatusText = $"Downloading {SelectedRemoteEntry.Name}… {p:P0}";
+                StatusText = string.Format(LocalizationService.Instance["FileTransfer_DownloadingProgressFormat"], SelectedRemoteEntry.Name, p);
             });
             await _client.DownloadAsync(SelectedRemoteRoot.RootId, remoteFile, localFile, progress, _transferCts.Token);
-            StatusText = "Download complete.";
+            StatusText = LocalizationService.Instance["FileTransfer_DownloadComplete"];
             TransferProgress = 0;
-            RefreshLocal();
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Download cancelled.";
+            StatusText = LocalizationService.Instance["FileTransfer_DownloadCancelled"];
             TransferProgress = 0;
         }
         catch (Exception ex)
         {
-            StatusText = $"Download failed: {ex.Message}";
+            StatusText = string.Format(LocalizationService.Instance["FileTransfer_DownloadFailedFormat"], ex.Message);
         }
         finally
         {
@@ -277,7 +318,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
     }
 
-    private bool CanDownload() => SelectedRemoteEntry is { IsDirectory: false } && _connection.IsConnected && !IsTransferring;
+    private bool CanDownload() => SelectedRemoteEntry is { IsDirectory: false } && SelectedRemoteRoot is not null && _connection.IsConnected && !IsTransferring;
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
     private void Cancel()
@@ -289,10 +330,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     public void Dispose()
     {
+        _connection.PropertyChanged -= OnConnectionPropertyChanged;
         _client.Dispose();
         _transferCts?.Cancel();
         _transferCts?.Dispose();
     }
+
+    private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ConnectionViewModel.IsConnected))
+            return;
+
+        UploadCommand.NotifyCanExecuteChanged();
+        DownloadCommand.NotifyCanExecuteChanged();
+    }
+
+    private static string? GetLocalPath(IStorageItem item)
+        => item.TryGetLocalPath();
 
     private static string CombineRemotePath(string currentPath, string childName)
     {

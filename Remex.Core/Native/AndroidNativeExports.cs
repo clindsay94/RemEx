@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
@@ -38,6 +39,9 @@ public static class AndroidNativeExports
     private static PairingClient? _activePairingClient;
     private static PairingResponse? _activePairingResponse;
     private static readonly ConcurrentDictionary<string, string> _pinnedHashes = new();
+    private static readonly Channel<RemexMessage> OutboundMessageQueue = Channel.CreateUnbounded<RemexMessage>(
+        new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    private static int _outboundSendLoopStarted;
 
     static AndroidNativeExports()
     {
@@ -51,6 +55,8 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.FrameReceived += OnNativeFrameReceived;
         RemexDesktopClient.Current.ErrorReceived += OnNativeDesktopError;
         RemexDesktopClient.Current.MetaReceived += OnNativeMetaReceived;
+
+        EnsureOutboundSendLoopStarted();
     }
 
     // In .NET 10 Android NativeAOT, the built-in JNI export `Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate`
@@ -505,16 +511,36 @@ public static class AndroidNativeExports
             return SerializeOperationSuccess($"{message.Type} dispatched.");
         }
 
-        _ = Task.Run(async () =>
+        EnsureOutboundSendLoopStarted();
+        if (!OutboundMessageQueue.Writer.TryWrite(message))
+        {
+            return SerializeOperationFailure($"Failed to queue message '{message.Type}'.");
+        }
+
+        return SerializeOperationSuccess("Message dispatched.");
+    }
+
+    private static void EnsureOutboundSendLoopStarted()
+    {
+        if (Interlocked.Exchange(ref _outboundSendLoopStarted, 1) == 1)
+            return;
+
+        _ = Task.Run(ProcessOutboundMessagesAsync);
+    }
+
+    private static async Task ProcessOutboundMessagesAsync()
+    {
+        await foreach (var message in OutboundMessageQueue.Reader.ReadAllAsync())
         {
             try
             {
                 await RemexNativeClient.Current.SendMessageAsync(message);
             }
-            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendMessage failed: {ex.Message}"); }
-        });
-
-        return SerializeOperationSuccess("Message dispatched.");
+            catch (Exception ex)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"Queued send failed for {message.Type}: {ex.Message}");
+            }
+        }
     }
 
     private static bool HandleDesktopMessage(RemexMessage message)

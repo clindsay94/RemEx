@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Client.Models;
 using Remex.Client.Services;
+using Remex.Client.Services.FileTransfer;
 using Remex.Core.Guards;
 using Remex.Core.Models;
 
@@ -43,7 +44,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         new TutorialPage(6, "Remote Control",   "Control your remote machine.",            PlatformFlags.All),
         new TutorialPage(7, "Remote Desktop",   "Stream your remote desktop.",             PlatformFlags.All),
         new TutorialPage(8, "Customization",    "Personalize the app look and feel.",      PlatformFlags.All),
-        new TutorialPage(9, "Finish",           "You're all set — let's go!",             PlatformFlags.All),
+        new TutorialPage(9, "File Transfer",    "Share folders between phone and PC.",     PlatformFlags.All),
+        new TutorialPage(10, "Finish",          "You're all set — let's go!",             PlatformFlags.All),
     };
 
     /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
@@ -330,7 +332,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void TutorialNext()
     {
         var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
-                     : OperatingSystem.IsLinux()   ? PlatformFlags.Linux
+                     : OperatingSystem.IsLinux() ? PlatformFlags.Linux
                      : PlatformFlags.Android;
 
         int nextIndex = TutorialPageIndex + 1;
@@ -345,7 +347,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void TutorialPrevious()
     {
         var platform = OperatingSystem.IsWindows() ? PlatformFlags.Windows
-                     : OperatingSystem.IsLinux()   ? PlatformFlags.Linux
+                     : OperatingSystem.IsLinux() ? PlatformFlags.Linux
                      : PlatformFlags.Android;
 
         int prevIndex = TutorialPageIndex - 1;
@@ -511,7 +513,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToFileTransfer()
     {
-        NotifyIfDisconnected("File Transfer");
+        NotifyIfDisconnected(LocalizationService.Instance["Nav_Files"]);
         _fileTransferViewModel ??= new FileTransferViewModel(Connection);
         SetTransitionAndNavigate(7, _fileTransferViewModel);
     }
@@ -591,7 +593,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         if (_settingsViewModel is null)
         {
-            _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this);
+            _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this, new FileTransferRootSettingsService());
             _ = _settingsViewModel.InitializeAsync(); // InitializeAsync calls RefreshSensors itself
             _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
             return;

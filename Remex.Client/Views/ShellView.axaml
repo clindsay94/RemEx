@@ -151,10 +151,10 @@
                                         </Button>
 
                                         <!-- File Transfer -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" AutomationProperties.Name="Files" ToolTip.Tip="File Transfer">
+                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" AutomationProperties.Name="{conv:Localize Nav_Files}" ToolTip.Tip="{conv:Localize Nav_FilesTooltip}">
                                             <StackPanel Orientation="Horizontal" Spacing="14">
                                                 <Path Data="{StaticResource IconFiles}" Fill="#34D399" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="3"/>
-                                                <TextBlock Text="Files" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
+                                                <TextBlock Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" IsVisible="{Binding IsDrawerOpen}"/>
                                             </StackPanel>
                                         </Button>
 
@@ -482,18 +482,29 @@
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P8_QR_Body2}"/>
                             </StackPanel>
 
-                            <!-- Page 9: You're All Set -->
+                            <!-- Page 9: File Transfer -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=9}">
-                                <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P9_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body1}"/>
+                                <Border Background="#0A0A1A" CornerRadius="8" Padding="12" BorderBrush="#1E1E2E" BorderThickness="1">
+                                    <TextBlock FontSize="12" Foreground="#CCCCEE" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P9_Steps}"/>
+                                </Border>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body2}"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Replay}"/>
+                            </StackPanel>
+
+                            <!-- Page 10: You're All Set -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}">
+                                <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{conv:Localize Tutorial_P10_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body1}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body2}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#6C6CAA" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Replay}"/>
                             </StackPanel>
 
                             <!-- Page indicator dots -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,4,0,0">
-                                <!-- Pages 0-9 -->
+                                <!-- Pages 0-10 -->
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=0}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=1}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=2}"/>
@@ -504,6 +515,7 @@
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=7}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=8}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=9}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=10}"/>
                             </StackPanel>
 
                             <!-- Don't Show Again checkbox -->
@@ -512,8 +524,8 @@
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=9}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=9}" Background="#4ADE80" Foreground="#1A1A1A" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=10}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}" Background="#4ADE80" Foreground="#1A1A1A" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                             </Grid>
                         </StackPanel>
                     </Border>

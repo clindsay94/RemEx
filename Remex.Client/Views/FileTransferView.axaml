@@ -43,80 +43,53 @@
 
         <!-- ═══ HEADER ═══ -->
         <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,16">
-            <TextBlock Text="FILE TRANSFER" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-            <TextBlock Text="SECURE · CHUNKED · SHA-256 VERIFIED" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+            <TextBlock Text="{local:Localize FileTransfer_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+            <TextBlock Text="{local:Localize FileTransfer_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2.0"/>
         </StackPanel>
 
-        <!-- ═══ TWO-COLUMN BROWSER ═══ -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*">
-
-            <!-- ── LOCAL PANEL ── -->
-            <Border Grid.Column="0" Classes="glass-card" Padding="0" ClipToBounds="True">
-                <Grid RowDefinitions="Auto,*">
-                    <!-- Path bar -->
-                    <Border Grid.Row="0" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="💻" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding LocalPath}" FontSize="11" Background="Transparent" BorderThickness="0" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <Button Grid.Column="2" Content="↺" Classes="icon-btn" Command="{Binding RefreshLocalCommand}" ToolTip.Tip="Refresh local" Margin="4,0,0,0"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- File list -->
-                    <ListBox Grid.Row="1" ItemsSource="{Binding LocalEntries}" SelectedItem="{Binding SelectedLocalEntry}" Background="Transparent" BorderThickness="0">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:FileEntry">
-                                <Border Background="Transparent" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </Border>
-
-            <!-- ── MIDDLE CONTROLS ── -->
-            <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center" Margin="12,0">
-                <Button Content="→" Classes="action-btn" Command="{Binding UploadCommand}" ToolTip.Tip="Upload selected file to remote" FontSize="18"/>
-                <Button Content="←" Classes="action-btn" Command="{Binding DownloadCommand}" ToolTip.Tip="Download selected file to local" FontSize="18"/>
-                <Button Content="✕" Classes="action-btn" Command="{Binding CancelCommand}" ToolTip.Tip="Cancel transfer" Background="#3A1A1A" Foreground="#FF6B6B"/>
-            </StackPanel>
-
-            <!-- ── REMOTE PANEL ── -->
-            <Border Grid.Column="2" Classes="glass-card" Padding="0" ClipToBounds="True">
-                <Grid RowDefinitions="Auto,Auto,*">
-                    <Border Grid.Row="0" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="Remote Root" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding RemoteRoots}" SelectedItem="{Binding SelectedRemoteRoot}" MinWidth="200" HorizontalAlignment="Stretch">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="models:FileSharedRoot">
+        <!-- ═══ REMOTE BROWSER ═══ -->
+        <Border Grid.Row="1" Classes="glass-card" Padding="0" ClipToBounds="True">
+            <Grid RowDefinitions="Auto,Auto,Auto,*">
+                <Border Grid.Row="0" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_SharedFolderLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding RemoteRoots}" SelectedItem="{Binding SelectedRemoteRoot}" MinWidth="220" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:FileSharedRoot">
+                                    <StackPanel Spacing="2">
                                         <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <Button Grid.Column="2" Content="↺" Classes="icon-btn" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="Reload shared folders" Margin="8,0,0,0"/>
-                        </Grid>
-                    </Border>
+                                        <TextBlock Text="{local:Localize FileTransfer_ReadOnly}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !IsWritable}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Grid.Column="2" Content="↺" Classes="icon-btn" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" Margin="8,0,0,0"/>
+                    </Grid>
+                </Border>
 
-                    <!-- Path bar -->
-                    <Border Grid.Row="1" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="Path" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding RemotePath}" FontSize="11" Background="Transparent" BorderThickness="0" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <Button Grid.Column="2" Content="↺" Classes="icon-btn" Command="{Binding BrowseRemoteCommand}" ToolTip.Tip="Refresh remote" Margin="4,0,0,0"/>
-                        </Grid>
-                    </Border>
+                <Border Grid.Row="1" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_PathLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding RemotePath}" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                        <Button Grid.Column="2" Content="↑" Classes="icon-btn" Command="{Binding NavigateRemoteUpCommand}" ToolTip.Tip="{local:Localize FileTransfer_UpTooltip}" Margin="4,0,0,0"/>
+                        <Button Grid.Column="3" Content="↺" Classes="icon-btn" Command="{Binding BrowseRemoteCommand}" ToolTip.Tip="{local:Localize FileTransfer_RefreshTooltip}" Margin="4,0,0,0"/>
+                    </Grid>
+                </Border>
 
-                    <!-- Loading indicator -->
-                    <TextBlock Grid.Row="2" Text="Loading…" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsLoading}"/>
+                <Border Grid.Row="2" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
+                        <Button Grid.Column="0" Content="{local:Localize FileTransfer_UploadBtn}" Classes="action-btn" Command="{Binding UploadCommand}" HorizontalAlignment="Left" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
+                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_DownloadBtn}" Classes="action-btn" Command="{Binding DownloadCommand}" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
+                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_OpenFolderBtn}" Classes="action-btn" Command="{Binding OpenSelectedRemoteCommand}" HorizontalAlignment="Left" Margin="10,0,0,0" ToolTip.Tip="{local:Localize FileTransfer_OpenFolderTooltip}"/>
+                        <Button Grid.Column="3" Content="{local:Localize Btn_Cancel}" Classes="action-btn" Command="{Binding CancelCommand}" HorizontalAlignment="Left" Margin="10,0,0,0" Background="#3A1A1A" Foreground="#FF6B6B" ToolTip.Tip="{local:Localize FileTransfer_CancelTooltip}"/>
+                        <TextBlock Grid.Column="4" Text="{Binding RemoteRootHint}" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                    </Grid>
+                </Border>
 
-                    <!-- File list -->
-                    <ListBox Grid.Row="2" ItemsSource="{Binding RemoteEntries}" SelectedItem="{Binding SelectedRemoteEntry}" Background="Transparent" BorderThickness="0" IsVisible="{Binding !IsLoading}">
+                <Grid Grid.Row="3">
+                    <TextBlock Text="{local:Localize FileTransfer_Loading}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsLoading}"/>
+
+                    <ListBox ItemsSource="{Binding RemoteEntries}" SelectedItem="{Binding SelectedRemoteEntry}" Background="Transparent" BorderThickness="0" IsVisible="{Binding !IsLoading}">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="models:FileEntry">
                                 <Border Background="Transparent" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
@@ -130,8 +103,8 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
-            </Border>
-        </Grid>
+            </Grid>
+        </Border>
 
         <!-- ═══ STATUS / PROGRESS ═══ -->
         <Border Grid.Row="2" Classes="glass-card" Padding="16,12" Margin="0,12,0,0">

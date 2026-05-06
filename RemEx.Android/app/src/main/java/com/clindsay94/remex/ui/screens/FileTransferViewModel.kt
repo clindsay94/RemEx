@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.service.FileTransferNotificationManager
 import java.io.OutputStream
 import java.security.MessageDigest
 import java.util.UUID
@@ -25,6 +26,12 @@ import org.json.JSONObject
 
 private const val TAG = "FileTransferVM"
 private const val CHUNK_SIZE = 65_536
+
+private fun JSONObject.optMeaningfulString(key: String): String? {
+    if (!has(key) || isNull(key)) return null
+    val value = optString(key, "").trim()
+    return value.takeUnless { it.isEmpty() || it.equals("null", ignoreCase = true) }
+}
 
 data class RemoteFileEntry(
         val name: String,
@@ -77,6 +84,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     private var pendingBrowseRequestId: String? = null
     private var activeTransferId: String? = null
+    private var activeTransferFileName: String? = null
     private var activeDownload: ActiveDownload? = null
     private var activeUploadJob: Job? = null
 
@@ -166,9 +174,15 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val transferId = UUID.randomUUID().toString().replace("-", "")
 
         activeTransferId = transferId
+        activeTransferFileName = targetName
         _isTransferring.value = true
         _transferProgress.value = 0f
         _statusText.value = "Uploading $targetName..."
+        FileTransferNotificationManager.showTransferStarted(
+                getApplication(),
+                targetName,
+                isDownload = false,
+        )
 
         activeUploadJob =
                 viewModelScope.launch(Dispatchers.IO) {
@@ -257,7 +271,12 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                         Log.i(TAG, "Upload cancelled for $transferId")
                     } catch (e: Exception) {
                         Log.e(TAG, "Upload failed", e)
-                        _statusText.value = "Upload failed: ${e.message}"
+                        val message = e.message ?: "Unknown error."
+                        _statusText.value = "Upload failed: $message"
+                        FileTransferNotificationManager.showTransferFailed(
+                                getApplication(),
+                                "Upload failed: $message",
+                        )
                         resetTransferState()
                     }
                 }
@@ -291,10 +310,16 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 }
 
         activeTransferId = transferId
+        activeTransferFileName = entry.name
         activeDownload = ActiveDownload(transferId, destinationUri, output, channel, writerJob)
         _isTransferring.value = true
         _transferProgress.value = 0f
         _statusText.value = "Downloading ${entry.name}..."
+        FileTransferNotificationManager.showTransferStarted(
+                getApplication(),
+                entry.name,
+                isDownload = true,
+        )
 
         val remoteRelativePath = combineRemotePath(_remotePath.value, entry.name)
         sendMessage(
@@ -328,6 +353,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         activeUploadJob?.cancel()
         cleanupDownload(deletePartial = true)
         _statusText.value = "Cancelled."
+        FileTransferNotificationManager.cancel(getApplication())
         resetTransferState()
     }
 
@@ -349,8 +375,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private fun handleRootsResponse(obj: JSONObject) {
         _isLoading.value = false
         val response = obj.optJSONObject("fileRootsResponse") ?: return
-        val errorMessage = response.optString("errorMessage", "")
-        if (errorMessage.isNotBlank()) {
+        val errorMessage = response.optMeaningfulString("errorMessage")
+        if (errorMessage != null) {
             _statusText.value = "Shared folders unavailable: $errorMessage"
             return
         }
@@ -386,8 +412,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (response.optString("requestId") != pendingBrowseRequestId) return
 
         _isLoading.value = false
-        val errorMessage = response.optString("errorMessage", "")
-        if (errorMessage.isNotBlank()) {
+        val errorMessage = response.optMeaningfulString("errorMessage")
+        if (errorMessage != null) {
             _statusText.value = "Browse error: $errorMessage"
             return
         }
@@ -424,6 +450,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             _transferProgress.value = transferred.toFloat() / total
             val action = if (activeDownload != null) "Downloading" else "Uploading"
             _statusText.value = "$action... ${(transferred * 100 / total)}%"
+            FileTransferNotificationManager.showTransferProgress(
+                    getApplication(),
+                    fileName = activeTransferFileName ?: "File transfer",
+                    isDownload = activeDownload != null,
+                    transferredBytes = transferred,
+                    totalBytes = total,
+            )
         }
     }
 
@@ -441,19 +474,36 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (end.optString("transferId") != activeTransferId) return
 
         val success = end.optBoolean("success", false)
-        val errorMessage = end.optString("errorMessage")
+        val errorMessage = end.optMeaningfulString("errorMessage")
 
         if (success) {
             if (activeDownload != null) {
+                val fileName = activeTransferFileName ?: "File"
                 cleanupDownload(deletePartial = false)
                 _statusText.value = "Download complete."
+                FileTransferNotificationManager.showTransferComplete(
+                        getApplication(),
+                        fileName,
+                        isDownload = true,
+                )
             } else {
+                val fileName = activeTransferFileName ?: "File"
                 _statusText.value = "Upload complete."
+                FileTransferNotificationManager.showTransferComplete(
+                        getApplication(),
+                        fileName,
+                        isDownload = false,
+                )
                 browseRemote(_remotePath.value)
             }
         } else {
             cleanupDownload(deletePartial = true)
-            _statusText.value = "Transfer failed: $errorMessage"
+            val message = errorMessage ?: "Unknown error."
+            _statusText.value = "Transfer failed: $message"
+            FileTransferNotificationManager.showTransferFailed(
+                    getApplication(),
+                    "Transfer failed: $message",
+            )
         }
 
         resetTransferState()
@@ -488,6 +538,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     private fun resetTransferState() {
         activeTransferId = null
+        activeTransferFileName = null
         activeUploadJob = null
         _isTransferring.value = false
         _transferProgress.value = 0f

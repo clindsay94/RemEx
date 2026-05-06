@@ -24,7 +24,7 @@ Last updated: 2026-05-04T14:30:00-06:00
 
 | Track | ID | Status | Agent | Notes |
 |---|---|---|---|---|
-| File Transfer | 2A-file-transfer | 🚧 IN PROGRESS | GPT-5.4 | Shared-root protocol + host enforcement landed; desktop now browses host roots, Android now supports SAF upload/download. Remaining work: user-configured host roots and true pair-level permissions |
+| File Transfer | 2A-file-transfer | 🚧 IN PROGRESS | GPT-5.4 | Shared-root protocol + host enforcement landed; Android SAF upload/download and desktop host-side browser are in place. 2.0 scope narrowed to polishing current host-side UX; reverse mobile-folder browsing deferred to a later version. Remaining work: user-configured host roots and true pair-level permissions |
 | Critical Fixes | 2B-critical-fixes | ✅ COMPLETE | Sonnet 4.6 | C-1 to C-4 and H-1 to H-7 bug fixes applied |
 | Material3 Stable | 2C-material3 | ✅ COMPLETE | Sonnet 4.6 | Downgraded 1.5.0-alpha17 → 1.4.0; replaced MaterialShapes with RoundedPolygon; removed MotionScheme.expressive() |
 | Release Eng | 2D-release-eng | ✅ COMPLETE | Sonnet 4.6 | AAB + arm64-v8a ABI filter, cleartext disabled, network security config, R8 rules, backup exclusions |
@@ -55,3 +55,4 @@ Last updated: 2026-05-04T14:30:00-06:00
 | 2026-05-03 | 2A | LOW | Android download destination not implemented (SAF) | File download POSTs to host; receiving chunks requires Android SAF integration in future sprint |
 | 2026-05-06 | 2A | HIGH | Shared-root design requires host-side path boundary changes; current implementation still exposes raw remote paths | Reworking Track 2A to root-relative browse/transfer and improved desktop/Android product flow |
 | 2026-05-06 | 2A | MEDIUM | True pair-level host permissions are blocked by the current security backbone lacking a durable client identity on the host | Current slice uses host-level shared roots; per-pair permissions need a follow-up identity contract and host settings UI |
+| 2026-05-06 | 2A | LOW | Reverse mobile-folder browsing from desktop would require new host-mediated cross-client routing and Android shared-root exposure | Deferred beyond 2.0; current release focus is polishing host-side shared-folder transfer UX |

@@ -166,7 +166,9 @@
                             <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip.Tip="{local:Localize Settings_DiscoverTooltip}"/>
                         </Grid>
                         <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap">
-                            <Run Text="On this device, use "/><Run Text="wss://localhost:5005/ws" FontFamily="Consolas"/><Run Text=". Phones on your LAN should use the address below."/>
+                            <Run Text="On this device, use "/>
+                            <Run Text="wss://localhost:5005/ws" FontFamily="Consolas"/>
+                            <Run Text=". Phones on your LAN should use the address below."/>
                         </TextBlock>
                     </StackPanel>
 
@@ -302,6 +304,49 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ Shared Folders Section ═══ -->
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding SupportsSharedFolderConfiguration}">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{local:Localize Settings_FileTransferSection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Settings_FileTransferDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{local:Localize Settings_FileTransferTutorialTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_FileTransferTutorialBody}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{local:Localize Settings_FileTransferTutorialSteps}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="{local:Localize Settings_FileTransferAddFolder}" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                        <Button Content="{local:Localize Settings_FileTransferRestoreDefaults}" Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{local:Localize Settings_FileTransferEmpty}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap" IsVisible="{Binding !HasSharedRoots}"/>
+
+                    <ItemsControl ItemsSource="{Binding SharedRoots}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FileTransferSharedRootItem">
+                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto">
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="12,0,0,0">
+                                            <TextBlock Text="{local:Localize Settings_FileTransferWritable}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            <ToggleSwitch IsChecked="{Binding IsWritable}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,0,0" Cursor="Hand"/>
+                                        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding AbsolutePath}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{local:Localize Settings_FileTransferImmediate}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 

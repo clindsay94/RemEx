@@ -13,6 +13,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Services;
+using Remex.Client.Services.FileTransfer;
 using Remex.Core.Models;
 
 namespace Remex.Client.ViewModels;
@@ -27,6 +28,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly DashboardLayoutService _layoutService;
     private readonly ConnectionViewModel _connection;
     private readonly ShellViewModel _shell;
+    private readonly FileTransferRootSettingsService _fileTransferRootSettings;
     private DashboardProfile _profile = new();
 
     [ObservableProperty]
@@ -53,6 +55,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         new("Українська", "uk")
     };
 
+    public Func<FolderPickerOpenOptions, Task<IReadOnlyList<IStorageFolder>>>? PickSharedFolderAsync { get; set; }
+
+    public ObservableCollection<FileTransferSharedRootItem> SharedRoots { get; } = new();
+
+    public bool SupportsSharedFolderConfiguration => !OperatingSystem.IsAndroid();
+
+    public bool HasSharedRoots => SharedRoots.Count > 0;
+
     [ObservableProperty]
     private string _hostRuntimeText = LocalizationService.Instance["Service_HostUnavailable"];
 
@@ -76,15 +86,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         get => StreamFps switch
         {
-            <= 5   => 0,
-            <= 10  => 1,
-            <= 15  => 2,
-            <= 20  => 3,
-            <= 30  => 4,
-            <= 60  => 5,
+            <= 5 => 0,
+            <= 10 => 1,
+            <= 15 => 2,
+            <= 20 => 3,
+            <= 30 => 4,
+            <= 60 => 5,
             <= 120 => 6,
             <= 240 => 7,
-            _      => 8,
+            _ => 8,
         };
         set => StreamFps = value switch
         {
@@ -106,11 +116,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public SettingsViewModel(
         DashboardLayoutService layoutService,
         ConnectionViewModel connection,
-        ShellViewModel shell)
+        ShellViewModel shell,
+        FileTransferRootSettingsService fileTransferRootSettings)
     {
         _layoutService = layoutService;
         _connection = connection;
         _shell = shell;
+        _fileTransferRootSettings = fileTransferRootSettings;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
@@ -155,6 +167,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 _connection.ConnectionHistory.Add(entry);
         });
 
+        await LoadSharedRootsAsync();
+
         _ = RefreshServiceStatusAsync();
     }
 
@@ -167,6 +181,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         foreach (var item in AvailableSensors)
             item.PinChanged -= OnSensorPinChanged;
+        foreach (var root in SharedRoots)
+            UnsubscribeSharedRoot(root);
     }
 
     public void RefreshSensors()
@@ -283,16 +299,27 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _savedStatus = string.Empty;
 
+    private void ShowTransientStatus(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        SavedStatus = message;
+
+        _ = Task.Delay(3000).ContinueWith(_ =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (SavedStatus == message)
+                    SavedStatus = string.Empty;
+            }));
+    }
+
     [RelayCommand]
     private async Task SaveAsync()
     {
         Save();
         await _layoutService.FlushAsync();
-        SavedStatus = LocalizationService.Instance["Settings_SavedStatus"];
-
-        // Clear status after 3 seconds
-        _ = Task.Delay(3000).ContinueWith(_ =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => SavedStatus = string.Empty));
+        ShowTransientStatus(LocalizationService.Instance["Settings_SavedStatus"]);
     }
 
     [RelayCommand]
@@ -331,6 +358,72 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _shell.ReplayTutorial();
     }
 
+    [RelayCommand]
+    private async Task AddSharedFolderAsync()
+    {
+        if (!SupportsSharedFolderConfiguration)
+            return;
+
+        if (PickSharedFolderAsync is null)
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferPickerUnavailable"]);
+            return;
+        }
+
+        var folders = await PickSharedFolderAsync(new FolderPickerOpenOptions
+        {
+            Title = LocalizationService.Instance["Settings_FileTransferPickerTitle"],
+            AllowMultiple = false,
+        });
+
+        if (folders.Count == 0)
+            return;
+
+        var selectedPath = folders[0].TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(selectedPath))
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferLocalPathUnavailable"]);
+            return;
+        }
+
+        var normalizedPath = Path.GetFullPath(selectedPath);
+        if (SharedRoots.Any(root => PathsEqual(root.AbsolutePath, normalizedPath)))
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferFolderExists"]);
+            return;
+        }
+
+        var item = new FileTransferSharedRootItem(
+            $"custom-{Guid.NewGuid():N}",
+            GetSharedRootDisplayName(normalizedPath),
+            normalizedPath,
+            isWritable: false);
+
+        SubscribeSharedRoot(item);
+        SharedRoots.Add(item);
+        OnPropertyChanged(nameof(HasSharedRoots));
+
+        await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferFolderAdded"]);
+    }
+
+    [RelayCommand]
+    private async Task RestoreDefaultSharedFoldersAsync()
+    {
+        if (!SupportsSharedFolderConfiguration)
+            return;
+
+        try
+        {
+            var roots = await _fileTransferRootSettings.ResetToDefaultsAsync();
+            ReplaceSharedRoots(roots);
+            ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferDefaultsRestored"]);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
     private void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(ConnectionViewModel.HostCapabilities)
@@ -350,6 +443,110 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         HostRuntimeText = _connection.HostRuntimeSummary;
         HostCapabilityText = _connection.RemoteDesktopAvailabilitySummary;
+    }
+
+    private async Task LoadSharedRootsAsync()
+    {
+        if (!SupportsSharedFolderConfiguration)
+            return;
+
+        try
+        {
+            var roots = await _fileTransferRootSettings.LoadAsync();
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ReplaceSharedRoots(roots));
+        }
+        catch (Exception ex)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message)));
+        }
+    }
+
+    private void ReplaceSharedRoots(IReadOnlyList<FileTransferRootConfiguration> roots)
+    {
+        foreach (var existing in SharedRoots)
+            UnsubscribeSharedRoot(existing);
+
+        SharedRoots.Clear();
+
+        foreach (var root in roots)
+        {
+            var item = new FileTransferSharedRootItem(root.RootId, root.DisplayName, root.AbsolutePath, root.IsWritable);
+            SubscribeSharedRoot(item);
+            SharedRoots.Add(item);
+        }
+
+        OnPropertyChanged(nameof(HasSharedRoots));
+    }
+
+    private void SubscribeSharedRoot(FileTransferSharedRootItem item)
+    {
+        item.WritableChanged += OnSharedRootWritableChanged;
+        item.RemoveRequested += OnSharedRootRemoveRequested;
+    }
+
+    private void UnsubscribeSharedRoot(FileTransferSharedRootItem item)
+    {
+        item.WritableChanged -= OnSharedRootWritableChanged;
+        item.RemoveRequested -= OnSharedRootRemoveRequested;
+    }
+
+    private async void OnSharedRootWritableChanged(object? sender, bool isWritable)
+    {
+        await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferSaved"]);
+    }
+
+    private async void OnSharedRootRemoveRequested(object? sender, EventArgs e)
+    {
+        if (sender is not FileTransferSharedRootItem item)
+            return;
+
+        UnsubscribeSharedRoot(item);
+        SharedRoots.Remove(item);
+        OnPropertyChanged(nameof(HasSharedRoots));
+
+        await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferSaved"]);
+    }
+
+    private async Task SaveSharedRootsAsync(string successMessage)
+    {
+        try
+        {
+            await _fileTransferRootSettings.SaveAsync(SharedRoots.Select(root => new FileTransferRootConfiguration
+            {
+                RootId = root.RootId,
+                DisplayName = root.DisplayName,
+                AbsolutePath = root.AbsolutePath,
+                IsWritable = root.IsWritable,
+                CanRename = root.IsWritable,
+                CanMove = root.IsWritable,
+                CanDelete = root.IsWritable,
+            }).ToList());
+
+            ShowTransientStatus(successMessage);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    private static bool PathsEqual(string left, string right)
+    {
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        return string.Equals(
+            Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            comparison);
+    }
+
+    private static string GetSharedRootDisplayName(string absolutePath)
+    {
+        var trimmed = absolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return Path.GetFileName(trimmed) is { Length: > 0 } name ? name : trimmed;
     }
 
     // ═══════════════ Windows Service Management ═══════════════
@@ -1210,4 +1407,33 @@ public partial class SensorPinItem : ObservableObject
 
     partial void OnIsPinnedChanged(bool value) => PinChanged?.Invoke(this, value);
 }
+
+public partial class FileTransferSharedRootItem : ObservableObject
+{
+    public string RootId { get; }
+
+    public string DisplayName { get; }
+
+    public string AbsolutePath { get; }
+
+    [ObservableProperty]
+    private bool _isWritable;
+
+    public event EventHandler<bool>? WritableChanged;
+    public event EventHandler? RemoveRequested;
+
+    public FileTransferSharedRootItem(string rootId, string displayName, string absolutePath, bool isWritable)
+    {
+        RootId = rootId;
+        DisplayName = displayName;
+        AbsolutePath = absolutePath;
+        _isWritable = isWritable;
+    }
+
+    partial void OnIsWritableChanged(bool value) => WritableChanged?.Invoke(this, value);
+
+    [RelayCommand]
+    private void Remove() => RemoveRequested?.Invoke(this, EventArgs.Empty);
+}
+
 public record LanguageItem(string DisplayName, string Code);

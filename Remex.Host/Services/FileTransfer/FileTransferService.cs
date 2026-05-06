@@ -153,8 +153,9 @@ public sealed class FileTransferService : IFileTransferService
         {
             var json = File.ReadAllText(_configPath);
             var roots = JsonSerializer.Deserialize<List<ConfiguredRoot>>(json, JsonOptions);
-            if (roots is { Count: > 0 })
+            if (roots is not null)
                 return roots
+                    .Where(root => !string.IsNullOrWhiteSpace(root.AbsolutePath))
                     .Where(root => Directory.Exists(root.AbsolutePath))
                     .Select(root => root with { AbsolutePath = Path.GetFullPath(root.AbsolutePath) })
                     .ToList();

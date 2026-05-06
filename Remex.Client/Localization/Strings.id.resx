@@ -405,4 +405,74 @@ Linux: ip addr atau hostname -I</value></data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Dibuat dengan ❤️ di Denver, Colorado</value>
   </data>
+  <data name="Nav_Files" xml:space="preserve"><value>File</value></data>
+  <data name="Nav_FilesTooltip" xml:space="preserve"><value>Transfer File — Jelajahi folder bersama PC dan pindahkan file antara ponsel dan host</value></data>
+  <data name="Tutorial_P9_Title" xml:space="preserve"><value>Transfer File &amp; Folder Bersama</value></data>
+  <data name="Tutorial_P9_Body1" xml:space="preserve"><value>Transfer File hanya menampilkan folder yang telah dibagikan oleh host PC Anda. Konfigurasikan dari Pengaturan di host desktop agar ponsel Anda melihat lokasi yang tepat.</value></data>
+  <data name="Tutorial_P9_Steps" xml:space="preserve"><value>1. Buka Pengaturan → Folder Bersama di host PC.
+2. Pertahankan RemEx Transfers agar dapat ditulis untuk unggahan cepat ponsel → PC.
+3. Biarkan folder lain hanya-baca kecuali Anda ingin perangkat seluler mengubahnya.</value></data>
+  <data name="Tutorial_P9_Body2" xml:space="preserve"><value>Di ponsel Anda, jelajahi folder bersama, ketuk file untuk mengunduhnya, atau unggah dari Android ke folder yang dapat ditulis.</value></data>
+  <data name="Tutorial_P10_Title" xml:space="preserve"><value>Anda Siap!</value></data>
+  <data name="Tutorial_P10_Body1" xml:space="preserve"><value>Gunakan bilah sisi untuk menavigasi antara Beranda, Sensor, Kontrol Jarak Jauh, Peluncur Aplikasi, Pengelola Tugas, dan Desktop Jarak Jauh.</value></data>
+  <data name="Tutorial_P10_Body2" xml:space="preserve"><value>Buka Pengaturan (⚙) untuk menyesuaikan tema, koneksi, kualitas streaming, dan menyematkan sensor ke Beranda.</value></data>
+  <data name="Tutorial_P10_Replay" xml:space="preserve"><value>Anda dapat memutar ulang tutorial ini kapan saja dari Pengaturan.</value></data>
+  <data name="Settings_FileTransferSection" xml:space="preserve"><value>FOLDER BERSAMA</value></data>
+  <data name="Settings_FileTransferDesc" xml:space="preserve"><value>Pilih folder mana di PC ini yang muncul di Transfer File. Folder hanya-baca memungkinkan penjelajahan dan unduhan, sedangkan folder yang dapat ditulis juga menerima unggahan dari ponsel Anda.</value></data>
+  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve"><value>CARA KERJA TRANSFER FILE</value></data>
+  <data name="Settings_FileTransferTutorialBody" xml:space="preserve"><value>Ponsel Anda hanya melihat folder yang tercantum di sini. Arahkan unggahan rutin ke folder yang dapat ditulis seperti RemEx Transfers, dan biarkan sisanya hanya-baca kecuali Anda ingin perangkat seluler mengubahnya.</value></data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve"><value>1. Tambahkan folder PC yang ingin Anda ekspos melalui RemEx.
+2. Aktifkan unggahan hanya untuk folder yang harus menerima file dari ponsel.
+3. Buka Transfer File di ponsel Anda dan jelajahi folder bersama dari sana.</value></data>
+  <data name="Settings_FileTransferAddFolder" xml:space="preserve"><value>+ Tambah Folder</value></data>
+  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve"><value>Pulihkan Default</value></data>
+  <data name="Settings_FileTransferEmpty" xml:space="preserve"><value>Belum ada folder bersama yang dikonfigurasi. Tambahkan setidaknya satu folder agar Transfer File tersedia.</value></data>
+  <data name="Settings_FileTransferWritable" xml:space="preserve"><value>Izinkan unggahan</value></data>
+  <data name="Settings_FileTransferRemove" xml:space="preserve"><value>Hapus</value></data>
+  <data name="Settings_FileTransferImmediate" xml:space="preserve"><value>Perubahan langsung diterapkan ke layar Transfer File.</value></data>
+  <data name="Settings_FileTransferPickerTitle" xml:space="preserve"><value>Pilih folder untuk dibagikan</value></data>
+  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve"><value>Pemilih folder tidak tersedia.</value></data>
+  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve"><value>Folder yang dipilih tidak tersedia sebagai jalur lokal.</value></data>
+  <data name="Settings_FileTransferFolderExists" xml:space="preserve"><value>Folder itu sudah dibagikan.</value></data>
+  <data name="Settings_FileTransferFolderAdded" xml:space="preserve"><value>Folder bersama ditambahkan.</value></data>
+  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve"><value>Folder bersama dipulihkan.</value></data>
+  <data name="Settings_FileTransferSaved" xml:space="preserve"><value>Folder bersama diperbarui.</value></data>
+  <data name="FileTransfer_Header" xml:space="preserve"><value>TRANSFER FILE</value></data>
+  <data name="FileTransfer_Subheader" xml:space="preserve"><value>FOLDER BERSAMA · PILIH FILE · LOKASI UNDUHAN</value></data>
+  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve"><value>Folder Bersama</value></data>
+  <data name="FileTransfer_ReloadTooltip" xml:space="preserve"><value>Muat ulang folder bersama</value></data>
+  <data name="FileTransfer_ReadOnly" xml:space="preserve"><value>Hanya baca</value></data>
+  <data name="FileTransfer_PathLabel" xml:space="preserve"><value>Jalur</value></data>
+  <data name="FileTransfer_UpTooltip" xml:space="preserve"><value>Pergi ke folder induk</value></data>
+  <data name="FileTransfer_RefreshTooltip" xml:space="preserve"><value>Perbarui folder saat ini</value></data>
+  <data name="FileTransfer_UploadBtn" xml:space="preserve"><value>Unggah File</value></data>
+  <data name="FileTransfer_UploadTooltip" xml:space="preserve"><value>Pilih file lokal dan unggah ke folder jarak jauh ini</value></data>
+  <data name="FileTransfer_DownloadBtn" xml:space="preserve"><value>Unduh Yang Dipilih</value></data>
+  <data name="FileTransfer_DownloadTooltip" xml:space="preserve"><value>Pilih tempat menyimpan file jarak jauh yang dipilih</value></data>
+  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve"><value>Buka Folder</value></data>
+  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve"><value>Buka folder jarak jauh yang dipilih</value></data>
+  <data name="FileTransfer_CancelTooltip" xml:space="preserve"><value>Batalkan transfer aktif</value></data>
+  <data name="FileTransfer_Loading" xml:space="preserve"><value>Memuat…</value></data>
+  <data name="FileTransfer_NoSharedFolders" xml:space="preserve"><value>Host belum mengekspos folder bersama apa pun.</value></data>
+  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve"><value>Folder bersama tidak tersedia: {0}</value></data>
+  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve"><value>Kesalahan jelajah: {0}</value></data>
+  <data name="FileTransfer_PickerUnavailable" xml:space="preserve"><value>Pemilih file tidak tersedia.</value></data>
+  <data name="FileTransfer_PickerTitle" xml:space="preserve"><value>Pilih file untuk diunggah</value></data>
+  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve"><value>File yang dipilih tidak tersedia sebagai jalur lokal.</value></data>
+  <data name="FileTransfer_UploadingFormat" xml:space="preserve"><value>Mengunggah {0}…</value></data>
+  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve"><value>Mengunggah {0}… {1:P0}</value></data>
+  <data name="FileTransfer_UploadComplete" xml:space="preserve"><value>Unggahan selesai.</value></data>
+  <data name="FileTransfer_UploadCancelled" xml:space="preserve"><value>Unggahan dibatalkan.</value></data>
+  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve"><value>Gagal mengunggah: {0}</value></data>
+  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve"><value>Dialog simpan tidak tersedia.</value></data>
+  <data name="FileTransfer_SavePickerTitle" xml:space="preserve"><value>Simpan file yang diunduh</value></data>
+  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve"><value>Tujuan yang dipilih tidak tersedia sebagai jalur lokal.</value></data>
+  <data name="FileTransfer_DownloadingFormat" xml:space="preserve"><value>Mengunduh {0}…</value></data>
+  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve"><value>Mengunduh {0}… {1:P0}</value></data>
+  <data name="FileTransfer_DownloadComplete" xml:space="preserve"><value>Unduhan selesai.</value></data>
+  <data name="FileTransfer_DownloadCancelled" xml:space="preserve"><value>Unduhan dibatalkan.</value></data>
+  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve"><value>Gagal mengunduh: {0}</value></data>
+  <data name="FileTransfer_HintNoneSelected" xml:space="preserve"><value>Pilih folder bersama untuk dijelajahi.</value></data>
+  <data name="FileTransfer_HintWritableFormat" xml:space="preserve"><value>Unggahan dari PC ini masuk ke {0}.</value></data>
+  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve"><value>{0} hanya-baca. Pilih folder yang dapat ditulis untuk mengunggah.</value></data>
 </root>

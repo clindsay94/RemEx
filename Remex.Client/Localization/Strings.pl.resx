@@ -393,4 +393,74 @@ Linux: ip addr lub hostname -I</value></data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Stworzone z ❤️ w Denver, Kolorado</value>
   </data>
+  <data name="Nav_Files" xml:space="preserve"><value>Pliki</value></data>
+  <data name="Nav_FilesTooltip" xml:space="preserve"><value>Transfer plików — Przeglądaj udostępnione foldery PC i przenoś pliki między telefonem a hostem</value></data>
+  <data name="Tutorial_P9_Title" xml:space="preserve"><value>Transfer plików i foldery udostępnione</value></data>
+  <data name="Tutorial_P9_Body1" xml:space="preserve"><value>Transfer plików wyświetla tylko foldery udostępnione przez hosta PC. Skonfiguruj je w Ustawieniach na hoście, aby telefon widział właściwe lokalizacje.</value></data>
+  <data name="Tutorial_P9_Steps" xml:space="preserve"><value>1. Otwórz Ustawienia → Foldery udostępnione na hoście PC.
+2. Zostaw RemEx Transfers jako zapisywalny dla szybkich przesyłań telefon → PC.
+3. Pozostałe foldery zostaw tylko do odczytu, chyba że chcesz, aby urządzenia mobilne mogły je modyfikować.</value></data>
+  <data name="Tutorial_P9_Body2" xml:space="preserve"><value>Na telefonie przeglądaj folder udostępniony, dotknij pliku, aby go pobrać, lub prześlij z Androida do dowolnego folderu z włączonymi zapisami.</value></data>
+  <data name="Tutorial_P10_Title" xml:space="preserve"><value>Gotowe!</value></data>
+  <data name="Tutorial_P10_Body1" xml:space="preserve"><value>Użyj paska bocznego, aby nawigować między Stroną główną, Czujnikami, Zdalnym sterowaniem, Uruchamiaczem aplikacji, Menedżerem zadań i Zdalnym pulpitem.</value></data>
+  <data name="Tutorial_P10_Body2" xml:space="preserve"><value>Otwórz Ustawienia (⚙), aby dostosować motyw, połączenie, jakość transmisji i przypiąć czujniki do strony głównej.</value></data>
+  <data name="Tutorial_P10_Replay" xml:space="preserve"><value>Ten samouczek możesz odtworzyć ponownie w dowolnym momencie z Ustawień.</value></data>
+  <data name="Settings_FileTransferSection" xml:space="preserve"><value>FOLDERY UDOSTĘPNIONE</value></data>
+  <data name="Settings_FileTransferDesc" xml:space="preserve"><value>Wybierz, które foldery na tym PC mają być widoczne w Transferze plików. Foldery tylko do odczytu umożliwiają przeglądanie i pobieranie, a foldery zapisywalne przyjmują też przesyłki z telefonu.</value></data>
+  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve"><value>JAK DZIAŁA TRANSFER PLIKÓW</value></data>
+  <data name="Settings_FileTransferTutorialBody" xml:space="preserve"><value>Telefon widzi tylko foldery wymienione tutaj. Kieruj rutynowe przesyłki do folderu zapisywalnego, takiego jak RemEx Transfers, a resztę zostaw jako tylko do odczytu, jeśli nie chcesz, aby urządzenia mobilne mogły je modyfikować.</value></data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve"><value>1. Dodaj foldery PC, które chcesz udostępnić przez RemEx.
+2. Włącz przesyłanie tylko dla folderów, które mają przyjmować pliki z telefonu.
+3. Otwórz Transfer plików na telefonie i przeglądaj foldery udostępnione stamtąd.</value></data>
+  <data name="Settings_FileTransferAddFolder" xml:space="preserve"><value>+ Dodaj folder</value></data>
+  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve"><value>Przywróć ustawienia domyślne</value></data>
+  <data name="Settings_FileTransferEmpty" xml:space="preserve"><value>Nie skonfigurowano jeszcze żadnych folderów udostępnionych. Dodaj co najmniej jeden folder, aby Transfer plików był dostępny.</value></data>
+  <data name="Settings_FileTransferWritable" xml:space="preserve"><value>Zezwól na przesyłanie</value></data>
+  <data name="Settings_FileTransferRemove" xml:space="preserve"><value>Usuń</value></data>
+  <data name="Settings_FileTransferImmediate" xml:space="preserve"><value>Zmiany są stosowane natychmiast na ekranie Transferu plików.</value></data>
+  <data name="Settings_FileTransferPickerTitle" xml:space="preserve"><value>Wybierz folder do udostępnienia</value></data>
+  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve"><value>Selektor folderów niedostępny.</value></data>
+  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve"><value>Wybrany folder jest niedostępny jako ścieżka lokalna.</value></data>
+  <data name="Settings_FileTransferFolderExists" xml:space="preserve"><value>Ten folder jest już udostępniony.</value></data>
+  <data name="Settings_FileTransferFolderAdded" xml:space="preserve"><value>Folder udostępniony dodany.</value></data>
+  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve"><value>Foldery udostępnione przywrócono.</value></data>
+  <data name="Settings_FileTransferSaved" xml:space="preserve"><value>Foldery udostępnione zaktualizowane.</value></data>
+  <data name="FileTransfer_Header" xml:space="preserve"><value>TRANSFER PLIKÓW</value></data>
+  <data name="FileTransfer_Subheader" xml:space="preserve"><value>FOLDERY UDOSTĘPNIONE · WYBIERZ PLIK · CEL POBRANIA</value></data>
+  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve"><value>Folder udostępniony</value></data>
+  <data name="FileTransfer_ReloadTooltip" xml:space="preserve"><value>Odśwież foldery udostępnione</value></data>
+  <data name="FileTransfer_ReadOnly" xml:space="preserve"><value>Tylko do odczytu</value></data>
+  <data name="FileTransfer_PathLabel" xml:space="preserve"><value>Ścieżka</value></data>
+  <data name="FileTransfer_UpTooltip" xml:space="preserve"><value>Przejdź do folderu nadrzędnego</value></data>
+  <data name="FileTransfer_RefreshTooltip" xml:space="preserve"><value>Odśwież bieżący folder</value></data>
+  <data name="FileTransfer_UploadBtn" xml:space="preserve"><value>Prześlij plik</value></data>
+  <data name="FileTransfer_UploadTooltip" xml:space="preserve"><value>Wybierz plik lokalny i prześlij go do tego folderu zdalnego</value></data>
+  <data name="FileTransfer_DownloadBtn" xml:space="preserve"><value>Pobierz zaznaczone</value></data>
+  <data name="FileTransfer_DownloadTooltip" xml:space="preserve"><value>Wybierz, gdzie zapisać wybrany plik zdalny</value></data>
+  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve"><value>Otwórz folder</value></data>
+  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve"><value>Otwórz wybrany folder zdalny</value></data>
+  <data name="FileTransfer_CancelTooltip" xml:space="preserve"><value>Anuluj aktywny transfer</value></data>
+  <data name="FileTransfer_Loading" xml:space="preserve"><value>Ładowanie…</value></data>
+  <data name="FileTransfer_NoSharedFolders" xml:space="preserve"><value>Host nie udostępnił jeszcze żadnych folderów.</value></data>
+  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve"><value>Foldery udostępnione niedostępne: {0}</value></data>
+  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve"><value>Błąd przeglądania: {0}</value></data>
+  <data name="FileTransfer_PickerUnavailable" xml:space="preserve"><value>Selektor plików niedostępny.</value></data>
+  <data name="FileTransfer_PickerTitle" xml:space="preserve"><value>Wybierz plik do przesłania</value></data>
+  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve"><value>Wybrany plik jest niedostępny jako ścieżka lokalna.</value></data>
+  <data name="FileTransfer_UploadingFormat" xml:space="preserve"><value>Przesyłanie {0}…</value></data>
+  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve"><value>Przesyłanie {0}… {1:P0}</value></data>
+  <data name="FileTransfer_UploadComplete" xml:space="preserve"><value>Przesyłanie zakończone.</value></data>
+  <data name="FileTransfer_UploadCancelled" xml:space="preserve"><value>Przesyłanie anulowane.</value></data>
+  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve"><value>Błąd przesyłania: {0}</value></data>
+  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve"><value>Okno zapisu niedostępne.</value></data>
+  <data name="FileTransfer_SavePickerTitle" xml:space="preserve"><value>Zapisz pobrany plik</value></data>
+  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve"><value>Wybrany cel jest niedostępny jako ścieżka lokalna.</value></data>
+  <data name="FileTransfer_DownloadingFormat" xml:space="preserve"><value>Pobieranie {0}…</value></data>
+  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve"><value>Pobieranie {0}… {1:P0}</value></data>
+  <data name="FileTransfer_DownloadComplete" xml:space="preserve"><value>Pobieranie zakończone.</value></data>
+  <data name="FileTransfer_DownloadCancelled" xml:space="preserve"><value>Pobieranie anulowane.</value></data>
+  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve"><value>Błąd pobierania: {0}</value></data>
+  <data name="FileTransfer_HintNoneSelected" xml:space="preserve"><value>Wybierz folder udostępniony do przeglądania.</value></data>
+  <data name="FileTransfer_HintWritableFormat" xml:space="preserve"><value>Przesyłki z tego PC trafiają do {0}.</value></data>
+  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve"><value>{0} jest tylko do odczytu. Wybierz folder zapisywalny, aby przesłać pliki.</value></data>
 </root>

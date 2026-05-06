@@ -414,4 +414,74 @@ Chrome)</value></data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Hecho con ❤️ en Denver, Colorado</value>
   </data>
+  <data name="Nav_Files" xml:space="preserve"><value>Archivos</value></data>
+  <data name="Nav_FilesTooltip" xml:space="preserve"><value>Transferencia de archivos — Explora carpetas compartidas del PC y mueve archivos entre el teléfono y el equipo</value></data>
+  <data name="Tutorial_P9_Title" xml:space="preserve"><value>Transferencia de archivos y carpetas compartidas</value></data>
+  <data name="Tutorial_P9_Body1" xml:space="preserve"><value>La transferencia de archivos solo muestra las carpetas que el host de tu PC ha compartido. Configúralas desde Configuración en el host de escritorio para que tu teléfono vea las ubicaciones correctas.</value></data>
+  <data name="Tutorial_P9_Steps" xml:space="preserve"><value>1. Abre Configuración → Carpetas compartidas en el host del PC.
+2. Mantén Transferencias RemEx como escribible para subidas rápidas del teléfono al PC.
+3. Deja las demás carpetas en solo lectura a menos que quieras que los dispositivos móviles las modifiquen.</value></data>
+  <data name="Tutorial_P9_Body2" xml:space="preserve"><value>En tu teléfono, navega por una carpeta compartida, toca un archivo para descargarlo o sube archivos desde Android a cualquier carpeta con escritura habilitada.</value></data>
+  <data name="Tutorial_P10_Title" xml:space="preserve"><value>¡Ya estás listo!</value></data>
+  <data name="Tutorial_P10_Body1" xml:space="preserve"><value>Usa la barra lateral para navegar entre Inicio, Sensores, Control Remoto, Lanzador de Aplicaciones, Administrador de Tareas y Escritorio Remoto.</value></data>
+  <data name="Tutorial_P10_Body2" xml:space="preserve"><value>Abre Configuración (⚙) para personalizar tu tema, conexión, calidad de transmisión y fijar sensores en Inicio.</value></data>
+  <data name="Tutorial_P10_Replay" xml:space="preserve"><value>Puedes repetir este tutorial en cualquier momento desde Configuración.</value></data>
+  <data name="Settings_FileTransferSection" xml:space="preserve"><value>CARPETAS COMPARTIDAS</value></data>
+  <data name="Settings_FileTransferDesc" xml:space="preserve"><value>Elige qué carpetas de este PC aparecen en Transferencia de archivos. Las carpetas de solo lectura permiten navegar y descargar, mientras que las carpetas editables también aceptan subidas desde tu teléfono.</value></data>
+  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve"><value>CÓMO FUNCIONA LA TRANSFERENCIA DE ARCHIVOS</value></data>
+  <data name="Settings_FileTransferTutorialBody" xml:space="preserve"><value>Tu teléfono solo ve las carpetas de esta lista. Orienta las subidas habituales a una carpeta escribible como Transferencias RemEx, y deja todo lo demás en solo lectura a menos que quieras que los dispositivos móviles lo modifiquen.</value></data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve"><value>1. Agrega las carpetas del PC que quieres exponer con RemEx.
+2. Activa las subidas solo para las carpetas que deben aceptar archivos desde el teléfono.
+3. Abre Transferencia de archivos en tu teléfono y navega por las carpetas compartidas desde allí.</value></data>
+  <data name="Settings_FileTransferAddFolder" xml:space="preserve"><value>+ Agregar carpeta</value></data>
+  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve"><value>Restaurar predeterminados</value></data>
+  <data name="Settings_FileTransferEmpty" xml:space="preserve"><value>Todavía no hay carpetas compartidas configuradas. Agrega al menos una carpeta para que la Transferencia de archivos esté disponible.</value></data>
+  <data name="Settings_FileTransferWritable" xml:space="preserve"><value>Permitir subidas</value></data>
+  <data name="Settings_FileTransferRemove" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Settings_FileTransferImmediate" xml:space="preserve"><value>Los cambios se aplican inmediatamente en la pantalla de Transferencia de archivos.</value></data>
+  <data name="Settings_FileTransferPickerTitle" xml:space="preserve"><value>Seleccionar carpeta para compartir</value></data>
+  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve"><value>Selector de carpetas no disponible.</value></data>
+  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve"><value>La carpeta seleccionada no está disponible como ruta local.</value></data>
+  <data name="Settings_FileTransferFolderExists" xml:space="preserve"><value>Esa carpeta ya está compartida.</value></data>
+  <data name="Settings_FileTransferFolderAdded" xml:space="preserve"><value>Carpeta compartida agregada.</value></data>
+  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve"><value>Carpetas compartidas restauradas.</value></data>
+  <data name="Settings_FileTransferSaved" xml:space="preserve"><value>Carpetas compartidas actualizadas.</value></data>
+  <data name="FileTransfer_Header" xml:space="preserve"><value>TRANSFERENCIA DE ARCHIVOS</value></data>
+  <data name="FileTransfer_Subheader" xml:space="preserve"><value>CARPETAS COMPARTIDAS · ELIGE UN ARCHIVO · DESTINO DE DESCARGA</value></data>
+  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve"><value>Carpeta compartida</value></data>
+  <data name="FileTransfer_ReloadTooltip" xml:space="preserve"><value>Recargar carpetas compartidas</value></data>
+  <data name="FileTransfer_ReadOnly" xml:space="preserve"><value>Solo lectura</value></data>
+  <data name="FileTransfer_PathLabel" xml:space="preserve"><value>Ruta</value></data>
+  <data name="FileTransfer_UpTooltip" xml:space="preserve"><value>Ir a la carpeta superior</value></data>
+  <data name="FileTransfer_RefreshTooltip" xml:space="preserve"><value>Actualizar la carpeta actual</value></data>
+  <data name="FileTransfer_UploadBtn" xml:space="preserve"><value>Subir archivo</value></data>
+  <data name="FileTransfer_UploadTooltip" xml:space="preserve"><value>Elige un archivo local y súbelo a esta carpeta remota</value></data>
+  <data name="FileTransfer_DownloadBtn" xml:space="preserve"><value>Descargar seleccionado</value></data>
+  <data name="FileTransfer_DownloadTooltip" xml:space="preserve"><value>Elige dónde guardar el archivo remoto seleccionado</value></data>
+  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve"><value>Abrir carpeta</value></data>
+  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve"><value>Abrir la carpeta remota seleccionada</value></data>
+  <data name="FileTransfer_CancelTooltip" xml:space="preserve"><value>Cancelar la transferencia activa</value></data>
+  <data name="FileTransfer_Loading" xml:space="preserve"><value>Cargando…</value></data>
+  <data name="FileTransfer_NoSharedFolders" xml:space="preserve"><value>El host aún no ha expuesto ninguna carpeta compartida.</value></data>
+  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve"><value>Carpetas compartidas no disponibles: {0}</value></data>
+  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve"><value>Error al explorar: {0}</value></data>
+  <data name="FileTransfer_PickerUnavailable" xml:space="preserve"><value>Selector de archivos no disponible.</value></data>
+  <data name="FileTransfer_PickerTitle" xml:space="preserve"><value>Seleccionar archivo para subir</value></data>
+  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve"><value>El archivo seleccionado no está disponible como ruta local.</value></data>
+  <data name="FileTransfer_UploadingFormat" xml:space="preserve"><value>Subiendo {0}…</value></data>
+  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve"><value>Subiendo {0}… {1:P0}</value></data>
+  <data name="FileTransfer_UploadComplete" xml:space="preserve"><value>Subida completa.</value></data>
+  <data name="FileTransfer_UploadCancelled" xml:space="preserve"><value>Subida cancelada.</value></data>
+  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve"><value>Error al subir: {0}</value></data>
+  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve"><value>Diálogo de guardado no disponible.</value></data>
+  <data name="FileTransfer_SavePickerTitle" xml:space="preserve"><value>Guardar archivo descargado</value></data>
+  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve"><value>El destino seleccionado no está disponible como ruta local.</value></data>
+  <data name="FileTransfer_DownloadingFormat" xml:space="preserve"><value>Descargando {0}…</value></data>
+  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve"><value>Descargando {0}… {1:P0}</value></data>
+  <data name="FileTransfer_DownloadComplete" xml:space="preserve"><value>Descarga completa.</value></data>
+  <data name="FileTransfer_DownloadCancelled" xml:space="preserve"><value>Descarga cancelada.</value></data>
+  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve"><value>Error al descargar: {0}</value></data>
+  <data name="FileTransfer_HintNoneSelected" xml:space="preserve"><value>Elige una carpeta compartida para explorar.</value></data>
+  <data name="FileTransfer_HintWritableFormat" xml:space="preserve"><value>Las subidas desde este PC van a {0}.</value></data>
+  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve"><value>{0} es de solo lectura. Elige una carpeta escribible para subir archivos.</value></data>
 </root>

@@ -38,6 +38,9 @@
   <data name="Nav_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="Nav_Files" xml:space="preserve">
+    <value>Files</value>
+  </data>
 
   <!-- Common Buttons -->
   <data name="Btn_Connect" xml:space="preserve">
@@ -994,15 +997,29 @@ Linux: ip addr  or  hostname -I</value>
     <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
-    <value>You're All Set!</value>
+    <value>File Transfer &amp; Shared Folders</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Use the sidebar to navigate between Home, Sensors, Remote Control, App Launcher, Task Manager, and Remote Desktop.</value>
+    <value>File Transfer only shows the folders your PC host has shared. Configure them from Settings on the desktop host so your phone sees the right locations.</value>
+  </data>
+  <data name="Tutorial_P9_Steps" xml:space="preserve">
+    <value>1. Open Settings → Shared Folders on the PC host.
+2. Keep RemEx Transfers writable for quick phone → PC uploads.
+3. Leave other folders read-only unless you want mobile devices to modify them.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
+    <value>On your phone, browse a shared folder, tap a file to download it, or upload from Android into any writable folder.</value>
+  </data>
+  <data name="Tutorial_P10_Title" xml:space="preserve">
+    <value>You're All Set!</value>
+  </data>
+  <data name="Tutorial_P10_Body1" xml:space="preserve">
+    <value>Use the sidebar to navigate between Home, Sensors, Remote Control, App Launcher, Task Manager, and Remote Desktop.</value>
+  </data>
+  <data name="Tutorial_P10_Body2" xml:space="preserve">
     <value>Open Settings (⚙) to customise your theme, connection, stream quality, and pin sensors to Home.</value>
   </data>
-  <data name="Tutorial_P9_Replay" xml:space="preserve">
+  <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>You can replay this tutorial anytime from Settings.</value>
   </data>
 
@@ -1088,6 +1105,9 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Nav_LauncherTooltip" xml:space="preserve">
     <value>App Launcher — Start programs on your PC remotely</value>
+  </data>
+  <data name="Nav_FilesTooltip" xml:space="preserve">
+    <value>File Transfer — Browse shared PC folders and move files between phone and host</value>
   </data>
   <data name="Nav_RemoteTooltip" xml:space="preserve">
     <value>Remote Control — Power, volume, and Wake-on-LAN</value>
@@ -1200,6 +1220,179 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Username or MACHINE\Username</value>
+  </data>
+  <data name="Settings_FileTransferSection" xml:space="preserve">
+    <value>SHARED FOLDERS</value>
+  </data>
+  <data name="Settings_FileTransferDesc" xml:space="preserve">
+    <value>Choose which folders on this PC appear in File Transfer. Read-only folders allow browsing and downloads, while writable folders also accept uploads from your phone.</value>
+  </data>
+  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve">
+    <value>HOW FILE TRANSFER WORKS</value>
+  </data>
+  <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
+    <value>Your phone only sees the folders listed here. Keep routine uploads pointed at a writable folder such as RemEx Transfers, and leave everything else read-only unless you want mobile devices to change it.</value>
+  </data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
+    <value>1. Add the PC folders you want RemEx to expose.
+2. Turn on uploads only for folders that should accept phone → PC files.
+3. Open File Transfer on your phone and browse the shared folders from there.</value>
+  </data>
+  <data name="Settings_FileTransferAddFolder" xml:space="preserve">
+    <value>+ Add Folder</value>
+  </data>
+  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
+    <value>Restore Defaults</value>
+  </data>
+  <data name="Settings_FileTransferEmpty" xml:space="preserve">
+    <value>No shared folders are configured yet. Add at least one folder to make File Transfer available.</value>
+  </data>
+  <data name="Settings_FileTransferWritable" xml:space="preserve">
+    <value>Allow uploads</value>
+  </data>
+  <data name="Settings_FileTransferRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_FileTransferImmediate" xml:space="preserve">
+    <value>Changes apply immediately to the File Transfer screen.</value>
+  </data>
+  <data name="Settings_FileTransferPickerTitle" xml:space="preserve">
+    <value>Select folder to share</value>
+  </data>
+  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve">
+    <value>Folder picker unavailable.</value>
+  </data>
+  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve">
+    <value>Selected folder is not available as a local path.</value>
+  </data>
+  <data name="Settings_FileTransferFolderExists" xml:space="preserve">
+    <value>That folder is already shared.</value>
+  </data>
+  <data name="Settings_FileTransferFolderAdded" xml:space="preserve">
+    <value>Shared folder added.</value>
+  </data>
+  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve">
+    <value>Shared folders restored.</value>
+  </data>
+  <data name="Settings_FileTransferSaved" xml:space="preserve">
+    <value>Shared folders updated.</value>
+  </data>
+
+  <!-- File Transfer View -->
+  <data name="FileTransfer_Header" xml:space="preserve">
+    <value>FILE TRANSFER</value>
+  </data>
+  <data name="FileTransfer_Subheader" xml:space="preserve">
+    <value>HOST SHARED FOLDERS · PICK A FILE TO SEND · CHOOSE WHERE DOWNLOADS SAVE</value>
+  </data>
+  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
+    <value>Shared Folder</value>
+  </data>
+  <data name="FileTransfer_ReloadTooltip" xml:space="preserve">
+    <value>Reload shared folders</value>
+  </data>
+  <data name="FileTransfer_ReadOnly" xml:space="preserve">
+    <value>Read-only</value>
+  </data>
+  <data name="FileTransfer_PathLabel" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="FileTransfer_UpTooltip" xml:space="preserve">
+    <value>Go to parent folder</value>
+  </data>
+  <data name="FileTransfer_RefreshTooltip" xml:space="preserve">
+    <value>Refresh current folder</value>
+  </data>
+  <data name="FileTransfer_UploadBtn" xml:space="preserve">
+    <value>Upload File</value>
+  </data>
+  <data name="FileTransfer_UploadTooltip" xml:space="preserve">
+    <value>Choose a local file and upload it to this remote folder</value>
+  </data>
+  <data name="FileTransfer_DownloadBtn" xml:space="preserve">
+    <value>Download Selected</value>
+  </data>
+  <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
+    <value>Choose where to save the selected remote file</value>
+  </data>
+  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve">
+    <value>Open the selected remote folder</value>
+  </data>
+  <data name="FileTransfer_CancelTooltip" xml:space="preserve">
+    <value>Cancel the active transfer</value>
+  </data>
+  <data name="FileTransfer_Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <!-- File Transfer Status / VM strings -->
+  <data name="FileTransfer_NoSharedFolders" xml:space="preserve">
+    <value>The host has not exposed any shared folders yet.</value>
+  </data>
+  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
+    <value>Shared folders unavailable: {0}</value>
+  </data>
+  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
+    <value>Browse error: {0}</value>
+  </data>
+  <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
+    <value>File picker unavailable.</value>
+  </data>
+  <data name="FileTransfer_PickerTitle" xml:space="preserve">
+    <value>Select file to upload</value>
+  </data>
+  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve">
+    <value>Selected file is not available as a local path.</value>
+  </data>
+  <data name="FileTransfer_UploadingFormat" xml:space="preserve">
+    <value>Uploading {0}…</value>
+  </data>
+  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve">
+    <value>Uploading {0}… {1:P0}</value>
+  </data>
+  <data name="FileTransfer_UploadComplete" xml:space="preserve">
+    <value>Upload complete.</value>
+  </data>
+  <data name="FileTransfer_UploadCancelled" xml:space="preserve">
+    <value>Upload cancelled.</value>
+  </data>
+  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve">
+    <value>Upload failed: {0}</value>
+  </data>
+  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve">
+    <value>Save dialog unavailable.</value>
+  </data>
+  <data name="FileTransfer_SavePickerTitle" xml:space="preserve">
+    <value>Save downloaded file</value>
+  </data>
+  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve">
+    <value>Selected destination is not available as a local path.</value>
+  </data>
+  <data name="FileTransfer_DownloadingFormat" xml:space="preserve">
+    <value>Downloading {0}…</value>
+  </data>
+  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve">
+    <value>Downloading {0}… {1:P0}</value>
+  </data>
+  <data name="FileTransfer_DownloadComplete" xml:space="preserve">
+    <value>Download complete.</value>
+  </data>
+  <data name="FileTransfer_DownloadCancelled" xml:space="preserve">
+    <value>Download cancelled.</value>
+  </data>
+  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve">
+    <value>Download failed: {0}</value>
+  </data>
+  <data name="FileTransfer_HintNoneSelected" xml:space="preserve">
+    <value>Choose a shared folder to browse.</value>
+  </data>
+  <data name="FileTransfer_HintWritableFormat" xml:space="preserve">
+    <value>Uploads from this PC go into {0}.</value>
+  </data>
+  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve">
+    <value>{0} is read-only. Choose a writable shared folder to upload.</value>
   </data>
 
   <!-- Service (Phase 4) -->
