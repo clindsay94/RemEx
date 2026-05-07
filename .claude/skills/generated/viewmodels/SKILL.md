@@ -1,11 +1,11 @@
 ---
 name: viewmodels
-description: "Skill for the ViewModels area of RemEx. 239 symbols across 22 files."
+description: "Skill for the ViewModels area of RemEx. 280 symbols across 26 files."
 ---
 
 # ViewModels
 
-239 symbols | 22 files | Cohesion: 87%
+280 symbols | 26 files | Cohesion: 86%
 
 ## When to Use
 
@@ -17,16 +17,16 @@ description: "Skill for the ViewModels area of RemEx. 239 symbols across 22 file
 
 | File | Symbols |
 |------|---------|
-| `Remex.Client/ViewModels/SettingsViewModel.cs` | RefreshServiceAsync, BrowseHostPathAsync, InstallServiceAsync, InstallWindowsServiceAsync, InstallLinuxServiceAsync (+34) |
-| `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | OnConnectionPropertyChanged, OnLayoutProfileReceived, OnLayoutProfileReceivedAsync, InitializeAsync, EnsureDefaultCards (+25) |
-| `Remex.Client/ViewModels/ConnectionViewModel.cs` | LockAsync, SleepAsync, HibernateAsync, SignOutAsync, ShutdownAsync (+25) |
-| `Remex.Client/ViewModels/ShellViewModel.cs` | NotifyIfDisconnected, SetTransitionAndNavigate, NavigateToCanvas, NavigateToRemote, NavigateToAppLauncher (+21) |
+| `Remex.Client/ViewModels/SettingsViewModel.cs` | RefreshServiceAsync, BrowseHostPathAsync, InstallServiceAsync, InstallWindowsServiceAsync, InstallLinuxServiceAsync (+47) |
+| `Remex.Client/ViewModels/ConnectionViewModel.cs` | SendAsync, LockAsync, SleepAsync, HibernateAsync, SignOutAsync (+29) |
+| `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | OnConnectionPropertyChanged, OnLayoutProfileReceived, OnLayoutProfileReceivedAsync, InitializeAsync, EnsureDefaultCards (+27) |
+| `Remex.Client/ViewModels/ShellViewModel.cs` | NotifyIfDisconnected, SetTransitionAndNavigate, NavigateToCanvas, NavigateToRemote, NavigateToAppLauncher (+22) |
 | `Remex.Client/ViewModels/RemoteViewModel.cs` | RemoteViewModel, LoadWolConfigAsync, ConfirmAsync, LockPcAsync, ShutdownPcAsync (+13) |
-| `Remex.Client/ViewModels/CustomizationViewModel.cs` | FindSnap, VibrateCardCornerRadius, VibrateRemoteCornerRadius, OnSelectedThemeChanged, OnCornerRadiusChanged (+13) |
+| `Remex.Client/ViewModels/CustomizationViewModel.cs` | CustomizationViewModel, FindSnap, VibrateCardCornerRadius, VibrateRemoteCornerRadius, OnSelectedThemeChanged (+13) |
+| `Remex.Client/ViewModels/FileTransferViewModel.cs` | FileTransferViewModel, OnSelectedRemoteRootChanged, InitializeAsync, LoadRemoteRootsAsync, BrowseRemoteAsync (+10) |
+| `Remex.Client.Tests/ViewModels/ConnectionViewModelTests.cs` | Dispose, Constructor_WithAllNullDependencies_ShouldNotThrow, Dispose_ShouldNotThrowOnDoubleDispose, DiscoverHostsCommand_WhenNoDiscoveryService_ShouldNotCrash, RequestProcessListAsync_WhenNotConnected_ShouldNotThrow (+10) |
 | `Remex.Client/ViewModels/TaskManagerViewModel.cs` | TaskManagerViewModel, RefreshProcessesAsync, KillProcessAsync, StartPolling, PollAsync (+6) |
 | `Remex.Client/ViewModels/AppLauncherViewModel.cs` | LaunchAppAsync, NavigateBack, NormalizeEntry, NormalizeString, RemoveAppAsync (+5) |
-| `Remex.Client.Tests/ViewModels/ConnectionViewModelTests.cs` | RequestProcessListAsync_WhenNotConnected_ShouldNotThrow, Dispose, Dispose, Constructor_WithAllNullDependencies_ShouldNotThrow, Dispose_ShouldNotThrowOnDoubleDispose (+5) |
-| `Remex.Client/ViewModels/HomeViewModel.cs` | NavigateToCanvas, NavigateToRemote, NavigateToAppLauncher, NavigateToRemoteDesktop, NavigateToTaskManager (+4) |
 
 ## Entry Points
 
@@ -35,8 +35,8 @@ Start here when exploring this area:
 - **`TaskManagerViewModel`** (Class) — `Remex.Client/ViewModels/TaskManagerViewModel.cs:14`
 - **`RemoteViewModel`** (Class) — `Remex.Client/ViewModels/RemoteViewModel.cs:14`
 - **`RemoteDesktopViewModel`** (Class) — `Remex.Client/ViewModels/RemoteDesktopViewModel.cs:20`
+- **`FileTransferViewModel`** (Class) — `Remex.Client/ViewModels/FileTransferViewModel.cs:17`
 - **`AboutViewModel`** (Class) — `Remex.Client/ViewModels/AboutViewModel.cs:13`
-- **`SensorViewModel`** (Class) — `Remex.Client/ViewModels/SensorViewModel.cs:11`
 
 ## Key Symbols
 
@@ -45,48 +45,49 @@ Start here when exploring this area:
 | `TaskManagerViewModel` | Class | `Remex.Client/ViewModels/TaskManagerViewModel.cs` | 14 |
 | `RemoteViewModel` | Class | `Remex.Client/ViewModels/RemoteViewModel.cs` | 14 |
 | `RemoteDesktopViewModel` | Class | `Remex.Client/ViewModels/RemoteDesktopViewModel.cs` | 20 |
+| `FileTransferViewModel` | Class | `Remex.Client/ViewModels/FileTransferViewModel.cs` | 17 |
 | `AboutViewModel` | Class | `Remex.Client/ViewModels/AboutViewModel.cs` | 13 |
 | `SensorViewModel` | Class | `Remex.Client/ViewModels/SensorViewModel.cs` | 11 |
 | `CanvasCardViewModel` | Class | `Remex.Client/ViewModels/CanvasCardViewModel.cs` | 13 |
-| `RemoveCardOperation` | Class | `Remex.Client/Services/ICanvasOperation.cs` | 68 |
-| `ShellViewModel` | Class | `Remex.Client/ViewModels/ShellViewModel.cs` | 22 |
-| `SettingsViewModel` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 24 |
+| `ShellViewModel` | Class | `Remex.Client/ViewModels/ShellViewModel.cs` | 23 |
+| `SettingsViewModel` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 25 |
+| `SensorPinItem` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 1388 |
 | `CustomizationViewModel` | Class | `Remex.Client/ViewModels/CustomizationViewModel.cs` | 17 |
-| `SensorActivationItem` | Class | `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | 1049 |
-| `ConnectionViewModel` | Class | `Remex.Client/ViewModels/ConnectionViewModel.cs` | 29 |
-| `SensorPinItem` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 1197 |
+| `FileTransferRootSettingsService` | Class | `Remex.Client/Services/FileTransfer/FileTransferRootSettingsService.cs` | 9 |
+| `FileTransferSharedRootItem` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 1410 |
+| `RemoveCardOperation` | Class | `Remex.Client/Services/ICanvasOperation.cs` | 68 |
+| `ConnectionViewModel` | Class | `Remex.Client/ViewModels/ConnectionViewModel.cs` | 33 |
+| `SensorActivationItem` | Class | `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | 1064 |
 | `CommandPaletteViewModel` | Class | `Remex.Client/ViewModels/CommandPaletteViewModel.cs` | 12 |
-| `NavigateToCanvas` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 457 |
-| `NavigateToRemote` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 464 |
-| `NavigateToAppLauncher` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 475 |
-| `NavigateToTaskManager` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 486 |
-| `NavigateToRemoteDesktop` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 494 |
-| `NavigateToAbout` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 501 |
+| `NavigateToCanvas` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 461 |
+| `NavigateToRemote` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 468 |
+| `NavigateToAppLauncher` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 479 |
 
 ## Execution Flows
 
 | Flow | Type | Steps |
 |------|------|-------|
-| `InstallServiceAsync → Deserialize` | cross_community | 8 |
+| `InstallWindowsServiceAsync → DisposeWebSocket` | cross_community | 8 |
+| `InstallWindowsServiceAsync → CancelAndDispose` | cross_community | 8 |
+| `UploadAsync → SerializeToUtf8Bytes` | cross_community | 8 |
+| `InstallWindowsServiceAsync → Deserialize` | cross_community | 7 |
 | `OnPointerReleased → SaveInternalAsync` | cross_community | 7 |
-| `ToggleSettingsPanel → M3Palette` | cross_community | 7 |
-| `ToggleSettingsPanel → ToColor` | cross_community | 7 |
-| `InstallServiceAsync → Dispose` | cross_community | 7 |
-| `ShutdownPcAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `ForceShutdownPcAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `RestartPcAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `ForceRestartAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `RestartToUefiAsync → SerializeToUtf8Bytes` | cross_community | 7 |
+| `InitializeAsync → SaveInternalAsync` | cross_community | 6 |
+| `StartPairingNative → Deserialize` | cross_community | 6 |
+| `InitializeAsync → GetDisplayName` | cross_community | 6 |
+| `SendWolAsync → SerializeToUtf8Bytes` | cross_community | 6 |
+| `DownloadAsync → SerializeToUtf8Bytes` | cross_community | 6 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
+| Remex.Host.Tests | 6 calls |
 | Services | 6 calls |
-| Remex.Host.Tests | 4 calls |
-| Native | 2 calls |
-| Network | 2 calls |
-| Handlers | 1 calls |
+| Native | 3 calls |
+| FileTransfer | 3 calls |
+| Handlers | 2 calls |
+| Network | 1 calls |
 
 ## How to Explore
 

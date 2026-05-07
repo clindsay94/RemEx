@@ -196,6 +196,17 @@
                         <TextBlock Text="Scheme Variant" VerticalAlignment="Center"/>
                         <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="200"/>
                     </Grid>
+
+                    <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
+
+                    <!-- Hardware Sync -->
+                    <Grid ColumnDefinitions="*,2*">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Hardware Sync" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="Sync accent color with physical RGB" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding SyncWithHardware}" OnContent="On" OffContent="Off" HorizontalAlignment="Left"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 

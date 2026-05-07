@@ -66,8 +66,6 @@ Start here when exploring this area:
 | `ExecuteAsync → DetermineCategory` | intra_community | 4 |
 | `ExecuteAsync → ParseMeminfoLine` | cross_community | 4 |
 | `ExecuteAsync → GetCpuUsageAsync` | cross_community | 3 |
-| `ExecuteAsync → GetUptimeAsync` | cross_community | 3 |
-| `ExecuteAsync → MapChipName` | cross_community | 3 |
 
 ## How to Explore
 

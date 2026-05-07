@@ -181,6 +181,9 @@ public record CustomizationSettings
     [JsonPropertyName("canvasBackgroundType")]
     public string BackgroundMaterial { get; init; } = "Mica";
 
+    /// <summary>When true, the UI accent color attempts to sync with physical hardware (OpenRGB/FanControl).</summary>
+    public bool SyncWithHardware { get; init; } = false;
+
     /// <summary>Compatibility alias for older UI clients.</summary>
     [JsonIgnore]
     public string BaseTheme

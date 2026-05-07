@@ -7,31 +7,40 @@
     <UserControl.Styles>
         <Style Selector="Button.rd-btn">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16 8"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
         </Style>
         <Style Selector="Button.rd-btn:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+            <Setter Property="RenderTransform" Value="scale(1.02)"/>
         </Style>
+        <Style Selector="Button.rd-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+        </Style>
+        
         <Style Selector="Button.rd-btn-start">
             <Setter Property="Background" Value="{DynamicResource SystemSuccessBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemSuccessBrush}"/>
-        </Style>
-        <Style Selector="Button.rd-btn-start:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemSuccessBackgroundHoverBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
         <Style Selector="Button.rd-btn-stop">
             <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
-        <Style Selector="Button.rd-btn-stop:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundHoverBrush}"/>
-        </Style>
+
         <Style Selector="controls|VirtualCursorPad">
             <Setter Property="PadBorderBrush">
                 <Setter.Value>

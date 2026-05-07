@@ -18,7 +18,7 @@ description: "Skill for the Remex.Core.Tests area of RemEx. 23 symbols across 6 
 | File | Symbols |
 |------|---------|
 | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | RoundTrip_DesktopMetaMessage_PreservesAllFields, RoundTrip_DesktopInputKeyDown_PreservesKeyCode, RoundTrip_DesktopStopMessage, RoundTrip_DesktopStartWithConfig_PreservesAllFields, RoundTrip_DesktopInputMouseMove_PreservesAllFields (+2) |
-| `Remex.Core.Tests/MessageSerializerTests.cs` | RoundTrip_PingMessage_PreservesAllFields, RoundTrip_PongMessage_PreservesAllFields, Deserialize_MalformedJson_ReturnsNull, Deserialize_EmptyBytes_ReturnsNull, Serialize_PingMessage_ProducesValidJson (+1) |
+| `Remex.Core.Tests/MessageSerializerTests.cs` | RoundTrip_PingMessage_PreservesAllFields, RoundTrip_NullTimestamp_IsPreserved, Deserialize_MalformedJson_ReturnsNull, Deserialize_EmptyBytes_ReturnsNull, Serialize_PingMessage_ProducesValidJson (+1) |
 | `Remex.Core.Tests/WakeOnLanServiceTests.cs` | WakeAsync_Accepts_Valid_MAC_Formats, WakeAsync_Rejects_Invalid_MAC, WakeAsync_Rejects_Invalid_BroadcastIp, WakeAsync_Accepts_Valid_BroadcastIp |
 | `Remex.Core.Tests/RemexMessageTests.cs` | RemexMessage_CommandType_SerializesCorrectly, HostInfoMessage_RoundTripsCapabilities |
 | `Remex.Core/Messages/MessageSerializer.cs` | Deserialize, Serialize |
@@ -43,7 +43,7 @@ Start here when exploring this area:
 | `RoundTrip_DesktopStopMessage` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 117 |
 | `RemexMessage_CommandType_SerializesCorrectly` | Method | `Remex.Core.Tests/RemexMessageTests.cs` | 7 |
 | `RoundTrip_PingMessage_PreservesAllFields` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 18 |
-| `RoundTrip_PongMessage_PreservesAllFields` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 30 |
+| `RoundTrip_NullTimestamp_IsPreserved` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 42 |
 | `Deserialize_MalformedJson_ReturnsNull` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 53 |
 | `Deserialize_EmptyBytes_ReturnsNull` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 61 |
 | `Deserialize` | Method | `Remex.Core/Messages/MessageSerializer.cs` | 20 |
@@ -53,7 +53,7 @@ Start here when exploring this area:
 | `RoundTrip_DesktopConfigMessage` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 128 |
 | `HostInfoMessage_RoundTripsCapabilities` | Method | `Remex.Core.Tests/RemexMessageTests.cs` | 58 |
 | `Serialize_PingMessage_ProducesValidJson` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 6 |
-| `RoundTrip_NullTimestamp_IsPreserved` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 42 |
+| `RoundTrip_PongMessage_PreservesAllFields` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 30 |
 | `Serialize` | Method | `Remex.Core/Messages/MessageSerializer.cs` | 13 |
 | `WakeAsync_Accepts_Valid_MAC_Formats` | Method | `Remex.Core.Tests/WakeOnLanServiceTests.cs` | 8 |
 | `WakeAsync_Rejects_Invalid_MAC` | Method | `Remex.Core.Tests/WakeOnLanServiceTests.cs` | 20 |
@@ -63,16 +63,16 @@ Start here when exploring this area:
 
 | Flow | Type | Steps |
 |------|------|-------|
-| `InstallServiceAsync → Deserialize` | cross_community | 8 |
-| `ShutdownPcAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `ForceShutdownPcAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `RestartPcAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `ForceRestartAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `RestartToUefiAsync → SerializeToUtf8Bytes` | cross_community | 7 |
-| `OnStagedCardsCollectionChanged → SerializeToUtf8Bytes` | cross_community | 7 |
-| `OnCardDropped → SerializeToUtf8Bytes` | cross_community | 7 |
+| `UploadAsync → SerializeToUtf8Bytes` | cross_community | 8 |
+| `InstallWindowsServiceAsync → Deserialize` | cross_community | 7 |
+| `StartPairingNative → Deserialize` | cross_community | 6 |
 | `SendWolAsync → SerializeToUtf8Bytes` | cross_community | 6 |
+| `DownloadAsync → SerializeToUtf8Bytes` | cross_community | 6 |
 | `LaunchAppAsync → SerializeToUtf8Bytes` | cross_community | 6 |
+| `ApplySensorAlert → SerializeToUtf8Bytes` | cross_community | 6 |
+| `StartPairingNative → SerializeToUtf8Bytes` | cross_community | 5 |
+| `CompletePairingAsync → Deserialize` | cross_community | 5 |
+| `HandleAsync → SerializeToUtf8Bytes` | cross_community | 4 |
 
 ## Connected Areas
 

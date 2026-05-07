@@ -65,9 +65,7 @@ Start here when exploring this area:
 | Flow | Type | Steps |
 |------|------|-------|
 | `OnPointerReleased → SaveInternalAsync` | cross_community | 7 |
-| `OnCardDropped → SerializeToUtf8Bytes` | cross_community | 7 |
 | `OnPointerReleased → Dispose` | cross_community | 6 |
-| `OnCardDropped → Dispose` | cross_community | 6 |
 | `OnPointerReleased → UpdateUndoRedoState` | cross_community | 5 |
 | `OnPointerReleased → RemoveCardOperation` | cross_community | 4 |
 

@@ -112,6 +112,9 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void NavigateToTaskManager() => _shell.NavigateToTaskManager();
 
+    [RelayCommand]
+    private void NavigateToFileTransfer() => _shell.NavigateToFileTransfer();
+
     public void Dispose()
     {
         Connection.PropertyChanged -= _onConnectionChanged;

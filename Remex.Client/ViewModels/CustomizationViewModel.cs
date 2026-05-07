@@ -133,6 +133,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _accentColor = settings.AccentColor;
         _schemeVariant = settings.SchemeVariant;
         _canvasBackgroundType = settings.BackgroundMaterial;
+        _syncWithHardware = settings.SyncWithHardware;
 
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
@@ -197,6 +198,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _canvasBackgroundType;
 
+    [ObservableProperty]
+    private bool _syncWithHardware;
+
     partial void OnSelectedThemeChanged(AppTheme value)
     {
         OnPropertyChanged(nameof(SelectedThemePreset));
@@ -250,6 +254,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         ApplyAndSave();
     }
 
+    partial void OnSyncWithHardwareChanged(bool value) => ApplyAndSave();
+
     public bool IsGlassModeSelected => CanvasBackgroundType == "Glass";
 
     private void ApplyAndSave()
@@ -267,6 +273,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             AccentColor = AccentColor,
             SchemeVariant = SchemeVariant,
             BackgroundMaterial = CanvasBackgroundType,
+            SyncWithHardware = SyncWithHardware,
             CustomAccentColors = CustomAccentColors.Take(8).ToList()
         };
 

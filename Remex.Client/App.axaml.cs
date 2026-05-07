@@ -53,6 +53,7 @@ public partial class App : Application
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
         collection.AddSingleton<ThemeService>();
+        collection.AddSingleton<HardwareThemeService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
         collection.AddSingleton<PinnedCertStore>();
 
@@ -91,15 +92,17 @@ public partial class App : Application
 
             if (!File.Exists(filePath)) return;
 
-            using var doc = JsonDocument.Parse(File.ReadAllText(filePath));
-            if (!doc.RootElement.TryGetProperty("customization", out var customization)) return;
-            if (!customization.TryGetProperty("baseTheme", out var baseThemeProp)) return;
+            var json = File.ReadAllText(filePath);
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var profile = JsonSerializer.Deserialize<Remex.Core.Models.DashboardProfile>(json, options);
 
-            var themeId = baseThemeProp.GetString();
-            if (string.IsNullOrWhiteSpace(themeId)) return;
-            if (!Enum.TryParse<AppTheme>(themeId, ignoreCase: true, out var theme)) return;
+            if (profile?.Customization == null) return;
 
-            Services.GetRequiredService<ThemeService>().ApplyThemeSync(theme);
+            var themeService = Services.GetRequiredService<ThemeService>();
+            
+            // Apply the full customization object immediately.
+            // This ensures colors, corner radii, and base theme are set BEFORE the window is shown.
+            themeService.ApplyCustomization(profile.Customization);
         }
         catch
         {

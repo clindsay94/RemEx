@@ -1,6 +1,6 @@
 # RemEx 2.0 — Execution Tracker
 
-Last updated: 2026-05-04T14:30:00-06:00
+Last updated: 2026-05-06T16:20:00-06:00
 
 ## Phase 0 — Foundation
 
@@ -24,10 +24,10 @@ Last updated: 2026-05-04T14:30:00-06:00
 
 | Track | ID | Status | Agent | Notes |
 |---|---|---|---|---|
-| File Transfer | 2A-file-transfer | 🚧 IN PROGRESS | GPT-5.4 | Shared-root protocol + host enforcement landed; Android SAF upload/download and desktop host-side browser are in place. 2.0 scope narrowed to polishing current host-side UX; reverse mobile-folder browsing deferred to a later version. Remaining work: user-configured host roots and true pair-level permissions |
+| File Transfer | 2A-file-transfer | 🚧 IN PROGRESS | GPT-5.4 | Shared-root protocol + host enforcement landed; desktop integration, shared-folder configuration, desktop/file-transfer localization, Android SAF upload/download, and transfer notifications are in place. 2.0 scope is now a remote-browser-first UX. Remaining high-value follow-ups from the original spec: download-side SHA-256 verification and eventual pair-level permissions |
 | Critical Fixes | 2B-critical-fixes | ✅ COMPLETE | Sonnet 4.6 | C-1 to C-4 and H-1 to H-7 bug fixes applied |
 | Material3 Stable | 2C-material3 | ✅ COMPLETE | Sonnet 4.6 | Downgraded 1.5.0-alpha17 → 1.4.0; replaced MaterialShapes with RoundedPolygon; removed MotionScheme.expressive() |
-| Release Eng | 2D-release-eng | ✅ COMPLETE | Sonnet 4.6 | AAB + arm64-v8a ABI filter, cleartext disabled, network security config, R8 rules, backup exclusions |
+| Release Eng | 2D-release-eng | ✅ COMPLETE | Sonnet 4.6 | Original 2D checklist is complete: AAB + arm64-v8a ABI filter, cleartext disabled, network security config, R8 rules, backup exclusions. TargetSdk 37 follow-up remains outside the original checklist: local-network permission flow + Android 17 LAN regression pass |
 | JNI Hardening | 2E-jni-hardening | ✅ COMPLETE | Sonnet 4.6 | RuntimeException catch on all native calls; private native methods with public wrappers |
 | Crashlytics | 2F-crashlytics | ⛔ BLOCKED | Sonnet 4.6 | Requires google-services.json — not present in repo; deferred to post-release |
 | Battery Opt | 2G-battery-opt | ✅ COMPLETE | Sonnet 4.6 | REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission + tutorial onboarding page |
@@ -38,7 +38,7 @@ Last updated: 2026-05-04T14:30:00-06:00
 
 | Track | ID | Status | Agent | Notes |
 |---|---|---|---|---|
-| Localization | 3A-localization | ⏳ PENDING | — | Blocked on Phase 2 |
+| Localization | 3A-localization | 🚧 IN PROGRESS | GPT-5.4 | .NET file-transfer localization landed early (nav/tutorial/shared-folder/view strings across desktop .resx files). Remaining work is reconciliation against Android locale files and any later Phase 2 strings |
 | Docs | 3B-docs | ⏳ PENDING | — | Blocked on Phase 2 |
 | Installer | 3C-installer | ⏳ PENDING | — | Blocked on Phase 2 |
 | Final Tests | 3D-tests | ⏳ PENDING | — | Blocked on Phase 2 |
@@ -56,3 +56,5 @@ Last updated: 2026-05-04T14:30:00-06:00
 | 2026-05-06 | 2A | HIGH | Shared-root design requires host-side path boundary changes; current implementation still exposes raw remote paths | Reworking Track 2A to root-relative browse/transfer and improved desktop/Android product flow |
 | 2026-05-06 | 2A | MEDIUM | True pair-level host permissions are blocked by the current security backbone lacking a durable client identity on the host | Current slice uses host-level shared roots; per-pair permissions need a follow-up identity contract and host settings UI |
 | 2026-05-06 | 2A | LOW | Reverse mobile-folder browsing from desktop would require new host-mediated cross-client routing and Android shared-root exposure | Deferred beyond 2.0; current release focus is polishing host-side shared-folder transfer UX |
+| 2026-05-06 | 2A | MEDIUM | Original Track 2A required end-to-end SHA-256 verification for both directions, but the current implementation only fully verifies uploads | Keep current upload verification; add receiver-side download hash verification as the next hardening pass |
+| 2026-05-06 | 2D | HIGH | Android app now targets SDK 37, but the Phase 2 release plan still only reflects the pre-Android-17 hardening checklist. Current manifest and Connection screen handle `NEARBY_WIFI_DEVICES` only, not the new local-network permission flow | Pending follow-up: add Android 17 local-network permission handling, rerun LAN discovery/manual-connect validation, and update Android guidance strings |

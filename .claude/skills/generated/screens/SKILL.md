@@ -1,16 +1,16 @@
 ---
 name: screens
-description: "Skill for the Screens area of RemEx. 171 symbols across 29 files."
+description: "Skill for the Screens area of RemEx. 200 symbols across 33 files."
 ---
 
 # Screens
 
-171 symbols | 29 files | Cohesion: 79%
+200 symbols | 33 files | Cohesion: 76%
 
 ## When to Use
 
 - Working with code in `RemEx.Android/`
-- Understanding how RemoteDesktopScreen, ConnectionScreen, AppNavigation work
+- Understanding how RemoteDesktopScreen, DashboardScreen, cardShape work
 - Modifying screens-related functionality
 
 ## Key Files
@@ -18,72 +18,72 @@ description: "Skill for the Screens area of RemEx. 171 symbols across 29 files."
 | File | Symbols |
 |------|---------|
 | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopViewModel.kt` | updateDirectTouch, sendMouseMove, sendMouseScroll, sendMouseClick, sendMouseDown (+23) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardViewModel.kt` | setCardEnabled, moveCard, resizeCard, cycleTelemetryDisplayMode, saveCardLayout (+10) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | RemoteDesktopUiState, RemoteDesktopScreen, TapContext, RemoteDesktopScreenContent, showControlsWithTimer (+6) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | saveRemoteDesktopDirectTouch, saveConnectionSettings, SettingsManager, resetOnboarding, saveRemoteDesktopPointerSpeed (+5) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteControlViewModel.kt` | updateScrollSensitivity, sendMouseMove, sendMouseClick, sendScroll, sendText (+4) |
+| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/FileTransferViewModel.kt` | ActiveDownload, loadRemoteRoots, uploadFromUri, downloadToUri, queryMetadata (+16) |
+| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardViewModel.kt` | setCardEnabled, moveCard, resizeCard, cycleTelemetryDisplayMode, saveCardLayout (+11) |
+| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | RemoteDesktopUiState, RemoteDesktopScreen, TapContext, RemoteDesktopScreenContent, showControlsWithTimer (+5) |
+| `RemEx.Android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | saveRemoteDesktopDirectTouch, saveHomeLayout, saveHomeEnabledCards, saveRemoteDesktopDefaults, saveRemoteDesktopPointerSpeed (+4) |
 | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardScreen.kt` | DashboardScreen, AvailableCardItem, CardSizeDp, defaultCardSizeFor, DashboardScreenContent (+4) |
+| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteControlViewModel.kt` | sendMouseMove, sendMouseClick, sendScroll, sendText, sendInput (+4) |
 | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/TaskManagerViewModel.kt` | updateSearchQuery, updateSortField, clearKillError, refreshProcesses, killProcess (+4) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionScreen.kt` | ConnectionScreen, ConnectionScreenContent, hasNearbyWifiPermission, hasAllConnectPermissions, doConnect (+2) |
 | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/SplashScreen.kt` | Particle, FloatingShape, StreamParticle, SplashScreen, skipSplash (+2) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | SendMessage, SendMessageNative, StopDesktopStream, StopDesktopStreamNative, StartDesktopStream (+1) |
+| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionScreen.kt` | ConnectionScreenContent, hasNearbyWifiPermission, hasAllConnectPermissions, doConnect, HelpStep (+2) |
 
 ## Entry Points
 
 Start here when exploring this area:
 
 - **`RemoteDesktopScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt:124`
-- **`ConnectionScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionScreen.kt:44`
-- **`AppNavigation`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt:112`
-- **`SettingsScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/SettingsScreen.kt:38`
 - **`DashboardScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardScreen.kt:117`
+- **`cardShape`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/theme/Theme.kt:169`
+- **`DashboardScreenContent`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardScreen.kt:159`
+- **`AppLauncherScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/AppLauncherScreen.kt:58`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
 | `RemoteDesktopUiState` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | 90 |
-| `SettingsManager` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | 16 |
-| `MorphPolygonShape` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/theme/Theme.kt` | 122 |
+| `MorphPolygonShape` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/theme/Theme.kt` | 120 |
 | `AppLauncherViewModel` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/AppLauncherViewModel.kt` | 30 |
 | `AppLauncherUiState` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/AppLauncherScreen.kt` | 50 |
 | `DesktopFrame` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopViewModel.kt` | 26 |
-| `RemoteControlUiState` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteControlScreen.kt` | 133 |
+| `RemoteFileEntry` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/FileTransferViewModel.kt` | 35 |
+| `RemoteSharedRoot` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/FileTransferViewModel.kt` | 41 |
+| `RemoteControlUiState` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteControlScreen.kt` | 136 |
 | `HomeCardState` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardViewModel.kt` | 38 |
 | `TelemetrySensor` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardViewModel.kt` | 30 |
 | `AppEntry` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/AppLauncherViewModel.kt` | 24 |
 | `RemoteDesktopScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | 124 |
-| `ConnectionScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionScreen.kt` | 44 |
-| `AppNavigation` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt` | 112 |
-| `SettingsScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/SettingsScreen.kt` | 38 |
 | `DashboardScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardScreen.kt` | 117 |
-| `cardShape` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/theme/Theme.kt` | 171 |
+| `cardShape` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/theme/Theme.kt` | 169 |
 | `DashboardScreenContent` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/DashboardScreen.kt` | 159 |
-| `RemoteDesktopScreenContent` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | 185 |
-| `showControlsWithTimer` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | 236 |
-| `mapLocalToHost` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteDesktopScreen.kt` | 295 |
+| `AppLauncherScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/AppLauncherScreen.kt` | 58 |
+| `AppLauncherScreenPreview` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/AppLauncherScreen.kt` | 191 |
+| `RemoteMouseScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteMouseScreen.kt` | 62 |
+| `RemoteMouseScreenContent` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteMouseScreen.kt` | 86 |
+| `FloatingMouseIsland` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteMouseScreen.kt` | 269 |
 
 ## Execution Flows
 
 | Flow | Type | Steps |
 |------|------|-------|
+| `HandleFileTransferMessage → SendMessageNative` | cross_community | 7 |
 | `TaskManagerScreen → SendMessageNative` | cross_community | 6 |
+| `FileTransferScreen → CanPostNotifications` | cross_community | 5 |
+| `FileTransferScreen → EnsureChannel` | cross_community | 5 |
+| `FileTransferScreen → SendMessageNative` | cross_community | 5 |
 | `RemoteMouseScreen → SendMessageNative` | cross_community | 5 |
 | `FloatingMouseIsland → SendMessageNative` | cross_community | 5 |
-| `OnCreate → PrimaryDestinationsPager` | cross_community | 5 |
-| `OnCreate → QrScannerScreen` | cross_community | 5 |
-| `OnCreate → NavigateToPrimary` | cross_community | 5 |
-| `AppNavigationDisconnectedPreview → Particle` | cross_community | 5 |
-| `AppNavigationDisconnectedPreview → FloatingShape` | cross_community | 5 |
-| `AppNavigationDisconnectedPreview → StreamParticle` | cross_community | 5 |
-| `AppNavigationContent → MarkOnboardingCompleted` | cross_community | 5 |
+| `HandleTransferEnd → SendMessageNative` | cross_community | 5 |
+| `HandleFileTransferMessage → CanPostNotifications` | cross_community | 5 |
+| `HandleFileTransferMessage → EnsureChannel` | cross_community | 5 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| Remex | 7 calls |
-| Navigation | 1 calls |
+| Remex | 13 calls |
+| Service | 6 calls |
 
 ## How to Explore
 

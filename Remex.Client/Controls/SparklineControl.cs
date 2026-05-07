@@ -164,11 +164,65 @@ public class SparklineControl : Control
             case GraphType.Gauge:
                 RenderGauge(context, bounds);
                 break;
+            case GraphType.Radial:
+                RenderRadial(context, bounds);
+                break;
             default:
                 RenderBars(context, bounds);
                 break;
         }
     }
+
+    // ═══════════════ Radial Chart ═══════════════
+
+    private void RenderRadial(DrawingContext context, Rect bounds)
+    {
+        double range = MaxSeen - MinSeen;
+        double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
+
+        if (_accentBrush == null) UpdateBrushes();
+
+        double size = Math.Min(bounds.Width, bounds.Height);
+        double centerX = bounds.Width / 2;
+        double centerY = bounds.Height / 2;
+        double strokeWidth = size * 0.12;
+        double radius = (size - strokeWidth) / 2;
+
+        var trackPen = new Pen(TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128)), strokeWidth);
+        var accentPen = new Pen(_accentBrush!, strokeWidth, lineCap: PenLineCap.Round);
+
+        // Draw track
+        context.DrawEllipse(null, trackPen, new Point(centerX, centerY), radius, radius);
+
+        // Draw progress arc
+        if (fraction > 0)
+        {
+            double sweepAngle = fraction * 360;
+            var geometry = new StreamGeometry();
+            Point endPt;
+            
+            using (var ctx = geometry.Open())
+            {
+                double startAngle = -90; // Top center
+                double endAngle = startAngle + sweepAngle;
+
+                double startRad = startAngle * Math.PI / 180;
+                double endRad = endAngle * Math.PI / 180;
+
+                Point startPt = new Point(centerX + radius * Math.Cos(startRad), centerY + radius * Math.Sin(startRad));
+                endPt = new Point(centerX + radius * Math.Cos(endRad), centerY + radius * Math.Sin(endRad));
+
+                ctx.BeginFigure(startPt, false);
+                ctx.ArcTo(endPt, new Size(radius, radius), 0, sweepAngle > 180, SweepDirection.Clockwise);
+                ctx.EndFigure(false);
+            }
+            context.DrawGeometry(null, accentPen, geometry);
+
+            // Glow effect at the tip
+            context.DrawEllipse(_glowBrush!, null, endPt, strokeWidth * 0.8, strokeWidth * 0.8);
+        }
+    }
+
 
     // ═══════════════ Bar Chart ═══════════════
 

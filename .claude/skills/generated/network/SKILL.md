@@ -1,11 +1,11 @@
 ---
 name: network
-description: "Skill for the Network area of RemEx. 33 symbols across 13 files."
+description: "Skill for the Network area of RemEx. 39 symbols across 13 files."
 ---
 
 # Network
 
-33 symbols | 13 files | Cohesion: 91%
+39 symbols | 13 files | Cohesion: 95%
 
 ## When to Use
 
@@ -17,9 +17,9 @@ description: "Skill for the Network area of RemEx. 33 symbols across 13 files."
 
 | File | Symbols |
 |------|---------|
-| `Remex.Core/Services/Network/RemexNetworkListener.cs` | StartListeningAsync, AcceptClientsAsync, HandleClientSafeAsync, HandleClientAsync, ValidateAccessKey (+3) |
-| `Remex.Client/Services/Network/RemoteDesktopService.cs` | StartStreamAsync, SendInputAsync, SendConfigAsync, SendJsonAsync |
-| `Remex.Client/ViewModels/RemoteDesktopViewModel.cs` | ApplySettingsAsync, PersistStreamSettings, SendInputAsync |
+| `Remex.Client/Services/Network/RemoteDesktopService.cs` | ConnectAsync, StartStreamAsync, StopStreamAsync, SendInputAsync, Disconnect (+3) |
+| `Remex.Core/Services/Network/RemexNetworkListener.cs` | StartListeningAsync, AcceptClientsAsync, HandleClientSafeAsync, HandleClientAsync, StopListening (+2) |
+| `Remex.Client/ViewModels/RemoteDesktopViewModel.cs` | StartStreamAsync, StopStreamAsync, SendInputAsync, OnFrameReceived, OnMetaReceived (+1) |
 | `Remex.Host/Services/Network/ExternalNetworkListenerService.cs` | ExecuteAsync, StopAsync, Dispose |
 | `Remex.Core/Services/Network/INetworkListener.cs` | StartListeningAsync, StopListening, INetworkListener |
 | `Remex.Core/Services/Network/MdnsDiscoveryService.cs` | DiscoverHostsAsync, TryResolveHost, MdnsDiscoveryService |
@@ -32,54 +32,57 @@ description: "Skill for the Network area of RemEx. 33 symbols across 13 files."
 
 Start here when exploring this area:
 
-- **`AndroidNativeExports`** (Class) — `Remex.Core/Native/AndroidNativeExports.cs:15`
+- **`AndroidNativeExports`** (Class) — `Remex.Core/Native/AndroidNativeExports.cs:18`
 - **`WakeOnLanService`** (Class) — `Remex.Core/Services/Network/WakeOnLanService.cs:11`
 - **`IpcWakeOnLanService`** (Class) — `Remex.Client/Services/Network/IpcWakeOnLanService.cs:13`
 - **`MdnsHostDiscoveredEventArgs`** (Class) — `Remex.Core/Services/Network/IMdnsDiscoveryService.cs:14`
-- **`RemexNetworkListener`** (Class) — `Remex.Core/Services/Network/RemexNetworkListener.cs:19`
+- **`RemexNetworkListener`** (Class) — `Remex.Core/Services/Network/RemexNetworkListener.cs:22`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `AndroidNativeExports` | Class | `Remex.Core/Native/AndroidNativeExports.cs` | 15 |
+| `AndroidNativeExports` | Class | `Remex.Core/Native/AndroidNativeExports.cs` | 18 |
 | `WakeOnLanService` | Class | `Remex.Core/Services/Network/WakeOnLanService.cs` | 11 |
 | `IpcWakeOnLanService` | Class | `Remex.Client/Services/Network/IpcWakeOnLanService.cs` | 13 |
 | `MdnsHostDiscoveredEventArgs` | Class | `Remex.Core/Services/Network/IMdnsDiscoveryService.cs` | 14 |
-| `RemexNetworkListener` | Class | `Remex.Core/Services/Network/RemexNetworkListener.cs` | 19 |
+| `RemexNetworkListener` | Class | `Remex.Core/Services/Network/RemexNetworkListener.cs` | 22 |
 | `MdnsDiscoveryService` | Class | `Remex.Core/Services/Network/MdnsDiscoveryService.cs` | 10 |
 | `IWakeOnLanService` | Interface | `Remex.Core/Services/Network/IWakeOnLanService.cs` | 4 |
 | `INetworkListener` | Interface | `Remex.Core/Services/Network/INetworkListener.cs` | 5 |
 | `IMdnsDiscoveryService` | Interface | `Remex.Core/Services/Network/IMdnsDiscoveryService.cs` | 7 |
 | `SendInputAsync` | Method | `Remex.Client/ViewModels/RemoteDesktopViewModel.cs` | 400 |
-| `StartStreamAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 50 |
-| `SendInputAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 66 |
-| `SendConfigAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 76 |
-| `StartListeningAsync` | Method | `Remex.Core/Services/Network/RemexNetworkListener.cs` | 45 |
+| `Dispose` | Method | `Remex.Client/ViewModels/RemoteDesktopViewModel.cs` | 515 |
+| `ConnectAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 34 |
+| `StartStreamAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 55 |
+| `StopStreamAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 65 |
+| `SendInputAsync` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 71 |
+| `Disconnect` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 91 |
+| `Dispose` | Method | `Remex.Client/Services/Network/RemoteDesktopService.cs` | 245 |
+| `StartListeningAsync` | Method | `Remex.Core/Services/Network/RemexNetworkListener.cs` | 50 |
 | `StopAsync` | Method | `Remex.Host/Services/Network/ExternalNetworkListenerService.cs` | 21 |
 | `Dispose` | Method | `Remex.Host/Services/Network/ExternalNetworkListenerService.cs` | 27 |
-| `StopListening` | Method | `Remex.Core/Services/Network/RemexNetworkListener.cs` | 110 |
-| `Dispose` | Method | `Remex.Core/Services/Network/RemexNetworkListener.cs` | 359 |
-| `DiscoverHostsAsync` | Method | `Remex.Core/Services/Network/MdnsDiscoveryService.cs` | 21 |
-| `Dispose` | Method | `Remex.Host/Services/Network/MdnsAdvertisingService.cs` | 57 |
 
 ## Execution Flows
 
 | Flow | Type | Steps |
 |------|------|-------|
+| `ExecuteAsync → ExecuteProcess` | cross_community | 8 |
+| `ExecuteAsync → NormalizeDelay` | cross_community | 8 |
+| `ExecuteAsync → ExecuteProcess` | cross_community | 8 |
+| `ExecuteAsync → BuildShutdownArgs` | cross_community | 8 |
+| `ExecuteAsync → SendCommandAsync` | cross_community | 8 |
+| `ExecuteAsync → CommandRequest` | cross_community | 8 |
+| `ExecuteAsync → CreateDelayParameters` | cross_community | 8 |
+| `ExecuteAsync → Shutdown` | cross_community | 7 |
 | `ExecuteAsync → Deserialize` | cross_community | 6 |
 | `ExecuteAsync → Serialize` | cross_community | 6 |
-| `ExecuteAsync → CommandResponse` | intra_community | 6 |
-| `ExecuteAsync → ValidateAccessKey` | intra_community | 6 |
-| `ApplySettingsAsync → SaveInternalAsync` | cross_community | 5 |
-| `ApplySettingsAsync → Dispose` | cross_community | 5 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
 | Native | 2 calls |
-| ViewModels | 1 calls |
 | Command | 1 calls |
 
 ## How to Explore

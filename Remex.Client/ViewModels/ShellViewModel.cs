@@ -25,6 +25,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 {
     private readonly DashboardLayoutService _layoutService;
     private readonly ThemeService _themeService;
+    private readonly HardwareThemeService _hardwareThemeService;
     private readonly IImmersiveModeService? _immersiveMode;
     private readonly IServiceProvider _services;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
@@ -232,19 +233,25 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
 
-    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null)
+    public ShellViewModel(DashboardLayoutService layoutService, ThemeService themeService, HardwareThemeService hardwareThemeService, ConnectionViewModel connectionViewModel, IServiceProvider services, IImmersiveModeService? immersiveMode = null)
     {
         _layoutService = Guard.NotNull(layoutService);
         _themeService = Guard.NotNull(themeService);
+        _hardwareThemeService = Guard.NotNull(hardwareThemeService);
         Connection = Guard.NotNull(connectionViewModel);
         _services = Guard.NotNull(services);
         _immersiveMode = immersiveMode; // Intentionally optional
 
-        _onCustomizationApplied = settings => Customization = settings;
+        _onCustomizationApplied = settings =>
+        {
+            Customization = settings;
+            _hardwareThemeService.SetEnabled(settings.SyncWithHardware);
+        };
         _themeService.CustomizationApplied += _onCustomizationApplied;
         if (_layoutService.CurrentProfile?.Customization != null)
         {
             Customization = _layoutService.CurrentProfile.Customization;
+            _hardwareThemeService.SetEnabled(Customization.SyncWithHardware);
         }
 
         // Load reduced-motion preference

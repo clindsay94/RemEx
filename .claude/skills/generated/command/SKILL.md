@@ -67,16 +67,16 @@ Start here when exploring this area:
 
 | Flow | Type | Steps |
 |------|------|-------|
+| `ExecuteAsync → ExecuteProcess` | cross_community | 8 |
+| `ExecuteAsync → NormalizeDelay` | cross_community | 8 |
+| `ExecuteAsync → ExecuteProcess` | cross_community | 8 |
+| `ExecuteAsync → BuildShutdownArgs` | cross_community | 8 |
+| `ExecuteAsync → SendCommandAsync` | cross_community | 8 |
+| `ExecuteAsync → CommandRequest` | cross_community | 8 |
+| `ExecuteAsync → CreateDelayParameters` | cross_community | 8 |
+| `ExecuteAsync → Shutdown` | cross_community | 7 |
 | `SendWolAsync → SerializeToUtf8Bytes` | cross_community | 6 |
 | `WakePc → CommandRequest` | cross_community | 4 |
-| `ExecuteCommandAsync → ExecuteProcess` | intra_community | 3 |
-| `ExecuteCommandAsync → NormalizeDelay` | intra_community | 3 |
-| `ExecuteCommandAsync → ExecuteProcess` | intra_community | 3 |
-| `ExecuteCommandAsync → BuildShutdownArgs` | intra_community | 3 |
-| `ExecuteCommandAsync → SendCommandAsync` | intra_community | 3 |
-| `ExecuteCommandAsync → CommandRequest` | intra_community | 3 |
-| `ExecuteCommandAsync → CreateDelayParameters` | intra_community | 3 |
-| `ExecuteCommandAsync → ExecuteProcess` | intra_community | 3 |
 
 ## Connected Areas
 

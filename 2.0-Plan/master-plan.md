@@ -884,31 +884,49 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
 ## TRACK 2A — Remote file transfer
 
 **ID:** `2A-file-transfer`
-**GOAL:** Implement secure remote file browse + upload + download with progress and cancel, using the `FileTransfer*` messages declared in Phase 0.
+**GOAL:** Ship secure shared-root-based remote file browse + upload + download with progress and cancel on desktop and Android, while deferring reverse client-to-client browsing and per-pair file permissions.
 **PRE-CONDITIONS:** All Phase 1 tracks complete.
 **SUGGESTED MODEL:** Claude Sonnet 4.6 or Gemini 2.5 Pro.
+
+**IMPLEMENTATION-ADJUSTED SCOPE (May 2026):**
+
+- Host-side file transfer boundaries are shared roots, not arbitrary raw paths. The contract now uses `rootId + relativePath`, with host enforcement for path-escape prevention and Linux restricted-path rejection.
+- Desktop 2.0 UX is remote-browser-first: a single remote pane, native file open/save pickers for upload/download, progress, cancel, and shell navigation. The original dual-pane drag/drop concept is deferred beyond 2.0.
+- Desktop Settings now owns host shared-folder management. Users can add/remove roots, toggle write access, and restore defaults; this drives the host-side `file_transfer_roots.json` boundary model.
+- Concrete Avalonia surface/layout work is intentionally not prescribed here; this track records the desktop product shape and integration points only.
+- Android 2.0 UX is also remote-browser-first and uses Storage Access Framework URIs for upload/download, plus notification-based transfer progress.
+- Android currently reuses the generic `RemexCoreClient.SendMessage(...)` bridge and `onFileTransferMessage(json)` callback path. The dedicated native file-transfer methods originally planned are deferred unless the generic bridge becomes a maintenance problem.
+- Reverse mobile-folder browsing from desktop, cross-client routing, and true per-pair file permissions are deferred beyond 2.0.
 
 **NEW FILES (host):**
 
 1. `/home/connorl/RemEx/Remex.Host/Services/FileTransfer/FileTransferService.cs` — implements `IFileTransferService` from Phase 0.
-   - `BrowseAsync(path, ct)`: `DirectoryInfo.EnumerateFileSystemInfos()`. Reject paths that escape via `..`. Reject paths that resolve to system-restricted locations on Linux (`/proc`, `/sys`, `/dev`).
-   - `OpenForReadAsync(path, ct)`: returns a `FileStream` open for read.
-   - `OpenForWriteAsync(path, expectedBytes, ct)`: returns a `FileStream` open for write, truncating to 0 bytes. Reject if `expectedBytes > 5_000_000_000` (5 GB cap for 2.0).
+   - `ListRootsAsync(ct)`: expose configured shared roots and their write capabilities.
+   - `BrowseAsync(rootId, relativePath, ct)`: enumerate entries inside the selected root. Reject path escape via `..`. Reject Linux restricted paths (`/proc`, `/sys`, `/dev`).
+   - `OpenForReadAsync(rootId, relativePath, ct)`: returns a `FileStream` open for read.
+   - `OpenForWriteAsync(rootId, relativePath, expectedBytes, ct)`: returns a `FileStream` open for write, truncating to 0 bytes. Reject if `expectedBytes > 5_000_000_000` (5 GB cap for 2.0).
+   - Persist defaults/user-managed roots via `file_transfer_roots.json`.
 
 2. `/home/connorl/RemEx/Remex.Host/Handlers/FileTransferHandler.cs`:
    - Hooks into `PingPongHandler`'s message dispatch (Track 1B added the dispatcher; this track adds a new case).
    - For each transfer: maintain a `ConcurrentDictionary<string, FileTransferState>` keyed by `transferId`. Each state has a `FileStream` + `SHA256` hasher + `bytesTransferred` counter.
    - On `FileTransferStart`: open the destination/source, register state.
    - On `FileTransferChunk`: append/write, update hash, send `FileTransferProgress` every 10 chunks (or on completion).
-   - On `FileTransferEnd`: verify final SHA-256 matches, close stream, send back final ack.
+   - On `FileTransferEnd`: verify upload SHA-256, close stream, send back final ack.
    - On `FileTransferCancel`: close stream, delete partial file (uploads only), remove state.
    - On WebSocket close mid-transfer: clean up all active transfers for that connection.
+
+**KEEP FROM THE ORIGINAL SPEC (recommended follow-up improvements):**
+
+- Add receiver-side SHA-256 verification for downloads so end-to-end integrity matches uploads.
+- Preserve the 64 KB chunk size and cancel-cleanup behavior as implemented.
+- Keep the shared-root boundary model for 2.0, but reintroduce the idea of finer-grained permissions later once the host has a durable per-pair identity contract.
 
 **FILES TO MODIFY (host):**
 
 1. `/home/connorl/RemEx/Remex.Host/Handlers/PingPongHandler.cs`:
    - Inject `FileTransferHandler` via constructor.
-   - In the dispatch switch, add cases for all 7 file-transfer message types, delegating to the handler.
+   - In the dispatch switch, add cases for file roots, browse, and transfer message types, delegating to the handler.
 
 2. `/home/connorl/RemEx/Remex.Host/HostBootstrapper.cs`:
    - Register: `builder.Services.AddSingleton<IFileTransferService, FileTransferService>();` and `builder.Services.AddTransient<FileTransferHandler>();`.
@@ -916,26 +934,35 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
 **NEW FILES (.NET desktop client):**
 
 1. `/home/connorl/RemEx/Remex.Client/Services/FileTransfer/FileTransferClient.cs`:
-   - API: `Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string path, CancellationToken ct)`, `Task UploadAsync(string localPath, string remotePath, IProgress<double> progress, CancellationToken ct)`, `Task DownloadAsync(string remotePath, string localPath, IProgress<double> progress, CancellationToken ct)`.
+   - API: list remote roots, browse a selected root, upload/download with progress and cancel.
+   - Reuses the existing desktop WebSocket connection and file-transfer message stream rather than adding a separate transport.
 
-2. `/home/connorl/RemEx/Remex.Client/Views/FileTransferView.axaml` and `.axaml.cs`:
-   - Two-column file browser: local on left, remote on right.
-   - Drag from local → upload; drag from remote → download.
-   - Progress bar at bottom for active transfer.
-   - Cancel button.
+2. `/home/connorl/RemEx/Remex.Client/Services/FileTransfer/FileTransferRootSettingsService.cs`:
+   - Persist and normalize desktop-managed shared roots.
+   - Provide defaults/restore-defaults behavior for Settings.
 
-3. `/home/connorl/RemEx/Remex.Client/ViewModels/FileTransferViewModel.cs`.
+3. Desktop file-transfer presentation layer:
+   - Remote-browser-first UX with shared-root selection, browse/navigation, upload/download actions, progress, and cancel.
+   - Native storage pickers drive upload/download selection.
 
 **FILES TO MODIFY (.NET desktop client):**
 
-1. `/home/connorl/RemEx/Remex.Client/Views/MainView.axaml` (or wherever the nav menu lives — locate via `grep -r "NavigationViewItem" /home/connorl/RemEx/Remex.Client/Views`):
-   - Add a new nav item "Files" that navigates to `FileTransferView`.
+1. Desktop navigation surface:
+   - Add a new "Files" destination and route it to the desktop file-transfer experience.
+
+2. Desktop shared-root configuration surface:
+   - Add host shared-folder management, tutorial/help copy, and immediate-save behavior for file-transfer roots.
+
+3. `/home/connorl/RemEx/Remex.Client/Localization/Strings.resx` and sibling `Strings.{lang}.resx` files:
+   - Add navigation, tutorial, settings, and file-transfer-view strings for the shared-root implementation.
 
 **NEW FILES (Android):**
 
-1. `/home/connorl/RemEx/RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/FileTransferScreen.kt` — Compose UI mirroring the desktop file browser.
+1. `/home/connorl/RemEx/RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/FileTransferScreen.kt` — Compose UI for remote browsing, SAF-backed upload/download, and transfer progress.
 
 2. `/home/connorl/RemEx/RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/FileTransferViewModel.kt`.
+
+3. `/home/connorl/RemEx/RemEx.Android/app/src/main/java/com/clindsay94/remex/service/FileTransferNotificationManager.kt`.
 
 **FILES TO MODIFY (Android):**
 
@@ -944,25 +971,16 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
    - Add a bottom-nav item.
 
 2. `/home/connorl/RemEx/RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt`:
-   - Add native method declarations:
+   - Reuse the existing generic `SendMessage(...)` path for file-transfer messages.
+   - Keep `RemexCallback.onFileTransferMessage(json)` as the Android callback surface for browse/progress/chunk/end events.
 
-     ```kotlin
-     external fun BrowseRemoteFolderNative(path: String): String  // returns FileBrowseResponse JSON
-     external fun StartFileUploadNative(localUri: String, remotePath: String): String  // returns transferId
-     external fun StartFileDownloadNative(remotePath: String, localUri: String): String
-     external fun CancelFileTransferNative(transferId: String): String
-     ```
+3. `/home/connorl/RemEx/RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt`:
+   - Expose a shared flow of raw file-transfer JSON messages and forward the callback stream to the file-transfer screen/viewmodel.
 
-   - Add to the `RemexCallback` interface:
+**KEEP FROM THE ORIGINAL SPEC (recommended Android follow-up improvements):**
 
-     ```kotlin
-     fun onFileTransferProgress(progressJson: String)
-     fun onFileTransferComplete(completeJson: String)
-     ```
-
-   - Update `RemexClientManager` to expose `StateFlow<List<FileTransferStatus>>` and forward callbacks.
-
-3. `/home/connorl/RemEx/Remex.Core/AndroidNativeExports.cs` — add the corresponding `[UnmanagedCallersOnly]` exports.
+- If the generic JSON bridge becomes brittle, introduce a typed native browse/upload/download/cancel API later.
+- If the product moves toward richer transfer orchestration, expose typed progress/completion callback shapes instead of raw JSON.
 
 **DO NOT TOUCH:** Pairing or TLS code. Any other handler.
 
@@ -970,11 +988,12 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
 
 1. `cd /home/connorl/RemEx && dotnet build Remex.sln -c Release` — exit 0.
 2. `cd /home/connorl/RemEx/RemEx.Android && ./gradlew :app:assembleDebug` — `BUILD SUCCESSFUL`.
-3. End-to-end: connect desktop client to host, browse `/home`, upload a 100 MB file from desktop to host, download back, verify SHA-256 matches via `sha256sum` on both copies.
-4. Same test from Android.
-5. Cancel a 1 GB upload mid-transfer; verify host deletes the partial file (`ls -la /tmp/remex-test-upload.bin` after cancel — should not exist).
+3. End-to-end: connect desktop client to host, browse a configured shared root, upload a 100 MB file from desktop to host, then download it back.
+4. Same test from Android using SAF-backed upload/download.
+5. Cancel a 1 GB upload mid-transfer; verify host deletes the partial file.
+6. Validate shared-root settings from desktop: add/remove a root, toggle write access, restore defaults, and confirm the File Transfer view reflects the new root list immediately.
 
-**POST-CONDITIONS:** File transfer works on desktop and Android. SHA-256 verified end-to-end. Cancel cleans up state.
+**POST-CONDITIONS:** File transfer works on desktop and Android within configured shared roots. Upload integrity is verified, cancel cleans up state, desktop settings own root management, and download-side end-to-end hash verification remains a recommended improvement.
 
 ---
 
@@ -1095,6 +1114,17 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
 **GOAL:** Apply every Play Store hardening listed in Gemini's PRD §7 and the review-report Play Store checklist that isn't already done.
 **PRE-CONDITIONS:** Phase 0 complete. Can run in parallel.
 **SUGGESTED MODEL:** **Haiku / Gemini Flash / local model.** This is mechanical work with crisp verification.
+
+**IMPLEMENTATION-ADJUSTED STATUS (May 2026):**
+
+- The original Track 2D checklist is already landed in the repo: `usesCleartextTraffic="false"`, `networkSecurityConfig`, arm64-only bundle output, R8 keep rules for the native bridge, and backup/data-extraction exclusions are all present.
+- The Android app now targets SDK 37 / Android 17 beta. Treat the remaining work here as a follow-up compliance slice, not evidence that the original 2D release-hardening work is incomplete.
+- The highest-priority SDK 37 follow-up is local-network permission handling for LAN discovery and direct host connections:
+   - Add `android.permission.ACCESS_LOCAL_NETWORK` to the manifest once the final Android 17 SDK contract used by this repo is locked.
+   - Request the local-network permission at runtime alongside the existing discovery/connect permission flow.
+   - Re-test mDNS discovery and manual IP/port connection on Android 17 devices/emulators after the new permission flow lands.
+   - Update Android help/tutorial/FAQ copy that currently references only `NEARBY_WIFI_DEVICES`, so user guidance matches target-37 behavior.
+- AGP/toolchain setup is already sufficient for SDK 37 in this repo, so the remaining risk is behavioral compliance, not build-system readiness.
 
 **FILES TO MODIFY:**
 
@@ -1473,22 +1503,29 @@ These were chosen by the planner; they are not open questions. Lighter agents sh
 ## TRACK 3A — Localization regen
 
 **ID:** `3A-locale-regen`
-**GOAL:** Propagate new English strings from Phase 1/2 into all 8 non-English locales via the existing Python script.
+**GOAL:** Reconcile and propagate new English strings from Phase 1/2 into all 8 non-English locales, accounting for any strings that were landed early during feature work.
 **PRE-CONDITIONS:** All Phase 2 tracks that added strings are complete.
 **SUGGESTED MODEL:** **Haiku / Flash / local** (mechanical).
+
+**IMPLEMENTATION NOTE (May 2026):**
+
+- Some .NET file-transfer localization work may already be landed ahead of Phase 3, including file-transfer nav/tutorial/shared-folder strings.
+- Treat this track as a reconciliation pass: verify completeness first, then fill only the remaining gaps.
 
 **STEPS:**
 
 1. `cd /home/connorl/RemEx && python3 scripts/generate_locale_files.py`
 2. Verify output mentions all 8 locales (`values-es`, `values-fr`, `values-hi`, `values-in`, `values-pl`, `values-pt-rBR`, `values-tr`, `values-uk`).
-3. **For .NET .resx files**, no equivalent script exists. Manually add the new keys to each `Strings.{lang}.resx` file using the English text as a placeholder. Mark each placeholder with a `<!-- NEEDS_TRANSLATION -->` comment so a human translator can find them later.
+3. **For .NET .resx files**, no equivalent script exists. First diff English against each `Strings.{lang}.resx` file to find genuinely missing keys.
+4. For any missing .NET keys, add them manually. If a reviewed translation is available, use it; otherwise add the English text as a placeholder and mark it with a `<!-- NEEDS_TRANSLATION -->` comment.
 
 **VERIFICATION:**
 
 1. `for d in /home/connorl/RemEx/RemEx.Android/app/src/main/res/values-*; do grep -c "name=\"pairing_title\"" "$d/strings.xml" || echo "MISSING $d"; done` — expect `1` for every locale.
 2. `for f in /home/connorl/RemEx/Remex.Client/Localization/Strings.*.resx; do grep -c "PairingDialogTitle" "$f" || echo "MISSING $f"; done` — expect `1` for every file.
+3. Spot-check file-transfer strings such as `Nav_Files`, `Settings_FileTransferSection`, and `FileTransfer_Header` across the .NET locale files.
 
-**POST-CONDITIONS:** Every new string is present in every locale file (placeholder is acceptable for non-English where unreviewed).
+**POST-CONDITIONS:** Every new string is present in every locale file. Existing early translations are preserved, and placeholders are only used where a reviewed translation is still missing.
 
 ---
 

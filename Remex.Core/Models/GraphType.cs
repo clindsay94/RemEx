@@ -19,4 +19,7 @@ public enum GraphType
 
     /// <summary>Horizontal fill bar — good for percentage utilisation.</summary>
     Gauge,
+
+    /// <summary>Circular / radial progress path — expressive NOC style.</summary>
+    Radial,
 }

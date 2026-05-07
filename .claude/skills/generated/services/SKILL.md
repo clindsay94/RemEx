@@ -67,16 +67,16 @@ Start here when exploring this area:
 
 | Flow | Type | Steps |
 |------|------|-------|
-| `ToggleSettingsPanel → M3Palette` | cross_community | 7 |
-| `ToggleSettingsPanel → ToColor` | cross_community | 7 |
-| `Main → GetPlatform` | cross_community | 6 |
-| `Main → GetIsInteractiveSession` | cross_community | 6 |
-| `Main → GetRuntimeMode` | cross_community | 6 |
-| `Main → SupportsRemoteDesktop` | cross_community | 6 |
 | `ToggleSettingsPanel → ApplyBaseThemeInternal` | cross_community | 6 |
 | `ToggleSettingsPanel → SetResourceOverrideInternal` | cross_community | 6 |
 | `InitializeAsync → M3Palette` | cross_community | 5 |
 | `InitializeAsync → ToColor` | cross_community | 5 |
+| `InitializeAsync → M3Palette` | cross_community | 5 |
+| `InitializeAsync → ToColor` | cross_community | 5 |
+| `SyncLayoutAsync → M3Palette` | cross_community | 5 |
+| `SyncLayoutAsync → ToColor` | cross_community | 5 |
+| `OnCornerRadiusChanged → M3Palette` | cross_community | 5 |
+| `OnCornerRadiusChanged → ToColor` | cross_community | 5 |
 
 ## Connected Areas
 

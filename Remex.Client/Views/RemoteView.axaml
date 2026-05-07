@@ -8,10 +8,10 @@
         <Style Selector="Button.remote-btn">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource RemoteCardCornerRadius}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
             <Setter Property="Padding" Value="20 16"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -25,42 +25,21 @@
         </Style>
         <Style Selector="Button.remote-btn:pointerover">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="RenderTransform" Value="translateY(-1px)"/>
+            <Setter Property="RenderTransform" Value="translateY(-2px)"/>
         </Style>
         <Style Selector="Button.remote-btn:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
+        
         <Style Selector="Button.remote-btn-danger">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource SystemError}" Opacity="0.12"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Foreground" Value="{DynamicResource SystemError}"/>
-            <Setter Property="BorderBrush" Value="#40FF6B6B"/>
-        </Style>
-        <Style Selector="Button.remote-btn-danger:pointerover">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource SystemError}" Opacity="0.2"/>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
         <Style Selector="Button.remote-btn-warn">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource SystemWarning}" Opacity="0.12"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Foreground" Value="{DynamicResource SystemWarning}"/>
-            <Setter Property="BorderBrush" Value="#40FFD93D"/>
-        </Style>
-        <Style Selector="Button.remote-btn-warn:pointerover">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{DynamicResource SystemWarning}" Opacity="0.2"/>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="#15FFD93D"/>
+            <Setter Property="Foreground" Value="#FFD93D"/>
+            <Setter Property="BorderBrush" Value="#FFD93D"/>
         </Style>
     </UserControl.Styles>
 

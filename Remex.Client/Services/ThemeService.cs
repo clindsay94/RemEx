@@ -168,8 +168,24 @@ public class ThemeService : IDisposable
         }
     }
 
-    private void SetResourceOverrideInternal(string key, object value)
+    public void SetResourceOverrideInternal(string key, object value)
     {
         _overrideResources[key] = value;
+    }
+
+    /// <summary>
+    /// Injects a color from physical hardware into the current theme.
+    /// Used by HardwareThemeService.
+    /// </summary>
+    public void ApplyHardwareAccent(Color color)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // We only override the primary accent; the rest of the palette 
+            // will be regenerated based on this hardware seed if needed.
+            // For now, we just push the literal color.
+            SetResourceOverrideInternal("AccentPrimary", color);
+            SetResourceOverrideInternal("AccentPrimaryBrush", new SolidColorBrush(color));
+        });
     }
 }

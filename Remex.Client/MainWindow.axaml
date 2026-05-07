@@ -11,8 +11,9 @@
     ExtendClientAreaToDecorationsHint="True"
     ExtendClientAreaChromeHints="PreferSystemChrome"
     ExtendClientAreaTitleBarHeightHint="32"
-    TransparencyLevelHint="None"
-    Background="#0A0A10"
+    TransparencyLevelHint="Mica, AcrylicBlur, None"
+    Background="Transparent"
+    TransparencyBackgroundFallback="#0A0A10"
     WindowStartupLocation="CenterScreen">
 
     <Window.KeyBindings>

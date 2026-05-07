@@ -28,335 +28,283 @@
         <Style Selector="Button.settings-back:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
+
+        <!-- Modern TextBox styling -->
+        <Style Selector="TextBox.modern">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="TextBox.modern:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlassBaseMediumBrush}"/>
+        </Style>
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24" MaxWidth="500">
+        <StackPanel Margin="40" Spacing="32" MaxWidth="1100">
 
             <!-- ═══ Header ═══ -->
-            <Button Classes="settings-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="settings-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" VerticalAlignment="Center"/>
+                
+                <TextBlock Grid.Column="1" Text="{local:Localize Settings_Header}" FontSize="32" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="{local:Localize Settings_Header}" FontSize="24" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SavedStatus}" FontSize="12" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <Button Content="{local:Localize Settings_SaveChanges}" Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SavedStatus}" FontSize="13" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <Button Content="{local:Localize Settings_SaveChanges}" Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="20,10" CornerRadius="10" FontSize="14" FontWeight="Bold" Cursor="Hand"/>
                 </StackPanel>
             </Grid>
 
-            <!-- ═══ Service Section ═══ -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsServiceSectionVisible}">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{Binding ServiceSectionHeader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
+            <WrapPanel Margin="0,10,0,0">
+                
+                <!-- LEFT COLUMN -->
+                <StackPanel MinWidth="400" MaxWidth="600" Spacing="24" Margin="0,0,16,16">
+                    
+                    <!-- ═══ Service Section ═══ -->
+                    <Border Classes="glass-card" Padding="24" IsVisible="{Binding IsServiceSectionVisible}">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="{Binding ServiceSectionHeader}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                    <!-- Status row -->
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Spacing="4">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Ellipse Width="10" Height="10" VerticalAlignment="Center" AutomationProperties.Name="{Binding ServiceStatusText}">
-                                    <Ellipse.Fill>
-                                        <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            </StackPanel>
-                            <TextBlock Text="{Binding ServiceAccountDisplay}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsServiceInstalled}"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </Grid>
-
-                    <!-- Action buttons -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding !IsServiceBusy}">
-                        <!-- Not installed → Install + Configure Login -->
-                        <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}"/>
-                        <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}"/>
-
-                        <!-- Installed → Start / Stop / Configure / Uninstall -->
-                        <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding !IsServiceRunning}"/>
-                        <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="{DynamicResource SystemWarningBrush}" Foreground="#1A1A1A" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding IsServiceRunning}"/>
-                        <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}"/>
-                        <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="12,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}"/>
-                    </StackPanel>
-                    <!-- Credential configuration panel -->
-                    <Border IsVisible="{Binding IsCredentialPanelOpen}" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="{local:Localize Settings_ServiceLogin}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="{local:Localize Settings_Username}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBox Text="{Binding ServiceUsername}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8 6" FontSize="13" FontFamily="Consolas" Watermark="{local:Localize Settings_UsernameWatermark}"/>
-                                <TextBlock Text="{local:Localize Settings_UsernameHint}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
-                            </StackPanel>
-
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="{local:Localize Settings_Password}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBox PasswordChar="●" Text="{Binding ServicePassword}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8 6" FontSize="13" Watermark="{local:Localize Settings_PasswordWatermark}"/>
-                            </StackPanel>
-
-                            <Button Content="{local:Localize Btn_Apply}" Command="{Binding ApplyLoginCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left" IsVisible="{Binding IsServiceInstalled}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Service log -->
-                    <Border IsVisible="{Binding ServiceLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MaxHeight="200">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                            <TextBlock Text="{Binding ServiceLog}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="NoWrap"/>
-                        </ScrollViewer>
-                    </Border>
-
-                    <TextBlock Text="{local:Localize Settings_ServiceDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-            <!-- ═══ General Section ═══ -->
-            <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize Settings_General}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel>
-                            <TextBlock Text="{local:Localize Settings_Language}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        </StackPanel>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" MinWidth="150" VerticalAlignment="Center">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding DisplayName}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- ═══ Connection Section ═══ -->
-            <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="14">
-                    <TextBlock Text="{local:Localize Settings_Connection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-
-                    <!-- ── Live status row (color dot + text + current address) ── -->
-                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                        <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Ellipse Width="10" Height="10" VerticalAlignment="Center">
-                                    <Ellipse.Fill>
-                                        <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                                <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Text="{Binding HostRuntimeText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
-                            <TextBlock Text="{Binding HostCapabilityText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- ── Pairing PIN banner (shows when phone is asking for it) ── -->
-                    <Border Background="#1F2D1F" BorderBrush="#4ADE80" BorderThickness="2" CornerRadius="8" Padding="16,14" IsVisible="{Binding Connection.HasActivePairingPin}">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="PHONE PAIRING — ENTER THIS PIN ON YOUR PHONE" FontSize="11" FontWeight="Bold" LetterSpacing="2" Foreground="#4ADE80"/>
-                            <TextBlock Text="{Binding Connection.ActivePairingPin}" FontSize="42" FontWeight="Black" Foreground="#4ADE80" FontFamily="Consolas" LetterSpacing="6" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Expires soon — start pairing on your phone again if it times out." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- ── Address field ── -->
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Text="{Binding HostAddress}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12 8" FontSize="13" FontFamily="Consolas" Watermark="wss://host:port/ws" ToolTip.Tip="{local:Localize Settings_HostAddressTooltip}"/>
-                            <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip.Tip="{local:Localize Settings_DiscoverTooltip}"/>
-                        </Grid>
-                        <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap">
-                            <Run Text="On this device, use "/>
-                            <Run Text="wss://localhost:5005/ws" FontFamily="Consolas"/>
-                            <Run Text=". Phones on your LAN should use the address below."/>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <!-- ── LAN address hint for phones ── -->
-                    <Border Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" IsVisible="{Binding Connection.LanHostAddress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="ADDRESS FOR YOUR PHONE" FontSize="10" FontWeight="SemiBold" LetterSpacing="2" Foreground="{DynamicResource TextMutedBrush}"/>
-                            <TextBlock Text="{Binding Connection.LanHostAddress}" FontSize="13" FontFamily="Consolas" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Border>
-
-                    <ComboBox IsVisible="{Binding DiscoveredHosts.Count}" ItemsSource="{Binding DiscoveredHosts}" SelectedItem="{Binding HostAddress}" HorizontalAlignment="Stretch" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12,4" FontSize="12" FontFamily="Consolas" ToolTip.Tip="Select a discovered host"/>
-
-                    <!-- Recent connection history picker -->
-                    <ComboBox IsVisible="{Binding ConnectionHistory.Count}" ItemsSource="{Binding ConnectionHistory}" HorizontalAlignment="Stretch" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="12,4" FontSize="12" FontFamily="Consolas" ToolTip.Tip="Select from recent connections" SelectionChanged="OnConnectionHistorySelected">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="coreModels:ConnectionProfile">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{Binding HostAddress}" FontSize="12"/>
-                                    <TextBlock Text="{Binding LastConnected, StringFormat='Connected: {0:g}'}" FontSize="10" Opacity="0.7"/>
+                            <!-- Status row -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Ellipse Width="12" Height="12" VerticalAlignment="Center">
+                                            <Ellipse.Fill>
+                                                <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding ServiceStatusText}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding ServiceAccountDisplay}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsServiceInstalled}"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
+                                <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Cursor="Hand"/>
+                            </Grid>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                        <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" ToolTip.Tip="{local:Localize Settings_SaveReconnectTooltip}"/>
-                        <Button Content="Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold"/>
-                    </StackPanel>
+                            <!-- Action buttons -->
+                            <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding !IsServiceBusy}">
+                                <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand"/>
 
-                    <TextBlock Text="{local:Localize Settings_AutoSaveHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic"/>
-                </StackPanel>
-            </Border>
+                                <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding !IsServiceRunning}" Cursor="Hand"/>
+                                <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="{DynamicResource SystemWarningBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding IsServiceRunning}" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" Cursor="Hand" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1"/>
+                            </StackPanel>
 
-            <!-- ═══ Remote Desktop Section ═══ -->
-            <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize Settings_RemoteDesktop}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                            <!-- Credential configuration panel -->
+                            <Border IsVisible="{Binding IsCredentialPanelOpen}" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Text="{local:Localize Settings_ServiceLogin}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="{local:Localize Settings_Username}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBox Text="{Binding ServiceUsername}" Watermark="{local:Localize Settings_UsernameWatermark}" Classes="modern"/>
+                                        <TextBlock Text="{local:Localize Settings_UsernameHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="{local:Localize Settings_Password}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBox PasswordChar="●" Text="{Binding ServicePassword}" Watermark="{local:Localize Settings_PasswordWatermark}" Classes="modern"/>
+                                    </StackPanel>
+                                    <Button Content="{local:Localize Btn_Apply}" Command="{Binding ApplyLoginCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="20,10" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Right" IsVisible="{Binding IsServiceInstalled}" Cursor="Hand"/>
+                                </StackPanel>
+                            </Border>
 
-                    <!-- Stream Quality -->
-                    <StackPanel Spacing="4">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="{local:Localize RemoteDesktop_Quality}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="1" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding StreamQuality, StringFormat={}{0}%}"/>
-                        </Grid>
-                        <Slider Minimum="10" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding StreamQuality}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                        <Grid ColumnDefinitions="*,*">
-                            <TextBlock Text="Low" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                            <TextBlock Grid.Column="1" Text="High" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Stream FPS -->
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel>
-                            <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{local:Localize Settings_ServiceDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap" Opacity="0.7"/>
                         </StackPanel>
-                        <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedStreamFpsIndex}" MinWidth="70" VerticalAlignment="Center">
-                            <ComboBoxItem Content="5"/>
-                            <ComboBoxItem Content="10"/>
-                            <ComboBoxItem Content="15"/>
-                            <ComboBoxItem Content="20"/>
-                            <ComboBoxItem Content="30"/>
-                            <ComboBoxItem Content="60"/>
-                            <ComboBoxItem Content="120"/>
-                            <ComboBoxItem Content="240"/>
-                            <ComboBoxItem Content="360"/>
-                        </ComboBox>
-                    </Grid>
-                </StackPanel>
-            </Border>
+                    </Border>
 
-            <!-- ═══ Layout Section ═══ -->
-            <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize Settings_Layout}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                    <!-- ═══ Connection Section ═══ -->
+                    <Border Classes="glass-card" Padding="24">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="{local:Localize Settings_Connection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                    <!-- Snap toggle -->
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel>
-                            <TextBlock Text="{local:Localize Settings_SnapToGrid}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Ellipse Width="12" Height="12" VerticalAlignment="Center">
+                                            <Ellipse.Fill>
+                                                <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding HostRuntimeText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                                    <TextBlock Text="{Binding HostCapabilityText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Text="{Binding HostAddress}" Watermark="wss://host:port/ws" FontFamily="Consolas" Classes="modern"/>
+                                    <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Content="Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand"/>
+                            </StackPanel>
                         </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Settings_SnapToGridTooltip}"/>
-                    </Grid>
+                    </Border>
+                    
+                    <!-- ═══ General Section ═══ -->
+                    <Border Classes="glass-card" Padding="24">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="{local:Localize Settings_General}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{local:Localize Settings_Language}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" MinWidth="180" CornerRadius="8">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-                    <!-- Grid size slider -->
-                    <StackPanel Spacing="4" IsEnabled="{Binding IsSnapToGridEnabled}">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="{local:Localize Settings_GridSize}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="1" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0} px">
-                                        <Binding Path="GridSize"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </Grid>
-                        <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding GridSize}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                        <Grid ColumnDefinitions="*,*">
-                            <TextBlock Text="Small" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                            <TextBlock Grid.Column="1" Text="Large" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                        </Grid>
-                    </StackPanel>
                 </StackPanel>
-            </Border>
 
-            <!-- ═══ Pinned Sensors Section ═══ -->
-            <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="12">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{local:Localize Settings_PinnedSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                        <TextBlock Text="ℹ" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" Cursor="Hand" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Settings_HwInfoTooltip}"/>
-                    </StackPanel>
-                    <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <!-- RIGHT COLUMN -->
+                <StackPanel MinWidth="400" MaxWidth="600" Spacing="24" Margin="0,0,16,16">
 
-                    <TextBlock Text="{local:Localize Settings_OpenSensorWorkspaceHint}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" IsVisible="{Binding !AvailableSensors.Count}"/>
+                    <!-- ═══ Remote Desktop Section ═══ -->
+                    <Border Classes="glass-card" Padding="24">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="{local:Localize Settings_RemoteDesktop}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                    <ScrollViewer MaxHeight="350" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding AvailableSensors}">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{local:Localize RemoteDesktop_Quality}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding StreamQuality, StringFormat={}{0}%}"/>
+                                </Grid>
+                                <Slider Minimum="10" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding StreamQuality}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedStreamFpsIndex}" MinWidth="80" CornerRadius="8" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="5"/>
+                                    <ComboBoxItem Content="10"/>
+                                    <ComboBoxItem Content="15"/>
+                                    <ComboBoxItem Content="20"/>
+                                    <ComboBoxItem Content="30"/>
+                                    <ComboBoxItem Content="60"/>
+                                    <ComboBoxItem Content="120"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ Layout Section ═══ -->
+                    <Border Classes="glass-card" Padding="24">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="{local:Localize Settings_Layout}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{local:Localize Settings_SnapToGrid}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{local:Localize Settings_GridSize}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>
+                                </Grid>
+                                <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding GridSize}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ Pinned Sensors Section ═══ -->
+                    <Border Classes="glass-card" Padding="24">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="{local:Localize Settings_PinnedSensors}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_PinnedSensorsDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.8"/>
+
+                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding AvailableSensors}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SensorPinItem">
+                                            <CheckBox IsChecked="{Binding IsPinned}" Margin="0,4">
+                                                <TextBlock Text="{Binding SensorName}" FontSize="13" VerticalAlignment="Center"/>
+                                            </CheckBox>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </WrapPanel>
+
+            <!-- ═══ FULL WIDTH SECTIONS ═══ -->
+            <StackPanel Spacing="24">
+                <!-- ═══ Shared Folders Section ═══ -->
+                <Border Classes="glass-card" Padding="24" IsVisible="{Binding SupportsSharedFolderConfiguration}">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="{local:Localize Settings_FileTransferSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                        
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                <Button Content="{local:Localize Settings_FileTransferAddFolder}" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_FileTransferRestoreDefaults}" Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding SharedRoots}" Margin="0,10,0,0">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:SensorPinItem">
-                                    <CheckBox IsChecked="{Binding IsPinned}" Margin="0,2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13">
-                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <TextBlock Text="{Binding SensorName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                            <Border Background="#1E1E3A" CornerRadius="3" Padding="4,1" VerticalAlignment="Center" IsVisible="{Binding Source, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                <TextBlock Text="{Binding Source}" FontSize="10" Foreground="#6C6CAA"/>
-                                            </Border>
-                                        </StackPanel>
-                                    </CheckBox>
+                                <DataTemplate x:DataType="vm:FileTransferSharedRootItem">
+                                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding AbsolutePath}" FontSize="12" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="24,0">
+                                                <TextBlock Text="{local:Localize Settings_FileTransferWritable}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <ToggleSwitch IsChecked="{Binding IsWritable}" OnContent="" OffContent=""/>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" CornerRadius="8" Cursor="Hand"/>
+                                        </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </ScrollViewer>
-                </StackPanel>
-            </Border>
-
-            <!-- ═══ Shared Folders Section ═══ -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding SupportsSharedFolderConfiguration}">
-                <StackPanel Spacing="14">
-                    <TextBlock Text="{local:Localize Settings_FileTransferSection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                    <TextBlock Text="{local:Localize Settings_FileTransferDesc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-
-                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="14" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="{local:Localize Settings_FileTransferTutorialTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <TextBlock Text="{local:Localize Settings_FileTransferTutorialBody}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                            <TextBlock Text="{local:Localize Settings_FileTransferTutorialSteps}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Border>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="{local:Localize Settings_FileTransferAddFolder}" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
-                        <Button Content="{local:Localize Settings_FileTransferRestoreDefaults}" Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
                     </StackPanel>
+                </Border>
 
-                    <TextBlock Text="{local:Localize Settings_FileTransferEmpty}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap" IsVisible="{Binding !HasSharedRoots}"/>
-
-                    <ItemsControl ItemsSource="{Binding SharedRoots}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:FileTransferSharedRootItem">
-                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,8">
-                                    <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto">
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="12,0,0,0">
-                                            <TextBlock Text="{local:Localize Settings_FileTransferWritable}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                            <ToggleSwitch IsChecked="{Binding IsWritable}" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="2" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,0,0" Cursor="Hand"/>
-                                        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding AbsolutePath}" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Text="{local:Localize Settings_FileTransferImmediate}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-
-            <!-- ═══ Help Section ═══ -->
-            <Border Classes="glass-card" Padding="20">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{local:Localize Settings_Help}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                    <Button Content="{local:Localize Settings_ReplayTutorial}" Command="{Binding ReplayTutorialCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_ReplayTutorialTooltip}"/>
-                </StackPanel>
-            </Border>
+                <!-- ═══ Help Section ═══ -->
+                <Border Classes="glass-card" Padding="24">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{local:Localize Settings_Help}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="Need to see the walkthrough again?" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="{local:Localize Settings_ReplayTutorial}" Command="{Binding ReplayTutorialCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>
