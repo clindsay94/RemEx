@@ -134,6 +134,24 @@ public sealed record RemexMessage
 
     [JsonPropertyName("fileBrowseResponse")]
     public FileBrowseResponse? FileBrowseResponse { get; init; }
+
+    [JsonPropertyName("fileManageRequest")]
+    public FileManageRequest? FileManageRequest { get; init; }
+
+    [JsonPropertyName("fileManageResponse")]
+    public FileManageResponse? FileManageResponse { get; init; }
+
+    [JsonPropertyName("fileHashRequest")]
+    public FileHashRequest? FileHashRequest { get; init; }
+
+    [JsonPropertyName("fileHashResponse")]
+    public FileHashResponse? FileHashResponse { get; init; }
+
+    [JsonPropertyName("fileRootManageRequest")]
+    public FileRootManageRequest? FileRootManageRequest { get; init; }
+
+    [JsonPropertyName("fileRootManageResponse")]
+    public FileRootManageResponse? FileRootManageResponse { get; init; }
 }
 
 /// <summary>
@@ -179,4 +197,10 @@ public static class MessageTypes
     public const string FileRootsResponse = "file_roots_response";
     public const string FileBrowseRequest = "file_browse_request";
     public const string FileBrowseResponse = "file_browse_response";
+    public const string FileManageRequest = "file_manage_request";
+    public const string FileManageResponse = "file_manage_response";
+    public const string FileHashRequest = "file_hash_request";
+    public const string FileHashResponse = "file_hash_response";
+    public const string FileRootManageRequest = "file_root_manage_request";
+    public const string FileRootManageResponse = "file_root_manage_response";
 }

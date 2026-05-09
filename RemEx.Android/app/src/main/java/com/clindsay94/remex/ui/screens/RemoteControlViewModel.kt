@@ -92,7 +92,7 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                 val mac = settingsManager.macAddressFlow.first()
                 val broadcast = settingsManager.broadcastIpFlow.first()
                 if (mac.isNotBlank()) {
-                    val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9)
+                    val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull() ?: ""
                     val response = JSONObject(responseJson)
                     val success = response.optBoolean("success", false)
                     val message = response.optString("message", "Wake packet sent")
@@ -199,7 +199,7 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                             put("parameters", parameters)
                         }
 
-                val responseJson = RemexCoreClient.SendCommand(request.toString())
+                val responseJson = RemexCoreClient.SendCommand(request.toString()).getOrNull() ?: "{}"
                 val response = JSONObject(responseJson)
                 val message = response.optString("message", "Command sent")
                 val success = response.optBoolean("success", false)
@@ -223,7 +223,7 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                             put("type", "desktop_input")
                             put("inputEvent", input)
                         }
-                RemexCoreClient.SendMessage(message.toString())
+                RemexCoreClient.SendMessage(message.toString()).getOrNull()
             }
         }
     }

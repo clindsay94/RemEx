@@ -16,7 +16,7 @@ class RemexLockTileService : TileService() {
             return
         }
         val commandJson = JSONObject().apply { put("action", "Lock") }.toString()
-        RemexCoreClient.SendCommand(commandJson)
+        RemexCoreClient.SendCommand(commandJson).getOrNull()
     }
 
     override fun onStartListening() {

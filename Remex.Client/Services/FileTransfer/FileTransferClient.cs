@@ -25,6 +25,10 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
     private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
     private readonly ConcurrentDictionary<string, Channel<byte[]>> _downloadChannels = new();
+    private readonly ConcurrentDictionary<string, IncrementalHash> _downloadHashers = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _manageWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _hashWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _rootManageWaiters = new();
 
     public FileTransferClient(ConnectionViewModel connection)
     {
@@ -82,6 +86,112 @@ public sealed class FileTransferClient : IDisposable
             throw new IOException($"Browse error: {err}");
 
         return response.FileBrowseResponse?.Entries ?? [];
+    }
+
+    public async Task DeleteRemoteAsync(string rootId, string relativePath, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _manageWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileManageRequest,
+            FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "delete" }
+        });
+
+        var response = await tcs.Task;
+        _manageWaiters.TryRemove(requestId, out _);
+
+        if (response.FileManageResponse?.Success == false)
+            throw new IOException($"Delete failed: {response.FileManageResponse.ErrorMessage}");
+    }
+
+    public async Task RenameRemoteAsync(string rootId, string relativePath, string newName, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _manageWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileManageRequest,
+            FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "rename", NewName = newName }
+        });
+
+        var response = await tcs.Task;
+        _manageWaiters.TryRemove(requestId, out _);
+
+        if (response.FileManageResponse?.Success == false)
+            throw new IOException($"Rename failed: {response.FileManageResponse.ErrorMessage}");
+    }
+
+    public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _hashWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileHashRequest,
+            FileHashRequest = new FileHashRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
+        });
+
+        var response = await tcs.Task;
+        _hashWaiters.TryRemove(requestId, out _);
+
+        if (response.FileHashResponse?.ErrorMessage is string err)
+            throw new IOException($"Hash verification failed: {err}");
+
+        return response.FileHashResponse?.Sha256Base64 ?? string.Empty;
+    }
+
+    public async Task<IReadOnlyList<FileSharedRoot>> AddRemoteRootAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _rootManageWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileRootManageRequest,
+            FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "add", SourceRootId = sourceRootId, SourceRelativePath = sourceRelativePath }
+        });
+
+        var response = await tcs.Task;
+        _rootManageWaiters.TryRemove(requestId, out _);
+
+        if (response.FileRootManageResponse?.ErrorMessage is string err)
+            throw new IOException($"Add root failed: {err}");
+
+        return response.FileRootManageResponse?.Roots ?? [];
+    }
+
+    public async Task<IReadOnlyList<FileSharedRoot>> RemoveRemoteRootAsync(string rootId, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _rootManageWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileRootManageRequest,
+            FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "remove", RootId = rootId }
+        });
+
+        var response = await tcs.Task;
+        _rootManageWaiters.TryRemove(requestId, out _);
+
+        if (response.FileRootManageResponse?.ErrorMessage is string err)
+            throw new IOException($"Remove root failed: {err}");
+
+        return response.FileRootManageResponse?.Roots ?? [];
     }
 
     public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<double>? progress, CancellationToken ct)
@@ -176,6 +286,8 @@ public sealed class FileTransferClient : IDisposable
         // eliminating the race condition that would exist with fire-and-forget WriteAsync.
         var channel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
         _downloadChannels[transferId] = channel;
+        var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        _downloadHashers[transferId] = hasher;
 
         var writeTask = Task.Run(async () =>
         {
@@ -209,11 +321,25 @@ public sealed class FileTransferClient : IDisposable
         _downloadChannels.TryRemove(transferId, out _);
         _transferEndWaiters.TryRemove(transferId, out _);
         _progressReporters.TryRemove(transferId, out _);
+        _downloadHashers.TryRemove(transferId, out _);
 
         if (result.FileTransferEnd?.Success == false)
         {
+            hasher.Dispose();
             try { File.Delete(localPath); } catch { /* best-effort */ }
             throw new IOException($"Download failed: {result.FileTransferEnd.ErrorMessage}");
+        }
+
+        // Verify the host-supplied SHA-256 against the bytes we actually received.
+        // Master plan §996 calls this out as the recommended download-side parity
+        // with upload integrity verification.
+        var expectedHash = result.FileTransferEnd?.Sha256Base64;
+        var actualHash = Convert.ToBase64String(hasher.GetHashAndReset());
+        hasher.Dispose();
+        if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
+        {
+            try { File.Delete(localPath); } catch { /* best-effort */ }
+            throw new IOException("Download failed: SHA-256 integrity check failed.");
         }
     }
 
@@ -232,7 +358,12 @@ public sealed class FileTransferClient : IDisposable
 
             case MessageTypes.FileTransferChunk when message.FileTransferChunk is { } chunk:
                 if (_downloadChannels.TryGetValue(chunk.TransferId, out var ch))
-                    ch.Writer.TryWrite(Convert.FromBase64String(chunk.DataBase64));
+                {
+                    var bytes = Convert.FromBase64String(chunk.DataBase64);
+                    if (_downloadHashers.TryGetValue(chunk.TransferId, out var hasher))
+                        hasher.AppendData(bytes);
+                    ch.Writer.TryWrite(bytes);
+                }
                 break;
 
             case MessageTypes.FileTransferProgress when message.FileTransferProgress is { } prog:
@@ -243,6 +374,21 @@ public sealed class FileTransferClient : IDisposable
             case MessageTypes.FileTransferEnd when message.FileTransferEnd is { } end:
                 if (_transferEndWaiters.TryGetValue(end.TransferId, out var endTcs))
                     endTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileManageResponse when message.FileManageResponse is { } manage:
+                if (_manageWaiters.TryGetValue(manage.RequestId, out var manageTcs))
+                    manageTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileHashResponse when message.FileHashResponse is { } hashResp:
+                if (_hashWaiters.TryGetValue(hashResp.RequestId, out var hashTcs))
+                    hashTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileRootManageResponse when message.FileRootManageResponse is { } rootManage:
+                if (_rootManageWaiters.TryGetValue(rootManage.RequestId, out var rootManageTcs))
+                    rootManageTcs.TrySetResult(message);
                 break;
         }
     }

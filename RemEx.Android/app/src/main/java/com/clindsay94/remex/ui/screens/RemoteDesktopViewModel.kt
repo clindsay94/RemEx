@@ -358,7 +358,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         _desktopError.value = null
         reconnectAttempts = 0
-        RemexCoreClient.StartDesktopStream(config.toString())
+        RemexCoreClient.StartDesktopStream(config.toString()).getOrNull()
         _isStreaming.value = true
     }
 
@@ -373,7 +373,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         recycleCurrentFrame()
 
         if (RemexCoreClient.isLibraryLoaded) {
-            RemexCoreClient.StopDesktopStream()
+            RemexCoreClient.StopDesktopStream().getOrNull()
         }
     }
 
@@ -498,7 +498,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         put("type", "desktop_config")
                         put("desktopConfig", buildConfigJson())
                     }
-            RemexCoreClient.SendMessage(message.toString())
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to push config update", e)
         }
@@ -533,7 +533,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         put("type", "desktop_input")
                         put("inputEvent", input)
                     }
-            RemexCoreClient.SendMessage(message.toString())
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
         }
     }
 

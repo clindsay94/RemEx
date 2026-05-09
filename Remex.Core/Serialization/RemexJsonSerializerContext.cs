@@ -55,6 +55,12 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(FileBrowseRequest))]
 [JsonSerializable(typeof(FileBrowseResponse))]
 [JsonSerializable(typeof(FileEntry))]
+[JsonSerializable(typeof(FileManageRequest))]
+[JsonSerializable(typeof(FileManageResponse))]
+[JsonSerializable(typeof(FileHashRequest))]
+[JsonSerializable(typeof(FileHashResponse))]
+[JsonSerializable(typeof(FileRootManageRequest))]
+[JsonSerializable(typeof(FileRootManageResponse))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
 }

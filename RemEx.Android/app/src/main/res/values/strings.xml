@@ -135,6 +135,7 @@
     <string name="settings_tab_connection">Connection</string>
     <string name="settings_tab_personalization">Personalization</string>
     <string name="settings_tab_input">Input</string>
+    <string name="settings_tab_file_transfer">File Transfer</string>
     <string name="settings_tab_help">Help</string>
     <string name="settings_tab_about">About</string>
     <string name="settings_help_title">Help</string>
@@ -309,7 +310,7 @@
     <string name="faq_a2">Windows:\nOpen Command Prompt and type \'ipconfig\'. Look for the \'IPv4 Address\' line under your active network adapter (e.g. 192.168.1.42).\n\nmacOS:\nGo to System Settings → Network and look at the connected interface, or open Terminal and run: ipconfig getifaddr en0\n\nLinux:\nOpen a terminal and run: ip addr  or  hostname -I\n\nYou can also see the IP directly in the Remex.Client.Desktop window.</string>
 
     <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
-    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. RemEx will prompt for this when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
+    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. On Android 17+, ACCESS_LOCAL_NETWORK must also be granted. RemEx will prompt for these when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
 
     <string name="faq_q4">What is the default port?</string>
     <string name="faq_a4">The default port is 5005. If Remex.Client.Desktop finds port 5005 in use, it will fall back to 5006. You can see the active port in the desktop client\'s window.\n\nIf you changed the port on the host side, make sure to enter the matching port in the Connection screen on this app.</string>
@@ -401,6 +402,30 @@
     <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
     <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer failed</string>
+
+    <!-- File transfer — actions -->
+    <string name="file_transfer_rename">Rename</string>
+    <string name="file_transfer_delete">Delete</string>
+    <string name="file_transfer_pin_folder">Pin as shortcut</string>
+    <string name="file_transfer_select_all">Select all</string>
+    <string name="file_transfer_selected">selected</string>
+    <string name="file_transfer_delete_selected">Delete selected</string>
+    <string name="file_transfer_cancel_selection">Cancel selection</string>
+    <!-- File transfer — rename dialog -->
+    <string name="file_transfer_rename_title">Rename</string>
+    <string name="file_transfer_rename_hint">New name</string>
+    <string name="file_transfer_rename_confirm">Rename</string>
+    <!-- Generic dialog -->
+    <string name="dialog_cancel">Cancel</string>
+    <!-- Content descriptions -->
+    <string name="cd_more_options">More options</string>
+    <!-- File transfer settings tab -->
+    <string name="settings_ft_shared_folders_title">Android Shared Folders</string>
+    <string name="settings_ft_shared_folders_desc">Add folders from this device to share when Android hosting is enabled. Your selections are saved and will be used automatically once the feature is available.</string>
+    <string name="settings_ft_coming_soon">Android hosting coming in a future update</string>
+    <string name="settings_ft_no_folders">No folders added yet.</string>
+    <string name="settings_ft_add_folder">Add folder…</string>
+    <string name="settings_ft_remove_folder">Remove folder</string>
 
     <!-- ═══ Material Shapes ═══ -->
     <string name="shape_circle">Circle</string>

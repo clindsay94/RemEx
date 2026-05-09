@@ -233,7 +233,7 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
 
             _isRefreshing.value = true
             val request = JSONObject().apply { put("type", "process_list_request") }
-            RemexCoreClient.SendMessage(request.toString())
+            RemexCoreClient.SendMessage(request.toString()).getOrNull()
             // Spinner cleared by processList collector when data arrives.
             // Safety net: clear after 5s in case host doesn't respond.
             delay(5000)
@@ -254,12 +254,12 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                                     }
                             )
                         }
-                val responseJson = RemexCoreClient.SendCommand(request.toString())
+                val responseJson = RemexCoreClient.SendCommand(request.toString()).getOrNull()
                 val success = try {
-                    responseJson.isNotBlank() &&
+                    responseJson?.isNotBlank() == true &&
                         JSONObject(responseJson).optBoolean("commandSuccess", true)
                 } catch (_: Exception) {
-                    responseJson.isNotBlank()
+                    responseJson?.isNotBlank() == true
                 }
                 if (!success) {
                     _killError.value = "Failed to kill process $pid"

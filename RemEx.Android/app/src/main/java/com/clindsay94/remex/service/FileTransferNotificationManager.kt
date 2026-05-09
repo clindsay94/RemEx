@@ -50,13 +50,19 @@ object FileTransferNotificationManager {
                         ((transferredBytes.coerceAtMost(totalBytes) * 100) / totalBytes)
                 else null
         val body =
-                if (progress != null)
-                        context.getString(
-                                R.string.file_transfer_notification_progress,
-                                transferredBytes,
-                                totalBytes,
-                        )
-                else context.getString(R.string.file_transfer_notification_preparing)
+                when {
+                    progress != null ->
+                            context.getString(
+                                    R.string.file_transfer_notification_progress,
+                                    transferredBytes,
+                                    totalBytes,
+                            )
+                    transferredBytes > 0L ->
+                            // Total unknown — show running bytes so the user sees activity
+                            // instead of a stuck "Preparing transfer" message.
+                            formatBytes(transferredBytes)
+                    else -> context.getString(R.string.file_transfer_notification_preparing)
+                }
 
         notify(
                 context = context,
@@ -67,6 +73,14 @@ object FileTransferNotificationManager {
                 ongoing = true,
         )
     }
+
+    private fun formatBytes(bytes: Long): String =
+            when {
+                bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
+                bytes >= 1_048_576L -> "%.1f MB".format(bytes / 1_048_576.0)
+                bytes >= 1_024L -> "%.1f KB".format(bytes / 1_024.0)
+                else -> "$bytes B"
+            }
 
     fun showTransferComplete(context: Context, fileName: String, isDownload: Boolean) {
         notify(

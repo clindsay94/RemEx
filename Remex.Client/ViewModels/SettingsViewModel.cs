@@ -1093,33 +1093,33 @@ WantedBy=multi-user.target";
 
         if (OperatingSystem.IsLinux())
         {
-            bool installed = false;
-            bool running = false;
-            string statusText = LocalizationService.Instance["Service_Checking"];
-            try
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => 
             {
-                installed = File.Exists("/etc/systemd/system/remex-host.service");
-                if (installed)
+                bool installed = false;
+                bool running = false;
+                string statusText = LocalizationService.Instance["Service_Checking"];
+                try
                 {
-                    var processes = Process.GetProcessesByName("Remex.Host");
-                    running = processes.Length > 0;
-                    statusText = running
-                        ? LocalizationService.Instance["Service_Running"]
-                        : LocalizationService.Instance["Service_Stopped"];
+                    installed = File.Exists("/etc/systemd/system/remex-host.service");
+                    if (installed)
+                    {
+                        var processes = Process.GetProcessesByName("Remex.Host");
+                        running = processes.Length > 0;
+                        statusText = running
+                            ? LocalizationService.Instance["Service_Running"]
+                            : LocalizationService.Instance["Service_Stopped"];
+                    }
+                    else
+                    {
+                        statusText = LocalizationService.Instance["Service_NotInstalled"];
+                    }
                 }
-                else
+                catch
                 {
-                    statusText = LocalizationService.Instance["Service_NotInstalled"];
+                    installed = false;
+                    statusText = LocalizationService.Instance["Service_Checking"];
                 }
-            }
-            catch
-            {
-                installed = false;
-                statusText = LocalizationService.Instance["Service_Checking"];
-            }
 
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
                 IsServiceInstalled = installed;
                 IsServiceRunning = running;
                 ServiceStatusText = statusText;

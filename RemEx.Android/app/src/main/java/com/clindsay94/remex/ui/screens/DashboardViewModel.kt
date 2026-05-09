@@ -132,7 +132,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     val mac = settingsManager.macAddressFlow.first()
                     val broadcast = settingsManager.broadcastIpFlow.first()
                     if (mac.isNotEmpty()) {
-                        RemexCoreClient.WakePc(mac, broadcast, 9)
+                        RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
                         Log.d("DashboardVM", "Wake-on-LAN packet sent to $mac via $broadcast:9")
                     } else {
                         Log.w("DashboardVM", "Cannot send Wake-on-LAN: MAC address not configured")

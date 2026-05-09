@@ -57,19 +57,19 @@ object RemexCoreClient {
     private external fun RegisterCallbackNative(callback: RemexCallback?)
 
     @JvmStatic
-    fun InitRemex(initJson: String): String {
+    fun InitRemex(initJson: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                InitRemexNative(initJson)
+                Result.success(InitRemexNative(initJson))
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "InitRemexNative not linked", e)
-                "{\"success\":false,\"message\":\"Native method not linked.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "InitRemexNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -78,19 +78,19 @@ object RemexCoreClient {
     private external fun InitRemexNative(initJson: String): String
 
     @JvmStatic
-    fun WakePc(macAddress: String, broadcastIp: String, port: Int): String {
+    fun WakePc(macAddress: String, broadcastIp: String, port: Int): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                WakePcNative(macAddress, broadcastIp, port)
+                Result.success(WakePcNative(macAddress, broadcastIp, port))
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "WakePcNative not linked", e)
-                "{\"success\":false,\"message\":\"Native method not linked.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "WakePcNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -99,19 +99,19 @@ object RemexCoreClient {
     private external fun WakePcNative(macAddress: String, broadcastIp: String, port: Int): String
 
     @JvmStatic
-    fun GetTelemetry(): String {
+    fun GetTelemetry(): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                GetTelemetryNative()
+                Result.success(GetTelemetryNative())
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "GetTelemetryNative not linked", e)
-                "{\"success\":false,\"message\":\"Native method not linked.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "GetTelemetryNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -120,19 +120,19 @@ object RemexCoreClient {
     private external fun GetTelemetryNative(): String
 
     @JvmStatic
-    fun SendMessage(messageJson: String): String {
+    fun SendMessage(messageJson: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                SendMessageNative(messageJson)
+                Result.success(SendMessageNative(messageJson))
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SendMessageNative not linked", e)
-                "{\"success\":false,\"message\":\"Native method not linked.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "SendMessageNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -141,19 +141,19 @@ object RemexCoreClient {
     private external fun SendMessageNative(messageJson: String): String
 
     @JvmStatic
-    fun SendCommand(commandJson: String): String {
+    fun SendCommand(commandJson: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                SendCommandNative(commandJson)
+                Result.success(SendCommandNative(commandJson))
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SendCommandNative not linked", e)
-                "{\"success\":false,\"message\":\"Native method not linked.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "SendCommandNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -162,15 +162,20 @@ object RemexCoreClient {
     private external fun SendCommandNative(commandJson: String): String
 
     @JvmStatic
-    fun StartDesktopStream(configJson: String) {
-        if (isLibraryLoaded) {
+    fun StartDesktopStream(configJson: String): Result<Unit> {
+        return if (isLibraryLoaded) {
             try {
                 StartDesktopStreamNative(configJson)
+                Result.success(Unit)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StartDesktopStreamNative not linked", e)
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "StartDesktopStreamNative crashed", e)
+                Result.failure(e)
             }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -179,15 +184,20 @@ object RemexCoreClient {
     private external fun StartDesktopStreamNative(configJson: String)
 
     @JvmStatic
-    fun StopDesktopStream() {
-        if (isLibraryLoaded) {
+    fun StopDesktopStream(): Result<Unit> {
+        return if (isLibraryLoaded) {
             try {
                 StopDesktopStreamNative()
+                Result.success(Unit)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StopDesktopStreamNative not linked", e)
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "StopDesktopStreamNative crashed", e)
+                Result.failure(e)
             }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -200,22 +210,22 @@ object RemexCoreClient {
     private external fun StartPairingNative(hostUrl: String, clientName: String, clientVersion: String): String
 
     @JvmStatic
-    fun StartPairing(hostUrl: String, clientName: String, clientVersion: String): String {
+    fun StartPairing(hostUrl: String, clientName: String, clientVersion: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "StartPairing → native (host=$hostUrl, client=$clientName v$clientVersion)")
                 val result = StartPairingNative(hostUrl, clientName, clientVersion)
                 Log.d(TAG, "StartPairing ← native result: $result")
-                result
+                Result.success(result)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StartPairingNative not loaded", e)
-                "ERROR: Native method not loaded"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "StartPairingNative crashed", e)
-                "ERROR: Native method crashed: ${e.message}"
+                Result.failure(e)
             }
         } else {
-            "ERROR: Library not loaded"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -224,7 +234,7 @@ object RemexCoreClient {
     private external fun SubmitPairingPinNative(pin: String): String
 
     @JvmStatic
-    fun SubmitPairingPin(pin: String): String {
+    fun SubmitPairingPin(pin: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "SubmitPairingPin → native (pin length=${pin.length})")
@@ -232,16 +242,16 @@ object RemexCoreClient {
                 // Don't log the raw OK result — it contains hostId and SPKI hash. Just log shape.
                 val redacted = if (result.startsWith("OK:")) "OK:<hostId>|<spkiHash>" else result
                 Log.d(TAG, "SubmitPairingPin ← native result: $redacted")
-                result
+                Result.success(result)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SubmitPairingPinNative not loaded", e)
-                "ERROR: Native method not loaded"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "SubmitPairingPinNative crashed", e)
-                "ERROR: Native method crashed: ${e.message}"
+                Result.failure(e)
             }
         } else {
-            "ERROR: Library not loaded"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -250,19 +260,19 @@ object RemexCoreClient {
     private external fun GetPinnedHostHashNative(hostId: String): String
 
     @JvmStatic
-    fun GetPinnedHostHash(hostId: String): String {
+    fun GetPinnedHostHash(hostId: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                GetPinnedHostHashNative(hostId)
+                Result.success(GetPinnedHostHashNative(hostId))
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "GetPinnedHostHashNative not loaded", e)
-                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "GetPinnedHostHashNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 
@@ -271,19 +281,19 @@ object RemexCoreClient {
     private external fun SetPinnedHostHashNative(hostId: String, spkiHashBase64: String): String
 
     @JvmStatic
-    fun SetPinnedHostHash(hostId: String, spkiHashBase64: String): String {
+    fun SetPinnedHostHash(hostId: String, spkiHashBase64: String): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                SetPinnedHostHashNative(hostId, spkiHashBase64)
+                Result.success(SetPinnedHostHashNative(hostId, spkiHashBase64))
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SetPinnedHostHashNative not loaded", e)
-                "{\"success\":false,\"message\":\"Native method not loaded.\"}"
+                Result.failure(e)
             } catch (e: RuntimeException) {
                 Log.e(TAG, "SetPinnedHostHashNative crashed", e)
-                "{\"success\":false,\"message\":\"Native method crashed.\"}"
+                Result.failure(e)
             }
         } else {
-            "{\"success\":false,\"message\":\"Library not loaded.\"}"
+            Result.failure(IllegalStateException("Library not loaded."))
         }
     }
 

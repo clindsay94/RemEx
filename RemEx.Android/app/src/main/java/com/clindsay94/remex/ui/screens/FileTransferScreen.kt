@@ -2,7 +2,8 @@ package com.clindsay94.remex.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,14 +15,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -34,10 +45,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,6 +63,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,7 +72,7 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun FileTransferScreen(
         onNavigateToConnection: () -> Unit = {},
@@ -71,27 +87,138 @@ fun FileTransferScreen(
     val isTransferring by vm.isTransferring.collectAsState()
     val transferProgress by vm.transferProgress.collectAsState()
     val statusText by vm.statusText.collectAsState()
+    val isSelectionMode by vm.isSelectionMode.collectAsState()
+    val selectedEntryNames by vm.selectedEntryNames.collectAsState()
 
     val selectedRoot = remoteRoots.firstOrNull { it.rootId == selectedRootId }
     val padding = calculateAdaptivePadding(1f)
 
+    // ── File pickers ──────────────────────────────────────────────────────────
     val uploadLauncher =
             rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-                if (uri != null) {
-                    vm.uploadFromUri(uri)
-                }
+                if (uri != null) vm.uploadFromUri(uri)
             }
 
     var pendingDownloadEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
     val createDocumentLauncher =
-            rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri
-                ->
+            rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
                 val entry = pendingDownloadEntry
                 pendingDownloadEntry = null
-                if (uri != null && entry != null) {
-                    vm.downloadToUri(entry, uri)
+                if (uri != null && entry != null) vm.downloadToUri(entry, uri)
+            }
+
+    // ── Rename dialog ─────────────────────────────────────────────────────────
+    var renameTarget by remember { mutableStateOf<RemoteFileEntry?>(null) }
+    var renameText by remember { mutableStateOf("") }
+
+    if (renameTarget != null) {
+        AlertDialog(
+                onDismissRequest = { renameTarget = null },
+                title = { Text(stringResource(R.string.file_transfer_rename_title)) },
+                text = {
+                    OutlinedTextField(
+                            value = renameText,
+                            onValueChange = { renameText = it },
+                            label = { Text(stringResource(R.string.file_transfer_rename_hint)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                vm.renameEntry(renameTarget!!, renameText)
+                                renameTarget = null
+                            }),
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.renameEntry(renameTarget!!, renameText)
+                        renameTarget = null
+                    }) { Text(stringResource(R.string.file_transfer_rename_confirm)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { renameTarget = null }) {
+                        Text(stringResource(R.string.dialog_cancel))
+                    }
+                },
+        )
+    }
+
+    // ── Context menu bottom sheet ─────────────────────────────────────────────
+    var contextMenuEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
+    if (contextMenuEntry != null) {
+        val entry = contextMenuEntry!!
+        ModalBottomSheet(
+                onDismissRequest = { contextMenuEntry = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                Text(
+                        text = entry.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                )
+                HorizontalDivider()
+
+                if (!entry.isDirectory) {
+                    DropdownMenuItem(
+                            text = { Text(stringResource(R.string.file_transfer_download)) },
+                            leadingIcon = { Icon(Icons.Default.Download, null) },
+                            enabled = !isTransferring,
+                            onClick = {
+                                contextMenuEntry = null
+                                pendingDownloadEntry = entry
+                                createDocumentLauncher.launch(entry.name)
+                            },
+                    )
+                }
+
+                if (selectedRoot?.canRename == true) {
+                    DropdownMenuItem(
+                            text = { Text(stringResource(R.string.file_transfer_rename)) },
+                            leadingIcon = { Icon(Icons.Default.DriveFileRenameOutline, null) },
+                            onClick = {
+                                val captured = entry
+                                contextMenuEntry = null
+                                renameText = captured.name
+                                renameTarget = captured
+                            },
+                    )
+                }
+
+                if (selectedRoot?.canDelete == true) {
+                    DropdownMenuItem(
+                            text = {
+                                Text(
+                                        stringResource(R.string.file_transfer_delete),
+                                        color = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
+                            },
+                            onClick = {
+                                contextMenuEntry = null
+                                vm.deleteEntry(entry)
+                            },
+                    )
+                }
+
+                if (entry.isDirectory && entry.name != "..") {
+                    DropdownMenuItem(
+                            text = { Text(stringResource(R.string.file_transfer_pin_folder)) },
+                            leadingIcon = { Icon(Icons.Default.PushPin, null) },
+                            onClick = {
+                                contextMenuEntry = null
+                                vm.navigateInto(entry)
+                                vm.pinCurrentFolder()
+                            },
+                    )
                 }
             }
+        }
+    }
 
     Scaffold(
             topBar = {
@@ -103,8 +230,7 @@ fun FileTransferScreen(
             },
     ) { innerPadding ->
         Column(
-                modifier =
-                        Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = padding),
+                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = padding),
         ) {
             if (!isConnected) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -139,43 +265,72 @@ fun FileTransferScreen(
                     modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
             )
 
-            Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                        onClick = { uploadLauncher.launch("*/*") },
-                        enabled = selectedRoot?.isWritable == true && !isTransferring,
-                        modifier = Modifier.weight(1f),
+            // ── Selection mode bar vs normal action bar ───────────────────────
+            if (isSelectionMode) {
+                Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Icon(
-                            Icons.Default.Upload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.file_transfer_upload))
+                    Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = { vm.clearSelection() }) {
+                            Icon(Icons.Default.Close, stringResource(R.string.file_transfer_cancel_selection))
+                        }
+                        Text(
+                                text = "${selectedEntryNames.size} ${stringResource(R.string.file_transfer_selected)}",
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = { vm.selectAll() }) {
+                            Icon(Icons.Default.SelectAll, stringResource(R.string.file_transfer_select_all))
+                        }
+                        if (selectedRoot?.canDelete == true) {
+                            IconButton(
+                                    onClick = { vm.deleteSelectedEntries() },
+                                    enabled = selectedEntryNames.isNotEmpty() && !isLoading,
+                            ) {
+                                Icon(
+                                        Icons.Default.Delete,
+                                        stringResource(R.string.file_transfer_delete_selected),
+                                        tint = if (selectedEntryNames.isNotEmpty() && !isLoading)
+                                            MaterialTheme.colorScheme.error
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
                 }
-
-                OutlinedButton(
-                        onClick = { vm.browseRemote() },
-                        enabled = selectedRoot != null && !isLoading && !isTransferring,
-                        modifier = Modifier.weight(1f),
+            } else {
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.file_transfer_browse))
-                }
-
-                if (isTransferring) {
-                    OutlinedButton(
-                            onClick = { vm.cancelTransfer() },
+                    Button(
+                            onClick = { uploadLauncher.launch("*/*") },
+                            enabled = selectedRoot?.isWritable == true && !isTransferring,
                             modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.file_transfer_cancel)) }
+                    ) {
+                        Icon(Icons.Default.Upload, null, Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.file_transfer_upload))
+                    }
+                    OutlinedButton(
+                            onClick = { vm.browseRemote() },
+                            enabled = selectedRoot != null && !isLoading && !isTransferring,
+                            modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.Refresh, null, Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.file_transfer_browse))
+                    }
+                    if (isTransferring) {
+                        OutlinedButton(onClick = { vm.cancelTransfer() }, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.file_transfer_cancel))
+                        }
+                    }
                 }
             }
 
@@ -204,7 +359,7 @@ fun FileTransferScreen(
                 remoteRoots.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                                text = stringResource(R.string.file_transfer_no_shared_folders),
+                                stringResource(R.string.file_transfer_no_shared_folders),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -212,7 +367,7 @@ fun FileTransferScreen(
                 remoteEntries.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                                text = stringResource(R.string.file_transfer_empty),
+                                stringResource(R.string.file_transfer_empty),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -223,17 +378,23 @@ fun FileTransferScreen(
                             RemoteFileRow(
                                     entry = entry,
                                     isTransferring = isTransferring,
-                                    onTap = { vm.navigateInto(entry) },
+                                    isSelectionMode = isSelectionMode,
+                                    isSelected = entry.name in selectedEntryNames,
+                                    canDelete = selectedRoot?.canDelete == true,
+                                    canRename = selectedRoot?.canRename == true,
+                                    onTap = {
+                                        if (isSelectionMode) vm.toggleEntrySelection(entry)
+                                        else vm.navigateInto(entry)
+                                    },
+                                    onLongPress = { vm.enterSelectionMode(entry) },
                                     onDownload = {
                                         pendingDownloadEntry = entry
                                         createDocumentLauncher.launch(entry.name)
                                     },
+                                    onContextMenu = { contextMenuEntry = entry },
                             )
                             HorizontalDivider(
-                                    color =
-                                            MaterialTheme.colorScheme.outlineVariant.copy(
-                                                    alpha = 0.4f
-                                            )
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                             )
                         }
                     }
@@ -271,21 +432,14 @@ private fun SharedRootPicker(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text(stringResource(R.string.file_transfer_shared_folder)) },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                    },
-                    modifier =
-                            Modifier.menuAnchor(
-                                            ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                                            enabled = true,
-                                    )
-                                    .fillMaxWidth(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.menuAnchor(
+                                    ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                    enabled = true,
+                            )
+                            .fillMaxWidth(),
             )
-
-            ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-            ) {
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 roots.forEach { root ->
                     DropdownMenuItem(
                             text = {
@@ -293,57 +447,63 @@ private fun SharedRootPicker(
                                     Text(root.displayName)
                                     if (!root.isWritable) {
                                         Text(
-                                                text =
-                                                        stringResource(
-                                                                R.string
-                                                                        .file_transfer_read_only_root
-                                                        ),
+                                                stringResource(R.string.file_transfer_read_only_root),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                 }
                             },
-                            onClick = {
-                                expanded = false
-                                onSelectRoot(root.rootId)
-                            },
+                            onClick = { expanded = false; onSelectRoot(root.rootId) },
                     )
                 }
             }
         }
-
         IconButton(onClick = onRefreshRoots) {
             Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RemoteFileRow(
         entry: RemoteFileEntry,
         isTransferring: Boolean,
+        isSelectionMode: Boolean,
+        isSelected: Boolean,
+        canDelete: Boolean,
+        canRename: Boolean,
         onTap: () -> Unit,
+        onLongPress: () -> Unit,
         onDownload: () -> Unit,
+        onContextMenu: () -> Unit,
 ) {
+    val hasContextActions = entry.name != ".." && (canDelete || canRename || !entry.isDirectory)
+
     Row(
-            modifier =
-                    Modifier.fillMaxWidth()
-                            .clickable(enabled = entry.isDirectory) { onTap() }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-                imageVector =
-                        if (entry.isDirectory) Icons.Default.Folder
-                        else Icons.AutoMirrored.Filled.InsertDriveFile,
-                contentDescription = null,
-                tint =
-                        if (entry.isDirectory) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp),
-        )
+        if (isSelectionMode && entry.name != "..") {
+            Icon(
+                    imageVector = if (isSelected) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+            )
+        } else {
+            Icon(
+                    imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
+                    contentDescription = null,
+                    tint = if (entry.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+            )
+        }
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -362,24 +522,25 @@ private fun RemoteFileRow(
             }
         }
 
-        if (!entry.isDirectory) {
-            IconButton(
-                    onClick = onDownload,
-                    enabled = !isTransferring,
-            ) {
-                Icon(
-                        imageVector = Icons.Default.Download,
-                        contentDescription = stringResource(R.string.file_transfer_download),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        if (!isSelectionMode && entry.name != "..") {
+            if (!entry.isDirectory) {
+                IconButton(onClick = onDownload, enabled = !isTransferring) {
+                    Icon(
+                            Icons.Default.Download,
+                            contentDescription = stringResource(R.string.file_transfer_download),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-        } else if (entry.name != "..") {
-            Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-            )
+            if (hasContextActions) {
+                IconButton(onClick = onContextMenu) {
+                    Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.cd_more_options),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }

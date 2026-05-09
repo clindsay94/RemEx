@@ -57,6 +57,33 @@
                 <TextBlock Text="{local:Localize About_Tagline}" FontSize="14" FontFamily="{StaticResource Sixtyfour}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" LetterSpacing="2"/>
             </StackPanel>
 
+            <!-- Keyboard Shortcuts Button -->
+            <Button Classes="about-back" Content="⌨ Keyboard Shortcuts" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
+                <Button.Flyout>
+                    <Flyout Placement="Bottom" IsOpen="{Binding IsShowShortcutsOpen, Mode=TwoWay}">
+                        <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Keyboard Shortcuts" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
+                                
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + Shift + P" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Command Palette" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl + Z" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="Undo Layout Edit" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+                                    
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl + Y" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Redo Layout Edit" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+                                    
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Close Overlays/Panels" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+
             <!-- Version Info Card -->
             <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                 <StackPanel Spacing="16">
@@ -80,6 +107,40 @@
                         </StackPanel>
                         <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
                     </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- What's New Section -->
+            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="What's New?" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding WhatsNewItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Spacing="4" Margin="0,0,0,12">
+                                    <TextBlock Text="{Binding Version}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- FAQ Section -->
+            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Frequently Asked Questions" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <ItemsControl ItemsSource="{Binding FaqItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Spacing="4" Margin="0,0,0,16">
+                                    <TextBlock Text="{Binding Question}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Answer}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
 

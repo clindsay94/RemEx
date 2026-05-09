@@ -14,6 +14,12 @@ public sealed class FileTransferHandler(
 {
     private const int ProgressChunkInterval = 10;
 
+    // Defensive running cap. FileTransferService applies the same limit to
+    // start.TotalBytes, but mobile clients send 0 for unknown content URIs, so
+    // a malicious / buggy peer could otherwise stream unbounded bytes past the
+    // initial check. Kept identical to FileTransferService.MaxUploadBytes.
+    private const long MaxUploadBytes = 5_000_000_000L;
+
     private sealed class FileTransferState
     {
         public required string TransferId { get; init; }
@@ -162,6 +168,26 @@ public sealed class FileTransferHandler(
         try
         {
             var data = Convert.FromBase64String(chunk.DataBase64);
+
+            if (state.Direction == "upload" && state.BytesTransferred + data.Length > MaxUploadBytes)
+            {
+                logger.LogWarning(
+                    "Upload {TransferId} exceeded {Cap}-byte cap (transferred={Transferred}, incoming={Incoming}); aborting.",
+                    chunk.TransferId, MaxUploadBytes, state.BytesTransferred, data.Length);
+                await CleanupTransferAsync(chunk.TransferId, deleteFile: true);
+                await MessageSerializer.SendAsync(ws, new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferEnd,
+                    FileTransferEnd = new FileTransferEnd
+                    {
+                        TransferId = chunk.TransferId,
+                        Success = false,
+                        ErrorMessage = $"Upload exceeded the {MaxUploadBytes / 1_000_000_000.0:0.#} GB cap.",
+                    }
+                }, ct);
+                return;
+            }
+
             await state.FileStream.WriteAsync(data, ct);
             state.Hasher.TransformBlock(data, 0, data.Length, null, 0);
             state.BytesTransferred += data.Length;
@@ -228,6 +254,119 @@ public sealed class FileTransferHandler(
         if (cancel is null) return;
 
         await CleanupTransferAsync(cancel.TransferId, deleteFile: true);
+    }
+
+    public async Task HandleFileManageRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileManageRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            switch (req.Operation)
+            {
+                case "delete":
+                    await fileTransferService.DeleteAsync(req.RootId, req.RelativePath, ct);
+                    break;
+                case "rename":
+                    if (string.IsNullOrWhiteSpace(req.NewName))
+                        throw new ArgumentException("NewName is required for rename.");
+                    await fileTransferService.RenameAsync(req.RootId, req.RelativePath, req.NewName, ct);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown operation '{req.Operation}'.");
+            }
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManageResponse,
+                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = true }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileManage {Operation} failed for {Path}", req.Operation, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManageResponse,
+                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = false, ErrorMessage = ex.Message }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileHashRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            var hash = await fileTransferService.ComputeSha256Async(req.RootId, req.RelativePath, ct);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileHashResponse,
+                FileHashResponse = new FileHashResponse { RequestId = req.RequestId, Sha256Base64 = hash }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileHash failed for {Path}", req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileHashResponse,
+                FileHashResponse = new FileHashResponse { RequestId = req.RequestId, ErrorMessage = ex.Message }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    public async Task HandleFileRootManageRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileRootManageRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            IReadOnlyList<FileSharedRoot> updatedRoots;
+            switch (req.Operation)
+            {
+                case "add":
+                    if (string.IsNullOrWhiteSpace(req.SourceRootId) || string.IsNullOrWhiteSpace(req.SourceRelativePath))
+                        throw new ArgumentException("SourceRootId and SourceRelativePath are required for add.");
+                    updatedRoots = await fileTransferService.AddRootFromPathAsync(req.SourceRootId, req.SourceRelativePath, ct);
+                    break;
+                case "remove":
+                    if (string.IsNullOrWhiteSpace(req.RootId))
+                        throw new ArgumentException("RootId is required for remove.");
+                    updatedRoots = await fileTransferService.RemoveRootAsync(req.RootId, ct);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown operation '{req.Operation}'.");
+            }
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageResponse,
+                FileRootManageResponse = new FileRootManageResponse { RequestId = req.RequestId, Roots = [.. updatedRoots] }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileRootManage {Operation} failed", req.Operation);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageResponse,
+                FileRootManageResponse = new FileRootManageResponse { RequestId = req.RequestId, Roots = [], ErrorMessage = ex.Message }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
     }
 
     public async Task CleanupAllTransfersAsync()
@@ -301,12 +440,11 @@ public sealed class FileTransferHandler(
                 FileTransferEnd = new FileTransferEnd
                 {
                     TransferId = state.TransferId,
-                    Success = true
+                    Success = true,
+                    Sha256Base64 = hash,
                 }
             }, ct);
 
-            // Send sha256 in a follow-up: embed it in the FileTransferStart that the client sent
-            // (sha256 is already included in the initial start message from host perspective)
             logger.LogInformation("Download complete for {TransferId}, sha256={Hash}", state.TransferId, hash);
         }
         catch (OperationCanceledException)

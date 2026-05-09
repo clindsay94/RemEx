@@ -223,7 +223,7 @@ class LaunchAppCallback : ActionCallback {
                     put("TargetPath", path)
                 })
             }
-            RemexCoreClient.SendCommand(request.toString())
+            RemexCoreClient.SendCommand(request.toString()).getOrNull()
         }
     }
 }

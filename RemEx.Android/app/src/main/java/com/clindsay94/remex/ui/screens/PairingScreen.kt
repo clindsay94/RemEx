@@ -45,7 +45,7 @@ class PairingViewModel : ViewModel() {
     ): Boolean {
         _uiState.value = PairingUiState(isLoading = true)
 
-        val result = withContext(Dispatchers.IO) { RemexCoreClient.SubmitPairingPin(pin) }
+        val result = withContext(Dispatchers.IO) { RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: "" }
 
         if (result.startsWith("OK:")) {
             val parts = result.substring(3).split("|")
@@ -91,7 +91,7 @@ class PairingViewModel : ViewModel() {
             _uiState.value = PairingUiState(isLoading = true)
             val result =
                     withContext(Dispatchers.IO) {
-                        RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion)
+                        RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion).getOrNull() ?: ""
                     }
             startPairingInFlight = false
             if (result == "OK") {

@@ -126,12 +126,16 @@ fun ConnectionScreenContent(
         var pendingConnect by remember { mutableStateOf(false) }
         var pendingDiscover by remember { mutableStateOf(false) }
 
-        // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES)
+        // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES + ACCESS_LOCAL_NETWORK)
         val connectPermissions = remember {
                 buildList {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                         add(Manifest.permission.POST_NOTIFICATIONS)
                                         add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                                }
+                                // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN discovery
+                                if (Build.VERSION.SDK_INT >= 36) { 
+                                        add("android.permission.ACCESS_LOCAL_NETWORK")
                                 }
                         }
                         .toTypedArray()
@@ -139,10 +143,16 @@ fun ConnectionScreenContent(
 
         fun hasNearbyWifiPermission(): Boolean {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
-                return ContextCompat.checkSelfPermission(
+                val hasNearby = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.NEARBY_WIFI_DEVICES
                 ) == PackageManager.PERMISSION_GRANTED
+                
+                val hasLocalNet = if (Build.VERSION.SDK_INT >= 36) {
+                        ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
+                } else true
+                
+                return hasNearby && hasLocalNet
         }
 
         fun hasAllConnectPermissions(): Boolean {
@@ -179,15 +189,14 @@ fun ConnectionScreenContent(
                         }
                 }
 
-        // Separate permission launcher for "Discover" — only needs NEARBY_WIFI_DEVICES
+        // Separate permission launcher for "Discover" — needs NEARBY_WIFI_DEVICES and ACCESS_LOCAL_NETWORK
         val discoverPermissionLauncher =
-                rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-                        granted ->
+                rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+                        results ->
                         if (pendingDiscover) {
                                 pendingDiscover = false
-                                if (granted) {
-                                        onDiscoverHost()
-                                }
+                                // We proceed anyway; if some are denied, discovery might degrade gracefully
+                                onDiscoverHost()
                         }
                 }
 
@@ -392,11 +401,12 @@ fun ConnectionScreenContent(
                                                                 if (isDiscovering) return@Button
                                                                 if (!hasNearbyWifiPermission()) {
                                                                         pendingDiscover = true
-                                                                        discoverPermissionLauncher
-                                                                                .launch(
-                                                                                        Manifest.permission
-                                                                                                .NEARBY_WIFI_DEVICES
-                                                                                )
+                                                                        val permsToRequest = if (Build.VERSION.SDK_INT >= 36) {
+                                                                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES, "android.permission.ACCESS_LOCAL_NETWORK")
+                                                                        } else {
+                                                                            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
+                                                                        }
+                                                                        discoverPermissionLauncher.launch(permsToRequest)
                                                                 } else {
                                                                         onDiscoverHost()
                                                                 }

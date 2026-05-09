@@ -198,6 +198,18 @@ public sealed class PingPongHandler(
                         await fileTransferHandler.HandleFileTransferCancelAsync(message);
                         break;
 
+                    case MessageTypes.FileManageRequest:
+                        await fileTransferHandler.HandleFileManageRequestAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileHashRequest:
+                        await fileTransferHandler.HandleFileHashRequestAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileRootManageRequest:
+                        await fileTransferHandler.HandleFileRootManageRequestAsync(message, webSocket, ct);
+                        break;
+
                     default:
                         logger.LogWarning("Unknown message type: {Type}", message.Type);
                         break;

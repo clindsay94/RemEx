@@ -1,7 +1,11 @@
 package com.clindsay94.remex.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Parcelable
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +22,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Input
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.*
@@ -51,6 +59,7 @@ enum class SettingsCategory : Parcelable {
     CONNECTION,
     PERSONALIZATION,
     INPUT,
+    FILE_TRANSFER,
     HELP;
 
     val titleRes: Int
@@ -58,6 +67,7 @@ enum class SettingsCategory : Parcelable {
             CONNECTION -> R.string.settings_tab_connection
             PERSONALIZATION -> R.string.settings_tab_personalization
             INPUT -> R.string.settings_tab_input
+            FILE_TRANSFER -> R.string.settings_tab_file_transfer
             HELP -> R.string.settings_tab_help
         }
 
@@ -66,6 +76,7 @@ enum class SettingsCategory : Parcelable {
             CONNECTION -> Icons.Default.Wifi
             PERSONALIZATION -> Icons.Default.Palette
             INPUT -> Icons.AutoMirrored.Filled.Input
+            FILE_TRANSFER -> Icons.Default.FolderOpen
             HELP -> Icons.AutoMirrored.Filled.Help
         }
 }
@@ -162,6 +173,7 @@ private fun SettingsDetailContent(
         )
         SettingsCategory.PERSONALIZATION -> PersonalizationScreen(showHeader = true)
         SettingsCategory.INPUT -> InputTab()
+        SettingsCategory.FILE_TRANSFER -> FileTransferSettingsTab()
         SettingsCategory.HELP -> HelpTab(
             onReplayTutorial = onReplayTutorial,
             onNavigateToAbout = onNavigateToAbout
@@ -293,6 +305,139 @@ private fun InputTab() {
                                 valueRange = 0.1f..5.0f,
                                 steps = 20
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FileTransferSettingsTab() {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
+    val scope = rememberCoroutineScope()
+    val sharedFolderUris by settingsManager.sharedFolderUrisFlow.collectAsState(initial = emptySet())
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            scope.launch { settingsManager.addSharedFolderUri(uri.toString()) }
+        }
+    }
+
+    Scaffold(
+            topBar = {
+                RemexScreenHeader(title = stringResource(R.string.settings_tab_file_transfer))
+            }
+    ) { innerPadding ->
+        Column(
+                modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                    text = stringResource(R.string.settings_ft_shared_folders_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+            )
+
+            Card(
+                    colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+            ) {
+                Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                            text = stringResource(R.string.settings_ft_shared_folders_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                                text = stringResource(R.string.settings_ft_coming_soon),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    if (sharedFolderUris.isEmpty()) {
+                        Text(
+                                text = stringResource(R.string.settings_ft_no_folders),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        sharedFolderUris.forEach { uriString ->
+                            val uri = Uri.parse(uriString)
+                            val displayName = uri.lastPathSegment
+                                    ?.substringAfterLast('/')
+                                    ?.substringAfterLast(':')
+                                    ?: uriString
+                            Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                        Icons.Default.FolderOpen,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                        text = displayName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1
+                                )
+                                IconButton(
+                                        onClick = {
+                                            scope.launch { settingsManager.removeSharedFolderUri(uriString) }
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.settings_ft_remove_folder),
+                                            modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    OutlinedButton(
+                            onClick = { folderPickerLauncher.launch(null) },
+                            modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Add, null, Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.settings_ft_add_folder))
                     }
                 }
             }

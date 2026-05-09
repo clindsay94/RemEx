@@ -718,7 +718,8 @@ public static class AndroidNativeExports
         }
 
         if (msg.Type is MessageTypes.FileRootsResponse or MessageTypes.FileBrowseResponse or MessageTypes.FileTransferChunk
-                       or MessageTypes.FileTransferProgress or MessageTypes.FileTransferEnd)
+                       or MessageTypes.FileTransferProgress or MessageTypes.FileTransferEnd
+                       or MessageTypes.FileManageResponse or MessageTypes.FileHashResponse or MessageTypes.FileRootManageResponse)
         {
             NotifyJavaData(
                 _onFileTransferMessageMethodId,

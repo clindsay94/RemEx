@@ -106,6 +106,14 @@
                                         <Path Data="{StaticResource IconLauncher}" Fill="{DynamicResource AccentPrimaryBrush}" Width="20" Height="20" Stretch="Uniform" HorizontalAlignment="Center"/>
                                     </Button>
                                     <TextBlock Text="REMEX" FontSize="11" FontWeight="Black" LetterSpacing="4" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="4,12,0,0" IsVisible="{Binding IsDrawerOpen}"/>
+                                    
+                                    <!-- Command Palette Hint -->
+                                    <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" IsVisible="{Binding IsDrawerOpen}" ToolTip.Tip="Open Command Palette (Ctrl+Shift+P)">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
+                                            <TextBlock Text="🔍" FontSize="10" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Ctrl+Shift+P" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
 
                                 <!-- ═══ Navigation Items ═══ -->
@@ -494,8 +502,64 @@
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P9_Body2}"/>
                             </StackPanel>
 
-                            <!-- Page 10: You're All Set -->
+                            <!-- Page 10: Glossary Command Palette -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}">
+                                <TextBlock Text="⌨️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: Command Palette" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Press Ctrl+Shift+P at any time to open the Command Palette. It allows you to search for features, navigate between screens, and execute quick actions instantly."/>
+                            </StackPanel>
+
+                            <!-- Page 11: Glossary App Launcher -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=11}">
+                                <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: App Launcher" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="The App Launcher lets you configure and execute predefined applications or scripts on your host PC with a single click. Ideal for starting games or servers remotely."/>
+                            </StackPanel>
+
+                            <!-- Page 12: Glossary Task Manager -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=12}">
+                                <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: Task Manager" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Just like the Windows Task Manager, this screen lets you view currently running processes, check their resource usage, and remotely terminate them if they are frozen."/>
+                            </StackPanel>
+
+                            <!-- Page 13: Glossary Sensor Canvas -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=13}">
+                                <TextBlock Text="🌡️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: Sensor Canvas" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="The Sensor Canvas is a fully customizable, drag-and-drop workspace. Pin hardware sensors (CPU, RAM, Temps) to monitor your PC's telemetry in real-time."/>
+                            </StackPanel>
+
+                            <!-- Page 14: Glossary File Transfer -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=14}">
+                                <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: File Transfer" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Securely browse, upload, and download files between your client and host PC. Host machines control access by defining 'Shared Folders' in their settings."/>
+                            </StackPanel>
+                            
+                            <!-- Page 15: Glossary Remote Desktop -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=15}">
+                                <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: Remote Desktop" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Stream your host PC's screen directly to your client. Adjust the quality, scaling, and FPS in the settings to optimize performance over your network."/>
+                            </StackPanel>
+
+                            <!-- Page 16: Glossary Quick Settings -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}">
+                                <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: Quick Settings" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="On Android, you can add RemEx tiles directly to your notification shade's Quick Settings. Easily Lock or Sleep your PC without even opening the app."/>
+                            </StackPanel>
+                            
+                            <!-- Page 17: Glossary Customization -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=17}">
+                                <TextBlock Text="🎨" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Glossary: Customization" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Personalize RemEx! Change themes, toggle dark/light mode, adjust card border radii, and customize the primary accent color via the Settings menu."/>
+                            </StackPanel>
+
+                            <!-- Page 18: You're All Set -->
+                            <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=18}">
                                 <TextBlock Text="🎉" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{conv:Localize Tutorial_P10_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_P10_Body1}"/>
@@ -505,7 +569,7 @@
 
                             <!-- Page indicator dots -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,4,0,0">
-                                <!-- Pages 0-10 -->
+                                <!-- Pages 0-18 -->
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=0}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=1}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=2}"/>
@@ -517,6 +581,14 @@
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=8}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=9}"/>
                                 <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=10}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=11}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=12}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=13}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=14}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=15}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=16}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=17}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentPrimaryBrush}" Opacity="{Binding TutorialPageIndex, Converter={x:Static conv:IndexToOpacityConverter.Instance}, ConverterParameter=18}"/>
                             </StackPanel>
 
                             <!-- Don't Show Again checkbox -->
@@ -525,8 +597,8 @@
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=10}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}" Background="#4ADE80" Foreground="#1A1A1A" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=18}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=18}" Background="#4ADE80" Foreground="#1A1A1A" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                             </Grid>
                         </StackPanel>
                     </Border>

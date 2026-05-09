@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -63,6 +64,9 @@ class SettingsManager(val context: Context) {
         val FLOATING_MOUSE_ISLAND_Y_KEY = floatPreferencesKey("floating_mouse_island_y")
         val MOUSE_FAB_X_KEY = floatPreferencesKey("mouse_fab_x")
         val MOUSE_FAB_Y_KEY = floatPreferencesKey("mouse_fab_y")
+
+        /** Shared Android folder URIs designated to be exposed when Android hosting is available. */
+        val SHARED_FOLDER_URIS_KEY = stringSetPreferencesKey("shared_folder_uris")
 
         /** Sentinel value indicating the host address has not been configured by the user. */
         const val DEFAULT_HOST_PLACEHOLDER = ""
@@ -392,6 +396,24 @@ class SettingsManager(val context: Context) {
             preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] = remoteDesktopCardShapePreset
             preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] = remoteControlCardShapePreset
             preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
+        }
+    }
+
+    // ── File transfer shared folders ──────────────────────────────────────────
+
+    val sharedFolderUrisFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[SHARED_FOLDER_URIS_KEY] ?: emptySet()
+    }
+
+    suspend fun addSharedFolderUri(uri: String) {
+        context.dataStore.edit { prefs ->
+            prefs[SHARED_FOLDER_URIS_KEY] = (prefs[SHARED_FOLDER_URIS_KEY] ?: emptySet()) + uri
+        }
+    }
+
+    suspend fun removeSharedFolderUri(uri: String) {
+        context.dataStore.edit { prefs ->
+            prefs[SHARED_FOLDER_URIS_KEY] = (prefs[SHARED_FOLDER_URIS_KEY] ?: emptySet()) - uri
         }
     }
 }

@@ -154,7 +154,32 @@
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                                 <Button Content="Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand"/>
+                                <Button Content="{local:Localize Home_QrCodeButton}" 
+                                        Command="{Binding Connection.GenerateQrCodeCommand}" 
+                                        Background="{DynamicResource CardBackgroundBrush}" 
+                                        Foreground="{DynamicResource TextSecondaryBrush}" 
+                                        Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"
+                                        ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
                             </StackPanel>
+
+                            <!-- QR Code Display Panel -->
+                            <Border IsVisible="{Binding Connection.ShowQrCode}" 
+                                    Background="{DynamicResource GlassBaseDarkBrush}" 
+                                    CornerRadius="12" Padding="20" 
+                                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <StackPanel Spacing="16">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{local:Localize Home_QrCodeButton}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="✕" Command="{Binding Connection.CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+                                    </Grid>
+                                    
+                                    <Border Background="White" Padding="12" CornerRadius="8" HorizontalAlignment="Center">
+                                        <Image Source="{Binding Connection.QrCodeImage}" Width="180" Height="180"/>
+                                    </Border>
+                                    
+                                    <TextBlock Text="{local:Localize Home_QrCodeScanHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
 

@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Selection;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Remex.Client.ViewModels;
+using Remex.Core.Models;
 
 namespace Remex.Client.Views;
 
@@ -11,7 +15,15 @@ public partial class FileTransferView : UserControl
     public FileTransferView()
     {
         InitializeComponent();
+        RemoteFileList.SelectionChanged += OnRemoteFileListSelectionChanged;
         DataContextChanged += (_, _) => ConfigureViewModel();
+    }
+
+    private void OnRemoteFileListSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is not FileTransferViewModel vm) return;
+        var selected = RemoteFileList.SelectedItems?.OfType<FileEntry>() ?? [];
+        vm.SetSelectedEntries(selected);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -32,6 +44,8 @@ public partial class FileTransferView : UserControl
     {
         if (DataContext is not FileTransferViewModel vm)
             return;
+
+        vm.SelectAllEntries = () => RemoteFileList.SelectAll();
 
         vm.PickUploadFileAsync = async options =>
         {

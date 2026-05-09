@@ -27,6 +27,7 @@ public sealed class FileTransferService : IFileTransferService
         public bool CanRename { get; init; }
         public bool CanMove { get; init; }
         public bool CanDelete { get; init; }
+        public bool CanRemoveRoot { get; init; }
     }
 
     public FileTransferService()
@@ -37,21 +38,7 @@ public sealed class FileTransferService : IFileTransferService
     }
 
     public Task<IReadOnlyList<FileSharedRoot>> ListRootsAsync(CancellationToken ct)
-    {
-        var roots = LoadConfiguredRoots()
-            .Select(root => new FileSharedRoot
-            {
-                RootId = root.RootId,
-                DisplayName = root.DisplayName,
-                IsWritable = root.IsWritable,
-                CanRename = root.CanRename,
-                CanMove = root.CanMove,
-                CanDelete = root.CanDelete,
-            })
-            .ToList();
-
-        return Task.FromResult<IReadOnlyList<FileSharedRoot>>(roots);
-    }
+        => Task.FromResult(MapToSharedRoots(LoadConfiguredRoots()));
 
     public Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct)
     {
@@ -98,6 +85,116 @@ public sealed class FileTransferService : IFileTransferService
 
         return Task.FromResult<Stream>(new FileStream(resolved, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true));
     }
+
+    public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct)
+    {
+        var root = GetConfiguredRoot(rootId);
+        if (!root.CanDelete)
+            throw new UnauthorizedAccessException($"Deletions are not permitted in '{root.DisplayName}'.");
+
+        var resolved = ResolvePath(rootId, relativePath);
+
+        if (Directory.Exists(resolved))
+            Directory.Delete(resolved, recursive: true);
+        else if (File.Exists(resolved))
+            File.Delete(resolved);
+        else
+            throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
+
+        return Task.CompletedTask;
+    }
+
+    public Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(newName) || newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            throw new ArgumentException("New name is invalid.");
+
+        var root = GetConfiguredRoot(rootId);
+        if (!root.CanRename)
+            throw new UnauthorizedAccessException($"Renames are not permitted in '{root.DisplayName}'.");
+
+        var resolved = ResolvePath(rootId, relativePath);
+        var parentDir = Path.GetDirectoryName(resolved)
+            ?? throw new InvalidOperationException("Cannot rename a root path.");
+        var destination = Path.Combine(parentDir, newName);
+
+        if (Directory.Exists(resolved))
+            Directory.Move(resolved, destination);
+        else if (File.Exists(resolved))
+            File.Move(resolved, destination, overwrite: false);
+        else
+            throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
+
+        return Task.CompletedTask;
+    }
+
+    public async Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct)
+    {
+        var resolved = ResolvePath(rootId, relativePath);
+        if (!File.Exists(resolved))
+            throw new FileNotFoundException($"File not found in shared root '{rootId}': {relativePath}");
+
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        await using var stream = new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
+        var hash = await sha.ComputeHashAsync(stream, ct);
+        return Convert.ToBase64String(hash);
+    }
+
+    public Task<IReadOnlyList<FileSharedRoot>> AddRootFromPathAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct)
+    {
+        var absolutePath = ResolvePath(sourceRootId, sourceRelativePath);
+        if (!Directory.Exists(absolutePath))
+            throw new DirectoryNotFoundException($"Directory does not exist: {absolutePath}");
+
+        var roots = LoadConfiguredRoots().ToList();
+        var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (roots.Any(r => r.AbsolutePath.Equals(absolutePath, pathComparison)))
+            throw new InvalidOperationException("This folder is already a shared root.");
+
+        var displayName = Path.GetFileName(absolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var rootId = $"custom_{Guid.NewGuid():N}";
+
+        roots.Add(new ConfiguredRoot
+        {
+            RootId = rootId,
+            DisplayName = displayName,
+            AbsolutePath = absolutePath,
+            IsWritable = true,
+            CanRename = true,
+            CanMove = true,
+            CanDelete = true,
+            CanRemoveRoot = true,
+        });
+
+        SaveConfiguredRoots(roots);
+        return Task.FromResult<IReadOnlyList<FileSharedRoot>>(MapToSharedRoots(roots));
+    }
+
+    public Task<IReadOnlyList<FileSharedRoot>> RemoveRootAsync(string rootId, CancellationToken ct)
+    {
+        var roots = LoadConfiguredRoots().ToList();
+        var target = roots.FirstOrDefault(r => r.RootId == rootId)
+            ?? throw new InvalidOperationException($"Shared root '{rootId}' not found.");
+
+        if (!target.CanRemoveRoot)
+            throw new UnauthorizedAccessException($"The root '{target.DisplayName}' cannot be removed.");
+
+        roots.RemoveAll(r => r.RootId == rootId);
+        SaveConfiguredRoots(roots);
+        return Task.FromResult<IReadOnlyList<FileSharedRoot>>(MapToSharedRoots(roots));
+    }
+
+    private static IReadOnlyList<FileSharedRoot> MapToSharedRoots(IReadOnlyList<ConfiguredRoot> roots)
+        => roots.Select(r => new FileSharedRoot
+        {
+            RootId = r.RootId,
+            DisplayName = r.DisplayName,
+            IsWritable = r.IsWritable,
+            CanRename = r.CanRename,
+            CanMove = r.CanMove,
+            CanDelete = r.CanDelete,
+            CanRemoveRoot = r.CanRemoveRoot,
+        }).ToList();
 
     private ConfiguredRoot GetConfiguredRoot(string rootId)
     {
@@ -193,6 +290,7 @@ public sealed class FileTransferService : IFileTransferService
                 CanRename = true,
                 CanMove = true,
                 CanDelete = true,
+                CanRemoveRoot = false,
             },
             new()
             {
@@ -200,6 +298,7 @@ public sealed class FileTransferService : IFileTransferService
                 DisplayName = "Downloads",
                 AbsolutePath = Path.Combine(home, "Downloads"),
                 IsWritable = false,
+                CanRemoveRoot = true,
             },
             new()
             {
@@ -207,6 +306,7 @@ public sealed class FileTransferService : IFileTransferService
                 DisplayName = "Desktop",
                 AbsolutePath = Path.Combine(home, "Desktop"),
                 IsWritable = false,
+                CanRemoveRoot = true,
             },
             new()
             {
@@ -214,6 +314,7 @@ public sealed class FileTransferService : IFileTransferService
                 DisplayName = "Documents",
                 AbsolutePath = Path.Combine(home, "Documents"),
                 IsWritable = false,
+                CanRemoveRoot = true,
             },
             new()
             {
@@ -221,6 +322,7 @@ public sealed class FileTransferService : IFileTransferService
                 DisplayName = "Pictures",
                 AbsolutePath = Path.Combine(home, "Pictures"),
                 IsWritable = false,
+                CanRemoveRoot = true,
             },
         };
 

@@ -754,6 +754,9 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     case MessageTypes.FileTransferChunk:
                     case MessageTypes.FileTransferEnd:
                     case MessageTypes.FileTransferProgress:
+                    case MessageTypes.FileManageResponse:
+                    case MessageTypes.FileHashResponse:
+                    case MessageTypes.FileRootManageResponse:
                         FileTransferMessageReceived?.Invoke(message);
                         break;
                 }
@@ -960,7 +963,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     host = lanIp;
             }
 
-            var certService = App.Services.GetService<ICertificateService>();
+            var certService = App.Services.GetService<ICertificateService>() 
+                           ?? App.EmbeddedHostServices?.GetService<ICertificateService>();
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
 
             // QR bootstrap is the out-of-band trust exchange: it carries the host endpoint and

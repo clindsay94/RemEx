@@ -29,6 +29,11 @@ public sealed class RemexNativeClient : IDisposable
     private Task? _receiveLoopTask;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<CommandResponse>> _pendingCommands = new();
     private long _commandIdCounter;
+    // ClientWebSocket.SendAsync is not safe for concurrent calls. The outbound queue
+    // serializes file-transfer / launcher / etc. messages, but SendCommandAsync also
+    // invokes SendMessageAsync directly — a command racing with a chunk flood would
+    // throw "There is already one outstanding 'SendAsync'". Guard every send.
+    private readonly SemaphoreSlim _sendGate = new(1, 1);
 
     public event Action<TelemetryPayload>? TelemetryReceived;
     public event Action<List<Remex.Core.Models.AppEntry>>? LauncherEntriesReceived;
@@ -197,7 +202,18 @@ public sealed class RemexNativeClient : IDisposable
     {
         if (_webSocket == null || _webSocket.State != WebSocketState.Open) return;
         var bytes = RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
-        await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+
+        await _sendGate.WaitAsync(ct);
+        try
+        {
+            // Re-check inside the gate — we may have been closed while waiting.
+            if (_webSocket == null || _webSocket.State != WebSocketState.Open) return;
+            await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+        }
+        finally
+        {
+            _sendGate.Release();
+        }
     }
 
     private async Task ReceiveLoopAsync(CancellationToken ct)

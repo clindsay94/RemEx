@@ -156,8 +156,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                 ?.takeIf { it.isNotBlank() }
 
                 if (spkiHash.isNullOrBlank()) {
+                    val cachedHashResult = RemexCoreClient.GetPinnedHostHash(host)
                     val cachedHash =
-                            RemexCoreClient.GetPinnedHostHash(host).takeIf {
+                            cachedHashResult.getOrNull()?.takeIf {
                                 it.isNotBlank() && !it.startsWith("{\"success\":false")
                             }
                     if (cachedHash != null) {
@@ -184,10 +185,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                         "wss://$host:$port/ws",
                                         "Android Client",
                                         "2.0.0"
-                                )
+                                ).getOrNull()
 
                         if (pairResult == "OK") {
-                            val submitResult = RemexCoreClient.SubmitPairingPin(pairingPin)
+                            val submitResult = RemexCoreClient.SubmitPairingPin(pairingPin).getOrNull() ?: ""
                             if (submitResult.startsWith("OK:")) {
                                 val parts = submitResult.substring(3).split("|")
                                 if (parts.size >= 2) {
@@ -241,7 +242,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             put("spkiHash", spkiHash)
                             put("startTelemetryPolling", true)
                         }
-                val result = RemexCoreClient.InitRemex(initRequest.toString())
+                val initResult = RemexCoreClient.InitRemex(initRequest.toString())
+                val result = initResult.getOrNull() ?: ""
                 if (result.isBlank()) {
                     Log.w(
                             "RemexManager",

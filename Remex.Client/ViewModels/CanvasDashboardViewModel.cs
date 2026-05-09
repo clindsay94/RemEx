@@ -317,6 +317,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         {
             ProcessTelemetry(Connection.Telemetry);
         }
+        else if (e.PropertyName == nameof(Connection.IsConnected) && !Connection.IsConnected)
+        {
+            CleanupSensorSubscriptions();
+        }
     }
 
     private void OnLayoutProfileReceived(DashboardProfile profile)
@@ -774,7 +778,10 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
                     // Subscribe once per sensor name to prevent duplicate firings on reconnect.
                     if (_subscribedSensorNames.Add(sensorName))
+                    {
+                        sensor.AlertTriggered -= OnSensorAlertTriggered;
                         sensor.AlertTriggered += OnSensorAlertTriggered;
+                    }
 
                     // Keep one reusable template in staging so users can add more cards.
                     var staged = new CanvasCardViewModel

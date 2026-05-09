@@ -190,14 +190,14 @@ class RemoteCommandCallback : ActionCallback {
                 val mac = settings.macAddressFlow.first()
                 val broadcast = settings.broadcastIpFlow.first()
                 if (mac.isNotBlank()) {
-                    RemexCoreClient.WakePc(mac, broadcast, 9)
+                    RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
                 }
             } else {
                 val request = JSONObject().apply {
                     put("action", action)
                     put("parameters", JSONObject())
                 }
-                RemexCoreClient.SendCommand(request.toString())
+                RemexCoreClient.SendCommand(request.toString()).getOrNull()
             }
         }
     }

@@ -69,6 +69,7 @@ RemEx.Android/build/
 .cxx
 *.keystore
 *.iml
+google-services.json
 
 # macOS
 .DS_Store
@@ -118,3 +119,4 @@ docs/ui-evaluation-report.md
 /installer/output/
 /.claude/Agents
 /.claude/skills
+RemEx.Android/app/google-services.json

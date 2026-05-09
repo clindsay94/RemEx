@@ -18,6 +18,7 @@ public sealed record FileSharedRoot
     [JsonPropertyName("canRename")] public bool CanRename { get; init; }
     [JsonPropertyName("canMove")] public bool CanMove { get; init; }
     [JsonPropertyName("canDelete")] public bool CanDelete { get; init; }
+    [JsonPropertyName("canRemoveRoot")] public bool CanRemoveRoot { get; init; }
 }
 
 public sealed record FileTransferStart
@@ -85,4 +86,50 @@ public sealed record FileEntry
     [JsonPropertyName("isDirectory")] public required bool IsDirectory { get; init; }
     [JsonPropertyName("sizeBytes")] public long SizeBytes { get; init; }
     [JsonPropertyName("modifiedUnixMs")] public long ModifiedUnixMs { get; init; }
+}
+
+public sealed record FileManageRequest
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("rootId")] public required string RootId { get; init; }
+    [JsonPropertyName("relativePath")] public required string RelativePath { get; init; }
+    [JsonPropertyName("operation")] public required string Operation { get; init; } // "delete" | "rename"
+    [JsonPropertyName("newName")] public string? NewName { get; init; }
+}
+
+public sealed record FileManageResponse
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("success")] public required bool Success { get; init; }
+    [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+}
+
+public sealed record FileHashRequest
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("rootId")] public required string RootId { get; init; }
+    [JsonPropertyName("relativePath")] public required string RelativePath { get; init; }
+}
+
+public sealed record FileHashResponse
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("sha256")] public string? Sha256Base64 { get; init; }
+    [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+}
+
+public sealed record FileRootManageRequest
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("operation")] public required string Operation { get; init; } // "add" | "remove"
+    [JsonPropertyName("sourceRootId")] public string? SourceRootId { get; init; }
+    [JsonPropertyName("sourceRelativePath")] public string? SourceRelativePath { get; init; }
+    [JsonPropertyName("rootId")] public string? RootId { get; init; }
+}
+
+public sealed record FileRootManageResponse
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("roots")] public required FileSharedRoot[] Roots { get; init; }
+    [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }
