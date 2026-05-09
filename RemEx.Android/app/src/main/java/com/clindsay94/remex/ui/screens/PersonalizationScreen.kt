@@ -32,8 +32,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
+import com.clindsay94.remex.ui.theme.colorSchemeFromSeed
 import com.clindsay94.remex.ui.theme.materialShapeNames
 import com.clindsay94.remex.ui.theme.materialShapesList
 import com.google.android.material.color.utilities.Hct
@@ -801,17 +803,19 @@ private fun MiniCardPreview(
         cornerRadius: Int,
         opacity: Float
 ) {
-    val baseColor =
-            remember(seedColor) {
-                try {
-                    Color(seedColor.toColorInt())
-                } catch (e: Exception) {
-                    Color(0xFF6750A4.toInt())
-                }
-            }
+    val isDark = isSystemInDarkTheme()
+    val scheme = remember(seedColor, isDark) {
+        try {
+            colorSchemeFromSeed(Color(seedColor.toColorInt()), isDark)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    val containerTarget = scheme?.primaryContainer ?: MaterialTheme.colorScheme.primaryContainer
+    val contentColor = scheme?.onPrimaryContainer ?: MaterialTheme.colorScheme.onPrimaryContainer
     val animatedColor by
             animateColorAsState(
-                    targetValue = baseColor,
+                    targetValue = containerTarget,
                     animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
                     label = "MiniCardColorAnimation"
             )
@@ -833,26 +837,26 @@ private fun MiniCardPreview(
                 Box(
                         modifier =
                                 Modifier.size(16.dp)
-                                        .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                                        .background(contentColor.copy(alpha = 0.5f), CircleShape)
                 )
                 Box(
                         modifier =
                                 Modifier.width(32.dp)
                                         .height(8.dp)
-                                        .background(Color.White.copy(alpha = 0.3f), CircleShape)
+                                        .background(contentColor.copy(alpha = 0.3f), CircleShape)
                 )
             }
             Text(
                     stringResource(R.string.personalization_preview),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
+                    color = contentColor,
                     fontWeight = FontWeight.Bold
             )
             Box(
                     modifier =
                             Modifier.fillMaxWidth()
                                     .height(20.dp)
-                                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                    .background(contentColor.copy(alpha = 0.2f), CircleShape)
             )
         }
     }

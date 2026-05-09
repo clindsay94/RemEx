@@ -233,9 +233,9 @@ private fun AppNavigationContent(
                 }
         }
 
-        LaunchedEffect(currentRoute, pagerState.currentPage) {
-                if (currentRoute == PrimaryNavRoute && selectedPrimaryIndex != pagerState.currentPage) {
-                        selectedPrimaryIndex = pagerState.currentPage
+        LaunchedEffect(currentRoute, pagerState.settledPage) {
+                if (currentRoute == PrimaryNavRoute) {
+                        selectedPrimaryIndex = pagerState.settledPage
                 }
         }
 

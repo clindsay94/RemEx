@@ -408,17 +408,10 @@ fun DashboardScreenContent(
                                                                 ),
                                                         colors =
                                                                 CardDefaults.cardColors(
-                                                                        // M3: surfaceContainerLow
-                                                                        // for card container —
-                                                                        // appropriate tonal depth.
-                                                                        // contentColor must be
-                                                                        // explicit because
-                                                                        // .copy(alpha=) breaks
-                                                                        // contentColorFor() lookup.
                                                                         containerColor =
                                                                                 MaterialTheme
                                                                                         .colorScheme
-                                                                                        .surfaceContainerLow
+                                                                                        .primaryContainer
                                                                                         .copy(
                                                                                                 alpha =
                                                                                                         cardOpacity
@@ -426,7 +419,7 @@ fun DashboardScreenContent(
                                                                         contentColor =
                                                                                 MaterialTheme
                                                                                         .colorScheme
-                                                                                        .onSurface
+                                                                                        .onPrimaryContainer
                                                                 )
                                                 ) {
                                                         Box(
