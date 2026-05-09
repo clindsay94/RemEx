@@ -56,7 +56,10 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             port = 8338;
         }
 
-        // Load TLS certificate for secure TCP connections (Phase 1 Track 1A)
+        // Load TLS certificate for secure TCP connections (Phase 1 Track 1A).
+        // FAIL-CLOSED: if the certificate cannot be loaded the listener must not
+        // start in plaintext mode.  A silent downgrade would silently strip the
+        // entire 2.0 security backbone (TLS + pairing) from any TCP clients.
         if (_certificateService != null)
         {
             try
@@ -66,7 +69,14 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to load TLS certificate for TCP command port - connections will fail");
+                _logger.LogCritical(
+                    ex,
+                    "FATAL: Could not load TLS certificate for the TCP command port. " +
+                    "Remex refuses to start without TLS — plaintext fallback is not permitted. " +
+                    "Check that the certificate store is accessible and try again.");
+                throw new InvalidOperationException(
+                    "Remex.Host cannot start without a valid TLS certificate. " +
+                    "See inner exception for details.", ex);
             }
         }
 
@@ -233,8 +243,14 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                 }
                 else
                 {
-                    stream = client.GetStream();
-                    _logger.LogWarning("TCP command port accepting plaintext connection - no TLS certificate available");
+                    // This branch should be unreachable: StartListeningAsync throws if
+                    // _serverCert is null.  Log as critical and refuse the connection
+                    // rather than silently falling back to plaintext.
+                    _logger.LogCritical(
+                        "TCP command port has no TLS certificate — rejecting connection. " +
+                        "This indicates a programming error; StartListeningAsync should have " +
+                        "refused to start without a valid certificate.");
+                    return;
                 }
 
                 using (stream)

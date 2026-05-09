@@ -23,7 +23,13 @@ public sealed class PairingService : IPairingService
     private readonly ICertificateService _certificateService;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
-    // Pairing session state (only one active session at a time)
+    // Pairing session state (only one active session at a time).
+    // Design note: PairingService is registered as a singleton. To avoid concurrent
+    // sessions corrupting each other's ECDH material, we enforce a single-active-session
+    // constraint via a semaphore that rejects (rather than queues) concurrent StartPairingAsync
+    // calls. This is simpler than a per-connection ConcurrentDictionary because RemEx is a
+    // single-host / single-client product — simultaneous pairing from two clients is always a
+    // misuse and should be surfaced as an error, not silently interleaved.
     private byte[]? _sharedSecret; // ECDH-derived shared secret
     private byte[]? _sessionKey;   // HKDF-derived session key
     private string? _activePin;
@@ -51,9 +57,26 @@ public sealed class PairingService : IPairingService
 
     public async Task<PairingState> StartPairingAsync(CancellationToken ct)
     {
-        await _lock.WaitAsync(ct);
+        // Try to acquire without waiting: if another session holds the lock, reject immediately
+        // rather than queuing — two simultaneous pairing sessions would corrupt each other's
+        // ECDH state (see design note above).
+        if (!await _lock.WaitAsync(0, ct))
+        {
+            throw new InvalidOperationException(
+                "A pairing session is already in progress. " +
+                "Only one pairing session is permitted at a time.");
+        }
         try
         {
+            // Reject if a live session already exists (e.g. client started pairing but hasn't
+            // completed or timed out yet — prevents a second client from stomping the first).
+            if (IsPairingActive)
+            {
+                throw new InvalidOperationException(
+                    "A pairing session is already active. " +
+                    "Wait for the current session to complete or expire before starting a new one.");
+            }
+
             // Generate ephemeral P-256 ECDH keypair
             _hostEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
 

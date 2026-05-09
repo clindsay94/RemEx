@@ -22,7 +22,8 @@
       "Bash(grep -i \"\\\\.kt$\")",
       "mcp__gitnexus__list_repos",
       "mcp__gitnexus__impact",
-      "Bash(./gradlew :app:compileDebugKotlin)"
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(dotnet test *)"
     ]
   },
   "outputStyle": "default"

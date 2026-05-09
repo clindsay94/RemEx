@@ -26,9 +26,17 @@ public sealed class PingPongHandler(
     PairingHandler pairingHandler,
     FileTransferHandler fileTransferHandler)
 {
-    public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
+    public async Task HandleAsync(WebSocket webSocket, bool isLoopback, CancellationToken ct)
     {
-        logger.LogInformation("Client connected.");
+        // Per-connection pairing gate. Loopback connections come from the embedded host on the
+        // same machine, where pairing adds no security and is intentionally skipped on the client
+        // side as well — see ConnectionViewModel.IsLoopbackHost. All other connections must
+        // complete the PIN-based pairing handshake before issuing destructive or stateful commands.
+        bool isPaired = isLoopback;
+        if (isLoopback)
+            logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
+        else
+            logger.LogInformation("Client connected. Awaiting pairing handshake.");
 
         try
         {
@@ -104,7 +112,48 @@ public sealed class PingPongHandler(
                     break;
                 }
 
-                logger.LogDebug("Received: {Type}", message.Type);
+                logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
+                    message.Type, message.ProtocolVersion);
+
+                // Reject messages from clients running a protocol version older than 2.
+                // 1.x clients will get a clear rejection rather than silently operating in a
+                // degraded state.  ProtocolVersion defaults to 2 in RemEx 2.0 messages, so a
+                // zero value also indicates a legacy or malformed client.
+                if (message.ProtocolVersion < 2)
+                {
+                    logger.LogWarning(
+                        "Rejecting client with ProtocolVersion={Version} — minimum required is 2.",
+                        message.ProtocolVersion);
+                    var versionError = new RemexMessage
+                    {
+                        Type = MessageTypes.CommandResponse,
+                        CommandSuccess = false,
+                        CommandMessage =
+                            $"Protocol version {message.ProtocolVersion} is not supported. " +
+                            "Please upgrade your RemEx client to version 2.0 or later.",
+                        CorrelationId = message.CorrelationId,
+                    };
+                    await MessageSerializer.SendAsync(webSocket, versionError, ct);
+                    break;  // Close the loop; the finally block will close the WebSocket.
+                }
+
+                // Reject any gated message types from a connection that has not completed pairing.
+                // Allowed pre-pairing: ping, pairing handshake messages.
+                if (!isPaired && RequiresPairing(message.Type))
+                {
+                    logger.LogWarning(
+                        "Rejecting {Type} from unpaired connection — pairing handshake required.",
+                        message.Type);
+                    var unauthorized = new RemexMessage
+                    {
+                        Type = MessageTypes.CommandResponse,
+                        CommandSuccess = false,
+                        CommandMessage = "Pairing required. Complete PIN-based pairing before issuing this request.",
+                        CorrelationId = message.CorrelationId,
+                    };
+                    await MessageSerializer.SendAsync(webSocket, unauthorized, ct);
+                    continue;
+                }
 
                 switch (message.Type)
                 {
@@ -171,6 +220,11 @@ public sealed class PingPongHandler(
                         var completeResponse = await pairingHandler.HandlePairingCompleteAsync(message, ct);
                         if (completeResponse is not null)
                             await MessageSerializer.SendAsync(webSocket, completeResponse, ct);
+                        if (completeResponse is { Type: MessageTypes.PairingComplete, CommandSuccess: true })
+                        {
+                            isPaired = true;
+                            logger.LogInformation("Pairing verified — connection authenticated.");
+                        }
                         break;
 
                     // ── 2.0 File Transfer ──
@@ -329,6 +383,18 @@ public sealed class PingPongHandler(
         Type = MessageTypes.CommandResponse,
         CommandSuccess = success,
         CommandMessage = msg,
+    };
+
+    /// <summary>
+    /// Returns true when the message type must be rejected before the connection has completed
+    /// pairing. Ping and the pairing handshake messages are intentionally exempt.
+    /// </summary>
+    private static bool RequiresPairing(string type) => type switch
+    {
+        MessageTypes.Ping => false,
+        MessageTypes.PairingRequest => false,
+        MessageTypes.PairingComplete => false,
+        _ => true,
     };
 
     private static int ParseDelaySeconds(Dictionary<string, string>? parameters)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -41,6 +42,15 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     private bool _userDisconnected;
     private bool _isPairedWithCurrentHost;
     private string? _cachedLocalIpv4;
+
+    // Snapshot of pinned host SPKI hashes captured immediately before each WebSocket connect
+    // attempt. The TLS validation callback reads this synchronously, eliminating the
+    // .GetAwaiter().GetResult() deadlock risk inside the callback.
+    private IReadOnlyDictionary<string, string>? _pinSnapshot;
+    // Set true when the user has explicitly initiated pairing for the current connect attempt.
+    // Allows trust-on-first-use only when the operator opted in; otherwise the cert callback
+    // fails closed on any unrecognized SPKI hash.
+    private bool _allowFirstTimeTrustForCurrentConnect;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
@@ -478,11 +488,22 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             StatusText = LocalizationService.Instance["Status_Connecting"];
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 
-            // 2.0: Accept self-signed certificates (TLS pinning validated by PinnedCertStore)
+            // 2.0 TLS pinning. Pre-load the pin snapshot synchronously usable by the TLS callback.
+            // The callback rejects unrecognized certs; first-time trust is only granted on
+            // loopback connections or when the pin store is empty (initial pair) — the PIN
+            // handshake then provides MITM protection during that one window.
+            await LoadPinSnapshotAsync();
+            var uri = new Uri(HostAddress);
+            _allowFirstTimeTrustForCurrentConnect =
+                IsLoopbackHost(uri) || (_pinSnapshot is not null && _pinSnapshot.Count == 0);
+
             _webSocket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
 
-            var uri = new Uri(HostAddress);
             await _webSocket.ConnectAsync(uri, linkedCts.Token);
+
+            // Trust window closes immediately after the handshake. Any subsequent reconnect must
+            // re-evaluate the snapshot/opt-in fresh, so don't leave the flag set.
+            _allowFirstTimeTrustForCurrentConnect = false;
 
             // Loopback connections target the in-process embedded host on the same machine.
             // Pairing exists to bootstrap trust with a *remote* host, so it adds no security
@@ -564,6 +585,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         finally
         {
             IsConnecting = false;
+            // Always close the trust window on exit, even if ConnectAsync threw.
+            _allowFirstTimeTrustForCurrentConnect = false;
         }
     }
 
@@ -1045,8 +1068,19 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         uri.Host is "localhost" or "127.0.0.1" or "::1";
 
     /// <summary>
-    /// Accepts self-signed certificates for the 2.0 TLS transport.
-    /// Real pinning validation is performed at a higher level by PinnedCertStore.
+    /// TLS server-certificate validation callback. Enforces SPKI pinning against the snapshot
+    /// captured by <see cref="LoadPinSnapshotAsync"/> immediately before <c>ConnectAsync</c>.
+    ///
+    /// Security model:
+    ///   - If the snapshot contains the incoming cert's SPKI hash, accept (matched pin).
+    ///   - If the snapshot is non-empty and the hash does not match, reject (MITM defence).
+    ///   - If the snapshot is empty AND the operator has opted into first-time trust for this
+    ///     connect attempt, accept; the downstream PIN-based pairing handshake protects against
+    ///     MITM in this trust-on-first-use window.
+    ///   - Any other state (no snapshot loaded, opt-in not granted) → reject.
+    ///
+    /// The callback is fully synchronous: no <c>.GetAwaiter().GetResult()</c>, no DI lookup,
+    /// no async I/O. Pins must be loaded into <see cref="_pinSnapshot"/> before the connect call.
     /// </summary>
     private bool AcceptSelfSignedCertificate(
         object sender,
@@ -1061,21 +1095,69 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         var hashBytes = System.Security.Cryptography.SHA256.HashData(spki);
         var hashBase64 = Convert.ToBase64String(hashBytes);
 
-        var store = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
-        if (store != null)
+        var pins = _pinSnapshot;
+        if (pins is null)
         {
-            var pins = store.GetAllPinsAsync().GetAwaiter().GetResult();
+            // ConnectAsync must populate the snapshot before invoking ConnectAsync on the socket.
+            // Hitting this branch is a programming error; fail closed.
+            _logger.LogError(
+                "TLS validation callback invoked without a pin snapshot. Rejecting cert {Hash}.",
+                hashBase64);
+            _isPairedWithCurrentHost = false;
+            return false;
+        }
+
+        if (pins.Count > 0)
+        {
             if (pins.Values.Contains(hashBase64))
             {
                 _isPairedWithCurrentHost = true;
                 return true;
             }
 
+            _logger.LogError(
+                "Rejecting host certificate: SPKI {Hash} does not match any pinned host. " +
+                "If the host certificate has legitimately rotated, the operator must re-pair.",
+                hashBase64);
             _isPairedWithCurrentHost = false;
-            _logger.LogWarning("Unknown host certificate SPKI {Hash}. Accepting for potential pairing handshake.", hashBase64);
+            return false;
         }
 
-        return true;
+        // Empty pin store. Trust-on-first-use is permitted only if the operator explicitly opted
+        // in for this connect attempt. The PIN-based pairing handshake that follows provides
+        // MITM protection in this window.
+        if (_allowFirstTimeTrustForCurrentConnect)
+        {
+            _isPairedWithCurrentHost = false;
+            _logger.LogInformation(
+                "First-time pairing: accepting cert SPKI {Hash} for pairing handshake.",
+                hashBase64);
+            return true;
+        }
+
+        _logger.LogError(
+            "Rejecting host certificate: SPKI {Hash} not pinned and first-time trust not granted.",
+            hashBase64);
+        _isPairedWithCurrentHost = false;
+        return false;
+    }
+
+    /// <summary>
+    /// Loads the current pinned-host snapshot synchronously usable by the TLS callback. Must be
+    /// called before each <c>ClientWebSocket.ConnectAsync</c> invocation.
+    /// </summary>
+    private async Task LoadPinSnapshotAsync()
+    {
+        var store = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
+        if (store is null)
+        {
+            // No pin store configured (e.g. a misconfigured DI container). Empty snapshot will
+            // cause the validation callback to fail closed unless first-time-trust is granted.
+            _pinSnapshot = new Dictionary<string, string>();
+            return;
+        }
+
+        _pinSnapshot = await store.GetAllPinsAsync().ConfigureAwait(false);
     }
 
     private async Task<string?> PromptForPinAsync()

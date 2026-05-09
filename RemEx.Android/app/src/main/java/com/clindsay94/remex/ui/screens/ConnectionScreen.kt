@@ -126,6 +126,9 @@ fun ConnectionScreenContent(
         var pendingConnect by remember { mutableStateOf(false) }
         var pendingDiscover by remember { mutableStateOf(false) }
 
+        // Snackbar state declared early so permission launchers below can reference it.
+        val snackbarHostState = remember { SnackbarHostState() }
+
         // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES + ACCESS_LOCAL_NETWORK)
         val connectPermissions = remember {
                 buildList {
@@ -177,25 +180,52 @@ fun ConnectionScreenContent(
                 )
         }
 
-        // Permission launcher for "Save & Connect" — requests both POST_NOTIFICATIONS +
-        // NEARBY_WIFI_DEVICES
+        // Permission launcher for "Save & Connect" — requests POST_NOTIFICATIONS,
+        // NEARBY_WIFI_DEVICES, and ACCESS_LOCAL_NETWORK (Android 17+ / API 37+).
+        // If ACCESS_LOCAL_NETWORK is denied on API 37+, we surface a clear rationale
+        // via snackbar before falling through to the connect attempt (which will fail
+        // at the socket layer with an equally clear error, but the rationale string
+        // explains *why* before that happens).
         val connectPermissionLauncher =
                 rememberLauncherForActivityResult(
                         ActivityResultContracts.RequestMultiplePermissions()
-                ) { _ ->
+                ) { results ->
                         if (pendingConnect) {
                                 pendingConnect = false
+                                // Check if ACCESS_LOCAL_NETWORK was denied on Android 17+
+                                val localNetworkDenied = Build.VERSION.SDK_INT >= 37 &&
+                                        results["android.permission.ACCESS_LOCAL_NETWORK"] == false
+                                if (localNetworkDenied) {
+                                        scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                        context.getString(R.string.error_local_network_permission_denied)
+                                                )
+                                        }
+                                        // Do not attempt connection — it will fail silently without LAN access.
+                                        return@rememberLauncherForActivityResult
+                                }
                                 doConnect()
                         }
                 }
 
-        // Separate permission launcher for "Discover" — needs NEARBY_WIFI_DEVICES and ACCESS_LOCAL_NETWORK
+        // Separate permission launcher for "Discover" — needs NEARBY_WIFI_DEVICES and
+        // ACCESS_LOCAL_NETWORK.  Same denial handling: show rationale and abort.
         val discoverPermissionLauncher =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
                         results ->
                         if (pendingDiscover) {
                                 pendingDiscover = false
-                                // We proceed anyway; if some are denied, discovery might degrade gracefully
+                                // Check if ACCESS_LOCAL_NETWORK was denied on Android 17+
+                                val localNetworkDenied = Build.VERSION.SDK_INT >= 37 &&
+                                        results["android.permission.ACCESS_LOCAL_NETWORK"] == false
+                                if (localNetworkDenied) {
+                                        scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                        context.getString(R.string.error_local_network_permission_denied)
+                                                )
+                                        }
+                                        return@rememberLauncherForActivityResult
+                                }
                                 onDiscoverHost()
                         }
                 }
@@ -227,7 +257,6 @@ fun ConnectionScreenContent(
         }
 
         val scrollBehavior = rememberRemexTopBarScrollBehavior()
-        val snackbarHostState = remember { SnackbarHostState() }
         LaunchedEffect(discoveredHost) {
                 if (discoveredHost != null) {
                         snackbarHostState.showSnackbar("Host discovered: ${discoveredHost.host}")

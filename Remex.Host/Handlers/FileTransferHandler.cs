@@ -142,7 +142,38 @@ public sealed class FileTransferHandler(
             _activeTransfers[start.TransferId] = state;
 
             if (start.Direction == "download")
-                _ = StreamDownloadAsync(state, ws, ct);
+            {
+                // Wrap in a local async lambda so exceptions are caught and surfaced to the
+                // client rather than silently swallowed by a fire-and-forget Task.
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await StreamDownloadAsync(state, ws, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Unhandled exception in StreamDownloadAsync for {TransferId}", start.TransferId);
+                        try
+                        {
+                            await MessageSerializer.SendAsync(ws, new RemexMessage
+                            {
+                                Type = MessageTypes.FileTransferEnd,
+                                FileTransferEnd = new FileTransferEnd
+                                {
+                                    TransferId = start.TransferId,
+                                    Success = false,
+                                    ErrorMessage = $"Download failed: {ex.Message}"
+                                }
+                            }, CancellationToken.None);
+                        }
+                        catch (Exception sendEx)
+                        {
+                            logger.LogWarning(sendEx, "Could not send error response for failed download {TransferId}", start.TransferId);
+                        }
+                    }
+                }, ct);
+            }
         }
         catch (Exception ex)
         {

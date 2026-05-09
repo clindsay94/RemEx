@@ -83,7 +83,14 @@ public static class HostBootstrapper
         builder.Services.AddHostedService<IpcHostServer>();
 
         // ── 2.0 Security Services ──
-        builder.Services.AddSingleton<ICertificateService, CertificateService>();
+        // CertificateService is instantiated once here so that Kestrel and the DI container
+        // share a single instance.  Registering a concrete instance via AddSingleton(instance)
+        // avoids the previous double-registration bug where AddSingleton<ICertificateService,
+        // CertificateService>() (line 86) and then AddSingleton<ICertificateService>(certService)
+        // (line 124) produced two separate registrations — the first was silently shadowed by the
+        // second but both allocations happened.  GetAwaiter().GetResult() is acceptable here
+        // because CreateApplication() is called once on the startup path before the async host
+        // loop begins; no synchronisation context is active.
         builder.Services.AddSingleton<PairingService>();
         builder.Services.AddSingleton<IPairingService>(sp => sp.GetRequiredService<PairingService>());
         builder.Services.AddTransient<PairingHandler>();
@@ -112,15 +119,18 @@ public static class HostBootstrapper
                 // Port in use, try next
             }
         }
+
         // ── 2.0 TLS Configuration ──
-        // Generate or load the self-signed certificate synchronously during startup.
+        // Instantiate CertificateService once, run its async initializer synchronously
+        // (acceptable: startup path, no active sync context), then register the live
+        // instance as the ICertificateService singleton so DI resolves the same object
+        // that Kestrel was configured with.
         var certService = new CertificateService(
             Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddConsole())
                 .CreateLogger<CertificateService>());
         var tlsCert = certService.GetOrCreateCertificateAsync(CancellationToken.None)
             .GetAwaiter().GetResult();
 
-        // Replace the default CertificateService singleton with the pre-initialized one.
         builder.Services.AddSingleton<ICertificateService>(certService);
 
         builder.WebHost.ConfigureKestrel(kestrel =>
@@ -201,7 +211,16 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),
                 context.RequestServices.GetRequiredService<PairingHandler>(),
                 context.RequestServices.GetRequiredService<FileTransferHandler>());
-            await handler.HandleAsync(ws, context.RequestAborted);
+
+            // Loopback / in-process connections come from the embedded host on the same machine
+            // (or in-process test servers). Pairing adds no security here — it would prompt for
+            // a PIN the user's own desktop generated — so we satisfy the pairing gate
+            // automatically. A null RemoteIpAddress means no real socket (TestServer/in-process
+            // transport) and is treated as loopback for the same reason.
+            var remoteIp = context.Connection.RemoteIpAddress;
+            var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
+
+            await handler.HandleAsync(ws, isLoopback, context.RequestAborted);
         });
 
         // Remote Desktop WebSocket endpoint (dedicated binary stream)

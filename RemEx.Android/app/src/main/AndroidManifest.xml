@@ -19,6 +19,16 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.USE_LOOPBACK_INTERFACE" />
 
+    <!--
+        android:allowBackup="true" is intentional. Security properties are preserved because:
+          - data_extraction_rules.xml excludes the SPKI pin store (pinned_hosts) and
+            DataStore preferences from cloud/D2D backups.
+          - The EncryptedSharedPreferences master key (stored in Android Keystore) is
+            non-exportable by design and cannot be transferred between devices.
+        If you add new sensitive storage in the future, you MUST also add an exclusion rule
+        to both data_extraction_rules.xml (API 31+) and backup_rules.xml (pre-API 31) to
+        prevent that data from being included in backups.
+    -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -40,6 +50,83 @@
             android:exported="true"
             android:label="@string/tile_lock_label"
             android:icon="@drawable/ic_lock"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexShutdownTileService"
+            android:exported="true"
+            android:label="@string/tile_shutdown_label"
+            android:icon="@drawable/ic_shutdown"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexRestartTileService"
+            android:exported="true"
+            android:label="@string/tile_restart_label"
+            android:icon="@drawable/ic_restart"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexRestartUefiTileService"
+            android:exported="true"
+            android:label="@string/tile_restart_uefi_label"
+            android:icon="@drawable/ic_restart_uefi"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexWakeOnLanTileService"
+            android:exported="true"
+            android:label="@string/tile_wol_label"
+            android:icon="@drawable/ic_wol"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexSleepTileService"
+            android:exported="true"
+            android:label="@string/tile_sleep_label"
+            android:icon="@drawable/ic_sleep"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexHibernateTileService"
+            android:exported="true"
+            android:label="@string/tile_hibernate_label"
+            android:icon="@drawable/ic_hibernate"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.RemexMonitorOffTileService"
+            android:exported="true"
+            android:label="@string/tile_monitor_off_label"
+            android:icon="@drawable/ic_monitor_off"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE"/>

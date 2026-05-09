@@ -85,6 +85,22 @@ Start here when exploring this area:
 | ViewModels | 1 calls |
 | Native | 1 calls |
 
+## Best Practices
+
+<!-- Evolution: 2026-05-08 | source: ep-2026-05-08-001 | pattern: dual_di_container_resolution -->
+
+### Cross-Boundary Service Resolution
+When designing services for dual-mode applications (client + embedded host), be aware that services may be registered in different DI containers. 
+
+- **Host-Owned Services:** Services like `ICertificateService` or `IPairingService` are typically registered in the Host container.
+- **Client-Owned Services:** UI-specific services are in the Client container.
+- **Resolution Strategy:** Consumers should be designed to handle resolution from both containers if they can run in both modes.
+
+**Code Pattern:**
+```csharp
+var service = App.Services.GetService<T>() ?? App.EmbeddedHostServices?.GetService<T>();
+```
+
 ## How to Explore
 
 1. `gitnexus_context({name: "AddProgramWindow"})` — see callers and callees

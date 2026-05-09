@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
 
@@ -16,6 +17,7 @@ public sealed class FileTransferService : IFileTransferService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    private readonly ILogger<FileTransferService> _logger;
     private readonly string _configPath;
 
     private sealed record ConfiguredRoot
@@ -30,8 +32,9 @@ public sealed class FileTransferService : IFileTransferService
         public bool CanRemoveRoot { get; init; }
     }
 
-    public FileTransferService()
+    public FileTransferService(ILogger<FileTransferService> logger)
     {
+        _logger = logger;
         var baseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
         Directory.CreateDirectory(baseFolder);
         _configPath = Path.Combine(baseFolder, "file_transfer_roots.json");
@@ -257,9 +260,13 @@ public sealed class FileTransferService : IFileTransferService
                     .Select(root => root with { AbsolutePath = Path.GetFullPath(root.AbsolutePath) })
                     .ToList();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall back to defaults when the config is unreadable.
+            // Do not rethrow — empty/default roots is a recoverable state.
+            // Log so operators can diagnose configuration corruption or permission issues.
+            _logger.LogError(ex,
+                "Failed to load configured file-transfer roots from {Path}. " +
+                "Falling back to defaults.", _configPath);
         }
 
         var fallbackRoots = CreateDefaultRoots();

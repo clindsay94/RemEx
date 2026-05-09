@@ -89,6 +89,23 @@ Start here when exploring this area:
 | Handlers | 2 calls |
 | Network | 1 calls |
 
+## Best Practices
+
+<!-- Evolution: 2026-05-08 | source: ep-2026-05-08-001 | pattern: dual_di_container_resolution -->
+
+### Dual-DI Container Resolution
+In dual-mode applications where the client hosts an embedded server, services may be registered in separate DI containers (the Client container and the Host container). When a ViewModel needs a service that might be owned by the host (e.g., `ICertificateService`), it should check both containers.
+
+**Pattern:**
+```csharp
+var service = App.Services.GetService<IMyService>() 
+           ?? App.EmbeddedHostServices?.GetService<IMyService>();
+```
+
+- Always check the client container first (`App.Services`).
+- Use the null-coalescing operator to fallback to `App.EmbeddedHostServices`.
+- Ensure proper null handling for `App.EmbeddedHostServices` as it will be null in standalone client mode.
+
 ## How to Explore
 
 1. `gitnexus_context({name: "TaskManagerViewModel"})` — see callers and callees

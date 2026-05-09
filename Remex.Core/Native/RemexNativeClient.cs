@@ -19,7 +19,7 @@ namespace Remex.Core.Native;
 /// A native-optimized WebSocket client for RemEx communication.
 /// Handles persistent connection, telemetry streaming, and command dispatching.
 /// </summary>
-public sealed class RemexNativeClient : IDisposable
+public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 {
     private static readonly Lazy<RemexNativeClient> Instance = new(() => new RemexNativeClient());
     public static RemexNativeClient Current => Instance.Value;
@@ -173,7 +173,10 @@ public sealed class RemexNativeClient : IDisposable
             Type = MessageTypes.Command,
             CommandAction = request.Action,
             CommandParameters = request.Parameters,
-            Timestamp = DateTime.UtcNow.Ticks // We use this as correlation ID for now
+            Timestamp = DateTime.UtcNow.Ticks,
+            // Set CorrelationId so the host can echo it back; the receive-side
+            // HandleMessage lookup resolves the correct pending TCS by this ID.
+            CorrelationId = id,
         };
 
         try
@@ -272,13 +275,24 @@ public sealed class RemexNativeClient : IDisposable
                 break;
 
             case MessageTypes.CommandResponse:
-                // Correlation via timestamp/parameters if needed, but for now we just find any pending
-                // In a real app we should have a proper correlation ID.
-                // We'll just complete the first pending one for simplicity in this MVP.
-                foreach (var tcs in _pendingCommands.Values)
+                if (msg.CorrelationId is not null
+                    && _pendingCommands.TryRemove(msg.CorrelationId, out var matchedTcs))
                 {
-                    if (tcs.TrySetResult(new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText)))
-                        break;
+                    // Happy path: host echoed our CorrelationId — resolve the correct awaiter.
+                    matchedTcs.TrySetResult(
+                        new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText));
+                }
+                else if (msg.CorrelationId is null && !_pendingCommands.IsEmpty)
+                {
+                    // Fallback for hosts that do not echo CorrelationId (pre-2.0 or buggy).
+                    // Complete the first pending entry — this is best-effort and incorrect
+                    // under concurrency; upgrade the host to fix it properly.
+                    foreach (var tcs in _pendingCommands.Values)
+                    {
+                        if (tcs.TrySetResult(
+                            new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText)))
+                            break;
+                    }
                 }
                 break;
         }
@@ -286,8 +300,29 @@ public sealed class RemexNativeClient : IDisposable
         MessageReceived?.Invoke(msg);
     }
 
+    /// <summary>
+    /// Async disposal — preferred call site.  Awaits a clean WebSocket close before
+    /// releasing resources.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        await DisconnectAsync();
+    }
+
+    /// <summary>
+    /// Synchronous disposal forwarded to <see cref="DisposeAsync"/>.  Callers that
+    /// hold a reference inside an async context should prefer <c>await using</c> to
+    /// avoid blocking the calling thread.
+    /// </summary>
     public void Dispose()
     {
-        DisconnectAsync().GetAwaiter().GetResult();
+        // Fire-and-forget on the thread-pool so we don't block the caller's thread.
+        // The underlying DisconnectAsync gracefully closes the WebSocket;
+        // resources are cleaned up regardless of whether the await completes.
+        _ = Task.Run(async () =>
+        {
+            try { await DisconnectAsync(); }
+            catch { /* best-effort — already disconnecting */ }
+        });
     }
 }

@@ -7,26 +7,54 @@
     <string name="widget_hardware_label">RemEx Hardware</string>
     <string name="widget_launcher_label">RemEx Lanzador</string>
 
+    <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Ejecución Remota</string>
 
+    <!-- ═══ Navigation ═══ -->
     <string name="snackbar_no_pc_connected">Ningún PC conectado</string>
     <string name="snackbar_setup_connection">Configurar conexión</string>
+    <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">Más</string>
     <string name="cd_settings_fab">Ajustes</string>
+    <string name="exit_dialog_title">Exit RemEx?</string>
+    <string name="exit_dialog_message">Are you sure you want to exit?</string>
+    <string name="button_exit">Exit</string>
 
+    <!-- ═══ Common Components ═══ -->
     <string name="banner_no_pc_connected">Sin PC conectado — funciones no disponibles</string>
     <string name="button_connect">Conectar</string>
     <string name="disconnected_requires_connection">%1$s requiere un PC conectado.</string>
     <string name="disconnected_connect_wifi">Conéctate a tu PC por Wi-Fi para usar esta función.</string>
     <string name="button_setup_connection">Configurar conexión</string>
 
+    <!-- ═══ Shared Buttons ═══ -->
     <string name="button_cancel">Cancelar</string>
     <string name="button_confirm">Confirmar</string>
     <string name="button_dismiss">Omitir</string>
     <string name="button_done">Listo</string>
     <string name="cd_refresh">Actualizar</string>
+    <string name="cd_phone">Phone</string>
+    <string name="cd_terminal">Terminal</string>
+    <string name="cd_launch_icon">Launch</string>
+    <string name="cd_trackpad_icon">Trackpad</string>
+    <string name="cd_monitor_icon">Monitor</string>
+    <string name="cd_play_icon">Play</string>
+    <string name="cd_camera_icon">Camera</string>
+    <string name="cd_section_icon">Section Icon</string>
+    <string name="cd_card_enabled">Card Enabled</string>
+    <string name="cd_connection_icon">Connection</string>
+    <string name="cd_error_icon">Error</string>
+    <string name="cd_wifi_icon">Wi-Fi</string>
+    <string name="cd_search_icon">Search</string>
+    <string name="cd_qr_scanner_icon">QR Scanner</string>
+    <string name="cd_success_icon">Success</string>
+    <string name="cd_help_icon">Help</string>
+    <string name="cd_expand_icon">Expand</string>
+    <string name="cd_category_icon">Category</string>
+    <string name="cd_resize_cards">Resize cards</string>
 
+    <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Saltar</string>
     <string name="tutorial_get_started">Comenzar</string>
     <string name="tutorial_next">Siguiente</string>
@@ -50,8 +78,35 @@
     <string name="tutorial_page6_title">¡Todo listo!</string>
     <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nDesde el panel de control puedes monitorizar estadísticas del sistema, lanzar aplicaciones, gestionar tareas y transmitir tu escritorio de forma remota.\n\nVe a Personalización para ajustar tu tema, formas de tarjetas, fuentes y colores.\n\nConsulta las Preguntas Frecuentes en Ajustes si tienes problemas. ¡Disfruta de RemEx!</string>
 
+    <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
+    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
+    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
+
+    <!-- ═══ Connection Status Strings ═══ -->
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting to %1$s:%2$d…</string>
+    <string name="status_error">Error: %1$s</string>
+    <string name="status_awaiting_metadata">Awaiting host metadata</string>
+    <string name="status_metadata_unavailable">Host metadata unavailable</string>
+    <string name="status_native_lib_not_loaded">Native library not loaded</string>
+    <string name="error_no_host_found">No RemEx host found on the network</string>
+    <string name="error_discovery_failed">Discovery failed: %1$s</string>
+    <string name="capability_desktop_available">desktop available</string>
+    <string name="capability_desktop_unavailable">desktop unavailable</string>
+
+    <!-- ═══ Foreground Service Strings ═══ -->
+    <string name="notification_channel_name">RemEx Connection</string>
+    <string name="notification_channel_description">Keeps the connection to your PC alive</string>
+    <string name="notification_title_connected">Connected to PC</string>
+    <string name="notification_title_connecting">Connecting…</string>
+    <string name="notification_text_connected">RemEx is running in the background</string>
+    <string name="notification_text_connecting">Maintaining connection</string>
+
+    <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">Administrador de Tareas</string>
     <string name="task_manager_search_hint">Buscar nombre de proceso o PID</string>
+    <string name="sort_by">Sort by:</string>
     <string name="sort_name">Nombre</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
@@ -66,6 +121,7 @@
     <string name="task_manager_pid_label">PID: %1$d</string>
     <string name="cd_kill_process">Finalizar</string>
 
+    <!-- ═══ Remote Mouse Screen ═══ -->
     <string name="screen_remote_mouse_title">Ratón Remoto</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Click Izquierdo</string>
@@ -74,19 +130,25 @@
     <string name="cd_scroll_down">Desplazar Abajo</string>
     <string name="cd_keyboard">Teclado</string>
 
+    <!-- ═══ Settings Screen ═══ -->
     <string name="screen_settings_title">Ajustes</string>
     <string name="settings_tab_connection">Conexión</string>
     <string name="settings_tab_personalization">Personalización</string>
+    <string name="settings_tab_input">Input</string>
+    <string name="settings_tab_file_transfer">File Transfer</string>
     <string name="settings_tab_help">Ayuda</string>
+    <string name="settings_tab_about">About</string>
     <string name="settings_help_title">Ayuda e Información</string>
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
     <string name="settings_replay_tutorial_body">Vuelve a ver la guía de inicio que cubre la configuración, el descubrimiento automático y cómo conectar con tu PC.</string>
     <string name="settings_faq_hint">¿Tienes alguna duda? Consulta las FAQ disponibles en el menú (⋮ → FAQ).</string>
 
+    <!-- ═══ App Launcher Screen ═══ -->
     <string name="screen_app_launcher_title">Lanzador de Apps</string>
     <string name="app_launcher_no_apps">No se encontraron apps</string>
     <string name="button_fetch_from_host">Obtener del Host</string>
 
+    <!-- ═══ Remote Control Screen ═══ -->
     <string name="screen_remote_control_title">Control Remoto</string>
     <string name="remote_control_section_header">Comandos del Sistema</string>
     <string name="remote_control_description">Las acciones críticas requieren confirmación. El retraso opcional establece los segundos de shutdown -t.</string>
@@ -109,6 +171,7 @@
     <string name="rc_category_power">Energía</string>
     <string name="rc_category_energy">Ahorro</string>
 
+    <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Escritorio Remoto</string>
     <string name="cd_show_keyboard">Mostrar Teclado</string>
     <string name="cd_reset_input">Restablecer Entrada</string>
@@ -123,11 +186,22 @@
     <string name="cd_exit_fullscreen">Salir de Pantalla Completa</string>
     <string name="cd_zoom_in">Acercar</string>
     <string name="cd_zoom_out">Alejar</string>
+    <string name="cd_mouse_left">Left Click</string>
+    <string name="cd_mouse_middle">Middle Click</string>
+    <string name="cd_mouse_right">Right Click</string>
+    <string name="cd_expand_mouse_controls">Expand Mouse Controls</string>
     <string name="remote_desktop_config_title">Configuración de Stream</string>
     <string name="remote_desktop_quality_label">Calidad: %1$d%%</string>
     <string name="remote_desktop_fps_label">FPS Objetivo: %1$d</string>
     <string name="remote_desktop_controls_hint">Lápiz = Absoluto • 2 Dedos = Scroll • Pulsación Larga = Click Derecho</string>
+    <string name="remote_desktop_direct_touch_label">Modo toque directo</string>
+    <string name="remote_desktop_direct_touch_desc">Las posiciones táctiles se mapean directamente a las coordenadas de la pantalla</string>
+    <string name="remote_desktop_pointer_speed_label">Velocidad del cursor: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_controls_hint_v2">Tocar = Clic • Mantener = Clic derecho • 2 dedos = Desplazar • Lápiz = Absoluto</string>
 
+    <!-- ═══ Dashboard Screen ═══ -->
     <string name="screen_dashboard_title">Panel de Control</string>
     <string name="cd_reset_zoom">Restablecer zoom</string>
     <string name="cd_customize_cards">Personalizar tarjetas</string>
@@ -147,7 +221,11 @@
     <string name="dashboard_collecting_data">Recopilando datos…</string>
     <string name="cd_change_display_mode">Cambiar modo de visualización</string>
 
+    <!-- ═══ Connection Screen ═══ -->
     <string name="screen_connection_title">Conexión</string>
+    <string name="screen_splash_title">Loading</string>
+    <string name="screen_tutorial_title">Tutorial</string>
+    <string name="screen_qr_scanner_title">Scan QR Code</string>
     <string name="connection_host_settings">Ajustes del Host</string>
     <string name="cd_dismiss_error">Descartar</string>
     <string name="connection_auto_discover_title">Autodescubrimiento en LAN</string>
@@ -156,6 +234,7 @@
     <string name="connection_found_host">Encontrado: %1$s — Buscar de nuevo</string>
     <string name="connection_discover_button">Descubrir Automáticamente</string>
     <string name="connection_host_found">Host encontrado. Datos rellenados a continuación.</string>
+    <string name="connection_scan_qr_code">Escanear código QR</string>
     <string name="connection_help_title">Cómo conectar manualmente</string>
     <string name="connection_help_step1_title">Instala RemEx Host en tu PC</string>
     <string name="connection_help_step1_body">Descarga y ejecuta el instalador del Host RemEx en el PC que quieras controlar. Aparecerá en la bandeja del sistema.</string>
@@ -182,14 +261,43 @@
     <string name="connection_hint_broadcast">Normalmente 255.255.255.255 — cambiar solo si WOL falla</string>
     <string name="connection_label_subnet">Máscara de Subred</string>
     <string name="connection_hint_subnet">Típicamente 255.255.255.0 en redes domésticas</string>
+    <string name="connection_label_pairing_pin">Pairing PIN (6-digits)</string>
+    <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Valores de Escritorio Remoto</string>
     <string name="connection_quality_label">Calidad: %1$d%%</string>
     <string name="connection_fps_label">FPS Objetivo: %1$d (máx 120)</string>
     <string name="connection_scale_label">Escala: %1$s</string>
     <string name="button_save_connect">Guardar y Conectar</string>
     <string name="connection_status_label">Estado: %1$s</string>
+    <string name="connection_paired">Paired</string>
+    <string name="connection_unpair">Unpair</string>
 
+    <!-- ═══ Pairing Screen ═══ -->
+    <string name="pairing_title">Security Pairing</string>
+    <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
+    <string name="pairing_submit">Pair</string>
+    <string name="pairing_cancel">Cancel</string>
+    <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
+    <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
+
+    <!-- ═══ QR Scanner Screen ═══ -->
+    <string name="qr_scanner_title">Escanear código QR</string>
+    <string name="cd_back">Atrás</string>
+    <string name="qr_scanner_hint">Apunta la cámara al código QR mostrado en tu PC</string>
+    <string name="qr_scanner_permission_required">Se necesita permiso de cámara para escanear códigos QR</string>
+    <string name="qr_scanner_grant_permission">Conceder permiso</string>
+    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
+    <string name="qr_error_invalid">Invalid RemEx QR code</string>
+
+    <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
+    <string name="screen_about_title">About RemEx</string>
+    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
+    <string name="about_version_android">Android Version: %1$s</string>
+    <string name="about_version_pc">PC Version: %1$s</string>
+    <string name="about_github_star">Give my repository a star on Github</string>
+    <string name="about_github_cat">(pls, they have my cat)</string>
+    <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
     <string name="faq_header">Preguntas Frecuentes</string>
     <string name="cd_collapse">Contraer</string>
     <string name="cd_expand">Expandir</string>
@@ -225,6 +333,7 @@
     <string name="faq_q10">¿Puedo volver a ver el tutorial?</string>
     <string name="faq_a10">¡Sí! Ve a Ajustes desde el menú (⋮ → Ajustes). Allí encontrarás la opción para repetir el tutorial en cualquier momento.</string>
 
+    <!-- ═══ Personalization Screen ═══ -->
     <string name="screen_personalization_title">Personalización</string>
     <string name="personalization_appearance_studio">Estudio de Apariencia</string>
     <string name="personalization_section_language">Idioma</string>
@@ -251,14 +360,103 @@
     <string name="personalization_shape_task_manager">Admin. de Tareas</string>
     <string name="personalization_shape_pc_orb">Orbe de Conexión PC</string>
     <string name="personalization_preview">VISTA PREVIA</string>
-    <string name="remote_desktop_direct_touch_label">Modo toque directo</string>
-    <string name="remote_desktop_direct_touch_desc">Las posiciones táctiles se mapean directamente a las coordenadas de la pantalla</string>
-    <string name="remote_desktop_pointer_speed_label">Velocidad del cursor: %.1fx</string>
-    <string name="remote_desktop_controls_hint_v2">Tocar = Clic • Mantener = Clic derecho • 2 dedos = Desplazar • Lápiz = Absoluto</string>
-    <string name="connection_scan_qr_code">Escanear código QR</string>
-    <string name="qr_scanner_title">Escanear código QR</string>
-    <string name="cd_back">Atrás</string>
-    <string name="qr_scanner_hint">Apunta la cámara al código QR mostrado en tu PC</string>
-    <string name="qr_scanner_permission_required">Se necesita permiso de cámara para escanear códigos QR</string>
-    <string name="qr_scanner_grant_permission">Conceder permiso</string>
+
+    <!-- ═══ Widget Configuration Activities ═══ -->
+    <string name="widget_config_app_launcher_title">Configure App Launcher</string>
+    <string name="widget_config_app_launcher_hint">Select the apps to show on your widget:</string>
+    <string name="widget_config_no_apps">No apps available yet.</string>
+    <string name="widget_config_no_apps_hint">Connect to your PC and sync apps first.</string>
+    <string name="widget_config_hardware_info_title">Configure Hardware Info</string>
+    <string name="widget_config_hardware_info_hint">Select the sensors to display on your widget:</string>
+    <string name="widget_config_no_sensors">No sensors available yet.</string>
+    <string name="widget_config_no_sensors_hint">Connect to your PC first to discover sensors.</string>
+    <string name="widget_config_remote_control_title">Configure Remote Control</string>
+    <string name="widget_config_remote_control_hint">Select the commands to show on your widget:</string>
+    <string name="tutorial_battery_title">Keep RemEx Running</string>
+    <string name="tutorial_battery_body">Android may put RemEx to sleep to save battery, which can interrupt your remote session.\n\nTap "Whitelist RemEx" below to exempt the app from battery optimization and keep your connection stable.</string>
+    <string name="tutorial_battery_action">Whitelist RemEx</string>
+    <string name="tile_lock_label">Lock PC</string>
+    <string name="tile_shutdown_label">Shutdown PC</string>
+    <string name="tile_restart_label">Restart PC</string>
+    <string name="tile_restart_uefi_label">UEFI Settings</string>
+    <string name="tile_sleep_label">Sleep PC</string>
+    <string name="tile_hibernate_label">Hibernate PC</string>
+    <string name="tile_monitor_off_label">Monitor Off</string>
+    <string name="tile_wol_label">Wake On LAN</string>
+
+    <!-- ═══ File Transfer Screen ═══ -->
+    <string name="screen_file_transfer_title">File Transfer</string>
+    <string name="file_transfer_local">Local (Phone)</string>
+    <string name="file_transfer_remote">Remote (PC)</string>
+    <string name="file_transfer_browse">Browse</string>
+    <string name="file_transfer_upload">Upload ↑</string>
+    <string name="file_transfer_download">Download ↓</string>
+    <string name="file_transfer_cancel">Cancel</string>
+    <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
+    <string name="file_transfer_loading">Loading…</string>
+    <string name="file_transfer_empty">No files found.</string>
+    <string name="file_transfer_shared_folder">Shared folder</string>
+    <string name="file_transfer_no_shared_folders">This host is not exposing any shared folders yet.</string>
+    <string name="file_transfer_select_root">Select a remote folder</string>
+    <string name="file_transfer_read_only_root">Read-only</string>
+    <string name="file_transfer_notification_channel_name">File transfers</string>
+    <string name="file_transfer_notification_channel_description">Shows progress for uploads and downloads.</string>
+    <string name="file_transfer_notification_upload_title">Uploading %1$s</string>
+    <string name="file_transfer_notification_download_title">Downloading %1$s</string>
+    <string name="file_transfer_notification_preparing">Preparing transfer…</string>
+    <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
+    <string name="file_transfer_notification_complete_title">Transfer complete</string>
+    <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
+    <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
+    <string name="file_transfer_notification_failed_title">Transfer failed</string>
+
+    <!-- File transfer — actions -->
+    <string name="file_transfer_rename">Rename</string>
+    <string name="file_transfer_delete">Delete</string>
+    <string name="file_transfer_pin_folder">Pin as shortcut</string>
+    <string name="file_transfer_select_all">Select all</string>
+    <string name="file_transfer_selected">selected</string>
+    <string name="file_transfer_delete_selected">Delete selected</string>
+    <string name="file_transfer_cancel_selection">Cancel selection</string>
+    <!-- File transfer — rename dialog -->
+    <string name="file_transfer_rename_title">Rename</string>
+    <string name="file_transfer_rename_hint">New name</string>
+    <string name="file_transfer_rename_confirm">Rename</string>
+    <!-- Generic dialog -->
+    <string name="dialog_cancel">Cancel</string>
+    <!-- Content descriptions -->
+    <string name="cd_more_options">More options</string>
+    <!-- File transfer settings tab -->
+    <string name="settings_ft_shared_folders_title">Android Shared Folders</string>
+    <string name="settings_ft_shared_folders_desc">Add folders from this device to share when Android hosting is enabled. Your selections are saved and will be used automatically once the feature is available.</string>
+    <string name="settings_ft_coming_soon">Android hosting coming in a future update</string>
+    <string name="settings_ft_no_folders">No folders added yet.</string>
+    <string name="settings_ft_add_folder">Add folder…</string>
+    <string name="settings_ft_remove_folder">Remove folder</string>
+
+    <!-- ═══ Material Shapes ═══ -->
+    <string name="shape_circle">Circle</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_triangle">Triangle</string>
+    <string name="shape_diamond">Diamond</string>
+    <string name="shape_pentagon">Pentagon</string>
+    <string name="shape_arch">Arch</string>
+    <string name="shape_semi_circle">Semi-Circle</string>
+    <string name="shape_pill">Pill</string>
+    <string name="shape_slanted">Slanted</string>
+    <string name="shape_fan">Fan</string>
+    <string name="shape_clam_shell">Clam Shell</string>
+    <string name="shape_gem">Gem</string>
+    <string name="shape_heart">Heart</string>
+    <string name="shape_flower">Flower</string>
+    <string name="shape_puffy">Puffy</string>
+    <string name="shape_puffy_diamond">Puffy Diamond</string>
+    <string name="shape_ghostish">Ghostish</string>
+    <string name="shape_oval">Oval</string>
+    <string name="shape_clover_4_leaf">4-Leaf Clover</string>
+    <string name="shape_clover_8_leaf">8-Leaf Clover</string>
+    <string name="shape_sunny">Sunny</string>
+    <string name="shape_soft_burst">Soft Burst</string>
+    <string name="shape_soft_boom">Soft Boom</string>
+    <string name="shape_pixel_circle">Pixel Circle</string>
 </resources>

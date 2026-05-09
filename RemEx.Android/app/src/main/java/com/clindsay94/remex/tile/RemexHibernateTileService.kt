@@ -6,10 +6,9 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import org.json.JSONObject
 
-class RemexLockTileService : TileService() {
-
+class RemexHibernateTileService : TileService() {
     private fun executeCommand() {
-        val commandJson = JSONObject().apply { put("action", "Lock") }.toString()
+        val commandJson = JSONObject().apply { put("action", "Hibernate") }.toString()
         RemexCoreClient.SendCommand(commandJson).getOrNull()
     }
 
@@ -20,8 +19,6 @@ class RemexLockTileService : TileService() {
             qsTile.updateTile()
             return
         }
-        // Require device unlock before executing, even for Lock PC (defence-in-depth: prevents
-        // a bystander from locking a remote machine from a stranger's locked phone).
         if (isLocked) {
             unlockAndRun { executeCommand() }
         } else {
@@ -32,7 +29,7 @@ class RemexLockTileService : TileService() {
     override fun onStartListening() {
         super.onStartListening()
         qsTile.state = if (RemexClientManager.isConnected.value) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        qsTile.label = getString(com.clindsay94.remex.R.string.tile_lock_label)
+        qsTile.label = getString(com.clindsay94.remex.R.string.tile_hibernate_label)
         qsTile.updateTile()
     }
 }
