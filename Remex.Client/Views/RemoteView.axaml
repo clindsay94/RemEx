@@ -1,8 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Client.ViewModels"
-    xmlns:local="clr-namespace:Remex.Client.Converters"
-    x:Class="Remex.Client.Views.RemoteView" x:DataType="vm:RemoteViewModel">
+    xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.RemoteView" x:DataType="vm:RemoteViewModel">
 
     <UserControl.Styles>
         <Style Selector="Button.remote-btn">
@@ -30,7 +29,7 @@
         <Style Selector="Button.remote-btn:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
-        
+
         <Style Selector="Button.remote-btn-danger">
             <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
@@ -48,43 +47,25 @@
 
             <!-- ═══ Header ═══ -->
             <StackPanel Spacing="4">
-                <TextBlock Text="{local:Localize Remote_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <TextBlock Text="{local:Localize Remote_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Text="{local:Localize Remote_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                <TextBlock Text="{local:Localize Remote_Subheader}" FontFamily="{StaticResource Sixtyfour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
             <!-- ═══ Wake on LAN ═══ -->
             <Border Classes="glass-card" Padding="20">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="{local:Localize Remote_WolSection}" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                    <TextBlock Text="{local:Localize Remote_WolDescription}"
-                               FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{local:Localize Remote_WolSection}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{local:Localize Remote_WolDescription}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
 
-                    <TextBox Text="{Binding WolMacAddress}" Watermark="{local:Localize Remote_WolMacWatermark}"
-                             Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" 
-                             BorderBrush="{DynamicResource CardBorderBrush}"
-                             CornerRadius="8" Padding="10,8" FontSize="12"
-                             FontFamily="Consolas, monospace"/>
+                    <TextBox Text="{Binding WolMacAddress}" Watermark="{local:Localize Remote_WolMacWatermark}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="10,8" FontSize="12" FontFamily="Consolas, monospace"/>
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0">
-                        <TextBox Grid.Column="0" Text="{Binding WolBroadcastIp}"
-                                 Watermark="{local:Localize Remote_WolBroadcastWatermark}"
-                                 Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" 
-                                 BorderBrush="{DynamicResource CardBorderBrush}"
-                                 CornerRadius="8" Padding="10,8" FontSize="12"
-                                 FontFamily="Consolas, monospace" Margin="0,0,8,0"/>
-                        <TextBox Grid.Column="1" Text="{Binding WolPort}" Width="80"
-                                 Watermark="{local:Localize Remote_WolPortWatermark}" Background="{DynamicResource GlassBaseDarkBrush}" 
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" 
-                                 Padding="10,8" FontSize="12" FontFamily="Consolas, monospace"/>
+                        <TextBox Grid.Column="0" Text="{Binding WolBroadcastIp}" Watermark="{local:Localize Remote_WolBroadcastWatermark}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="10,8" FontSize="12" FontFamily="Consolas, monospace" Margin="0,0,8,0"/>
+                        <TextBox Grid.Column="1" Text="{Binding WolPort}" Width="80" Watermark="{local:Localize Remote_WolPortWatermark}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="10,8" FontSize="12" FontFamily="Consolas, monospace"/>
                     </Grid>
 
-                    <Button Classes="remote-btn" Content="{local:Localize Remote_WolSend}"
-                            Command="{Binding SendWolCommand}" HorizontalAlignment="Stretch"/>
-                    <TextBlock Text="{Binding WolStatusText}" FontSize="11"
-                               Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
-                               IsVisible="{Binding WolStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Classes="remote-btn" Content="{local:Localize Remote_WolSend}" Command="{Binding SendWolCommand}" HorizontalAlignment="Stretch"/>
+                    <TextBlock Text="{Binding WolStatusText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding WolStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
             </Border>
 

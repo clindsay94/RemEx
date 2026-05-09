@@ -56,8 +56,8 @@
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="settings-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" VerticalAlignment="Center"/>
-                
-                <TextBlock Grid.Column="1" Text="{local:Localize Settings_Header}" FontSize="32" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1" Text="{local:Localize Settings_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SavedStatus}" FontSize="13" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
@@ -67,10 +67,10 @@
 
             <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
             <WrapPanel Margin="0,10,0,0">
-                
+
                 <!-- LEFT COLUMN -->
                 <StackPanel MinWidth="400" MaxWidth="600" Spacing="24" Margin="0,0,16,16">
-                    
+
                     <!-- ═══ Service Section ═══ -->
                     <Border Classes="glass-card" Padding="24" IsVisible="{Binding IsServiceSectionVisible}">
                         <StackPanel Spacing="20">
@@ -157,7 +157,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    
+
                     <!-- ═══ General Section ═══ -->
                     <Border Classes="glass-card" Padding="24">
                         <StackPanel Spacing="16">
@@ -263,7 +263,7 @@
                 <Border Classes="glass-card" Padding="24" IsVisible="{Binding SupportsSharedFolderConfiguration}">
                     <StackPanel Spacing="16">
                         <TextBlock Text="{local:Localize Settings_FileTransferSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                        
+
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">

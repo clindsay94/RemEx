@@ -14,8 +14,8 @@
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="*, Auto">
                 <StackPanel Spacing="4" Grid.Column="0">
-                    <TextBlock Text="{local:Localize AppLauncher_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="{local:Localize AppLauncher_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                    <TextBlock Text="{local:Localize AppLauncher_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                    <TextBlock Text="{local:Localize AppLauncher_Subheader}" FontFamily="{StaticResource Sixtyfour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
                 </StackPanel>
 
                 <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="1" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />

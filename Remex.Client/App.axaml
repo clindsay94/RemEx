@@ -35,6 +35,9 @@
 
             <!-- Typography -->
             <FontFamily x:Key="JetBrainsMono">avares://Remex.Client/Assets#JetBrains Mono, Consolas, DejaVu Sans Mono, monospace</FontFamily>
+            <FontFamily x:Key="Bungee_Shade">avares://Remex.Client/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade</FontFamily>
+            <FontFamily x:Key="Nabla">avares://Remex.Client/Assets/Fonts/Nabla-Regular.ttf#Nabla</FontFamily>
+            <FontFamily x:Key="Sixtyfour">avares://Remex.Client/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 

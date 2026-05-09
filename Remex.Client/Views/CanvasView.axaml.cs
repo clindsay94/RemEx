@@ -24,8 +24,8 @@ public partial class CanvasView : UserControl
     {
         if (_previousVm != null)
         {
-            _previousVm.ResetViewRequested   -= OnResetViewRequested;
-            _previousVm.MinimapPanRequested  -= OnMinimapPanRequested;
+            _previousVm.ResetViewRequested -= OnResetViewRequested;
+            _previousVm.MinimapPanRequested -= OnMinimapPanRequested;
             _previousVm.ShowSetAlertRequested -= OnShowSetAlertRequested;
         }
 
@@ -33,8 +33,8 @@ public partial class CanvasView : UserControl
 
         if (_previousVm != null)
         {
-            _previousVm.ResetViewRequested   += OnResetViewRequested;
-            _previousVm.MinimapPanRequested  += OnMinimapPanRequested;
+            _previousVm.ResetViewRequested += OnResetViewRequested;
+            _previousVm.MinimapPanRequested += OnMinimapPanRequested;
             _previousVm.ShowSetAlertRequested += OnShowSetAlertRequested;
         }
 

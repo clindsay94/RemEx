@@ -32,8 +32,8 @@
 
             <!-- Header -->
             <StackPanel Spacing="4">
-                <TextBlock Text="{local:Localize TaskMgr_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <TextBlock Text="{local:Localize TaskMgr_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Text="{local:Localize TaskMgr_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                <TextBlock Text="{local:Localize TaskMgr_Subheader}" FontFamily="{StaticResource Sixtyfour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
             </StackPanel>
 
             <!-- Search and Sort Controls -->
