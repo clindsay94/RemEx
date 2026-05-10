@@ -79,12 +79,12 @@
     <string name="tutorial_page6_body">Ви готові до керування.\n\nНа панелі керування ви можете моніторити системну статистику, запускати програми, керувати завданнями та транслювати робочий стіл.\n\nПерейдіть до розділу «Персоналізація», щоб налаштувати тему, вигляд карток, шрифти та кольори.\n\nЯкщо виникнуть проблеми, перегляньте FAQ у налаштуваннях. Приємного користування RemEx!</string>
 
     <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
-    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
+    <string name="tutorial_page_qr_title">Швидке сполучення за допомогою QR-коду</string>
     <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
 
     <!-- ═══ Connection Status Strings ═══ -->
-    <string name="status_disconnected">Disconnected</string>
-    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Відключено</string>
+    <string name="status_connected">Підключено</string>
     <string name="status_connecting">Connecting to %1$s:%2$d…</string>
     <string name="status_error">Error: %1$s</string>
     <string name="status_awaiting_metadata">Awaiting host metadata</string>
@@ -94,8 +94,8 @@
     <string name="error_discovery_failed">Discovery failed: %1$s</string>
     <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
          to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
-    <string name="permission_local_network_rationale">RemEx needs the Local Network permission to find and connect to your PC on Wi-Fi. Without it, discovery and connection will not work on Android 17 and later. Grant this permission in Settings to continue.</string>
-    <string name="error_local_network_permission_denied">Local Network access was denied. RemEx cannot connect to your PC without this permission on Android 17+. Please grant it in App Settings.</string>
+    <string name="permission_local_network_rationale">RemEx потрібен дозвіл на доступ до локальної мережі, щоб знайти та підключитися до вашого ПК через Wi-Fi. Без нього виявлення та підключення не працюватимуть на Android 17 та новіших версіях. Надайте цей дозвіл у Налаштуваннях.</string>
+    <string name="error_local_network_permission_denied">Доступ до локальної мережі відхилено. RemEx не може підключитися до вашого ПК без цього дозволу на Android 17+. Будь ласка, надайте його в Налаштуваннях програми.</string>
     <string name="capability_desktop_available">desktop available</string>
     <string name="capability_desktop_unavailable">desktop unavailable</string>
 
@@ -319,11 +319,11 @@
     <string name="faq_q4">Який порт використовується за замовчуванням?</string>
     <string name="faq_a4">Порт за замовчуванням — 5005. Якщо він зайнятий, Remex.Client.Desktop використає порт 5006. Активний порт можна побачити у вікні програми на ПК.\n\nЯкщо ви змінили порт на ПК, обов’язково введіть відповідний номер на екрані підключення в цьому додатку.</string>
 
-    <string name="faq_q5">Для чого потрібен ключ доступу?</string>
-    <string name="faq_a5">Ключ доступу — це необов’язковий токен автентифікації. Якщо ви встановили його на ПК (у налаштуваннях Remex.Host), ви повинні ввести той самий ключ тут для підключення.\n\nЯкщо ви не встановлювали ключ на ПК, залиште це поле порожнім.</string>
+    <string name="faq_q5">Як мені з'єднатися з ПК?</string>
+    <string name="faq_a5">При першому підключенні до ПК ви повинні ввести 6-значний PIN-код, що відображається на ПК. Це створює безпечний та зашифрований зв'язок між пристроями. Вам не потрібно буде вводити PIN знову, якщо ви не скинете підключення або не перевстановите додаток.</string>
 
     <string name="faq_q6">Чи можу я підключитися через інтернет (не тільки через LAN)?</string>
-    <string name="faq_a6">RemEx розроблено для використання в локальній мережі (LAN). Для підключення через інтернет вам потрібно налаштувати переадресацію портів (port forwarding) на роутері для порту 5005 і використовувати вашу публічну IP-адресу.\n\nВажливо: відкриття порту в інтернет є ризиком для безпеки. У такому разі завжди вмикайте ключ доступу. Рекомендованим способом для віддаленого доступу є VPN.</string>
+    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. A VPN is the recommended approach for remote access.</string>
 
     <string name="faq_q7">Віддалений робочий стіл гальмує або не працює. Що робити?</string>
     <string name="faq_a7">• Зменште якість у розділі Підключення → Налаштування віддаленого робочого столу.\n• Зменште цільовий FPS (15–20 FPS достатньо для більшості випадків).\n• Зменште масштаб, щоб знизити роздільну здатність потоку.\n• Переконайтеся, що ваш ПК підтримує бекенд захоплення екрана: DXGI на Windows, X11/Wayland на Linux.\n• Перевірте швидкість вашої локальної мережі (бажано Wi-Fi 5 ГГц).</string>
@@ -389,12 +389,12 @@
     <string name="tile_wol_label">Wake On LAN</string>
 
     <!-- ═══ File Transfer Screen ═══ -->
-    <string name="screen_file_transfer_title">File Transfer</string>
-    <string name="file_transfer_local">Local (Phone)</string>
-    <string name="file_transfer_remote">Remote (PC)</string>
-    <string name="file_transfer_browse">Browse</string>
-    <string name="file_transfer_upload">Upload ↑</string>
-    <string name="file_transfer_download">Download ↓</string>
+    <string name="screen_file_transfer_title">Передача файлів</string>
+    <string name="file_transfer_local">Локальний (Телефон)</string>
+    <string name="file_transfer_remote">Віддалений (ПК)</string>
+    <string name="file_transfer_browse">Огляд</string>
+    <string name="file_transfer_upload">Завантажити ↑</string>
+    <string name="file_transfer_download">Скачати ↓</string>
     <string name="file_transfer_cancel">Cancel</string>
     <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
     <string name="file_transfer_loading">Loading…</string>
@@ -439,9 +439,9 @@
     <string name="settings_ft_remove_folder">Remove folder</string>
 
     <!-- ═══ Material Shapes ═══ -->
-    <string name="shape_circle">Circle</string>
-    <string name="shape_square">Square</string>
-    <string name="shape_triangle">Triangle</string>
+    <string name="shape_circle">Коло</string>
+    <string name="shape_square">Квадрат</string>
+    <string name="shape_triangle">Трикутник</string>
     <string name="shape_diamond">Diamond</string>
     <string name="shape_pentagon">Pentagon</string>
     <string name="shape_arch">Arch</string>
@@ -451,7 +451,7 @@
     <string name="shape_fan">Fan</string>
     <string name="shape_clam_shell">Clam Shell</string>
     <string name="shape_gem">Gem</string>
-    <string name="shape_heart">Heart</string>
+    <string name="shape_heart">Серце</string>
     <string name="shape_flower">Flower</string>
     <string name="shape_puffy">Puffy</string>
     <string name="shape_puffy_diamond">Puffy Diamond</string>

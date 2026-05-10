@@ -1234,9 +1234,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Seu celular só vê as pastas listadas aqui. Direcione uploads rotineiros para uma pasta gravável como RemEx Transfers, e deixe o restante somente leitura, a menos que queira que dispositivos móveis possam modificá-los.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Adicione as pastas do PC que você deseja expor com o RemEx.
+2. Ative uploads apenas para pastas que devem aceitar arquivos de telefone → PC.
+3. Abra a Transferência de arquivos no seu telefone e navegue pelas pastas compartilhadas a partir daí.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Adicionar Pasta</value>
@@ -1754,13 +1754,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>How do I pair my phone or second PC?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -> Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
+    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -> Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Auto-discovery isn't finding my PC. What should I check?</value>

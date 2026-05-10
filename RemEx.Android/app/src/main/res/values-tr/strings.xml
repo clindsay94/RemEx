@@ -79,12 +79,12 @@
     <string name="tutorial_page6_body">Kontrolü ele almaya hazırsınız.\n\nPanelden sistem istatistiklerini izleyebilir, uygulamaları başlatabilir, görevleri yönetebilir ve masaüstünüzü uzaktan yayınlayabilirsiniz.\n\nTemanızı, kart şekillerinizi, yazı tiplerinizi ve renklerinizi özelleştirmek için Kişiselleştirme bölümüne gidin.\n\nHerhangi bir sorunla karşılaşırsanız Ayarlar\'daki SSS bölümüne göz atın. RemEx\'in tadını çıkarın!</string>
 
     <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
-    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
+    <string name="tutorial_page_qr_title">Hızlı QR Kod Eşleştirme</string>
     <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
 
     <!-- ═══ Connection Status Strings ═══ -->
-    <string name="status_disconnected">Disconnected</string>
-    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Bağlantı Kesildi</string>
+    <string name="status_connected">Bağlandı</string>
     <string name="status_connecting">Connecting to %1$s:%2$d…</string>
     <string name="status_error">Error: %1$s</string>
     <string name="status_awaiting_metadata">Awaiting host metadata</string>
@@ -94,8 +94,8 @@
     <string name="error_discovery_failed">Discovery failed: %1$s</string>
     <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
          to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
-    <string name="permission_local_network_rationale">RemEx needs the Local Network permission to find and connect to your PC on Wi-Fi. Without it, discovery and connection will not work on Android 17 and later. Grant this permission in Settings to continue.</string>
-    <string name="error_local_network_permission_denied">Local Network access was denied. RemEx cannot connect to your PC without this permission on Android 17+. Please grant it in App Settings.</string>
+    <string name="permission_local_network_rationale">RemEx'in Wi-Fi üzerinden bilgisayarınızı bulması ve bağlanması için Yerel Ağ iznine ihtiyacı vardır. Bu izin olmadan, Android 17 ve sonraki sürümlerde keşif ve bağlantı çalışmayacaktır. Devam etmek için Ayarlar'dan bu izni verin.</string>
+    <string name="error_local_network_permission_denied">Yerel Ağ erişimi reddedildi. RemEx, Android 17+ sürümlerinde bu izin olmadan bilgisayarınıza bağlanamaz. Lütfen Uygulama Ayarları'ndan izin verin.</string>
     <string name="capability_desktop_available">desktop available</string>
     <string name="capability_desktop_unavailable">desktop unavailable</string>
 
@@ -319,11 +319,11 @@
     <string name="faq_q4">Varsayılan port nedir?</string>
     <string name="faq_a4">Varsayılan port 5005\'tir. Eğer Remex.Client.Desktop 5005 portunun kullanımda olduğunu görürse, 5006\'ya geri döner. Aktif portu masaüstü istemcisinin penceresinde görebilirsiniz.\n\nHost tarafında portu değiştirdiyseniz, bu uygulamadaki Bağlantı ekranına eşleşen portu girdiğinizden emin olun.</string>
 
-    <string name="faq_q5">Erişim Anahtarı ne işe yarar?</string>
-    <string name="faq_a5">Erişim Anahtarı isteğe bağlı bir kimlik doğrulama belirtecidir. Host üzerinde bir erişim anahtarı ayarlarsanız (Remex.Host ayarlarında), bağlanmak için buraya aynı anahtarı girmelisiniz.\n\nHost üzerinde bir anahtar yapılandırmadıysanız bu alanı boş bırakın.</string>
+    <string name="faq_q5">Bilgisayarımla nasıl eşleştirme yaparım?</string>
+    <string name="faq_a5">Bilgisayarınıza ilk kez bağlandığınızda, PC ekranında görünen 6 haneli PIN kodunu girmeniz gerekir. Bu, cihazlar arasında güvenli ve şifreli bir bağlantı oluşturur. Bağlantıyı sıfırlamadığınız veya uygulamayı yeniden yüklemediğiniz sürece PIN kodunu tekrar girmeniz gerekmeyecektir.</string>
 
     <string name="faq_q6">İnternet üzerinden bağlanabilir miyim?</string>
-    <string name="faq_a6">RemEx, yerel ağ (LAN) kullanımı için tasarlanmıştır. İnternet üzerinden bağlanmak için yönlendiricinizde port yönlendirme ayarlamanız ve genel IP adresinizi kullanmanız gerekir.\n\nÖnemli: Portu internete açmak bir güvenlik riskidir. Bunu yaparsanız, kimlik doğrulama için her zaman Erişim Anahtarını etkinleştirin. Uzaktan erişim için önerilen yöntem VPN\'dir.</string>
+    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. A VPN is the recommended approach for remote access.</string>
 
     <string name="faq_q7">Uzak Masaüstü gecikmeli çalışıyor. Ne yapabilirim?</string>
     <string name="faq_a7">• Bağlantı → Uzak Masaüstü Varsayılanları kısmındaki Kalite kaydırıcısını düşürün.\n• Hedef FPS\'yi düşürün (çoğu kullanım durumu için 15–20 FPS yeterlidir).\n• Yayınlanan çözünürlüğü azaltmak için Ölçeği düşürün.\n• PC\'nizin ekran yakalama arka ucunu desteklediğinden emin olun: Windows\'ta DXGI, Linux\'ta X11/Wayland.\n• Hızlı, yerel bir Wi-Fi ağında (5 GHz tercih edilir) olduğunuzu kontrol edin.</string>
@@ -389,12 +389,12 @@
     <string name="tile_wol_label">Wake On LAN</string>
 
     <!-- ═══ File Transfer Screen ═══ -->
-    <string name="screen_file_transfer_title">File Transfer</string>
-    <string name="file_transfer_local">Local (Phone)</string>
-    <string name="file_transfer_remote">Remote (PC)</string>
-    <string name="file_transfer_browse">Browse</string>
-    <string name="file_transfer_upload">Upload ↑</string>
-    <string name="file_transfer_download">Download ↓</string>
+    <string name="screen_file_transfer_title">Dosya Transferi</string>
+    <string name="file_transfer_local">Yerel (Telefon)</string>
+    <string name="file_transfer_remote">Uzak (PC)</string>
+    <string name="file_transfer_browse">Göz At</string>
+    <string name="file_transfer_upload">Yükle ↑</string>
+    <string name="file_transfer_download">İndir ↓</string>
     <string name="file_transfer_cancel">Cancel</string>
     <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
     <string name="file_transfer_loading">Loading…</string>
@@ -439,9 +439,9 @@
     <string name="settings_ft_remove_folder">Remove folder</string>
 
     <!-- ═══ Material Shapes ═══ -->
-    <string name="shape_circle">Circle</string>
-    <string name="shape_square">Square</string>
-    <string name="shape_triangle">Triangle</string>
+    <string name="shape_circle">Daire</string>
+    <string name="shape_square">Kare</string>
+    <string name="shape_triangle">Üçgen</string>
     <string name="shape_diamond">Diamond</string>
     <string name="shape_pentagon">Pentagon</string>
     <string name="shape_arch">Arch</string>
@@ -451,7 +451,7 @@
     <string name="shape_fan">Fan</string>
     <string name="shape_clam_shell">Clam Shell</string>
     <string name="shape_gem">Gem</string>
-    <string name="shape_heart">Heart</string>
+    <string name="shape_heart">Kalp</string>
     <string name="shape_flower">Flower</string>
     <string name="shape_puffy">Puffy</string>
     <string name="shape_puffy_diamond">Puffy Diamond</string>
