@@ -116,6 +116,8 @@
     <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
     <string name="task_manager_fetching">Fetching processes…</string>
+    <string name="task_manager_retry">Retry</string>
+    <string name="task_manager_dismiss">Dismiss</string>
     <string name="task_manager_header_name">Name</string>
     <string name="task_manager_header_cpu">CPU</string>
     <string name="task_manager_header_ram">RAM</string>

@@ -304,8 +304,9 @@ public class LinuxTelemetryService : ITelemetryService
 
             return double.IsNaN(usage) || usage < 0 ? 0 : Math.Round(usage, 1);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to read CPU usage from {Path}.", _statFile);
             return 0;
         }
     }
@@ -325,8 +326,9 @@ public class LinuxTelemetryService : ITelemetryService
 
             return (Math.Round(totalGb, 2), Math.Round(Math.Max(0, usedGb), 2));
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to read RAM usage from {Path}.", _meminfoFile);
             return (0, 0);
         }
     }
@@ -340,8 +342,9 @@ public class LinuxTelemetryService : ITelemetryService
             var time = TimeSpan.FromSeconds(uptimeSeconds);
             return $"{(int)time.TotalDays}d {time.Hours}h {time.Minutes}m";
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to read uptime from {Path}.", _uptimeFile);
             return "N/A";
         }
     }

@@ -419,9 +419,13 @@ public sealed class PingPongHandler(
 
     private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)
     {
-        try
+        // Per-iteration try/catch: a single transient failure (e.g. /proc read race,
+        // hwmon entry briefly unreadable, websocket send hiccup) used to kill the loop
+        // forever — the user would see "connected but telemetry never updates". Now
+        // we log a warning and keep going; only WebSocket-state failures end the stream.
+        while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
-            while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+            try
             {
                 var payload = telemetryBackgroundService.CurrentPayload;
                 if (payload != null)
@@ -435,15 +439,25 @@ public sealed class PingPongHandler(
 
                     await MessageSerializer.SendAsync(webSocket, message, ct);
                 }
+            }
+            catch (OperationCanceledException) { return; }
+            catch (WebSocketException ex)
+            {
+                // Socket is gone; no point continuing.
+                logger.LogWarning(ex, "Telemetry stream halted: WebSocket error.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                // Transient failure (e.g. /proc parse, hwmon read). Log loudly and keep going.
+                logger.LogWarning(ex, "Telemetry stream tick failed; continuing.");
+            }
 
-                // Assuming 1-second ticks as defined in instructions/impl generally
+            try
+            {
                 await Task.Delay(1000, ct);
             }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            logger.LogTrace(ex, "Telemetry stream halted.");
+            catch (OperationCanceledException) { return; }
         }
     }
 
