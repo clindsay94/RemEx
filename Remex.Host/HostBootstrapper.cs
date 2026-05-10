@@ -160,6 +160,21 @@ public static class HostBootstrapper
                 "Configure the service to 'Log on as' your Windows user account.");
         }
 
+        // Surface missing Linux capture/input tools at startup, loud and early. This is the
+        // root cause of the "RD is black, commands don't work" report on Linux hosts: the
+        // services silently return empty bytes when their external tools aren't installed.
+        if (OperatingSystem.IsLinux())
+        {
+            var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Remex.Host");
+            var caps = app.Services.GetRequiredService<IHostCapabilitiesProvider>().GetCurrent();
+            if (!caps.SupportsRemoteDesktop && caps.RemoteDesktopUnavailableReason is { } reason)
+            {
+                // LogError so it shows up under default console verbosity.
+                logger.LogError("Remote desktop unavailable: {Reason}", reason);
+                Console.Error.WriteLine($"[Remex.Host] {reason}");
+            }
+        }
+
         // Enable WebSocket support.
         app.UseWebSockets();
 

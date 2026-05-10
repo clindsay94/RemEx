@@ -1,5 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.*
@@ -41,6 +45,12 @@ import com.clindsay94.remex.ui.theme.materialShapesList
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import kotlin.math.roundToInt
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 @OptIn(
         ExperimentalMaterial3Api::class,
@@ -288,14 +298,23 @@ fun PersonalizationScreen(
                                                     HapticFeedbackConstants.KEYBOARD_TAP
                                             )
                                             expanded = false
-                                            if (tag == "system") {
-                                                AppCompatDelegate.setApplicationLocales(
-                                                        LocaleListCompat.getEmptyLocaleList()
-                                                )
+                                            val locales = if (tag == "system") {
+                                                LocaleListCompat.getEmptyLocaleList()
                                             } else {
-                                                AppCompatDelegate.setApplicationLocales(
-                                                        LocaleListCompat.forLanguageTags(tag)
-                                                )
+                                                LocaleListCompat.forLanguageTags(tag)
+                                            }
+                                            AppCompatDelegate.setApplicationLocales(locales)
+                                            // On Android 12 and below, AppCompatDelegate only
+                                            // auto-recreates the activity when the host is
+                                            // AppCompatActivity. MainActivity extends
+                                            // ComponentActivity, so on pre-Tiramisu we have to
+                                            // recreate manually for the new locale to take
+                                            // effect immediately. On Android 13+, the system
+                                            // handles recreation via LocaleManager and the
+                                            // explicit call is a no-op (already in TRANSLATING
+                                            // state — recreate() is idempotent).
+                                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                                view.context.findActivity()?.recreate()
                                             }
                                         }
                                 )

@@ -1147,6 +1147,21 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_QrCodeTooltip" xml:space="preserve">
     <value>Generate a QR code to connect the RemEx Android app</value>
   </data>
+  <data name="Settings_ShowPairingPin" xml:space="preserve">
+    <value>Show pairing PIN</value>
+  </data>
+  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
+    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+  </data>
+  <data name="Settings_PairingPinTitle" xml:space="preserve">
+    <value>PAIRING PIN</value>
+  </data>
+  <data name="Settings_PairingPinHint" xml:space="preserve">
+    <value>Enter this code on your phone to complete pairing</value>
+  </data>
+  <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
+    <value>Expires in {0}s</value>
+  </data>
   <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
     <value>Open the drag-and-drop sensor workspace to monitor PC telemetry</value>
   </data>

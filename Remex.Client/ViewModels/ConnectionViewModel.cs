@@ -94,9 +94,34 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasActivePairingPin))]
+    [NotifyPropertyChangedFor(nameof(PairingPinExpiresInText))]
     private DateTimeOffset? _activePairingExpiresAt;
 
     public bool HasActivePairingPin => !string.IsNullOrEmpty(ActivePairingPin);
+
+    /// <summary>
+    /// Whether the pairing-PIN panel should be visible. Auto-set to true when a PIN
+    /// arrives so the user sees it without having to click; the user can dismiss it
+    /// and re-open via <see cref="ShowPairingPinCommand"/>.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showPairingPin;
+
+    /// <summary>
+    /// Localized "Expires in Ns" countdown string driven by <see cref="ActivePairingExpiresAt"/>.
+    /// Refreshed once per second by <see cref="_pairingExpiryTimer"/>.
+    /// </summary>
+    public string PairingPinExpiresInText
+    {
+        get
+        {
+            if (ActivePairingExpiresAt is null) return string.Empty;
+            var seconds = (int)Math.Max(0, (ActivePairingExpiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds);
+            return string.Format(LocalizationService.Instance["Settings_PairingPinExpiresIn"], seconds);
+        }
+    }
+
+    private DispatcherTimer? _pairingExpiryTimer;
 
     /// <summary>
     /// LAN address phones on the same network should use to reach this PC's host.
@@ -139,14 +164,47 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             {
                 ActivePairingPin = pin;
                 ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(expires);
+                ShowPairingPin = true;
+                StartPairingExpiryTimer();
             });
         service.PinCleared += () =>
             Dispatcher.UIThread.Post(() =>
             {
                 ActivePairingPin = null;
                 ActivePairingExpiresAt = null;
+                ShowPairingPin = false;
+                StopPairingExpiryTimer();
             });
     }
+
+    private void StartPairingExpiryTimer()
+    {
+        if (_pairingExpiryTimer is not null) return;
+        _pairingExpiryTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) =>
+        {
+            OnPropertyChanged(nameof(PairingPinExpiresInText));
+            if (ActivePairingExpiresAt is { } expires && DateTimeOffset.UtcNow >= expires)
+            {
+                ActivePairingPin = null;
+                ActivePairingExpiresAt = null;
+                ShowPairingPin = false;
+                StopPairingExpiryTimer();
+            }
+        });
+        _pairingExpiryTimer.Start();
+    }
+
+    private void StopPairingExpiryTimer()
+    {
+        _pairingExpiryTimer?.Stop();
+        _pairingExpiryTimer = null;
+    }
+
+    [RelayCommand]
+    private void ShowPairingPinPanel() => ShowPairingPin = HasActivePairingPin;
+
+    [RelayCommand]
+    private void ClosePairingPin() => ShowPairingPin = false;
 
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
     public ObservableCollection<double> LatencyHistory { get; } = new();

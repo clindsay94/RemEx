@@ -33,6 +33,8 @@ enum class ProcessSortField {
 class TaskManagerViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
+        private const val MAX_CONSECUTIVE_TIMEOUTS = 3
+
         private val EXCLUDED_PROCESSES =
                 setOf(
                         "svchost",
@@ -146,6 +148,10 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                         )
                     }
                     _processes.value = list
+                    // Reset the unresponsive-host detector — we just got a real response.
+                    lastResponseAt = System.currentTimeMillis()
+                    consecutiveTimeouts = 0
+                    _loadError.value = null
                 } catch (e: Exception) {
                     Log.w("TaskManagerVM", "Failed to parse process list", e)
                 } finally {
@@ -175,8 +181,24 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
     private val _killError = MutableStateFlow<String?>(null)
     val killError: StateFlow<String?> = _killError.asStateFlow()
 
+    private val _loadError = MutableStateFlow<String?>(null)
+    /**
+     * Surfaced to the UI when the host stops responding to process_list_request after several
+     * consecutive timeouts. Distinct from [killError] (per-action) — this is a persistent
+     * "host is silent" banner that replaces the empty refresh-storm pattern.
+     */
+    val loadError: StateFlow<String?> = _loadError.asStateFlow()
+
+    private var lastResponseAt: Long = 0L
+    private var consecutiveTimeouts: Int = 0
+
     private var initialRefreshJob: Job? = null
     private var autoRefreshJob: Job? = null
+
+    fun clearLoadError() {
+        _loadError.value = null
+        consecutiveTimeouts = 0
+    }
 
     fun clearKillError() { _killError.value = null }
 
@@ -231,6 +253,14 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                 return@launch
             }
 
+            // If the host has been silent for several rounds, stop hammering it. The user
+            // re-tries via clearLoadError() / pull-to-refresh — see ConnectionScreen.
+            if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
+                _isRefreshing.value = false
+                return@launch
+            }
+
+            val sentAt = System.currentTimeMillis()
             _isRefreshing.value = true
             val request = JSONObject().apply { put("type", "process_list_request") }
             RemexCoreClient.SendMessage(request.toString()).getOrNull()
@@ -238,6 +268,27 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
             // Safety net: clear after 5s in case host doesn't respond.
             delay(5000)
             _isRefreshing.value = false
+
+            // If no response arrived in this window, count it as a timeout. After
+            // MAX_CONSECUTIVE_TIMEOUTS rounds without a single response we surface a
+            // persistent error and stop the auto-refresh job — this replaces the
+            // "spins forever, refreshes every 4s, never shows processes" pattern.
+            if (lastResponseAt < sentAt) {
+                consecutiveTimeouts++
+                Log.w(
+                        "TaskManagerVM",
+                        "Host did not respond to process_list_request " +
+                                "(timeout $consecutiveTimeouts/$MAX_CONSECUTIVE_TIMEOUTS)"
+                )
+                if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
+                    _loadError.value =
+                            "Host is not responding to process list requests. " +
+                                    "Check that pairing completed and the host has " +
+                                    "permission to read process info."
+                    autoRefreshJob?.cancel()
+                    autoRefreshJob = null
+                }
+            }
         }
     }
 

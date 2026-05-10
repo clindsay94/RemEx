@@ -47,6 +47,7 @@ fun TaskManagerScreen(
     val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val killError by viewModel.killError.collectAsState()
+    val loadError by viewModel.loadError.collectAsState()
 
         LaunchedEffect(viewModel, isVisible, isConnected) {
                 viewModel.setAutoRefreshEnabled(isVisible && isConnected)
@@ -66,11 +67,13 @@ fun TaskManagerScreen(
             isConnected = isConnected,
             isRefreshing = isRefreshing,
             killError = killError,
+            loadError = loadError,
             onRefreshProcesses = { viewModel.refreshProcesses() },
             onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
             onUpdateSortField = { viewModel.updateSortField(it) },
             onKillProcess = { viewModel.killProcess(it) },
             onClearKillError = { viewModel.clearKillError() },
+            onClearLoadError = { viewModel.clearLoadError() },
             onNavigateToConnection = onNavigateToConnection
     )
 }
@@ -93,7 +96,9 @@ fun TaskManagerScreenContent(
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier,
         killError: String? = null,
+        loadError: String? = null,
         onClearKillError: () -> Unit = {},
+        onClearLoadError: () -> Unit = {},
 ) {
     val view = LocalView.current
 
@@ -141,6 +146,15 @@ fun TaskManagerScreenContent(
                 NotConnectedBanner(
                         isConnected = isConnected,
                         onNavigateToConnection = onNavigateToConnection
+                )
+
+                LoadErrorBanner(
+                        message = loadError,
+                        onRetry = {
+                            onClearLoadError()
+                            onRefreshProcesses()
+                        },
+                        onDismiss = onClearLoadError
                 )
 
                 SearchBar(
@@ -436,5 +450,47 @@ private fun UsageIndicator(label: String, value: String, progress: Float, color:
                 trackColor = color.copy(alpha = 0.1f),
                 strokeCap = StrokeCap.Round
         )
+    }
+}
+
+/**
+ * Persistent error banner shown when the host has stopped responding to process_list_request
+ * after several consecutive timeouts. Distinct from a transient snackbar — this stays put until
+ * the user retries or dismisses it, and replaces the previous "spinner refreshes forever" UI.
+ */
+@Composable
+private fun LoadErrorBanner(
+        message: String?,
+        onRetry: () -> Unit,
+        onDismiss: () -> Unit,
+) {
+    if (message.isNullOrBlank()) return
+    Card(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+    ) {
+        Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(18.dp)
+            )
+            Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.task_manager_retry)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_manager_dismiss)) }
+        }
     }
 }
