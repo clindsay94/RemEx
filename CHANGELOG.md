@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.15.0] - 2026-05-15
+
+### Added
+- **Stability:** Final polish and stability fixes for the 1.x series before 2.0.
+
+---
+
 ## [1.11.0] - 2026-04-15
 
 ### Added
@@ -85,9 +92,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Status | Release Date | End of Support |
 |---------|--------|--------------|----------------|
-| 1.11.0 | Current | Apr 15, 2026 | Apr 15, 2027 |
-| 1.10.0 | Supported | Mar 2026 | Mar 2027 |
-| 1.9.0 | Maintained | Feb 2026 | Feb 2027 |
+| 1.15.0 | Current | May 15, 2026 | May 15, 2027 |
+| 1.11.0 | Supported | Apr 15, 2026 | Apr 15, 2027 |
+| 1.10.0 | Maintained | Mar 2026 | Mar 2027 |
+| 1.9.0 | Unsupported | Feb 2026 | Feb 2027 |
 | < 1.9.0 | Unsupported | - | - |
 
 ---

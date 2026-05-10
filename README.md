@@ -7,13 +7,13 @@
 ![Android](https://img.shields.io/badge/Android-Compose%20%7C%20Material%203-3DDC84?logo=android&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Android-22C55E)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B)](LICENSE)
-![Version](https://img.shields.io/badge/Version-1.13.0-FF6B6B)
+![Version](https://img.shields.io/badge/Version-1.15.0-FF6B6B)
 
 A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · QR Pairing · App launcher · Process manager\
 Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full **native Android** app (Kotlin + Jetpack Compose) powered by a .NET NativeAOT JNI core.
 
-> **Leaving closed beta soon:** production launch is imminent on Google Play. Once the Android app is live on the Play Store, APKs will no longer be supplied from this repository.
+> **Leaving closed beta soon:** production launch is imminent on Google Play. Once the Android app is live on the Play Store, APKs will no longer be supplied from this repository.  **Note:** The next major release will be 2.0 with exciting new features!
 
 ---
 
@@ -21,7 +21,7 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 
 ### Windows Desktop Client (Installer)
 
-1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-v1.11.0-Setup.exe`.
+1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download the latest `RemEx-v1.15.0-Setup.exe`.
 2. Run the installer and follow the wizard:
    - Choose **Client only** or **Client + Windows Service** (service starts automatically at boot).
 3. Launch **RemEx** from the Start Menu or desktop shortcut.
@@ -29,31 +29,31 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 ### Linux Desktop Client & Host (Automated)
 
 1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download:
-   - `remex-client-v1.xx.x-linux-x64.tar.gz` (for the Desktop UI)
-   - `remex-host-v1.xx.x-linux-x64.tar.gz` (for the background service)
+   - `remex-client-v1.15.0-linux-x64.tar.gz` (for the Desktop UI)
+   - `remex-host-v1.15.0-linux-x64.tar.gz` (for the background service)
 2. **Extract** the archives:
    ```bash
-   tar -xzf remex-client-v1.xx.x-linux-x64.tar.gz
-   tar -xzf remex-host-v1.xx.x-linux-x64.tar.gz
+   tar -xzf remex-client-v1.15.0-linux-x64.tar.gz
+   tar -xzf remex-host-v1.15.0-linux-x64.tar.gz
    ```
 3. **Install** via the provided scripts (installs to `~/.local/share/` and sets up `systemd` user services):
    ```bash
    # Install Client (adds to Applications menu)
-   ./remex-client-v1.xx.x-linux-x64/install.sh install
+   ./remex-client-v1.15.0-linux-x64/install.sh install
 
    # Install Host (starts background service)
-   ./remex-host-v1.xx.x-linux-x64/install.sh install
+   ./remex-host-v1.15.0-linux-x64/install.sh install
    ```
 
 ### Native Android App
 
-1. Go to the **Releases** page and download the latest `RemEx-v1.13.0.apk`.
+1. Go to the **Releases** page and download the latest `RemEx-v1.15.0.apk`.
 2. Open the downloaded `.apk` file to install.
 3. Use the new **QR Scanner** on the connection screen to pair instantly with your PC!
 
 ---
 
-## 💎 Key Features (v1.13.0)
+## 💎 Key Features (v1.15.0)
 
 ### ✨ Enhanced User Experience (New in v1.11.0)
 - **Haptic Feedback:** Tactile vibration feedback for all Android interactions.
