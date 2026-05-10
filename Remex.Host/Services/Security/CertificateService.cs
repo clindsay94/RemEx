@@ -20,10 +20,17 @@ public sealed class CertificateService : ICertificateService
     private X509Certificate2? _certificate;
     private string? _spkiHashBase64;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly string? _certPathOverride;
 
     public CertificateService(ILogger<CertificateService> logger)
     {
         _logger = logger;
+    }
+
+    internal CertificateService(ILogger<CertificateService> logger, string certPath)
+    {
+        _logger = logger;
+        _certPathOverride = certPath;
     }
 
     public async Task<X509Certificate2> GetOrCreateCertificateAsync(CancellationToken ct)
@@ -144,8 +151,11 @@ public sealed class CertificateService : ICertificateService
         return Convert.ToBase64String(hash);
     }
 
-    private static string GetCertificatePath()
+    private string GetCertificatePath()
     {
+        if (_certPathOverride is not null)
+            return _certPathOverride;
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             return Path.Combine(

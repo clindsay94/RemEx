@@ -977,7 +977,7 @@ sudo systemctl start remex-host</value>
 Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
-    <value>Then enter ws://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value>
+    <value>Then enter wss://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
@@ -1701,5 +1701,107 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
+  </data>
+
+  <!-- About and FAQ -->
+  <data name="About_KeyboardShortcuts" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="About_CommandPalette" xml:space="preserve">
+    <value>Command Palette</value>
+  </data>
+  <data name="About_UndoLayout" xml:space="preserve">
+    <value>Undo Layout Edit</value>
+  </data>
+  <data name="About_RedoLayout" xml:space="preserve">
+    <value>Redo Layout Edit</value>
+  </data>
+  <data name="About_CloseOverlays" xml:space="preserve">
+    <value>Close Overlays/Panels</value>
+  </data>
+  <data name="About_WhatsNew" xml:space="preserve">
+    <value>What's New?</value>
+  </data>
+  <data name="About_Faq" xml:space="preserve">
+    <value>Frequently Asked Questions</value>
+  </data>
+  <data name="About_WhatsNew_Features" xml:space="preserve">
+    <value>Features</value>
+  </data>
+  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
+    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+  </data>
+  <data name="About_WhatsNew_Fixes" xml:space="preserve">
+    <value>Fixes</value>
+  </data>
+  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
+    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+  </data>
+  <data name="About_WhatsNew_Issues" xml:space="preserve">
+    <value>Issues (Known)</value>
+  </data>
+  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
+    <value>Bitmap-on-clipboard deferred to 2.x</value>
+  </data>
+
+  <data name="Faq_Q1_Question" xml:space="preserve">
+    <value>What do I need to run on my PC?</value>
+  </data>
+  <data name="Faq_Q1_Answer" xml:space="preserve">
+    <value>You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+  </data>
+  <data name="Faq_Q2_Question" xml:space="preserve">
+    <value>How do I pair my phone or second PC?</value>
+  </data>
+  <data name="Faq_Q2_Answer" xml:space="preserve">
+    <value>Scan the QR code found in the Settings -> Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
+  </data>
+  <data name="Faq_Q3_Question" xml:space="preserve">
+    <value>How do I find my PC's IP address?</value>
+  </data>
+  <data name="Faq_Q3_Answer" xml:space="preserve">
+    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -> Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+  </data>
+  <data name="Faq_Q4_Question" xml:space="preserve">
+    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+  </data>
+  <data name="Faq_Q4_Answer" xml:space="preserve">
+    <value>1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+  </data>
+  <data name="Faq_Q5_Question" xml:space="preserve">
+    <value>What is the default port?</value>
+  </data>
+  <data name="Faq_Q5_Answer" xml:space="preserve">
+    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window.</value>
+  </data>
+  <data name="Faq_Q6_Question" xml:space="preserve">
+    <value>Can I connect over the internet?</value>
+  </data>
+  <data name="Faq_Q6_Answer" xml:space="preserve">
+    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+  </data>
+  <data name="Faq_Q7_Question" xml:space="preserve">
+    <value>Remote Desktop is laggy. What can I do?</value>
+  </data>
+  <data name="Faq_Q7_Answer" xml:space="preserve">
+    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+  </data>
+  <data name="Faq_Q8_Question" xml:space="preserve">
+    <value>What is Wake-on-LAN (WOL)?</value>
+  </data>
+  <data name="Faq_Q8_Answer" xml:space="preserve">
+    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+  </data>
+  <data name="Faq_Q9_Question" xml:space="preserve">
+    <value>How do I transfer files?</value>
+  </data>
+  <data name="Faq_Q9_Answer" xml:space="preserve">
+    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+  </data>
+  <data name="Faq_Q10_Question" xml:space="preserve">
+    <value>Can I lock my PC remotely?</value>
+  </data>
+  <data name="Faq_Q10_Answer" xml:space="preserve">
+    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
   </data>
 </root>

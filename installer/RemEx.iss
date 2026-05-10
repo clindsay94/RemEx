@@ -1,11 +1,11 @@
 ; ============================================================
 ;  RemEx Installer
-;  Build with: iscc /DAppVersion=1.6.0 installer\RemEx.iss
+;  Build with: iscc /DAppVersion=2.0.0 installer\RemEx.iss
 ;  Or use:     installer\build-installer.ps1
 ; ============================================================
 
 #ifndef AppVersion
-  #define AppVersion "1.6.0"
+  #define AppVersion "2.0.0"
 #endif
 
 #define AppName        "RemEx"
@@ -32,8 +32,10 @@ DisableProgramGroupPage=yes
 
 LicenseFile=terms.rtf
 SetupIconFile=..\Remex.Client.Desktop\icon.ico
-WizardImageFile=compiler:WizModernImage.bmp
-WizardSmallImageFile=compiler:WizModernSmallImage.bmp
+WizardImageFile=..\Remex.Client\Assets\New-REMEX.png
+WizardSmallImageFile=..\Remex.Client\Assets\New-REMEX.png
+WizardResizable=yes
+WizardStyle=modern
 
 OutputDir=Output
 OutputBaseFilename=RemEx-v{#AppVersion}-Setup

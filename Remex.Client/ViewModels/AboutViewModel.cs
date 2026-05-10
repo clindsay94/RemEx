@@ -46,23 +46,51 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     
     private void LoadWhatsNew()
     {
-        WhatsNewItems.Add(new WhatsNewItem("Features", "End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts"));
-        WhatsNewItems.Add(new WhatsNewItem("Fixes", "Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks"));
-        WhatsNewItems.Add(new WhatsNewItem("Issues (Known)", "Bitmap-on-clipboard deferred to 2.x"));
+        WhatsNewItems.Add(new WhatsNewItem(
+            LocalizationService.Instance["About_WhatsNew_Features"],
+            LocalizationService.Instance["About_WhatsNew_Features_Body"]));
+            
+        WhatsNewItems.Add(new WhatsNewItem(
+            LocalizationService.Instance["About_WhatsNew_Fixes"],
+            LocalizationService.Instance["About_WhatsNew_Fixes_Body"]));
+            
+        WhatsNewItems.Add(new WhatsNewItem(
+            LocalizationService.Instance["About_WhatsNew_Issues"],
+            LocalizationService.Instance["About_WhatsNew_Issues_Body"]));
     }
 
     private void LoadFaq()
     {
-        FaqItems.Add(new FaqItem("What do I need to run on my PC?", "You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page."));
-        FaqItems.Add(new FaqItem("How do I pair my phone or second PC?", "Scan the QR code found in the Settings -> Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host."));
-        FaqItems.Add(new FaqItem("How do I find my PC's IP address?", "Windows: 'ipconfig' in Command Prompt. macOS: System Settings -> Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window."));
-        FaqItems.Add(new FaqItem("Auto-discovery isn't finding my PC. What should I check?", "1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS)."));
-        FaqItems.Add(new FaqItem("What is the default port?", "The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window."));
-        FaqItems.Add(new FaqItem("Can I connect over the internet?", "RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons."));
-        FaqItems.Add(new FaqItem("Remote Desktop is laggy. What can I do?", "• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network."));
-        FaqItems.Add(new FaqItem("What is Wake-on-LAN (WOL)?", "Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen."));
-        FaqItems.Add(new FaqItem("How do I transfer files?", "Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders."));
-        FaqItems.Add(new FaqItem("Can I lock my PC remotely?", "Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC."));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q1_Question"],
+            LocalizationService.Instance["Faq_Q1_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q2_Question"],
+            LocalizationService.Instance["Faq_Q2_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q3_Question"],
+            LocalizationService.Instance["Faq_Q3_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q4_Question"],
+            LocalizationService.Instance["Faq_Q4_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q5_Question"],
+            LocalizationService.Instance["Faq_Q5_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q6_Question"],
+            LocalizationService.Instance["Faq_Q6_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q7_Question"],
+            LocalizationService.Instance["Faq_Q7_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q8_Question"],
+            LocalizationService.Instance["Faq_Q8_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q9_Question"],
+            LocalizationService.Instance["Faq_Q9_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q10_Question"],
+            LocalizationService.Instance["Faq_Q10_Answer"]));
     }
 
     [RelayCommand]

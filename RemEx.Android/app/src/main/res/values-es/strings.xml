@@ -79,21 +79,25 @@
     <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nDesde el panel de control puedes monitorizar estadísticas del sistema, lanzar aplicaciones, gestionar tareas y transmitir tu escritorio de forma remota.\n\nVe a Personalización para ajustar tu tema, formas de tarjetas, fuentes y colores.\n\nConsulta las Preguntas Frecuentes en Ajustes si tienes problemas. ¡Disfruta de RemEx!</string>
 
     <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
-    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
-    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
+    <string name="tutorial_page_qr_title">Emparejamiento rápido con código QR</string>
+    <string name="tutorial_page_qr_body">La forma más rápida de conectarse es escaneando un código QR.\n\n1. Abre Remex.Client.Desktop en tu PC\n2. Ve a Conexión → Mostrar Código QR\n3. En tu teléfono, toca el icono QR en la pantalla de Conexión\n4. Apunta tu cámara al código\n\n¡Tu teléfono se guardará y conectará automáticamente, sin necesidad de escribir nada!</string>
 
     <!-- ═══ Connection Status Strings ═══ -->
-    <string name="status_disconnected">Disconnected</string>
-    <string name="status_connected">Connected</string>
-    <string name="status_connecting">Connecting to %1$s:%2$d…</string>
+    <string name="status_disconnected">Desconectado</string>
+    <string name="status_connected">Conectado</string>
+    <string name="status_connecting">Conectando a %1$s:%2$d…</string>
     <string name="status_error">Error: %1$s</string>
-    <string name="status_awaiting_metadata">Awaiting host metadata</string>
-    <string name="status_metadata_unavailable">Host metadata unavailable</string>
-    <string name="status_native_lib_not_loaded">Native library not loaded</string>
-    <string name="error_no_host_found">No RemEx host found on the network</string>
-    <string name="error_discovery_failed">Discovery failed: %1$s</string>
-    <string name="capability_desktop_available">desktop available</string>
-    <string name="capability_desktop_unavailable">desktop unavailable</string>
+    <string name="status_awaiting_metadata">Esperando metadatos del host</string>
+    <string name="status_metadata_unavailable">Metadatos del host no disponibles</string>
+    <string name="status_native_lib_not_loaded">Librería nativa no cargada</string>
+    <string name="error_no_host_found">No se encontró ningún host RemEx en la red</string>
+    <string name="error_discovery_failed">Fallo en el descubrimiento: %1$s</string>
+    <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
+         to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
+    <string name="permission_local_network_rationale">RemEx necesita el permiso de Red Local para encontrar y conectarse a tu PC por Wi-Fi. Sin él, el descubrimiento y la conexión no funcionarán en Android 17 y versiones posteriores. Concede este permiso en los Ajustes para continuar.</string>
+    <string name="error_local_network_permission_denied">El acceso a la Red Local fue denegado. RemEx no puede conectarse a tu PC sin este permiso en Android 17+. Por favor, concédelo en los Ajustes de la Aplicación.</string>
+    <string name="capability_desktop_available">escritorio disponible</string>
+    <string name="capability_desktop_unavailable">escritorio no disponible</string>
 
     <!-- ═══ Foreground Service Strings ═══ -->
     <string name="notification_channel_name">RemEx Connection</string>
@@ -315,11 +319,11 @@
     <string name="faq_q4">¿Cuál es el puerto por defecto?</string>
     <string name="faq_a4">Es el 5005. Si está ocupado, el cliente usará el 5006. El puerto activo se muestra en la ventana de la aplicación de escritorio.\n\nSi cambias el puerto en el host, asegúrate de poner el mismo en la app móvil.</string>
 
-    <string name="faq_q5">¿Para qué sirve la Clave de Acceso?</string>
-    <string name="faq_a5">Es un token opcional de autenticación. Si configuras una clave en el host, deberás introducir la misma aquí para poder conectar.\n\nSi no has configurado ninguna en el PC, deja este campo vacío.</string>
+    <string name="faq_q5">¿Cómo realizo el emparejamiento con mi PC?</string>
+    <string name="faq_a5">Cuando te conectas a un PC por primera vez, debes introducir el PIN de 6 dígitos que se muestra en el PC. Esto crea un vínculo seguro y cifrado entre los dispositivos. No necesitarás introducir el PIN de nuevo a menos que restablezcas la conexión o reinstales la app.</string>
 
     <string name="faq_q6">¿Puedo conectar por internet (fuera de casa)?</string>
-    <string name="faq_a6">RemEx está diseñado para redes locales (LAN). Para usarlo por internet, tendrías que abrir puertos en tu router (port forwarding) y usar tu IP pública.\n\nImportante: Exponer puertos es un riesgo de seguridad. Usa siempre Clave de Acceso si lo haces. Lo más recomendable es usar una VPN.</string>
+    <string name="faq_a6">RemEx está diseñado para redes locales (LAN). Para usarlo por internet, tendrías que abrir puertos en tu router (port forwarding) y usar tu IP pública.\n\nImportante: Exponer puertos a internet es un riesgo de seguridad. Se recomienda encarecidamente el uso de una VPN para el acceso remoto.</string>
 
     <string name="faq_q7">El Escritorio Remoto va lento. ¿Cómo lo mejoro?</string>
     <string name="faq_a7">• Baja el control de Calidad en los ajustes de conexión.\n• Reduce los FPS objetivo (15–20 FPS suele bastar).\n• Baja la Escala para reducir la resolución.\n• Asegúrate de usar una red Wi-Fi rápida (preferiblemente de 5 GHz).</string>
@@ -362,101 +366,101 @@
     <string name="personalization_preview">VISTA PREVIA</string>
 
     <!-- ═══ Widget Configuration Activities ═══ -->
-    <string name="widget_config_app_launcher_title">Configure App Launcher</string>
-    <string name="widget_config_app_launcher_hint">Select the apps to show on your widget:</string>
-    <string name="widget_config_no_apps">No apps available yet.</string>
-    <string name="widget_config_no_apps_hint">Connect to your PC and sync apps first.</string>
-    <string name="widget_config_hardware_info_title">Configure Hardware Info</string>
-    <string name="widget_config_hardware_info_hint">Select the sensors to display on your widget:</string>
-    <string name="widget_config_no_sensors">No sensors available yet.</string>
-    <string name="widget_config_no_sensors_hint">Connect to your PC first to discover sensors.</string>
-    <string name="widget_config_remote_control_title">Configure Remote Control</string>
-    <string name="widget_config_remote_control_hint">Select the commands to show on your widget:</string>
-    <string name="tutorial_battery_title">Keep RemEx Running</string>
-    <string name="tutorial_battery_body">Android may put RemEx to sleep to save battery, which can interrupt your remote session.\n\nTap "Whitelist RemEx" below to exempt the app from battery optimization and keep your connection stable.</string>
-    <string name="tutorial_battery_action">Whitelist RemEx</string>
-    <string name="tile_lock_label">Lock PC</string>
-    <string name="tile_shutdown_label">Shutdown PC</string>
-    <string name="tile_restart_label">Restart PC</string>
-    <string name="tile_restart_uefi_label">UEFI Settings</string>
-    <string name="tile_sleep_label">Sleep PC</string>
-    <string name="tile_hibernate_label">Hibernate PC</string>
-    <string name="tile_monitor_off_label">Monitor Off</string>
+    <string name="widget_config_app_launcher_title">Configurar Lanzador de Apps</string>
+    <string name="widget_config_app_launcher_hint">Selecciona las apps para mostrar en tu widget:</string>
+    <string name="widget_config_no_apps">No hay apps disponibles todavía.</string>
+    <string name="widget_config_no_apps_hint">Conéctate a tu PC y sincroniza las apps primero.</string>
+    <string name="widget_config_hardware_info_title">Configurar Información de Hardware</string>
+    <string name="widget_config_hardware_info_hint">Selecciona los sensores para mostrar en tu widget:</string>
+    <string name="widget_config_no_sensors">No hay sensores disponibles todavía.</string>
+    <string name="widget_config_no_sensors_hint">Conéctate a tu PC primero para descubrir sensores.</string>
+    <string name="widget_config_remote_control_title">Configurar Control Remoto</string>
+    <string name="widget_config_remote_control_hint">Selecciona los comandos para mostrar en tu widget:</string>
+    <string name="tutorial_battery_title">Mantener RemEx en ejecución</string>
+    <string name="tutorial_battery_body">Android puede poner a RemEx a dormir para ahorrar batería, lo que puede interrumpir tu sesión remota.\n\nToca "Autorizar RemEx" abajo para eximir a la app de la optimización de batería y mantener tu conexión estable.</string>
+    <string name="tutorial_battery_action">Autorizar RemEx</string>
+    <string name="tile_lock_label">Bloquear PC</string>
+    <string name="tile_shutdown_label">Apagar PC</string>
+    <string name="tile_restart_label">Reiniciar PC</string>
+    <string name="tile_restart_uefi_label">Ajustes UEFI</string>
+    <string name="tile_sleep_label">Suspender PC</string>
+    <string name="tile_hibernate_label">Hibernar PC</string>
+    <string name="tile_monitor_off_label">Apagar Monitor</string>
     <string name="tile_wol_label">Wake On LAN</string>
 
     <!-- ═══ File Transfer Screen ═══ -->
-    <string name="screen_file_transfer_title">File Transfer</string>
-    <string name="file_transfer_local">Local (Phone)</string>
-    <string name="file_transfer_remote">Remote (PC)</string>
-    <string name="file_transfer_browse">Browse</string>
-    <string name="file_transfer_upload">Upload ↑</string>
-    <string name="file_transfer_download">Download ↓</string>
-    <string name="file_transfer_cancel">Cancel</string>
-    <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
-    <string name="file_transfer_loading">Loading…</string>
-    <string name="file_transfer_empty">No files found.</string>
-    <string name="file_transfer_shared_folder">Shared folder</string>
-    <string name="file_transfer_no_shared_folders">This host is not exposing any shared folders yet.</string>
-    <string name="file_transfer_select_root">Select a remote folder</string>
-    <string name="file_transfer_read_only_root">Read-only</string>
-    <string name="file_transfer_notification_channel_name">File transfers</string>
-    <string name="file_transfer_notification_channel_description">Shows progress for uploads and downloads.</string>
-    <string name="file_transfer_notification_upload_title">Uploading %1$s</string>
-    <string name="file_transfer_notification_download_title">Downloading %1$s</string>
-    <string name="file_transfer_notification_preparing">Preparing transfer…</string>
-    <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
-    <string name="file_transfer_notification_complete_title">Transfer complete</string>
-    <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
-    <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
-    <string name="file_transfer_notification_failed_title">Transfer failed</string>
+    <string name="screen_file_transfer_title">Transferencia de Archivos</string>
+    <string name="file_transfer_local">Local (Teléfono)</string>
+    <string name="file_transfer_remote">Remoto (PC)</string>
+    <string name="file_transfer_browse">Explorar</string>
+    <string name="file_transfer_upload">Subir ↑</string>
+    <string name="file_transfer_download">Descargar ↓</string>
+    <string name="file_transfer_cancel">Cancelar</string>
+    <string name="file_transfer_not_connected">Conéctate a un host para explorar archivos remotos.</string>
+    <string name="file_transfer_loading">Cargando…</string>
+    <string name="file_transfer_empty">No se encontraron archivos.</string>
+    <string name="file_transfer_shared_folder">Carpeta compartida</string>
+    <string name="file_transfer_no_shared_folders">Este host aún no está exponiendo ninguna carpeta compartida.</string>
+    <string name="file_transfer_select_root">Selecciona una carpeta remota</string>
+    <string name="file_transfer_read_only_root">Solo lectura</string>
+    <string name="file_transfer_notification_channel_name">Transferencias de archivos</string>
+    <string name="file_transfer_notification_channel_description">Muestra el progreso de las subidas y descargas.</string>
+    <string name="file_transfer_notification_upload_title">Subiendo %1$s</string>
+    <string name="file_transfer_notification_download_title">Descargando %1$s</string>
+    <string name="file_transfer_notification_preparing">Preparando transferencia…</string>
+    <string name="file_transfer_notification_progress">%1$d de %2$d bytes transferidos</string>
+    <string name="file_transfer_notification_complete_title">Transferencia completada</string>
+    <string name="file_transfer_notification_upload_complete">%1$s subido</string>
+    <string name="file_transfer_notification_download_complete">%1$s descargado</string>
+    <string name="file_transfer_notification_failed_title">Transferencia fallida</string>
 
     <!-- File transfer — actions -->
-    <string name="file_transfer_rename">Rename</string>
-    <string name="file_transfer_delete">Delete</string>
-    <string name="file_transfer_pin_folder">Pin as shortcut</string>
-    <string name="file_transfer_select_all">Select all</string>
-    <string name="file_transfer_selected">selected</string>
-    <string name="file_transfer_delete_selected">Delete selected</string>
-    <string name="file_transfer_cancel_selection">Cancel selection</string>
+    <string name="file_transfer_rename">Renombrar</string>
+    <string name="file_transfer_delete">Eliminar</string>
+    <string name="file_transfer_pin_folder">Anclar como acceso directo</string>
+    <string name="file_transfer_select_all">Seleccionar todo</string>
+    <string name="file_transfer_selected">seleccionado</string>
+    <string name="file_transfer_delete_selected">Eliminar seleccionados</string>
+    <string name="file_transfer_cancel_selection">Cancelar selección</string>
     <!-- File transfer — rename dialog -->
-    <string name="file_transfer_rename_title">Rename</string>
-    <string name="file_transfer_rename_hint">New name</string>
-    <string name="file_transfer_rename_confirm">Rename</string>
+    <string name="file_transfer_rename_title">Renombrar</string>
+    <string name="file_transfer_rename_hint">Nuevo nombre</string>
+    <string name="file_transfer_rename_confirm">Renombrar</string>
     <!-- Generic dialog -->
-    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_cancel">Cancelar</string>
     <!-- Content descriptions -->
-    <string name="cd_more_options">More options</string>
+    <string name="cd_more_options">Más opciones</string>
     <!-- File transfer settings tab -->
-    <string name="settings_ft_shared_folders_title">Android Shared Folders</string>
-    <string name="settings_ft_shared_folders_desc">Add folders from this device to share when Android hosting is enabled. Your selections are saved and will be used automatically once the feature is available.</string>
-    <string name="settings_ft_coming_soon">Android hosting coming in a future update</string>
-    <string name="settings_ft_no_folders">No folders added yet.</string>
-    <string name="settings_ft_add_folder">Add folder…</string>
-    <string name="settings_ft_remove_folder">Remove folder</string>
+    <string name="settings_ft_shared_folders_title">Carpetas compartidas de Android</string>
+    <string name="settings_ft_shared_folders_desc">Añade carpetas de este dispositivo para compartir cuando el alojamiento de Android esté habilitado. Tus selecciones se guardarán y se usarán automáticamente una vez que la función esté disponible.</string>
+    <string name="settings_ft_coming_soon">El alojamiento de Android llegará en una futura actualización</string>
+    <string name="settings_ft_no_folders">Aún no se han añadido carpetas.</string>
+    <string name="settings_ft_add_folder">Añadir carpeta…</string>
+    <string name="settings_ft_remove_folder">Eliminar carpeta</string>
 
     <!-- ═══ Material Shapes ═══ -->
-    <string name="shape_circle">Circle</string>
-    <string name="shape_square">Square</string>
-    <string name="shape_triangle">Triangle</string>
-    <string name="shape_diamond">Diamond</string>
-    <string name="shape_pentagon">Pentagon</string>
-    <string name="shape_arch">Arch</string>
-    <string name="shape_semi_circle">Semi-Circle</string>
-    <string name="shape_pill">Pill</string>
-    <string name="shape_slanted">Slanted</string>
-    <string name="shape_fan">Fan</string>
-    <string name="shape_clam_shell">Clam Shell</string>
-    <string name="shape_gem">Gem</string>
-    <string name="shape_heart">Heart</string>
-    <string name="shape_flower">Flower</string>
-    <string name="shape_puffy">Puffy</string>
-    <string name="shape_puffy_diamond">Puffy Diamond</string>
-    <string name="shape_ghostish">Ghostish</string>
-    <string name="shape_oval">Oval</string>
-    <string name="shape_clover_4_leaf">4-Leaf Clover</string>
-    <string name="shape_clover_8_leaf">8-Leaf Clover</string>
-    <string name="shape_sunny">Sunny</string>
-    <string name="shape_soft_burst">Soft Burst</string>
-    <string name="shape_soft_boom">Soft Boom</string>
-    <string name="shape_pixel_circle">Pixel Circle</string>
+    <string name="shape_circle">Círculo</string>
+    <string name="shape_square">Cuadrado</string>
+    <string name="shape_triangle">Triángulo</string>
+    <string name="shape_diamond">Diamante</string>
+    <string name="shape_pentagon">Pentágono</string>
+    <string name="shape_arch">Arco</string>
+    <string name="shape_semi_circle">Semicírculo</string>
+    <string name="shape_pill">Píldora</string>
+    <string name="shape_slanted">Inclinado</string>
+    <string name="shape_fan">Abanico</string>
+    <string name="shape_clam_shell">Almeja</string>
+    <string name="shape_gem">Gema</string>
+    <string name="shape_heart">Corazón</string>
+    <string name="shape_flower">Flor</string>
+    <string name="shape_puffy">Hinchado</string>
+    <string name="shape_puffy_diamond">Diamante hinchado</string>
+    <string name="shape_ghostish">Fantasmal</string>
+    <string name="shape_oval">Óvalo</string>
+    <string name="shape_clover_4_leaf">Trébol de 4 hojas</string>
+    <string name="shape_clover_8_leaf">Trébol de 8 hojas</string>
+    <string name="shape_sunny">Soleado</string>
+    <string name="shape_soft_burst">Explosión suave</string>
+    <string name="shape_soft_boom">Estallido suave</string>
+    <string name="shape_pixel_circle">Círculo de píxeles</string>
 </resources>

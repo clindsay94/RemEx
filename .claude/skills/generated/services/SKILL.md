@@ -101,6 +101,25 @@ When designing services for dual-mode applications (client + embedded host), be 
 var service = App.Services.GetService<T>() ?? App.EmbeddedHostServices?.GetService<T>();
 ```
 
+<!-- Evolution: 2026-05-09 | source: ep-2026-05-09-003 | pattern: exclusive_async_operation_gating -->
+
+### Exclusive Async Operation Gating
+Critical async operations that modify singleton state or manage exclusive resources (like pairing or hardware access) must be protected by a semaphore or mutex to prevent race conditions.
+
+**Pattern (C#):**
+```csharp
+private readonly SemaphoreSlim _gate = new(1, 1);
+
+public async Task ExecuteOnceAsync() {
+    if (!_gate.Wait(0)) return; // Immediate reject or throw
+    try {
+        // Implementation
+    } finally {
+        _gate.Release();
+    }
+}
+```
+
 ## How to Explore
 
 1. `gitnexus_context({name: "AddProgramWindow"})` — see callers and callees

@@ -85,6 +85,25 @@ Start here when exploring this area:
 | Remex | 13 calls |
 | Service | 6 calls |
 
+## Best Practices
+
+<!-- Evolution: 2026-05-09 | source: ep-2026-05-09-001 | pattern: compose_pager_sync_settled_page -->
+
+### Compose Pager Synchronization
+When synchronizing a `HorizontalPager` with external state (like a selected tab index), use `pagerState.settledPage` for the back-sync (Pager -> State). Using `currentPage` causes a feedback loop during animations as `currentPage` changes multiple times before reaching the target.
+
+**Correct Pattern:**
+```kotlin
+LaunchedEffect(pagerState.settledPage) {
+    selectedTabIndex = pagerState.settledPage
+}
+```
+
+<!-- Evolution: 2026-05-09 | source: ep-2026-05-09-002 | pattern: high_fidelity_preview_derivation -->
+
+### High-Fidelity Previews
+UI previews (especially for personalization features) must use the same underlying derivation logic as the runtime components. If the app uses `colorSchemeFromSeed`, the preview component should also derive a full `ColorScheme` from the seed color to ensure accuracy.
+
 ## How to Explore
 
 1. `gitnexus_context({name: "RemoteDesktopScreen"})` — see callers and callees

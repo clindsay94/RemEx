@@ -59,10 +59,10 @@ Tiles that existed pre-audit (RestartUefi, WakeOnLan) are tracked here for compl
 
 | Track | ID | Status | Agent | Notes |
 |---|---|---|---|---|
-| Localization | 3A-localization | 🚧 IN PROGRESS | GPT-5.4 | .NET file-transfer localization landed early (nav/tutorial/shared-folder/view strings across desktop .resx files). Remaining work is reconciliation against Android locale files and any later Phase 2 strings |
-| Docs | 3B-docs | ⏳ PENDING | — | Blocked on Phase 2 |
-| Installer | 3C-installer | ⏳ PENDING | — | Blocked on Phase 2 |
-| Final Tests | 3D-tests | ⏳ PENDING | — | Blocked on Phase 2 |
+| Localization | 3A-localization | ✅ COMPLETE | Gemini | Reconciled Android and .NET locales; generated scripts/sync_resx.py for future .resx syncing |
+| Docs | 3B-docs | ✅ COMPLETE | Gemini | Updated README, SECURITY, API_CONTRACTS, and ANDROID_SETUP for 2.0 |
+| Final Tests | 3C-tests | 🚧 IN PROGRESS | Claude | User reported Claude is currently working on this track |
+| Installer | 3D-installer | ✅ COMPLETE | Gemini | Updated RemEx.iss (v2.0.0, New-REMEX.png) and build-linux.sh (branding priority) |
 
 ## Audit Remediation — 2026-05-09
 

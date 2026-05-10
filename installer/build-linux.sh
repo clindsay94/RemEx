@@ -63,8 +63,9 @@ if [[ "$SKIP_CLIENT" == false ]]; then
     cp "$LINUX_DIR/client-install.sh"    "$CLIENT_STAGE/install.sh"
     chmod +x "$CLIENT_STAGE/install.sh"
 
-    # Icon — prefer PNG, fall back to ico (install script handles the rest)
-    if   [[ -f "$CLIENT_PROJ/icon.png" ]]; then cp "$CLIENT_PROJ/icon.png" "$CLIENT_STAGE/remex.png"
+    # Icon — prefer New-REMEX.png, then icon.png, then icon.ico
+    if   [[ -f "$REPO_ROOT/Remex.Client/Assets/New-REMEX.png" ]]; then cp "$REPO_ROOT/Remex.Client/Assets/New-REMEX.png" "$CLIENT_STAGE/remex.png"
+    elif [[ -f "$CLIENT_PROJ/icon.png" ]]; then cp "$CLIENT_PROJ/icon.png" "$CLIENT_STAGE/remex.png"
     elif [[ -f "$CLIENT_PROJ/icon.ico" ]]; then cp "$CLIENT_PROJ/icon.ico" "$CLIENT_STAGE/remex.ico"
     fi
 

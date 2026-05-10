@@ -79,21 +79,25 @@
     <string name="tutorial_page6_body">Anda siap untuk memegang kendali.\n\nDari dasbor Anda dapat memantau statistik sistem, meluncurkan aplikasi, mengelola tugas, dan melakukan streaming desktop dari jarak jauh.\n\nBuka Personalisasi untuk menyesuaikan tema, bentuk kartu, font, dan warna.\n\nLihat FAQ di Pengaturan jika Anda menemui masalah. Selamat menikmati RemEx!</string>
 
     <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
-    <string name="tutorial_page_qr_title">Quick Pair with QR Code</string>
-    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
+    <string name="tutorial_page_qr_title">Pasangkan Cepat dengan Kode QR</string>
+    <string name="tutorial_page_qr_body">Cara tercepat untuk terhubung adalah dengan memindai kode QR.\n\n1. Buka Remex.Client.Desktop di PC Anda\n2. Buka Koneksi → Tampilkan Kode QR\n3. Di ponsel Anda, ketuk ikon QR pada layar Koneksi\n4. Arahkan kamera Anda ke kode tersebut\n\nPonsel Anda akan secara otomatis menyimpan dan terhubung — tidak perlu mengetik manual!</string>
 
     <!-- ═══ Connection Status Strings ═══ -->
-    <string name="status_disconnected">Disconnected</string>
-    <string name="status_connected">Connected</string>
-    <string name="status_connecting">Connecting to %1$s:%2$d…</string>
-    <string name="status_error">Error: %1$s</string>
-    <string name="status_awaiting_metadata">Awaiting host metadata</string>
-    <string name="status_metadata_unavailable">Host metadata unavailable</string>
-    <string name="status_native_lib_not_loaded">Native library not loaded</string>
-    <string name="error_no_host_found">No RemEx host found on the network</string>
-    <string name="error_discovery_failed">Discovery failed: %1$s</string>
-    <string name="capability_desktop_available">desktop available</string>
-    <string name="capability_desktop_unavailable">desktop unavailable</string>
+    <string name="status_disconnected">Terputus</string>
+    <string name="status_connected">Terhubung</string>
+    <string name="status_connecting">Menghubungkan ke %1$s:%2$d…</string>
+    <string name="status_error">Kesalahan: %1$s</string>
+    <string name="status_awaiting_metadata">Menunggu metadata host</string>
+    <string name="status_metadata_unavailable">Metadata host tidak tersedia</string>
+    <string name="status_native_lib_not_loaded">Pustaka asli tidak dimuat</string>
+    <string name="error_no_host_found">Tidak ada host RemEx yang ditemukan di jaringan</string>
+    <string name="error_discovery_failed">Penemuan gagal: %1$s</string>
+    <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
+         to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
+    <string name="permission_local_network_rationale">RemEx memerlukan izin Jaringan Lokal untuk menemukan dan terhubung ke PC Anda melalui Wi-Fi. Tanpa izin ini, penemuan dan koneksi tidak akan berfungsi pada Android 17 dan yang lebih baru. Berikan izin ini di Pengaturan untuk melanjutkan.</string>
+    <string name="error_local_network_permission_denied">Akses Jaringan Lokal ditolak. RemEx tidak dapat terhubung ke PC Anda tanpa izin ini di Android 17+. Berikan izin ini di Pengaturan Aplikasi.</string>
+    <string name="capability_desktop_available">desktop tersedia</string>
+    <string name="capability_desktop_unavailable">desktop tidak tersedia</string>
 
     <!-- ═══ Foreground Service Strings ═══ -->
     <string name="notification_channel_name">RemEx Connection</string>
@@ -315,11 +319,11 @@
     <string name="faq_q4">Berapa port defaultnya?</string>
     <string name="faq_a4">Port default adalah 5005. Jika Remex.Client.Desktop menemukan port 5005 sedang digunakan, ia akan beralih ke 5006. Anda dapat melihat port yang aktif di jendela klien desktop.\n\nJika Anda mengubah port di sisi host, pastikan untuk memasukkan port yang sama di layar Koneksi pada aplikasi ini.</string>
 
-    <string name="faq_q5">Apa fungsi Kunci Akses?</string>
-    <string name="faq_a5">Kunci Akses adalah token autentikasi opsional. Jika Anda mengatur kunci akses pada host (dalam pengaturan Remex.Host), Anda harus memasukkan kunci yang sama di sini untuk terhubung.\n\nJika Anda belum mengonfigurasinya di host, biarkan kolom ini kosong.</string>
+    <string name="faq_q5">Bagaimana cara memasangkan dengan PC saya?</string>
+    <string name="faq_a5">Saat Anda terhubung ke PC untuk pertama kalinya, Anda harus memasukkan PIN 6 digit yang ditampilkan di PC. Ini menciptakan ikatan yang aman dan terenkripsi antar perangkat. Anda tidak perlu memasukkan PIN lagi kecuali Anda mengatur ulang koneksi atau menginstal ulang aplikasi.</string>
 
     <string name="faq_q6">Bisakah saya terhubung melalui internet (bukan hanya LAN)?</string>
-    <string name="faq_a6">RemEx dirancang untuk penggunaan jaringan lokal (LAN). Untuk terhubung melalui internet, Anda perlu mengatur port forwarding di router untuk port 5005 (atau port mana pun yang Anda gunakan) dan menggunakan alamat IP publik Anda.\n\nPenting: Mengekspos port ke internet adalah risiko keamanan. Jika Anda melakukan ini, selalu aktifkan Kunci Akses untuk autentikasi. VPN adalah pendekatan yang direkomendasikan untuk akses jarak jauh.</string>
+    <string name="faq_a6">RemEx dirancang untuk penggunaan jaringan lokal (LAN). Untuk terhubung melalui internet, Anda perlu mengatur port forwarding di router untuk port 5005 (atau port mana pun yang Anda gunakan) dan menggunakan alamat IP publik Anda.\n\nPenting: Mengekspos port ke internet adalah risiko keamanan. VPN adalah pendekatan yang direkomendasikan untuk akses jarak jauh.</string>
 
     <string name="faq_q7">Desktop Jarak Jauh lambat atau tidak berfungsi. Apa yang bisa saya lakukan?</string>
     <string name="faq_a7">• Turunkan slider Kualitas di Koneksi → Default Desktop Jarak Jauh.\n• Kurangi Target FPS (15–20 FPS cukup untuk sebagian besar penggunaan).\n• Turunkan Skala untuk mengurangi resolusi yang dialirkan.\n• Pastikan PC mendukung backend tangkapan layar: DXGI di Windows, X11/Wayland di Linux.\n• Pastikan Anda berada di jaringan Wi-Fi lokal yang cepat (5 GHz lebih disukai).</string>
@@ -362,100 +366,100 @@
     <string name="personalization_preview">PRATINJAU</string>
 
     <!-- ═══ Widget Configuration Activities ═══ -->
-    <string name="widget_config_app_launcher_title">Configure App Launcher</string>
-    <string name="widget_config_app_launcher_hint">Select the apps to show on your widget:</string>
-    <string name="widget_config_no_apps">No apps available yet.</string>
-    <string name="widget_config_no_apps_hint">Connect to your PC and sync apps first.</string>
-    <string name="widget_config_hardware_info_title">Configure Hardware Info</string>
-    <string name="widget_config_hardware_info_hint">Select the sensors to display on your widget:</string>
-    <string name="widget_config_no_sensors">No sensors available yet.</string>
-    <string name="widget_config_no_sensors_hint">Connect to your PC first to discover sensors.</string>
-    <string name="widget_config_remote_control_title">Configure Remote Control</string>
-    <string name="widget_config_remote_control_hint">Select the commands to show on your widget:</string>
-    <string name="tutorial_battery_title">Keep RemEx Running</string>
-    <string name="tutorial_battery_body">Android may put RemEx to sleep to save battery, which can interrupt your remote session.\n\nTap "Whitelist RemEx" below to exempt the app from battery optimization and keep your connection stable.</string>
+    <string name="widget_config_app_launcher_title">Konfigurasi Peluncur Aplikasi</string>
+    <string name="widget_config_app_launcher_hint">Pilih aplikasi untuk ditampilkan di widget Anda:</string>
+    <string name="widget_config_no_apps">Belum ada aplikasi yang tersedia.</string>
+    <string name="widget_config_no_apps_hint">Hubungkan ke PC Anda dan sinkronkan aplikasi terlebih dahulu.</string>
+    <string name="widget_config_hardware_info_title">Konfigurasi Info Perangkat Keras</string>
+    <string name="widget_config_hardware_info_hint">Pilih sensor untuk ditampilkan di widget Anda:</string>
+    <string name="widget_config_no_sensors">Belum ada sensor yang tersedia.</string>
+    <string name="widget_config_no_sensors_hint">Hubungkan ke PC Anda terlebih dahulu untuk menemukan sensor.</string>
+    <string name="widget_config_remote_control_title">Konfigurasi Kontrol Jarak Jauh</string>
+    <string name="widget_config_remote_control_hint">Pilih perintah untuk ditampilkan di widget Anda:</string>
+    <string name="tutorial_battery_title">Biarkan RemEx Berjalan</string>
+    <string name="tutorial_battery_body">Android mungkin menidurkan RemEx untuk menghemat baterai, yang dapat mengganggu sesi jarak jauh Anda.\n\nKetuk "Whitelist RemEx" di bawah untuk mengecualikan aplikasi dari pengoptimalan baterai dan menjaga koneksi Anda tetap stabil.</string>
     <string name="tutorial_battery_action">Whitelist RemEx</string>
-    <string name="tile_lock_label">Lock PC</string>
-    <string name="tile_shutdown_label">Shutdown PC</string>
+    <string name="tile_lock_label">Kunci PC</string>
+    <string name="tile_shutdown_label">Matikan PC</string>
     <string name="tile_restart_label">Restart PC</string>
-    <string name="tile_restart_uefi_label">UEFI Settings</string>
-    <string name="tile_sleep_label">Sleep PC</string>
-    <string name="tile_hibernate_label">Hibernate PC</string>
-    <string name="tile_monitor_off_label">Monitor Off</string>
+    <string name="tile_restart_uefi_label">Pengaturan UEFI</string>
+    <string name="tile_sleep_label">Tidurkan PC</string>
+    <string name="tile_hibernate_label">Hibernasi PC</string>
+    <string name="tile_monitor_off_label">Matikan Monitor</string>
     <string name="tile_wol_label">Wake On LAN</string>
 
     <!-- ═══ File Transfer Screen ═══ -->
-    <string name="screen_file_transfer_title">File Transfer</string>
-    <string name="file_transfer_local">Local (Phone)</string>
-    <string name="file_transfer_remote">Remote (PC)</string>
-    <string name="file_transfer_browse">Browse</string>
-    <string name="file_transfer_upload">Upload ↑</string>
-    <string name="file_transfer_download">Download ↓</string>
-    <string name="file_transfer_cancel">Cancel</string>
-    <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
-    <string name="file_transfer_loading">Loading…</string>
-    <string name="file_transfer_empty">No files found.</string>
-    <string name="file_transfer_shared_folder">Shared folder</string>
-    <string name="file_transfer_no_shared_folders">This host is not exposing any shared folders yet.</string>
-    <string name="file_transfer_select_root">Select a remote folder</string>
-    <string name="file_transfer_read_only_root">Read-only</string>
-    <string name="file_transfer_notification_channel_name">File transfers</string>
-    <string name="file_transfer_notification_channel_description">Shows progress for uploads and downloads.</string>
-    <string name="file_transfer_notification_upload_title">Uploading %1$s</string>
-    <string name="file_transfer_notification_download_title">Downloading %1$s</string>
-    <string name="file_transfer_notification_preparing">Preparing transfer…</string>
-    <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
-    <string name="file_transfer_notification_complete_title">Transfer complete</string>
-    <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
-    <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
-    <string name="file_transfer_notification_failed_title">Transfer failed</string>
+    <string name="screen_file_transfer_title">Transfer File</string>
+    <string name="file_transfer_local">Lokal (Ponsel)</string>
+    <string name="file_transfer_remote">Jarak Jauh (PC)</string>
+    <string name="file_transfer_browse">Telusuri</string>
+    <string name="file_transfer_upload">Unggah ↑</string>
+    <string name="file_transfer_download">Unduh ↓</string>
+    <string name="file_transfer_cancel">Batal</string>
+    <string name="file_transfer_not_connected">Hubungkan ke host untuk menelusuri file jarak jauh.</string>
+    <string name="file_transfer_loading">Memuat…</string>
+    <string name="file_transfer_empty">Tidak ada file yang ditemukan.</string>
+    <string name="file_transfer_shared_folder">Folder bersama</string>
+    <string name="file_transfer_no_shared_folders">Host ini belum mengekspos folder bersama apa pun.</string>
+    <string name="file_transfer_select_root">Pilih folder jarak jauh</string>
+    <string name="file_transfer_read_only_root">Baca-saja</string>
+    <string name="file_transfer_notification_channel_name">Transfer file</string>
+    <string name="file_transfer_notification_channel_description">Menunjukkan kemajuan untuk unggahan dan unduhan.</string>
+    <string name="file_transfer_notification_upload_title">Mengunggah %1$s</string>
+    <string name="file_transfer_notification_download_title">Mengunduh %1$s</string>
+    <string name="file_transfer_notification_preparing">Menyiapkan transfer…</string>
+    <string name="file_transfer_notification_progress">%1$d dari %2$d byte ditransfer</string>
+    <string name="file_transfer_notification_complete_title">Transfer selesai</string>
+    <string name="file_transfer_notification_upload_complete">Berhasil mengunggah %1$s</string>
+    <string name="file_transfer_notification_download_complete">Berhasil mengunduh %1$s</string>
+    <string name="file_transfer_notification_failed_title">Transfer gagal</string>
 
     <!-- File transfer — actions -->
-    <string name="file_transfer_rename">Rename</string>
-    <string name="file_transfer_delete">Delete</string>
-    <string name="file_transfer_pin_folder">Pin as shortcut</string>
-    <string name="file_transfer_select_all">Select all</string>
-    <string name="file_transfer_selected">selected</string>
-    <string name="file_transfer_delete_selected">Delete selected</string>
-    <string name="file_transfer_cancel_selection">Cancel selection</string>
+    <string name="file_transfer_rename">Ubah Nama</string>
+    <string name="file_transfer_delete">Hapus</string>
+    <string name="file_transfer_pin_folder">Sematkan sebagai pintasan</string>
+    <string name="file_transfer_select_all">Pilih semua</string>
+    <string name="file_transfer_selected">dipilih</string>
+    <string name="file_transfer_delete_selected">Hapus yang dipilih</string>
+    <string name="file_transfer_cancel_selection">Batal pilihan</string>
     <!-- File transfer — rename dialog -->
-    <string name="file_transfer_rename_title">Rename</string>
-    <string name="file_transfer_rename_hint">New name</string>
-    <string name="file_transfer_rename_confirm">Rename</string>
+    <string name="file_transfer_rename_title">Ubah Nama</string>
+    <string name="file_transfer_rename_hint">Nama baru</string>
+    <string name="file_transfer_rename_confirm">Ubah Nama</string>
     <!-- Generic dialog -->
-    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_cancel">Batal</string>
     <!-- Content descriptions -->
-    <string name="cd_more_options">More options</string>
+    <string name="cd_more_options">Opsi lainnya</string>
     <!-- File transfer settings tab -->
-    <string name="settings_ft_shared_folders_title">Android Shared Folders</string>
-    <string name="settings_ft_shared_folders_desc">Add folders from this device to share when Android hosting is enabled. Your selections are saved and will be used automatically once the feature is available.</string>
-    <string name="settings_ft_coming_soon">Android hosting coming in a future update</string>
-    <string name="settings_ft_no_folders">No folders added yet.</string>
-    <string name="settings_ft_add_folder">Add folder…</string>
-    <string name="settings_ft_remove_folder">Remove folder</string>
+    <string name="settings_ft_shared_folders_title">Folder Bersama Android</string>
+    <string name="settings_ft_shared_folders_desc">Tambahkan folder dari perangkat ini untuk dibagikan saat hosting Android diaktifkan. Pilihan Anda akan disimpan dan digunakan secara otomatis setelah fitur tersedia.</string>
+    <string name="settings_ft_coming_soon">Hosting Android akan hadir di pembaruan mendatang</string>
+    <string name="settings_ft_no_folders">Belum ada folder yang ditambahkan.</string>
+    <string name="settings_ft_add_folder">Tambah folder…</string>
+    <string name="settings_ft_remove_folder">Hapus folder</string>
 
     <!-- ═══ Material Shapes ═══ -->
-    <string name="shape_circle">Circle</string>
-    <string name="shape_square">Square</string>
-    <string name="shape_triangle">Triangle</string>
-    <string name="shape_diamond">Diamond</string>
+    <string name="shape_circle">Lingkaran</string>
+    <string name="shape_square">Kotak</string>
+    <string name="shape_triangle">Segitiga</string>
+    <string name="shape_diamond">Wajik</string>
     <string name="shape_pentagon">Pentagon</string>
-    <string name="shape_arch">Arch</string>
-    <string name="shape_semi_circle">Semi-Circle</string>
-    <string name="shape_pill">Pill</string>
-    <string name="shape_slanted">Slanted</string>
-    <string name="shape_fan">Fan</string>
-    <string name="shape_clam_shell">Clam Shell</string>
-    <string name="shape_gem">Gem</string>
-    <string name="shape_heart">Heart</string>
-    <string name="shape_flower">Flower</string>
-    <string name="shape_puffy">Puffy</string>
-    <string name="shape_puffy_diamond">Puffy Diamond</string>
-    <string name="shape_ghostish">Ghostish</string>
+    <string name="shape_arch">Lengkungan</string>
+    <string name="shape_semi_circle">Setengah Lingkaran</string>
+    <string name="shape_pill">Pil</string>
+    <string name="shape_slanted">Miring</string>
+    <string name="shape_fan">Kipas</string>
+    <string name="shape_clam_shell">Cangkang Kerang</string>
+    <string name="shape_gem">Permata</string>
+    <string name="shape_heart">Hati</string>
+    <string name="shape_flower">Bunga</string>
+    <string name="shape_puffy">Gembung</string>
+    <string name="shape_puffy_diamond">Wajik Gembung</string>
+    <string name="shape_ghostish">Seperti Hantu</string>
     <string name="shape_oval">Oval</string>
-    <string name="shape_clover_4_leaf">4-Leaf Clover</string>
-    <string name="shape_clover_8_leaf">8-Leaf Clover</string>
-    <string name="shape_sunny">Sunny</string>
+    <string name="shape_clover_4_leaf">Semanggi 4 Daun</string>
+    <string name="shape_clover_8_leaf">Semanggi 8 Daun</string>
+    <string name="shape_sunny">Matahari</string>
     <string name="shape_soft_burst">Soft Burst</string>
     <string name="shape_soft_boom">Soft Boom</string>
     <string name="shape_pixel_circle">Pixel Circle</string>

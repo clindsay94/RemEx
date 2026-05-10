@@ -41,12 +41,7 @@ RemEx 2.0 uses **TLS 1.3 with certificate pinning** and **ECDH X25519 key exchan
 
 **TCP Command Port (Port 8338):**
 
-The TCP command port (used for fire-and-forget commands like Wake-on-LAN) now uses TLS 1.3 for transport encryption but does **not yet** enforce pairing verification in Phase 1. It accepts TLS connections without validating the client's paired status. This is intentional for Phase 1 simplicity, as these commands are low-risk (WoL, basic system commands).
-
-**Mitigation:**
-- Bind the TCP port to localhost only by setting `RemexHost:Security:LocalhostOnly = true` in `appsettings.json`
-- Use firewall rules to restrict access to port 8338 to known local devices
-- Track 1B will add paired-client verification to the TCP port (require client cert or paired SPKI validation)
+The TCP command port is now TLS 1.3 encrypted. Access is restricted to clients that have completed a pairing handshake from the same IP address within the last 24 hours. While slightly less granular than the WebSocket pairing, this provides a strong barrier against unauthorized commands.
 
 ### 1.x Security Model (Legacy, EOL after 2026-10-01)
 
@@ -62,8 +57,8 @@ On Linux, the Task Manager uses `pkexec` to attempt process termination if the h
 
 ### Environment Security
 
-RemEx is designed for **trusted LAN environments only**. The access key provides a barrier against unauthorized access on the local network but is not a substitute for network-level encryption (TLS/SSL). 
+RemEx 2.0 provides **network-level encryption** out-of-the-box. All communication between the client and host is secured via TLS 1.3 / WSS, protecting against network sniffing on local networks.
 
 **Recommendations:**
-- If your threat model requires protection against network sniffing, use a VPN or encrypted tunnel (e.g., WireGuard or Tailscale) between client and host.
+- Even with TLS, we recommend using a VPN (e.g., WireGuard or Tailscale) if accessing your host over the public internet.
 - Ensure the host machine's firewall is configured to only allow traffic on the RemEx ports (Default: 5005, 8338) from known local devices.

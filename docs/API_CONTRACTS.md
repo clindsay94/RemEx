@@ -4,11 +4,26 @@ Full API documentation for the communication protocols used in RemEx.
 
 ---
 
+## 0. Security & Protocol Versioning
+
+### Protocol Version
+
+RemEx 2.0 introduces the `protocolVersion` field. Clients and hosts MUST support `protocolVersion: 2` or higher. Legacy 1.x messages without this field are rejected.
+
+### Encryption (TLS 1.3)
+
+All network communication is encrypted via TLS 1.3. 
+- **WebSocket:** Use `wss://`
+- **TCP:** Use `SslStream` wrapping the TCP socket
+- **HTTP:** Use `https://`
+
+---
+
 ## 1. WebSocket Telemetry & Remote Execution (`/ws`)
 
 The WebSocket endpoint provides real-time bidirectional communication. It is primarily used for streaming hardware telemetry and issuing remote commands between the UI client and the host service.
 
-**Endpoint:** `ws://<host>:<port>/ws` (Default port: 5005)
+**Endpoint:** `wss://<host>:<port>/ws` (Default port: 5005)
 
 ### Envelope: `RemexMessage`
 
@@ -17,53 +32,81 @@ All messages exchanged over the WebSocket use the `RemexMessage` JSON envelope.
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `type` | `string` | **Required.** Message type discriminator (e.g., `"ping"`, `"telemetry"`, `"command"`). |
+| `protocolVersion` | `int` | **Required.** Must be `2` for RemEx 2.0. |
 | `timestamp` | `long?` | UTC ticks when the message was created, used for latency measurement. |
 | `telemetry` | `TelemetryPayload?` | Optional payload attached for telemetry streaming. |
 | `commandAction` | `string?` | Command action name (e.g., `"Shutdown"`, `"Lock"`). |
 | `commandParameters` | `Dictionary<string, string>?` | Command parameters (e.g., for WoL MAC address). |
 | `commandSuccess` | `bool?` | Whether the command succeeded (for response messages). |
 | `commandMessage` | `string?` | Response message from command execution. |
-| `launcherEntries` | `List<AppEntry>?` | Launcher sync list. |
-| `launcherEntry` | `AppEntry?` | Single launcher entry for add/remove. |
-| `processList` | `List<ProcessInfo>?` | List of running processes. |
+| `pairingRequest` | `PairingRequest?` | Payload for the pairing handshake. |
+| `pairingResponse` | `PairingResponse?` | Payload for the pairing handshake. |
+| `pairingComplete` | `PairingComplete?` | Payload for the pairing handshake. |
+| `fileTransferStart` | `FileTransferStart?` | Payload for file transfer initiation. |
+| `fileTransferChunk` | `FileTransferChunk?` | Payload for file transfer data. |
+| `fileTransferEnd` | `FileTransferEnd?` | Payload for file transfer completion. |
+| `fileBrowseRequest` | `FileBrowseRequest?` | Request to browse remote files. |
+| `fileBrowseResponse` | `FileBrowseResponse?` | Response with remote file list. |
 
 
-### Command Actions
+### Message Types (New in 2.0)
 
-- `Shutdown`: Initiates a system shutdown.
-- `Restart`: Initiates a system restart.
-- `ForceRestart`: Forces a system restart without waiting for applications.
-- `RestartToUefi`: Restarts the system directly into UEFI/BIOS settings.
-- `Lock`: Locks the current user session.
-- `LaunchApp`: Launches an application locally.
-  - **Required Parameter:** `"TargetPath"`
-- `WakeOnLan`: Sends a magic packet to wake a target machine.
-  - **Required Parameter:** `"MacAddress"`
-  - **Optional Parameter:** `"BroadcastIp"`
-  - **Optional Parameter:** `"Port"`
-- `KillProcess`: Terminates a running process.
-  - **Required Parameter:** `"ProcessId"` (integer represented as a string)
-### Message Types
-
-- `ping` / `pong`: Used for keep-alive and latency calculation.
-- `telemetry`: Streaming hardware sensor data.
-- `command`: Request to execute a remote command.
-- `command_response`: Response indicating the success/failure of a command.
-- `launcher_sync`: Synchronization of app launcher entries.
-- `launcher_add`: Request to add a new launcher entry.
-- `launcher_remove`: Request to remove a launcher entry.
-- `process_list_request`: Request to retrieve the list of running processes.
-- `process_list_sync`: Response containing the list of running processes.
+- `pairing_request`: Initiate ECDH pairing.
+- `pairing_response`: Host ephemeral key + PIN HMAC.
+- `pairing_complete`: Client PIN HMAC acknowledgement.
+- `file_browse_request`: Request a directory listing.
+- `file_browse_response`: Directory listing response.
+- `file_transfer_start`: Initiate an upload/download.
+- `file_transfer_chunk`: Data packet (base64 encoded).
+- `file_transfer_end`: Signal transfer completion and verify hash.
+- `file_transfer_progress`: Update transfer status.
 
 ---
 
-## 2. TCP Command Ingress (External Network Listener)
+## 2. Pairing Protocol (Handshake)
 
-The external TCP listener is used to receive one-shot system power commands, such as shutting down or waking up machines over the network.
+RemEx 2.0 uses an ECDH (NIST P-256) key exchange with a 6-digit PIN out-of-band binding.
+
+1. **Client → Host:** `pairing_request` with `ClientPublicKeyBase64`.
+2. **Host → Client:** `pairing_response` with `HostPublicKeyBase64`, `HostId`, `HostName`, `CertificateSpkiHashBase64`, and `PinHmacBase64`.
+   - Host displays 6-digit PIN to the user.
+   - `PinHmac` is `HMAC-SHA256(SessionKey, PIN)`.
+3. **Client → Host:** `pairing_complete` with `ClientPinHmacBase64`.
+   - `ClientPinHmac` is `HMAC-SHA256(SessionKey, "ack:" + PIN)`.
+4. **Host → Client:** `command_response` with `Success=true` if pairing is accepted.
+
+Once paired, the client pins the `CertificateSpkiHashBase64` and uses it to validate the host in future TLS handshakes.
+
+---
+
+## 3. Remote File Transfer Protocol
+
+### Shared Roots
+The host defines "Shared Roots" (e.g., "Downloads", "Documents"). Clients browse and transfer files relative to these roots.
+
+### Message Flow (Download)
+1. **Client → Host:** `file_browse_request` to locate the file.
+2. **Client → Host:** `file_transfer_start` with `direction="download"`.
+3. **Host → Client:** `file_transfer_chunk` messages until the file is exhausted.
+4. **Host → Client:** `file_transfer_end` with the full file SHA-256 hash.
+5. **Client:** Verifies the received chunks against the hash.
+
+### Message Flow (Upload)
+1. **Client → Host:** `file_transfer_start` with `direction="upload"` and total file hash.
+2. **Client → Host:** `file_transfer_chunk` messages.
+3. **Host:** Updates `file_transfer_progress` periodically.
+4. **Client → Host:** `file_transfer_end` signal.
+5. **Host:** Verifies the received file hash and responds with success/failure.
+
+---
+
+## 4. TCP Command Ingress (External Network Listener)
+
+The external TCP listener is now encrypted via TLS 1.3 and requires pairing verification.
 
 **Endpoint:** TCP Socket on Port `8338` (Configurable via `Remex:CommandPort`)
 
-⚠️ **Security Warning:** The TCP Command Ingress endpoint allows remote execution of power commands (Shutdown, Restart, Force Restart, Restart to UEFI, Lock, and Wake-on-LAN). Ensure this port is protected by a firewall and only accessible from trusted networks. **If `Remex:AccessKey` is configured on the host, all TCP commands MUST include the access key in `Parameters["AccessKey"]`** or they will be rejected with an `Unauthorized` response.
+⚠️ **Security Warning:** Clients must have completed a WSS pairing from the same IP address within the last 24 hours to be authorized for TCP commands.
 
 ### Request Payload: `CommandRequest`
 
@@ -73,150 +116,52 @@ The client must send a UTF-8 encoded JSON string matching the following structur
 {
   "Action": "string",
   "Parameters": {
-    "AccessKey": "string (if Remex:AccessKey is set on the host)",
     "Key": "Value"
   }
 }
 ```
 
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `Action` | `string` | The command to execute (Case-insensitive). |
-| `Parameters` | `Dictionary<string, string>?` | Optional parameters for specific commands. |
-| `Parameters["AccessKey"]` | `string` | **Required if `Remex:AccessKey` is configured on the host.** Must match the configured key exactly. Comparison uses constant-time (`CryptographicOperations.FixedTimeEquals`) to prevent timing attacks. |
+---
 
-**Supported Actions:**
+## 5. Local IPC (Named Pipe)
 
-All actions require `AccessKey` in `Parameters` **if and only if** `Remex:AccessKey` is configured on the host.
-
-- `SHUTDOWN`: Initiates a system shutdown.
-- `RESTART`: Initiates a system restart.
-- `FORCERESTART`: Forces a system restart without waiting for applications.
-- `RESTARTTOUEFI`: Restarts the system directly into UEFI/BIOS settings.
-- `LOCK`: Locks the current user session.
-- `HIBERNATION`: Hibernates the system.
-- `SLEEP`: Puts the system to sleep.
-- `KILLPROCESS`: Terminates a process.
-  - **Required Parameter:** `"ProcessId"` (Process ID as a string)
-  - **Required Parameter (if key is set):** `"AccessKey"`
-- `LAUNCHAPP`: Launches an application.
-  - **Required Parameter:** `"TargetPath"` (Application path)
-  - **Required Parameter (if key is set):** `"AccessKey"`
-- `WAKEONLAN`: Sends a magic packet to wake a target machine.
-  - **Required Parameter:** `"MacAddress"` (e.g., `"00:11:22:33:44:55"`)
-  - **Optional Parameter:** `"BroadcastIp"` (Default: `"255.255.255.255"`)
-  - **Optional Parameter:** `"Port"` (Default: `"9"`)
-  - **Required Parameter (if key is set):** `"AccessKey"`
-
-### Response Payload: `CommandResponse`
-
-The server responds with a UTF-8 encoded JSON string indicating the result.
-
-```json
-{
-  "Success": true,
-  "Message": "string"
-}
-```
-
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `Success` | `bool` | Whether the command executed successfully. `false` if the request was malformed or the access key was invalid/missing. |
-| `Message` | `string` | Human-readable status or error message. If `Success=false` due to an access key mismatch, the message will be `"Unauthorized"`. |
-
-**Example: Request rejected due to missing/invalid access key:**
-```json
-{
-  "Success": false,
-  "Message": "Unauthorized"
-}
-```
+(No changes in 2.0)
 
 ---
 
-## 3. Local IPC (Named Pipe)
+## 6. WebSocket Remote Desktop (`/ws/desktop`)
 
-The Named Pipe is exclusively used for local communication between the Avalonia UI client and the background Host Service (e.g., launching local applications).
+**Endpoint:** `wss://<host>:<port>/ws/desktop` (Default port: 5005)
 
-**Endpoint:** Named Pipe `RemexIPC`
-
-### Request Payload: `CommandRequest` (Local IPC)
-
-The client writes a JSON string to the pipe:
-
-```json
-{
-  "Action": "string",
-  "TargetPath": "string"
-}
-```
-
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `Action` | `string` | The local action to perform. |
-| `TargetPath` | `string?` | Optional path or argument for the action. |
-
-### Response Payload: `CommandResponse` (Local IPC)
-
-The background service responds with:
-
-```json
-{
-  "Success": true,
-  "Message": "string"
-}
-```
+(Protocol unchanged, but now requires TLS 1.3 and Pairing verification).
 
 ---
 
-## 4. WebSocket Remote Desktop (`/ws/desktop`)
+## 7. REST / Minimal APIs
 
-A dedicated WebSocket endpoint for live screen streaming and remote input forwarding.
+**Endpoint:** `https://<host>:<port>/` (Default port: 5005)
 
-**Endpoint:** `ws://<host>:<port>/ws/desktop` (Default port: 5005)
-
-### Message Types
-
-- `desktop_start`: Client → Host. Begin streaming. Includes an optional `desktopConfig` payload.
-- `desktop_stop`: Client → Host. Stop the stream and close the connection.
-- `desktop_config`: Client → Host. Update streaming parameters mid-session.
-- `desktop_meta`: Host → Client. Screen metadata sent once after `desktop_start`.
-- `desktop_frame`: Host → Client. Binary JPEG frame (sent as a WebSocket binary message).
-- `desktop_input`: Client → Host. Forwarded input event (mouse move, click, key press, scroll).
-- `desktop_error`: Host → Client. Error message (e.g., screen capture failure).
-
-### `DesktopConfig`
-
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `quality` | `int` | `50` | JPEG quality (1–100). |
-| `scale` | `double` | `0.5` | Downscale factor (0.1–1.0). |
-| `targetFps` | `int` | `10` | Target frames per second. |
-
-### `DesktopMeta`
-
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `screenWidth` | `int` | Native screen width in pixels. |
-| `screenHeight` | `int` | Native screen height in pixels. |
-| `hostInstanceId` | `string` | Unique host process ID (used to prevent self-connections). |
-
----
-
-## 5. REST / Minimal APIs
-
-The RemEx Host exposes a basic HTTP endpoint for health checks and service discovery.
-
-**Endpoint:** `http://<host>:<port>/` (Default port: 5005)
-
-### Health Check
-
+### Health Check (`/`)
 - **Method:** `GET`
-- **Path:** `/`
 - **Response:**
   ```json
   {
     "service": "Remex.Host",
-    "status": "running"
+    "status": "running",
+    "version": "2.0.0"
   }
   ```
+
+### Pairing QR (`/pairing-qr`)
+- **Method:** `GET`
+- **Description:** Returns a JSON payload for the Android app to scan.
+- **Response:**
+  ```json
+  {
+    "host": "string",
+    "port": 5005,
+    "hostId": "string",
+    "spkiHash": "string (base64)"
+  }
+  ```
+

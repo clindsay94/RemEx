@@ -1,398 +1,1639 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <root>
-<data name="Nav_Home" xml:space="preserve"><value>Головна</value></data>
-<data name="Nav_Sensors" xml:space="preserve"><value>Датчики</value></data>
-<data name="Nav_Remote" xml:space="preserve"><value>Пульт</value></data>
-<data name="Nav_Launcher" xml:space="preserve"><value>Запуск</value></data>
-<data name="Nav_Tasks" xml:space="preserve"><value>Завдання</value></data>
-<data name="Nav_Desktop" xml:space="preserve"><value>Робочий стіл</value></data>
-<data name="Nav_Settings" xml:space="preserve"><value>Налаштування</value></data>
-<data name="Btn_Connect" xml:space="preserve"><value>Підключити</value></data>
-<data name="Btn_Disconnect" xml:space="preserve"><value>Відключити</value></data>
-<data name="Btn_Cancel" xml:space="preserve"><value>Скасувати</value></data>
-<data name="Btn_Save" xml:space="preserve"><value>Зберегти</value></data>
-<data name="Btn_Apply" xml:space="preserve"><value>Застосувати</value></data>
-<data name="Btn_Browse" xml:space="preserve"><value>Огляд...</value></data>
-<data name="Btn_Discover" xml:space="preserve"><value>Знайти</value></data>
-<data name="Btn_Refresh" xml:space="preserve"><value>⟳ Оновити</value></data>
-<data name="Btn_Start" xml:space="preserve"><value>▶ Запустити</value></data>
-<data name="Btn_Stop" xml:space="preserve"><value>⏹ Зупинити</value></data>
-<data name="Btn_Submit" xml:space="preserve"><value>Надіслати</value></data>
-<data name="Remote_Header" xml:space="preserve"><value>⏻ ПУЛЬТ ПК</value></data>
-<data name="Remote_Subheader" xml:space="preserve"><value>КЕРУВАННЯ ЖИВЛЕННЯМ &amp; СИСТЕМОЮ</value></data>
-<data name="Remote_WolSection" xml:space="preserve"><value>WAKE ON LAN</value></data>
-<data name="Remote_WolDescription" xml:space="preserve"><value>Надіслати магічний пакет для пробудження цільового ПК.</value></data>
-<data name="Remote_Graceful" xml:space="preserve"><value>НОРМАЛЬНЕ</value></data>
-<data name="Remote_Forced" xml:space="preserve"><value>ПРИМУСОВЕ (НЕГАЙНО)</value></data>
-<data name="Remote_Lock" xml:space="preserve"><value>🔒 Заблокувати ПК</value></data>
-<data name="Remote_SignOut" xml:space="preserve"><value>🚪 Вихід</value></data>
-<data name="Remote_Shutdown" xml:space="preserve"><value>⏻ Вимкнути</value></data>
-<data name="Remote_Restart" xml:space="preserve"><value>🔄 Перезавантажити</value></data>
-<data name="Remote_Sleep" xml:space="preserve"><value>💤 Сон</value></data>
-<data name="Remote_Hibernate" xml:space="preserve"><value>❄ Сплячий режим</value></data>
-<data name="Remote_ForceShutdown" xml:space="preserve"><value>⚠ Примусове вимкнення</value></data>
-<data name="Remote_ForceRestart" xml:space="preserve"><value>⚠ Примусове перезавантаження</value></data>
-<data name="Remote_RebootUefi" xml:space="preserve"><value>🔧 Перезавантаження в UEFI</value></data>
-<data name="Remote_WolSend" xml:space="preserve"><value>🔌 Надіслати пакет Wake-on-LAN</value></data>
-<data name="Settings_Header" xml:space="preserve"><value>НАЛАШТУВАННЯ</value></data>
-<data name="Settings_Back" xml:space="preserve"><value>← Командний центр</value></data>
-<data name="Settings_SaveChanges" xml:space="preserve"><value>Зберегти зміни</value></data>
-<data name="Settings_SavedStatus" xml:space="preserve"><value>Налаштування збережено!</value></data>
-<data name="Settings_Connection" xml:space="preserve"><value>ПІДКЛЮЧЕННЯ</value></data>
-<data name="Settings_HostAddress" xml:space="preserve"><value>Адреса хоста</value></data>
-<data name="Settings_AccessKey" xml:space="preserve"><value>Ключ доступу</value></data>
-<data name="Settings_SaveReconnect" xml:space="preserve"><value>Зберегти &amp; Перепідключити</value></data>
-<data name="Settings_RemoteDesktop" xml:space="preserve"><value>ВІДДАЛЕНИЙ РОБОЧИЙ СТІЛ</value></data>
-<data name="Settings_StreamFpsDesc" xml:space="preserve"><value>Стандартна частота кадрів для нових потоків</value></data>
-<data name="Settings_Layout" xml:space="preserve"><value>МАКЕТ</value></data>
-<data name="Settings_SnapToGrid" xml:space="preserve"><value>Прив'язати до сітки</value></data>
-<data name="Settings_SnapToGridDesc" xml:space="preserve"><value>Картки прив'язуються до найближчої лінії сітки при опусканні</value></data>
-<data name="Settings_GridSize" xml:space="preserve"><value>Розмір сітки</value></data>
-<data name="Settings_PinnedSensors" xml:space="preserve"><value>ЗАКРІПЛЕНІ ДАТЧИКИ</value></data>
-<data name="Settings_PinnedSensorsDesc" xml:space="preserve"><value>Виберіть датчики для відображення на головному екрані</value></data>
-<data name="Settings_ServiceSection" xml:space="preserve"><value>СЛУЖБА WINDOWS</value></data>
-<data name="Settings_ServiceLogin" xml:space="preserve"><value>ВХІД СЛУЖБИ</value></data>
-<data name="Settings_ServiceDesc" xml:space="preserve"><value>Служба працює у фоновому режимі, щоб RemEx міг приймати віддалені команди без відкритого застосунку.</value></data>
-<data name="Settings_AccountFormat" xml:space="preserve"><value>Обліковий запис: {0}</value></data>
-<data name="Settings_Username" xml:space="preserve"><value>Ім'я користувача</value></data>
-<data name="Settings_Password" xml:space="preserve"><value>Пароль</value></data>
-<data name="Settings_RestartNote" xml:space="preserve"><value>Зміна мови набуде чинності після перезапуску RemEx.</value></data>
-<data name="Settings_Language" xml:space="preserve"><value>Мова</value></data>
-<data name="Home_Subtitle" xml:space="preserve"><value>КОМАНДНИЙ ЦЕНТР ДИСТАНЦІЙНОГО ВИКОНАННЯ</value></data>
-<data name="Home_QuickActions" xml:space="preserve"><value>ШВИДКІ ДІЇ</value></data>
-<data name="Home_SensorWorkspace" xml:space="preserve"><value>Простір датчиків</value></data>
-<data name="Home_PcRemote" xml:space="preserve"><value>Пульт ПК</value></data>
-<data name="Home_Desktop" xml:space="preserve"><value>Робочий стіл</value></data>
-<data name="Home_Launcher" xml:space="preserve"><value>Запуск</value></data>
-<data name="Home_Tasks" xml:space="preserve"><value>Завдання</value></data>
-<data name="Home_LiveTelemetry" xml:space="preserve"><value>ТЕЛЕМЕТРІЯ В РЕАЛЬНОМУ ЧАСІ</value></data>
-<data name="Home_NoPinnedSensors" xml:space="preserve"><value>Немає закріплених датчиків</value></data>
-<data name="Home_NoPinnedSensorsHint" xml:space="preserve"><value>Відкрийте простір датчиків, клацніть правою кнопкою мишки на картці та закріпіть на головній.</value></data>
-<data name="TaskMgr_Header" xml:space="preserve"><value>▤ ДИСПЕТЧЕР ЗАВДАНЬ</value></data>
-<data name="TaskMgr_Subheader" xml:space="preserve"><value>ПРОВІДНИК ПРОЦЕСІВ</value></data>
-<data name="TaskMgr_SearchPlaceholder" xml:space="preserve"><value>Пошук за назвою або PID...</value></data>
-<data name="TaskMgr_KillProcess" xml:space="preserve"><value>Завершити процес</value></data>
-<data name="TaskMgr_SortName" xml:space="preserve"><value>Назва</value></data>
-<data name="TaskMgr_SortCpu" xml:space="preserve"><value>CPU %</value></data>
-<data name="TaskMgr_SortRam" xml:space="preserve"><value>RAM</value></data>
-<data name="AppLauncher_Header" xml:space="preserve"><value>◈ ЗАПУСК ПРОГРАМ</value></data>
-<data name="AppLauncher_Subheader" xml:space="preserve"><value>ДИСТАНЦІЙНЕ КЕРУВАННЯ ПРОГРАМАМИ</value></data>
-<data name="AppLauncher_AddProgram" xml:space="preserve"><value>+ Додати програму</value></data>
-<data name="AppLauncher_NoApps" xml:space="preserve"><value>Програм не налаштовано.</value></data>
-<data name="AppLauncher_MoveLeft" xml:space="preserve"><value>Перемістити ліворуч</value></data>
-<data name="AppLauncher_MoveRight" xml:space="preserve"><value>Перемістити праворуч</value></data>
-<data name="AppLauncher_Remove" xml:space="preserve"><value>Видалити</value></data>
-<data name="AddProgram_Title" xml:space="preserve"><value>Додати програму</value></data>
-<data name="AddProgram_Header" xml:space="preserve"><value>Додати нову програму</value></data>
-<data name="AddProgram_ExePath" xml:space="preserve"><value>Шлях до виконуваного файлу</value></data>
-<data name="AddProgram_DisplayName" xml:space="preserve"><value>Відображувана назва</value></data>
-<data name="AddProgram_AccentColor" xml:space="preserve"><value>Акцентний колір (Hex)</value></data>
-<data name="AddProgram_IconPreview" xml:space="preserve"><value>Попередній перегляд іконки</value></data>
-<data name="TrayFlyout_Header" xml:space="preserve"><value>ШВИДКИЙ ПЕРЕГЛЯД</value></data>
-<data name="TrayFlyout_Home" xml:space="preserve"><value>ГОЛОВНА</value></data>
-<data name="TrayFlyout_Workspace" xml:space="preserve"><value>ПРОСТІР</value></data>
-<data name="Canvas_Header" xml:space="preserve"><value>ПРОСТІР ДАТЧИКІВ</value></data>
-<data name="Canvas_Connection" xml:space="preserve"><value>Підключення</value></data>
-<data name="Canvas_Actions" xml:space="preserve"><value>Дії</value></data>
-<data name="Canvas_Latency" xml:space="preserve"><value>Затримка</value></data>
-<data name="Canvas_Avg" xml:space="preserve"><value>СЕР</value></data>
-<data name="Canvas_Max" xml:space="preserve"><value>МАКС</value></data>
-<data name="Canvas_ActiveSensors" xml:space="preserve"><value>АКТИВНІ ДАТЧИКИ</value></data>
-<data name="Canvas_NewSensors" xml:space="preserve"><value>НОВІ ДАТЧИКИ</value></data>
-<data name="Canvas_AddCard" xml:space="preserve"><value>+ Додати картку</value></data>
-<data name="Canvas_Save" xml:space="preserve"><value>Зберегти</value></data>
-<data name="Canvas_Sync" xml:space="preserve"><value>Синхронізувати</value></data>
-<data name="Canvas_Sensors" xml:space="preserve"><value>Датчики ({0})</value></data>
-<data name="Canvas_Ping" xml:space="preserve"><value>📡 Ping</value></data>
-<data name="Canvas_CancelConnect" xml:space="preserve"><value>✕ Скасувати</value></data>
-<data name="Canvas_Disconnect" xml:space="preserve"><value>✕ Відключити</value></data>
-<data name="Canvas_LayoutSaved" xml:space="preserve"><value>Макет збережено!</value></data>
-<data name="Canvas_SyncRequested" xml:space="preserve"><value>Синхронізацію запрошено…</value></data>
-<data name="RemoteDesktop_Header" xml:space="preserve"><value>ВІДДАЛЕНИЙ РОБОЧИЙ СТІЛ</value></data>
-<data name="RemoteDesktop_Quality" xml:space="preserve"><value>Якість:</value></data>
-<data name="RemoteDesktop_Scale" xml:space="preserve"><value>Масштаб:</value></data>
-<data name="RemoteDesktop_Fps" xml:space="preserve"><value>FPS:</value></data>
-<data name="RemoteDesktop_StreamError" xml:space="preserve"><value>⚠ Помилка потоку</value></data>
-<data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve"><value>Віддалений робочий стіл</value></data>
-<data name="RemoteDesktop_PlaceholderHint" xml:space="preserve"><value>Підключіться і натисніть Пуск для початку трансляції.</value></data>
-<data name="RemoteDesktop_ToggleCursorPad" xml:space="preserve"><value>D-Pad</value></data>
-<data name="RemoteDesktop_ToggleFullscreen" xml:space="preserve"><value>На весь екран</value></data>
-<data name="RemoteDesktop_Fullscreen" xml:space="preserve"><value>Вийти</value></data>
-<data name="RemoteDesktop_CompactPad" xml:space="preserve"><value>Компактний</value></data>
-<data name="RemoteDesktop_FullPad" xml:space="preserve"><value>Повний</value></data>
-<data name="RemoteDesktop_ResolutionFormat" xml:space="preserve"><value>Роздільна здатність: {0}</value></data>
-<data name="RemoteDesktop_FpsFormat" xml:space="preserve"><value>FPS: {0:F1}</value></data>
-<data name="RemoteDesktop_QualityFormat" xml:space="preserve"><value>Q: {0}</value></data>
-<data name="Custom_Header" xml:space="preserve"><value>🎨 НАЛАШТУВАННЯ ВИГЛЯДУ</value></data>
-<data name="Custom_Subheader" xml:space="preserve"><value>ТЕМИ &amp; ПРЕСЕТИ ДВИЖКА</value></data>
-<data name="Custom_BasePresets" xml:space="preserve"><value>БАЗОВІ ПРЕСЕТИ</value></data>
-<data name="Custom_AdvancedTuning" xml:space="preserve"><value>РОЗШИРНЕ ТОНКЕ НАЛАШТУВАННЯ</value></data>
-<data name="Custom_CornerRadius" xml:space="preserve"><value>Радіус кута</value></data>
-<data name="Custom_GlassOpacity" xml:space="preserve"><value>Прозорість скла</value></data>
-<data name="Custom_GlowStrength" xml:space="preserve"><value>Сила свічення</value></data>
-<data name="Custom_AccentColor" xml:space="preserve"><value>Акцентний колір</value></data>
-<data name="Custom_BackgroundMode" xml:space="preserve"><value>Режим тла</value></data>
-<data name="Custom_Atmosphere" xml:space="preserve"><value>АТМОСФЕРА ПОЛОТНА</value></data>
-<data name="Custom_Reset" xml:space="preserve"><value>Скинути до стандартів теми</value></data>
-<data name="Custom_Back" xml:space="preserve"><value>← Командний центр</value></data>
-<data name="Custom_RemoteCardShape" xml:space="preserve"><value>Форма картки пульта</value></data>
-<data name="Status_Disconnected" xml:space="preserve"><value>Відключено</value></data>
-<data name="Status_Connected" xml:space="preserve"><value>Підключено</value></data>
-<data name="Status_Connecting" xml:space="preserve"><value>Підключення…</value></data>
-<data name="Status_PingSent" xml:space="preserve"><value>Ping надіслано…</value></data>
-<data name="Status_ServerClosed" xml:space="preserve"><value>Відключено (сервер закрито)</value></data>
-<data name="Status_NoHostsFound" xml:space="preserve"><value>Хости через mDNS не знайдено.</value></data>
-<data name="Status_SearchingHosts" xml:space="preserve"><value>Пошук хостів…</value></data>
-<data name="Status_DiscoveryUnavailable" xml:space="preserve"><value>Служба виявлення недоступна.</value></data>
-<data name="Status_PongNoTimestamp" xml:space="preserve"><value>Pong (без мітки часу)</value></data>
-<data name="Status_Pong" xml:space="preserve"><value>Pong!</value></data>
-<data name="Status_NotStreaming" xml:space="preserve"><value>Не транслюється</value></data>
-<data name="Status_Streaming" xml:space="preserve"><value>Трансляція</value></data>
-<data name="Status_SelfConnection" xml:space="preserve"><value>Виявлено само-підключення — неможливо відобразити власний екран</value></data>
-<data name="Status_ConnectionSaved" xml:space="preserve"><value>Налаштування підключення збережено</value></data>
-<data name="Status_ZoomFormat" xml:space="preserve"><value>Масштаб: {0:F1}×</value></data>
-<data name="Status_PadCompact" xml:space="preserve"><value>Пад: Компактний</value></data>
-<data name="Status_PadFull" xml:space="preserve"><value>Пад: Повний</value></data>
-<data name="Status_PadCompactTooltip" xml:space="preserve"><value>Компактний пад курсора активовано</value></data>
-<data name="Status_PadFullTooltip" xml:space="preserve"><value>Повнорозмірний пад курсора активовано</value></data>
-<data name="Service_NotInstalled" xml:space="preserve"><value>Не встановлено</value></data>
-<data name="Service_Running" xml:space="preserve"><value>Виконується</value></data>
-<data name="Service_Stopped" xml:space="preserve"><value>Зупинено</value></data>
-<data name="Service_Pending" xml:space="preserve"><value>Очікування…</value></data>
-<data name="Service_Installed" xml:space="preserve"><value>Встановлено</value></data>
-<data name="Service_Starting" xml:space="preserve"><value>Запускається…</value></data>
-<data name="Service_Stopping" xml:space="preserve"><value>Зупиняється…</value></data>
-<data name="Service_Uninstalling" xml:space="preserve"><value>Службу видалено.</value></data>
-<data name="Service_PasswordRequired" xml:space="preserve"><value>Потрібен пароль.</value></data>
-<data name="Service_Publishing" xml:space="preserve"><value>Публікація Remex.Host…</value></data>
-<data name="Service_PublishFailed" xml:space="preserve"><value>Публікація не вдалась — перегляньте журнал.</value></data>
-<data name="Service_Creating" xml:space="preserve"><value>Створення служби…</value></data>
-<data name="Service_CreateFailed" xml:space="preserve"><value>Не вдалося створити службу — перегляньте журнал.</value></data>
-<data name="Service_ConfiguringLogin" xml:space="preserve"><value>Налаштування входу…</value></data>
-<data name="Service_ConfigureFailed" xml:space="preserve"><value>Не вдалося налаштувати облікові дані — перегляньте журнал.</value></data>
-<data name="Service_GrantingRights" xml:space="preserve"><value>Надання прав входу…</value></data>
-<data name="Service_StoppingEmbedded" xml:space="preserve"><value>Зупинка вбудованого хоста…</value></data>
-<data name="Service_StartingService" xml:space="preserve"><value>Запуск служби…</value></data>
-<data name="Service_InstalledStarted" xml:space="preserve"><value>Встановлено &amp; запущено.</value></data>
-<data name="Service_InstalledStartFailed" xml:space="preserve"><value>Встановлено — запуск міг не вдатися, перегляньте журнал.</value></data>
-<data name="Service_DeletingService" xml:space="preserve"><value>Видалення служби…</value></data>
-<data name="Service_ApplyingCredentials" xml:space="preserve"><value>Застосування облікових даних…</value></data>
-<data name="Service_HostUnavailable" xml:space="preserve"><value>Можливості хоста недоступні</value></data>
-<data name="Service_HostUnavailableHint" xml:space="preserve"><value>Підключіться до хоста для перевірки можливостей середовища виконання.</value></data>
-<data name="Wol_EnterMac" xml:space="preserve"><value>⚠ Спочатку введіть MAC-адресу.</value></data>
-<data name="Wol_SendingViaHost" xml:space="preserve"><value>Надсилання магічного пакету через хост…</value></data>
-<data name="Wol_SendingLocal" xml:space="preserve"><value>Надсилання магічного пакету локально…</value></data>
-<data name="Wol_SentToFormat" xml:space="preserve"><value>✅ Пакет надіслано до {0}</value></data>
-<data name="Wol_SuccessFormat" xml:space="preserve"><value>✅ {0}</value></data>
-<data name="Wol_ErrorFormat" xml:space="preserve"><value>❌ {0}</value></data>
-<data name="Wol_LockSent" xml:space="preserve"><value>Блокування надіслано</value></data>
-<data name="Wol_ShutdownSent" xml:space="preserve"><value>Вимкнення надіслано</value></data>
-<data name="Wol_ForceShutdownSent" xml:space="preserve"><value>Примусове вимкнення надіслано</value></data>
-<data name="Wol_RestartSent" xml:space="preserve"><value>Перезавантаження надіслано</value></data>
-<data name="Wol_ForceRestartSent" xml:space="preserve"><value>Примусове перезавантаження надіслано</value></data>
-<data name="Wol_RebootUefiSent" xml:space="preserve"><value>Перезавантаження в UEFI надіслано</value></data>
-<data name="Wol_SleepSent" xml:space="preserve"><value>Сон надіслано</value></data>
-<data name="Wol_HibernateSent" xml:space="preserve"><value>Сплячий режим надіслано</value></data>
-<data name="Wol_SignOutSent" xml:space="preserve"><value>Вихід надіслано</value></data>
-<!-- Tutorial -->
-<data name="Tutorial_Header" xml:space="preserve"><value>ПОЧАТОК РОБОТИ</value></data>
-<data name="Tutorial_Skip" xml:space="preserve"><value>Пропустити ✕</value></data>
-<data name="Tutorial_Back" xml:space="preserve"><value>← Назад</value></data>
-<data name="Tutorial_Next" xml:space="preserve"><value>Далі →</value></data>
-<data name="Tutorial_Finish" xml:space="preserve"><value>Почати ✓</value></data>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
 
+  <!-- Navigation -->
+  <data name="App_Name" xml:space="preserve">
+    <value>RemEx</value>
+  </data>
+  <data name="Nav_Home" xml:space="preserve">
+    <value>Головна</value>
+  </data>
+  <data name="Nav_Sensors" xml:space="preserve">
+    <value>Датчики</value>
+  </data>
+  <data name="Nav_Remote" xml:space="preserve">
+    <value>Пульт</value>
+  </data>
+  <data name="Nav_Launcher" xml:space="preserve">
+    <value>Запуск</value>
+  </data>
+  <data name="Nav_Tasks" xml:space="preserve">
+    <value>Завдання</value>
+  </data>
+  <data name="Nav_Desktop" xml:space="preserve">
+    <value>Робочий стіл</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Налаштування</value>
+  </data>
+  <data name="Nav_Files" xml:space="preserve">
+    <value>Файли</value>
+  </data>
 
-<data name="Tutorial_P0_Title" xml:space="preserve"><value>Ласкаво просимо до RemEx</value></data>
-<data name="Tutorial_P0_Body" xml:space="preserve"><value>RemEx перетворює ваш ПК на центр дистанційного керування. Відстежуйте апаратні датчики, запускайте програми, керуйте процесами та транслюйте робочий стіл — усім цим можна керувати з вашого Android-пристрою.
+  <!-- Common Buttons -->
+  <data name="Btn_Connect" xml:space="preserve">
+    <value>Підключити</value>
+  </data>
+  <data name="Btn_Disconnect" xml:space="preserve">
+    <value>Відключити</value>
+  </data>
+  <data name="Btn_Cancel" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
+  <data name="Btn_Save" xml:space="preserve">
+    <value>Зберегти</value>
+  </data>
+  <data name="Btn_Apply" xml:space="preserve">
+    <value>Застосувати</value>
+  </data>
+  <data name="Btn_Browse" xml:space="preserve">
+    <value>Огляд...</value>
+  </data>
+  <data name="Btn_Discover" xml:space="preserve">
+    <value>Знайти</value>
+  </data>
+  <data name="Btn_Refresh" xml:space="preserve">
+    <value>⟳ Оновити</value>
+  </data>
+  <data name="Btn_Start" xml:space="preserve">
+    <value>▶ Запустити</value>
+  </data>
+  <data name="Btn_Stop" xml:space="preserve">
+    <value>⏹ Зупинити</value>
+  </data>
+  <data name="Btn_Submit" xml:space="preserve">
+    <value>Надіслати</value>
+  </data>
+  <data name="Btn_Ping" xml:space="preserve">
+    <value>Ping</value>
+  </data>
 
-На вашому ПК працює RemEx Host, до якого ваш телефон підключається через локальну мережу.</value></data>
+  <!-- Remote View -->
+  <data name="Remote_Header" xml:space="preserve">
+    <value>⏻ ПУЛЬТ ПК</value>
+  </data>
+  <data name="Remote_Subheader" xml:space="preserve">
+    <value>КЕРУВАННЯ ЖИВЛЕННЯМ &amp; СИСТЕМОЮ</value>
+  </data>
+  <data name="Remote_WolSection" xml:space="preserve">
+    <value>WAKE ON LAN</value>
+  </data>
+  <data name="Remote_WolDescription" xml:space="preserve">
+    <value>Надіслати магічний пакет для пробудження цільового ПК.</value>
+  </data>
+  <data name="Remote_Graceful" xml:space="preserve">
+    <value>НОРМАЛЬНЕ</value>
+  </data>
+  <data name="Remote_Forced" xml:space="preserve">
+    <value>ПРИМУСОВЕ (НЕГАЙНО)</value>
+  </data>
+  <data name="Remote_Lock" xml:space="preserve">
+    <value>🔒 Заблокувати ПК</value>
+  </data>
+  <data name="Remote_SignOut" xml:space="preserve">
+    <value>🚪 Вихід</value>
+  </data>
+  <data name="Remote_Shutdown" xml:space="preserve">
+    <value>⏻ Вимкнути</value>
+  </data>
+  <data name="Remote_Restart" xml:space="preserve">
+    <value>🔄 Перезавантажити</value>
+  </data>
+  <data name="Remote_Sleep" xml:space="preserve">
+    <value>💤 Сон</value>
+  </data>
+  <data name="Remote_Hibernate" xml:space="preserve">
+    <value>❄ Сплячий режим</value>
+  </data>
+  <data name="Remote_ForceShutdown" xml:space="preserve">
+    <value>⚠ Примусове вимкнення</value>
+  </data>
+  <data name="Remote_ForceRestart" xml:space="preserve">
+    <value>⚠ Примусове перезавантаження</value>
+  </data>
+  <data name="Remote_RebootUefi" xml:space="preserve">
+    <value>🔧 Перезавантаження в UEFI</value>
+  </data>
+  <data name="Remote_WolSend" xml:space="preserve">
+    <value>🔌 Надіслати пакет Wake-on-LAN</value>
+  </data>
 
-<data name="Tutorial_P1_Title" xml:space="preserve"><value>Як це працює</value></data>
-<data name="Tutorial_P1_Body1" xml:space="preserve"><value>Цей десктопний застосунок містить вбудований RemEx Host, який запускається автоматично. Ваш Android-телефон підключається до нього, а не навпаки.</value></data>
-<data name="Tutorial_P1_Body2" xml:space="preserve"><value>Для постійного доступу (навіть коли ви не ввійшли в систему) ви можете встановити хост як службу Windows або демон Linux. Це дозволить вашому телефону підключатися в будь-який час.</value></data>
+  <!-- Settings -->
+  <data name="Settings_Header" xml:space="preserve">
+    <value>НАЛАШТУВАННЯ</value>
+  </data>
+  <data name="Settings_Back" xml:space="preserve">
+    <value>← Командний центр</value>
+  </data>
+  <data name="Settings_SaveChanges" xml:space="preserve">
+    <value>Зберегти зміни</value>
+  </data>
+  <data name="Settings_SavedStatus" xml:space="preserve">
+    <value>Налаштування збережено!</value>
+  </data>
+  <data name="Settings_Connection" xml:space="preserve">
+    <value>ПІДКЛЮЧЕННЯ</value>
+  </data>
+  <data name="Settings_HostAddress" xml:space="preserve">
+    <value>Адреса хоста</value>
+  </data>
+  <data name="Settings_AccessKey" xml:space="preserve">
+    <value>Ключ доступу</value>
+  </data>
+  <data name="Settings_SaveReconnect" xml:space="preserve">
+    <value>Зберегти &amp; Перепідключити</value>
+  </data>
+  <data name="Settings_RemoteDesktop" xml:space="preserve">
+    <value>ВІДДАЛЕНИЙ РОБОЧИЙ СТІЛ</value>
+  </data>
+  <data name="Settings_StreamFpsDesc" xml:space="preserve">
+    <value>Стандартна частота кадрів для нових потоків</value>
+  </data>
+  <data name="Settings_Layout" xml:space="preserve">
+    <value>МАКЕТ</value>
+  </data>
+  <data name="Settings_SnapToGrid" xml:space="preserve">
+    <value>Прив'язати до сітки</value>
+  </data>
+  <data name="Settings_SnapToGridDesc" xml:space="preserve">
+    <value>Картки прив'язуються до найближчої лінії сітки при опусканні</value>
+  </data>
+  <data name="Settings_GridSize" xml:space="preserve">
+    <value>Розмір сітки</value>
+  </data>
+  <data name="Settings_PinnedSensors" xml:space="preserve">
+    <value>ЗАКРІПЛЕНІ ДАТЧИКИ</value>
+  </data>
+  <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
+    <value>Виберіть датчики для відображення на головному екрані</value>
+  </data>
+  <data name="Settings_ServiceSection" xml:space="preserve">
+    <value>СЛУЖБА WINDOWS</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>WINDOWS SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>LINUX DAEMON (SYSTEMD)</value>
+  </data>
+  <data name="Settings_ServiceLogin" xml:space="preserve">
+    <value>ВХІД СЛУЖБИ</value>
+  </data>
+  <data name="Settings_ServiceDesc" xml:space="preserve">
+    <value>Служба працює у фоновому режимі, щоб RemEx міг приймати віддалені команди без відкритого застосунку.</value>
+  </data>
+  <data name="Settings_AccountFormat" xml:space="preserve">
+    <value>Обліковий запис: {0}</value>
+  </data>
+  <data name="Settings_Username" xml:space="preserve">
+    <value>Ім'я користувача</value>
+  </data>
+  <data name="Settings_Password" xml:space="preserve">
+    <value>Пароль</value>
+  </data>
+  <data name="Settings_RestartNote" xml:space="preserve">
+    <value>Зміна мови набуде чинності після перезапуску RemEx.</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>Мова</value>
+  </data>
 
-<data name="Tutorial_P2_Title" xml:space="preserve"><value>Запуск як служби Windows</value></data>
-<data name="Tutorial_P2_Body1" xml:space="preserve"><value>Щоб RemEx працював цілодобово без необхідності входу в систему, встановіть його як службу Windows:</value></data>
-<data name="Tutorial_P2_Steps" xml:space="preserve"><value>1. Відкрийте Налаштування (⚙) → прокрутіть до "Служба Windows"
-2. Введіть своє ім'я користувача та пароль Windows
-3. Натисніть "Встановити як службу"
-4. Служба запускається автоматично під час завантаження системи</value></data>
-<data name="Tutorial_P2_Note" xml:space="preserve"><value>Служба працює під вашим обліковим записом, тому вона має доступ до сеансу робочого столу для захоплення екрана та запуску програм.</value></data>
+  <!-- Home -->
+  <data name="Home_Subtitle" xml:space="preserve">
+    <value>КОМАНДНИЙ ЦЕНТР ДИСТАНЦІЙНОГО ВИКОНАННЯ</value>
+  </data>
+  <data name="Home_QuickActions" xml:space="preserve">
+    <value>ШВИДКІ ДІЇ</value>
+  </data>
+  <data name="Home_SensorWorkspace" xml:space="preserve">
+    <value>Простір датчиків</value>
+  </data>
+  <data name="Home_PcRemote" xml:space="preserve">
+    <value>Пульт ПК</value>
+  </data>
+  <data name="Home_Desktop" xml:space="preserve">
+    <value>Робочий стіл</value>
+  </data>
+  <data name="Home_Launcher" xml:space="preserve">
+    <value>Запуск</value>
+  </data>
+  <data name="Home_Tasks" xml:space="preserve">
+    <value>Завдання</value>
+  </data>
+  <data name="Home_LiveTelemetry" xml:space="preserve">
+    <value>ТЕЛЕМЕТРІЯ В РЕАЛЬНОМУ ЧАСІ</value>
+  </data>
+  <data name="Home_NoPinnedSensors" xml:space="preserve">
+    <value>Немає закріплених датчиків</value>
+  </data>
+  <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
+    <value>Відкрийте простір датчиків, клацніть правою кнопкою мишки на картці та закріпіть на головній.</value>
+  </data>
 
-<data name="Tutorial_P3_Title" xml:space="preserve"><value>Налаштування служби Linux</value></data>
-<data name="Tutorial_P3_Body1" xml:space="preserve"><value>У Linux RemEx Host може працювати як служба systemd для автоматичного запуску.</value></data>
-<data name="Tutorial_P3_Steps" xml:space="preserve"><value>sudo cp remex-host.service /etc/systemd/system/
+  <!-- Task Manager -->
+  <data name="TaskMgr_Header" xml:space="preserve">
+    <value>▤ ДИСПЕТЧЕР ЗАВДАНЬ</value>
+  </data>
+  <data name="TaskMgr_Subheader" xml:space="preserve">
+    <value>ПРОВІДНИК ПРОЦЕСІВ</value>
+  </data>
+  <data name="TaskMgr_SearchPlaceholder" xml:space="preserve">
+    <value>Пошук за назвою або PID...</value>
+  </data>
+  <data name="TaskMgr_KillProcess" xml:space="preserve">
+    <value>Завершити процес</value>
+  </data>
+  <data name="TaskMgr_SortName" xml:space="preserve">
+    <value>Назва</value>
+  </data>
+  <data name="TaskMgr_SortCpu" xml:space="preserve">
+    <value>CPU %</value>
+  </data>
+  <data name="TaskMgr_SortRam" xml:space="preserve">
+    <value>RAM</value>
+  </data>
+
+  <!-- App Launcher -->
+  <data name="AppLauncher_Header" xml:space="preserve">
+    <value>◈ ЗАПУСК ПРОГРАМ</value>
+  </data>
+  <data name="AppLauncher_Subheader" xml:space="preserve">
+    <value>ДИСТАНЦІЙНЕ КЕРУВАННЯ ПРОГРАМАМИ</value>
+  </data>
+  <data name="AppLauncher_AddProgram" xml:space="preserve">
+    <value>+ Додати програму</value>
+  </data>
+  <data name="AppLauncher_NoApps" xml:space="preserve">
+    <value>Програм не налаштовано.</value>
+  </data>
+  <data name="AppLauncher_MoveLeft" xml:space="preserve">
+    <value>Перемістити ліворуч</value>
+  </data>
+  <data name="AppLauncher_MoveRight" xml:space="preserve">
+    <value>Перемістити праворуч</value>
+  </data>
+  <data name="AppLauncher_Remove" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+
+  <!-- Add Program -->
+  <data name="AddProgram_Title" xml:space="preserve">
+    <value>Додати програму</value>
+  </data>
+  <data name="AddProgram_Header" xml:space="preserve">
+    <value>Додати нову програму</value>
+  </data>
+  <data name="AddProgram_ExePath" xml:space="preserve">
+    <value>Шлях до виконуваного файлу</value>
+  </data>
+  <data name="AddProgram_DisplayName" xml:space="preserve">
+    <value>Відображувана назва</value>
+  </data>
+  <data name="AddProgram_AccentColor" xml:space="preserve">
+    <value>Акцентний колір (Hex)</value>
+  </data>
+  <data name="AddProgram_IconPreview" xml:space="preserve">
+    <value>Попередній перегляд іконки</value>
+  </data>
+  <data name="AddProgram_WatermarkPath" xml:space="preserve">
+    <value>C:\Шлях\До\Програми.exe</value>
+  </data>
+  <data name="AddProgram_WatermarkName" xml:space="preserve">
+    <value>Моя програма</value>
+  </data>
+  <data name="AddProgram_WatermarkColor" xml:space="preserve">
+    <value>#RRGGBB</value>
+  </data>
+
+  <!-- Tray Flyout -->
+  <data name="TrayFlyout_Header" xml:space="preserve">
+    <value>ШВИДКИЙ ПЕРЕГЛЯД</value>
+  </data>
+  <data name="TrayFlyout_Home" xml:space="preserve">
+    <value>ГОЛОВНА</value>
+  </data>
+  <data name="TrayFlyout_Workspace" xml:space="preserve">
+    <value>ПРОСТІР</value>
+  </data>
+  <data name="TrayFlyout_Title" xml:space="preserve">
+    <value>Швидкий перегляд</value>
+  </data>
+
+  <!-- Canvas / Dashboard -->
+  <data name="Canvas_Header" xml:space="preserve">
+    <value>ПРОСТІР ДАТЧИКІВ</value>
+  </data>
+  <data name="Canvas_Connection" xml:space="preserve">
+    <value>Підключення</value>
+  </data>
+  <data name="Canvas_Actions" xml:space="preserve">
+    <value>Дії</value>
+  </data>
+  <data name="Canvas_Latency" xml:space="preserve">
+    <value>Затримка</value>
+  </data>
+  <data name="Canvas_Avg" xml:space="preserve">
+    <value>СЕР</value>
+  </data>
+  <data name="Canvas_Max" xml:space="preserve">
+    <value>МАКС</value>
+  </data>
+  <data name="Canvas_ActiveSensors" xml:space="preserve">
+    <value>АКТИВНІ ДАТЧИКИ</value>
+  </data>
+  <data name="Canvas_NewSensors" xml:space="preserve">
+    <value>НОВІ ДАТЧИКИ</value>
+  </data>
+  <data name="Canvas_AddCard" xml:space="preserve">
+    <value>+ Додати картку</value>
+  </data>
+  <data name="Canvas_Save" xml:space="preserve">
+    <value>Зберегти</value>
+  </data>
+  <data name="Canvas_Sync" xml:space="preserve">
+    <value>Синхронізувати</value>
+  </data>
+  <data name="Canvas_Sensors" xml:space="preserve">
+    <value>Датчики ({0})</value>
+  </data>
+  <data name="Canvas_Ping" xml:space="preserve">
+    <value>📡 Ping</value>
+  </data>
+  <data name="Canvas_CancelConnect" xml:space="preserve">
+    <value>✕ Скасувати</value>
+  </data>
+  <data name="Canvas_Disconnect" xml:space="preserve">
+    <value>✕ Відключити</value>
+  </data>
+  <data name="Canvas_LayoutSaved" xml:space="preserve">
+    <value>Макет збережено!</value>
+  </data>
+  <data name="Canvas_SyncRequested" xml:space="preserve">
+    <value>Синхронізацію запрошено…</value>
+  </data>
+  <data name="Dashboard_SystemTelemetry" xml:space="preserve">
+    <value>Системна телеметрія</value>
+  </data>
+  <data name="Dashboard_Samples" xml:space="preserve">
+    <value>ЗРАЗКИ</value>
+  </data>
+  <data name="Dashboard_Uptime" xml:space="preserve">
+    <value>ЧАС РОБОТИ</value>
+  </data>
+  <data name="Dashboard_Connect" xml:space="preserve">
+    <value>⚡ Підключити</value>
+  </data>
+  <data name="Dashboard_Ping" xml:space="preserve">
+    <value>📡 Ping</value>
+  </data>
+  <data name="Dashboard_Disconnect" xml:space="preserve">
+    <value>✕ Відключити</value>
+  </data>
+  <data name="Dashboard_HostWatermark" xml:space="preserve">
+    <value>ws://host:port/ws</value>
+  </data>
+  <data name="Dashboard_MenuSize" xml:space="preserve">
+    <value>📐 Розмір</value>
+  </data>
+  <data name="Dashboard_MenuTheme" xml:space="preserve">
+    <value>🎨 Тема</value>
+  </data>
+  <data name="Dashboard_MenuGraph" xml:space="preserve">
+    <value>📊 Графік</value>
+  </data>
+
+  <!-- Remote Desktop -->
+  <data name="RemoteDesktop_Header" xml:space="preserve">
+    <value>ВІДДАЛЕНИЙ РОБОЧИЙ СТІЛ</value>
+  </data>
+  <data name="RemoteDesktop_Quality" xml:space="preserve">
+    <value>Якість:</value>
+  </data>
+  <data name="RemoteDesktop_Scale" xml:space="preserve">
+    <value>Масштаб:</value>
+  </data>
+  <data name="RemoteDesktop_Fps" xml:space="preserve">
+    <value>FPS:</value>
+  </data>
+  <data name="RemoteDesktop_StreamError" xml:space="preserve">
+    <value>⚠ Помилка потоку</value>
+  </data>
+  <data name="RemoteDesktop_PlaceholderTitle" xml:space="preserve">
+    <value>Віддалений робочий стіл</value>
+  </data>
+  <data name="RemoteDesktop_PlaceholderHint" xml:space="preserve">
+    <value>Підключіться і натисніть Пуск для початку трансляції.</value>
+  </data>
+  <data name="RemoteDesktop_ToggleCursorPad" xml:space="preserve">
+    <value>D-Pad</value>
+  </data>
+  <data name="RemoteDesktop_ToggleFullscreen" xml:space="preserve">
+    <value>На весь екран</value>
+  </data>
+  <data name="RemoteDesktop_Fullscreen" xml:space="preserve">
+    <value>Вийти</value>
+  </data>
+  <data name="RemoteDesktop_CompactPad" xml:space="preserve">
+    <value>Компактний</value>
+  </data>
+  <data name="RemoteDesktop_FullPad" xml:space="preserve">
+    <value>Повний</value>
+  </data>
+  <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve">
+    <value>Роздільна здатність: {0}</value>
+  </data>
+  <data name="RemoteDesktop_FpsFormat" xml:space="preserve">
+    <value>FPS: {0:F1}</value>
+  </data>
+  <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
+    <value>Q: {0}</value>
+  </data>
+
+  <!-- Customization -->
+  <data name="Custom_Header" xml:space="preserve">
+    <value>🎨 НАЛАШТУВАННЯ ВИГЛЯДУ</value>
+  </data>
+  <data name="Custom_Subheader" xml:space="preserve">
+    <value>ТЕМИ &amp; ПРЕСЕТИ ДВИЖКА</value>
+  </data>
+  <data name="Custom_BasePresets" xml:space="preserve">
+    <value>БАЗОВІ ПРЕСЕТИ</value>
+  </data>
+  <data name="Custom_AdvancedTuning" xml:space="preserve">
+    <value>РОЗШИРНЕ ТОНКЕ НАЛАШТУВАННЯ</value>
+  </data>
+  <data name="Custom_CornerRadius" xml:space="preserve">
+    <value>Радіус кута</value>
+  </data>
+  <data name="Custom_GlassOpacity" xml:space="preserve">
+    <value>Прозорість скла</value>
+  </data>
+  <data name="Custom_AppWindowOpacity" xml:space="preserve">
+    <value>Window Opacity</value>
+  </data>
+  <data name="Custom_GlowStrength" xml:space="preserve">
+    <value>Сила свічення</value>
+  </data>
+  <data name="Custom_AccentColor" xml:space="preserve">
+    <value>Акцентний колір</value>
+  </data>
+  <data name="Custom_BackgroundMode" xml:space="preserve">
+    <value>Режим тла</value>
+  </data>
+  <data name="Custom_Atmosphere" xml:space="preserve">
+    <value>АТМОСФЕРА ПОЛОТНА</value>
+  </data>
+  <data name="Custom_Reset" xml:space="preserve">
+    <value>Скинути до стандартів теми</value>
+  </data>
+  <data name="Custom_Back" xml:space="preserve">
+    <value>← Командний центр</value>
+  </data>
+  <data name="Custom_RemoteCardShape" xml:space="preserve">
+    <value>Форма картки пульта</value>
+  </data>
+  <data name="Custom_PresetStandardGlass" xml:space="preserve">
+    <value>Standard Glass</value>
+  </data>
+  <data name="Custom_PresetCyberNOC" xml:space="preserve">
+    <value>Cyber-NOC</value>
+  </data>
+  <data name="Custom_PresetSolarFlare" xml:space="preserve">
+    <value>Solar-Flare</value>
+  </data>
+  <data name="Custom_PresetMonolith" xml:space="preserve">
+    <value>Monolith</value>
+  </data>
+  <data name="Custom_PresetDynamic" xml:space="preserve">
+    <value>Dynamic</value>
+  </data>
+
+  <!-- Status Messages -->
+  <data name="Main_Title" xml:space="preserve">
+    <value>Remex — Ping / Pong</value>
+  </data>
+  <data name="Main_HostWatermark" xml:space="preserve">
+    <value>ws://host:5005/ws</value>
+  </data>
+  <data name="Main_Status" xml:space="preserve">
+    <value>Статус:</value>
+  </data>
+  <data name="Main_Latency" xml:space="preserve">
+    <value>Затримка:</value>
+  </data>
+
+  <!-- Status Messages -->
+  <data name="Status_Disconnected" xml:space="preserve">
+    <value>Відключено</value>
+  </data>
+  <data name="Status_Connected" xml:space="preserve">
+    <value>Підключено</value>
+  </data>
+  <data name="Status_Connecting" xml:space="preserve">
+    <value>Підключення…</value>
+  </data>
+  <data name="Status_PingSent" xml:space="preserve">
+    <value>Ping надіслано…</value>
+  </data>
+  <data name="Status_ServerClosed" xml:space="preserve">
+    <value>Відключено (сервер закрито)</value>
+  </data>
+  <data name="Status_NoHostsFound" xml:space="preserve">
+    <value>Хости через mDNS не знайдено.</value>
+  </data>
+  <data name="Status_SearchingHosts" xml:space="preserve">
+    <value>Пошук хостів…</value>
+  </data>
+  <data name="Status_DiscoveryUnavailable" xml:space="preserve">
+    <value>Служба виявлення недоступна.</value>
+  </data>
+  <data name="Status_PongNoTimestamp" xml:space="preserve">
+    <value>Pong (без мітки часу)</value>
+  </data>
+  <data name="Status_Pong" xml:space="preserve">
+    <value>Pong!</value>
+  </data>
+  <data name="Status_NotStreaming" xml:space="preserve">
+    <value>Не транслюється</value>
+  </data>
+  <data name="Status_Streaming" xml:space="preserve">
+    <value>Трансляція</value>
+  </data>
+  <data name="Status_SelfConnection" xml:space="preserve">
+    <value>Виявлено само-підключення — неможливо відобразити власний екран</value>
+  </data>
+  <data name="Status_ConnectionSaved" xml:space="preserve">
+    <value>Налаштування підключення збережено</value>
+  </data>
+  <data name="Status_ZoomFormat" xml:space="preserve">
+    <value>Масштаб: {0:F1}×</value>
+  </data>
+  <data name="Status_PadCompact" xml:space="preserve">
+    <value>Пад: Компактний</value>
+  </data>
+  <data name="Status_PadFull" xml:space="preserve">
+    <value>Пад: Повний</value>
+  </data>
+  <data name="Status_PadCompactTooltip" xml:space="preserve">
+    <value>Компактний пад курсора активовано</value>
+  </data>
+  <data name="Status_PadFullTooltip" xml:space="preserve">
+    <value>Повнорозмірний пад курсора активовано</value>
+  </data>
+  <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
+    <value>Connect to a host to check remote desktop availability.</value>
+  </data>
+  <data name="Status_StreamConnecting" xml:space="preserve">
+    <value>Connecting...</value>
+  </data>
+  <data name="Status_StreamFailedFormat" xml:space="preserve">
+    <value>Failed: {0}</value>
+  </data>
+  <data name="Status_Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
+    <value>Frame decode error ({0} bytes): {1}: {2}</value>
+  </data>
+
+  <!-- Service Status -->
+  <data name="Service_NotInstalled" xml:space="preserve">
+    <value>Не встановлено</value>
+  </data>
+  <data name="Service_Running" xml:space="preserve">
+    <value>Виконується</value>
+  </data>
+  <data name="Service_Stopped" xml:space="preserve">
+    <value>Зупинено</value>
+  </data>
+  <data name="Service_Pending" xml:space="preserve">
+    <value>Очікування…</value>
+  </data>
+  <data name="Service_Installed" xml:space="preserve">
+    <value>Встановлено</value>
+  </data>
+  <data name="Service_Starting" xml:space="preserve">
+    <value>Запускається…</value>
+  </data>
+  <data name="Service_Stopping" xml:space="preserve">
+    <value>Зупиняється…</value>
+  </data>
+  <data name="Service_Uninstalling" xml:space="preserve">
+    <value>Службу видалено.</value>
+  </data>
+  <data name="Service_PasswordRequired" xml:space="preserve">
+    <value>Потрібен пароль.</value>
+  </data>
+  <data name="Service_Publishing" xml:space="preserve">
+    <value>Публікація Remex.Host…</value>
+  </data>
+  <data name="Service_PublishFailed" xml:space="preserve">
+    <value>Публікація не вдалась — перегляньте журнал.</value>
+  </data>
+  <data name="Service_Creating" xml:space="preserve">
+    <value>Створення служби…</value>
+  </data>
+  <data name="Service_CreateFailed" xml:space="preserve">
+    <value>Не вдалося створити службу — перегляньте журнал.</value>
+  </data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve">
+    <value>Налаштування входу…</value>
+  </data>
+  <data name="Service_ConfigureFailed" xml:space="preserve">
+    <value>Не вдалося налаштувати облікові дані — перегляньте журнал.</value>
+  </data>
+  <data name="Service_GrantingRights" xml:space="preserve">
+    <value>Надання прав входу…</value>
+  </data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve">
+    <value>Зупинка вбудованого хоста…</value>
+  </data>
+  <data name="Service_StartingService" xml:space="preserve">
+    <value>Запуск служби…</value>
+  </data>
+  <data name="Service_InstalledStarted" xml:space="preserve">
+    <value>Встановлено &amp; запущено.</value>
+  </data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve">
+    <value>Встановлено — запуск міг не вдатися, перегляньте журнал.</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>Installing systemd service…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Service installation failed.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>Removing systemd service…</value>
+  </data>
+  <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
+    <value>Zoom: {0}×</value>
+  </data>
+  <data name="Service_DeletingService" xml:space="preserve">
+    <value>Видалення служби…</value>
+  </data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve">
+    <value>Застосування облікових даних…</value>
+  </data>
+  <data name="Service_HostUnavailable" xml:space="preserve">
+    <value>Можливості хоста недоступні</value>
+  </data>
+  <data name="Service_HostUnavailableHint" xml:space="preserve">
+    <value>Підключіться до хоста для перевірки можливостей середовища виконання.</value>
+  </data>
+  <data name="Service_Checking" xml:space="preserve">
+    <value>Перевірка…</value>
+  </data>
+  <data name="Service_LocatingHost" xml:space="preserve">
+    <value>Пошук Remex.Host…</value>
+  </data>
+  <data name="Service_HostNotFound" xml:space="preserve">
+    <value>Remex.Host.exe не знайдено.</value>
+  </data>
+  <data name="Service_StartedMsg" xml:space="preserve">
+    <value>Запущено.</value>
+  </data>
+  <data name="Service_StartFailed" xml:space="preserve">
+    <value>Помилка запуску — див. журнал.</value>
+  </data>
+  <data name="Service_StoppedMsg" xml:space="preserve">
+    <value>Зупинено.</value>
+  </data>
+  <data name="Service_StopFailed" xml:space="preserve">
+    <value>Помилка зупинки — див. журнал.</value>
+  </data>
+  <data name="Service_CredentialsUpdated" xml:space="preserve">
+    <value>Облікові дані оновлено — перезапустіть службу, щоб зміни набули чинності.</value>
+  </data>
+  <data name="Service_CredentialsFailed" xml:space="preserve">
+    <value>Не вдалося — див. журнал.</value>
+  </data>
+  <data name="Service_UninstallFailed" xml:space="preserve">
+    <value>Можливо, видалення не вдалося — див. журнал.</value>
+  </data>
+  <data name="Status_ConnectionCancelled" xml:space="preserve">
+    <value>Підключення скасовано</value>
+  </data>
+  <data name="Status_ConnectionTimedOut" xml:space="preserve">
+    <value>Час очікування підключення минув</value>
+  </data>
+  <data name="Status_FoundHostFormat" xml:space="preserve">
+    <value>Found host: {0}</value>
+  </data>
+  <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
+    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+  </data>
+  <data name="Status_ConnectedToHost" xml:space="preserve">
+    <value>Connected to host</value>
+  </data>
+  <data name="Status_HostNotConnected" xml:space="preserve">
+    <value>Host not connected</value>
+  </data>
+  <data name="Status_InteractiveHost" xml:space="preserve">
+    <value>Interactive host</value>
+  </data>
+  <data name="Status_ServiceHost" xml:space="preserve">
+    <value>Service host</value>
+  </data>
+  <data name="Status_HeadlessHost" xml:space="preserve">
+    <value>Headless host</value>
+  </data>
+  <data name="Status_Host" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
+    <value>Remote desktop available</value>
+  </data>
+  <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
+    <value>Remote desktop unavailable</value>
+  </data>
+  <data name="Status_NotConnected" xml:space="preserve">
+    <value>Not connected.</value>
+  </data>
+  <data name="Status_NoMessage" xml:space="preserve">
+    <value>No message</value>
+  </data>
+  <data name="Status_CommandTimedOut" xml:space="preserve">
+    <value>Command timed out.</value>
+  </data>
+  <data name="Status_ErrorFormat" xml:space="preserve">
+    <value>Error: {0}</value>
+  </data>
+  <data name="Status_UserDisconnected" xml:space="preserve">
+    <value>User disconnected</value>
+  </data>
+  <data name="Status_SendErrorFormat" xml:space="preserve">
+    <value>Send error: {0}</value>
+  </data>
+  <data name="Status_PongFormat" xml:space="preserve">
+    <value>Pong! {0:F1} ms</value>
+  </data>
+  <data name="Status_ReceiveErrorFormat" xml:space="preserve">
+    <value>Receive error: {0}</value>
+  </data>
+  <data name="Status_ReconnectingFormat" xml:space="preserve">
+    <value>Reconnecting in {0}s…</value>
+  </data>
+  <data name="Status_QrCodeFailed" xml:space="preserve">
+    <value>Failed to generate QR code: {0}</value>
+  </data>
+  <data name="Status_FeatureRequiresConnection" xml:space="preserve">
+    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+  </data>
+  <data name="Status_Pairing" xml:space="preserve">
+    <value>Pairing with host...</value>
+  </data>
+  <data name="Pairing_InvalidPin" xml:space="preserve">
+    <value>PIN must be exactly 6 digits.</value>
+  </data>
+
+  <!-- WoL Status -->
+  <data name="Wol_EnterMac" xml:space="preserve">
+    <value>⚠ Спочатку введіть MAC-адресу.</value>
+  </data>
+  <data name="Wol_SendingViaHost" xml:space="preserve">
+    <value>Надсилання магічного пакету через хост…</value>
+  </data>
+  <data name="Wol_SendingLocal" xml:space="preserve">
+    <value>Надсилання магічного пакету локально…</value>
+  </data>
+  <data name="Wol_SentToFormat" xml:space="preserve">
+    <value>✅ Пакет надіслано до {0}</value>
+  </data>
+  <data name="Wol_SuccessFormat" xml:space="preserve">
+    <value>✅ {0}</value>
+  </data>
+  <data name="Wol_ErrorFormat" xml:space="preserve">
+    <value>❌ {0}</value>
+  </data>
+  <data name="Wol_LockSent" xml:space="preserve">
+    <value>Блокування надіслано</value>
+  </data>
+  <data name="Wol_ShutdownSent" xml:space="preserve">
+    <value>Вимкнення надіслано</value>
+  </data>
+  <data name="Wol_ForceShutdownSent" xml:space="preserve">
+    <value>Примусове вимкнення надіслано</value>
+  </data>
+  <data name="Wol_RestartSent" xml:space="preserve">
+    <value>Перезавантаження надіслано</value>
+  </data>
+  <data name="Wol_ForceRestartSent" xml:space="preserve">
+    <value>Примусове перезавантаження надіслано</value>
+  </data>
+  <data name="Wol_RebootUefiSent" xml:space="preserve">
+    <value>Перезавантаження в UEFI надіслано</value>
+  </data>
+  <data name="Wol_SleepSent" xml:space="preserve">
+    <value>Сон надіслано</value>
+  </data>
+  <data name="Wol_HibernateSent" xml:space="preserve">
+    <value>Сплячий режим надіслано</value>
+  </data>
+  <data name="Wol_SignOutSent" xml:space="preserve">
+    <value>Вихід надіслано</value>
+  </data>
+  <!-- Tutorial -->
+  <data name="Tutorial_Header" xml:space="preserve">
+    <value>ПОЧАТОК РОБОТИ</value>
+  </data>
+  <data name="Tutorial_Skip" xml:space="preserve">
+    <value>Пропустити ✕</value>
+  </data>
+  <data name="Tutorial_Back" xml:space="preserve">
+    <value>← Назад</value>
+  </data>
+  <data name="Tutorial_Next" xml:space="preserve">
+    <value>Далі →</value>
+  </data>
+  <data name="Tutorial_Finish" xml:space="preserve">
+    <value>Почати ✓</value>
+  </data>
+  <data name="Tutorial_DontShowAgain" xml:space="preserve">
+    <value>Don't show this tutorial again</value>
+  </data>
+
+  <data name="Tutorial_P0_Title" xml:space="preserve">
+    <value>Ласкаво просимо до RemEx</value>
+  </data>
+  <data name="Tutorial_P0_Body" xml:space="preserve">
+    <value>RemEx turns your PC into a remote command center. Monitor hardware sensors, launch apps, manage processes, and stream your desktop — all controllable from your Android device.
+
+Your PC runs the RemEx Host, which your phone connects to over your local network.</value>
+  </data>
+
+  <data name="Tutorial_P1_Title" xml:space="preserve">
+    <value>Як це працює</value>
+  </data>
+  <data name="Tutorial_P1_Body1" xml:space="preserve">
+    <value>Цей десктопний застосунок містить вбудований RemEx Host, який запускається автоматично. Ваш Android-телефон підключається до нього, а не навпаки.</value>
+  </data>
+  <data name="Tutorial_P1_Body2" xml:space="preserve">
+    <value>Для постійного доступу (навіть коли ви не ввійшли в систему) ви можете встановити хост як службу Windows або демон Linux. Це дозволить вашому телефону підключатися в будь-який час.</value>
+  </data>
+
+  <data name="Tutorial_P2_Title" xml:space="preserve">
+    <value>Запуск як служби Windows</value>
+  </data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve">
+    <value>Щоб RemEx працював цілодобово без необхідності входу в систему, встановіть його як службу Windows:</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
+2. Set your Windows username and password
+3. Click 'Install as Service'
+4. The service starts automatically on boot</value>
+  </data>
+  <data name="Tutorial_P2_Note" xml:space="preserve">
+    <value>Служба працює під вашим обліковим записом, тому вона має доступ до сеансу робочого столу для захоплення екрана та запуску програм.</value>
+  </data>
+
+  <data name="Tutorial_P3_Title" xml:space="preserve">
+    <value>Налаштування служби Linux</value>
+  </data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve">
+    <value>У Linux RemEx Host може працювати як служба systemd для автоматичного запуску.</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>sudo cp remex-host.service /etc/systemd/system/
 sudo systemctl enable remex-host
-sudo systemctl start remex-host</value></data>
-<data name="Tutorial_P3_Link" xml:space="preserve"><value>Детальні інструкції див. у файлі docs/linux-service-setup.md на GitHub</value></data>
+sudo systemctl start remex-host</value>
+  </data>
+  <data name="Tutorial_P3_Link" xml:space="preserve">
+    <value>Детальні інструкції див. у файлі docs/linux-service-setup.md на GitHub</value>
+  </data>
 
-<data name="Tutorial_P4_Title" xml:space="preserve"><value>Інтеграція з HWInfo (Рекомендовано)</value></data>
-<data name="Tutorial_P4_Body1" xml:space="preserve"><value>Для детального моніторингу обладнання (понад 300 датчиків) встановіть HWiNFO64 — програма безкоштовна для особистого користування.</value></data>
-<data name="Tutorial_P4_Steps" xml:space="preserve"><value>1. Завантажте з hwinfo.com
-2. Запустіть HWInfo → Налаштування (⚙) → Main Settings
-3. Поставте галочку на "Shared Memory Support" → OK
-4. HWInfo має бути запущено, щоб RemEx міг зчитувати його датчики</value></data>
-<data name="Tutorial_P4_Warning" xml:space="preserve"><value>⚠ Спільна пам'ять (Shared Memory) у HWInfo автоматично вимикається через 12 годин (у безкоштовній версії). Періодично вмикайте її знову або розгляньте можливість придбання ліцензії Pro.</value></data>
+  <data name="Tutorial_P4_Title" xml:space="preserve">
+    <value>Інтеграція з HWInfo (Рекомендовано)</value>
+  </data>
+  <data name="Tutorial_P4_Body1" xml:space="preserve">
+    <value>Для детального моніторингу обладнання (понад 300 датчиків) встановіть HWiNFO64 — програма безкоштовна для особистого користування.</value>
+  </data>
+  <data name="Tutorial_P4_Steps" xml:space="preserve">
+    <value>1. Download from hwinfo.com
+2. Run HWInfo → Settings (⚙) → Main Settings
+3. Check 'Shared Memory Support' → OK
+4. HWInfo must be running for RemEx to read its sensors</value>
+  </data>
+  <data name="Tutorial_P4_Warning" xml:space="preserve">
+    <value>⚠ Спільна пам'ять (Shared Memory) у HWInfo автоматично вимикається через 12 годин (у безкоштовній версії). Періодично вмикайте її знову або розгляньте можливість придбання ліцензії Pro.</value>
+  </data>
 
-<data name="Tutorial_P5_Title" xml:space="preserve"><value>Моніторинг датчиків</value></data>
-<data name="Tutorial_P5_Body1" xml:space="preserve"><value>RemEx підтримує два джерела телеметрії:</value></data>
-<data name="Tutorial_P5_HWInfo" xml:space="preserve"><value>🟢 HWInfo: 300+ датчиків — температури ЦП, частоти графічного процесора, швидкість вентиляторів, напруга, енергоспоживання. Потребує запущеного HWInfo.</value></data>
-<data name="Tutorial_P5_BuiltIn" xml:space="preserve"><value>🪟 Вбудоване: Основні датчики — використання ЦП, ОЗП, дисковий ввід/вивід, швидкість мережі. Завжди доступно, без додаткового ПЗ.</value></data>
-<data name="Tutorial_P5_Body2" xml:space="preserve"><value>Закріпіть ваші улюблені датчики на головному екрані в Налаштуваннях → Закріплені датчики.</value></data>
+  <data name="Tutorial_P5_Title" xml:space="preserve">
+    <value>Моніторинг датчиків</value>
+  </data>
+  <data name="Tutorial_P5_Body1" xml:space="preserve">
+    <value>RemEx підтримує два джерела телеметрії:</value>
+  </data>
+  <data name="Tutorial_P5_HWInfo" xml:space="preserve">
+    <value>🟢 HWInfo: 300+ датчиків — температури ЦП, частоти графічного процесора, швидкість вентиляторів, напруга, енергоспоживання. Потребує запущеного HWInfo.</value>
+  </data>
+  <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
+    <value>🪟 Вбудоване: Основні датчики — використання ЦП, ОЗП, дисковий ввід/вивід, швидкість мережі. Завжди доступно, без додаткового ПЗ.</value>
+  </data>
+  <data name="Tutorial_P5_Body2" xml:space="preserve">
+    <value>Закріпіть ваші улюблені датчики на головному екрані в Налаштуваннях → Закріплені датчики.</value>
+  </data>
 
-<data name="Tutorial_P6_Title" xml:space="preserve"><value>Налаштування запуску програм</value></data>
-<data name="Tutorial_P6_Body1" xml:space="preserve"><value>Запуск програм дозволяє запускати програми на вашому ПК з телефону. Додатки спершу потрібно налаштувати тут.</value></data>
-<data name="Tutorial_P6_Steps" xml:space="preserve"><value>1. Перейдіть на сторінку "Запуск" (бічна панель)
-2. Натисніть "+ Додати програму"
-3. Виберіть файл .exe або ярлик
-4. Запускайте з вашого Android-додатку!</value></data>
-<data name="Tutorial_P6_Note" xml:space="preserve"><value>Це працює навіть із автономною службою Remex.Host — налаштуйте програми в десктопному клієнті хоча б один раз.</value></data>
+  <data name="Tutorial_P6_Title" xml:space="preserve">
+    <value>Налаштування запуску програм</value>
+  </data>
+  <data name="Tutorial_P6_Body1" xml:space="preserve">
+    <value>Запуск програм дозволяє запускати програми на вашому ПК з телефону. Додатки спершу потрібно налаштувати тут.</value>
+  </data>
+  <data name="Tutorial_P6_Steps" xml:space="preserve">
+    <value>1. Navigate to the Launcher page (sidebar)
+2. Click '+ Add Program'
+3. Browse to the .exe or shortcut
+4. Launch from your Android app!</value>
+  </data>
+  <data name="Tutorial_P6_Note" xml:space="preserve">
+    <value>Це працює навіть із автономною службою Remex.Host — налаштуйте програми в десктопному клієнті хоча б один раз.</value>
+  </data>
 
-<data name="Tutorial_P7_Title" xml:space="preserve"><value>Підключення вашого телефону</value></data>
-<data name="Tutorial_P7_Body1" xml:space="preserve"><value>Ваш Android-додаток автоматично знаходить цей ПК за допомогою mDNS. Обидва пристрої мають бути в одній мережі Wi-Fi / LAN.</value></data>
-<data name="Tutorial_P7_Body2" xml:space="preserve"><value>Якщо автоматичне виявлення не працює, знайдіть IP-адресу вашого ПК вручну:</value></data>
-<data name="Tutorial_P7_IpSteps" xml:space="preserve"><value>Windows: CMD → ipconfig → "IPv4 Address"
-Linux: ip addr або hostname -I</value></data>
-<data name="Tutorial_P7_Body3" xml:space="preserve"><value>Введіть ws://&lt;IP&gt;:5005/ws у налаштуваннях підключення Android-додатку.</value></data>
+  <data name="Tutorial_P7_Title" xml:space="preserve">
+    <value>Підключення вашого телефону</value>
+  </data>
+  <data name="Tutorial_P7_Body1" xml:space="preserve">
+    <value>Ваш Android-додаток автоматично знаходить цей ПК за допомогою mDNS. Обидва пристрої мають бути в одній мережі Wi-Fi / LAN.</value>
+  </data>
+  <data name="Tutorial_P7_Body2" xml:space="preserve">
+    <value>Якщо автоматичне виявлення не працює, знайдіть IP-адресу вашого ПК вручну:</value>
+  </data>
+  <data name="Tutorial_P7_IpSteps" xml:space="preserve">
+    <value>Windows: CMD → ipconfig → 'IPv4 Address'
+Linux: ip addr  or  hostname -I</value>
+  </data>
+  <data name="Tutorial_P7_Body3" xml:space="preserve">
+    <value>Введіть ws://&lt;IP&gt;:5005/ws у налаштуваннях підключення Android-додатку.</value>
+  </data>
 
-<data name="Tutorial_P8_Title" xml:space="preserve"><value>Все готово!</value></data>
-<data name="Tutorial_P8_Body1" xml:space="preserve"><value>Використовуйте бічну панель для навігації між Головною, Датчиками, Пультом, Запуском програм, Диспетчером завдань та Віддаленим робочим столом.</value></data>
-<data name="Tutorial_P8_Body2" xml:space="preserve"><value>Відкрийте Налаштування (⚙), щоб змінити тему, підключення, якість трансляції та закріпити датчики на Головній.</value></data>
-<data name="Tutorial_P8_Replay" xml:space="preserve"><value>Ви можете переглянути цей посібник будь-коли в Налаштуваннях.</value></data>
+  <data name="Tutorial_P8_QR_Title" xml:space="preserve">
+    <value>QR Code Pairing</value>
+  </data>
+  <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
+    <value>The fastest way to connect your phone is by scanning a QR code. The host generates a pairing code that contains everything your mobile app needs.</value>
+  </data>
+  <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
+    <value>1. Open Settings → Connection on the host
+2. Click "Show QR Code"
+3. Open the RemEx mobile app
+4. Tap the QR scanner icon on the connection screen
+5. Point your camera at the code — you'll connect automatically!</value>
+  </data>
+  <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
+    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
+  </data>
+  <data name="Tutorial_P9_Title" xml:space="preserve">
+    <value>Передача файлів і спільні папки</value>
+  </data>
+  <data name="Tutorial_P9_Body1" xml:space="preserve">
+    <value>Передача файлів показує лише папки, якими поділився ваш PC-хост. Налаштуйте їх у Налаштуваннях на хості, щоб телефон бачив правильні розташування.</value>
+  </data>
+  <data name="Tutorial_P9_Steps" xml:space="preserve">
+    <value>1. Open Settings → Shared Folders on the PC host.
+2. Keep RemEx Transfers writable for quick phone → PC uploads.
+3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+  </data>
+  <data name="Tutorial_P9_Body2" xml:space="preserve">
+    <value>На телефоні перегляньте спільну папку, торкніться файлу, щоб завантажити його, або завантажте з Android до будь-якої папки з доступом для запису.</value>
+  </data>
+  <data name="Tutorial_P10_Title" xml:space="preserve">
+    <value>Ви готові!</value>
+  </data>
+  <data name="Tutorial_P10_Body1" xml:space="preserve">
+    <value>Використовуйте бічну панель для навігації між Головною, Датчиками, Дистанційним керуванням, Лаунчером додатків, Диспетчером задач та Віддаленим робочим столом.</value>
+  </data>
+  <data name="Tutorial_P10_Body2" xml:space="preserve">
+    <value>Відкрийте Налаштування (⚙), щоб налаштувати тему, з'єднання, якість потоку та закріпити датчики на Головній.</value>
+  </data>
+  <data name="Tutorial_P10_Replay" xml:space="preserve">
+    <value>Ви можете повторно переглянути це навчання в будь-який час у Налаштуваннях.</value>
+  </data>
 
-<!-- Phase 4: Live Localization - New Keys (English placeholder) -->
+  <!-- Phase 4: Live Localization - New Keys -->
 
+  <!-- Shell (Phase 4) -->
+  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
+    <value>Залиште порожнім, щоб вимкнути</value>
+  </data>
+  <data name="Shell_Atmosphere" xml:space="preserve">
+    <value>АТМОСФЕРА</value>
+  </data>
+  <data name="Shell_AutoSaveNote" xml:space="preserve">
+    <value>Автозбереження при змінах. Зберігається після перезавантаження.</value>
+  </data>
+  <data name="Shell_FineTuning" xml:space="preserve">
+    <value>ТОНКЕ НАЛАШТУВАННЯ</value>
+  </data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve">
+    <value>Шлях до виконуваного файлу хоста</value>
+  </data>
+  <data name="Shell_HostPathHint" xml:space="preserve">
+    <value>Шлях до Remex.Host.exe (залиште порожнім для автовизначення)</value>
+  </data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve">
+    <value>Шлях до Remex.Host.exe. Залиште порожнім для автовизначення (та сама папка, суміжні папки тощо)</value>
+  </data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve">
+    <value>Автовизначення (або вкажіть власний шлях)</value>
+  </data>
+  <data name="Shell_HostWatermark" xml:space="preserve">
+    <value>ws://host:port/ws</value>
+  </data>
+  <data name="Shell_Initializing" xml:space="preserve">
+    <value>Ініціалізація панелі керування...</value>
+  </data>
+  <data name="Shell_JpegQuality" xml:space="preserve">
+    <value>Якість JPEG</value>
+  </data>
+  <data name="Shell_OpenSettings" xml:space="preserve">
+    <value>Відкрити налаштування</value>
+  </data>
+  <data name="Shell_PasswordWatermark" xml:space="preserve">
+    <value>Пароль Windows</value>
+  </data>
+  <data name="Shell_SettingsSubtitle" xml:space="preserve">
+    <value>Конфігурація та Налаштування вигляду</value>
+  </data>
+  <data name="Shell_SettingsTitle" xml:space="preserve">
+    <value>⚙ Налаштування</value>
+  </data>
+  <data name="Shell_StreamSettings" xml:space="preserve">
+    <value>НАЛАШТУВАННЯ ТРАНСЛЯЦІЇ</value>
+  </data>
+  <data name="Shell_StreamSettingsDesc" xml:space="preserve">
+    <value>Налаштуйте якість трансляції екрана, яку хост передає на підключені клієнти (телефон, планшет).</value>
+  </data>
+  <data name="Shell_Subtitle" xml:space="preserve">
+    <value>Командний центр дистанційного виконання</value>
+  </data>
+  <data name="Shell_TargetFps" xml:space="preserve">
+    <value>Цільовий FPS</value>
+  </data>
+  <data name="Shell_Theme" xml:space="preserve">
+    <value>ТЕМА</value>
+  </data>
+  <data name="Shell_UsernameWatermark" xml:space="preserve">
+    <value>.\Ім'я_користувача</value>
+  </data>
+  <data name="Shell_Welcome" xml:space="preserve">
+    <value>ВІТАЄМО</value>
+  </data>
 
-<data name="Shell_AccessKeyWatermark" xml:space="preserve"><value>Залиште порожнім, щоб вимкнути</value></data>
-<data name="Shell_Atmosphere" xml:space="preserve"><value>АТМОСФЕРА</value></data>
-<data name="Shell_AutoSaveNote" xml:space="preserve"><value>Автозбереження при змінах. Зберігається після перезавантаження.</value></data>
-<data name="Shell_FineTuning" xml:space="preserve"><value>ТОНКЕ НАЛАШТУВАННЯ</value></data>
-<data name="Shell_HostBinaryPath" xml:space="preserve"><value>Шлях до виконуваного файлу хоста</value></data>
-<data name="Shell_HostPathHint" xml:space="preserve"><value>Шлях до Remex.Host.exe (залиште порожнім для автовизначення)</value></data>
-<data name="Shell_HostPathTooltip" xml:space="preserve"><value>Шлях до Remex.Host.exe. Залиште порожнім для автовизначення (та сама папка, суміжні папки тощо)</value></data>
-<data name="Shell_HostPathWatermark" xml:space="preserve"><value>Автовизначення (або вкажіть власний шлях)</value></data>
-<data name="Shell_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-<data name="Shell_Initializing" xml:space="preserve"><value>Ініціалізація панелі керування...</value></data>
-<data name="Shell_JpegQuality" xml:space="preserve"><value>Якість JPEG</value></data>
-<data name="Shell_OpenSettings" xml:space="preserve"><value>Відкрити налаштування</value></data>
-<data name="Shell_PasswordWatermark" xml:space="preserve"><value>Пароль Windows</value></data>
-<data name="Shell_SettingsSubtitle" xml:space="preserve"><value>Конфігурація та Налаштування вигляду</value></data>
-<data name="Shell_SettingsTitle" xml:space="preserve"><value>⚙ Налаштування</value></data>
-<data name="Shell_StreamSettings" xml:space="preserve"><value>НАЛАШТУВАННЯ ТРАНСЛЯЦІЇ</value></data>
-<data name="Shell_StreamSettingsDesc" xml:space="preserve"><value>Налаштуйте якість трансляції екрана, яку хост передає на підключені клієнти (телефон, планшет).</value></data>
-<data name="Shell_Subtitle" xml:space="preserve"><value>Командний центр дистанційного виконання</value></data>
-<data name="Shell_TargetFps" xml:space="preserve"><value>Цільовий FPS</value></data>
-<data name="Shell_Theme" xml:space="preserve"><value>ТЕМА</value></data>
-<data name="Shell_UsernameWatermark" xml:space="preserve"><value>.\Ім'я_користувача</value></data>
-<data name="Shell_Welcome" xml:space="preserve"><value>ВІТАЄМО</value></data>
-<data name="Nav_DesktopTooltip" xml:space="preserve"><value>Віддалений робочий стіл — Транслюйте екран вашого ПК у реальному часі</value></data>
-<data name="Nav_HomeTooltip" xml:space="preserve"><value>Головна — Огляд та закріплені датчики</value></data>
-<data name="Nav_Launch" xml:space="preserve"><value>Запустити</value></data>
-<data name="Nav_LauncherTooltip" xml:space="preserve"><value>Запуск програм — Віддалено запускайте програми на вашому ПК</value></data>
-<data name="Nav_RemoteTooltip" xml:space="preserve"><value>Пульт — Живлення, гучність і Wake-on-LAN</value></data>
-<data name="Nav_SensorsTooltip" xml:space="preserve"><value>Простір датчиків — Перетягуйте картки телеметрії</value></data>
-<data name="Nav_SettingsTooltip" xml:space="preserve"><value>Налаштування — Підключення, макет та персоналізація</value></data>
-<data name="Nav_TasksTooltip" xml:space="preserve"><value>Диспетчер завдань — Перегляд та завершення запущених процесів</value></data>
-<data name="Home_CancelTooltip" xml:space="preserve"><value>Скасувати спробу підключення</value></data>
-<data name="Home_ConnectTooltip" xml:space="preserve"><value>Підключитися до хоста RemEx — переконайтеся, що він запущений на вашому ПК</value></data>
-<data name="Home_DesktopTooltip" xml:space="preserve"><value>Транслюйте робочий стіл вашого ПК на цей пристрій у реальному часі</value></data>
-<data name="Home_LauncherTooltip" xml:space="preserve"><value>Запускайте програми на вашому ПК, не перебуваючи за клавіатурою</value></data>
-<data name="Home_PcRemoteTooltip" xml:space="preserve"><value>Дистанційно керуйте вашим ПК — живлення, гучність і Wake-on-LAN</value></data>
-<data name="Home_SensorWorkspaceTooltip" xml:space="preserve"><value>Відкрийте простір датчиків із функцією перетягування для моніторингу телеметрії ПК</value></data>
-<data name="Home_TasksTooltip" xml:space="preserve"><value>Переглядайте запущені процеси та завершуйте завдання на вашому ПК</value></data>
-<data name="Settings_AccessKeyTooltip" xml:space="preserve"><value>Додатковий ключ автентифікації — має збігатися з ключем, встановленим на хості. Залиште порожнім, якщо не налаштовано.</value></data>
-<data name="Settings_AccessKeyWatermark" xml:space="preserve"><value>Залиште порожнім, щоб вимкнути</value></data>
-<data name="Settings_AutoSaveHint" xml:space="preserve"><value>Зміни зберігаються автоматично та залишаються після перезавантаження.</value></data>
-<data name="Settings_ConfigureLogin" xml:space="preserve"><value>⚙ Налаштувати вхід</value></data>
-<data name="Settings_DiscoverTooltip" xml:space="preserve"><value>Автоматичне виявлення хостів RemEx у вашій локальній мережі за допомогою mDNS</value></data>
-<data name="Settings_General" xml:space="preserve"><value>ЗАГАЛЬНІ</value></data>
-<data name="Settings_Help" xml:space="preserve"><value>ДОПОМОГА</value></data>
-<data name="Settings_HostAddressTooltip" xml:space="preserve"><value>WebSocket-адреса хоста RemEx (напр. ws://192.168.1.42:5005/ws). Знайдіть свій IP за допомогою ipconfig (Windows) або ip addr (Linux).</value></data>
-<data name="Settings_HwInfoTooltip" xml:space="preserve"><value>HWInfo (необов'язково, рекомендовано) відстежує понад 300 апаратних датчиків, включаючи температури ядер ЦП, статистику графічного процесора, швидкість вентиляторів та напругу. Без HWInfo RemEx використовує вбудовані лічильники продуктивності Windows (базові ЦП/ОЗП/Диск/Мережа). Завантажте HWInfo на hwinfo.com → Settings → увімкніть "Shared Memory Support". Примітка: спільна пам'ять HWInfo автоматично вимикається через 12 годин — увімкніть її знову в налаштуваннях HWInfo.</value></data>
-<data name="Settings_Install" xml:space="preserve"><value>📦 Встановити</value></data>
-<data name="Settings_LanguageHeader" xml:space="preserve"><value>МОВА</value></data>
-<data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve"><value>Спочатку відкрийте Простір датчиків, щоб виявити їх.</value></data>
-<data name="Settings_PasswordWatermark" xml:space="preserve"><value>Пароль Windows для цього облікового запису</value></data>
-<data name="Settings_Refresh" xml:space="preserve"><value>⟳ Оновити</value></data>
-<data name="Settings_ReplayTutorial" xml:space="preserve"><value>📖 Повторити посібник</value></data>
-<data name="Settings_ReplayTutorialTooltip" xml:space="preserve"><value>Переглянути посібник для початківців ще раз</value></data>
-<data name="Settings_SaveReconnectTooltip" xml:space="preserve"><value>Зберегти налаштування підключення та перепідключитися до хоста</value></data>
-<data name="Settings_SnapToGridTooltip" xml:space="preserve"><value>Якщо ввімкнено, картки датчиків прив'язуються до найближчої лінії сітки під час переміщення</value></data>
-<data name="Settings_Uninstall" xml:space="preserve"><value>🗑 Видалити</value></data>
-<data name="Settings_UsernameHint" xml:space="preserve"><value>Використовуйте .\Ім'я_користувача для локальних облікових записів. GLADOS-V3\Connor автоматично стане .\Connor.</value></data>
-<data name="Settings_UsernameWatermark" xml:space="preserve"><value>.\Ім'я_користувача або MACHINE\Ім'я_користувача</value></data>
-<data name="Service_BtnInstall" xml:space="preserve"><value>📦 Встановити</value></data>
-<data name="Service_BtnLogin" xml:space="preserve"><value>⚙ Вхід</value></data>
-<data name="Service_BtnRemove" xml:space="preserve"><value>🗑 Видалити</value></data>
-<data name="Remote_WolBroadcastWatermark" xml:space="preserve"><value>Широкомовна IP-адреса (255.255.255.255)</value></data>
-<data name="Remote_WolMacWatermark" xml:space="preserve"><value>MAC-адреса (AA:BB:CC:DD:EE:FF)</value></data>
-<data name="Remote_WolPortWatermark" xml:space="preserve"><value>Порт</value></data>
-<data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve"><value>Вийти з повноекранного режиму</value></data>
-<data name="RemoteDesktop_Host" xml:space="preserve"><value>Хост:</value></data>
-<data name="RemoteDesktop_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-<data name="RemoteDesktop_Pad" xml:space="preserve"><value>Пад</value></data>
-<data name="RemoteDesktop_PenModeHint" xml:space="preserve"><value>Режим пера: дотик = миттєвий клік, перетягування = клік і перетягування</value></data>
-<data name="RemoteDesktop_ResetZoom" xml:space="preserve"><value>🔍 Скинути масштаб</value></data>
-<data name="RemoteDesktop_StylusHint" xml:space="preserve"><value>S-Pen / Стилус: натискання = клік, кнопка на стилусі = правий клік</value></data>
-<data name="RemoteDesktop_StylusModeTip" xml:space="preserve"><value>Режим стилуса (сприймати дотик як перо)</value></data>
-<data name="RemoteDesktop_SwitchPadModeTip" xml:space="preserve"><value>Перемикання між повним і компактним падом курсора</value></data>
-<data name="RemoteDesktop_ToggleCompactPadTip" xml:space="preserve"><value>Перемкнути компактний пад курсора</value></data>
-<data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve"><value>Перемкнути пад курсора</value></data>
-<data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve"><value>Перемкнути повноекранний режим</value></data>
-<data name="RemoteDesktop_TogglePen" xml:space="preserve"><value>Перо</value></data>
-<data name="RemoteDesktop_ToggleStylusModeTip" xml:space="preserve"><value>Перемкнути режим стилуса (сприймати дотик як перо)</value></data>
-<data name="RemoteDesktop_TouchHint" xml:space="preserve"><value>Сенсор: дотик = клік, перетягування = переміщення, довгий натиск = правий клік, щипок = масштаб</value></data>
-<data name="Canvas_GraphType" xml:space="preserve"><value>📊 Тип графіка</value></data>
-<data name="Canvas_LockPC" xml:space="preserve"><value>🔒 Заблокувати ПК</value></data>
-<data name="Canvas_RebootUefi" xml:space="preserve"><value>🔧 Перезавантажити в UEFI</value></data>
-<data name="Canvas_TogglePinToHome" xml:space="preserve"><value>📌 Закріпити/Відкріпити на Головній</value></data>
-<data name="AppLauncher_AddNewApp" xml:space="preserve"><value>ДОДАТИ НОВУ ПРОГРАМУ</value></data>
-<data name="AppLauncher_DisplayNameWatermark" xml:space="preserve"><value>Відображувана назва (напр. Chrome)</value></data>
-<data name="AppLauncher_TargetPathWatermark" xml:space="preserve"><value>Цільовий шлях (напр. C:\Program Files...)</value></data>
-<data name="TaskMgr_CpuLabel" xml:space="preserve"><value>CPU</value></data>
-<data name="TaskMgr_MemLabel" xml:space="preserve"><value>MEM</value></data>
-<data name="Tutorial_P1_Diagram" xml:space="preserve"><value>📱 Android-додаток → підключається до → 🖥️ Хоста ПК (ця машина)</value></data>
-<data name="Tutorial_P3_Body2" xml:space="preserve"><value>Детальні інструкції, параметри конфігурації та усунення несправностей див. у повному посібнику:</value></data>
-<data name="Tutorial_SkipTooltip" xml:space="preserve"><value>Пропустити посібник — ви можете переглянути його пізніше в Налаштуваннях</value></data>
+  <!-- Nav (Phase 4) -->
+  <data name="Nav_DesktopTooltip" xml:space="preserve">
+    <value>Віддалений робочий стіл — Транслюйте екран вашого ПК у реальному часі</value>
+  </data>
+  <data name="Nav_HomeTooltip" xml:space="preserve">
+    <value>Головна — Огляд та закріплені датчики</value>
+  </data>
+  <data name="Nav_Launch" xml:space="preserve">
+    <value>Запустити</value>
+  </data>
+  <data name="Nav_LauncherTooltip" xml:space="preserve">
+    <value>Запуск програм — Віддалено запускайте програми на вашому ПК</value>
+  </data>
+  <data name="Nav_FilesTooltip" xml:space="preserve">
+    <value>Передача файлів — Перегляд спільних папок ПК і переміщення файлів між телефоном та хостом</value>
+  </data>
+  <data name="Nav_RemoteTooltip" xml:space="preserve">
+    <value>Пульт — Живлення, гучність і Wake-on-LAN</value>
+  </data>
+  <data name="Nav_SensorsTooltip" xml:space="preserve">
+    <value>Простір датчиків — Перетягуйте картки телеметрії</value>
+  </data>
+  <data name="Nav_SettingsTooltip" xml:space="preserve">
+    <value>Налаштування — Підключення, макет та персоналізація</value>
+  </data>
+  <data name="Nav_TasksTooltip" xml:space="preserve">
+    <value>Диспетчер завдань — Перегляд та завершення запущених процесів</value>
+  </data>
 
-<!-- Phase 4: misc-views keys -->
+  <!-- Home (Phase 4) -->
+  <data name="Home_CancelTooltip" xml:space="preserve">
+    <value>Скасувати спробу підключення</value>
+  </data>
+  <data name="Home_ConnectTooltip" xml:space="preserve">
+    <value>Підключитися до хоста RemEx — переконайтеся, що він запущений на вашому ПК</value>
+  </data>
+  <data name="Home_DesktopTooltip" xml:space="preserve">
+    <value>Транслюйте робочий стіл вашого ПК на цей пристрій у реальному часі</value>
+  </data>
+  <data name="Home_LauncherTooltip" xml:space="preserve">
+    <value>Запускайте програми на вашому ПК, не перебуваючи за клавіатурою</value>
+  </data>
+  <data name="Home_PcRemoteTooltip" xml:space="preserve">
+    <value>Дистанційно керуйте вашим ПК — живлення, гучність і Wake-on-LAN</value>
+  </data>
+  <data name="Home_QrCodeButton" xml:space="preserve">
+    <value>QR-код</value>
+  </data>
+  <data name="Home_QrCodeScanHint" xml:space="preserve">
+    <value>Скануйте додатком RemEx Android</value>
+  </data>
+  <data name="Home_QrCodeTooltip" xml:space="preserve">
+    <value>Згенеруйте QR-код для підключення додатка RemEx Android</value>
+  </data>
+  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
+    <value>Відкрийте простір датчиків із функцією перетягування для моніторингу телеметрії ПК</value>
+  </data>
+  <data name="Home_TasksTooltip" xml:space="preserve">
+    <value>Переглядайте запущені процеси та завершуйте завдання на вашому ПК</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
 
+  <!-- Settings (Phase 4) -->
+  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
+    <value>Додатковий ключ автентифікації — має збігатися з ключем, встановленим на хості. Залиште порожнім, якщо не налаштовано.</value>
+  </data>
+  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
+    <value>Залиште порожнім, щоб вимкнути</value>
+  </data>
+  <data name="Settings_AutoSaveHint" xml:space="preserve">
+    <value>Зміни зберігаються автоматично та залишаються після перезавантаження.</value>
+  </data>
+  <data name="Settings_ConfigureLogin" xml:space="preserve">
+    <value>⚙ Налаштувати вхід</value>
+  </data>
+  <data name="Settings_DiscoverTooltip" xml:space="preserve">
+    <value>Автоматичне виявлення хостів RemEx у вашій локальній мережі за допомогою mDNS</value>
+  </data>
+  <data name="Settings_General" xml:space="preserve">
+    <value>ЗАГАЛЬНІ</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>ДОПОМОГА</value>
+  </data>
+  <data name="Settings_HostAddressTooltip" xml:space="preserve">
+    <value>WebSocket-адреса хоста RemEx (напр. ws://192.168.1.42:5005/ws). Знайдіть свій IP за допомогою ipconfig (Windows) або ip addr (Linux).</value>
+  </data>
+  <data name="Settings_HwInfoTooltip" xml:space="preserve">
+    <value>HWInfo (необов'язково, рекомендовано) відстежує понад 300 апаратних датчиків, включаючи температури ядер ЦП, статистику графічного процесора, швидкість вентиляторів та напругу. Без HWInfo RemEx використовує вбудовані лічильники продуктивності Windows (базові ЦП/ОЗП/Диск/Мережа). Завантажте HWInfo на hwinfo.com → Settings → увімкніть "Shared Memory Support". Примітка: спільна пам'ять HWInfo автоматично вимикається через 12 годин — увімкніть її знову в налаштуваннях HWInfo.</value>
+  </data>
+  <data name="Settings_Install" xml:space="preserve">
+    <value>📦 Встановити</value>
+  </data>
+  <data name="Settings_LanguageHeader" xml:space="preserve">
+    <value>МОВА</value>
+  </data>
+  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve">
+    <value>Спочатку відкрийте Простір датчиків, щоб виявити їх.</value>
+  </data>
+  <data name="Settings_PasswordWatermark" xml:space="preserve">
+    <value>Пароль Windows для цього облікового запису</value>
+  </data>
+  <data name="Settings_Refresh" xml:space="preserve">
+    <value>⟳ Оновити</value>
+  </data>
+  <data name="Settings_ReplayTutorial" xml:space="preserve">
+    <value>📖 Повторити посібник</value>
+  </data>
+  <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
+    <value>Переглянути посібник для початківців ще раз</value>
+  </data>
+  <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
+    <value>Зберегти налаштування підключення та перепідключитися до хоста</value>
+  </data>
+  <data name="Settings_SnapToGridTooltip" xml:space="preserve">
+    <value>Якщо ввімкнено, картки датчиків прив'язуються до найближчої лінії сітки під час переміщення</value>
+  </data>
+  <data name="Settings_Uninstall" xml:space="preserve">
+    <value>🗑 Видалити</value>
+  </data>
+  <data name="Settings_UsernameHint" xml:space="preserve">
+    <value>Використовуйте .\Ім'я_користувача для локальних облікових записів. GLADOS-V3\Connor автоматично стане .\Connor.</value>
+  </data>
+  <data name="Settings_UsernameWatermark" xml:space="preserve">
+    <value>.\Ім'я_користувача або MACHINE\Ім'я_користувача</value>
+  </data>
+  <data name="Settings_FileTransferSection" xml:space="preserve">
+    <value>СПІЛЬНІ ПАПКИ</value>
+  </data>
+  <data name="Settings_FileTransferDesc" xml:space="preserve">
+    <value>Виберіть, які папки цього ПК відображаються у Передачі файлів. Папки лише для читання дозволяють перегляд та завантаження, тоді як папки з доступом для запису приймають завантаження з телефону.</value>
+  </data>
+  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve">
+    <value>ЯК ПРАЦЮЄ ПЕРЕДАЧА ФАЙЛІВ</value>
+  </data>
+  <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
+    <value>Ваш телефон бачить лише папки, перелічені тут. Направте звичайні завантаження до папки із доступом для запису, наприклад RemEx Transfers, а решту залиште лише для читання.</value>
+  </data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
+    <value>1. Add the PC folders you want RemEx to expose.
+2. Turn on uploads only for folders that should accept phone → PC files.
+3. Open File Transfer on your phone and browse the shared folders from there.</value>
+  </data>
+  <data name="Settings_FileTransferAddFolder" xml:space="preserve">
+    <value>+ Додати папку</value>
+  </data>
+  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
+    <value>Відновити стандартні</value>
+  </data>
+  <data name="Settings_FileTransferEmpty" xml:space="preserve">
+    <value>Спільних папок ще не налаштовано. Додайте принаймні одну папку, щоб Передача файлів стала доступною.</value>
+  </data>
+  <data name="Settings_FileTransferWritable" xml:space="preserve">
+    <value>Дозволити завантаження</value>
+  </data>
+  <data name="Settings_FileTransferRemove" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Settings_FileTransferImmediate" xml:space="preserve">
+    <value>Зміни негайно відображаються на екрані Передачі файлів.</value>
+  </data>
+  <data name="Settings_FileTransferPickerTitle" xml:space="preserve">
+    <value>Виберіть папку для спільного доступу</value>
+  </data>
+  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve">
+    <value>Вибір папки недоступний.</value>
+  </data>
+  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve">
+    <value>Вибрана папка недоступна як локальний шлях.</value>
+  </data>
+  <data name="Settings_FileTransferFolderExists" xml:space="preserve">
+    <value>Ця папка вже у спільному доступі.</value>
+  </data>
+  <data name="Settings_FileTransferFolderAdded" xml:space="preserve">
+    <value>Спільну папку додано.</value>
+  </data>
+  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve">
+    <value>Спільні папки відновлено.</value>
+  </data>
+  <data name="Settings_FileTransferSaved" xml:space="preserve">
+    <value>Спільні папки оновлено.</value>
+  </data>
 
-<data name="AddProgram_WatermarkColor" xml:space="preserve"><value>#RRGGBB</value></data>
-<data name="AddProgram_WatermarkName" xml:space="preserve"><value>Моя програма</value></data>
-<data name="AddProgram_WatermarkPath" xml:space="preserve"><value>C:\Шлях\До\Програми.exe</value></data>
-<data name="Btn_Ping" xml:space="preserve"><value>Ping</value></data>
-<data name="Dashboard_Connect" xml:space="preserve"><value>⚡ Підключити</value></data>
-<data name="Dashboard_Disconnect" xml:space="preserve"><value>✕ Відключити</value></data>
-<data name="Dashboard_HostWatermark" xml:space="preserve"><value>ws://host:port/ws</value></data>
-<data name="Dashboard_MenuGraph" xml:space="preserve"><value>📊 Графік</value></data>
-<data name="Dashboard_MenuSize" xml:space="preserve"><value>📐 Розмір</value></data>
-<data name="Dashboard_MenuTheme" xml:space="preserve"><value>🎨 Тема</value></data>
-<data name="Dashboard_Ping" xml:space="preserve"><value>📡 Ping</value></data>
-<data name="Dashboard_Samples" xml:space="preserve"><value>ЗРАЗКИ</value></data>
-<data name="Dashboard_SystemTelemetry" xml:space="preserve"><value>Системна телеметрія</value></data>
-<data name="Dashboard_Uptime" xml:space="preserve"><value>ЧАС РОБОТИ</value></data>
-<data name="Main_HostWatermark" xml:space="preserve"><value>ws://host:5005/ws</value></data>
-<data name="Main_Latency" xml:space="preserve"><value>Затримка:</value></data>
-<data name="Main_Status" xml:space="preserve"><value>Статус:</value></data>
-<data name="Main_Title" xml:space="preserve"><value>Remex — Ping / Pong</value></data>
-<data name="TrayFlyout_Title" xml:space="preserve"><value>Швидкий перегляд</value></data>
-<data name="Service_Checking" xml:space="preserve"><value>Перевірка…</value></data>
-<data name="Service_LocatingHost" xml:space="preserve"><value>Пошук Remex.Host…</value></data>
-<data name="Service_HostNotFound" xml:space="preserve"><value>Remex.Host.exe не знайдено.</value></data>
-<data name="Service_StartedMsg" xml:space="preserve"><value>Запущено.</value></data>
-<data name="Service_StartFailed" xml:space="preserve"><value>Помилка запуску — див. журнал.</value></data>
-<data name="Service_StoppedMsg" xml:space="preserve"><value>Зупинено.</value></data>
-<data name="Service_StopFailed" xml:space="preserve"><value>Помилка зупинки — див. журнал.</value></data>
-<data name="Service_CredentialsUpdated" xml:space="preserve"><value>Облікові дані оновлено — перезапустіть службу, щоб зміни набули чинності.</value></data>
-<data name="Service_CredentialsFailed" xml:space="preserve"><value>Не вдалося — див. журнал.</value></data>
-<data name="Service_UninstallFailed" xml:space="preserve"><value>Можливо, видалення не вдалося — див. журнал.</value></data>
-<data name="Status_ConnectionCancelled" xml:space="preserve"><value>Підключення скасовано</value></data>
-<data name="Status_ConnectionTimedOut" xml:space="preserve"><value>Час очікування підключення минув</value></data>
-<data name="Home_QrCodeButton" xml:space="preserve"><value>QR-код</value></data>
-<data name="Home_QrCodeScanHint" xml:space="preserve"><value>Скануйте додатком RemEx Android</value></data>
-<data name="Home_QrCodeTooltip" xml:space="preserve"><value>Згенеруйте QR-код для підключення додатка RemEx Android</value></data>
+  <!-- File Transfer View -->
+  <data name="FileTransfer_Header" xml:space="preserve">
+    <value>ПЕРЕДАЧА ФАЙЛІВ</value>
+  </data>
+  <data name="FileTransfer_Subheader" xml:space="preserve">
+    <value>СПІЛЬНІ ПАПКИ · ВИБЕРІТЬ ФАЙЛ · МІСЦЕ ЗБЕРЕЖЕННЯ</value>
+  </data>
+  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve">
+    <value>Спільна папка</value>
+  </data>
+  <data name="FileTransfer_ReloadTooltip" xml:space="preserve">
+    <value>Перезавантажити спільні папки</value>
+  </data>
+  <data name="FileTransfer_ReadOnly" xml:space="preserve">
+    <value>Лише читання</value>
+  </data>
+  <data name="FileTransfer_PathLabel" xml:space="preserve">
+    <value>Шлях</value>
+  </data>
+  <data name="FileTransfer_UpTooltip" xml:space="preserve">
+    <value>Перейти до батьківської папки</value>
+  </data>
+  <data name="FileTransfer_RefreshTooltip" xml:space="preserve">
+    <value>Оновити поточну папку</value>
+  </data>
+  <data name="FileTransfer_UploadBtn" xml:space="preserve">
+    <value>Завантажити файл</value>
+  </data>
+  <data name="FileTransfer_UploadTooltip" xml:space="preserve">
+    <value>Виберіть локальний файл і завантажте його до цієї віддаленої папки</value>
+  </data>
+  <data name="FileTransfer_DownloadBtn" xml:space="preserve">
+    <value>Завантажити вибране</value>
+  </data>
+  <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
+    <value>Виберіть, куди зберегти вибраний віддалений файл</value>
+  </data>
+  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve">
+    <value>Відкрити папку</value>
+  </data>
+  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve">
+    <value>Відкрити вибрану віддалену папку</value>
+  </data>
+  <data name="FileTransfer_CancelTooltip" xml:space="preserve">
+    <value>Скасувати активну передачу</value>
+  </data>
+  <data name="FileTransfer_Loading" xml:space="preserve">
+    <value>Завантаження…</value>
+  </data>
+  <!-- File Transfer Status / VM strings -->
+  <data name="FileTransfer_NoSharedFolders" xml:space="preserve">
+    <value>Хост ще не надав жодних спільних папок.</value>
+  </data>
+  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
+    <value>Спільні папки недоступні: {0}</value>
+  </data>
+  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
+    <value>Помилка перегляду: {0}</value>
+  </data>
+  <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
+    <value>Вибір файлу недоступний.</value>
+  </data>
+  <data name="FileTransfer_PickerTitle" xml:space="preserve">
+    <value>Виберіть файл для завантаження</value>
+  </data>
+  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve">
+    <value>Вибраний файл недоступний як локальний шлях.</value>
+  </data>
+  <data name="FileTransfer_UploadingFormat" xml:space="preserve">
+    <value>Завантаження {0}…</value>
+  </data>
+  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve">
+    <value>Завантаження {0}… {1:P0}</value>
+  </data>
+  <data name="FileTransfer_UploadComplete" xml:space="preserve">
+    <value>Завантаження завершено.</value>
+  </data>
+  <data name="FileTransfer_UploadCancelled" xml:space="preserve">
+    <value>Завантаження скасовано.</value>
+  </data>
+  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve">
+    <value>Помилка завантаження: {0}</value>
+  </data>
+  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve">
+    <value>Діалог збереження недоступний.</value>
+  </data>
+  <data name="FileTransfer_SavePickerTitle" xml:space="preserve">
+    <value>Зберегти завантажений файл</value>
+  </data>
+  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve">
+    <value>Вибране місце призначення недоступне як локальний шлях.</value>
+  </data>
+  <data name="FileTransfer_DownloadingFormat" xml:space="preserve">
+    <value>Завантаження {0}…</value>
+  </data>
+  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve">
+    <value>Завантаження {0}… {1:P0}</value>
+  </data>
+  <data name="FileTransfer_DownloadComplete" xml:space="preserve">
+    <value>Завантаження завершено.</value>
+  </data>
+  <data name="FileTransfer_DownloadCancelled" xml:space="preserve">
+    <value>Завантаження скасовано.</value>
+  </data>
+  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve">
+    <value>Помилка завантаження: {0}</value>
+  </data>
+  <data name="FileTransfer_HintNoneSelected" xml:space="preserve">
+    <value>Виберіть спільну папку для перегляду.</value>
+  </data>
+  <data name="FileTransfer_HintWritableFormat" xml:space="preserve">
+    <value>Завантаження з цього ПК потрапляють до {0}.</value>
+  </data>
+  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve">
+    <value>{0} лише для читання. Виберіть папку із доступом для запису, щоб завантажити файли.</value>
+  </data>
+  <!-- File management -->
+  <data name="FileTransfer_DeleteBtn" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="FileTransfer_DeleteTooltip" xml:space="preserve">
+    <value>Delete the selected file or folder on the host</value>
+  </data>
+  <data name="FileTransfer_DeletingFormat" xml:space="preserve">
+    <value>Deleting {0}…</value>
+  </data>
+  <data name="FileTransfer_DeleteComplete" xml:space="preserve">
+    <value>Deleted.</value>
+  </data>
+  <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
+    <value>Delete failed: {0}</value>
+  </data>
+  <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
+    <value>Deleting {0} items…</value>
+  </data>
+  <data name="FileTransfer_DeleteMultipleCompleteFormat" xml:space="preserve">
+    <value>Deleted {0} items.</value>
+  </data>
+  <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
+    <value>Select All</value>
+  </data>
+  <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
+    <value>Select all files and folders in the current directory</value>
+  </data>
+  <data name="FileTransfer_RenameBtn" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="FileTransfer_RenameTooltip" xml:space="preserve">
+    <value>Rename the selected file or folder on the host</value>
+  </data>
+  <data name="FileTransfer_RenamingFormat" xml:space="preserve">
+    <value>Renaming {0} to {1}…</value>
+  </data>
+  <data name="FileTransfer_RenameComplete" xml:space="preserve">
+    <value>Renamed.</value>
+  </data>
+  <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
+    <value>Rename failed: {0}</value>
+  </data>
+  <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="FileTransfer_RenameCancelBtn" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="FileTransfer_RenameInputPlaceholder" xml:space="preserve">
+    <value>New name…</value>
+  </data>
+  <!-- SHA-256 verification -->
+  <data name="FileTransfer_VerifyHashBtn" xml:space="preserve">
+    <value>Verify SHA-256</value>
+  </data>
+  <data name="FileTransfer_VerifyHashTooltip" xml:space="preserve">
+    <value>Compute and display the SHA-256 hash of the selected file on the host</value>
+  </data>
+  <data name="FileTransfer_HashComputingFormat" xml:space="preserve">
+    <value>Computing SHA-256 of {0}…</value>
+  </data>
+  <data name="FileTransfer_HashComplete" xml:space="preserve">
+    <value>SHA-256 computed.</value>
+  </data>
+  <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
+    <value>Hash failed: {0}</value>
+  </data>
+  <data name="FileTransfer_HashLabel" xml:space="preserve">
+    <value>SHA-256</value>
+  </data>
+  <!-- Root management -->
+  <data name="FileTransfer_PinFolderTooltip" xml:space="preserve">
+    <value>Pin the current folder as a new shared root in the dropdown</value>
+  </data>
+  <data name="FileTransfer_PinningFolder" xml:space="preserve">
+    <value>Pinning folder as shared root…</value>
+  </data>
+  <data name="FileTransfer_PinComplete" xml:space="preserve">
+    <value>Folder added to shared roots.</value>
+  </data>
+  <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
+    <value>Could not pin folder: {0}</value>
+  </data>
+  <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
+    <value>Remove this shared folder from the dropdown</value>
+  </data>
+  <data name="FileTransfer_RemovingRootFormat" xml:space="preserve">
+    <value>Removing {0} from shared folders…</value>
+  </data>
+  <data name="FileTransfer_RemoveRootComplete" xml:space="preserve">
+    <value>Shared folder removed.</value>
+  </data>
+  <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
+    <value>Could not remove folder: {0}</value>
+  </data>
+
+  <!-- Service (Phase 4) -->
+  <data name="Service_BtnInstall" xml:space="preserve">
+    <value>📦 Встановити</value>
+  </data>
+  <data name="Service_BtnLogin" xml:space="preserve">
+    <value>⚙ Вхід</value>
+  </data>
+  <data name="Service_BtnRemove" xml:space="preserve">
+    <value>🗑 Видалити</value>
+  </data>
+
+  <!-- Remote (Phase 4) -->
+  <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
+    <value>Широкомовна IP-адреса (255.255.255.255)</value>
+  </data>
+  <data name="Remote_WolMacWatermark" xml:space="preserve">
+    <value>MAC-адреса (AA:BB:CC:DD:EE:FF)</value>
+  </data>
+  <data name="Remote_WolPortWatermark" xml:space="preserve">
+    <value>Порт</value>
+  </data>
+
+  <!-- RemoteDesktop (Phase 4) -->
+  <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
+    <value>Вийти з повноекранного режиму</value>
+  </data>
+  <data name="RemoteDesktop_Host" xml:space="preserve">
+    <value>Хост:</value>
+  </data>
+  <data name="RemoteDesktop_HostWatermark" xml:space="preserve">
+    <value>ws://host:port/ws</value>
+  </data>
+  <data name="RemoteDesktop_Pad" xml:space="preserve">
+    <value>Пад</value>
+  </data>
+  <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
+    <value>Режим пера: дотик = миттєвий клік, перетягування = клік і перетягування</value>
+  </data>
+  <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
+    <value>🔍 Скинути масштаб</value>
+  </data>
+  <data name="RemoteDesktop_StylusHint" xml:space="preserve">
+    <value>S-Pen / Стилус: натискання = клік, кнопка на стилусі = правий клік</value>
+  </data>
+  <data name="RemoteDesktop_StylusModeTip" xml:space="preserve">
+    <value>Режим стилуса (сприймати дотик як перо)</value>
+  </data>
+  <data name="RemoteDesktop_SwitchPadModeTip" xml:space="preserve">
+    <value>Перемикання між повним і компактним падом курсора</value>
+  </data>
+  <data name="RemoteDesktop_ToggleCompactPadTip" xml:space="preserve">
+    <value>Перемкнути компактний пад курсора</value>
+  </data>
+  <data name="RemoteDesktop_ToggleCursorPadTip" xml:space="preserve">
+    <value>Перемкнути пад курсора</value>
+  </data>
+  <data name="RemoteDesktop_ToggleFullscreenTip" xml:space="preserve">
+    <value>Перемкнути повноекранний режим</value>
+  </data>
+  <data name="RemoteDesktop_TogglePen" xml:space="preserve">
+    <value>Перо</value>
+  </data>
+  <data name="RemoteDesktop_ToggleStylusModeTip" xml:space="preserve">
+    <value>Перемкнути режим стилуса (сприймати дотик як перо)</value>
+  </data>
+  <data name="RemoteDesktop_TouchHint" xml:space="preserve">
+    <value>Сенсор: дотик = клік, перетягування = переміщення, довгий натиск = правий клік, щипок = масштаб</value>
+  </data>
+
+  <!-- Canvas (Phase 4) -->
+  <data name="Canvas_GraphType" xml:space="preserve">
+    <value>📊 Тип графіка</value>
+  </data>
+  <data name="Canvas_LockPC" xml:space="preserve">
+    <value>🔒 Заблокувати ПК</value>
+  </data>
+  <data name="Canvas_RebootUefi" xml:space="preserve">
+    <value>🔧 Перезавантажити в UEFI</value>
+  </data>
+  <data name="Canvas_TogglePinToHome" xml:space="preserve">
+    <value>📌 Закріпити/Відкріпити на Головній</value>
+  </data>
+
+  <!-- AppLauncher (Phase 4) -->
+  <data name="AppLauncher_AddNewApp" xml:space="preserve">
+    <value>ДОДАТИ НОВУ ПРОГРАМУ</value>
+  </data>
+  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve">
+    <value>Відображувана назва (напр. Chrome)</value>
+  </data>
+  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve">
+    <value>Цільовий шлях (напр. C:\Program Files...)</value>
+  </data>
+
+  <!-- TaskMgr (Phase 4) -->
+  <data name="TaskMgr_CpuLabel" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="TaskMgr_MemLabel" xml:space="preserve">
+    <value>MEM</value>
+  </data>
+
+  <!-- Tutorial (Phase 4) -->
+  <data name="Tutorial_P1_Diagram" xml:space="preserve">
+    <value>📱 Android-додаток → підключається до → 🖥️ Хоста ПК (ця машина)</value>
+  </data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve">
+    <value>Детальні інструкції, параметри конфігурації та усунення несправностей див. у повному посібнику:</value>
+  </data>
+  <data name="Tutorial_SkipTooltip" xml:space="preserve">
+    <value>Пропустити посібник — ви можете переглянути його пізніше в Налаштуваннях</value>
+  </data>
+
+  <!-- App Launcher -->
+  <data name="AppLauncher_UnnamedApp" xml:space="preserve">
+    <value>Unnamed App</value>
+  </data>
+  <data name="FilePicker_SelectApplication" xml:space="preserve">
+    <value>Select Application</value>
+  </data>
+  <data name="FilePicker_Applications" xml:space="preserve">
+    <value>Applications</value>
+  </data>
+  <data name="FilePicker_AllFiles" xml:space="preserve">
+    <value>All Files</value>
+  </data>
+  <data name="Sensor_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+
+  <!-- About Screen -->
+  <data name="About_Header" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="About_Tagline" xml:space="preserve">
+    <value>RE(mote) EX(ecution) - Control Your PC</value>
+  </data>
+  <data name="About_DesktopClient" xml:space="preserve">
+    <value>Desktop Client</value>
+  </data>
+  <data name="About_PCHost" xml:space="preserve">
+    <value>PC Host</value>
+  </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Розгляньте можливість поставити зірочку на GitHub!</value>
   </data>
@@ -405,74 +1646,162 @@ Linux: ip addr або hostname -I</value></data>
   <data name="About_MadeWith" xml:space="preserve">
     <value>Зроблено з ❤️ у Денвері, Колорадо</value>
   </data>
-  <data name="Nav_Files" xml:space="preserve"><value>Файли</value></data>
-  <data name="Nav_FilesTooltip" xml:space="preserve"><value>Передача файлів — Перегляд спільних папок ПК і переміщення файлів між телефоном та хостом</value></data>
-  <data name="Tutorial_P9_Title" xml:space="preserve"><value>Передача файлів і спільні папки</value></data>
-  <data name="Tutorial_P9_Body1" xml:space="preserve"><value>Передача файлів показує лише папки, якими поділився ваш PC-хост. Налаштуйте їх у Налаштуваннях на хості, щоб телефон бачив правильні розташування.</value></data>
-  <data name="Tutorial_P9_Steps" xml:space="preserve"><value>1. Відкрийте Налаштування → Спільні папки на PC-хості.
-2. Залиште RemEx Transfers доступним для запису для швидкого завантаження з телефону на PC.
-3. Залиште інші папки лише для читання, якщо не хочете, щоб мобільні пристрої їх змінювали.</value></data>
-  <data name="Tutorial_P9_Body2" xml:space="preserve"><value>На телефоні перегляньте спільну папку, торкніться файлу, щоб завантажити його, або завантажте з Android до будь-якої папки з доступом для запису.</value></data>
-  <data name="Tutorial_P10_Title" xml:space="preserve"><value>Ви готові!</value></data>
-  <data name="Tutorial_P10_Body1" xml:space="preserve"><value>Використовуйте бічну панель для навігації між Головною, Датчиками, Дистанційним керуванням, Лаунчером додатків, Диспетчером задач та Віддаленим робочим столом.</value></data>
-  <data name="Tutorial_P10_Body2" xml:space="preserve"><value>Відкрийте Налаштування (⚙), щоб налаштувати тему, з'єднання, якість потоку та закріпити датчики на Головній.</value></data>
-  <data name="Tutorial_P10_Replay" xml:space="preserve"><value>Ви можете повторно переглянути це навчання в будь-який час у Налаштуваннях.</value></data>
-  <data name="Settings_FileTransferSection" xml:space="preserve"><value>СПІЛЬНІ ПАПКИ</value></data>
-  <data name="Settings_FileTransferDesc" xml:space="preserve"><value>Виберіть, які папки цього ПК відображаються у Передачі файлів. Папки лише для читання дозволяють перегляд та завантаження, тоді як папки з доступом для запису приймають завантаження з телефону.</value></data>
-  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve"><value>ЯК ПРАЦЮЄ ПЕРЕДАЧА ФАЙЛІВ</value></data>
-  <data name="Settings_FileTransferTutorialBody" xml:space="preserve"><value>Ваш телефон бачить лише папки, перелічені тут. Направте звичайні завантаження до папки із доступом для запису, наприклад RemEx Transfers, а решту залиште лише для читання.</value></data>
-  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve"><value>1. Додайте папки ПК, які хочете надати через RemEx.
-2. Увімкніть завантаження лише для папок, які мають приймати файли з телефону.
-3. Відкрийте Передачу файлів на телефоні та перегляньте спільні папки звідти.</value></data>
-  <data name="Settings_FileTransferAddFolder" xml:space="preserve"><value>+ Додати папку</value></data>
-  <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve"><value>Відновити стандартні</value></data>
-  <data name="Settings_FileTransferEmpty" xml:space="preserve"><value>Спільних папок ще не налаштовано. Додайте принаймні одну папку, щоб Передача файлів стала доступною.</value></data>
-  <data name="Settings_FileTransferWritable" xml:space="preserve"><value>Дозволити завантаження</value></data>
-  <data name="Settings_FileTransferRemove" xml:space="preserve"><value>Видалити</value></data>
-  <data name="Settings_FileTransferImmediate" xml:space="preserve"><value>Зміни негайно відображаються на екрані Передачі файлів.</value></data>
-  <data name="Settings_FileTransferPickerTitle" xml:space="preserve"><value>Виберіть папку для спільного доступу</value></data>
-  <data name="Settings_FileTransferPickerUnavailable" xml:space="preserve"><value>Вибір папки недоступний.</value></data>
-  <data name="Settings_FileTransferLocalPathUnavailable" xml:space="preserve"><value>Вибрана папка недоступна як локальний шлях.</value></data>
-  <data name="Settings_FileTransferFolderExists" xml:space="preserve"><value>Ця папка вже у спільному доступі.</value></data>
-  <data name="Settings_FileTransferFolderAdded" xml:space="preserve"><value>Спільну папку додано.</value></data>
-  <data name="Settings_FileTransferDefaultsRestored" xml:space="preserve"><value>Спільні папки відновлено.</value></data>
-  <data name="Settings_FileTransferSaved" xml:space="preserve"><value>Спільні папки оновлено.</value></data>
-  <data name="FileTransfer_Header" xml:space="preserve"><value>ПЕРЕДАЧА ФАЙЛІВ</value></data>
-  <data name="FileTransfer_Subheader" xml:space="preserve"><value>СПІЛЬНІ ПАПКИ · ВИБЕРІТЬ ФАЙЛ · МІСЦЕ ЗБЕРЕЖЕННЯ</value></data>
-  <data name="FileTransfer_SharedFolderLabel" xml:space="preserve"><value>Спільна папка</value></data>
-  <data name="FileTransfer_ReloadTooltip" xml:space="preserve"><value>Перезавантажити спільні папки</value></data>
-  <data name="FileTransfer_ReadOnly" xml:space="preserve"><value>Лише читання</value></data>
-  <data name="FileTransfer_PathLabel" xml:space="preserve"><value>Шлях</value></data>
-  <data name="FileTransfer_UpTooltip" xml:space="preserve"><value>Перейти до батьківської папки</value></data>
-  <data name="FileTransfer_RefreshTooltip" xml:space="preserve"><value>Оновити поточну папку</value></data>
-  <data name="FileTransfer_UploadBtn" xml:space="preserve"><value>Завантажити файл</value></data>
-  <data name="FileTransfer_UploadTooltip" xml:space="preserve"><value>Виберіть локальний файл і завантажте його до цієї віддаленої папки</value></data>
-  <data name="FileTransfer_DownloadBtn" xml:space="preserve"><value>Завантажити вибране</value></data>
-  <data name="FileTransfer_DownloadTooltip" xml:space="preserve"><value>Виберіть, куди зберегти вибраний віддалений файл</value></data>
-  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve"><value>Відкрити папку</value></data>
-  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve"><value>Відкрити вибрану віддалену папку</value></data>
-  <data name="FileTransfer_CancelTooltip" xml:space="preserve"><value>Скасувати активну передачу</value></data>
-  <data name="FileTransfer_Loading" xml:space="preserve"><value>Завантаження…</value></data>
-  <data name="FileTransfer_NoSharedFolders" xml:space="preserve"><value>Хост ще не надав жодних спільних папок.</value></data>
-  <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve"><value>Спільні папки недоступні: {0}</value></data>
-  <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve"><value>Помилка перегляду: {0}</value></data>
-  <data name="FileTransfer_PickerUnavailable" xml:space="preserve"><value>Вибір файлу недоступний.</value></data>
-  <data name="FileTransfer_PickerTitle" xml:space="preserve"><value>Виберіть файл для завантаження</value></data>
-  <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve"><value>Вибраний файл недоступний як локальний шлях.</value></data>
-  <data name="FileTransfer_UploadingFormat" xml:space="preserve"><value>Завантаження {0}…</value></data>
-  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve"><value>Завантаження {0}… {1:P0}</value></data>
-  <data name="FileTransfer_UploadComplete" xml:space="preserve"><value>Завантаження завершено.</value></data>
-  <data name="FileTransfer_UploadCancelled" xml:space="preserve"><value>Завантаження скасовано.</value></data>
-  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve"><value>Помилка завантаження: {0}</value></data>
-  <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve"><value>Діалог збереження недоступний.</value></data>
-  <data name="FileTransfer_SavePickerTitle" xml:space="preserve"><value>Зберегти завантажений файл</value></data>
-  <data name="FileTransfer_SavePathUnavailable" xml:space="preserve"><value>Вибране місце призначення недоступне як локальний шлях.</value></data>
-  <data name="FileTransfer_DownloadingFormat" xml:space="preserve"><value>Завантаження {0}…</value></data>
-  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve"><value>Завантаження {0}… {1:P0}</value></data>
-  <data name="FileTransfer_DownloadComplete" xml:space="preserve"><value>Завантаження завершено.</value></data>
-  <data name="FileTransfer_DownloadCancelled" xml:space="preserve"><value>Завантаження скасовано.</value></data>
-  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve"><value>Помилка завантаження: {0}</value></data>
-  <data name="FileTransfer_HintNoneSelected" xml:space="preserve"><value>Виберіть спільну папку для перегляду.</value></data>
-  <data name="FileTransfer_HintWritableFormat" xml:space="preserve"><value>Завантаження з цього ПК потрапляють до {0}.</value></data>
-  <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve"><value>{0} лише для читання. Виберіть папку із доступом для запису, щоб завантажити файли.</value></data>
+
+  <!-- Confirmation dialogs -->
+  <data name="Confirm_Shutdown_Title" xml:space="preserve">
+    <value>Shut Down — Are you sure?</value>
+  </data>
+  <data name="Confirm_Shutdown_Message" xml:space="preserve">
+    <value>The remote PC will shut down. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_Shutdown_Btn" xml:space="preserve">
+    <value>Shut Down</value>
+  </data>
+  <data name="Confirm_Restart_Title" xml:space="preserve">
+    <value>Restart — Are you sure?</value>
+  </data>
+  <data name="Confirm_Restart_Message" xml:space="preserve">
+    <value>The remote PC will restart. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_Restart_Btn" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
+    <value>Force Shutdown — Are you sure?</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
+    <value>This will immediately shut down the remote PC. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
+    <value>Force Shutdown</value>
+  </data>
+  <data name="Confirm_ForceRestart_Title" xml:space="preserve">
+    <value>Force Restart — Are you sure?</value>
+  </data>
+  <data name="Confirm_ForceRestart_Message" xml:space="preserve">
+    <value>This will immediately restart the remote PC. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
+    <value>Force Restart</value>
+  </data>
+  <data name="Confirm_RebootUefi_Title" xml:space="preserve">
+    <value>Reboot to UEFI — Are you sure?</value>
+  </data>
+  <data name="Confirm_RebootUefi_Message" xml:space="preserve">
+    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost.</value>
+  </data>
+  <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
+    <value>Reboot to UEFI</value>
+  </data>
+  <data name="PairingDialogTitle" xml:space="preserve">
+    <value>Pair with Host</value>
+  </data>
+  <data name="PairingDialogInstruction" xml:space="preserve">
+    <value>Enter the 6-digit PIN displayed on the host machine:</value>
+  </data>
+  <data name="Btn_Pair" xml:space="preserve">
+    <value>Pair</value>
+  </data>
+
+  <!-- About and FAQ -->
+  <data name="About_KeyboardShortcuts" xml:space="preserve">
+    <value>Keyboard Shortcuts</value>
+  </data>
+  <data name="About_CommandPalette" xml:space="preserve">
+    <value>Command Palette</value>
+  </data>
+  <data name="About_UndoLayout" xml:space="preserve">
+    <value>Undo Layout Edit</value>
+  </data>
+  <data name="About_RedoLayout" xml:space="preserve">
+    <value>Redo Layout Edit</value>
+  </data>
+  <data name="About_CloseOverlays" xml:space="preserve">
+    <value>Close Overlays/Panels</value>
+  </data>
+  <data name="About_WhatsNew" xml:space="preserve">
+    <value>What's New?</value>
+  </data>
+  <data name="About_Faq" xml:space="preserve">
+    <value>Frequently Asked Questions</value>
+  </data>
+  <data name="About_WhatsNew_Features" xml:space="preserve">
+    <value>Features</value>
+  </data>
+  <data name="About_WhatsNew_Features_Body" xml:space="preserve">
+    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+  </data>
+  <data name="About_WhatsNew_Fixes" xml:space="preserve">
+    <value>Fixes</value>
+  </data>
+  <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
+    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+  </data>
+  <data name="About_WhatsNew_Issues" xml:space="preserve">
+    <value>Issues (Known)</value>
+  </data>
+  <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
+    <value>Bitmap-on-clipboard deferred to 2.x</value>
+  </data>
+
+  <data name="Faq_Q1_Question" xml:space="preserve">
+    <value>What do I need to run on my PC?</value>
+  </data>
+  <data name="Faq_Q1_Answer" xml:space="preserve">
+    <value>You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+  </data>
+  <data name="Faq_Q2_Question" xml:space="preserve">
+    <value>How do I pair my phone or second PC?</value>
+  </data>
+  <data name="Faq_Q2_Answer" xml:space="preserve">
+    <value>Scan the QR code found in the Settings -> Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
+  </data>
+  <data name="Faq_Q3_Question" xml:space="preserve">
+    <value>How do I find my PC's IP address?</value>
+  </data>
+  <data name="Faq_Q3_Answer" xml:space="preserve">
+    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -> Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+  </data>
+  <data name="Faq_Q4_Question" xml:space="preserve">
+    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+  </data>
+  <data name="Faq_Q4_Answer" xml:space="preserve">
+    <value>1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+  </data>
+  <data name="Faq_Q5_Question" xml:space="preserve">
+    <value>What is the default port?</value>
+  </data>
+  <data name="Faq_Q5_Answer" xml:space="preserve">
+    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window.</value>
+  </data>
+  <data name="Faq_Q6_Question" xml:space="preserve">
+    <value>Can I connect over the internet?</value>
+  </data>
+  <data name="Faq_Q6_Answer" xml:space="preserve">
+    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+  </data>
+  <data name="Faq_Q7_Question" xml:space="preserve">
+    <value>Remote Desktop is laggy. What can I do?</value>
+  </data>
+  <data name="Faq_Q7_Answer" xml:space="preserve">
+    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+  </data>
+  <data name="Faq_Q8_Question" xml:space="preserve">
+    <value>What is Wake-on-LAN (WOL)?</value>
+  </data>
+  <data name="Faq_Q8_Answer" xml:space="preserve">
+    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+  </data>
+  <data name="Faq_Q9_Question" xml:space="preserve">
+    <value>How do I transfer files?</value>
+  </data>
+  <data name="Faq_Q9_Answer" xml:space="preserve">
+    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+  </data>
+  <data name="Faq_Q10_Question" xml:space="preserve">
+    <value>Can I lock my PC remotely?</value>
+  </data>
+  <data name="Faq_Q10_Answer" xml:space="preserve">
+    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+  </data>
 </root>

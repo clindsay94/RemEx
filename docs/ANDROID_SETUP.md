@@ -316,6 +316,27 @@ This script handles:
 
 See [scripts/setup-android-sdk.sh](../scripts/setup-android-sdk.sh) for details.
 
+## 🛡️ Security & Credentials
+
+### Encrypted Storage
+RemEx 2.0 uses `EncryptedSharedPreferences` to securely store pinned host certificate hashes. This prevents unauthorized access to your paired device list.
+- **Dependency:** `androidx.security:security-crypto:1.1.0-alpha06`
+- **Location:** `remex_pinned_hosts.xml` (excluded from Android Auto Backup)
+
+---
+
+## 📈 Firebase & Crashlytics
+
+For production builds, Firebase Crashlytics is used for crash reporting and NDK symbol analysis.
+
+### Prerequisites
+1. Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
+2. Add an Android app with package name `com.clindsay94.remex`.
+3. Download `google-services.json` and place it in `RemEx.Android/app/`.
+
+### NDK Symbol Upload
+The build system is configured to automatically upload unstripped native symbols (`libRemexCore.so`) to Firebase. This enables full C# stack traces for native crashes.
+
 ---
 
 ## Additional Resources
@@ -338,6 +359,7 @@ See [scripts/setup-android-sdk.sh](../scripts/setup-android-sdk.sh) for details.
 | `sdkmanager --uninstall "package-name"` | Remove package |
 | `adb devices` | List connected devices |
 | `./gradlew tasks` | List available Gradle tasks |
+| `sdkmanager "platforms;android-35"` | Install target SDK 35 |
 
 ---
 

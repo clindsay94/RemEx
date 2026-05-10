@@ -28,6 +28,12 @@ public sealed class PinnedCertStore
         _storePath = Path.Combine(appData, "Remex", "pinned_hosts.json");
     }
 
+    internal PinnedCertStore(ILogger<PinnedCertStore> logger, string storePath)
+    {
+        _logger = logger;
+        _storePath = storePath;
+    }
+
     /// <summary>
     /// Returns true if the given hostId has a pinned SPKI hash.
     /// </summary>

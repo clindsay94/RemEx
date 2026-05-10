@@ -1,7 +1,19 @@
+<!-- agent-team:start -->
+## Agent Team & Communication
+
+See global instructions: `~/.claude/CLAUDE.md`
+
+**Project-level coordination for RemEx 2.0:**
+- Root mission control: `/home/connorl/RemEx/AGENTS.md` — phase gates, chokepoint files, master plan
+- Sub-project playbooks: `Remex.Core/AGENTS.md`, `Remex.Client.Desktop/AGENTS.md`, etc.
+
+Read the relevant sub-project `AGENTS.md` before touching files in that directory.
+<!-- agent-team:end -->
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (7087 symbols, 14584 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (7338 symbols, 15213 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

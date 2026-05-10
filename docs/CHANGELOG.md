@@ -7,22 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] — TBD
+## [2.0.0] — 2026-05-10
 
 ### Added
 - End-to-end encrypted transport (TLS 1.3 / WSS) for all client-host communication
-- Cryptographic device pairing replacing plaintext access keys (ECDH X25519 + 6-digit PIN)
+- Cryptographic device pairing replacing plaintext access keys (ECDH P-256 + 6-digit PIN)
 - SHA-256 SPKI certificate pinning on client
 - Remote file transfer (browse, upload, download, cancel)
-- Quick Settings tile (Lock PC) on Android
+- 8 Quick Settings tiles on Android (Lock, Shutdown, Restart, Restart to UEFI, Wake on LAN, Sleep, Hibernate, Monitor Off)
 - Two-stage haptic feedback on Android (sent vs acknowledged)
 - Battery optimization onboarding on Android
 - Firebase Crashlytics NDK integration
+- Target SDK 37 (Android 17) support with Local Network permission flow
 
 ### Changed
 - Protocol version field added to `RemexMessage`; 1.x clients fail loudly
 - Material3 dependency moved from alpha to stable
-- Android `targetSdk` lowered from 36 (preview) to 35 (stable)
+- Windows Installer (Inno Setup) updated with new branding and versioning
+- Linux build scripts updated with `New-REMEX.png` icon priority
 
 ### Fixed
 - Settings view freeze on Linux (UI-thread marshalling)
@@ -34,11 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RefreshSensors` running on every Settings open/close
 - Hardcoded "Sort by:" string in `TaskManagerScreen`
 - Snapshot clipboard copies file path; redesigned as "Copy Path" with accurate label
+- All 11 high-severity security audit findings resolved
 
 ### Security
 - Plaintext access keys are no longer transmitted on the wire
 - DataStore exclusion from Auto Backup verified via `data_extraction_rules.xml`
 - Network security config disables cleartext traffic on Android
+- ECDH curve switched to NIST P-256 (built-in .NET) for better stability over NSec/X25519
 
 ---
 

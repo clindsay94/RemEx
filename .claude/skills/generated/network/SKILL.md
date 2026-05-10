@@ -85,6 +85,27 @@ Start here when exploring this area:
 | Native | 2 calls |
 | Command | 1 calls |
 
+## Best Practices
+
+<!-- Evolution: 2026-05-09 | source: ep-2026-05-09-003 | pattern: exclusive_async_operation_gating -->
+
+### Network Pairing Concurrency
+Pairing and authentication flows are sensitive to concurrent requests. Always use a semaphore to gate these operations and prevent race conditions that could lead to inconsistent security states or crashes.
+
+**Pattern (C#):**
+```csharp
+private readonly SemaphoreSlim _gate = new(1, 1);
+
+public async Task StartPairingAsync() {
+    if (!_gate.Wait(0)) throw new InvalidOperationException("Pairing already in progress.");
+    try {
+        // Pairing logic
+    } finally {
+        _gate.Release();
+    }
+}
+```
+
 ## How to Explore
 
 1. `gitnexus_context({name: "AndroidNativeExports"})` — see callers and callees

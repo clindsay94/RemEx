@@ -29,27 +29,26 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 ### Linux Desktop Client & Host (Automated)
 
 1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download:
-   - `remex-client-v1.xx.x-linux-x64.tar.gz` (for the Desktop UI)
-   - `remex-host-v1.xx.x-linux-x64.tar.gz` (for the background service)
+   - `remex-client-v2.0.0-linux-x64.tar.gz` (for the Desktop UI)
+   - `remex-host-v2.0.0-linux-x64.tar.gz` (for the background service)
 2. **Extract** the archives:
    ```bash
-   tar -xzf remex-client-v1.xx.x-linux-x64.tar.gz
-   tar -xzf remex-host-v1.xx.x-linux-x64.tar.gz
+   tar -xzf remex-client-v2.0.0-linux-x64.tar.gz
+   tar -xzf remex-host-v2.0.0-linux-x64.tar.gz
    ```
 3. **Install** via the provided scripts (installs to `~/.local/share/` and sets up `systemd` user services):
    ```bash
    # Install Client (adds to Applications menu)
-   ./remex-client-v1.xx.x-linux-x64/install.sh install
+   ./remex-client-v2.0.0-linux-x64/install.sh install
 
    # Install Host (starts background service)
-   ./remex-host-v1.xx.x-linux-x64/install.sh install
+   ./remex-host-v2.0.0-linux-x64/install.sh install
    ```
 
 ### Native Android App
 
-1. Go to the **Releases** page and download the latest `RemEx-v2.0.0.apk`.
-2. Open the downloaded `.apk` file to install.
-3. Use the new **QR Scanner** on the connection screen to pair instantly with your PC!
+1. **Install from Google Play:** [**Download on the Play Store**](https://play.google.com/store/apps/details?id=com.clindsay94.remex) (TBD)
+2. Use the new **PIN-based pairing** or **QR Scanner** on the connection screen to pair instantly with your PC!
 
 ---
 
@@ -83,9 +82,20 @@ No more typing IP addresses. The desktop client now generates a secure QR code t
 - **Free-form Canvas:** Arrange live sensor cards on a 4,000x4,000 zoomable workspace.
 
 ### 🔐 Production Readiness
+- **TLS 1.3 Encryption:** All network traffic (WSS/TLS) is encrypted end-to-end.
+- **PIN-based Pairing:** Secure cryptographic device pairing replaces plaintext access keys.
 - **Strict Validation:** Robust input validation across all network layers.
 - **Async & Null Safety:** Hardened codebase following strict architectural guidelines.
-- **Access Key Security:** Optional shared-secret authentication for all communication.
+
+---
+
+## 🚀 What's New in 2.0
+RemEx 2.0 is a major milestone focusing on security, performance, and flagship features:
+- **E2E Encryption:** Every connection is now secured via TLS 1.3 / WSS.
+- **Secure Pairing:** ECDH X25519 pairing with 6-digit PIN out-of-band binding.
+- **Remote File Transfer:** Browse, upload, download, and manage files on your remote host.
+- **Play Store Ready:** Fully optimized and hardened for production Google Play release.
+- **Critical Fixes:** Resolved 10+ high-severity bugs identified during the security audit.
 
 ---
 
@@ -105,9 +115,9 @@ installer/               Build scripts for Windows (Inno Setup) and Linux (bash)
 
 | Protocol | Purpose | Default Port |
 | :--- | :--- | :--- |
-| WebSocket `/ws` | Telemetry + Power Commands | 5005 |
-| WebSocket `/ws/desktop` | Remote Desktop Stream | 5005 |
-| TCP | External Script Ingress | 8338 |
+| WSS `/ws` | Encrypted Telemetry + Power Commands | 5005 |
+| WSS `/ws/desktop` | Encrypted Remote Desktop Stream | 5005 |
+| TCP (TLS) | External Script Ingress (Encrypted) | 8338 |
 | Named Pipe | Local IPC (Client ↔ Service) | `RemExLocalIPC` |
 
 ---
