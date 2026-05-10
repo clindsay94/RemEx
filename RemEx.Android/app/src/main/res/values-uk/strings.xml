@@ -1,39 +1,39 @@
 <resources>
     <string name="app_name">RemEx</string>
-    <string name="widget_remote_description">Швидкий доступ до команд дистанційного керування ПК: вимкнення, перезавантаження, блокування та інше.</string>
-    <string name="widget_hardware_description">Показники датчиків апаратного забезпечення вашого підключеного ПК у реальному часі.</string>
-    <string name="widget_launcher_description">Запускайте улюблені програми ПК безпосередньо з головного екрана.</string>
-    <string name="widget_remote_label">RemEx Пульт</string>
-    <string name="widget_hardware_label">RemEx Залізо</string>
-    <string name="widget_launcher_label">RemEx Лаунчер</string>
+    <string name="widget_remote_description">Quick access to PC remote commands like shutdown, restart, lock, and more.</string>
+    <string name="widget_hardware_description">Live hardware sensor readings from your connected PC.</string>
+    <string name="widget_launcher_description">Launch your favorite PC apps directly from your home screen.</string>
+    <string name="widget_remote_label">RemEx Remote</string>
+    <string name="widget_hardware_label">RemEx Hardware</string>
+    <string name="widget_launcher_label">RemEx Launcher</string>
 
     <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
-    <string name="splash_tagline">Дистанційне виконання</string>
+    <string name="splash_tagline">Remote Execution</string>
 
     <!-- ═══ Navigation ═══ -->
-    <string name="snackbar_no_pc_connected">ПК не підключено</string>
-    <string name="snackbar_setup_connection">Налаштувати підключення</string>
+    <string name="snackbar_no_pc_connected">No PC connected</string>
+    <string name="snackbar_setup_connection">Set up connection</string>
     <string name="connection_required_context">Connection required to access this feature.</string>
-    <string name="nav_more_label">Більше</string>
-    <string name="cd_settings_fab">Налаштування</string>
+    <string name="nav_more_label">More</string>
+    <string name="cd_settings_fab">Settings</string>
     <string name="exit_dialog_title">Exit RemEx?</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
     <string name="button_exit">Exit</string>
 
     <!-- ═══ Common Components ═══ -->
-    <string name="banner_no_pc_connected">ПК не підключено — функції недоступні</string>
-    <string name="button_connect">Підключити</string>
-    <string name="disconnected_requires_connection">%1$s потребує підключеного ПК.</string>
-    <string name="disconnected_connect_wifi">Підключіться до вашого ПК через Wi-Fi, щоб скористатися цією функцією.</string>
-    <string name="button_setup_connection">Налаштувати підключення</string>
+    <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
+    <string name="button_connect">Connect</string>
+    <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
+    <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
+    <string name="button_setup_connection">Set up connection</string>
 
     <!-- ═══ Shared Buttons ═══ -->
-    <string name="button_cancel">Скасувати</string>
-    <string name="button_confirm">Підтвердити</string>
-    <string name="button_dismiss">Закрити</string>
-    <string name="button_done">Готово</string>
-    <string name="cd_refresh">Оновити</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_confirm">Confirm</string>
+    <string name="button_dismiss">Dismiss</string>
+    <string name="button_done">Done</string>
+    <string name="cd_refresh">Refresh</string>
     <string name="cd_phone">Phone</string>
     <string name="cd_terminal">Terminal</string>
     <string name="cd_launch_icon">Launch</string>
@@ -56,46 +56,46 @@
 
     <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Пропустити</string>
-    <string name="tutorial_get_started">Почати</string>
+    <string name="tutorial_get_started">Розпочати</string>
     <string name="tutorial_next">Далі</string>
 
     <string name="tutorial_page1_title">Ласкаво просимо до RemEx</string>
-    <string name="tutorial_page1_body">RemEx — це ваш командний центр для дистанційного керування ПК. Керуйте комп’ютером, запускайте програми, стежте за продуктивністю та навіть переглядайте робочий стіл — усе з вашого телефону.\n\nДавайте підключимося за кілька простих кроків.</string>
+    <string name="tutorial_page1_body">RemEx — це ваш командний центр дистанційного керування ПК. Керуйте своїм комп\'ютером, запускайте додатки, стежте за продуктивністю та навіть переглядайте робочий стіл — усе з вашого телефону.\n\nДавайте підключимося за кілька швидких кроків.</string>
 
-    <string name="tutorial_page2_title">Спочатку встановіть Host</string>
-    <string name="tutorial_page2_body">Перш ніж підключитися, вам потрібно запустити хост-програму RemEx на вашому ПК.\n\nВаріант 1 — RemEx Desktop Client\nЗавантажте та запустіть Remex.Client.Desktop на своєму ПК. Він автоматично містить хост — просто запустіть його, і хост запрацює у фоновому режимі.\n\nВаріант 2 — RemEx Host (автономний)\nВстановіть і запустіть Remex.Host як окрему службу. Це ідеально підходить для серверів без монітора або якщо вам потрібен лише хост.\n\nОбидва варіанти автономні — додаткові середовища виконання не потрібні. Завантажте останню папку з релізами на GitHub, розпакуйте та запустіть.</string>
+    <string name="tutorial_page2_title">Спочатку запустіть Host</string>
+    <string name="tutorial_page2_body">Щоб підключитися, вам потрібно, щоб хост-програмне забезпечення RemEx працювало на вашому ПК.\n\nВаріант 1 — RemEx Desktop Client\nЗавантажте та запустіть Remex.Client.Desktop на своєму ПК. Він автоматично запускає хост у фоновому режимі.\n\nВаріант 2 — RemEx Host (автономний)\nВстановіть та запустіть Remex.Host як автономну службу. Це ідеально для серверів без монітора або якщо вам потрібен лише хост.\n\nОбидва варіанти самодостатні — додаткові середовища виконання не потрібні. Завантажте останню версію з GitHub, розпакуйте та запустіть.</string>
     <string name="tutorial_page2_link_label">Завантажити з GitHub Releases</string>
 
-    <string name="tutorial_page3_title">Автовиявлення</string>
-    <string name="tutorial_page3_body">Найпростіший спосіб підключення — автоматичне виявлення.\n\n1. Переконайтеся, що Remex.Client.Desktop або Remex.Host запущено на вашому ПК\n2. Переконайтеся, що телефон і ПК підключені до однієї мережі Wi-Fi\n3. Натисніть «Автовиявлення» на екрані підключення\n\nRemEx використовує mDNS для виявлення активних хостів у вашій локальній мережі. IP-адреса та порт вашого ПК будуть заповнені автоматично.</string>
+    <string name="tutorial_page3_title">Автоматичне виявлення</string>
+    <string name="tutorial_page3_body">Найпростіший спосіб підключення — це автоматичне виявлення.\n\n1. Переконайтеся, що Remex.Client.Desktop або Remex.Host запущено на вашому ПК\n2. Переконайтеся, що ваш телефон і ПК знаходяться в одній мережі Wi-Fi\n3. Натисніть "Виявити автоматично" на екрані підключення\n\nRemEx використовує mDNS для виявлення запущених хостів у вашій локальній мережі. IP-адреса та порт вашого ПК будуть заповнені автоматично.</string>
 
-    <string name="tutorial_page4_title">Пошук IP-адреси</string>
-    <string name="tutorial_page4_body">Якщо автовиявлення не працює, ви можете підключитися вручну. Спочатку знайдіть локальну IP-адресу вашого ПК:\n\nWindows:\n  Відкрийте командний рядок → введіть ipconfig\n  Шукайте «IPv4 Address» (наприклад, 192.168.1.42)\n\nmacOS:\n  Системні параметри → Мережа, або виконайте:\n  ipconfig getifaddr en0\n\nLinux:\n  Виконайте ip addr або hostname -I\n\nВи також можете побачити IP-адресу у вікні Remex.Client.Desktop у розділі статусу підключення.</string>
+    <string name="tutorial_page4_title">Як знайти свою IP-адресу</string>
+    <string name="tutorial_page4_body">Якщо автоматичне виявлення не працює, ви можете підключитися вручну. Спочатку знайдіть локальну IP-адресу вашого ПК:\n\nWindows:\n  Відкрийте командний рядок → введіть ipconfig\n  Знайдіть "IPv4 Address" (наприклад, 192.168.1.42)\n\nmacOS:\n  Системні параметри → Мережа, або запустіть:\n  ipconfig getifaddr en0\n\nLinux:\n  Запустіть ip addr або hostname -I\n\nВи також можете побачити IP-адресу у вікні Remex.Client.Desktop у розділі стану підключення.</string>
 
     <string name="tutorial_page5_title">Ручне підключення</string>
-    <string name="tutorial_page5_body">Коли ви дізнаєтеся IP-адресу:\n\n1. Перейдіть до екрана підключення (Налаштування → Підключення)\n2. Введіть IP-адресу вашого ПК\n3. Введіть порт (за замовчуванням 5005)\n4. Натисніть «Зберегти та підключити»\n\nRemEx встановить з’єднання, і ви побачите статус вашого ПК на головній панелі.\n\nПам’ятайте: для успішного з’єднання на цільовому ПК має бути запущено Remex.Client.Desktop або Remex.Host.</string>
+    <string name="tutorial_page5_body">Коли ви дізналися свою IP-адресу:\n\n1. Перейдіть до екрана підключення (Налаштування → Підключення)\n2. Введіть IP-адресу вашого ПК\n3. Введіть порт (за замовчуванням 5005)\n4. Натисніть "Зберегти та підключитися"\n\nRemEx встановить з\'єднання, і ви побачите стан вашого ПК на інформаційній панелі.\n\nПам\'ятайте: Remex.Client.Desktop або Remex.Host повинні бути запущені на цільовому ПК, щоб підключення було успішним.</string>
 
     <string name="tutorial_page6_title">Усе готово!</string>
-    <string name="tutorial_page6_body">Ви готові до керування.\n\nНа панелі керування ви можете моніторити системну статистику, запускати програми, керувати завданнями та транслювати робочий стіл.\n\nПерейдіть до розділу «Персоналізація», щоб налаштувати тему, вигляд карток, шрифти та кольори.\n\nЯкщо виникнуть проблеми, перегляньте FAQ у налаштуваннях. Приємного користування RemEx!</string>
+    <string name="tutorial_page6_body">Ви готові взяти керування на себе.\n\nЗ інформаційної панелі ви можете стежити за системними показниками, запускати додатки, керувати завданнями та транслювати робочий стіл дистанційно.\n\nПерейдіть до розділу "Персоналізація", щоб налаштувати тему, форму карток, шрифти та кольори.\n\nЯкщо виникнуть проблеми, перегляньте розділ FAQ у Налаштуваннях. Насолоджуйтесь RemEx!</string>
 
     <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
-    <string name="tutorial_page_qr_title">Швидке сполучення за допомогою QR-коду</string>
-    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open Remex.Client.Desktop on your PC\n2. Go to Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Point your camera at the code\n\nYour phone will automatically save and connect — no manual typing needed!</string>
+    <string name="tutorial_page_qr_title">Швидке сполучення за QR-кодом</string>
+    <string name="tutorial_page_qr_body">Найшвидший спосіб підключення — сканування QR-коду.\n\n1. Відкрийте Remex.Client.Desktop на вашому ПК\n2. Перейдіть до Підключення → Показати QR-код\n3. На телефоні натисніть на значок QR на екрані підключення\n4. Наведіть камеру на код\n\nВаш телефон автоматично збереже налаштування та підключиться — нічого не потрібно вводити вручну!</string>
 
     <!-- ═══ Connection Status Strings ═══ -->
     <string name="status_disconnected">Відключено</string>
     <string name="status_connected">Підключено</string>
-    <string name="status_connecting">Connecting to %1$s:%2$d…</string>
+    <string name="status_connecting">Підключення...</string>
     <string name="status_error">Error: %1$s</string>
     <string name="status_awaiting_metadata">Awaiting host metadata</string>
     <string name="status_metadata_unavailable">Host metadata unavailable</string>
     <string name="status_native_lib_not_loaded">Native library not loaded</string>
     <string name="error_no_host_found">No RemEx host found on the network</string>
-    <string name="error_discovery_failed">Discovery failed: %1$s</string>
+    <string name="error_discovery_failed">Помилка виявлення: %1$s</string>
     <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
          to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
-    <string name="permission_local_network_rationale">RemEx потрібен дозвіл на доступ до локальної мережі, щоб знайти та підключитися до вашого ПК через Wi-Fi. Без нього виявлення та підключення не працюватимуть на Android 17 та новіших версіях. Надайте цей дозвіл у Налаштуваннях.</string>
-    <string name="error_local_network_permission_denied">Доступ до локальної мережі відхилено. RemEx не може підключитися до вашого ПК без цього дозволу на Android 17+. Будь ласка, надайте його в Налаштуваннях програми.</string>
+    <string name="permission_local_network_rationale">RemEx потребує дозволу на доступ до локальної мережі для пошуку та підключення до вашого ПК через Wi-Fi. Без цього дозволу виявлення та підключення в Android 17+ не працюватимуть. Будь ласка, надайте цей дозвіл у налаштуваннях.</string>
+    <string name="error_local_network_permission_denied">Доступ до локальної мережі відхилено. RemEx не може підключитися до вашого ПК без цього дозволу в Android 17+. Будь ласка, надайте його в налаштуваннях додатка.</string>
     <string name="capability_desktop_available">desktop available</string>
     <string name="capability_desktop_unavailable">desktop unavailable</string>
 
@@ -108,176 +108,176 @@
     <string name="notification_text_connecting">Maintaining connection</string>
 
     <!-- ═══ Task Manager Screen ═══ -->
-    <string name="screen_task_manager_title">Диспетчер завдань</string>
-    <string name="task_manager_search_hint">Пошук назви процесу або PID</string>
+    <string name="screen_task_manager_title">Task Manager</string>
+    <string name="task_manager_search_hint">Search process name or PID</string>
     <string name="sort_by">Sort by:</string>
-    <string name="sort_name">Назва</string>
-    <string name="sort_cpu">ЦП</string>
-    <string name="sort_ram">ОЗП</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_cpu">CPU</string>
+    <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
-    <string name="task_manager_fetching">Отримання процесів…</string>
-    <string name="task_manager_header_name">Назва</string>
-    <string name="task_manager_header_cpu">ЦП</string>
-    <string name="task_manager_header_ram">ОЗП</string>
-    <string name="task_manager_kill_title">Завершити процес?</string>
-    <string name="task_manager_kill_message">Ви впевнені, що хочете завершити %1$s (PID: %2$d)?</string>
-    <string name="button_kill">Завершити</string>
+    <string name="task_manager_fetching">Fetching processes…</string>
+    <string name="task_manager_header_name">Name</string>
+    <string name="task_manager_header_cpu">CPU</string>
+    <string name="task_manager_header_ram">RAM</string>
+    <string name="task_manager_kill_title">Kill Process?</string>
+    <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
+    <string name="button_kill">Kill</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="cd_kill_process">Завершити</string>
+    <string name="cd_kill_process">Kill</string>
 
     <!-- ═══ Remote Mouse Screen ═══ -->
-    <string name="screen_remote_mouse_title">Дистанційна миша</string>
-    <string name="remote_mouse_trackpad_label">Трекпад</string>
-    <string name="remote_mouse_left_click">Лівий клік</string>
-    <string name="remote_mouse_right_click">Правий клік</string>
-    <string name="cd_scroll_up">Прокрутка вгору</string>
-    <string name="cd_scroll_down">Прокрутка вниз</string>
-    <string name="cd_keyboard">Клавіатура</string>
+    <string name="screen_remote_mouse_title">Remote Mouse</string>
+    <string name="remote_mouse_trackpad_label">Trackpad</string>
+    <string name="remote_mouse_left_click">Left Click</string>
+    <string name="remote_mouse_right_click">Right Click</string>
+    <string name="cd_scroll_up">Scroll Up</string>
+    <string name="cd_scroll_down">Scroll Down</string>
+    <string name="cd_keyboard">Keyboard</string>
 
     <!-- ═══ Settings Screen ═══ -->
-    <string name="screen_settings_title">Налаштування</string>
+    <string name="screen_settings_title">Settings</string>
     <string name="settings_tab_connection">Підключення</string>
-    <string name="settings_tab_personalization">Персоналізація</string>
+    <string name="settings_tab_personalization">Personalization</string>
     <string name="settings_tab_input">Input</string>
-    <string name="settings_tab_file_transfer">File Transfer</string>
-    <string name="settings_tab_help">Допомога</string>
-    <string name="settings_tab_about">About</string>
-    <string name="settings_help_title">Допомога та про програму</string>
-    <string name="settings_replay_tutorial">📖  Повторити навчання</string>
-    <string name="settings_replay_tutorial_body">Знову перегляньте вступний посібник, що охоплює налаштування, автовиявлення, пошук IP та підключення до ПК.</string>
-    <string name="settings_faq_hint">Маєте запитання? Перегляньте FAQ у додатковому меню (⋮ → FAQ).</string>
+    <string name="settings_tab_file_transfer">Передача файлів</string>
+    <string name="settings_tab_help">Help</string>
+    <string name="settings_tab_about">Про програму</string>
+    <string name="settings_help_title">Help</string>
+    <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
+    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
+    <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
 
     <!-- ═══ App Launcher Screen ═══ -->
-    <string name="screen_app_launcher_title">Запуск програм</string>
-    <string name="app_launcher_no_apps">Програм не знайдено</string>
-    <string name="button_fetch_from_host">Отримати з хоста</string>
+    <string name="screen_app_launcher_title">App Launcher</string>
+    <string name="app_launcher_no_apps">No apps found</string>
+    <string name="button_fetch_from_host">Fetch from Host</string>
 
     <!-- ═══ Remote Control Screen ═══ -->
-    <string name="screen_remote_control_title">Дистанційне керування</string>
-    <string name="remote_control_section_header">Системні команди</string>
-    <string name="remote_control_description">Критичні дії потребують підтвердження. Додаткова затримка встановлює секунди для команди shutdown -t.</string>
-    <string name="remote_control_confirm_choice">Підтвердити вибір</string>
-    <string name="remote_control_timer_label">Таймер (секунди)</string>
-    <string name="button_select">Вибрати</string>
-    <string name="button_run">Запустити</string>
-    <string name="rc_wake_pc">Пробудження ПК</string>
-    <string name="rc_lock_pc">Блокування ПК</string>
-    <string name="rc_shutdown">Вимкнення</string>
-    <string name="rc_restart">Перезавантаження</string>
-    <string name="rc_reboot_uefi">Перезавантаження в UEFI</string>
-    <string name="rc_force_shutdown">Примусове вимкнення</string>
-    <string name="rc_force_restart">Примусове перезавантаження</string>
-    <string name="rc_sleep">Сплячий режим</string>
-    <string name="rc_hibernate">Гібернація</string>
-    <string name="rc_monitor_off">Вимкнути монітор</string>
-    <string name="rc_logoff">Вийти з системи</string>
-    <string name="rc_category_session">Сесія</string>
-    <string name="rc_category_power">Живлення</string>
-    <string name="rc_category_energy">Енергія</string>
+    <string name="screen_remote_control_title">Remote Control</string>
+    <string name="remote_control_section_header">System Commands</string>
+    <string name="remote_control_description">Critical actions require confirmation. Optional delay sets shutdown -t seconds.</string>
+    <string name="remote_control_confirm_choice">Confirm choice</string>
+    <string name="remote_control_timer_label">Timer (seconds)</string>
+    <string name="button_select">Select</string>
+    <string name="button_run">Run</string>
+    <string name="rc_wake_pc">Wake PC</string>
+    <string name="rc_lock_pc">Lock PC</string>
+    <string name="rc_shutdown">Shutdown</string>
+    <string name="rc_restart">Restart</string>
+    <string name="rc_reboot_uefi">Reboot to UEFI</string>
+    <string name="rc_force_shutdown">Force Shutdown</string>
+    <string name="rc_force_restart">Force Restart</string>
+    <string name="rc_sleep">Sleep</string>
+    <string name="rc_hibernate">Hibernate</string>
+    <string name="rc_monitor_off">Turn Off Monitor</string>
+    <string name="rc_logoff">Log Off</string>
+    <string name="rc_category_session">Session</string>
+    <string name="rc_category_power">Power</string>
+    <string name="rc_category_energy">Energy</string>
 
     <!-- ═══ Remote Desktop Screen ═══ -->
-    <string name="screen_remote_desktop_title">Віддалений робочий стіл</string>
-    <string name="cd_show_keyboard">Показати клавіатуру</string>
-    <string name="cd_reset_input">Скинути введення</string>
-    <string name="cd_settings">Налаштування</string>
-    <string name="cd_toggle_fullscreen">Повноекранний режим</string>
-    <string name="cd_stop">Зупинити</string>
-    <string name="cd_remote_desktop_frame">Фрейм віддаленого робочого столу</string>
-    <string name="remote_desktop_unavailable">Віддалений робочий стіл недоступний</string>
-    <string name="remote_desktop_waiting">Очікування кадрів…</string>
-    <string name="remote_desktop_stopped">Трансляцію зупинено</string>
-    <string name="button_start_streaming">Почати трансляцію</string>
-    <string name="cd_exit_fullscreen">Вийти з повного екрана</string>
-    <string name="cd_zoom_in">Збільшити</string>
-    <string name="cd_zoom_out">Зменшити</string>
+    <string name="screen_remote_desktop_title">Remote Desktop</string>
+    <string name="cd_show_keyboard">Show Keyboard</string>
+    <string name="cd_reset_input">Reset Input</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_toggle_fullscreen">Toggle fullscreen</string>
+    <string name="cd_stop">Stop</string>
+    <string name="cd_remote_desktop_frame">Remote Desktop Frame</string>
+    <string name="remote_desktop_unavailable">Remote desktop unavailable</string>
+    <string name="remote_desktop_waiting">Waiting for frames…</string>
+    <string name="remote_desktop_stopped">Stream Stopped</string>
+    <string name="button_start_streaming">Start Streaming</string>
+    <string name="cd_exit_fullscreen">Exit Fullscreen</string>
+    <string name="cd_zoom_in">Zoom In</string>
+    <string name="cd_zoom_out">Zoom Out</string>
     <string name="cd_mouse_left">Left Click</string>
     <string name="cd_mouse_middle">Middle Click</string>
     <string name="cd_mouse_right">Right Click</string>
     <string name="cd_expand_mouse_controls">Expand Mouse Controls</string>
-    <string name="remote_desktop_config_title">Конфігурація потоку</string>
-    <string name="remote_desktop_quality_label">Якість: %1$d%%</string>
-    <string name="remote_desktop_fps_label">Цільовий FPS: %1$d</string>
-    <string name="remote_desktop_controls_hint">Перо = Абсолют • 2 пальці = Прокрутка • Довге натискання = Правий клік</string>
-    <string name="remote_desktop_direct_touch_label">Режим прямого дотику</string>
-    <string name="remote_desktop_direct_touch_desc">Позиції дотику відповідають координатам екрану</string>
-    <string name="remote_desktop_pointer_speed_label">Швидкість курсора: %.1fx</string>
+    <string name="remote_desktop_config_title">Stream Configuration</string>
+    <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
+    <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
+    <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
+    <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
+    <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
+    <string name="remote_desktop_pointer_speed_label">Cursor Speed: %.1fx</string>
     <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_controls_hint_v2">Натисніть = Клік • Утримуйте = Правий клік • 2 пальці = Прокрутка • Перо = Абсолютний</string>
+    <string name="remote_desktop_controls_hint_v2">Tap = Click • Long Press = Right Click • 2 Fingers = Scroll • Pen = Absolute</string>
 
     <!-- ═══ Dashboard Screen ═══ -->
-    <string name="screen_dashboard_title">Головна панель RemEx</string>
-    <string name="cd_reset_zoom">Скинути масштаб</string>
-    <string name="cd_customize_cards">Налаштувати картки</string>
-    <string name="dashboard_pc_status">Статус ПК</string>
-    <string name="dashboard_pc_status_subtitle">Індикатор статусу з’єднання</string>
-    <string name="dashboard_wake_pc">Пробудити ПК</string>
-    <string name="dashboard_wake_pc_subtitle">Надіслати WOL magic packet</string>
-    <string name="dashboard_telemetry_fallback">Телеметрія</string>
-    <string name="dashboard_card_drawer_title">Список карток</string>
-    <string name="dashboard_card_drawer_hint">Позначте, щоб додати картку, зніміть позначку, щоб видалити, або перетягніть картку на панель.</string>
-    <string name="dashboard_drop_to_place">Перетягніть, щоб розмістити %1$s</string>
-    <string name="dashboard_host_online">ХОСТ ОНЛАЙН</string>
-    <string name="dashboard_connecting">ПІДКЛЮЧЕННЯ…</string>
-    <string name="dashboard_tap_to_connect">НАТИСНІТЬ ДЛЯ ПІДКЛЮЧЕННЯ</string>
-    <string name="dashboard_wake_pc_button">ПРОБУДИТИ ПК</string>
+    <string name="screen_dashboard_title">RemEx Home Base</string>
+    <string name="cd_reset_zoom">Reset zoom</string>
+    <string name="cd_customize_cards">Customize cards</string>
+    <string name="dashboard_pc_status">PC Status</string>
+    <string name="dashboard_pc_status_subtitle">Connection status orb</string>
+    <string name="dashboard_wake_pc">Wake PC</string>
+    <string name="dashboard_wake_pc_subtitle">Send WOL magic packet</string>
+    <string name="dashboard_telemetry_fallback">Telemetry</string>
+    <string name="dashboard_card_drawer_title">Card Drawer</string>
+    <string name="dashboard_card_drawer_hint">Check to place card, uncheck to remove, or drag a card out onto canvas.</string>
+    <string name="dashboard_drop_to_place">Drop to place %1$s</string>
+    <string name="dashboard_host_online">HOST ONLINE</string>
+    <string name="dashboard_connecting">CONNECTING…</string>
+    <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
+    <string name="dashboard_wake_pc_button">WAKE PC</string>
     <string name="dashboard_no_value">--</string>
-    <string name="dashboard_collecting_data">Збір даних…</string>
-    <string name="cd_change_display_mode">Змінити режим відображення</string>
+    <string name="dashboard_collecting_data">Collecting data…</string>
+    <string name="cd_change_display_mode">Change display mode</string>
 
     <!-- ═══ Connection Screen ═══ -->
-    <string name="screen_connection_title">Підключення</string>
+    <string name="screen_connection_title">Connection</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>
     <string name="screen_qr_scanner_title">Scan QR Code</string>
-    <string name="connection_host_settings">Налаштування хоста</string>
-    <string name="cd_dismiss_error">Закрити</string>
-    <string name="connection_auto_discover_title">Автовиявлення в мережі LAN</string>
-    <string name="connection_auto_discover_hint">Переконайтеся, що на ПК запущено програму RemEx Host і обидва пристрої знаходяться в одній Wi-Fi мережі.</string>
-    <string name="connection_searching">Пошук хоста RemEx…</string>
-    <string name="connection_found_host">Знайдено: %1$s — Шукати знову</string>
-    <string name="connection_discover_button">Автовиявлення</string>
-    <string name="connection_host_found">Хост знайдено, поля нижче заповнено.</string>
-    <string name="connection_scan_qr_code">Сканувати QR-код</string>
-    <string name="connection_help_title">Як підключитися вручну</string>
-    <string name="connection_help_step1_title">Встановіть RemEx Host на ПК</string>
-    <string name="connection_help_step1_body">Завантажте та запустіть інсталятор RemEx Host на ПК, яким хочете керувати. Він з’явиться у системному треї після запуску.</string>
-    <string name="connection_help_step2_title">Підключіться до того ж Wi-Fi</string>
-    <string name="connection_help_step2_body">Ваш телефон і ПК мають бути в одній локальній мережі. Мобільний інтернет не працюватиме.</string>
-    <string name="connection_help_step3_title">Знайдіть IP-адресу вашого ПК</string>
-    <string name="connection_help_step4_title">Введіть IP нижче та натисніть «Зберегти та підключити»</string>
-    <string name="connection_help_step4_body">Порт за замовчуванням — 5005. Якщо ви встановили ключ доступу в програмі на ПК, введіть його тут.</string>
+    <string name="connection_host_settings">Host Settings</string>
+    <string name="cd_dismiss_error">Dismiss</string>
+    <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
+    <string name="connection_auto_discover_hint">Make sure your PC is running the RemEx Host app and both devices are on the same Wi-Fi network.</string>
+    <string name="connection_searching">Searching for RemEx Host…</string>
+    <string name="connection_found_host">Found: %1$s — Search Again</string>
+    <string name="connection_discover_button">Discover Automatically</string>
+    <string name="connection_host_found">Host found and fields filled in below.</string>
+    <string name="connection_scan_qr_code">Scan QR Code</string>
+    <string name="connection_help_title">How to connect manually</string>
+    <string name="connection_help_step1_title">Install RemEx Host on your PC</string>
+    <string name="connection_help_step1_body">Download and run the RemEx Host installer on the PC you want to control. It will appear in your system tray when running.</string>
+    <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
+    <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
+    <string name="connection_help_step3_title">Find your PC\'s IP address</string>
+    <string name="connection_help_step4_title">Enter the IP below and tap Save &amp; Connect</string>
+    <string name="connection_help_step4_body">The default port is 5005. If you haven\'t paired this device before, enter the 6-digit PIN from the host app.</string>
     <string name="connection_platform_windows">Windows</string>
-    <string name="connection_ip_windows">Відкрийте командний рядок і введіть: ipconfig\nШукайте «IPv4 Address» у розділі вашого Wi-Fi адаптера.</string>
+    <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for "IPv4 Address" under your Wi-Fi adapter.</string>
     <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">Перейдіть до Системних параметрів → Мережа → ваш Wi-Fi → Деталі.\nАбо відкрийте Термінал і введіть: ipconfig getifaddr en0</string>
+    <string name="connection_ip_macos">Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
-    <string name="connection_ip_linux">Відкрийте термінал і введіть: ip addr\nШукайте адресу inet вашого мережевого інтерфейсу (наприклад, wlan0 або eth0).</string>
-    <string name="connection_or_enter_manually">Або введіть вручну</string>
-    <string name="connection_label_host">IP-адреса хоста</string>
-    <string name="connection_hint_host">Локальний IP вашого ПК — знайдіть через ipconfig (Win) або ip addr (Linux)</string>
-    <string name="connection_label_port">Порт</string>
-    <string name="connection_hint_port">За замовчуванням: 5005</string>
-    <string name="connection_label_mac">MAC-адреса (Wake-on-LAN)</string>
+    <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
+    <string name="connection_or_enter_manually">Or enter manually</string>
+    <string name="connection_label_host">Host IP Address</string>
+    <string name="connection_hint_host">Your PC\'s local IP — find it via ipconfig (Win) or ip addr (Linux)</string>
+    <string name="connection_label_port">Port</string>
+    <string name="connection_hint_port">Default: 5005</string>
+    <string name="connection_label_mac">MAC Address (Wake-on-LAN)</string>
     <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
-    <string name="connection_hint_mac">Необхідно для Wake-on-LAN — знайдіть у Диспетчері пристроїв або через ip link</string>
+    <string name="connection_hint_mac">Required for Wake-on-LAN — find in Device Manager or ip link</string>
     <string name="connection_label_broadcast">Broadcast IP</string>
-    <string name="connection_hint_broadcast">Зазвичай 255.255.255.255 — змінюйте, лише якщо WOL не працює</string>
-    <string name="connection_label_subnet">Маска підмережі</string>
-    <string name="connection_hint_subnet">Зазвичай 255.255.255.0 для домашніх мереж</string>
+    <string name="connection_hint_broadcast">Usually 255.255.255.255 — only change if WOL fails</string>
+    <string name="connection_label_subnet">Subnet Mask</string>
+    <string name="connection_hint_subnet">Typically 255.255.255.0 for home networks</string>
     <string name="connection_label_pairing_pin">Pairing PIN (6-digits)</string>
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
-    <string name="connection_desktop_defaults_title">Налаштування віддаленого робочого столу</string>
-    <string name="connection_quality_label">Якість: %1$d%%</string>
-    <string name="connection_fps_label">Цільовий FPS: %1$d (макс. 120)</string>
-    <string name="connection_scale_label">Масштаб: %1$s</string>
-    <string name="button_save_connect">Зберегти та підключити</string>
-    <string name="connection_status_label">Статус: %1$s</string>
+    <string name="connection_desktop_defaults_title">Remote Desktop Defaults</string>
+    <string name="connection_quality_label">Quality: %1$d%%</string>
+    <string name="connection_fps_label">Target FPS: %1$d (max 120)</string>
+    <string name="connection_scale_label">Scale: %1$s</string>
+    <string name="button_save_connect">Save &amp; Connect</string>
+    <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
 
     <!-- ═══ Pairing Screen ═══ -->
-    <string name="pairing_title">Security Pairing</string>
+    <string name="pairing_title">Сполучення</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
@@ -285,11 +285,11 @@
     <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
 
     <!-- ═══ QR Scanner Screen ═══ -->
-    <string name="qr_scanner_title">Сканувати QR-код</string>
-    <string name="cd_back">Назад</string>
-    <string name="qr_scanner_hint">Направте камеру на QR-код, показаний на вашому ПК</string>
-    <string name="qr_scanner_permission_required">Для сканування QR-кодів потрібен дозвіл камери</string>
-    <string name="qr_scanner_grant_permission">Надати дозвіл</string>
+    <string name="qr_scanner_title">Сканер QR</string>
+    <string name="cd_back">Back</string>
+    <string name="qr_scanner_hint">Point camera at the QR code shown on your PC</string>
+    <string name="qr_scanner_permission_required">Camera permission is required to scan QR codes</string>
+    <string name="qr_scanner_grant_permission">Grant Permission</string>
     <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
 
@@ -302,68 +302,68 @@
     <string name="about_github_star">Give my repository a star on Github</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
-    <string name="faq_header">Часті запитання</string>
-    <string name="cd_collapse">Згорнути</string>
-    <string name="cd_expand">Розгорнути</string>
-    <string name="faq_github_button">Відкрити релізи на GitHub</string>
+    <string name="faq_header">Frequently Asked Questions</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
+    <string name="faq_github_button">Open GitHub Releases</string>
 
-    <string name="faq_q1">Що мені потрібно запустити на моєму ПК?</string>
-    <string name="faq_a1">Вам потрібно запустити Remex.Client.Desktop або Remex.Host на вашому ПК.\n\n• Remex.Client.Desktop — повноцінна програма, що містить хост. Просто запустіть її, і хост запрацює у фоні на порту 5005.\n\n• Remex.Host — окрема служба без інтерфейсу, ідеальна для серверів або фонового використання.\n\nОбидва варіанти автономні (усі середовища включено) — просто розпакуйте папку та запустіть. Завантажити можна зі сторінки релізів GitHub.</string>
+    <string name="faq_q1">What do I need to run on my PC?</string>
+    <string name="faq_a1">You need either Remex.Client.Desktop or Remex.Host running on your PC.\n\n• Remex.Client.Desktop — The full desktop app that bundles the host automatically. Just launch it and the host starts in the background on port 5005.\n\n• Remex.Host — A standalone headless service, ideal for servers or background-only use.\n\nBoth are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</string>
 
-    <string name="faq_q2">Як знайти IP-адресу мого ПК?</string>
-    <string name="faq_a2">Windows:\nВідкрийте командний рядок і введіть «ipconfig». Шукайте рядок «IPv4 Address» під вашим активним мережевим адаптером (наприклад, 192.168.1.42).\n\nmacOS:\nПерейдіть до Системних параметрів → Мережа та подивіться на активний інтерфейс, або відкрийте Термінал і виконайте: ipconfig getifaddr en0\n\nLinux:\nВідкрийте термінал і виконайте: ip addr або hostname -I\n\nВи також можете побачити IP безпосередньо у вікні Remex.Client.Desktop.</string>
+    <string name="faq_q2">How do I find my PC\'s IP address?</string>
+    <string name="faq_a2">Windows:\nOpen Command Prompt and type \'ipconfig\'. Look for the \'IPv4 Address\' line under your active network adapter (e.g. 192.168.1.42).\n\nmacOS:\nGo to System Settings → Network and look at the connected interface, or open Terminal and run: ipconfig getifaddr en0\n\nLinux:\nOpen a terminal and run: ip addr  or  hostname -I\n\nYou can also see the IP directly in the Remex.Client.Desktop window.</string>
 
-    <string name="faq_q3">Автовиявлення не знаходить мій ПК. Що перевірити?</string>
-    <string name="faq_a3">1. Переконайтеся, що Remex.Client.Desktop або Remex.Host дійсно запущені на вашому ПК.\n2. Обидва пристрої мають бути в одній Wi-Fi / LAN мережі.\n3. На Android 13+ має бути надано дозвіл NEARBY_WIFI_DEVICES. RemEx запитає його при натисканні «Автовиявлення».\n4. Деякі роутери мають увімкнену функцію «AP Isolation» або «Client Isolation», яка блокує зв’язок між пристроями. Перевірте налаштування роутера.\n5. Корпоративні або гостьові мережі часто блокують mDNS-трафік. Спробуйте використати домашню мережу.</string>
+    <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
+    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. On Android 17+, ACCESS_LOCAL_NETWORK must also be granted. RemEx will prompt for these when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
 
-    <string name="faq_q4">Який порт використовується за замовчуванням?</string>
-    <string name="faq_a4">Порт за замовчуванням — 5005. Якщо він зайнятий, Remex.Client.Desktop використає порт 5006. Активний порт можна побачити у вікні програми на ПК.\n\nЯкщо ви змінили порт на ПК, обов’язково введіть відповідний номер на екрані підключення в цьому додатку.</string>
+    <string name="faq_q4">What is the default port?</string>
+    <string name="faq_a4">The default port is 5005. If Remex.Client.Desktop finds port 5005 in use, it will fall back to 5006. You can see the active port in the desktop client\'s window.\n\nIf you changed the port on the host side, make sure to enter the matching port in the Connection screen on this app.</string>
 
-    <string name="faq_q5">Як мені з'єднатися з ПК?</string>
-    <string name="faq_a5">При першому підключенні до ПК ви повинні ввести 6-значний PIN-код, що відображається на ПК. Це створює безпечний та зашифрований зв'язок між пристроями. Вам не потрібно буде вводити PIN знову, якщо ви не скинете підключення або не перевстановите додаток.</string>
+    <string name="faq_q5">How do I pair with my PC?</string>
+    <string name="faq_a5">When you connect to a PC for the first time, you must enter the 6-digit PIN displayed on the PC. This creates a secure, encrypted bond between the devices. You won\'t need to enter the PIN again unless you reset the connection or reinstall the app.</string>
 
-    <string name="faq_q6">Чи можу я підключитися через інтернет (не тільки через LAN)?</string>
+    <string name="faq_q6">Can I connect over the internet (not just LAN)?</string>
     <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. A VPN is the recommended approach for remote access.</string>
 
-    <string name="faq_q7">Віддалений робочий стіл гальмує або не працює. Що робити?</string>
-    <string name="faq_a7">• Зменште якість у розділі Підключення → Налаштування віддаленого робочого столу.\n• Зменште цільовий FPS (15–20 FPS достатньо для більшості випадків).\n• Зменште масштаб, щоб знизити роздільну здатність потоку.\n• Переконайтеся, що ваш ПК підтримує бекенд захоплення екрана: DXGI на Windows, X11/Wayland на Linux.\n• Перевірте швидкість вашої локальної мережі (бажано Wi-Fi 5 ГГц).</string>
+    <string name="faq_q7">Remote Desktop is laggy or not working. What can I do?</string>
+    <string name="faq_a7">• Lower the Quality slider in Connection → Remote Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• Make sure your PC supports the screen capture backend: DXGI on Windows, X11/Wayland on Linux.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
 
-    <string name="faq_q8">Що таке Wake-on-LAN (WOL)?</string>
-    <string name="faq_a8">Wake-on-LAN дозволяє дистанційно вмикати ПК, надсилаючи «magic packet» через мережу.\n\nДля використання:\n1. Увімкніть WOL у налаштуваннях BIOS/UEFI вашого ПК.\n2. Увімкніть WOL у властивостях мережевого адаптера (Windows: Диспетчер пристроїв → Мережеві адаптери → Керування живленням).\n3. Введіть MAC-адресу вашого ПК на екрані підключення.\n4. Використовуйте картку «Пробудити ПК» на головній панелі або екрані дистанційного керування.</string>
+    <string name="faq_q8">What is Wake-on-LAN (WOL)?</string>
+    <string name="faq_a8">Wake-on-LAN lets you power on your PC remotely by sending a "magic packet" over the network.\n\nTo use it:\n1. Enable WOL in your PC\'s BIOS/UEFI settings.\n2. Enable WOL in your network adapter\'s properties (Windows: Device Manager → Network Adapter → Power Management).\n3. Enter your PC\'s MAC address in the Connection screen.\n4. Use the \'Wake PC\' card on the dashboard or the Remote Control screen.</string>
 
-    <string name="faq_q9">Як змінити зовнішній вигляд додатка?</string>
-    <string name="faq_a9">Перейдіть до екрана персоналізації (натисніть іконку шестерні на головній панелі або через Налаштування).\n\nВи можете змінити:\n• Палітру теми та колірну схему\n• Радіус кутів карток та пресети форм\n• Шрифт та його масштаб\n• Прозорість карток\n• Темну/світлу/системну тему</string>
+    <string name="faq_q9">How do I customize the app\'s appearance?</string>
+    <string name="faq_a9">Go to the Personalization screen (tap the gear FAB on the dashboard or navigate via the overflow menu → Settings).\n\nYou can change:\n• Theme palette and color seed\n• Card corner radius and shape presets\n• Font family and scale\n• Card opacity\n• Dark/light/system theme mode</string>
 
-    <string name="faq_q10">Чи можу я знову переглянути навчання?</string>
-    <string name="faq_a10">Так! Перейдіть до Налаштувань (⋮ → Налаштування). Там ви знайдете опцію повторного відтворення навчання.</string>
+    <string name="faq_q10">Can I re-watch the tutorial?</string>
+    <string name="faq_a10">Yes! Go to Settings from the overflow menu (⋮ → Settings). There you\'ll find an option to replay the tutorial at any time.</string>
 
     <!-- ═══ Personalization Screen ═══ -->
-    <string name="screen_personalization_title">Персоналізація</string>
-    <string name="personalization_appearance_studio">Студія вигляду</string>
-    <string name="personalization_section_language">Мова</string>
-    <string name="personalization_app_language">Мова додатка</string>
-    <string name="personalization_language_note">Змінює мову інтерфейсу додатка. Деякі тексти можуть залишатися англійською до завершення перекладу.</string>
-    <string name="personalization_system_default">Системна мова</string>
-    <string name="personalization_section_theme">Тема та стратегія</string>
-    <string name="personalization_display_mode">Режим відображення</string>
-    <string name="personalization_palette_strategy">Динамічна палітра</string>
-    <string name="personalization_section_color">Студія кольору</string>
-    <string name="personalization_palette_mode">Режим палітри</string>
-    <string name="personalization_hue_label">Відтінок: %1$d°</string>
-    <string name="personalization_chroma_label">Насиченість (Chroma): %1$d</string>
-    <string name="personalization_contrast_label">Контраст: %1$s</string>
-    <string name="personalization_tonal_range">Тональний діапазон</string>
-    <string name="personalization_manual_hex">Ручний HEX-код</string>
-    <string name="personalization_section_geometry">Експресивна геометрія</string>
-    <string name="personalization_corner_base">Базовий кут: %1$ddp</string>
-    <string name="personalization_card_opacity">Прозорість карток: %1$d%%</string>
-    <string name="personalization_shape_telemetry">Картки телеметрії</string>
-    <string name="personalization_shape_app_launcher">Запуск програм</string>
-    <string name="personalization_shape_remote_commands">Дистанційні команди</string>
-    <string name="personalization_shape_remote_mouse">Дистанційна миша</string>
-    <string name="personalization_shape_task_manager">Диспетчер завдань</string>
-    <string name="personalization_shape_pc_orb">Сфера статусу ПК</string>
-    <string name="personalization_preview">ПЕРЕГЛЯД</string>
+    <string name="screen_personalization_title">Personalization</string>
+    <string name="personalization_appearance_studio">Appearance Studio</string>
+    <string name="personalization_section_language">Language</string>
+    <string name="personalization_app_language">App Language</string>
+    <string name="personalization_language_note">Changes the display language for this app. Some text may remain in English until translations are complete.</string>
+    <string name="personalization_system_default">System Default</string>
+    <string name="personalization_section_theme">Theme &amp; Strategy</string>
+    <string name="personalization_display_mode">Display Mode</string>
+    <string name="personalization_palette_strategy">Dynamic Palette Strategy</string>
+    <string name="personalization_section_color">Color Studio</string>
+    <string name="personalization_palette_mode">Palette Mode</string>
+    <string name="personalization_hue_label">Hue: %1$d°</string>
+    <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
+    <string name="personalization_contrast_label">Contrast: %1$s</string>
+    <string name="personalization_tonal_range">Tonal Range</string>
+    <string name="personalization_manual_hex">Manual Hex Code</string>
+    <string name="personalization_section_geometry">Expressive Geometry</string>
+    <string name="personalization_corner_base">Corner Base: %1$ddp</string>
+    <string name="personalization_card_opacity">Card Opacity: %1$d%%</string>
+    <string name="personalization_shape_telemetry">Telemetry Cards</string>
+    <string name="personalization_shape_app_launcher">App Launcher</string>
+    <string name="personalization_shape_remote_commands">Remote Commands</string>
+    <string name="personalization_shape_remote_mouse">Remote Mouse</string>
+    <string name="personalization_shape_task_manager">Task Manager</string>
+    <string name="personalization_shape_pc_orb">PC Connection Orb</string>
+    <string name="personalization_preview">PREVIEW</string>
 
     <!-- ═══ Widget Configuration Activities ═══ -->
     <string name="widget_config_app_launcher_title">Configure App Launcher</string>
@@ -390,11 +390,11 @@
 
     <!-- ═══ File Transfer Screen ═══ -->
     <string name="screen_file_transfer_title">Передача файлів</string>
-    <string name="file_transfer_local">Локальний (Телефон)</string>
-    <string name="file_transfer_remote">Віддалений (ПК)</string>
-    <string name="file_transfer_browse">Огляд</string>
-    <string name="file_transfer_upload">Завантажити ↑</string>
-    <string name="file_transfer_download">Скачати ↓</string>
+    <string name="file_transfer_local">Local (Phone)</string>
+    <string name="file_transfer_remote">Remote (PC)</string>
+    <string name="file_transfer_browse">Browse</string>
+    <string name="file_transfer_upload">Вивантажити</string>
+    <string name="file_transfer_download">Завантажити</string>
     <string name="file_transfer_cancel">Cancel</string>
     <string name="file_transfer_not_connected">Connect to a host to browse remote files.</string>
     <string name="file_transfer_loading">Loading…</string>
@@ -439,9 +439,9 @@
     <string name="settings_ft_remove_folder">Remove folder</string>
 
     <!-- ═══ Material Shapes ═══ -->
-    <string name="shape_circle">Коло</string>
-    <string name="shape_square">Квадрат</string>
-    <string name="shape_triangle">Трикутник</string>
+    <string name="shape_circle">Circle</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_triangle">Triangle</string>
     <string name="shape_diamond">Diamond</string>
     <string name="shape_pentagon">Pentagon</string>
     <string name="shape_arch">Arch</string>
@@ -451,7 +451,7 @@
     <string name="shape_fan">Fan</string>
     <string name="shape_clam_shell">Clam Shell</string>
     <string name="shape_gem">Gem</string>
-    <string name="shape_heart">Серце</string>
+    <string name="shape_heart">Heart</string>
     <string name="shape_flower">Flower</string>
     <string name="shape_puffy">Puffy</string>
     <string name="shape_puffy_diamond">Puffy Diamond</string>

@@ -106,9 +106,9 @@ public sealed class PinnedCertStoreTests : IDisposable
     }
 
     [Fact]
-    public void GetPin_Sync_ReturnsStoredHash()
+    public async Task GetPin_Sync_ReturnsStoredHash()
     {
-        _store.SetPinAsync("host-f", "synchash==").GetAwaiter().GetResult();
+        await _store.SetPinAsync("host-f", "synchash==");
 
         var result = _store.GetPin("host-f");
 
