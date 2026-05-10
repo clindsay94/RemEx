@@ -10,7 +10,14 @@ public interface IHostCapabilitiesProvider
 
 public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
 {
-    public HostCapabilities GetCurrent()
+    // All inputs (OS, env vars, installed tools, session ID) are stable for the lifetime
+    // of the host process. Cache the result to avoid spawning `which` subprocesses on
+    // every health-check request or WebSocket handshake.
+    private readonly Lazy<HostCapabilities> _cached = new(Build, isThreadSafe: true);
+
+    public HostCapabilities GetCurrent() => _cached.Value;
+
+    private static HostCapabilities Build()
     {
         var platform = GetPlatform();
         var isInteractiveSession = GetIsInteractiveSession();
