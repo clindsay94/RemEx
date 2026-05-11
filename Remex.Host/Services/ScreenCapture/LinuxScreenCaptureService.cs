@@ -487,7 +487,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     private static string[] SplitLines(string output) =>
         output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    private static bool TryGetVirtualDesktopBounds(
+    internal static bool TryGetVirtualDesktopBounds(
         string[] lines,
         out int width,
         out int height,

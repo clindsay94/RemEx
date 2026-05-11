@@ -1,16 +1,11 @@
-using System.Reflection;
+using System.Runtime.Versioning;
 using Remex.Host.Services.ScreenCapture;
 
 namespace Remex.Host.Tests;
 
+[SupportedOSPlatform("linux")]
 public class LinuxScreenCaptureServiceTests
 {
-    private static readonly MethodInfo TryGetVirtualDesktopBoundsMethod =
-        typeof(LinuxScreenCaptureService).GetMethod(
-            "TryGetVirtualDesktopBounds",
-            BindingFlags.NonPublic | BindingFlags.Static)
-        ?? throw new InvalidOperationException("TryGetVirtualDesktopBounds was not found.");
-
     [Fact]
     public void TryGetVirtualDesktopBounds_UsesScreenCurrentDimensionsAndNegativeOffsets()
     {
@@ -50,8 +45,7 @@ public class LinuxScreenCaptureServiceTests
 
     private static (bool Parsed, int Width, int Height, int Left, int Top) InvokeTryGetVirtualDesktopBounds(string[] lines)
     {
-        object[] parameters = [lines, 0, 0, 0, 0];
-        var parsed = (bool)(TryGetVirtualDesktopBoundsMethod.Invoke(null, parameters) ?? false);
-        return (parsed, (int)parameters[1], (int)parameters[2], (int)parameters[3], (int)parameters[4]);
+        var parsed = LinuxScreenCaptureService.TryGetVirtualDesktopBounds(lines, out var width, out var height, out var left, out var top);
+        return (parsed, width, height, left, top);
     }
 }
