@@ -12,6 +12,7 @@ using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host;
+using Remex.Host.Services.Input;
 
 namespace Remex.Host.Handlers;
 
@@ -20,6 +21,7 @@ public sealed class RemoteDesktopHandler : IDisposable
     private readonly ILogger<RemoteDesktopHandler> _logger;
     private readonly IScreenCaptureService _screenCapture;
     private readonly IInputSimulationService _inputSimulation;
+    private readonly IDesktopWindowControlService _windowControl;
     private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
     private readonly Task _inputProcessingTask;
@@ -38,11 +40,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         ILogger<RemoteDesktopHandler> logger,
         IScreenCaptureService screenCapture,
         IInputSimulationService inputSimulation,
+        IDesktopWindowControlService windowControl,
         IHostCapabilitiesProvider hostCapabilitiesProvider)
     {
         _logger = logger;
         _screenCapture = screenCapture;
         _inputSimulation = inputSimulation;
+        _windowControl = windowControl;
         _hostCapabilitiesProvider = hostCapabilitiesProvider;
 
         // Start dedicated input processing thread
@@ -367,6 +371,14 @@ public sealed class RemoteDesktopHandler : IDisposable
                         ApplyConfig(message.DesktopConfig);
                         break;
 
+                    case MessageTypes.DesktopWindowQuery when message.DesktopWindowQuery is not null:
+                        await SendDesktopWindowResult(webSocket, _windowControl.QueryWindows(message.DesktopWindowQuery), message.CorrelationId, ct);
+                        break;
+
+                    case MessageTypes.DesktopWindowAction when message.DesktopWindowAction is not null:
+                        await SendDesktopWindowResult(webSocket, _windowControl.ExecuteAction(message.DesktopWindowAction), message.CorrelationId, ct);
+                        break;
+
                     case MessageTypes.DesktopStop:
                         await streamCts.CancelAsync();
                         return;
@@ -375,6 +387,25 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
         catch (OperationCanceledException) { /* normal */ }
         catch (WebSocketException) { }
+    }
+
+    private async Task SendDesktopWindowResult(WebSocket webSocket, DesktopWindowResult result, string? correlationId, CancellationToken ct)
+    {
+        try
+        {
+            var msg = new RemexMessage
+            {
+                Type = MessageTypes.DesktopWindowResult,
+                CorrelationId = correlationId,
+                DesktopWindowResult = result,
+            };
+
+            await MessageSerializer.SendAsync(webSocket, msg, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send DesktopWindowResult to client.");
+        }
     }
 
     private void DispatchInput(InputEvent input)

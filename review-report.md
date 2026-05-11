@@ -1,278 +1,198 @@
 ## Code-Review-Report.md
 ---
 type: Bugfix
-severity: Critical → **RESOLVED**
+severity: Critical
 breaking_changes: False
-target_files: 
-  - Remex.Core/Services/Network/RemexNetworkListener.cs ✅ FIXED
-  - Remex.Host/Configuration/RemexHostSettings.cs ✅ FIXED  
-  - Remex.Host/appsettings.json ✅ FIXED
-  - Remex.Host/Services/Security/PairingService.cs ✅ UPGRADED TO ECDH X25519
-  - Remex.Host/Handlers/PairingHandler.cs ✅ UPDATED
-  - Remex.Core/Services/Security/IPairingService.cs ✅ UPDATED
----
-
-## ✅ RESOLUTION SUMMARY (May 4, 2026)
-
-**Root cause identified:** Phase 1 of the master-plan was started but never completed. The new `RemexHostSettings.SecuritySettings` configuration structure was created but:
-1. The old access key system was never removed
-2. `RemexNetworkListener` still read from the legacy `Remex:AccessKey` path
-3. `PairingService` used simple PIN HMAC instead of proper ECDH X25519
-4. Both config paths were empty, causing the validator to incorrectly allow all connections
-
-**Actions taken:**
-1. ✅ **Removed old access key system** from `RemexNetworkListener.cs` (deleted `ValidateAccessKey` method, removed `_accessKeyBytes` field, removed constructor access key initialization)
-2. ✅ **Removed obsolete security properties** from `RemexHostSettings.SecuritySettings` (`RequireAccessKey`, `AccessKey`)  
-3. ✅ **Updated appsettings.json** to remove legacy `Remex:AccessKey` configuration
-4. ✅ **Upgraded PairingService** to use proper ECDH X25519 via NSec.Cryptography:
-   - Implemented X25519 key agreement for shared secret derivation
-   - Added HKDF-SHA256 for session key derivation (salt = cert SPKI hash, info = "remex-pair-v1")
-   - Updated HMAC computation to use ECDH-derived session key instead of raw PIN
-5. ✅ **Updated PairingHandler** to call `DeriveSessionKeyAsync` with client's public key
-6. ✅ **Updated IPairingService interface** to include new `DeriveSessionKeyAsync` method
-
-**Result:** Android-Avalonia connection is now properly secured via TLS + ECDH X25519 pairing protocol. The configuration paths are unified and the access key system has been completely removed as specified in master-plan Track 1B.
-
+target_files:
+  - RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt
+  - RemEx.Android/app/src/main/java/com/clindsay94/remex/service/RemexConnectionService.kt
+  - RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt
+  - Remex.Core/Native/RemexNativeClient.cs
+  - Remex.Host/Handlers/PingPongHandler.cs
+  - Remex.Host/Handlers/PairingHandler.cs
+  - Remex.Host/HostBootstrapper.cs
+  - Remex.Host/Services/Security/PairedClientRegistry.cs
+  - Remex.Host/Services/Security/PairingService.cs
 ---
 
 ## Issue Summary
-Android app cannot connect to Avalonia host after security configuration upgrade. The new `RemexHostSettings.SecuritySettings` class was introduced with the configuration path `RemexHost:Security:AccessKey`, but `RemexNetworkListener` still reads from the legacy path `Remex:AccessKey`, creating a configuration mismatch that breaks authentication.
+The reconnection model is not state-safe. Transport connectivity, pairing trust, foreground-service lifetime, and host identity are tracked independently and inconsistently, so disconnects frequently leave one side believing the connection is healthy while the other side requires a fresh pairing or a manual reset.
+
+This explains the exact failure class you described: desktop restarts forget previously paired Android clients, Android can get stuck in a perpetual "connecting" state after asynchronous failures, interrupted pairings stay wedged on the host, and QR/PIN flows do not agree on who the host is.
 
 ## Root Cause Analysis
 
-### The Configuration Split
-During the security upgrade, a new structured configuration class `RemexHostSettings` was created with nested `SecuritySettings`:
+### Finding 1 — Host pairing trust is process-local and is lost every time the desktop host restarts
+**Severity:** Critical
 
-```csharp
-// NEW structure in RemexHostSettings.cs (lines 66-82)
-public class SecuritySettings
-{
-    public bool RequireAccessKey { get; set; } = true;
-    public string AccessKey { get; set; } = string.Empty;
-    public bool LocalhostOnly { get; set; } = false;
-}
-```
+**Evidence**
+- `Remex.Host/Services/Security/PairedClientRegistry.cs:12-14` explicitly keeps paired clients in an in-memory `ConcurrentDictionary`.
+- `Remex.Host/Handlers/PairingHandler.cs:104-107` only registers the client ID in that in-memory registry after successful `PairingComplete`.
+- `Remex.Host/Handlers/PingPongHandler.cs:122-130` relies on that registry on every reconnect to decide whether a client is already trusted.
 
-This maps to the configuration path: `RemexHost:Security:AccessKey`
+**Why it breaks**
+- Android persists its `clientId` (`SettingsManager.getOrCreateClientId()`), but the host does not persist the corresponding trust decision.
+- After the desktop host restarts, the Android client still has a valid pinned certificate and the same client ID, but the host forgets that the client was previously paired.
+- The next connection is therefore transport-valid but auth-invalid.
 
-### The Orphaned Network Listener
-However, `RemexNetworkListener.cs` constructor (line 42) was never updated:
+**Observed result**
+- A desktop restart turns a previously paired Android device into an effectively new client.
+- Users are forced back into a handshake path or into manual cleanup because the host has lost the only state it uses to recognize paired clients.
 
-```csharp
-var accessKey = _configuration["Remex:AccessKey"] ?? "";
-_accessKeyBytes = Encoding.UTF8.GetBytes(accessKey);
-```
+**Proposed Solution**
+- Persist paired-client trust on the host, keyed by a stable tuple such as `(host certificate identity, clientId)`.
+- Load that store during host startup before accepting WebSocket connections.
+- Treat pairing as a durable trust record, not a per-process flag.
 
-It still reads from the **legacy path** `Remex:AccessKey` instead of `RemexHost:Security:AccessKey`.
+### Finding 2 — Android reconnection can deadlock itself in `isConnecting = true`
+**Severity:** Critical
 
-### The Validation Logic Disconnect
-In `appsettings.json`:
-- `Remex:AccessKey` = "" (empty string - legacy path)
-- `RemexHost:Security:RequireAccessKey` = true (new path)
-- `RemexHost:Security:AccessKey` = "" (new path)
+**Evidence**
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt:73-84` suppresses heartbeat reconnect attempts whenever `isConnecting.value` is true.
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt:117-121` and `144-151` set `_isConnecting` before starting a connection attempt.
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt:281-284` clears `_isConnecting` only when `onConnectionStateChanged(true)` arrives.
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt:325-326` forwards connection errors but does not clear `_isConnecting`.
+- `Remex.Core/Native/RemexNativeClient.cs:129-145` and `272-275` report failed or dropped connections with `ConnectionStateChanged(false)`.
 
-The `ValidateAccessKey` method (lines 344-360) has this logic:
-```csharp
-if (_accessKeyBytes.Length == 0)
-    return true;  // No key configured, allow all requests
-```
+**Why it breaks**
+- Failed asynchronous connects and dropped sockets emit `false`, not `true`.
+- The Android manager never clears `_isConnecting` on those failure callbacks.
+- Once that happens, the heartbeat loop stops retrying because it sees the client as permanently "in progress".
 
-Because `_accessKeyBytes` is initialized from the empty legacy path, the validator **allows all requests** even though `RequireAccessKey = true` in the new configuration.
+**Observed result**
+- After a severed connection or a host restart, Android can remain stuck in a pseudo-connecting state.
+- Auto-reconnect stops, UI state becomes misleading, and the only practical recovery becomes manual intervention.
 
-### Why Connections Are Failing
+**Proposed Solution**
+- Make `onConnectionStateChanged(false)` and `onConnectionError(...)` clear `_isConnecting`.
+- Separate transport phases explicitly: `Disconnected`, `Connecting`, `Connected`, `AuthRequired`, `Authenticated`, `Reconnecting`, `Failed`.
+- Gate the heartbeat on those explicit states instead of a single boolean.
 
-There are two potential failure scenarios:
+### Finding 3 — The Android foreground service tears itself down on transient disconnects, and force-stop cannot be made transparent
+**Severity:** High
 
-**Scenario 1: Inconsistent State**
-- The new `SecuritySettings.RequireAccessKey = true` might be checked elsewhere (not yet discovered in codebase scan)
-- The validator allows connections (empty key)
-- But another component rejects them (sees RequireAccessKey=true)
+**Evidence**
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/service/RemexConnectionService.kt:67-78` stops the service as soon as `isConnected` becomes false.
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionViewModel.kt:115-120` only starts that service during a manual connect action.
 
-**Scenario 2: Android Client Confusion**
-- Android clients may have been updated to read from a new configuration source
-- They're looking for an access key at the new path
-- But the server is reading from the old path
-- Result: key mismatch
+**Why it breaks**
+- The service is being used as the app's "stay alive and reconnect" mechanism, but it explicitly calls `stopSelf()` on the first disconnect.
+- That means a routine transport blip kills the very component intended to survive routine transport blips.
+- Separately, Android force-stop is an OS-level kill switch. Per Android's `Service.onStartCommand` / foreground-service behavior, `START_STICKY` can recover from system kills, but not from an explicit user force-stop. That behavior is platform-defined, not app-defined. External validation: Android Developers service lifecycle documentation.
 
-### Orphaned Configuration Class
-The `RemexHostSettings` class is **defined but never instantiated or used** anywhere in the codebase. This is a dead configuration structure that was created but never integrated with the dependency injection container or bound to the configuration system.
+**Observed result**
+- Background recovery is fragile even for normal disconnects.
+- After a true force-stop, the app cannot reconnect until the user launches it again; the code should therefore optimize for clean resume on next launch, not pretend force-stop can be bypassed.
+
+**Proposed Solution**
+- Do not self-stop the foreground service on the first disconnect; let it remain alive through the reconnect window.
+- Reconnect policy should live in one place and should survive short host outages.
+- On next launch after a force-stop, automatically restore the persisted host/client identity and resume the reconnect flow without requiring unpair/reinstall steps.
+
+### Finding 4 — Interrupted pairings are never canceled, so the next pairing attempt can be wedged for up to two minutes
+**Severity:** High
+
+**Evidence**
+- `Remex.Host/Services/Security/PairingService.cs:26-43` stores a single global pairing session.
+- `Remex.Host/Services/Security/PairingService.cs:41-42` sets a 120-second timeout.
+- `Remex.Host/Services/Security/PairingService.cs:58-78` rejects any new pairing attempt while the current session is active.
+- `Remex.Host/Services/Security/PairingService.cs:161-183` contains `CancelPairing()`, but repo usage is effectively success-path only (`VerifyClientHmacAsync`).
+- `Remex.Host/Handlers/PairingHandler.cs` and `Remex.Host/Handlers/PingPongHandler.cs` do not cancel the pairing session when the WebSocket dies mid-handshake.
+
+**Why it breaks**
+- If the Android app is killed, the desktop closes, or the network drops in the middle of the PIN flow, the host retains a live singleton pairing session.
+- The next retry hits "pairing session already active" instead of starting cleanly.
+
+**Observed result**
+- Users have to wait for expiry or manually reset the host-side state.
+- This aligns with the "half a step away from reinstalling" failure mode: the retry path is not idempotent.
+
+**Proposed Solution**
+- Bind pairing state to the connection/session that started it.
+- Cancel the active pairing immediately when that WebSocket closes or when the connect attempt is superseded.
+- Prefer per-client or per-connection pairing sessions instead of a single global singleton session.
+
+### Finding 5 — The codebase uses two different host identities for the same desktop
+**Severity:** High
+
+**Evidence**
+- `Remex.Host/HostBootstrapper.cs:192-200` returns `hostId = HostBootstrapper.InstanceId` from the QR bootstrap endpoint.
+- `Remex.Host/Handlers/PairingHandler.cs:64-69` returns `HostId = Environment.MachineName` from the PIN pairing flow.
+- `HostBootstrapper.InstanceId` is process-generated (`Guid.NewGuid()`), so it changes every desktop launch.
+
+**Why it breaks**
+- QR bootstrapping and PIN pairing are naming the same host with different identifiers.
+- One identifier is stable (`Environment.MachineName`), the other is ephemeral (`InstanceId`).
+- Any pinning, trust, or reconnect logic that keys off `hostId` can therefore see the same desktop as a different host after restart.
+
+**Observed result**
+- QR-established trust and PIN-established trust do not live in the same identity namespace.
+- The system feels like it is "treating the host as new" because, in one flow, it literally is.
+
+**Proposed Solution**
+- Pick one stable host identity and use it everywhere: QR bootstrap, PIN pairing, discovery metadata, and reconnect bookkeeping.
+- Reserve per-process instance IDs for stream/session diagnostics only, not for trust identity.
+
+### Finding 6 — The main control channel enforces pairing, but the dedicated desktop stream channel does not
+**Severity:** High
+
+**Evidence**
+- `Remex.Host/Handlers/PingPongHandler.cs:154-170` blocks most messages until pairing is complete.
+- `Remex.Host/HostBootstrapper.cs:244-259` maps `/ws/desktop` directly to `RemoteDesktopHandler`.
+- `Remex.Host/Handlers/RemoteDesktopHandler.cs:71-183` handles the stream with no pairing or paired-client check.
+
+**Why it breaks**
+- The app has two channels with different authorization rules.
+- A client can therefore be "unpaired" on the command channel but still interact with the desktop stream channel, or vice versa.
+
+**Observed result**
+- Reconnect behavior becomes inconsistent and hard to reason about.
+- Users can see partial functionality after reconnects instead of a single clean state transition, which makes failures look random.
+
+**Proposed Solution**
+- Apply the same trust/auth model to `/ws` and `/ws/desktop`.
+- Reuse the same stable client identity and same persisted pairing record for both channels.
+- Expose one authoritative "ready" state only after both transport and authorization are satisfied.
 
 ## Proposed Solution
+The fix needs to be architectural, not a one-line retry tweak.
 
-### 1. Bind RemexHostSettings to Dependency Injection
-In the host startup/bootstrapper (likely `Program.cs` or `HostBootstrapper.cs`), bind the settings:
+1. **Persist trust on both sides**
+   - Host: persist paired clients instead of using an in-memory registry.
+   - Client: persist a stable client identity and reuse it across reconnects.
 
-```csharp
-services.Configure<RemexHostSettings>(
-    configuration.GetSection(RemexHostSettings.SectionName));
-```
+2. **Promote authentication to a first-class connection state**
+   - Do not equate `WebSocket open` with `ready`.
+   - The client should not report "connected" until the host has either recognized the persisted pairing or the pairing handshake has completed.
 
-### 2. Update RemexNetworkListener Constructor
-Inject `IOptions<RemexHostSettings>` and read from the new path:
+3. **Make reconnect idempotent**
+   - Starting a new connect attempt must cancel any in-flight connect, pairing, and stream state from the previous attempt.
+   - Any interrupted pairing must be cleaned up immediately on socket close.
 
-```csharp
-public RemexNetworkListener(
-    IOptions<RemexHostSettings> hostSettings,
-    IConfiguration configuration,  // Keep for backward compatibility during migration
-    ILogger<RemexNetworkListener> logger,
-    ISystemCommandService commandService,
-    IWakeOnLanService wakeOnLanService)
-{
-    _configuration = configuration;
-    _logger = logger;
-    _commandService = commandService;
-    _wakeOnLanService = wakeOnLanService;
-    
-    // Read from new structured settings
-    var securitySettings = hostSettings.Value.Security;
-    var accessKey = securitySettings.AccessKey ?? "";
-    _accessKeyBytes = Encoding.UTF8.GetBytes(accessKey);
-    _requireAccessKey = securitySettings.RequireAccessKey;
-    _localhostOnly = securitySettings.LocalhostOnly;
-}
-```
+4. **Unify host identity**
+   - Use one stable host identifier across QR, PIN, discovery, and pin storage.
+   - Keep per-process instance IDs only for stream/session diagnostics.
 
-### 3. Add RequireAccessKey Check to ValidateAccessKey
-Update the validation method to respect the `RequireAccessKey` flag:
+5. **Stop treating the foreground service as disposable**
+   - Keep it alive across transient disconnects.
+   - Accept that force-stop cannot be bypassed, but make next-launch recovery automatic and clean.
 
-```csharp
-private bool ValidateAccessKey(CommandRequest request)
-{
-    // If access key requirement is disabled, allow all
-    if (!_requireAccessKey)
-        return true;
-    
-    // If key required but none configured, generate warning and reject
-    if (_accessKeyBytes.Length == 0)
-    {
-        _logger.LogWarning("RequireAccessKey is true but no AccessKey is configured. Rejecting request.");
-        return false;
-    }
-    
-    // Validate the supplied key
-    if (request.Parameters == null ||
-        !request.Parameters.TryGetValue("AccessKey", out var suppliedKey) ||
-        string.IsNullOrEmpty(suppliedKey))
-        return false;
+6. **Align channel authorization**
+   - `/ws` and `/ws/desktop` should share the same trust contract and same persisted pairing record.
 
-    return CryptographicOperations.FixedTimeEquals(
-        _accessKeyBytes,
-        Encoding.UTF8.GetBytes(suppliedKey));
-}
-```
+## Testing Gaps
+- `Remex.Host.Tests/PairingServiceTests.cs:27-212` validates cryptographic pairing mechanics, but not disconnect cleanup, host restart persistence, or retry-after-abort behavior.
+- `Remex.Client.Tests/ViewModels/ConnectionViewModelTests.cs:222-359` acknowledges missing reconnect/timeout abstractions; the most relevant reconnection cases are currently untested.
+- No Android tests were found for:
+  - reconnect after async connection failure
+  - reconnect after desktop restart
+  - interrupted pairing retry
+  - foreground-service behavior during transient disconnects
+  - clean resume after app relaunch
 
-### 4. Add LocalhostOnly Enforcement
-In `HandleClientAsync`, add IP address validation:
-
-```csharp
-private async Task HandleClientAsync(TcpClient client, CancellationToken token)
-{
-    try
-    {
-        // Check localhost-only restriction
-        if (_localhostOnly)
-        {
-            var remoteEndpoint = (IPEndPoint?)client.Client.RemoteEndPoint;
-            if (remoteEndpoint != null && 
-                !IPAddress.IsLoopback(remoteEndpoint.Address))
-            {
-                _logger.LogWarning("Rejected connection from {IP}: LocalhostOnly is enabled", 
-                    remoteEndpoint.Address);
-                return;
-            }
-        }
-        
-        // ... rest of existing method
-    }
-    // ... existing catch blocks
-}
-```
-
-### 5. Migration Path - Configuration Fallback
-To support backward compatibility during migration, add a fallback:
-
-```csharp
-// Try new path first, fall back to legacy
-var accessKey = securitySettings.AccessKey;
-if (string.IsNullOrEmpty(accessKey))
-{
-    accessKey = _configuration["Remex:AccessKey"] ?? "";
-    if (!string.IsNullOrEmpty(accessKey))
-    {
-        _logger.LogWarning("Reading AccessKey from legacy path 'Remex:AccessKey'. Please migrate to 'RemexHost:Security:AccessKey'");
-    }
-}
-```
-
-### 6. Update appsettings.json Documentation
-Add a comment to the configuration file explaining the new structure and marking the old path as deprecated:
-
-```json
-{
-  "Remex": {
-    "AccessKey": ""  // DEPRECATED: Use RemexHost:Security:AccessKey instead
-  },
-  "RemexHost": {
-    "Security": {
-      "RequireAccessKey": true,
-      "AccessKey": "",  // Generate on startup or set to a secure value
-      "LocalhostOnly": false
-    }
-  }
-}
-```
-
-### 7. Consider Access Key Auto-Generation
-If `RequireAccessKey = true` but `AccessKey` is empty, consider generating a secure key on startup:
-
-```csharp
-if (_requireAccessKey && _accessKeyBytes.Length == 0)
-{
-    var generatedKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-    _accessKeyBytes = Encoding.UTF8.GetBytes(generatedKey);
-    _logger.LogWarning("Generated random AccessKey: {Key}", generatedKey);
-    _logger.LogWarning("Please save this key and configure your clients, or set a permanent key in appsettings.json");
-}
-```
-
-## Testing Checklist
-
-After implementing the fix, verify:
-
-- [ ] RemexHostSettings is properly bound to DI container
-- [ ] RemexNetworkListener reads from `RemexHost:Security:AccessKey`
-- [ ] Android client can connect when `RequireAccessKey = false`
-- [ ] Android client can connect when `RequireAccessKey = true` and correct key is provided
-- [ ] Android client is REJECTED when `RequireAccessKey = true` and wrong key is provided
-- [ ] Android client is REJECTED when `RequireAccessKey = true` and no key is provided
-- [ ] Connections from non-localhost are blocked when `LocalhostOnly = true`
-- [ ] Legacy configuration path still works (with deprecation warning)
-- [ ] Access key auto-generation works when enabled
-
-## Files to Examine Further
-
-The following files were identified as using accessKey but should be verified for consistency:
-
-**Android (Kotlin):**
-- `RemEx.Android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt`
-- `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionViewModel.kt`
-- `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/RemoteControlViewModel.kt`
-- `RemEx.Android/app/src/main/java/com/clindsay94/remex/widget/RemoteControlWidget.kt`
-
-Verify that these components:
-1. Read the access key from the correct settings path
-2. Send it in the `Parameters["AccessKey"]` field of CommandRequest
-3. Handle the "Unauthorized" response properly
-4. Display meaningful error messages to the user
-
-## Additional Security Recommendations
-
-1. **TLS/SSL**: The current implementation uses raw TCP sockets. Consider adding TLS encryption for the connection, especially if not using LocalhostOnly mode.
-
-2. **Rate Limiting**: Add rate limiting to prevent brute-force attacks on the access key.
-
-3. **Key Rotation**: Implement a mechanism for rotating access keys without requiring host restart.
-
-4. **Audit Logging**: Log all authentication failures with timestamps and source IP addresses.
-
-5. **Configuration Validation**: Add startup validation to ensure SecuritySettings are logically consistent (e.g., if RequireAccessKey=true, AccessKey must not be empty).
+## Recommended Fix Order
+1. Persist `PairedClientRegistry` and unify host identity.
+2. Fix Android state handling so failed async connects clear `_isConnecting`.
+3. Cancel pairing sessions on connection loss.
+4. Keep the foreground service alive during reconnect windows.
+5. Apply pairing/auth checks consistently to `/ws` and `/ws/desktop`.

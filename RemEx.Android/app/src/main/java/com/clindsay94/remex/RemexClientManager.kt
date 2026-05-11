@@ -53,6 +53,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _desktopMeta = MutableSharedFlow<String>(replay = 1)
     val desktopMeta = _desktopMeta.asSharedFlow()
 
+    private val _desktopWindowResults = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 8)
+    val desktopWindowResults = _desktopWindowResults.asSharedFlow()
+
     init {
         RemexCoreClient.setCallback(this)
     }
@@ -316,6 +319,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onDesktopMeta(metaData: String) {
         _desktopMeta.tryEmit(metaData)
+    }
+
+    override fun onDesktopWindowResult(resultData: String) {
+        _desktopWindowResults.tryEmit(resultData)
     }
 
     override fun onFileTransferMessage(json: String) {

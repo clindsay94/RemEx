@@ -28,13 +28,25 @@ data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTim
 
 data class RemoteDesktopCapabilityState(
         val supportsRemoteDesktop: Boolean = true,
-        val unavailableReason: String? = null
+        val unavailableReason: String? = null,
+        val supportsCursorQuery: Boolean = false,
+        val supportsAdvancedWindowControl: Boolean = false,
+        val inputBackend: String? = null,
+        val windowBackend: String? = null
 )
 
 data class RemoteDesktopConfigState(
         val quality: Int = 50,
         val targetFps: Int = 30,
         val scale: Float = 0.6f
+)
+
+data class DesktopWindowModel(
+        val id: String,
+        val title: String,
+        val className: String? = null,
+        val desktopNumber: Int? = null,
+        val isActive: Boolean = false
 )
 
 class RemoteDesktopViewModel(application: Application) : AndroidViewModel(application) {
@@ -75,6 +87,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     private val _desktopError = MutableStateFlow<String?>(null)
     val desktopError: StateFlow<String?> = _desktopError.asStateFlow()
+
+    private val _windowResults = MutableStateFlow<List<DesktopWindowModel>>(emptyList())
+    val windowResults: StateFlow<List<DesktopWindowModel>> = _windowResults.asStateFlow()
+
+    private val _windowActionError = MutableStateFlow<String?>(null)
+    val windowActionError: StateFlow<String?> = _windowActionError.asStateFlow()
 
     private val frameTimestampsMs = ArrayDeque<Long>()
     private val _fps = MutableStateFlow(0f)
@@ -155,6 +173,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                             RemoteDesktopCapabilityState(
                                     supportsRemoteDesktop =
                                             json.optBoolean("supportsRemoteDesktop", false),
+                                    supportsCursorQuery =
+                                            json.optBoolean("supportsCursorQuery", false),
+                                    supportsAdvancedWindowControl =
+                                            json.optBoolean("supportsAdvancedWindowControl", false),
+                                    inputBackend =
+                                            json.optString("inputBackend").takeIf { it.isNotBlank() },
+                                    windowBackend =
+                                            json.optString("windowControlBackend")
+                                                    .takeIf { it.isNotBlank() },
                                     unavailableReason =
                                             json.optString("remoteDesktopUnavailableReason")
                                                     .takeIf { it.isNotBlank() }
@@ -164,6 +191,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     _capabilityState.value =
                             RemoteDesktopCapabilityState(
                                     supportsRemoteDesktop = false,
+                                    supportsCursorQuery = false,
+                                    supportsAdvancedWindowControl = false,
                                     unavailableReason = "Host metadata unavailable"
                             )
                 }
@@ -194,6 +223,54 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop meta", e)
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            RemexClientManager.desktopWindowResults.collect { resultJson ->
+                try {
+                    val json = JSONObject(resultJson)
+                    val success = json.optBoolean("success", false)
+                    if (!success) {
+                        _windowActionError.value =
+                                json.optString("errorText").takeIf { it.isNotBlank() }
+                                        ?: "Desktop window action failed"
+                        return@collect
+                    }
+
+                    _windowActionError.value = null
+                    val windowsArray = json.optJSONArray("windows")
+                    if (windowsArray != null) {
+                        val windows =
+                                buildList {
+                                    for (index in 0 until windowsArray.length()) {
+                                        val item = windowsArray.optJSONObject(index) ?: continue
+                                        add(
+                                                DesktopWindowModel(
+                                                        id = item.optString("id"),
+                                                        title =
+                                                                item.optString("title")
+                                                                        .ifBlank { "(untitled)" },
+                                                        className =
+                                                                item.optString("className")
+                                                                        .takeIf {
+                                                                            it.isNotBlank()
+                                                                        },
+                                                        desktopNumber =
+                                                                item.optInt("desktopNumber")
+                                                                        .takeIf { item.has("desktopNumber") },
+                                                        isActive =
+                                                                item.optBoolean("isActive", false)
+                                                )
+                                        )
+                                    }
+                                }
+                        _windowResults.value = windows
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse desktop window result", e)
+                    _windowActionError.value = "Desktop window metadata unavailable"
                 }
             }
         }
@@ -492,6 +569,46 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     fun getHostScreenSize(): Pair<Int, Int> = Pair(hostScreenWidth, hostScreenHeight)
     fun getHostDesktopOffset(): Pair<Int, Int> = Pair(hostDesktopLeft, hostDesktopTop)
 
+    fun queryWindows(searchText: String = "", includeAllDesktops: Boolean = true, limit: Int = 25) {
+        if (!_capabilityState.value.supportsAdvancedWindowControl) {
+            _windowActionError.value = "Advanced window control is unavailable on this host"
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val message =
+                    JSONObject().apply {
+                        put("type", "desktop_window_query")
+                        put(
+                                "desktopWindowQuery",
+                                JSONObject().apply {
+                                    put("requestId", java.util.UUID.randomUUID().toString().replace("-", ""))
+                                    put("searchText", searchText)
+                                    put("limit", limit.coerceIn(1, 100))
+                                    put("includeAllDesktops", includeAllDesktops)
+                                }
+                        )
+                    }
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        }
+    }
+
+    fun activateWindow(windowId: String) = sendWindowAction("activate", windowId)
+    fun raiseWindow(windowId: String) = sendWindowAction("raise", windowId)
+    fun minimizeWindow(windowId: String) = sendWindowAction("minimize", windowId)
+    fun closeWindow(windowId: String) = sendWindowAction("close", windowId)
+
+    fun resizeWindow(windowId: String, width: Int, height: Int) =
+            sendWindowAction("resize", windowId) {
+                put("width", width)
+                put("height", height)
+            }
+
+    fun moveWindowToDesktop(windowId: String, desktopNumber: Int) =
+            sendWindowAction("move_to_desktop", windowId) {
+                put("desktopNumber", desktopNumber)
+            }
+
     private fun pushConfigIfStreaming() {
         if (!_isStreaming.value || !RemexCoreClient.isLibraryLoaded) {
             return
@@ -538,6 +655,35 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         put("type", "desktop_input")
                         put("inputEvent", input)
                     }
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        }
+    }
+
+    private fun sendWindowAction(
+            action: String,
+            windowId: String,
+            configure: JSONObject.() -> Unit = {}
+    ) {
+        if (!_capabilityState.value.supportsAdvancedWindowControl) {
+            _windowActionError.value = "Advanced window control is unavailable on this host"
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val actionJson =
+                    JSONObject().apply {
+                        put("requestId", java.util.UUID.randomUUID().toString().replace("-", ""))
+                        put("action", action)
+                        put("windowId", windowId)
+                        configure()
+                    }
+
+            val message =
+                    JSONObject().apply {
+                        put("type", "desktop_window_action")
+                        put("desktopWindowAction", actionJson)
+                    }
+
             RemexCoreClient.SendMessage(message.toString()).getOrNull()
         }
     }

@@ -67,6 +67,10 @@ public class RemexMessageTests
                 RuntimeMode = "service",
                 Platform = "windows",
                 SupportsRemoteDesktop = false,
+                SupportsCursorQuery = false,
+                SupportsAdvancedWindowControl = true,
+                InputBackend = "xdotool",
+                WindowControlBackend = "kdotool",
                 RemoteDesktopUnavailableReason = "Interactive session required."
             }
         };
@@ -78,6 +82,10 @@ public class RemexMessageTests
         Assert.Equal(MessageTypes.HostInfo, deserialized!.Type);
         Assert.NotNull(deserialized.HostCapabilities);
         Assert.False(deserialized.HostCapabilities!.SupportsRemoteDesktop);
+        Assert.False(deserialized.HostCapabilities.SupportsCursorQuery);
+        Assert.True(deserialized.HostCapabilities.SupportsAdvancedWindowControl);
+        Assert.Equal("xdotool", deserialized.HostCapabilities.InputBackend);
+        Assert.Equal("kdotool", deserialized.HostCapabilities.WindowControlBackend);
         Assert.Equal("Interactive session required.", deserialized.HostCapabilities.RemoteDesktopUnavailableReason);
     }
 }

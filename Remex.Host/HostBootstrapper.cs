@@ -14,6 +14,7 @@ using Remex.Host.Services.Telemetry;
 using Remex.Host.Services.ProcessMonitor;
 using Remex.Core.Services.FileTransfer;
 using Remex.Host.Services.FileTransfer;
+using Remex.Host.Services.Input;
 
 namespace Remex.Host;
 
@@ -53,6 +54,7 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.Network.IWakeOnLanService, Remex.Core.Services.Network.WakeOnLanService>();
         builder.Services.AddSingleton<Remex.Core.Services.Network.INetworkListener, Remex.Core.Services.Network.RemexNetworkListener>();
         builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
+        builder.Services.AddSingleton<IDesktopWindowControlService, UnsupportedDesktopWindowControlService>();
         builder.Services.AddHostedService<Remex.Host.Services.IPC.LocalIpcServerService>();
         builder.Services.AddHostedService<Remex.Host.Services.Network.ExternalNetworkListenerService>();
         builder.Services.AddHostedService<Remex.Host.Services.Network.MdnsAdvertisingService>();
@@ -72,6 +74,7 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<IProcessMonitorService, LinuxProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.LinuxScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.LinuxInputSimulationService>();
+            builder.Services.AddSingleton<IDesktopWindowControlService, LinuxDesktopWindowControlService>();
         }
 
         builder.Services.AddSingleton<TelemetryBackgroundService>();
@@ -255,6 +258,7 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
                 context.RequestServices.GetRequiredService<IScreenCaptureService>(),
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),
+                context.RequestServices.GetRequiredService<IDesktopWindowControlService>(),
                 context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
             await handler.HandleAsync(ws, context.RequestAborted);
         });

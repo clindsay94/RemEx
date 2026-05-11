@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
@@ -19,11 +20,13 @@ public sealed class RemexDesktopClient : IDisposable
     private ClientWebSocket? _webSocket;
     private CancellationTokenSource? _receiveCts;
     private Task? _receiveLoopTask;
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<DesktopWindowResult>> _pendingWindowRequests = new();
     private bool _isStreaming;
 
     public event Action<byte[]>? FrameReceived;
     public event Action<DesktopMeta>? MetaReceived;
     public event Action<string>? ErrorReceived;
+    public event Action<DesktopWindowResult>? WindowResultReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -132,6 +135,60 @@ public sealed class RemexDesktopClient : IDisposable
         }, ct);
     }
 
+    public async Task<DesktopWindowResult> QueryWindowsAsync(string host, int port, DesktopWindowQuery query, string? spkiHash = null, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(host, port, spkiHash, ct);
+
+        var requestId = string.IsNullOrWhiteSpace(query.RequestId) ? Guid.NewGuid().ToString("N") : query.RequestId;
+        var tcs = new TaskCompletionSource<DesktopWindowResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingWindowRequests[requestId] = tcs;
+
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        try
+        {
+            await SendMessageAsync(new RemexMessage
+            {
+                Type = MessageTypes.DesktopWindowQuery,
+                CorrelationId = requestId,
+                DesktopWindowQuery = query with { RequestId = requestId },
+            }, ct);
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            _pendingWindowRequests.TryRemove(requestId, out _);
+        }
+    }
+
+    public async Task<DesktopWindowResult> ExecuteWindowActionAsync(string host, int port, DesktopWindowAction action, string? spkiHash = null, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(host, port, spkiHash, ct);
+
+        var requestId = string.IsNullOrWhiteSpace(action.RequestId) ? Guid.NewGuid().ToString("N") : action.RequestId;
+        var tcs = new TaskCompletionSource<DesktopWindowResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingWindowRequests[requestId] = tcs;
+
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        try
+        {
+            await SendMessageAsync(new RemexMessage
+            {
+                Type = MessageTypes.DesktopWindowAction,
+                CorrelationId = requestId,
+                DesktopWindowAction = action with { RequestId = requestId },
+            }, ct);
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            _pendingWindowRequests.TryRemove(requestId, out _);
+        }
+    }
+
     private async Task SendMessageAsync(RemexMessage message, CancellationToken ct)
     {
         if (!IsConnected)
@@ -146,6 +203,11 @@ public sealed class RemexDesktopClient : IDisposable
     public async Task DisconnectAsync()
     {
         _receiveCts?.Cancel();
+        foreach (var (_, waiter) in _pendingWindowRequests)
+        {
+            waiter.TrySetCanceled();
+        }
+        _pendingWindowRequests.Clear();
         if (_receiveLoopTask != null)
         {
             try { await _receiveLoopTask; } catch { }
@@ -203,6 +265,17 @@ public sealed class RemexDesktopClient : IDisposable
                     {
                         _isStreaming = false;
                         ErrorReceived?.Invoke(msg.ErrorText ?? "Unknown desktop error");
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopWindowResult && msg.DesktopWindowResult != null)
+                    {
+                        var requestId = msg.CorrelationId ?? msg.DesktopWindowResult.RequestId;
+                        if (!string.IsNullOrWhiteSpace(requestId) &&
+                            _pendingWindowRequests.TryGetValue(requestId, out var waiter))
+                        {
+                            waiter.TrySetResult(msg.DesktopWindowResult);
+                        }
+
+                        WindowResultReceived?.Invoke(msg.DesktopWindowResult);
                     }
                 }
             }

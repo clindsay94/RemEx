@@ -88,6 +88,18 @@ public sealed record RemexMessage
     [JsonPropertyName("desktopMeta")]
     public Remex.Core.Models.DesktopMeta? DesktopMeta { get; init; }
 
+    /// <summary>Remote desktop window query request.</summary>
+    [JsonPropertyName("desktopWindowQuery")]
+    public Remex.Core.Models.DesktopWindowQuery? DesktopWindowQuery { get; init; }
+
+    /// <summary>Remote desktop window action request.</summary>
+    [JsonPropertyName("desktopWindowAction")]
+    public Remex.Core.Models.DesktopWindowAction? DesktopWindowAction { get; init; }
+
+    /// <summary>Remote desktop window query/action response.</summary>
+    [JsonPropertyName("desktopWindowResult")]
+    public Remex.Core.Models.DesktopWindowResult? DesktopWindowResult { get; init; }
+
     /// <summary>Human-readable error/diagnostic text sent by the host.</summary>
     [JsonPropertyName("errorText")]
     public string? ErrorText { get; init; }
@@ -186,6 +198,9 @@ public static class MessageTypes
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
     public const string DesktopError = "desktop_error";
+    public const string DesktopWindowQuery = "desktop_window_query";
+    public const string DesktopWindowAction = "desktop_window_action";
+    public const string DesktopWindowResult = "desktop_window_result";
 
     // ── 2.0 Pairing ──
     public const string PairingRequest = "pairing_request";

@@ -38,8 +38,20 @@ public sealed record HostCapabilities
     /// <summary>Whether the host can inject mouse and keyboard input into the active session.</summary>
     public bool SupportsInputSimulation { get; init; }
 
+    /// <summary>Whether the host can report live cursor coordinates to remote clients.</summary>
+    public bool SupportsCursorQuery { get; init; }
+
+    /// <summary>Whether the host can perform advanced window-management actions for remote desktop.</summary>
+    public bool SupportsAdvancedWindowControl { get; init; }
+
     /// <summary>Whether the host can perform interactive application launches.</summary>
     public bool SupportsInteractiveAppLaunch { get; init; }
+
+    /// <summary>Name of the preferred mouse/keyboard input backend for the current runtime.</summary>
+    public string? InputBackend { get; init; }
+
+    /// <summary>Name of the backend used for advanced window-control features, if available.</summary>
+    public string? WindowControlBackend { get; init; }
 
     /// <summary>Human-readable reason explaining why remote desktop is unavailable.</summary>
     public string? RemoteDesktopUnavailableReason { get; init; }

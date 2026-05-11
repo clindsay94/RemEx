@@ -6,6 +6,7 @@ using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Host.Services;
+using Remex.Host.Services.Input;
 using System.Collections.Generic;
 
 namespace Remex.Host.Tests;
@@ -72,6 +73,38 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         {
             Platform = "test",
             SupportsRemoteDesktop = true,
+            SupportsAdvancedWindowControl = true,
+        };
+    }
+
+    private class MockDesktopWindowControlService : IDesktopWindowControlService
+    {
+        public DesktopWindowResult ExecuteAction(DesktopWindowAction action) => new()
+        {
+            RequestId = action.RequestId,
+            Action = action.Action,
+            Success = true,
+            Backend = "mock",
+        };
+
+        public DesktopWindowResult QueryWindows(DesktopWindowQuery query) => new()
+        {
+            RequestId = query.RequestId,
+            Success = true,
+            Backend = "mock",
+            CurrentDesktop = 1,
+            DesktopCount = 2,
+            Windows =
+            [
+                new DesktopWindowInfo
+                {
+                    Id = "window-1",
+                    Title = "Test Window",
+                    ClassName = "test",
+                    DesktopNumber = 1,
+                    IsActive = true,
+                },
+            ],
         };
     }
 
@@ -86,6 +119,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
                 services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
                 services.AddSingleton<IHostCapabilitiesProvider, MockHostCapabilitiesProvider>();
+                services.AddSingleton<IDesktopWindowControlService, MockDesktopWindowControlService>();
                 services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
                 {
                     opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;
@@ -213,5 +247,65 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
             try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
             catch { }
         }
+    }
+
+    [Fact]
+    public async Task DesktopWindowQuery_ReturnsStructuredResult()
+    {
+        var factory = GetFactory();
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        var startMsg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig { Quality = 50, Scale = 0.5, TargetFps = 5 },
+        };
+        await MessageSerializer.SendAsync(ws, startMsg, CancellationToken.None);
+
+        var buffer = new byte[4096];
+        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // desktop_meta
+        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // first frame
+
+        var queryMsg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopWindowQuery,
+            DesktopWindowQuery = new DesktopWindowQuery
+            {
+                RequestId = "query-1",
+                SearchText = "Test",
+            },
+        };
+
+        await MessageSerializer.SendAsync(ws, queryMsg, CancellationToken.None);
+
+        using var ms = new System.IO.MemoryStream();
+        WebSocketReceiveResult result;
+        do
+        {
+            result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            if (result.MessageType == WebSocketMessageType.Binary)
+            {
+                continue;
+            }
+
+            ms.Write(buffer, 0, result.Count);
+        }
+        while (!result.EndOfMessage);
+
+        var json = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        var response = System.Text.Json.JsonSerializer.Deserialize<RemexMessage>(json,
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+
+        Assert.NotNull(response);
+        Assert.Equal(MessageTypes.DesktopWindowResult, response!.Type);
+        Assert.NotNull(response.DesktopWindowResult);
+        Assert.True(response.DesktopWindowResult!.Success);
+        Assert.Equal("query-1", response.DesktopWindowResult.RequestId);
+        Assert.Single(response.DesktopWindowResult.Windows!);
+        Assert.Equal("Test Window", response.DesktopWindowResult.Windows![0].Title);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, CancellationToken.None);
     }
 }

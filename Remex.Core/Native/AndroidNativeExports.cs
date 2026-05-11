@@ -29,6 +29,7 @@ public static class AndroidNativeExports
     private static IntPtr _onHostInfoUpdateMethodId;
     private static IntPtr _onDesktopErrorMethodId;
     private static IntPtr _onDesktopMetaMethodId;
+    private static IntPtr _onDesktopWindowResultMethodId;
     private static IntPtr _onFileTransferMessageMethodId;
     private static IntPtr _onConnectionErrorMethodId;
 
@@ -55,6 +56,7 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.FrameReceived += OnNativeFrameReceived;
         RemexDesktopClient.Current.ErrorReceived += OnNativeDesktopError;
         RemexDesktopClient.Current.MetaReceived += OnNativeMetaReceived;
+        RemexDesktopClient.Current.WindowResultReceived += OnNativeDesktopWindowResult;
 
         EnsureOutboundSendLoopStarted();
     }
@@ -93,6 +95,7 @@ public static class AndroidNativeExports
         _onHostInfoUpdateMethodId = IntPtr.Zero;
         _onDesktopErrorMethodId = IntPtr.Zero;
         _onDesktopMetaMethodId = IntPtr.Zero;
+        _onDesktopWindowResultMethodId = IntPtr.Zero;
         _onFileTransferMessageMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
     }
@@ -128,6 +131,7 @@ public static class AndroidNativeExports
             _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
             _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
             _onDesktopMetaMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
+            _onDesktopWindowResultMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
             _onFileTransferMessageMethodId = JniHelper.GetMethodID(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
             _onConnectionErrorMethodId = JniHelper.GetMethodID(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
 
@@ -595,6 +599,30 @@ public static class AndroidNativeExports
                 });
                 return true;
 
+            case MessageTypes.DesktopWindowQuery when message.DesktopWindowQuery != null:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.QueryWindowsAsync(host, port, message.DesktopWindowQuery, spkiHash);
+                    }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopWindowQuery failed: {ex.Message}"); }
+                });
+                return true;
+
+            case MessageTypes.DesktopWindowAction when message.DesktopWindowAction != null:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.ExecuteWindowActionAsync(host, port, message.DesktopWindowAction, spkiHash);
+                    }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopWindowAction failed: {ex.Message}"); }
+                });
+                return true;
+
             case MessageTypes.DesktopStop:
                 _ = Task.Run(async () =>
                 {
@@ -680,6 +708,11 @@ public static class AndroidNativeExports
     private static void OnNativeMetaReceived(DesktopMeta meta)
     {
         NotifyJavaData(_onDesktopMetaMethodId, RemexJson.Serialize(meta, RemexJsonSerializerContext.Default.DesktopMeta));
+    }
+
+    private static void OnNativeDesktopWindowResult(DesktopWindowResult result)
+    {
+        NotifyJavaData(_onDesktopWindowResultMethodId, RemexJson.Serialize(result, RemexJsonSerializerContext.Default.DesktopWindowResult));
     }
 
     private static void NotifyJavaFrame(byte[] frame)

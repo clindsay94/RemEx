@@ -1,6 +1,8 @@
 using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -123,6 +125,30 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showConnectionPanel = true;
 
+    [ObservableProperty]
+    private bool _showWindowPanel;
+
+    [ObservableProperty]
+    private string _windowSearchText = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<DesktopWindowInfo> _availableWindows = new();
+
+    [ObservableProperty]
+    private DesktopWindowInfo? _selectedWindow;
+
+    [ObservableProperty]
+    private string _windowControlStatusText = "Advanced window control is unavailable on this host.";
+
+    [ObservableProperty]
+    private int _windowResizeWidth = 1280;
+
+    [ObservableProperty]
+    private int _windowResizeHeight = 720;
+
+    [ObservableProperty]
+    private int _targetDesktopNumber = 1;
+
     public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell, IImmersiveModeService? immersiveMode = null)
     {
         Connection = connection;
@@ -215,6 +241,13 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         Connection.IsConnected
             ? Connection.RemoteDesktopAvailabilitySummary
             : LocalizationService.Instance["Status_ConnectToCheckDesktop"];
+
+    public bool SupportsAdvancedWindowControl => Connection.HostCapabilities?.SupportsAdvancedWindowControl ?? false;
+
+    public string WindowControlCapabilityText =>
+        SupportsAdvancedWindowControl
+            ? $"Window control via {Connection.HostCapabilities?.WindowControlBackend ?? "host"}"
+            : "Advanced window control is unavailable on this host.";
 
     private bool CanStartStream() => !IsStreaming && Connection.IsConnected && IsRemoteDesktopSupported;
     private bool CanStopStream() => IsStreaming;
@@ -366,6 +399,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private void ToggleConnectionPanel() => ShowConnectionPanel = !ShowConnectionPanel;
 
     [RelayCommand]
+    private void ToggleWindowPanel() => ShowWindowPanel = !ShowWindowPanel;
+
+    [RelayCommand]
     private void SaveConnection()
     {
         // Connection.HostAddress is already bound via XAML
@@ -380,6 +416,63 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         IsViewportZoomed = false;
         ViewportZoomText = string.Format(LocalizationService.Instance["Status_ZoomFormat"], 1.0);
         ViewportZoomResetRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private async Task RefreshWindowsAsync()
+    {
+        if (!IsStreaming || !SupportsAdvancedWindowControl)
+        {
+            WindowControlStatusText = WindowControlCapabilityText;
+            return;
+        }
+
+        try
+        {
+            var result = await _desktopService.QueryWindowsAsync(new DesktopWindowQuery
+            {
+                SearchText = WindowSearchText,
+                Limit = 50,
+                IncludeAllDesktops = true,
+            });
+
+            ApplyWindowResult(result);
+        }
+        catch (Exception ex)
+        {
+            WindowControlStatusText = $"Window query failed: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task ActivateSelectedWindowAsync() => await ExecuteWindowActionAsync(DesktopWindowActionTypes.Activate);
+
+    [RelayCommand]
+    private async Task RaiseSelectedWindowAsync() => await ExecuteWindowActionAsync(DesktopWindowActionTypes.Raise);
+
+    [RelayCommand]
+    private async Task MinimizeSelectedWindowAsync() => await ExecuteWindowActionAsync(DesktopWindowActionTypes.Minimize);
+
+    [RelayCommand]
+    private async Task CloseSelectedWindowAsync() => await ExecuteWindowActionAsync(DesktopWindowActionTypes.Close);
+
+    [RelayCommand]
+    private async Task ResizeSelectedWindowAsync()
+    {
+        await ExecuteWindowActionAsync(DesktopWindowActionTypes.Resize, action => action with
+        {
+            Width = Math.Max(100, WindowResizeWidth),
+            Height = Math.Max(100, WindowResizeHeight),
+        });
+    }
+
+    [RelayCommand]
+    private async Task MoveSelectedWindowToDesktopAsync()
+    {
+        await ExecuteWindowActionAsync(DesktopWindowActionTypes.MoveToDesktop, action => action with
+        {
+            DesktopNumber = Math.Max(1, TargetDesktopNumber),
+        });
     }
 
     /// <summary>
@@ -402,6 +495,59 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     {
         if (!IsStreaming) return;
         await _desktopService.SendInputAsync(input);
+    }
+
+    private async Task ExecuteWindowActionAsync(string actionType, Func<DesktopWindowAction, DesktopWindowAction>? transform = null)
+    {
+        if (!IsStreaming || !SupportsAdvancedWindowControl || SelectedWindow is null)
+        {
+            WindowControlStatusText = WindowControlCapabilityText;
+            return;
+        }
+
+        try
+        {
+            var action = new DesktopWindowAction
+            {
+                Action = actionType,
+                WindowId = SelectedWindow.Id,
+            };
+
+            var result = await _desktopService.ExecuteWindowActionAsync(transform?.Invoke(action) ?? action);
+            ApplyWindowResult(result);
+
+            if (result.Success && actionType is not DesktopWindowActionTypes.Close)
+            {
+                await RefreshWindowsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            WindowControlStatusText = $"Window action failed: {ex.Message}";
+        }
+    }
+
+    private void ApplyWindowResult(DesktopWindowResult result)
+    {
+        WindowControlStatusText = result.Success
+            ? $"{result.Backend ?? "host"} ready"
+            : result.ErrorText ?? "Window control failed.";
+
+        if (result.Windows is null)
+        {
+            return;
+        }
+
+        AvailableWindows = new ObservableCollection<DesktopWindowInfo>(result.Windows);
+        if (SelectedWindow is not null)
+        {
+            SelectedWindow = AvailableWindows.FirstOrDefault(window => window.Id == SelectedWindow.Id);
+        }
+
+        if (SelectedWindow is null && AvailableWindows.Count > 0)
+        {
+            SelectedWindow = AvailableWindows[0];
+        }
     }
 
     // ═══════════════ Event Handlers ═══════════════
@@ -502,12 +648,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             {
                 OnPropertyChanged(nameof(IsRemoteDesktopSupported));
                 OnPropertyChanged(nameof(RemoteDesktopCapabilityText));
+                OnPropertyChanged(nameof(SupportsAdvancedWindowControl));
+                OnPropertyChanged(nameof(WindowControlCapabilityText));
                 StartStreamCommand.NotifyCanExecuteChanged();
 
                 if (!Connection.IsConnected && !IsStreaming)
                 {
                     StatusText = LocalizationService.Instance["Status_NotStreaming"];
                     HasStreamError = false;
+                    WindowControlStatusText = WindowControlCapabilityText;
                 }
             });
         }

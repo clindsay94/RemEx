@@ -176,4 +176,105 @@ public class RemoteDesktopMessageTests
         Assert.Null(evt.DeltaX);
         Assert.Null(evt.DeltaY);
     }
+
+    [Fact]
+    public void RoundTrip_DesktopWindowQuery_PreservesAllFields()
+    {
+        var original = new RemexMessage
+        {
+            Type = MessageTypes.DesktopWindowQuery,
+            DesktopWindowQuery = new DesktopWindowQuery
+            {
+                RequestId = "query-1",
+                SearchText = "code",
+                Limit = 12,
+                IncludeAllDesktops = false,
+            },
+        };
+
+        var bytes = MessageSerializer.Serialize(original);
+        var deserialized = MessageSerializer.Deserialize(bytes);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(MessageTypes.DesktopWindowQuery, deserialized!.Type);
+        Assert.NotNull(deserialized.DesktopWindowQuery);
+        Assert.Equal("query-1", deserialized.DesktopWindowQuery!.RequestId);
+        Assert.Equal("code", deserialized.DesktopWindowQuery.SearchText);
+        Assert.Equal(12, deserialized.DesktopWindowQuery.Limit);
+        Assert.False(deserialized.DesktopWindowQuery.IncludeAllDesktops);
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopWindowAction_PreservesAllFields()
+    {
+        var original = new RemexMessage
+        {
+            Type = MessageTypes.DesktopWindowAction,
+            DesktopWindowAction = new DesktopWindowAction
+            {
+                RequestId = "action-1",
+                Action = DesktopWindowActionTypes.Resize,
+                WindowId = "window-123",
+                Width = 1600,
+                Height = 900,
+            },
+        };
+
+        var bytes = MessageSerializer.Serialize(original);
+        var deserialized = MessageSerializer.Deserialize(bytes);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(MessageTypes.DesktopWindowAction, deserialized!.Type);
+        Assert.NotNull(deserialized.DesktopWindowAction);
+        Assert.Equal("action-1", deserialized.DesktopWindowAction!.RequestId);
+        Assert.Equal(DesktopWindowActionTypes.Resize, deserialized.DesktopWindowAction.Action);
+        Assert.Equal("window-123", deserialized.DesktopWindowAction.WindowId);
+        Assert.Equal(1600, deserialized.DesktopWindowAction.Width);
+        Assert.Equal(900, deserialized.DesktopWindowAction.Height);
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopWindowResult_PreservesAllFields()
+    {
+        var original = new RemexMessage
+        {
+            Type = MessageTypes.DesktopWindowResult,
+            DesktopWindowResult = new DesktopWindowResult
+            {
+                RequestId = "result-1",
+                Action = DesktopWindowActionTypes.Activate,
+                Success = true,
+                Backend = "kdotool",
+                CurrentDesktop = 2,
+                DesktopCount = 4,
+                Windows =
+                [
+                    new DesktopWindowInfo
+                    {
+                        Id = "window-1",
+                        Title = "Code",
+                        ClassName = "code",
+                        DesktopNumber = 2,
+                        Width = 1280,
+                        Height = 720,
+                        IsActive = true,
+                    },
+                ],
+            },
+        };
+
+        var bytes = MessageSerializer.Serialize(original);
+        var deserialized = MessageSerializer.Deserialize(bytes);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(MessageTypes.DesktopWindowResult, deserialized!.Type);
+        Assert.NotNull(deserialized.DesktopWindowResult);
+        Assert.True(deserialized.DesktopWindowResult!.Success);
+        Assert.Equal("kdotool", deserialized.DesktopWindowResult.Backend);
+        Assert.Equal(2, deserialized.DesktopWindowResult.CurrentDesktop);
+        Assert.Equal(4, deserialized.DesktopWindowResult.DesktopCount);
+        Assert.Single(deserialized.DesktopWindowResult.Windows!);
+        Assert.Equal("window-1", deserialized.DesktopWindowResult.Windows![0].Id);
+        Assert.Equal("Code", deserialized.DesktopWindowResult.Windows[0].Title);
+    }
 }

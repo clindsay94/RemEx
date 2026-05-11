@@ -11,49 +11,31 @@ namespace Remex.Host.Services.Input;
 public class LinuxInputSimulationService : IInputSimulationService
 {
     private readonly ILogger<LinuxInputSimulationService> _logger;
-
-    private enum InputBackend { Xdotool, Ydotool, None }
-    private readonly InputBackend _backend;
-    private readonly string _toolPath;
+    private readonly LinuxDesktopBackendStatus _backendStatus;
     private readonly string? _display;
 
     public LinuxInputSimulationService(ILogger<LinuxInputSimulationService> logger)
     {
         _logger = logger;
         _display = Environment.GetEnvironmentVariable("DISPLAY");
+        _backendStatus = LinuxDesktopBackendProbe.Probe();
 
-        // Prefer xdotool on X11, ydotool on Wayland; cross-fallback if primary unavailable
-        var isWayland = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
-                     || string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase);
-
-        if (isWayland)
-        {
-            var ydotoolPath = FindExecutable("ydotool");
-            var xdotoolPath = FindExecutable("xdotool");
-            if (ydotoolPath is not null) { _backend = InputBackend.Ydotool; _toolPath = ydotoolPath; }
-            else if (xdotoolPath is not null) { _backend = InputBackend.Xdotool; _toolPath = xdotoolPath; }
-            else { _backend = InputBackend.None; _toolPath = string.Empty; }
-        }
-        else
-        {
-            var xdotoolPath = FindExecutable("xdotool");
-            var ydotoolPath = FindExecutable("ydotool");
-            if (xdotoolPath is not null) { _backend = InputBackend.Xdotool; _toolPath = xdotoolPath; }
-            else if (ydotoolPath is not null) { _backend = InputBackend.Ydotool; _toolPath = ydotoolPath; }
-            else { _backend = InputBackend.None; _toolPath = string.Empty; }
-        }
-
-        _logger.LogInformation("Linux input backend: {Backend} ({Path})", _backend, _toolPath);
+        _logger.LogInformation(
+            "Linux input backend: {InputBackend} ({InputPath}); cursor query backend: {CursorBackend} ({CursorPath})",
+            _backendStatus.InputBackendName ?? "none",
+            _backendStatus.InputToolPath ?? "n/a",
+            _backendStatus.CursorQueryBackendName ?? "none",
+            _backendStatus.CursorQueryToolPath ?? "n/a");
     }
 
     public (int X, int Y) GetCursorPosition()
     {
-        // xdotool getmouselocation returns "x:123 y:456 screen:0 window:12345"
-        if (_backend == InputBackend.Xdotool)
+        if (_backendStatus.CursorQueryTool is LinuxDesktopTool.Kdotool or LinuxDesktopTool.Xdotool &&
+            _backendStatus.CursorQueryToolPath is not null)
         {
             try
             {
-                var result = RunToolWithOutput("getmouselocation", "--shell");
+                var result = RunToolWithOutput(_backendStatus.CursorQueryTool, _backendStatus.CursorQueryToolPath, "getmouselocation", "--shell");
                 // Output format: X=123\nY=456\nSCREEN=0\nWINDOW=12345
                 var lines = result.Split('\n');
                 var x = 0;
@@ -67,13 +49,13 @@ public class LinuxInputSimulationService : IInputSimulationService
             }
             catch { return (0, 0); }
         }
-        // ydotool doesn't support querying cursor position
+
         return (0, 0);
     }
 
     public void MoveMouse(int x, int y)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("mousemove", "--absolute", x.ToString(), y.ToString());
         else
             RunTool("mousemove", x.ToString(), y.ToString());
@@ -81,7 +63,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseMoveRelative(int dx, int dy)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("mousemove", dx.ToString(), dy.ToString());
         else
             RunTool("mousemove_relative", "--", dx.ToString(), dy.ToString());
@@ -89,7 +71,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseDown(int button)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", $"0x{MapButtonYdotool(button):X5}D");
         else
             RunTool("mousedown", MapButtonXdotool(button).ToString());
@@ -97,7 +79,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseUp(int button)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", $"0x{MapButtonYdotool(button):X5}U");
         else
             RunTool("mouseup", MapButtonXdotool(button).ToString());
@@ -105,7 +87,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseClick(int button)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", $"0x{MapButtonYdotool(button):X5}");
         else
             RunTool("click", MapButtonXdotool(button).ToString());
@@ -113,7 +95,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseScroll(int deltaX, int deltaY)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
             // ydotool mousemove sends relative motion; wheel via separate abstraction not supported well
             // Use xdotool fallback pattern: scroll buttons
@@ -153,7 +135,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void KeyDown(int keyCode)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("key", $"{keyCode}:1"); // 1 = press
         else
             RunTool("keydown", keyCode.ToString());
@@ -161,7 +143,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void KeyUp(int keyCode)
     {
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("key", $"{keyCode}:0"); // 0 = release
         else
             RunTool("keyup", keyCode.ToString());
@@ -171,7 +153,7 @@ public class LinuxInputSimulationService : IInputSimulationService
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        if (_backend == InputBackend.Ydotool)
+        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
             // ydotool type takes text directly, safe via argument array
             RunTool("type", "--", text);
@@ -201,7 +183,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     private void RunTool(params string[] arguments)
     {
-        if (_backend == InputBackend.None)
+        if (_backendStatus.InputTool == LinuxDesktopTool.None || _backendStatus.InputToolPath is null)
         {
             _logger.LogWarning("No input simulation tool available (install xdotool or ydotool).");
             return;
@@ -209,84 +191,36 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         try
         {
-            var argList = new List<string>(arguments);
-            var psi = new ProcessStartInfo(_toolPath)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            foreach (var arg in argList)
-                psi.ArgumentList.Add(arg);
-
-            // Set DISPLAY for xdotool
-            if (_backend == InputBackend.Xdotool && !string.IsNullOrEmpty(_display))
-                psi.Environment["DISPLAY"] = _display;
-
-            using var proc = Process.Start(psi);
-            proc?.WaitForExit(2000);
+            _ = RunToolWithOutput(_backendStatus.InputTool, _backendStatus.InputToolPath, arguments);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{Backend} command failed: {Args}", _backend, string.Join(" ", arguments));
+            _logger.LogWarning(ex, "{Backend} command failed: {Args}", _backendStatus.InputBackendName ?? "none", string.Join(" ", arguments));
         }
     }
 
-    private string RunToolWithOutput(params string[] arguments)
+    private string RunToolWithOutput(LinuxDesktopTool backend, string toolPath, params string[] arguments)
     {
-        if (_backend == InputBackend.None)
-            return string.Empty;
-
-        try
+        var argList = new List<string>(arguments);
+        var psi = new ProcessStartInfo(toolPath)
         {
-            var argList = new List<string>(arguments);
-            var psi = new ProcessStartInfo(_toolPath)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
 
-            foreach (var arg in argList)
-                psi.ArgumentList.Add(arg);
+        foreach (var arg in argList)
+            psi.ArgumentList.Add(arg);
 
-            // Set DISPLAY for xdotool
-            if (_backend == InputBackend.Xdotool && !string.IsNullOrEmpty(_display))
-                psi.Environment["DISPLAY"] = _display;
+        if (backend == LinuxDesktopTool.Xdotool && !string.IsNullOrEmpty(_display))
+            psi.Environment["DISPLAY"] = _display;
 
-            using var proc = Process.Start(psi);
-            if (proc is null) return string.Empty;
+        using var proc = Process.Start(psi);
+        if (proc is null) return string.Empty;
 
-            var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(2000);
-            return output;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "{Backend} query command failed: {Args}", _backend, string.Join(" ", arguments));
-            return string.Empty;
-        }
-    }
-
-    private static string? FindExecutable(string name)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo("which", name)
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var proc = Process.Start(psi);
-            if (proc is null) return null;
-            var path = proc.StandardOutput.ReadToEnd().Trim();
-            proc.WaitForExit(2000);
-            return proc.ExitCode == 0 && !string.IsNullOrEmpty(path) ? path : null;
-        }
-        catch { return null; }
+        var output = proc.StandardOutput.ReadToEnd();
+        proc.WaitForExit(2000);
+        return output;
     }
 }

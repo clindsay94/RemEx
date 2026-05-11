@@ -137,6 +137,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val hostCursorX by viewModel.hostCursorX.collectAsState()
         val hostCursorY by viewModel.hostCursorY.collectAsState()
         val fps by viewModel.fps.collectAsState()
+        val windowResults by viewModel.windowResults.collectAsState()
+        val windowActionError by viewModel.windowActionError.collectAsState()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -175,6 +177,15 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onUpdateDirectTouch = { viewModel.updateDirectTouch(it) },
                 onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
                 onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
+                windowResults = windowResults,
+                windowActionError = windowActionError,
+                onQueryWindows = { viewModel.queryWindows(it) },
+                onActivateWindow = { viewModel.activateWindow(it) },
+                onRaiseWindow = { viewModel.raiseWindow(it) },
+                onMinimizeWindow = { viewModel.minimizeWindow(it) },
+                onCloseWindow = { viewModel.closeWindow(it) },
+                onResizeWindow = { id, width, height -> viewModel.resizeWindow(id, width, height) },
+                onMoveWindowToDesktop = { id, desktop -> viewModel.moveWindowToDesktop(id, desktop) },
                 getHostScreenSize = { viewModel.getHostScreenSize() },
                 getHostDesktopOffset = { viewModel.getHostDesktopOffset() },
                 currentFrameTimestamp = currentFrame?.timestamp,
@@ -206,6 +217,15 @@ fun RemoteDesktopScreenContent(
         onUpdateDirectTouch: (Boolean) -> Unit,
         onUpdatePointerSpeed: (Float) -> Unit,
         onUpdateScrollSensitivity: (Float, Float) -> Unit,
+        windowResults: List<DesktopWindowModel>,
+        windowActionError: String?,
+        onQueryWindows: (String) -> Unit,
+        onActivateWindow: (String) -> Unit,
+        onRaiseWindow: (String) -> Unit,
+        onMinimizeWindow: (String) -> Unit,
+        onCloseWindow: (String) -> Unit,
+        onResizeWindow: (String, Int, Int) -> Unit,
+        onMoveWindowToDesktop: (String, Int) -> Unit,
         getHostScreenSize: () -> Pair<Int, Int>,
         getHostDesktopOffset: () -> Pair<Int, Int> = { Pair(0, 0) },
         currentFrameTimestamp: Long?,
@@ -234,6 +254,12 @@ fun RemoteDesktopScreenContent(
         var mouseControlsExpanded by rememberSaveable { mutableStateOf(false) }
         var controlsVisible by remember { mutableStateOf(false) }
         var controlsHideJob by remember { mutableStateOf<Job?>(null) }
+        var windowSearch by rememberSaveable { mutableStateOf("") }
+        var selectedWindowId by rememberSaveable { mutableStateOf<String?>(null) }
+        var resizeWidthText by rememberSaveable { mutableStateOf("1280") }
+        var resizeHeightText by rememberSaveable { mutableStateOf("720") }
+        var targetDesktopText by rememberSaveable { mutableStateOf("1") }
+        val selectedWindow = windowResults.firstOrNull { it.id == selectedWindowId }
 
         // Show controls and start auto-hide timer
         fun showControlsWithTimer() {
@@ -2270,6 +2296,317 @@ fun RemoteDesktopScreenContent(
                                                                 MaterialTheme.colorScheme
                                                                         .onSurfaceVariant
                                                 )
+
+                                                if (uiState.capabilityState
+                                                                .supportsAdvancedWindowControl
+                                                ) {
+                                                        HorizontalDivider()
+                                                        Text(
+                                                                text = "Window controls",
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .titleMedium,
+                                                                fontWeight = FontWeight.Bold
+                                                        )
+                                                        Text(
+                                                                text =
+                                                                        "Backend: ${uiState.capabilityState.windowBackend ?: "host"}",
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodySmall,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSurfaceVariant
+                                                        )
+
+                                                        OutlinedTextField(
+                                                                value = windowSearch,
+                                                                onValueChange = {
+                                                                        windowSearch = it
+                                                                },
+                                                                label = {
+                                                                        Text("Search windows")
+                                                                },
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                singleLine = true
+                                                        )
+
+                                                        FilledTonalButton(
+                                                                onClick = {
+                                                                        onQueryWindows(windowSearch)
+                                                                }
+                                                        ) { Text("Refresh windows") }
+
+                                                        if (windowActionError != null) {
+                                                                Text(
+                                                                        text = windowActionError,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .error,
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodySmall
+                                                                )
+                                                        }
+
+                                                        if (windowResults.isEmpty()) {
+                                                                Text(
+                                                                        text =
+                                                                                "No window results yet. Refresh to load the current desktop windows.",
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodySmall,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                        } else {
+                                                                Column(
+                                                                        verticalArrangement =
+                                                                                Arrangement
+                                                                                        .spacedBy(
+                                                                                                8.dp
+                                                                                        )
+                                                                ) {
+                                                                        windowResults.take(6).forEach {
+                                                                                window ->
+                                                                                ElevatedCard(
+                                                                                        onClick = {
+                                                                                                selectedWindowId =
+                                                                                                        window.id
+                                                                                        }
+                                                                                ) {
+                                                                                        Column(
+                                                                                                modifier =
+                                                                                                        Modifier.fillMaxWidth()
+                                                                                                                .padding(
+                                                                                                                        12.dp
+                                                                                                                ),
+                                                                                                verticalArrangement =
+                                                                                                        Arrangement
+                                                                                                                .spacedBy(
+                                                                                                                        6.dp
+                                                                                                                )
+                                                                                        ) {
+                                                                                                Text(
+                                                                                                        text =
+                                                                                                                window
+                                                                                                                        .title,
+                                                                                                        style =
+                                                                                                                MaterialTheme
+                                                                                                                        .typography
+                                                                                                                        .bodyLarge,
+                                                                                                        fontWeight =
+                                                                                                                FontWeight.SemiBold
+                                                                                                )
+                                                                                                Text(
+                                                                                                        text =
+                                                                                                                buildString {
+                                                                                                                        append(
+                                                                                                                                window.className
+                                                                                                                                        ?: "Unknown class"
+                                                                                                                        )
+                                                                                                                        window.desktopNumber
+                                                                                                                                ?.let {
+                                                                                                                                        append(
+                                                                                                                                                " • desktop "
+                                                                                                                                        )
+                                                                                                                                        append(
+                                                                                                                                                it
+                                                                                                                                        )
+                                                                                                                                }
+                                                                                                                        if (window.isActive) {
+                                                                                                                                append(
+                                                                                                                                        " • active"
+                                                                                                                                )
+                                                                                                                        }
+                                                                                                                },
+                                                                                                        style =
+                                                                                                                MaterialTheme
+                                                                                                                        .typography
+                                                                                                                        .bodySmall,
+                                                                                                        color =
+                                                                                                                MaterialTheme
+                                                                                                                        .colorScheme
+                                                                                                                        .onSurfaceVariant
+                                                                                                )
+                                                                                                Row(
+                                                                                                        horizontalArrangement =
+                                                                                                                Arrangement.spacedBy(
+                                                                                                                        8.dp
+                                                                                                                )
+                                                                                                ) {
+                                                                                                        TextButton(
+                                                                                                                onClick = {
+                                                                                                                        selectedWindowId =
+                                                                                                                                window.id
+                                                                                                                        onActivateWindow(
+                                                                                                                                window.id
+                                                                                                                        )
+                                                                                                                }
+                                                                                                        ) {
+                                                                                                                Text(
+                                                                                                                        "Activate"
+                                                                                                                )
+                                                                                                        }
+                                                                                                        TextButton(
+                                                                                                                onClick = {
+                                                                                                                        selectedWindowId =
+                                                                                                                                window.id
+                                                                                                                        onRaiseWindow(
+                                                                                                                                window.id
+                                                                                                                        )
+                                                                                                                }
+                                                                                                        ) {
+                                                                                                                Text(
+                                                                                                                        "Raise"
+                                                                                                                )
+                                                                                                        }
+                                                                                                        TextButton(
+                                                                                                                onClick = {
+                                                                                                                        selectedWindowId =
+                                                                                                                                window.id
+                                                                                                                        onMinimizeWindow(
+                                                                                                                                window.id
+                                                                                                                        )
+                                                                                                                }
+                                                                                                        ) {
+                                                                                                                Text(
+                                                                                                                        "Minimize"
+                                                                                                                )
+                                                                                                        }
+                                                                                                        TextButton(
+                                                                                                                onClick = {
+                                                                                                                        selectedWindowId =
+                                                                                                                                window.id
+                                                                                                                        onCloseWindow(
+                                                                                                                                window.id
+                                                                                                                        )
+                                                                                                                }
+                                                                                                        ) {
+                                                                                                                Text("Close")
+                                                                                                        }
+                                                                                                }
+                                                                                        }
+                                                                                }
+                                                                        }
+                                                                }
+                                                        }
+
+                                                        if (selectedWindow != null) {
+                                                                Text(
+                                                                        text =
+                                                                                "Selected: ${selectedWindow.title}",
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodyMedium,
+                                                                        fontWeight =
+                                                                                FontWeight.SemiBold
+                                                                )
+                                                                Row(
+                                                                        horizontalArrangement =
+                                                                                Arrangement.spacedBy(
+                                                                                        8.dp
+                                                                                )
+                                                                ) {
+                                                                        OutlinedTextField(
+                                                                                value =
+                                                                                        resizeWidthText,
+                                                                                onValueChange = {
+                                                                                        resizeWidthText =
+                                                                                                it
+                                                                                },
+                                                                                label = {
+                                                                                        Text(
+                                                                                                "Width"
+                                                                                        )
+                                                                                },
+                                                                                modifier =
+                                                                                        Modifier.weight(
+                                                                                                1f
+                                                                                        ),
+                                                                                singleLine = true
+                                                                        )
+                                                                        OutlinedTextField(
+                                                                                value =
+                                                                                        resizeHeightText,
+                                                                                onValueChange = {
+                                                                                        resizeHeightText =
+                                                                                                it
+                                                                                },
+                                                                                label = {
+                                                                                        Text(
+                                                                                                "Height"
+                                                                                        )
+                                                                                },
+                                                                                modifier =
+                                                                                        Modifier.weight(
+                                                                                                1f
+                                                                                        ),
+                                                                                singleLine = true
+                                                                        )
+                                                                }
+                                                                FilledTonalButton(
+                                                                        onClick = {
+                                                                                val width =
+                                                                                        resizeWidthText
+                                                                                                .toIntOrNull()
+                                                                                val height =
+                                                                                        resizeHeightText
+                                                                                                .toIntOrNull()
+                                                                                if (width != null &&
+                                                                                                height !=
+                                                                                                        null
+                                                                                ) {
+                                                                                        onResizeWindow(
+                                                                                                selectedWindow
+                                                                                                        .id,
+                                                                                                width,
+                                                                                                height
+                                                                                        )
+                                                                                }
+                                                                        }
+                                                                ) {
+                                                                        Text("Resize selected")
+                                                                }
+
+                                                                OutlinedTextField(
+                                                                        value =
+                                                                                targetDesktopText,
+                                                                        onValueChange = {
+                                                                                targetDesktopText =
+                                                                                        it
+                                                                        },
+                                                                        label = {
+                                                                                Text("Desktop #")
+                                                                        },
+                                                                        modifier =
+                                                                                Modifier.fillMaxWidth(),
+                                                                        singleLine = true
+                                                                )
+                                                                FilledTonalButton(
+                                                                        onClick = {
+                                                                                val desktop =
+                                                                                        targetDesktopText
+                                                                                                .toIntOrNull()
+                                                                                if (desktop != null) {
+                                                                                        onMoveWindowToDesktop(
+                                                                                                selectedWindow
+                                                                                                        .id,
+                                                                                                desktop
+                                                                                        )
+                                                                                }
+                                                                        }
+                                                                ) {
+                                                                        Text("Move selected window")
+                                                                }
+                                                        }
+                                                }
                                         }
                                 }
                         }

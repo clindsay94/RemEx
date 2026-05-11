@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Security;
 using System.Net.WebSockets;
@@ -18,6 +19,7 @@ public class RemoteDesktopService : IDisposable
     private ClientWebSocket? _webSocket;
     private CancellationTokenSource? _receiveCts;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<DesktopWindowResult>> _pendingWindowRequests = new();
     private bool _disposed;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -28,6 +30,7 @@ public class RemoteDesktopService : IDisposable
     public event Action<byte[]>? FrameReceived;
     public event Action<DesktopMeta>? MetaReceived;
     public event Action<string>? ErrorReceived;
+    public event Action<DesktopWindowResult>? WindowResultReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -89,9 +92,64 @@ public class RemoteDesktopService : IDisposable
         await SendJsonAsync(msg, ct);
     }
 
+    public async Task<DesktopWindowResult> QueryWindowsAsync(DesktopWindowQuery query, CancellationToken ct = default)
+    {
+        var requestId = string.IsNullOrWhiteSpace(query.RequestId) ? Guid.NewGuid().ToString("N") : query.RequestId;
+        var tcs = new TaskCompletionSource<DesktopWindowResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingWindowRequests[requestId] = tcs;
+
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        try
+        {
+            await SendJsonAsync(new RemexMessage
+            {
+                Type = MessageTypes.DesktopWindowQuery,
+                CorrelationId = requestId,
+                DesktopWindowQuery = query with { RequestId = requestId },
+            }, ct);
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            _pendingWindowRequests.TryRemove(requestId, out _);
+        }
+    }
+
+    public async Task<DesktopWindowResult> ExecuteWindowActionAsync(DesktopWindowAction action, CancellationToken ct = default)
+    {
+        var requestId = string.IsNullOrWhiteSpace(action.RequestId) ? Guid.NewGuid().ToString("N") : action.RequestId;
+        var tcs = new TaskCompletionSource<DesktopWindowResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingWindowRequests[requestId] = tcs;
+
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        try
+        {
+            await SendJsonAsync(new RemexMessage
+            {
+                Type = MessageTypes.DesktopWindowAction,
+                CorrelationId = requestId,
+                DesktopWindowAction = action with { RequestId = requestId },
+            }, ct);
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            _pendingWindowRequests.TryRemove(requestId, out _);
+        }
+    }
+
     public void Disconnect()
     {
         _receiveCts?.Cancel();
+        foreach (var (_, waiter) in _pendingWindowRequests)
+        {
+            waiter.TrySetCanceled();
+        }
+        _pendingWindowRequests.Clear();
 
         var socket = _webSocket;
         _webSocket = null;
@@ -202,6 +260,17 @@ public class RemoteDesktopService : IDisposable
                     else if (msg?.Type == MessageTypes.DesktopError && msg.ErrorText is not null)
                     {
                         ErrorReceived?.Invoke(msg.ErrorText);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopWindowResult && msg.DesktopWindowResult is not null)
+                    {
+                        var requestId = msg.CorrelationId ?? msg.DesktopWindowResult.RequestId;
+                        if (!string.IsNullOrWhiteSpace(requestId) &&
+                            _pendingWindowRequests.TryGetValue(requestId, out var waiter))
+                        {
+                            waiter.TrySetResult(msg.DesktopWindowResult);
+                        }
+
+                        WindowResultReceived?.Invoke(msg.DesktopWindowResult);
                     }
                 }
             }

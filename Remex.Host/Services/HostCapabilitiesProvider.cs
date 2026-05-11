@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Remex.Core.Models;
+using Remex.Host.Services.Input;
 
 namespace Remex.Host.Services;
 
@@ -22,8 +23,9 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         var platform = GetPlatform();
         var isInteractiveSession = GetIsInteractiveSession();
         var runtimeMode = GetRuntimeMode(isInteractiveSession);
-        var (supportsRemoteDesktop, remoteDesktopReason) = SupportsRemoteDesktop(isInteractiveSession);
-        var supportsInputSimulation = SupportsInputSimulation(isInteractiveSession);
+        var linuxBackend = OperatingSystem.IsLinux() ? LinuxDesktopBackendProbe.Probe() : null;
+        var (supportsRemoteDesktop, remoteDesktopReason) = SupportsRemoteDesktop(isInteractiveSession, linuxBackend);
+        var supportsInputSimulation = SupportsInputSimulation(isInteractiveSession, linuxBackend);
         var version = typeof(HostCapabilitiesProvider).Assembly.GetName().Version?.ToString() ?? "unknown";
 
         return new HostCapabilities
@@ -39,7 +41,11 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsLauncherSync = true,
             SupportsRemoteDesktop = supportsRemoteDesktop,
             SupportsInputSimulation = supportsInputSimulation,
+            SupportsCursorQuery = SupportsCursorQuery(isInteractiveSession, linuxBackend),
+            SupportsAdvancedWindowControl = SupportsAdvancedWindowControl(isInteractiveSession, linuxBackend),
             SupportsInteractiveAppLaunch = !OperatingSystem.IsWindows() || isInteractiveSession || Process.GetCurrentProcess().SessionId == 0,
+            InputBackend = linuxBackend?.InputBackendName,
+            WindowControlBackend = linuxBackend?.WindowControlBackendName,
             RemoteDesktopUnavailableReason = remoteDesktopReason,
         };
     }
@@ -89,7 +95,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return isInteractiveSession ? "interactive" : "headless";
     }
 
-    private static (bool Supported, string? Reason) SupportsRemoteDesktop(bool isInteractiveSession)
+    private static (bool Supported, string? Reason) SupportsRemoteDesktop(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -100,15 +106,14 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
 
         if (OperatingSystem.IsLinux())
         {
+            linuxBackend ??= LinuxDesktopBackendProbe.Probe();
+
             if (!isInteractiveSession)
             {
                 return (false, "Remote desktop requires an interactive logged-in user session. Start the host from a graphical session.");
             }
 
-            // Require a display server (X11 or Wayland) to be available.
-            var hasDisplay = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
-            var hasWayland = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
-            if (!hasDisplay && !hasWayland)
+            if (!linuxBackend.HasDisplayServer)
             {
                 return (false, "No display server detected. Start the host from inside an X11 or Wayland session ($DISPLAY or $WAYLAND_DISPLAY must be set).");
             }
@@ -117,12 +122,12 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             // happens because LinuxScreenCaptureService falls back to spectacle/grim/scrot/ffmpeg
             // and silently returns empty bytes when none are present.
             var hasCaptureTool =
-                HasExecutable("spectacle") ||
-                HasExecutable("grim") ||
-                HasExecutable("scrot") ||
-                HasExecutable("import") ||
-                HasExecutable("gnome-screenshot") ||
-                HasExecutable("ffmpeg");
+                LinuxDesktopBackendProbe.FindExecutable("spectacle") is not null ||
+                LinuxDesktopBackendProbe.FindExecutable("grim") is not null ||
+                LinuxDesktopBackendProbe.FindExecutable("scrot") is not null ||
+                LinuxDesktopBackendProbe.FindExecutable("import") is not null ||
+                LinuxDesktopBackendProbe.FindExecutable("gnome-screenshot") is not null ||
+                LinuxDesktopBackendProbe.FindExecutable("ffmpeg") is not null;
             if (!hasCaptureTool)
             {
                 return (false, "Remote desktop is unavailable: no screen capture tool found. Install one of: spectacle, grim (Wayland), scrot or ImageMagick (X11), or ffmpeg.");
@@ -131,7 +136,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             // Input is required for a usable RD session. If only one of the two is missing,
             // the connection still streams but nothing the user does works — be explicit
             // rather than silent.
-            if (!HasExecutable("xdotool") && !HasExecutable("ydotool"))
+            if (!linuxBackend.SupportsBasicInput)
             {
                 return (false, "Remote desktop is unavailable: no input simulation tool found. Install xdotool (X11) or ydotool (Wayland).");
             }
@@ -142,33 +147,42 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return (true, null);
     }
 
-    private static bool SupportsInputSimulation(bool isInteractiveSession)
+    private static bool SupportsInputSimulation(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
     {
         if (OperatingSystem.IsWindows()) return isInteractiveSession;
         if (OperatingSystem.IsLinux())
         {
             if (!isInteractiveSession) return false;
-            return HasExecutable("xdotool") || HasExecutable("ydotool");
+            linuxBackend ??= LinuxDesktopBackendProbe.Probe();
+            return linuxBackend.SupportsBasicInput;
         }
         return true;
     }
 
-    private static bool HasExecutable(string name)
+    private static bool SupportsCursorQuery(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
     {
-        try
+        if (OperatingSystem.IsWindows())
         {
-            var psi = new ProcessStartInfo("which", name)
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var proc = Process.Start(psi);
-            if (proc is null) return false;
-            proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(2000);
-            return proc.ExitCode == 0;
+            return isInteractiveSession;
         }
-        catch { return false; }
+
+        if (!OperatingSystem.IsLinux() || !isInteractiveSession)
+        {
+            return false;
+        }
+
+        linuxBackend ??= LinuxDesktopBackendProbe.Probe();
+        return linuxBackend.SupportsCursorQuery;
+    }
+
+    private static bool SupportsAdvancedWindowControl(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
+    {
+        if (!OperatingSystem.IsLinux() || !isInteractiveSession)
+        {
+            return false;
+        }
+
+        linuxBackend ??= LinuxDesktopBackendProbe.Probe();
+        return linuxBackend.SupportsAdvancedWindowControl;
     }
 }
