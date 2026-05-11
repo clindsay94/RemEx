@@ -46,8 +46,17 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 
     private RemexNativeClient() { }
 
-    public async Task ConnectAsync(string host, int port, string? spkiHash = null, CancellationToken ct = default)
+    private string? _clientId;
+
+    public string? ClientId
     {
+        get => _clientId;
+        set => _clientId = value;
+    }
+
+    public async Task ConnectAsync(string host, int port, string? spkiHash = null, string? clientId = null, CancellationToken ct = default)
+    {
+        _clientId = clientId;
         await DisconnectAsync();
 
         _connectionCts = new CancellationTokenSource();
@@ -171,6 +180,8 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         var message = new RemexMessage
         {
             Type = MessageTypes.Command,
+            ProtocolVersion = 2,
+            ClientId = _clientId,
             CommandAction = request.Action,
             CommandParameters = request.Parameters,
             Timestamp = DateTime.UtcNow.Ticks,
@@ -204,7 +215,17 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     public async Task SendMessageAsync(RemexMessage message, CancellationToken ct = default)
     {
         if (_webSocket == null || _webSocket.State != WebSocketState.Open) return;
-        var bytes = RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
+
+        // Ensure we satisfy Host protocol version and identity checks.
+        // RemexMessage defaults to version 2, but we set it explicitly here 
+        // to be safe under NativeAOT serialization rules.
+        var outgoing = message with 
+        { 
+            ProtocolVersion = 2,
+            ClientId = _clientId 
+        };
+
+        var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
 
         await _sendGate.WaitAsync(ct);
         try

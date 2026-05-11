@@ -43,15 +43,40 @@ object PinnedHostStore {
 
     private fun aead(context: Context): Aead {
         return aeadInstance ?: synchronized(this) {
-            aeadInstance ?: AndroidKeysetManager.Builder()
-                .withSharedPref(context.applicationContext, KEYSET_NAME, TINK_PREFS_FILE)
-                .withKeyTemplate(AesGcmKeyManager.aes256GcmTemplate())
-                .withMasterKeyUri(MASTER_KEY_URI)
-                .build()
-                .keysetHandle
-                .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
-                .also { aeadInstance = it }
+            aeadInstance ?: try {
+                buildAead(context)
+            } catch (e: Exception) {
+                // If Tink or the Android Keystore is corrupted (e.g., app data cleared but Keystore remained,
+                // or lock screen changes invalidated the key), we must clear the corrupted state and retry.
+                android.util.Log.e("PinnedHostStore", "Failed to initialize Tink AEAD. Clearing corrupted keyset and retrying.", e)
+
+                // Clear the SharedPreferences containing the Tink keyset
+                context.applicationContext.getSharedPreferences(TINK_PREFS_FILE, Context.MODE_PRIVATE)
+                    .edit()
+                    .clear()
+                    .apply()
+
+                // Clear the DataStore since its encrypted contents are now unreadable.
+                // We use runBlocking here because we are inside a synchronized block that must return an Aead synchronously.
+                // It's safe because DataStore edit runs quickly and this is an exceptional recovery path.
+                kotlinx.coroutines.runBlocking {
+                    context.applicationContext.pinnedHostDataStore.edit { it.clear() }
+                }
+
+                // Retry initialization
+                buildAead(context)
+            }.also { aeadInstance = it }
         }
+    }
+
+    private fun buildAead(context: Context): Aead {
+        return AndroidKeysetManager.Builder()
+            .withSharedPref(context.applicationContext, KEYSET_NAME, TINK_PREFS_FILE)
+            .withKeyTemplate(AesGcmKeyManager.aes256GcmTemplate())
+            .withMasterKeyUri(MASTER_KEY_URI)
+            .build()
+            .keysetHandle
+            .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
     }
 
     private fun prefKey(hostId: String) = stringPreferencesKey(hostId)

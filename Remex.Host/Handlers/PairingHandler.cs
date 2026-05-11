@@ -16,15 +16,18 @@ public sealed class PairingHandler
     private readonly ILogger<PairingHandler> _logger;
     private readonly PairingService _pairingService;
     private readonly ICertificateService _certificateService;
+    private readonly PairedClientRegistry _pairedClientRegistry;
 
     public PairingHandler(
         ILogger<PairingHandler> logger,
         PairingService pairingService,
-        ICertificateService certificateService)
+        ICertificateService certificateService,
+        PairedClientRegistry pairedClientRegistry)
     {
         _logger = logger;
         _pairingService = pairingService;
         _certificateService = certificateService;
+        _pairedClientRegistry = pairedClientRegistry;
     }
 
     /// <summary>
@@ -41,9 +44,10 @@ public sealed class PairingHandler
 
         try
         {
-            _logger.LogInformation("Pairing request received from client: {Name} v{Version}",
+            _logger.LogInformation("Pairing request received from client: {Name} v{Version} (ID: {ClientId})",
                 message.PairingRequest.ClientName,
-                message.PairingRequest.ClientVersion);
+                message.PairingRequest.ClientVersion,
+                message.PairingRequest.ClientId ?? "Unknown");
 
             // Start pairing session (generates host keypair and PIN)
             var state = await _pairingService.StartPairingAsync(ct);
@@ -96,6 +100,12 @@ public sealed class PairingHandler
             if (verified)
             {
                 _logger.LogInformation("Pairing completed successfully.");
+                
+                if (!string.IsNullOrWhiteSpace(message.PairingComplete.ClientId))
+                {
+                    _pairedClientRegistry.RegisterClient(message.PairingComplete.ClientId);
+                }
+
                 return new RemexMessage
                 {
                     Type = MessageTypes.PairingComplete,

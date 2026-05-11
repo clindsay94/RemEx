@@ -7,6 +7,7 @@ public sealed record PairingRequest
     [JsonPropertyName("clientPublicKey")] public required string ClientPublicKeyBase64 { get; init; }
     [JsonPropertyName("clientName")] public required string ClientName { get; init; }
     [JsonPropertyName("clientVersion")] public required string ClientVersion { get; init; }
+    [JsonPropertyName("clientId")] public string? ClientId { get; init; }
 }
 
 public sealed record PairingResponse
@@ -21,4 +22,5 @@ public sealed record PairingResponse
 public sealed record PairingComplete
 {
     [JsonPropertyName("clientPinHmac")] public required string ClientPinHmacBase64 { get; init; }
+    [JsonPropertyName("clientId")] public string? ClientId { get; init; }
 }

@@ -199,10 +199,17 @@ fun PairingScreen(
                             coroutineScope.launch {
                                 val paired =
                                         viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
-                                            RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
-                                            RemexCoreClient.SetPinnedHostHash(host, spkiHash)
-                                            PinnedHostStore.setPin(context, hostId, spkiHash)
-                                            PinnedHostStore.setPin(context, host, spkiHash)
+                                            try {
+                                                RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
+                                                RemexCoreClient.SetPinnedHostHash(host, spkiHash)
+                                                PinnedHostStore.setPin(context, hostId, spkiHash)
+                                                PinnedHostStore.setPin(context, host, spkiHash)
+                                            } catch (e: Exception) {
+                                                // If setPin still fails after recovery attempts, surface it to the ViewModel
+                                                viewModel.setError(e.message ?: "Failed to save pinned host securely.")
+                                                // Re-throw to prevent calling onPairSuccess()
+                                                throw e
+                                            }
                                         }
                                 if (paired) {
                                     onPairSuccess()

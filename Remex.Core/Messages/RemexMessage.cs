@@ -23,6 +23,12 @@ public sealed record RemexMessage
     public int ProtocolVersion { get; init; } = 2;
 
     /// <summary>
+    /// Unique identifier for the client, used to track paired sessions across reconnections.
+    /// </summary>
+    [JsonPropertyName("clientId")]
+    public string? ClientId { get; init; }
+
+    /// <summary>
     /// UTC ticks at the time the message was created, used for latency measurement.
     /// </summary>
     [JsonPropertyName("timestamp")]

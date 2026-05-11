@@ -437,7 +437,8 @@ public static class AndroidNativeExports
                 await RemexNativeClient.Current.ConnectAsync(
                     effectiveInitRequest.Host,
                     effectiveInitRequest.Port,
-                    effectiveInitRequest.SpkiHash);
+                    effectiveInitRequest.SpkiHash,
+                    effectiveInitRequest.ClientId);
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"ConnectAsync failed: {ex.Message}"); }
         });
@@ -831,6 +832,7 @@ public sealed record AndroidNativeInitRequest
     public string Host { get; init; } = "localhost";
     public int Port { get; init; } = 5005;
     public string SpkiHash { get; init; } = string.Empty;
+    public string? ClientId { get; init; }
     public int TelemetryPollIntervalMs { get; init; } = 1000;
     public bool StartTelemetryPolling { get; init; } = true;
     public bool WarmupTelemetry { get; init; } = true;

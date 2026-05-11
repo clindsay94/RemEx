@@ -1,0 +1,1 @@
+{"hook_type": "PreToolUse", "tool_name": "TestTool", "tool_input": {"test": "data"}, "session_id": "test-session"}

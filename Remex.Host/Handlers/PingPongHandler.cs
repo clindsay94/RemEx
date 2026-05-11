@@ -4,6 +4,7 @@ using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host.Services.Telemetry;
+using Remex.Host.Services.Security;
 
 namespace Remex.Host.Handlers;
 
@@ -24,7 +25,8 @@ public sealed class PingPongHandler(
     IHostCapabilitiesProvider hostCapabilitiesProvider,
     IInputSimulationService inputSimulation,
     PairingHandler pairingHandler,
-    FileTransferHandler fileTransferHandler)
+    FileTransferHandler fileTransferHandler,
+    PairedClientRegistry pairedClientRegistry)
 {
     public async Task HandleAsync(WebSocket webSocket, bool isLoopback, CancellationToken ct)
     {
@@ -32,11 +34,13 @@ public sealed class PingPongHandler(
         // same machine, where pairing adds no security and is intentionally skipped on the client
         // side as well — see ConnectionViewModel.IsLoopbackHost. All other connections must
         // complete the PIN-based pairing handshake before issuing destructive or stateful commands.
+        // We also check the registry to see if this client (by ID) has previously paired.
         bool isPaired = isLoopback;
+
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
         else
-            logger.LogInformation("Client connected. Awaiting pairing handshake.");
+            logger.LogInformation("Client connected. Awaiting pairing handshake or identity verification.");
 
         try
         {
@@ -114,6 +118,16 @@ public sealed class PingPongHandler(
 
                 logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
                     message.Type, message.ProtocolVersion);
+
+                // Check registry for persistent pairing if not already connection-paired
+                if (!isPaired && !string.IsNullOrWhiteSpace(message.ClientId))
+                {
+                    if (pairedClientRegistry.IsClientPaired(message.ClientId))
+                    {
+                        isPaired = true;
+                        logger.LogInformation("Connection authenticated via paired client identity: {ClientId}", message.ClientId);
+                    }
+                }
 
                 // Reject messages from clients running a protocol version older than 2.
                 // 1.x clients will get a clear rejection rather than silently operating in a

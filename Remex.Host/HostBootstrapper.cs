@@ -93,6 +93,7 @@ public static class HostBootstrapper
         // loop begins; no synchronisation context is active.
         builder.Services.AddSingleton<PairingService>();
         builder.Services.AddSingleton<IPairingService>(sp => sp.GetRequiredService<PairingService>());
+        builder.Services.AddSingleton<PairedClientRegistry>();
         builder.Services.AddTransient<PairingHandler>();
         builder.Services.AddSingleton<IFileTransferService, FileTransferService>();
         builder.Services.AddTransient<FileTransferHandler>();
@@ -225,7 +226,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),
                 context.RequestServices.GetRequiredService<PairingHandler>(),
-                context.RequestServices.GetRequiredService<FileTransferHandler>());
+                context.RequestServices.GetRequiredService<FileTransferHandler>(),
+                context.RequestServices.GetRequiredService<PairedClientRegistry>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for
