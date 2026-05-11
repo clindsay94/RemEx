@@ -57,7 +57,7 @@ if (isPublishBuild) {
 android {
     namespace = "com.clindsay94.remex"
     //noinspection GradleDependency
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.clindsay94.remex"
