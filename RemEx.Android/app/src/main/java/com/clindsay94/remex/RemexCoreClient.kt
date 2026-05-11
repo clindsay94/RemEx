@@ -207,14 +207,24 @@ object RemexCoreClient {
 
     @JvmStatic
     @JvmName("StartPairingNative")
-    private external fun StartPairingNative(hostUrl: String, clientName: String, clientVersion: String): String
+    private external fun StartPairingNative(
+            hostUrl: String,
+            clientName: String,
+            clientVersion: String,
+            clientId: String
+    ): String
 
     @JvmStatic
-    fun StartPairing(hostUrl: String, clientName: String, clientVersion: String): Result<String> {
+    fun StartPairing(
+            hostUrl: String,
+            clientName: String,
+            clientVersion: String,
+            clientId: String
+    ): Result<String> {
         return if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "StartPairing → native (host=$hostUrl, client=$clientName v$clientVersion)")
-                val result = StartPairingNative(hostUrl, clientName, clientVersion)
+                val result = StartPairingNative(hostUrl, clientName, clientVersion, clientId)
                 Log.d(TAG, "StartPairing ← native result: $result")
                 Result.success(result)
             } catch (e: UnsatisfiedLinkError) {

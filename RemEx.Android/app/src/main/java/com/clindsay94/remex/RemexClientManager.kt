@@ -145,6 +145,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         val settings = settingsManager ?: return
         val host = settings.hostFlow.first()
         val port = settings.portFlow.first()
+        val clientId = settings.getOrCreateClientId()
 
         _isConnecting.value = true
         try {
@@ -184,7 +185,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                 RemexCoreClient.StartPairing(
                                         "wss://$host:$port/ws",
                                         "Android Client",
-                                        "2.0.0"
+                                "2.0.0",
+                                clientId
                                 ).getOrNull()
 
                         if (pairResult == "OK") {
@@ -240,6 +242,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             put("host", host)
                             put("port", port)
                             put("spkiHash", spkiHash)
+                            put("clientId", clientId)
                             put("startTelemetryPolling", true)
                         }
                 val initResult = RemexCoreClient.InitRemex(initRequest.toString())

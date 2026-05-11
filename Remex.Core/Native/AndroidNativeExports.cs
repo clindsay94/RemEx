@@ -211,11 +211,12 @@ public static class AndroidNativeExports
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartPairingNative")]
-    public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr)
+    public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr, IntPtr clientIdPtr)
     {
         var hostUrl = JniHelper.ReadJString(env, hostUrlPtr);
         var clientName = JniHelper.ReadJString(env, clientNamePtr);
         var clientVersion = JniHelper.ReadJString(env, clientVersionPtr);
+        var clientId = JniHelper.ReadJString(env, clientIdPtr);
 
         return Export(env, () =>
         {
@@ -232,6 +233,8 @@ public static class AndroidNativeExports
                     return "ERROR: Client name is required";
                 if (string.IsNullOrEmpty(clientVersion))
                     return "ERROR: Client version is required";
+                if (string.IsNullOrWhiteSpace(clientId))
+                    return "ERROR: Client ID is required";
 
                 // Phase 0: TCP probe. Distinguishes L4 reachability (host/firewall) from L6/L7 issues
                 // (TLS, HTTP upgrade). Without this, ConnectAsync hangs for the full TLS budget on
@@ -290,7 +293,10 @@ public static class AndroidNativeExports
                 // Should be fast (<1s) but allow margin for first-time TLS sessions, slow hardware, etc.
                 using (var handshakeCts = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
                 {
-                    client = new PairingClient(ws, log: msg => Console.Error.WriteLine($"[PairingClient] {msg}"));
+                    client = new PairingClient(ws, log: msg => Console.Error.WriteLine($"[PairingClient] {msg}"))
+                    {
+                        ClientId = clientId
+                    };
                     try
                     {
                         _activePairingResponse = client.StartPairingAsync(clientName, clientVersion, handshakeCts.Token).GetAwaiter().GetResult();
@@ -410,6 +416,11 @@ public static class AndroidNativeExports
         var initRequest = string.IsNullOrWhiteSpace(initJson)
             ? new AndroidNativeInitRequest()
             : RemexJson.Deserialize(initJson, RemexJsonSerializerContext.Default.AndroidNativeInitRequest) ?? new AndroidNativeInitRequest();
+
+        if (string.IsNullOrWhiteSpace(initRequest.ClientId))
+        {
+            return SerializeOperationFailure("Client ID is required.");
+        }
 
         var effectiveSpkiHash = initRequest.SpkiHash;
         if (string.IsNullOrWhiteSpace(effectiveSpkiHash)

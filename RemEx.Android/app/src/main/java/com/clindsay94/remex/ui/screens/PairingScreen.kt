@@ -17,6 +17,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.security.PinnedHostStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,7 +82,7 @@ class PairingViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(pairingError = msg, isLoading = false)
     }
 
-    fun startPairing(hostUrl: String, clientName: String, clientVersion: String) {
+    fun startPairing(hostUrl: String, clientName: String, clientVersion: String, clientId: String) {
         // Reentrancy guard: don't kick off a second StartPairing while one is in flight,
         // and don't redo a successful one (the WebSocket is already alive on the native side).
         if (startPairingInFlight || startPairingSucceeded) return
@@ -91,7 +92,8 @@ class PairingViewModel : ViewModel() {
             _uiState.value = PairingUiState(isLoading = true)
             val result =
                     withContext(Dispatchers.IO) {
-                        RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion).getOrNull() ?: ""
+                        RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion, clientId)
+                                .getOrNull() ?: ""
                     }
             startPairingInFlight = false
             if (result == "OK") {
@@ -131,12 +133,15 @@ fun PairingScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var pin by remember { mutableStateOf("") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settingsManager = remember(context) { SettingsManager(context.applicationContext) }
 
     LaunchedEffect(Unit) {
         // Build the URL to pass to StartPairing.
         // Path must match RemexConstants.WebSocketPath on the host side ("/ws").
         val hostUrl = "wss://$host:$port/ws"
-        viewModel.startPairing(hostUrl, "Android Client", "2.0.0")
+        val clientId = withContext(Dispatchers.IO) { settingsManager.getOrCreateClientId() }
+        viewModel.startPairing(hostUrl, "Android Client", "2.0.0", clientId)
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.pairing_title)) }) }) {
@@ -192,7 +197,6 @@ fun PairingScreen(
                         enabled = !state.isLoading
                 ) { Text(stringResource(R.string.pairing_cancel)) }
 
-                val context = androidx.compose.ui.platform.LocalContext.current
                 val coroutineScope = rememberCoroutineScope()
                 Button(
                         onClick = {

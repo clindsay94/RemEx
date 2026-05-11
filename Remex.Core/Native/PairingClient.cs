@@ -17,6 +17,8 @@ public class PairingClient
     private ECDiffieHellman? _clientEcdh;
     private byte[]? _sessionKey;
 
+    public string? ClientId { get; set; }
+
     // Constructor intentionally avoids any dependency on Microsoft.Extensions.Logging
     // because this type is invoked from the Android NativeAOT entrypoints
     // (AndroidNativeExports), which load before any DI container is built and
@@ -39,11 +41,13 @@ public class PairingClient
         {
             Type = MessageTypes.PairingRequest,
             ProtocolVersion = 2,
+            ClientId = ClientId,
             PairingRequest = new PairingRequest
             {
                 ClientName = clientName,
                 ClientVersion = clientVersion,
-                ClientPublicKeyBase64 = clientPublicKeyBase64
+                ClientPublicKeyBase64 = clientPublicKeyBase64,
+                ClientId = ClientId
             }
         };
 
@@ -114,9 +118,11 @@ public class PairingClient
             {
                 Type = MessageTypes.PairingComplete,
                 ProtocolVersion = 2,
+                ClientId = ClientId,
                 PairingComplete = new PairingComplete
                 {
-                    ClientPinHmacBase64 = clientAckHmacBase64
+                    ClientPinHmacBase64 = clientAckHmacBase64,
+                    ClientId = ClientId
                 }
             };
             await MessageSerializer.SendAsync(_webSocket, comp);

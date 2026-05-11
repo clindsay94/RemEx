@@ -11,7 +11,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -33,6 +35,7 @@ class SettingsManager(val context: Context) {
         val HORIZONTAL_SCROLL_SENSITIVITY_KEY = floatPreferencesKey("horizontal_scroll_sensitivity")
         val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
         val SPLASH_SHOWN_KEY = booleanPreferencesKey("splash_shown")
+        val CLIENT_ID_KEY = stringPreferencesKey("client_id")
 
         val HOME_LAYOUT_JSON_KEY = stringPreferencesKey("home_layout_json")
         val HOME_ENABLED_CARDS_JSON_KEY = stringPreferencesKey("home_enabled_cards_json")
@@ -317,6 +320,22 @@ class SettingsManager(val context: Context) {
     suspend fun markSplashShown() {
         context.dataStore.edit { it[SPLASH_SHOWN_KEY] = true }
     }
+
+        suspend fun getOrCreateClientId(): String {
+                val existing = context.dataStore.data.first()[CLIENT_ID_KEY]
+                if (!existing.isNullOrBlank()) {
+                        return existing
+                }
+
+                val generated = UUID.randomUUID().toString().replace("-", "")
+                context.dataStore.edit { preferences ->
+                        if (preferences[CLIENT_ID_KEY].isNullOrBlank()) {
+                                preferences[CLIENT_ID_KEY] = generated
+                        }
+                }
+
+                return context.dataStore.data.first()[CLIENT_ID_KEY] ?: generated
+        }
 
     suspend fun saveRemoteDesktopDirectTouch(enabled: Boolean) {
         context.dataStore.edit { preferences -> preferences[DESKTOP_DIRECT_TOUCH_KEY] = enabled }

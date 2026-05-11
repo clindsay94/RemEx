@@ -18,11 +18,13 @@ public class PairingMessagesSerializationTests
         var original = new RemexMessage
         {
             Type = MessageTypes.PairingRequest,
+            ClientId = "client-123",
             PairingRequest = new PairingRequest
             {
                 ClientPublicKeyBase64 = "pubkey",
                 ClientName = "TestClient",
-                ClientVersion = "2.0.0"
+                ClientVersion = "2.0.0",
+                ClientId = "client-123"
             }
         };
 
@@ -31,10 +33,12 @@ public class PairingMessagesSerializationTests
 
         Assert.NotNull(deserialized);
         Assert.Equal(2, deserialized!.ProtocolVersion);
+        Assert.Equal("client-123", deserialized.ClientId);
         Assert.NotNull(deserialized.PairingRequest);
         Assert.Equal("pubkey", deserialized.PairingRequest!.ClientPublicKeyBase64);
         Assert.Equal("TestClient", deserialized.PairingRequest.ClientName);
         Assert.Equal("2.0.0", deserialized.PairingRequest.ClientVersion);
+        Assert.Equal("client-123", deserialized.PairingRequest.ClientId);
     }
 
     [Fact]
@@ -71,15 +75,22 @@ public class PairingMessagesSerializationTests
         var original = new RemexMessage
         {
             Type = MessageTypes.PairingComplete,
-            PairingComplete = new PairingComplete { ClientPinHmacBase64 = "clienthmac" }
+            ClientId = "client-123",
+            PairingComplete = new PairingComplete
+            {
+                ClientPinHmacBase64 = "clienthmac",
+                ClientId = "client-123"
+            }
         };
 
         var bytes = MessageSerializer.Serialize(original);
         var deserialized = MessageSerializer.Deserialize(bytes);
 
         Assert.NotNull(deserialized);
+        Assert.Equal("client-123", deserialized!.ClientId);
         Assert.NotNull(deserialized!.PairingComplete);
         Assert.Equal("clienthmac", deserialized.PairingComplete!.ClientPinHmacBase64);
+        Assert.Equal("client-123", deserialized.PairingComplete.ClientId);
     }
 
     [Fact]

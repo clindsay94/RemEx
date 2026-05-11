@@ -33,6 +33,7 @@ All messages exchanged over the WebSocket use the `RemexMessage` JSON envelope.
 | :--- | :--- | :--- |
 | `type` | `string` | **Required.** Message type discriminator (e.g., `"ping"`, `"telemetry"`, `"command"`). |
 | `protocolVersion` | `int` | **Required.** Must be `2` for RemEx 2.0. |
+| `clientId` | `string?` | Stable client installation identifier. Required for reconnectable paired sessions so the host can bind a later socket to the client that completed PIN pairing. |
 | `timestamp` | `long?` | UTC ticks when the message was created, used for latency measurement. |
 | `telemetry` | `TelemetryPayload?` | Optional payload attached for telemetry streaming. |
 | `commandAction` | `string?` | Command action name (e.g., `"Shutdown"`, `"Lock"`). |
@@ -67,15 +68,15 @@ All messages exchanged over the WebSocket use the `RemexMessage` JSON envelope.
 
 RemEx 2.0 uses an ECDH (NIST P-256) key exchange with a 6-digit PIN out-of-band binding.
 
-1. **Client → Host:** `pairing_request` with `ClientPublicKeyBase64`.
+1. **Client → Host:** `pairing_request` with `ClientPublicKeyBase64` and `clientId`.
 2. **Host → Client:** `pairing_response` with `HostPublicKeyBase64`, `HostId`, `HostName`, `CertificateSpkiHashBase64`, and `PinHmacBase64`.
    - Host displays 6-digit PIN to the user.
    - `PinHmac` is `HMAC-SHA256(SessionKey, PIN)`.
-3. **Client → Host:** `pairing_complete` with `ClientPinHmacBase64`.
+3. **Client → Host:** `pairing_complete` with `ClientPinHmacBase64` and the same `clientId`.
    - `ClientPinHmac` is `HMAC-SHA256(SessionKey, "ack:" + PIN)`.
 4. **Host → Client:** `command_response` with `Success=true` if pairing is accepted.
 
-Once paired, the client pins the `CertificateSpkiHashBase64` and uses it to validate the host in future TLS handshakes.
+Once paired, the client pins the `CertificateSpkiHashBase64` and uses it to validate the host in future TLS handshakes. The client must also keep sending the same top-level `clientId` on subsequent WebSocket messages so the host can recognize a fresh session socket as belonging to the paired client.
 
 ---
 
