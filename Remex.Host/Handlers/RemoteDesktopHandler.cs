@@ -185,56 +185,9 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private async Task StreamFramesAsync(WebSocket webSocket, CancellationToken ct)
     {
-        // ── Diagnostic probe: test capture before entering the stream loop ──
-        try
-        {
-            var testBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct: ct);
-            if (testBytes.Length == 0)
-            {
-                _logger.LogWarning("Diagnostic: test capture returned 0 bytes — screen capture is non-functional.");
-                await SendDesktopError(webSocket,
-                    "Screen capture failed on the host. If the host is running as a Windows Service (Session 0), " +
-                    "screen capture is not available. Run the Remex Desktop app interactively instead.",
-                    ct);
-            }
-            else
-            {
-                _logger.LogInformation("Diagnostic: test capture OK, frame size = {Bytes} bytes.", testBytes.Length);
-                // Send the test frame so the client sees something immediately
-                await webSocket.SendAsync(
-                    new ArraySegment<byte>(testBytes),
-                    WebSocketMessageType.Binary,
-                    endOfMessage: true,
-                    ct);
-            }
-        }
-        catch (OperationCanceledException) { return; }
-        catch (System.ComponentModel.Win32Exception ex)
-        {
-            _logger.LogWarning(ex, "Diagnostic: test capture threw (Win32 error - screen capture unavailable).");
-            await SendDesktopError(webSocket,
-                $"Screen capture error on host: {ex.GetType().Name}: {ex.Message}",
-                ct);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            _logger.LogWarning(ex, "Diagnostic: test capture threw (access denied).");
-            await SendDesktopError(webSocket,
-                $"Screen capture error on host: {ex.GetType().Name}: {ex.Message}",
-                ct);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Diagnostic: test capture threw (invalid operation).");
-            await SendDesktopError(webSocket,
-                $"Screen capture error on host: {ex.GetType().Name}: {ex.Message}",
-                ct);
-        }
-
         // ── Main frame loop ──
         var stopwatch = Stopwatch.StartNew();
         int consecutiveFailures = 0;
-        int consecutiveSendStalls = 0;
         bool errorReported = false;
         int totalFramesSent = 0;
 
@@ -244,20 +197,13 @@ public sealed class RemoteDesktopHandler : IDisposable
 
             try
             {
-                // Offload to thread pool so a blocking GDI call (e.g. GDI fallback during
-                // Windows Terminal focus) can't stall the async stream loop indefinitely.
-                // With DXGI as primary path this is a no-op cost; safety net for GDI fallback.
-                using var captureCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                captureCts.CancelAfter(TimeSpan.FromSeconds(3));
                 byte[] jpegBytes;
                 try
                 {
-                    var captureTask = Task.Run(() => _screenCapture.CaptureScreenAsync(_quality, _scale, captureCts.Token), captureCts.Token);
-                    jpegBytes = await captureTask;
+                    jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct);
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    _logger.LogWarning("Frame capture timed out after 3s — GDI may be blocking on an MPO window. Skipping frame.");
                     consecutiveFailures++;
                     continue;
                 }
@@ -266,42 +212,11 @@ public sealed class RemoteDesktopHandler : IDisposable
                     consecutiveFailures = 0;
                     errorReported = false;
 
-                    // Apply a per-send timeout to detect TCP congestion (Error 10054).
-                    // If the socket send buffer is full, SendAsync will stall indefinitely.
-                    using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    sendCts.CancelAfter(FrameSendTimeout);
-                    var sendSw = Stopwatch.StartNew();
-                    try
-                    {
-                        await webSocket.SendAsync(
-                            new ArraySegment<byte>(jpegBytes),
-                            WebSocketMessageType.Binary,
-                            endOfMessage: true,
-                            sendCts.Token);
-                        sendSw.Stop();
-                        consecutiveSendStalls = 0;
-
-                        if (sendSw.ElapsedMilliseconds > 1000)
-                        {
-                            _logger.LogWarning(
-                                "Frame send took {Ms}ms — network may be congested (frame #{N}, {Size} bytes).",
-                                sendSw.ElapsedMilliseconds, totalFramesSent, jpegBytes.Length);
-                        }
-                    }
-                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                    {
-                        consecutiveSendStalls++;
-                        _logger.LogWarning(
-                            "Frame send timed out after {Timeout}s (stall #{N}) — dropping frame.",
-                            FrameSendTimeout.TotalSeconds, consecutiveSendStalls);
-
-                        if (consecutiveSendStalls >= 3)
-                        {
-                            _logger.LogError("3 consecutive frame send timeouts — connection is stalled, aborting stream.");
-                            break;
-                        }
-                        continue; // Skip the throttle delay, try next frame immediately
-                    }
+                    await webSocket.SendAsync(
+                        new ArraySegment<byte>(jpegBytes),
+                        WebSocketMessageType.Binary,
+                        endOfMessage: true,
+                        ct);
 
                     totalFramesSent++;
                 }
@@ -335,8 +250,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 _logger.LogWarning("Screen capture failing consistently ({Count} consecutive). Sent {Total} frames total so far.", consecutiveFailures, totalFramesSent);
                 await SendDesktopError(webSocket,
                     totalFramesSent == 0
-                        ? "Screen capture is not working on the host. If the host is running as a Windows Service " +
-                          "(Session 0), screen capture is unavailable. Run the Remex Desktop app interactively on the host PC."
+                        ? "Screen capture is not working on the host."
                         : $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.",
                     ct);
             }

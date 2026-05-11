@@ -47,7 +47,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
             => Task.FromResult(FakeJpeg);
 
-        public (int Width, int Height, int Left, int Top) GetScreenSize() => (1920, 1080, 0, 0);
+        public (int Width, int Height, int Left, int Top) GetScreenSize() => (3200, 1080, -1280, 0);
     }
 
     private class MockInputSimulationService : IInputSimulationService
@@ -128,8 +128,10 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
                 new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
             Assert.NotNull(metaMsg);
             Assert.Equal(MessageTypes.DesktopMeta, metaMsg!.Type);
-            Assert.Equal(1920, metaMsg.DesktopMeta!.ScreenWidth);
+            Assert.Equal(3200, metaMsg.DesktopMeta!.ScreenWidth);
             Assert.Equal(1080, metaMsg.DesktopMeta.ScreenHeight);
+            Assert.Equal(-1280, metaMsg.DesktopMeta.DesktopLeft);
+            Assert.Equal(0, metaMsg.DesktopMeta.DesktopTop);
         }
 
         // Second message should be a binary frame
