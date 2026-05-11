@@ -7,9 +7,8 @@ private const val TAG = "RemexCoreClient"
 /**
  * JNI Bridge for Remex.Core NativeAOT library.
  *
- * This class corresponds to the entry points defined in AndroidNativeExports.cs.
- * Ensure the compiled native library (libRemexCore.so) is located in
- * src/main/jniLibs/arm64-v8a/
+ * This class corresponds to the entry points defined in AndroidNativeExports.cs. Ensure the
+ * compiled native library (libRemexCore.so) is located in src/main/jniLibs/arm64-v8a/
  */
 object RemexCoreClient {
 
@@ -37,7 +36,11 @@ object RemexCoreClient {
             isLibraryLoaded = true
             Log.i(TAG, "Loaded libRemexCore.so successfully")
         } catch (e: UnsatisfiedLinkError) {
-            Log.e(TAG, "Failed to load native library libRemexCore.so. Ensure the compiled .so is present in jniLibs/arm64-v8a/", e)
+            Log.e(
+                    TAG,
+                    "Failed to load native library libRemexCore.so. Ensure the compiled .so is present in jniLibs/arm64-v8a/",
+                    e
+            )
         }
     }
 
@@ -53,8 +56,7 @@ object RemexCoreClient {
         }
     }
 
-    @JvmStatic
-    private external fun RegisterCallbackNative(callback: RemexCallback?)
+    @JvmStatic private external fun RegisterCallbackNative(callback: RemexCallback?)
 
     @JvmStatic
     fun InitRemex(initJson: String): Result<String> {
@@ -115,9 +117,7 @@ object RemexCoreClient {
         }
     }
 
-    @JvmStatic
-    @JvmName("GetTelemetryNative")
-    private external fun GetTelemetryNative(): String
+    @JvmStatic @JvmName("GetTelemetryNative") private external fun GetTelemetryNative(): String
 
     @JvmStatic
     fun SendMessage(messageJson: String): Result<String> {
@@ -201,9 +201,7 @@ object RemexCoreClient {
         }
     }
 
-    @JvmStatic
-    @JvmName("StopDesktopStreamNative")
-    private external fun StopDesktopStreamNative()
+    @JvmStatic @JvmName("StopDesktopStreamNative") private external fun StopDesktopStreamNative()
 
     @JvmStatic
     @JvmName("StartPairingNative")
@@ -223,7 +221,10 @@ object RemexCoreClient {
     ): Result<String> {
         return if (isLibraryLoaded) {
             try {
-                Log.d(TAG, "StartPairing → native (host=$hostUrl, client=$clientName v$clientVersion)")
+                Log.d(
+                        TAG,
+                        "StartPairing → native (host=$hostUrl, client=$clientName v$clientVersion)"
+                )
                 val result = StartPairingNative(hostUrl, clientName, clientVersion, clientId)
                 Log.d(TAG, "StartPairing ← native result: $result")
                 Result.success(result)
@@ -308,10 +309,9 @@ object RemexCoreClient {
     }
 
     /**
-     * Frees unmanaged memory previously allocated on the native heap and returned
-     * as a pointer. Reserved for future use if [Export] is changed to use
-     * Marshal.AllocHGlobal instead of JNI-managed jstring references.
+     * Frees unmanaged memory previously allocated on the native heap and returned as a pointer.
+     * Reserved for future use if [Export] is changed to use Marshal.AllocHGlobal instead of
+     * JNI-managed jstring references.
      */
-    @JvmStatic
-    internal external fun FreeMemory(pointer: Long)
+    @JvmStatic internal external fun FreeMemory(pointer: Long)
 }

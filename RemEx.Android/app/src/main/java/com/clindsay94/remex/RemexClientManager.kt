@@ -183,14 +183,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                         )
                         val pairResult =
                                 RemexCoreClient.StartPairing(
-                                        "wss://$host:$port/ws",
-                                        "Android Client",
-                                "2.0.0",
-                                clientId
-                                ).getOrNull()
+                                                "wss://$host:$port/ws",
+                                                "Android Client",
+                                                "2.0.0",
+                                                clientId
+                                        )
+                                        .getOrNull()
 
                         if (pairResult == "OK") {
-                            val submitResult = RemexCoreClient.SubmitPairingPin(pairingPin).getOrNull() ?: ""
+                            val submitResult =
+                                    RemexCoreClient.SubmitPairingPin(pairingPin).getOrNull() ?: ""
                             if (submitResult.startsWith("OK:")) {
                                 val parts = submitResult.substring(3).split("|")
                                 if (parts.size >= 2) {

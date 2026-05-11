@@ -60,7 +60,7 @@ public class PairingClient
             response = await ReceiveMessageAsync(ct);
             if (response?.Type == MessageTypes.PairingResponse)
                 break;
-            
+
             _log?.Invoke($"Ignoring non-pairing message during handshake: {response?.Type}");
         }
 
@@ -86,7 +86,7 @@ public class PairingClient
             // Agree + KDF on receive
             using var hostPeer = ECDiffieHellman.Create();
             hostPeer.ImportSubjectPublicKeyInfo(Convert.FromBase64String(pairingResponse.HostPublicKeyBase64), out _);
-            
+
             byte[] ss = _clientEcdh.DeriveRawSecretAgreement(hostPeer.PublicKey);
 
             // Derive session key via HKDF-SHA256(sharedSecret, salt=certSpkiHash, info="remex-pair-v1")
@@ -134,7 +134,7 @@ public class PairingClient
                 confirm = await ReceiveMessageAsync(ct);
                 if (confirm?.Type == MessageTypes.PairingComplete || confirm?.Type == MessageTypes.PairingError)
                     break;
-                
+
                 _log?.Invoke($"Ignoring non-pairing message during confirmation: {confirm?.Type}");
             }
 

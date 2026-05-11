@@ -46,7 +46,10 @@ class PairingViewModel : ViewModel() {
     ): Boolean {
         _uiState.value = PairingUiState(isLoading = true)
 
-        val result = withContext(Dispatchers.IO) { RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: "" }
+        val result =
+                withContext(Dispatchers.IO) {
+                    RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: ""
+                }
 
         if (result.startsWith("OK:")) {
             val parts = result.substring(3).split("|")
@@ -93,7 +96,8 @@ class PairingViewModel : ViewModel() {
             val result =
                     withContext(Dispatchers.IO) {
                         RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion, clientId)
-                                .getOrNull() ?: ""
+                                .getOrNull()
+                                ?: ""
                     }
             startPairingInFlight = false
             if (result == "OK") {
@@ -209,8 +213,12 @@ fun PairingScreen(
                                                 PinnedHostStore.setPin(context, hostId, spkiHash)
                                                 PinnedHostStore.setPin(context, host, spkiHash)
                                             } catch (e: Exception) {
-                                                // If setPin still fails after recovery attempts, surface it to the ViewModel
-                                                viewModel.setError(e.message ?: "Failed to save pinned host securely.")
+                                                // If setPin still fails after recovery attempts,
+                                                // surface it to the ViewModel
+                                                viewModel.setError(
+                                                        e.message
+                                                                ?: "Failed to save pinned host securely."
+                                                )
                                                 // Re-throw to prevent calling onPairSuccess()
                                                 throw e
                                             }
