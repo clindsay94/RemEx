@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,10 @@ namespace Remex.Host.Services.ScreenCapture;
 [SupportedOSPlatform("linux")]
 public class LinuxScreenCaptureService : IScreenCaptureService
 {
+    private static readonly Regex XrandrGeometryRegex = new(
+        @"^(?<width>\d+)x(?<height>\d+)(?<x>[+-]\d+)(?<y>[+-]\d+)$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     private readonly ILogger<LinuxScreenCaptureService> _logger;
     private int _screenWidth;
     private int _screenHeight;
@@ -324,93 +329,22 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var output = proc.StandardOutput.ReadToEnd();
             proc.WaitForExit(3000);
 
-            foreach (var line in output.Split('\n'))
+            var lines = SplitLines(output);
+            if (TryGetVirtualDesktopBounds(lines, out var width, out var height, out var left, out var top))
             {
-                if (line.StartsWith("Screen ") && line.Contains("current "))
-                {
-                    var parts = line.Split("current ")[1].Split(',');
-                    var dims = parts[0].Trim().Split(" x ");
-                    if (dims.Length == 2 && int.TryParse(dims[0], out int w) && int.TryParse(dims[1], out int h))
-                    {
-                        _screenWidth = w;
-                        _screenHeight = h;
-
-                        int minX = 0, minY = 0;
-                        foreach (var innerLine in output.Split('\n'))
-                        {
-                            if (!innerLine.Contains(" connected") || !innerLine.Contains('x')) continue;
-                            var tokens = innerLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            foreach (var part in tokens)
-                            {
-                                if (!part.Contains('x') || !part.Contains('+')) continue;
-                                var geom = part.Split('+');
-                                if (geom.Length >= 3 && int.TryParse(geom[1], out int px) && int.TryParse(geom[2], out int py))
-                                {
-                                    minX = Math.Min(minX, px);
-                                    minY = Math.Min(minY, py);
-                                }
-                                break;
-                            }
-                        }
-
-                        _primaryX = minX;
-                        _primaryY = minY;
-                        _primaryWidth = w;
-                        _primaryHeight = h;
-
-                        return true;
-                    }
-                }
-            }
-
-            int minX2 = 0, minY2 = 0;
-            int maxX = 0, maxY = 0;
-            bool foundAny = false;
-            foreach (var line in output.Split('\n'))
-            {
-                if (!line.Contains(" connected") || !line.Contains('x')) continue;
-
-                var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var part in parts)
-                {
-                    if (!part.Contains('x') || !part.Contains('+')) continue;
-                    var geom = part.Split('+');
-                    var wh = geom[0].Split('x');
-                    if (wh.Length != 2) continue;
-                    if (!int.TryParse(wh[0], out int w) || !int.TryParse(wh[1], out int h)) continue;
-                    int x = geom.Length > 1 && int.TryParse(geom[1], out int px) ? px : 0;
-                    int y = geom.Length > 2 && int.TryParse(geom[2], out int py) ? py : 0;
-
-                    if (!foundAny)
-                    {
-                        minX2 = x;
-                        minY2 = y;
-                        maxX = x + w;
-                        maxY = y + h;
-                        foundAny = true;
-                    }
-                    else
-                    {
-                        minX2 = Math.Min(minX2, x);
-                        minY2 = Math.Min(minY2, y);
-                        maxX = Math.Max(maxX, x + w);
-                        maxY = Math.Max(maxY, y + h);
-                    }
-                    break;
-                }
-            }
-            if (foundAny)
-            {
-                _primaryX = minX2;
-                _primaryY = minY2;
-                _primaryWidth = maxX - minX2;
-                _primaryHeight = maxY - minY2;
-                _screenWidth = _primaryWidth;
-                _screenHeight = _primaryHeight;
+                _primaryX = left;
+                _primaryY = top;
+                _primaryWidth = width;
+                _primaryHeight = height;
+                _screenWidth = width;
+                _screenHeight = height;
                 return true;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "xrandr screen-size detection failed.");
+        }
         return false;
     }
     private bool TryDetectWithXdpyinfo()
@@ -548,5 +482,136 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         {
             return -1;
         }
+    }
+
+    private static string[] SplitLines(string output) =>
+        output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    internal static bool TryGetVirtualDesktopBounds(
+        string[] lines,
+        out int width,
+        out int height,
+        out int left,
+        out int top)
+    {
+        width = 0;
+        height = 0;
+        left = 0;
+        top = 0;
+
+        int minX = 0;
+        int minY = 0;
+        bool foundOffset = false;
+
+        foreach (var line in lines)
+        {
+            if (!line.StartsWith("Screen ", StringComparison.Ordinal) || !line.Contains("current ", StringComparison.Ordinal))
+                continue;
+
+            var currentIndex = line.IndexOf("current ", StringComparison.Ordinal);
+            if (currentIndex < 0)
+                continue;
+
+            var dimsSection = line[(currentIndex + "current ".Length)..];
+            var commaIndex = dimsSection.IndexOf(',');
+            if (commaIndex >= 0)
+                dimsSection = dimsSection[..commaIndex];
+
+            var dims = dimsSection.Split(" x ", StringSplitOptions.TrimEntries);
+            if (dims.Length != 2 ||
+                !int.TryParse(dims[0], out width) ||
+                !int.TryParse(dims[1], out height))
+            {
+                continue;
+            }
+
+            foreach (var innerLine in lines)
+            {
+                if (!TryParseXrandrGeometry(innerLine, out _, out _, out var x, out var y))
+                    continue;
+
+                minX = foundOffset ? Math.Min(minX, x) : x;
+                minY = foundOffset ? Math.Min(minY, y) : y;
+                foundOffset = true;
+            }
+
+            left = foundOffset ? minX : 0;
+            top = foundOffset ? minY : 0;
+            return true;
+        }
+
+        int maxX = 0;
+        int maxY = 0;
+        bool foundAny = false;
+
+        foreach (var line in lines)
+        {
+            if (!TryParseXrandrGeometry(line, out var currentWidth, out var currentHeight, out var x, out var y))
+                continue;
+
+            if (!foundAny)
+            {
+                minX = x;
+                minY = y;
+                maxX = x + currentWidth;
+                maxY = y + currentHeight;
+                foundAny = true;
+            }
+            else
+            {
+                minX = Math.Min(minX, x);
+                minY = Math.Min(minY, y);
+                maxX = Math.Max(maxX, x + currentWidth);
+                maxY = Math.Max(maxY, y + currentHeight);
+            }
+        }
+
+        if (!foundAny)
+            return false;
+
+        left = minX;
+        top = minY;
+        width = maxX - minX;
+        height = maxY - minY;
+        return true;
+    }
+
+    private static bool TryParseXrandrGeometry(
+        string line,
+        out int width,
+        out int height,
+        out int x,
+        out int y)
+    {
+        width = 0;
+        height = 0;
+        x = 0;
+        y = 0;
+
+        if (!line.Contains(" connected", StringComparison.Ordinal) || !line.Contains('x'))
+            return false;
+
+        var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var part in parts)
+        {
+            if (!part.Contains('x'))
+                continue;
+
+            var match = XrandrGeometryRegex.Match(part);
+            if (!match.Success)
+                continue;
+
+            if (!int.TryParse(match.Groups["width"].Value, out width) ||
+                !int.TryParse(match.Groups["height"].Value, out height) ||
+                !int.TryParse(match.Groups["x"].Value, out x) ||
+                !int.TryParse(match.Groups["y"].Value, out y))
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }
