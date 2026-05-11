@@ -16,7 +16,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 {
     private static readonly Regex XrandrGeometryRegex = new(
         @"^(?<width>\d+)x(?<height>\d+)(?<x>[+-]\d+)(?<y>[+-]\d+)$",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private readonly ILogger<LinuxScreenCaptureService> _logger;
     private int _screenWidth;
