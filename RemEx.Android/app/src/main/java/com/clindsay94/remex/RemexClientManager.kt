@@ -3,6 +3,7 @@ package com.clindsay94.remex
 import android.content.Context
 import android.util.Log
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.service.RemexConnectionService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,6 +65,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         if (settingsManager != null) return
 
         settingsManager = SettingsManager(context)
+
+        managerScope.launch {
+            val host = settingsManager?.hostFlow?.first().orEmpty()
+            if (host.isNotBlank()) {
+                runCatching { RemexConnectionService.start(context) }
+                        .onFailure { Log.w("RemexManager", "Failed to start keepalive service during initialize", it) }
+            }
+        }
 
         // Start Global Connection Heartbeat with exponential backoff.
         // Interval = min(BASE_DELAY_MS * 2^failures, MAX_DELAY_MS).
@@ -145,7 +154,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     val fileTransferMessages = _fileTransferMessages.asSharedFlow()
 
     private suspend fun connect(pairingPin: String? = null, isAutoConnect: Boolean = false) {
-        val settings = settingsManager ?: return
+        val settings = settingsManager ?: run {
+            _isConnecting.value = false
+            return
+        }
         val host = settings.hostFlow.first()
         val port = settings.portFlow.first()
         val clientId = settings.getOrCreateClientId()
@@ -283,7 +295,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onConnectionStateChanged(isConnected: Boolean) {
         _isConnected.value = isConnected
-        if (isConnected) _isConnecting.value = false
+        _isConnecting.value = false
     }
 
     fun setConnecting(isConnecting: Boolean) {
@@ -330,6 +342,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     }
 
     override fun onConnectionError(reason: String) {
+        _isConnected.value = false
+        _isConnecting.value = false
         _connectionError.tryEmit(reason)
     }
 }

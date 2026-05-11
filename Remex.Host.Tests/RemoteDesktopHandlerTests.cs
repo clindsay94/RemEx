@@ -115,7 +115,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
             builder.ConfigureServices(services =>
             {
                 services.AddSingleton<IScreenCaptureService, MockScreenCaptureService>();
-                services.AddSingleton<IInputSimulationService, MockInputSimulationService>();
+                services.AddSingleton<MockInputSimulationService>();
+                services.AddSingleton<IInputSimulationService>(sp => sp.GetRequiredService<MockInputSimulationService>());
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
                 services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
                 services.AddSingleton<IHostCapabilitiesProvider, MockHostCapabilitiesProvider>();
@@ -305,6 +306,44 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         Assert.Equal("query-1", response.DesktopWindowResult.RequestId);
         Assert.Single(response.DesktopWindowResult.Windows!);
         Assert.Equal("Test Window", response.DesktopWindowResult.Windows![0].Title);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task DesktopInput_MouseClickWithoutCoordinates_DoesNotMoveCursor()
+    {
+        var factory = GetFactory();
+        var input = factory.Services.GetRequiredService<MockInputSimulationService>();
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        var startMsg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig { Quality = 50, Scale = 0.5, TargetFps = 5 },
+        };
+        await MessageSerializer.SendAsync(ws, startMsg, CancellationToken.None);
+
+        var buffer = new byte[4096];
+        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // desktop_meta
+        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // first frame
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.DesktopInput,
+            InputEvent = new InputEvent
+            {
+                EventType = InputEventTypes.MouseClick,
+                Button = 0,
+            },
+        }, CancellationToken.None);
+
+        await Task.Delay(100);
+
+        Assert.Contains("click:0", input.ReceivedEvents);
+        Assert.DoesNotContain(input.ReceivedEvents, evt => evt.StartsWith("move:", StringComparison.Ordinal));
 
         await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, CancellationToken.None);
     }

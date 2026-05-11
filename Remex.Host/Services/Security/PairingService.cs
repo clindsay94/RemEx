@@ -116,20 +116,26 @@ public sealed class PairingService : IPairingService
 
     public Task<bool> VerifyClientHmacAsync(string clientHmacBase64, CancellationToken ct)
     {
-        if (_activePin is null || !IsPairingActive)
-        {
-            _logger.LogWarning("Pairing verification attempted but no active session or session expired.");
-            return Task.FromResult(false);
-        }
+        return VerifyClientHmacCoreAsync(clientHmacBase64, ct);
+    }
 
-        if (_sessionKey is null)
-        {
-            _logger.LogWarning("Pairing verification attempted but session key not yet derived (client public key not received).");
-            return Task.FromResult(false);
-        }
-
+    private async Task<bool> VerifyClientHmacCoreAsync(string clientHmacBase64, CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
         try
         {
+            if (_activePin is null || !IsPairingActive)
+            {
+                _logger.LogWarning("Pairing verification attempted but no active session or session expired.");
+                return false;
+            }
+
+            if (_sessionKey is null)
+            {
+                _logger.LogWarning("Pairing verification attempted but session key not yet derived (client public key not received).");
+                return false;
+            }
+
             // Compute expected HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
             var ackMessage = Encoding.UTF8.GetBytes("ack:" + _activePin);
             var expectedHmac = HMACSHA256.HashData(_sessionKey, ackMessage);
@@ -142,23 +148,40 @@ public sealed class PairingService : IPairingService
             if (match)
             {
                 _logger.LogInformation("Pairing verification successful.");
-                CancelPairing(); // Consume the session
+                CancelPairingCore(); // Consume the session
             }
             else
             {
                 _logger.LogWarning("Pairing verification failed — HMAC mismatch.");
             }
 
-            return Task.FromResult(match);
+            return match;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during pairing verification.");
-            return Task.FromResult(false);
+            return false;
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 
     public void CancelPairing()
+    {
+        _lock.Wait();
+        try
+        {
+            CancelPairingCore();
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private void CancelPairingCore()
     {
         _activePin = null;
         if (_sharedSecret != null)

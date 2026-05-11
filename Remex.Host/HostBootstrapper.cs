@@ -29,6 +29,7 @@ public static class HostBootstrapper
     /// Used by remote desktop to detect self-connections (infinite mirror prevention).
     /// </summary>
     public static string InstanceId { get; } = Guid.NewGuid().ToString("N");
+    public static string HostId => Environment.MachineName;
 
 
     /// <summary>
@@ -199,7 +200,7 @@ public static class HostBootstrapper
             {
                 host = "0.0.0.0", // Client should substitute with actual host address
                 port = port,
-                hostId = HostBootstrapper.InstanceId,
+                hostId = HostId,
                 spkiHashBase64 = certService.GetSpkiSha256Base64()
             });
         });
@@ -244,13 +245,34 @@ public static class HostBootstrapper
         });
 
         // Remote Desktop WebSocket endpoint (dedicated binary stream)
-        app.Map("/ws/desktop", async (HttpContext context) =>
+        app.Map("/ws/desktop", async (HttpContext context, PairedClientRegistry pairedClientRegistry) =>
         {
             if (!context.WebSockets.IsWebSocketRequest)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("WebSocket connections only.");
                 return;
+            }
+
+            var remoteIp = context.Connection.RemoteIpAddress;
+            var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
+            var clientId = context.Request.Query["clientId"].ToString();
+
+            if (!isLoopback)
+            {
+                if (string.IsNullOrWhiteSpace(clientId))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    await context.Response.WriteAsync("Paired client ID is required.");
+                    return;
+                }
+
+                if (!pairedClientRegistry.IsClientPaired(clientId))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    await context.Response.WriteAsync("Client is not paired.");
+                    return;
+                }
             }
 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();

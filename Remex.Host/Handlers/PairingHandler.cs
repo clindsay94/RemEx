@@ -63,7 +63,7 @@ public sealed class PairingHandler
                 PairingResponse = new PairingResponse
                 {
                     HostPublicKeyBase64 = state.HostPublicKeyBase64,
-                    HostId = Environment.MachineName,
+                    HostId = HostBootstrapper.HostId,
                     HostName = Environment.MachineName,
                     CertificateSpkiHashBase64 = _certificateService.GetSpkiSha256Base64(),
                     PinHmacBase64 = pinHmacBase64,
@@ -132,4 +132,6 @@ public sealed class PairingHandler
         Type = MessageTypes.PairingError,
         ErrorText = errorText,
     };
+
+    public void CancelActivePairing() => _pairingService.CancelPairing();
 }

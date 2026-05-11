@@ -172,8 +172,8 @@ public static class AndroidNativeExports
         {
             try
             {
-                var (host, port, accessKey) = GetDesktopEndpoint();
-                await RemexDesktopClient.Current.StartStreamAsync(host, port, config, accessKey);
+                var (host, port, clientId, accessKey) = GetDesktopEndpoint();
+                await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, accessKey);
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StartDesktopStream failed: {ex.Message}"); }
         });
@@ -568,8 +568,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), spkiHash);
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), clientId, spkiHash);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopStart failed: {ex.Message}"); }
                 });
@@ -580,8 +580,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, spkiHash);
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, clientId, spkiHash);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopInput failed: {ex.Message}"); }
                 });
@@ -592,8 +592,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, spkiHash);
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, clientId, spkiHash);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopConfig failed: {ex.Message}"); }
                 });
@@ -604,8 +604,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.QueryWindowsAsync(host, port, message.DesktopWindowQuery, spkiHash);
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.QueryWindowsAsync(host, port, message.DesktopWindowQuery, clientId, spkiHash);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopWindowQuery failed: {ex.Message}"); }
                 });
@@ -616,8 +616,8 @@ public static class AndroidNativeExports
                 {
                     try
                     {
-                        var (host, port, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.ExecuteWindowActionAsync(host, port, message.DesktopWindowAction, spkiHash);
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.ExecuteWindowActionAsync(host, port, message.DesktopWindowAction, clientId, spkiHash);
                     }
                     catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopWindowAction failed: {ex.Message}"); }
                 });
@@ -772,11 +772,15 @@ public static class AndroidNativeExports
         }
     }
 
-    private static (string Host, int Port, string SpkiHash) GetDesktopEndpoint()
+    private static (string Host, int Port, string ClientId, string SpkiHash) GetDesktopEndpoint()
     {
         lock (SyncRoot)
         {
-            return (_lastInitRequest.Host, _lastInitRequest.Port, _lastInitRequest.SpkiHash);
+            return (
+                _lastInitRequest.Host,
+                _lastInitRequest.Port,
+                _lastInitRequest.ClientId ?? string.Empty,
+                _lastInitRequest.SpkiHash);
         }
     }
 

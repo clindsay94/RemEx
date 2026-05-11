@@ -36,6 +36,7 @@ public sealed class PingPongHandler(
         // complete the PIN-based pairing handshake before issuing destructive or stateful commands.
         // We also check the registry to see if this client (by ID) has previously paired.
         bool isPaired = isLoopback;
+        bool pairingStarted = false;
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -227,7 +228,10 @@ public sealed class PingPongHandler(
                     case MessageTypes.PairingRequest:
                         var pairingResponse = await pairingHandler.HandlePairingRequestAsync(message, ct);
                         if (pairingResponse is not null)
+                        {
                             await MessageSerializer.SendAsync(webSocket, pairingResponse, ct);
+                            pairingStarted = pairingResponse.Type == MessageTypes.PairingResponse;
+                        }
                         break;
 
                     case MessageTypes.PairingComplete:
@@ -237,6 +241,7 @@ public sealed class PingPongHandler(
                         if (completeResponse is { Type: MessageTypes.PairingComplete, CommandSuccess: true })
                         {
                             isPaired = true;
+                            pairingStarted = false;
                             logger.LogInformation("Pairing verified — connection authenticated.");
                         }
                         break;
@@ -295,6 +300,12 @@ public sealed class PingPongHandler(
 
         // Clean up any active file transfers for this connection
         await fileTransferHandler.CleanupAllTransfersAsync();
+
+        if (pairingStarted)
+        {
+            pairingHandler.CancelActivePairing();
+            logger.LogInformation("Cancelled interrupted pairing session for disconnected client.");
+        }
 
         // Cancel background stream
         streamCts.Cancel();

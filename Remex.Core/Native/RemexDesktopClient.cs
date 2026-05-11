@@ -34,11 +34,11 @@ public sealed class RemexDesktopClient : IDisposable
 
     private RemexDesktopClient() { }
 
-    public async Task ConnectAsync(string host, int port, string? spkiHash = null, CancellationToken ct = default)
+    public async Task ConnectAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
         await DisconnectAsync();
 
-        var wsUri = new Uri($"wss://{host}:{port}{RemexConstants.WebSocketPath}/desktop");
+        var wsUri = BuildDesktopUri(host, port, clientId);
         _webSocket = new ClientWebSocket();
 
         if (!string.IsNullOrEmpty(spkiHash))
@@ -59,19 +59,19 @@ public sealed class RemexDesktopClient : IDisposable
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
     }
 
-    public async Task EnsureConnectedAsync(string host, int port, string? spkiHash = null, CancellationToken ct = default)
+    public async Task EnsureConnectedAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
         if (IsConnected)
         {
             return;
         }
 
-        await ConnectAsync(host, port, spkiHash, ct);
+        await ConnectAsync(host, port, clientId, spkiHash, ct);
     }
 
-    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? spkiHash = null, CancellationToken ct = default)
+    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         var resolvedConfig = config ?? DefaultConfig;
 
@@ -105,13 +105,13 @@ public sealed class RemexDesktopClient : IDisposable
         _isStreaming = false;
     }
 
-    public async Task SendInputAsync(string host, int port, InputEvent input, string? spkiHash = null, CancellationToken ct = default)
+    public async Task SendInputAsync(string host, int port, InputEvent input, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         if (!_isStreaming)
         {
-            await StartStreamAsync(host, port, DefaultConfig, spkiHash, ct);
+            await StartStreamAsync(host, port, DefaultConfig, clientId, spkiHash, ct);
         }
 
         await SendMessageAsync(new RemexMessage
@@ -135,9 +135,9 @@ public sealed class RemexDesktopClient : IDisposable
         }, ct);
     }
 
-    public async Task<DesktopWindowResult> QueryWindowsAsync(string host, int port, DesktopWindowQuery query, string? spkiHash = null, CancellationToken ct = default)
+    public async Task<DesktopWindowResult> QueryWindowsAsync(string host, int port, DesktopWindowQuery query, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         var requestId = string.IsNullOrWhiteSpace(query.RequestId) ? Guid.NewGuid().ToString("N") : query.RequestId;
         var tcs = new TaskCompletionSource<DesktopWindowResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -162,9 +162,9 @@ public sealed class RemexDesktopClient : IDisposable
         }
     }
 
-    public async Task<DesktopWindowResult> ExecuteWindowActionAsync(string host, int port, DesktopWindowAction action, string? spkiHash = null, CancellationToken ct = default)
+    public async Task<DesktopWindowResult> ExecuteWindowActionAsync(string host, int port, DesktopWindowAction action, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
-        await EnsureConnectedAsync(host, port, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         var requestId = string.IsNullOrWhiteSpace(action.RequestId) ? Guid.NewGuid().ToString("N") : action.RequestId;
         var tcs = new TaskCompletionSource<DesktopWindowResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -198,6 +198,17 @@ public sealed class RemexDesktopClient : IDisposable
 
         var bytes = RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
         await _webSocket!.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+    }
+
+    private static Uri BuildDesktopUri(string host, int port, string? clientId)
+    {
+        var uri = $"wss://{host}:{port}{RemexConstants.WebSocketPath}/desktop";
+        if (!string.IsNullOrWhiteSpace(clientId))
+        {
+            uri += $"?clientId={Uri.EscapeDataString(clientId)}";
+        }
+
+        return new Uri(uri);
     }
 
     public async Task DisconnectAsync()

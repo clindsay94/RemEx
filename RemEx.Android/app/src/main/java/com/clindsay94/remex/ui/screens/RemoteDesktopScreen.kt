@@ -167,6 +167,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onSendText = { viewModel.sendText(it) },
                 onSendKeyPress = { viewModel.sendKeyPress(it) },
                 onSendMouseDown = { b, x, y -> viewModel.sendMouseDown(b, x, y) },
+                onSendMouseClick = { b -> viewModel.sendMouseClick(b) },
                 onSendMouseUp = { b -> viewModel.sendMouseUp(b) },
                 onSendMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
                 onSendMouseAbsolute = { x, y -> viewModel.sendMouseAbsolute(x, y) },
@@ -206,7 +207,8 @@ fun RemoteDesktopScreenContent(
         onStopStreaming: () -> Unit,
         onSendText: (String) -> Unit,
         onSendKeyPress: (Int) -> Unit,
-        onSendMouseDown: (Int, Int, Int) -> Unit,
+        onSendMouseDown: (Int, Int?, Int?) -> Unit,
+        onSendMouseClick: (Int) -> Unit,
         onSendMouseUp: (Int) -> Unit,
         onSendMouseMove: (Float, Float) -> Unit,
         onSendMouseAbsolute: (Int, Int) -> Unit,
@@ -1150,8 +1152,8 @@ fun RemoteDesktopScreenContent(
                                                                                                                 } else {
                                                                                                                         onSendMouseDown(
                                                                                                                                 0,
-                                                                                                                                -1,
-                                                                                                                                -1
+                                                                                                                                null,
+                                                                                                                                null
                                                                                                                         )
                                                                                                                 }
                                                                                                                 isDragging =
@@ -1172,8 +1174,8 @@ fun RemoteDesktopScreenContent(
                                                                                                                 // moving after 500ms hold
                                                                                                                 onSendMouseDown(
                                                                                                                         0,
-                                                                                                                        -1,
-                                                                                                                        -1
+                                                                                                                        null,
+                                                                                                                        null
                                                                                                                 )
                                                                                                                 isDragging =
                                                                                                                         true
@@ -1316,10 +1318,8 @@ fun RemoteDesktopScreenContent(
                                                                                                                                         .toInt()
                                                                                                                         )
                                                                                                                 } else {
-                                                                                                                        onSendMouseAbsoluteClick(
-                                                                                                                                0,
-                                                                                                                                -1,
-                                                                                                                                -1
+                                                                                                                        onSendMouseClick(
+                                                                                                                                0
                                                                                                                         )
                                                                                                                 }
                                                                                                                 lastTap =
@@ -1346,10 +1346,8 @@ fun RemoteDesktopScreenContent(
                                                                                                                                         .toInt()
                                                                                                                         )
                                                                                                                 } else {
-                                                                                                                        onSendMouseAbsoluteClick(
-                                                                                                                                2,
-                                                                                                                                -1,
-                                                                                                                                -1
+                                                                                                                        onSendMouseClick(
+                                                                                                                                2
                                                                                                                         )
                                                                                                                 }
                                                                                                                 lastTap =

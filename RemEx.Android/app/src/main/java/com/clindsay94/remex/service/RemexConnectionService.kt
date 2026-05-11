@@ -14,8 +14,10 @@ import androidx.core.app.NotificationCompat
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -38,6 +40,8 @@ class RemexConnectionService : Service() {
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var notificationJob: Job? = null
+    private var hostMonitorJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -64,12 +68,19 @@ class RemexConnectionService : Service() {
         }
 
         // Update notification when connection state changes
-        serviceScope.launch {
+        notificationJob?.cancel()
+        notificationJob = serviceScope.launch {
             RemexClientManager.isConnected.collect { connected ->
                 val nm = getSystemService(NotificationManager::class.java)
                 nm.notify(NOTIFICATION_ID, buildNotification(isConnected = connected))
-                if (!connected) {
-                    // Auto-stop service when disconnected
+            }
+        }
+
+        hostMonitorJob?.cancel()
+        val settingsManager = SettingsManager(applicationContext)
+        hostMonitorJob = serviceScope.launch {
+            settingsManager.hostFlow.collect { host ->
+                if (host.isBlank()) {
                     stopSelf()
                 }
             }
