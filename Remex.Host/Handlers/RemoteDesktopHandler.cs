@@ -122,6 +122,9 @@ public sealed class RemoteDesktopHandler : IDisposable
                         _desktopTop = st;
 
                         var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+                        var streamMappingId = Guid.NewGuid().ToString("N");
+                        var streamSerial = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
                         var metaMsg = new RemexMessage
                         {
                             Type = MessageTypes.DesktopMeta,
@@ -134,9 +137,41 @@ public sealed class RemoteDesktopHandler : IDisposable
                                 HostInstanceId = HostBootstrapper.InstanceId,
                                 CursorX = cursorX,
                                 CursorY = cursorY,
+                                // Stage 3 additions
+                                CaptureBackend = _screenCapture.BackendName,
+                                InputBackend = _inputSimulation.BackendName,
+                                StreamMappingId = streamMappingId,
+                                LogicalWidth = sw,
+                                LogicalHeight = sh,
+                                PixelWidth = sw,
+                                PixelHeight = sh,
+                                StreamSerial = streamSerial,
+                                CursorMode = "absolute",
+                                CodecInfo = new DesktopCodecInfo
+                                {
+                                    Codec = DesktopCodecKind.Mjpeg,
+                                    TargetFps = _targetFps,
+                                },
+                                StylusCapabilities = DesktopStylusCapabilities.None,
                             }
                         };
                         await MessageSerializer.SendAsync(webSocket, metaMsg, ct);
+
+                        // Stage 3: send stream descriptor so client has mapping context
+                        var descriptorMsg = new RemexMessage
+                        {
+                            Type = MessageTypes.DesktopStreamDescriptor,
+                            DesktopStreamDescriptor = new DesktopStreamDescriptor
+                            {
+                                StreamMappingId = streamMappingId,
+                                StreamSerial = streamSerial,
+                                LogicalWidth = sw,
+                                LogicalHeight = sh,
+                                PixelWidth = sw,
+                                PixelHeight = sh,
+                            }
+                        };
+                        await MessageSerializer.SendAsync(webSocket, descriptorMsg, ct);
 
                         // Run stream + input receive + cursor update concurrently
                         using (var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -382,6 +417,25 @@ public sealed class RemoteDesktopHandler : IDisposable
                     case MessageTypes.DesktopStop:
                         await streamCts.CancelAsync();
                         return;
+
+                    case MessageTypes.DesktopPointerBatch when message.DesktopPointerBatch is not null:
+                        // Stage 3: high-rate stylus/pointer batches from Android.
+                        // Enqueue each sample individually so the input processor can handle them.
+                        // The input backend (Stage 5) will translate these to the appropriate OS events.
+                        foreach (var sample in message.DesktopPointerBatch.Samples)
+                        {
+                            // Convert coalesced history first (oldest samples), then the primary sample.
+                            if (sample.CoalescedHistory is { Count: > 0 })
+                            {
+                                foreach (var historic in sample.CoalescedHistory)
+                                {
+                                    EnqueuePointerSampleAsInputEvent(historic);
+                                }
+                            }
+
+                            EnqueuePointerSampleAsInputEvent(sample);
+                        }
+                        break;
                 }
             }
         }
@@ -468,6 +522,69 @@ public sealed class RemoteDesktopHandler : IDisposable
         _targetFps = Math.Clamp(config.TargetFps, 1, 360);
 
         _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}", _quality, _scale, _targetFps);
+    }
+
+    /// <summary>
+    /// Stage 3 bridge: maps a DesktopPointerSample onto a legacy InputEvent so the existing
+    /// DispatchInput path can handle it until Stage 5 introduces a dedicated stylus backend.
+    /// Non-stylus samples are mapped to mouse events. Stylus-specific data (pressure, tilt,
+    /// hover) is silently dropped here — it will be preserved end-to-end once Stage 5 lands.
+    /// </summary>
+    private void EnqueuePointerSampleAsInputEvent(DesktopPointerSample sample)
+    {
+        InputEvent? input = null;
+
+        switch (sample.Phase)
+        {
+            case PointerPhase.HoverMove:
+            case PointerPhase.ContactMove:
+                if (sample.LogicalX != 0 || sample.LogicalY != 0)
+                {
+                    input = new InputEvent
+                    {
+                        EventType = InputEventTypes.MouseMove,
+                        X = (int)sample.LogicalX,
+                        Y = (int)sample.LogicalY,
+                    };
+                }
+                else if (sample.Dx != 0 || sample.Dy != 0)
+                {
+                    input = new InputEvent
+                    {
+                        EventType = InputEventTypes.MouseMove,
+                        DeltaX = (int)sample.Dx,
+                        DeltaY = (int)sample.Dy,
+                    };
+                }
+                break;
+
+            case PointerPhase.ContactStart:
+                input = new InputEvent
+                {
+                    EventType = InputEventTypes.MouseDown,
+                    Button = 0,
+                    X = sample.LogicalX != 0 ? (int?)sample.LogicalX : null,
+                    Y = sample.LogicalY != 0 ? (int?)sample.LogicalY : null,
+                };
+                break;
+
+            case PointerPhase.ContactEnd:
+                input = new InputEvent
+                {
+                    EventType = InputEventTypes.MouseUp,
+                    Button = 0,
+                };
+                break;
+
+            // Hover start/end, button press/release — no-op in the legacy path.
+            default:
+                return;
+        }
+
+        if (input is not null && !_inputQueue.TryAdd(input))
+        {
+            _logger.LogDebug("Input queue full — dropping pointer sample phase={Phase}.", sample.Phase);
+        }
     }
 
     public void Dispose()

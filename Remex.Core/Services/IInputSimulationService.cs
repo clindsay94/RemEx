@@ -17,4 +17,10 @@ public interface IInputSimulationService
     /// Returns (0, 0) if unavailable.
     /// </summary>
     (int X, int Y) GetCursorPosition();
+
+    /// <summary>
+    /// Human-readable name of the active input backend for diagnostics and DesktopMeta.
+    /// Returns null when not available.
+    /// </summary>
+    string? BackendName => null;
 }

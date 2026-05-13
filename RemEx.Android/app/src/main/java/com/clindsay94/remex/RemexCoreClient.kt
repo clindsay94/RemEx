@@ -27,6 +27,7 @@ object RemexCoreClient {
         fun onDesktopError(errorText: String)
         fun onDesktopMeta(metaData: String)
         fun onDesktopWindowResult(resultData: String)
+        fun onDesktopStreamDescriptor(descriptor: String)
         fun onFileTransferMessage(json: String)
         fun onConnectionError(reason: String)
     }

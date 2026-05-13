@@ -27,6 +27,8 @@ public sealed class RemexDesktopClient : IDisposable
     public event Action<DesktopMeta>? MetaReceived;
     public event Action<string>? ErrorReceived;
     public event Action<DesktopWindowResult>? WindowResultReceived;
+    /// <summary>Raised when the host sends a stream surface descriptor (Stage 3).</summary>
+    public event Action<DesktopStreamDescriptor>? StreamDescriptorReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -132,6 +134,26 @@ public sealed class RemexDesktopClient : IDisposable
         {
             Type = MessageTypes.DesktopConfig,
             DesktopConfig = config,
+        }, ct);
+    }
+
+    /// <summary>
+    /// Sends a batch of high-resolution pointer/stylus samples to the host (Stage 3).
+    /// Falls back silently if not connected or not streaming.
+    /// </summary>
+    public async Task SendPointerBatchAsync(string host, int port, DesktopPointerBatch batch, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
+
+        if (!_isStreaming)
+        {
+            await StartStreamAsync(host, port, DefaultConfig, clientId, spkiHash, ct);
+        }
+
+        await SendMessageAsync(new RemexMessage
+        {
+            Type = MessageTypes.DesktopPointerBatch,
+            DesktopPointerBatch = batch,
         }, ct);
     }
 
@@ -287,6 +309,10 @@ public sealed class RemexDesktopClient : IDisposable
                         }
 
                         WindowResultReceived?.Invoke(msg.DesktopWindowResult);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopStreamDescriptor && msg.DesktopStreamDescriptor != null)
+                    {
+                        StreamDescriptorReceived?.Invoke(msg.DesktopStreamDescriptor);
                     }
                 }
             }

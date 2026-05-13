@@ -16,4 +16,10 @@ public interface IScreenCaptureService
     /// Gets the native screen dimensions and virtual desktop offsets for the captured area.
     /// </summary>
     (int Width, int Height, int Left, int Top) GetScreenSize();
+
+    /// <summary>
+    /// Human-readable name of the active capture backend for diagnostics and DesktopMeta.
+    /// Returns null when not available.
+    /// </summary>
+    string? BackendName => null;
 }

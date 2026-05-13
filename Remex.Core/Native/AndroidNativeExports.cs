@@ -32,6 +32,7 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopWindowResultMethodId;
     private static IntPtr _onFileTransferMessageMethodId;
     private static IntPtr _onConnectionErrorMethodId;
+    private static IntPtr _onDesktopStreamDescriptorMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -57,6 +58,7 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.ErrorReceived += OnNativeDesktopError;
         RemexDesktopClient.Current.MetaReceived += OnNativeMetaReceived;
         RemexDesktopClient.Current.WindowResultReceived += OnNativeDesktopWindowResult;
+        RemexDesktopClient.Current.StreamDescriptorReceived += OnNativeDesktopStreamDescriptor;
 
         EnsureOutboundSendLoopStarted();
     }
@@ -98,6 +100,7 @@ public static class AndroidNativeExports
         _onDesktopWindowResultMethodId = IntPtr.Zero;
         _onFileTransferMessageMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
+        _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
@@ -134,6 +137,7 @@ public static class AndroidNativeExports
             _onDesktopWindowResultMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
             _onFileTransferMessageMethodId = JniHelper.GetMethodID(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
             _onConnectionErrorMethodId = JniHelper.GetMethodID(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
+            _onDesktopStreamDescriptorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
 
             // Clean up the local class ref
             JniHelper.DeleteLocalRef(env, clazz);
@@ -190,6 +194,32 @@ public static class AndroidNativeExports
                 await RemexDesktopClient.Current.DisconnectAsync();
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StopDesktopStream failed: {ex.Message}"); }
+        });
+    }
+
+    /// <summary>
+    /// Sends a batch of high-resolution pointer/stylus samples to the host (Stage 3).
+    /// Called from Android Kotlin after raw MotionEvent capture.
+    /// </summary>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendDesktopPointerBatchNative")]
+    public static void SendDesktopPointerBatch(IntPtr env, IntPtr thiz, IntPtr batchJsonUtf8)
+    {
+        var batchJson = JniHelper.ReadJString(env, batchJsonUtf8);
+        if (string.IsNullOrWhiteSpace(batchJson))
+            return;
+
+        var batch = RemexJson.Deserialize(batchJson, RemexJsonSerializerContext.Default.DesktopPointerBatch);
+        if (batch is null)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var (host, port, clientId, accessKey) = GetDesktopEndpoint();
+                await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, accessKey);
+            }
+            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendDesktopPointerBatch failed: {ex.Message}"); }
         });
     }
 
@@ -713,6 +743,11 @@ public static class AndroidNativeExports
     private static void OnNativeDesktopWindowResult(DesktopWindowResult result)
     {
         NotifyJavaData(_onDesktopWindowResultMethodId, RemexJson.Serialize(result, RemexJsonSerializerContext.Default.DesktopWindowResult));
+    }
+
+    private static void OnNativeDesktopStreamDescriptor(DesktopStreamDescriptor descriptor)
+    {
+        NotifyJavaData(_onDesktopStreamDescriptorMethodId, RemexJson.Serialize(descriptor, RemexJsonSerializerContext.Default.DesktopStreamDescriptor));
     }
 
     private static void NotifyJavaFrame(byte[] frame)

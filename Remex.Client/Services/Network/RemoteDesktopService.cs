@@ -31,6 +31,8 @@ public class RemoteDesktopService : IDisposable
     public event Action<DesktopMeta>? MetaReceived;
     public event Action<string>? ErrorReceived;
     public event Action<DesktopWindowResult>? WindowResultReceived;
+    /// <summary>Raised when the host sends a stream surface descriptor (Stage 3).</summary>
+    public event Action<DesktopStreamDescriptor>? StreamDescriptorReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -271,6 +273,10 @@ public class RemoteDesktopService : IDisposable
                         }
 
                         WindowResultReceived?.Invoke(msg.DesktopWindowResult);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopStreamDescriptor && msg.DesktopStreamDescriptor is not null)
+                    {
+                        StreamDescriptorReceived?.Invoke(msg.DesktopStreamDescriptor);
                     }
                 }
             }

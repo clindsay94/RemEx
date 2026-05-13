@@ -7,6 +7,7 @@ using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host.Services.Input;
+using Remex.Host.Services.RemoteDesktop.Linux;
 using System.Collections.Generic;
 
 namespace Remex.Host.Tests;
@@ -75,6 +76,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
             SupportsRemoteDesktop = true,
             SupportsAdvancedWindowControl = true,
         };
+
+        public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport() => null;
     }
 
     private class MockDesktopWindowControlService : IDesktopWindowControlService
@@ -169,7 +172,11 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
             Assert.Equal(0, metaMsg.DesktopMeta.DesktopTop);
         }
 
-        // Second message should be a binary frame
+        // Second message is desktop_stream_descriptor (Stage 3)
+        result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+
+        // Third message should be a binary frame
         result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
         Assert.True(result.Count > 0);
@@ -267,7 +274,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
 
         var buffer = new byte[4096];
         await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // desktop_meta
-        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // first frame
+        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // desktop_stream_descriptor (Stage 3)
+        await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // first binary frame
 
         var queryMsg = new RemexMessage
         {

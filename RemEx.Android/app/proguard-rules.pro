@@ -41,6 +41,7 @@
 
 # Keep file-transfer native bridge callbacks
 -keepclassmembers class com.clindsay94.remex.RemexCoreClient$RemexCallback {
+    void onDesktopStreamDescriptor(java.lang.String);
     void onFileTransferProgress(java.lang.String);
     void onFileTransferComplete(java.lang.String);
 }

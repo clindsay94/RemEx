@@ -96,6 +96,14 @@ public sealed record RemexMessage
     [JsonPropertyName("desktopWindowAction")]
     public Remex.Core.Models.DesktopWindowAction? DesktopWindowAction { get; init; }
 
+    /// <summary>High-rate pointer/stylus sample batch (Stage 3 — Android → host).</summary>
+    [JsonPropertyName("desktopPointerBatch")]
+    public Remex.Core.Models.DesktopPointerBatch? DesktopPointerBatch { get; init; }
+
+    /// <summary>Stream surface descriptor (Stage 3 — host → client).</summary>
+    [JsonPropertyName("desktopStreamDescriptor")]
+    public Remex.Core.Models.DesktopStreamDescriptor? DesktopStreamDescriptor { get; init; }
+
     /// <summary>Remote desktop window query/action response.</summary>
     [JsonPropertyName("desktopWindowResult")]
     public Remex.Core.Models.DesktopWindowResult? DesktopWindowResult { get; init; }
@@ -198,6 +206,10 @@ public static class MessageTypes
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
     public const string DesktopError = "desktop_error";
+    /// <summary>High-rate pointer/stylus batch from Android to host (Stage 3).</summary>
+    public const string DesktopPointerBatch = "desktop_pointer_batch";
+    /// <summary>Stream surface descriptor from host to client (Stage 3).</summary>
+    public const string DesktopStreamDescriptor = "desktop_stream_descriptor";
     public const string DesktopWindowQuery = "desktop_window_query";
     public const string DesktopWindowAction = "desktop_window_action";
     public const string DesktopWindowResult = "desktop_window_result";

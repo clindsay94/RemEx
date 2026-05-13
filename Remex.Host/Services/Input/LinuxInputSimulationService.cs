@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Host.Services.Input.Linux;
+using Remex.Host.Services.RemoteDesktop.Linux;
 
 namespace Remex.Host.Services.Input;
 
@@ -13,6 +16,12 @@ public class LinuxInputSimulationService : IInputSimulationService
     private readonly ILogger<LinuxInputSimulationService> _logger;
     private readonly LinuxDesktopBackendStatus _backendStatus;
     private readonly string? _display;
+
+    // Stage 5: router is set when a WaylandNative/PortalNoPen session is active.
+    // When null, the legacy xdotool/ydotool path runs as before.
+    private LinuxInputBackendRouter? _router;
+
+    public string? BackendName => _router?.BackendName ?? _backendStatus.InputBackendName;
 
     public LinuxInputSimulationService(ILogger<LinuxInputSimulationService> logger)
     {
@@ -26,6 +35,32 @@ public class LinuxInputSimulationService : IInputSimulationService
             _backendStatus.InputToolPath ?? "n/a",
             _backendStatus.CursorQueryBackendName ?? "none",
             _backendStatus.CursorQueryToolPath ?? "n/a");
+    }
+
+    /// <summary>
+    /// Sets the backend router for WaylandNative / PortalNoPen tiers.
+    /// When set, all input events are routed through the router rather than shell tools.
+    /// Pass null to revert to the legacy shell-tool path.
+    /// </summary>
+    public void SetRouter(LinuxInputBackendRouter? router)
+    {
+        _router = router;
+    }
+
+    /// <summary>
+    /// Routes a pointer sample from the Android client.
+    /// Pen events are forwarded to the uinput tablet; regular events go through
+    /// the router or legacy path.
+    /// </summary>
+    public void EnqueuePointerSample(DesktopPointerSample sample)
+    {
+        if (_router is not null)
+        {
+            _router.EnqueuePointerSample(sample);
+            return;
+        }
+        // Legacy path: convert to absolute mouse move
+        MoveMouse((int)sample.LogicalX, (int)sample.LogicalY);
     }
 
     public (int X, int Y) GetCursorPosition()

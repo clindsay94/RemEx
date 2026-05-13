@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Services;
+using Remex.Host.Services.RemoteDesktop.Linux.Capture;
 
 namespace Remex.Host.Services.ScreenCapture;
 
@@ -26,6 +27,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     private int _primaryY;
     private int _primaryWidth;
     private int _primaryHeight;
+
+    // Stage 2: PipeWire capture coordinator. Injected externally when the
+    // WaylandNative or PortalNoPen tier is active; null for legacy (X11/fallback) path.
+    private LinuxCaptureSessionCoordinator? _captureCoordinator;
 
     private enum DisplayServer { Unknown, X11, Wayland }
     private readonly DisplayServer _displayServer;
@@ -54,10 +59,48 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             _captureToolPath ?? "none", _fallbackToolPath ?? "none");
     }
 
+    public string? BackendName => _captureCoordinator is not null ? "pipewire" : null;
+
+    /// <summary>
+    /// Sets the PipeWire capture coordinator to use for the native Wayland path.
+    /// Called by the remote desktop handler after the portal session is established.
+    /// Pass null to fall back to the legacy shell-tool path.
+    /// </summary>
+    public void SetCaptureCoordinator(LinuxCaptureSessionCoordinator? coordinator)
+    {
+        _captureCoordinator = coordinator;
+    }
+
     public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
+
+        // ── Stage 2 fast path: PipeWire native capture ─────────────────
+        if (_captureCoordinator is { IsRunning: true })
+        {
+            try
+            {
+                var frame = await _captureCoordinator.WaitForNextFrameAsync(timeoutMs: 80, ct: ct);
+                if (frame?.Data is not null && frame.Data.Length > 0)
+                {
+                    // The frame data from PipeWire is in the stream's native pixel format.
+                    // For now, return the raw bytes; the encoder stage (RemoteDesktopHandler)
+                    // is responsible for JPEG encoding. When the encoder is updated to accept
+                    // LinuxFrameSnapshot directly, this path will bypass the intermediate copy.
+                    return frame.Data;
+                }
+
+                _logger.LogDebug(
+                    "PipeWire frame not available; falling back to legacy capture for this tick.");
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "PipeWire capture threw; falling back to legacy for this tick.");
+            }
+        }
+
+        // ── Legacy path: shell tools (spectacle / grim / scrot / ffmpeg) ──
 
         var tmpFile = Path.Combine(Path.GetTempPath(), $"remex_capture_{Guid.NewGuid():N}.jpg");
         try
