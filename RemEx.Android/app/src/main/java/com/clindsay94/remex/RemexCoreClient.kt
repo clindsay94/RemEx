@@ -316,4 +316,36 @@ object RemexCoreClient {
      * JNI-managed jstring references.
      */
     @JvmStatic internal external fun FreeMemory(pointer: Long)
+
+    /**
+     * Sends a serialized `DesktopPointerBatch` JSON string to the connected host. Used for stylus
+     * and high-fidelity pointer data (pressure, tilt, hover, barrel buttons).
+     *
+     * The JSON must match the `Remex.Core.Messages.RemexMessage` envelope with `type =
+     * "desktop_pointer_batch"` and a `desktopPointerBatch` payload.
+     *
+     * Entry point: `Java_com_clindsay94_remex_RemexCoreClient_SendDesktopPointerBatchNative` in
+     * `AndroidNativeExports.cs`.
+     */
+    @JvmStatic
+    fun SendDesktopPointerBatch(batchJson: String): Result<Unit> {
+        return if (isLibraryLoaded) {
+            try {
+                SendDesktopPointerBatchNative(batchJson)
+                Result.success(Unit)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "SendDesktopPointerBatchNative not linked", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "SendDesktopPointerBatchNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
+    @JvmName("SendDesktopPointerBatchNative")
+    private external fun SendDesktopPointerBatchNative(batchJson: String)
 }

@@ -178,10 +178,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                     supportsAdvancedWindowControl =
                                             json.optBoolean("supportsAdvancedWindowControl", false),
                                     inputBackend =
-                                            json.optString("inputBackend").takeIf { it.isNotBlank() },
+                                            json.optString("inputBackend").takeIf {
+                                                it.isNotBlank()
+                                            },
                                     windowBackend =
-                                            json.optString("windowControlBackend")
-                                                    .takeIf { it.isNotBlank() },
+                                            json.optString("windowControlBackend").takeIf {
+                                                it.isNotBlank()
+                                            },
                                     unavailableReason =
                                             json.optString("remoteDesktopUnavailableReason")
                                                     .takeIf { it.isNotBlank() }
@@ -242,30 +245,29 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     _windowActionError.value = null
                     val windowsArray = json.optJSONArray("windows")
                     if (windowsArray != null) {
-                        val windows =
-                                buildList {
-                                    for (index in 0 until windowsArray.length()) {
-                                        val item = windowsArray.optJSONObject(index) ?: continue
-                                        add(
-                                                DesktopWindowModel(
-                                                        id = item.optString("id"),
-                                                        title =
-                                                                item.optString("title")
-                                                                        .ifBlank { "(untitled)" },
-                                                        className =
-                                                                item.optString("className")
-                                                                        .takeIf {
-                                                                            it.isNotBlank()
-                                                                        },
-                                                        desktopNumber =
-                                                                item.optInt("desktopNumber")
-                                                                        .takeIf { item.has("desktopNumber") },
-                                                        isActive =
-                                                                item.optBoolean("isActive", false)
-                                                )
+                        val windows = buildList {
+                            for (index in 0 until windowsArray.length()) {
+                                val item = windowsArray.optJSONObject(index) ?: continue
+                                add(
+                                        DesktopWindowModel(
+                                                id = item.optString("id"),
+                                                title =
+                                                        item.optString("title").ifBlank {
+                                                            "(untitled)"
+                                                        },
+                                                className =
+                                                        item.optString("className").takeIf {
+                                                            it.isNotBlank()
+                                                        },
+                                                desktopNumber =
+                                                        item.optInt("desktopNumber").takeIf {
+                                                            item.has("desktopNumber")
+                                                        },
+                                                isActive = item.optBoolean("isActive", false)
                                         )
-                                    }
-                                }
+                                )
+                            }
+                        }
                         _windowResults.value = windows
                     }
                 } catch (e: Exception) {
@@ -461,6 +463,20 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private var accumulatedX = 0f
     private var accumulatedY = 0f
 
+    /**
+     * Sends a pre-serialized `desktop_pointer_batch` JSON envelope to the host. Called by the raw
+     * stylus input path in the Screen composable.
+     *
+     * @param batchJson A fully-formed JSON string from [RemoteDesktopPointerSerializer.toBatchJson]
+     * .
+     */
+    fun sendPointerBatch(batchJson: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!RemexCoreClient.isLibraryLoaded) return@launch
+            RemexCoreClient.SendDesktopPointerBatch(batchJson).getOrNull()
+        }
+    }
+
     fun sendMouseMove(deltaX: Float, deltaY: Float) {
         accumulatedX += deltaX
         accumulatedY += deltaY
@@ -582,7 +598,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         put(
                                 "desktopWindowQuery",
                                 JSONObject().apply {
-                                    put("requestId", java.util.UUID.randomUUID().toString().replace("-", ""))
+                                    put(
+                                            "requestId",
+                                            java.util.UUID.randomUUID().toString().replace("-", "")
+                                    )
                                     put("searchText", searchText)
                                     put("limit", limit.coerceIn(1, 100))
                                     put("includeAllDesktops", includeAllDesktops)
@@ -605,9 +624,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             }
 
     fun moveWindowToDesktop(windowId: String, desktopNumber: Int) =
-            sendWindowAction("move_to_desktop", windowId) {
-                put("desktopNumber", desktopNumber)
-            }
+            sendWindowAction("move_to_desktop", windowId) { put("desktopNumber", desktopNumber) }
 
     private fun pushConfigIfStreaming() {
         if (!_isStreaming.value || !RemexCoreClient.isLibraryLoaded) {

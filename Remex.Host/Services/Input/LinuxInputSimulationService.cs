@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services;
@@ -21,13 +22,40 @@ public class LinuxInputSimulationService : IInputSimulationService
     // When null, the legacy xdotool/ydotool path runs as before.
     private LinuxInputBackendRouter? _router;
 
-    public string? BackendName => _router?.BackendName ?? _backendStatus.InputBackendName;
+    // Portal-based Wayland input injector.  Created on Wayland when the portal is
+    // available; null on X11 or when portal is absent.  Started lazily on first use
+    // so that the permission dialog is shown only when a remote desktop session
+    // actually begins sending input events.
+    private readonly LinuxPortalInputInjector? _portalInjector;
+    private int _portalStartFired; // 0 = not started, 1 = start fired (Interlocked)
+
+    public string? BackendName
+    {
+        get
+        {
+            if (_router is not null) return _router.BackendName;
+            if (_portalInjector?.IsActive == true) return "portal-notify";
+            return _backendStatus.InputBackendName;
+        }
+    }
 
     public LinuxInputSimulationService(ILogger<LinuxInputSimulationService> logger)
     {
         _logger = logger;
         _display = Environment.GetEnvironmentVariable("DISPLAY");
         _backendStatus = LinuxDesktopBackendProbe.Probe();
+
+        // On Wayland, create a portal input injector so that pointer events work even
+        // when xdotool / ydotool are not available or cannot inject into the compositor.
+        bool isWayland = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
+                         && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
+        if (isWayland)
+        {
+            _portalInjector = new LinuxPortalInputInjector(logger);
+            _logger.LogInformation(
+                "Wayland session detected — portal input injector created (will prompt for " +
+                "permission on first input event).");
+        }
 
         _logger.LogInformation(
             "Linux input backend: {InputBackend} ({InputPath}); cursor query backend: {CursorBackend} ({CursorPath})",
@@ -90,6 +118,17 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MoveMouse(int x, int y)
     {
+        // Portal path: absolute motion.
+        if (_portalInjector is not null)
+        {
+            EnsurePortalStarted();
+            if (_portalInjector.IsActive)
+            {
+                _portalInjector.NotifyPointerMotionAbsolute(x, y);
+                return;
+            }
+        }
+
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("mousemove", "--absolute", x.ToString(), y.ToString());
         else
@@ -98,6 +137,17 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseMoveRelative(int dx, int dy)
     {
+        // Portal path: relative motion works on Wayland without needing xdotool.
+        if (_portalInjector is not null)
+        {
+            EnsurePortalStarted();
+            if (_portalInjector.IsActive)
+            {
+                _portalInjector.NotifyPointerMotionRelative(dx, dy);
+                return;
+            }
+        }
+
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("mousemove", dx.ToString(), dy.ToString());
         else
@@ -106,6 +156,11 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseDown(int button)
     {
+        if (_portalInjector?.IsActive == true)
+        {
+            _portalInjector.NotifyPointerButton(MapButtonLinux(button), pressed: true);
+            return;
+        }
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", $"0x{MapButtonYdotool(button):X5}D");
         else
@@ -114,6 +169,11 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseUp(int button)
     {
+        if (_portalInjector?.IsActive == true)
+        {
+            _portalInjector.NotifyPointerButton(MapButtonLinux(button), pressed: false);
+            return;
+        }
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", $"0x{MapButtonYdotool(button):X5}U");
         else
@@ -122,14 +182,18 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MouseClick(int button)
     {
-        if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("click", $"0x{MapButtonYdotool(button):X5}");
-        else
-            RunTool("click", MapButtonXdotool(button).ToString());
+        MouseDown(button);
+        MouseUp(button);
     }
 
     public void MouseScroll(int deltaX, int deltaY)
     {
+        if (_portalInjector?.IsActive == true)
+        {
+            _portalInjector.NotifyPointerScrollDiscrete(deltaX, deltaY);
+            return;
+        }
+
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
             // ydotool mousemove sends relative motion; wheel via separate abstraction not supported well
@@ -215,6 +279,28 @@ public class LinuxInputSimulationService : IInputSimulationService
         2 => 0x111, // BTN_RIGHT
         _ => 0x110
     };
+
+    // Linux BTN_ codes used by the portal NotifyPointerButton API.
+    private static int MapButtonLinux(int button) => button switch
+    {
+        0 => 0x110, // BTN_LEFT
+        1 => 0x112, // BTN_MIDDLE
+        2 => 0x111, // BTN_RIGHT
+        _ => 0x110
+    };
+
+    /// <summary>
+    /// Fires a background task to start the portal input session if not already started.
+    /// The session start prompts the user once; subsequent calls are no-ops.
+    /// </summary>
+    private void EnsurePortalStarted()
+    {
+        if (_portalInjector is null || _portalInjector.IsActive) return;
+        if (Interlocked.CompareExchange(ref _portalStartFired, 1, 0) != 0) return;
+
+        // Fire-and-forget; the injector serialises concurrent start attempts internally.
+        _ = _portalInjector.EnsureStartedAsync();
+    }
 
     private void RunTool(params string[] arguments)
     {

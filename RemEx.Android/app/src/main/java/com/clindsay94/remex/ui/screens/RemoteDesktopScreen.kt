@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.screens
 
 import android.content.pm.ActivityInfo
 import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -28,6 +29,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -173,6 +175,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onSendMouseAbsolute = { x, y -> viewModel.sendMouseAbsolute(x, y) },
                 onSendMouseAbsoluteClick = { b, x, y -> viewModel.sendMouseAbsoluteClick(b, x, y) },
                 onSendMouseScroll = { x, y -> viewModel.sendMouseScroll(x, y) },
+                onSendPointerBatch = { viewModel.sendPointerBatch(it) },
                 onUpdateQuality = { viewModel.updateQuality(it) },
                 onUpdateTargetFps = { viewModel.updateTargetFps(it) },
                 onUpdateDirectTouch = { viewModel.updateDirectTouch(it) },
@@ -186,7 +189,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onMinimizeWindow = { viewModel.minimizeWindow(it) },
                 onCloseWindow = { viewModel.closeWindow(it) },
                 onResizeWindow = { id, width, height -> viewModel.resizeWindow(id, width, height) },
-                onMoveWindowToDesktop = { id, desktop -> viewModel.moveWindowToDesktop(id, desktop) },
+                onMoveWindowToDesktop = { id, desktop ->
+                        viewModel.moveWindowToDesktop(id, desktop)
+                },
                 getHostScreenSize = { viewModel.getHostScreenSize() },
                 getHostDesktopOffset = { viewModel.getHostDesktopOffset() },
                 currentFrameTimestamp = currentFrame?.timestamp,
@@ -196,7 +201,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun RemoteDesktopScreenContent(
         uiState: RemoteDesktopUiState,
@@ -214,6 +219,7 @@ fun RemoteDesktopScreenContent(
         onSendMouseAbsolute: (Int, Int) -> Unit,
         onSendMouseAbsoluteClick: (Int, Int, Int) -> Unit,
         onSendMouseScroll: (Int, Int) -> Unit,
+        onSendPointerBatch: (String) -> Unit = {},
         onUpdateQuality: (Int) -> Unit,
         onUpdateTargetFps: (Int) -> Unit,
         onUpdateDirectTouch: (Boolean) -> Unit,
@@ -325,6 +331,9 @@ fun RemoteDesktopScreenContent(
 
         fun mapLocalToHost(localOffset: Offset): Offset {
                 if (imageSize.width == 0 || imageSize.height == 0) return Offset.Zero
+                // Guard against Offset.Unspecified (NaN) and any other non-finite values
+                // that would produce NaN in the output and crash JSON serialization.
+                if (!localOffset.x.isFinite() || !localOffset.y.isFinite()) return Offset.Zero
                 val (hostW, hostH) = getHostScreenSize()
                 val (hostLeft, hostTop) = getHostDesktopOffset()
 
@@ -535,6 +544,78 @@ fun RemoteDesktopScreenContent(
                                         Modifier.weight(1f)
                                                 .fillMaxWidth()
                                                 .onGloballyPositioned { imageSize = it.size }
+                                                // ═══ RAW STYLUS CONTACT CAPTURE ═══
+                                                // intercepts before Compose gesture system;
+                                                // returns true (consumed) for stylus/eraser only
+                                                .pointerInteropFilter { event ->
+                                                        if (!uiState.isStreaming)
+                                                                return@pointerInteropFilter false
+                                                        val toolType = event.getToolType(0)
+                                                        if (toolType !=
+                                                                        MotionEvent
+                                                                                .TOOL_TYPE_STYLUS &&
+                                                                        toolType !=
+                                                                                MotionEvent
+                                                                                        .TOOL_TYPE_ERASER
+                                                        ) {
+                                                                return@pointerInteropFilter false
+                                                        }
+                                                        // Hover events must NOT be consumed here.
+                                                        // Returning true for ACTION_HOVER_*
+                                                        // corrupts
+                                                        // Compose's pointer-tracking state and
+                                                        // crashes
+                                                        // the app. Let them fall through to the
+                                                        // pointerInput hover block below.
+                                                        val actionMasked = event.actionMasked
+                                                        if (actionMasked ==
+                                                                        MotionEvent
+                                                                                .ACTION_HOVER_ENTER ||
+                                                                        actionMasked ==
+                                                                                MotionEvent
+                                                                                        .ACTION_HOVER_MOVE ||
+                                                                        actionMasked ==
+                                                                                MotionEvent
+                                                                                        .ACTION_HOVER_EXIT
+                                                        ) {
+                                                                return@pointerInteropFilter false
+                                                        }
+                                                        val samples =
+                                                                RemoteDesktopMotionMapper
+                                                                        .mapContactEvent(event) {
+                                                                                vx,
+                                                                                vy ->
+                                                                                val host =
+                                                                                        mapLocalToHost(
+                                                                                                Offset(
+                                                                                                        vx,
+                                                                                                        vy
+                                                                                                )
+                                                                                        )
+                                                                                if (host ==
+                                                                                                Offset.Zero &&
+                                                                                                (vx !=
+                                                                                                        0f ||
+                                                                                                        vy !=
+                                                                                                                0f)
+                                                                                )
+                                                                                        null
+                                                                                else
+                                                                                        Pair(
+                                                                                                host.x,
+                                                                                                host.y
+                                                                                        )
+                                                                        }
+                                                        if (samples.isNotEmpty()) {
+                                                                val json =
+                                                                        RemoteDesktopPointerSerializer
+                                                                                .toBatchJson(
+                                                                                        samples
+                                                                                )
+                                                                onSendPointerBatch(json)
+                                                        }
+                                                        true
+                                                }
                                                 // ═══ STYLUS HOVER HANDLING ═══
                                                 .pointerInput(uiState.isStreaming) {
                                                         if (!uiState.isStreaming)
@@ -576,11 +657,37 @@ fun RemoteDesktopScreenContent(
                                                                                                                 stylusChange
                                                                                                                         .position
                                                                                                         )
-                                                                                                onSendMouseAbsolute(
-                                                                                                        hostPos.x
-                                                                                                                .toInt(),
-                                                                                                        hostPos.y
-                                                                                                                .toInt()
+                                                                                                // Send as typed hover sample (tool kind Pen, phase HoverMove)
+                                                                                                val sample =
+                                                                                                        PointerSampleData(
+                                                                                                                timestamp =
+                                                                                                                        now,
+                                                                                                                pointerId =
+                                                                                                                        stylusChange
+                                                                                                                                .id
+                                                                                                                                .value
+                                                                                                                                .toInt(),
+                                                                                                                phase =
+                                                                                                                        PointerPhase
+                                                                                                                                .HoverMove,
+                                                                                                                toolKind =
+                                                                                                                        PointerToolKind
+                                                                                                                                .Pen,
+                                                                                                                deviceKind =
+                                                                                                                        PointerDeviceKind
+                                                                                                                                .Stylus,
+                                                                                                                logicalX =
+                                                                                                                        hostPos.x,
+                                                                                                                logicalY =
+                                                                                                                        hostPos.y,
+                                                                                                        )
+                                                                                                onSendPointerBatch(
+                                                                                                        RemoteDesktopPointerSerializer
+                                                                                                                .toBatchJson(
+                                                                                                                        listOf(
+                                                                                                                                sample
+                                                                                                                        )
+                                                                                                                )
                                                                                                 )
                                                                                                 cursorX =
                                                                                                         stylusChange
@@ -1510,7 +1617,8 @@ fun RemoteDesktopScreenContent(
                                                                 // screen coordinates using
                                                                 // actual host dimensions
                                                                 imageSize.width *
-                                                                        ((uiState.hostCursorX - hostLeft) /
+                                                                        ((uiState.hostCursorX -
+                                                                                hostLeft) /
                                                                                 hostWidth.toFloat())
                                                         }
                                                 val displayCursorY =
@@ -1518,7 +1626,8 @@ fun RemoteDesktopScreenContent(
                                                                 cursorY
                                                         } else {
                                                                 imageSize.height *
-                                                                        ((uiState.hostCursorY - hostTop) /
+                                                                        ((uiState.hostCursorY -
+                                                                                hostTop) /
                                                                                 hostHeight
                                                                                         .toFloat())
                                                         }
@@ -1598,7 +1707,7 @@ fun RemoteDesktopScreenContent(
                                                                 when {
                                                                         uiState.desktopError !=
                                                                                 null ->
-                                                                            uiState.desktopError
+                                                                                uiState.desktopError
                                                                         !uiState.capabilityState
                                                                                 .supportsRemoteDesktop ->
                                                                                 uiState.capabilityState
@@ -1667,12 +1776,14 @@ fun RemoteDesktopScreenContent(
                                         enter =
                                                 fadeIn(
                                                         animationSpec =
-                                                                androidx.compose.animation.core.tween(durationMillis = 200)
+                                                                androidx.compose.animation.core
+                                                                        .tween(durationMillis = 200)
                                                 ),
                                         exit =
                                                 fadeOut(
                                                         animationSpec =
-                                                                androidx.compose.animation.core.tween(durationMillis = 200)
+                                                                androidx.compose.animation.core
+                                                                        .tween(durationMillis = 200)
                                                 )
                                 ) {
                                         AssistChip(
@@ -1729,17 +1840,39 @@ fun RemoteDesktopScreenContent(
                                                 visible = controlsVisible || !uiState.isFullscreen,
                                                 enter =
                                                         slideInVertically(
-                                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                                                                androidx.compose.animation.core
+                                                                        .spring(
+                                                                                stiffness =
+                                                                                        androidx.compose
+                                                                                                .animation
+                                                                                                .core
+                                                                                                .Spring
+                                                                                                .StiffnessMediumLow
+                                                                        )
                                                         ) { it } +
                                                                 fadeIn(
-                                                                        androidx.compose.animation.core.tween(durationMillis = 200)
+                                                                        androidx.compose.animation
+                                                                                .core.tween(
+                                                                                durationMillis = 200
+                                                                        )
                                                                 ),
                                                 exit =
                                                         slideOutVertically(
-                                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                                                                androidx.compose.animation.core
+                                                                        .spring(
+                                                                                stiffness =
+                                                                                        androidx.compose
+                                                                                                .animation
+                                                                                                .core
+                                                                                                .Spring
+                                                                                                .StiffnessMediumLow
+                                                                        )
                                                         ) { it } +
                                                                 fadeOut(
-                                                                        androidx.compose.animation.core.tween(durationMillis = 200)
+                                                                        androidx.compose.animation
+                                                                                .core.tween(
+                                                                                durationMillis = 200
+                                                                        )
                                                                 ),
                                                 modifier = Modifier.align(Alignment.BottomCenter)
                                         ) {
@@ -2322,9 +2455,7 @@ fun RemoteDesktopScreenContent(
                                                                 onValueChange = {
                                                                         windowSearch = it
                                                                 },
-                                                                label = {
-                                                                        Text("Search windows")
-                                                                },
+                                                                label = { Text("Search windows") },
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 singleLine = true
                                                         )
@@ -2370,128 +2501,132 @@ fun RemoteDesktopScreenContent(
                                                                                                 8.dp
                                                                                         )
                                                                 ) {
-                                                                        windowResults.take(6).forEach {
-                                                                                window ->
-                                                                                ElevatedCard(
-                                                                                        onClick = {
-                                                                                                selectedWindowId =
-                                                                                                        window.id
-                                                                                        }
-                                                                                ) {
-                                                                                        Column(
-                                                                                                modifier =
-                                                                                                        Modifier.fillMaxWidth()
-                                                                                                                .padding(
-                                                                                                                        12.dp
-                                                                                                                ),
-                                                                                                verticalArrangement =
-                                                                                                        Arrangement
-                                                                                                                .spacedBy(
-                                                                                                                        6.dp
-                                                                                                                )
+                                                                        windowResults.take(6)
+                                                                                .forEach { window ->
+                                                                                        ElevatedCard(
+                                                                                                onClick = {
+                                                                                                        selectedWindowId =
+                                                                                                                window.id
+                                                                                                }
                                                                                         ) {
-                                                                                                Text(
-                                                                                                        text =
-                                                                                                                window
-                                                                                                                        .title,
-                                                                                                        style =
-                                                                                                                MaterialTheme
-                                                                                                                        .typography
-                                                                                                                        .bodyLarge,
-                                                                                                        fontWeight =
-                                                                                                                FontWeight.SemiBold
-                                                                                                )
-                                                                                                Text(
-                                                                                                        text =
-                                                                                                                buildString {
-                                                                                                                        append(
-                                                                                                                                window.className
-                                                                                                                                        ?: "Unknown class"
+                                                                                                Column(
+                                                                                                        modifier =
+                                                                                                                Modifier.fillMaxWidth()
+                                                                                                                        .padding(
+                                                                                                                                12.dp
+                                                                                                                        ),
+                                                                                                        verticalArrangement =
+                                                                                                                Arrangement
+                                                                                                                        .spacedBy(
+                                                                                                                                6.dp
                                                                                                                         )
-                                                                                                                        window.desktopNumber
-                                                                                                                                ?.let {
+                                                                                                ) {
+                                                                                                        Text(
+                                                                                                                text =
+                                                                                                                        window.title,
+                                                                                                                style =
+                                                                                                                        MaterialTheme
+                                                                                                                                .typography
+                                                                                                                                .bodyLarge,
+                                                                                                                fontWeight =
+                                                                                                                        FontWeight
+                                                                                                                                .SemiBold
+                                                                                                        )
+                                                                                                        Text(
+                                                                                                                text =
+                                                                                                                        buildString {
+                                                                                                                                append(
+                                                                                                                                        window.className
+                                                                                                                                                ?: "Unknown class"
+                                                                                                                                )
+                                                                                                                                window.desktopNumber
+                                                                                                                                        ?.let {
+                                                                                                                                                append(
+                                                                                                                                                        " • desktop "
+                                                                                                                                                )
+                                                                                                                                                append(
+                                                                                                                                                        it
+                                                                                                                                                )
+                                                                                                                                        }
+                                                                                                                                if (window.isActive
+                                                                                                                                ) {
                                                                                                                                         append(
-                                                                                                                                                " • desktop "
-                                                                                                                                        )
-                                                                                                                                        append(
-                                                                                                                                                it
+                                                                                                                                                " • active"
                                                                                                                                         )
                                                                                                                                 }
-                                                                                                                        if (window.isActive) {
-                                                                                                                                append(
-                                                                                                                                        " • active"
+                                                                                                                        },
+                                                                                                                style =
+                                                                                                                        MaterialTheme
+                                                                                                                                .typography
+                                                                                                                                .bodySmall,
+                                                                                                                color =
+                                                                                                                        MaterialTheme
+                                                                                                                                .colorScheme
+                                                                                                                                .onSurfaceVariant
+                                                                                                        )
+                                                                                                        Row(
+                                                                                                                horizontalArrangement =
+                                                                                                                        Arrangement
+                                                                                                                                .spacedBy(
+                                                                                                                                        8.dp
+                                                                                                                                )
+                                                                                                        ) {
+                                                                                                                TextButton(
+                                                                                                                        onClick = {
+                                                                                                                                selectedWindowId =
+                                                                                                                                        window.id
+                                                                                                                                onActivateWindow(
+                                                                                                                                        window.id
                                                                                                                                 )
                                                                                                                         }
-                                                                                                                },
-                                                                                                        style =
-                                                                                                                MaterialTheme
-                                                                                                                        .typography
-                                                                                                                        .bodySmall,
-                                                                                                        color =
-                                                                                                                MaterialTheme
-                                                                                                                        .colorScheme
-                                                                                                                        .onSurfaceVariant
-                                                                                                )
-                                                                                                Row(
-                                                                                                        horizontalArrangement =
-                                                                                                                Arrangement.spacedBy(
-                                                                                                                        8.dp
-                                                                                                                )
-                                                                                                ) {
-                                                                                                        TextButton(
-                                                                                                                onClick = {
-                                                                                                                        selectedWindowId =
-                                                                                                                                window.id
-                                                                                                                        onActivateWindow(
-                                                                                                                                window.id
+                                                                                                                ) {
+                                                                                                                        Text(
+                                                                                                                                "Activate"
                                                                                                                         )
                                                                                                                 }
-                                                                                                        ) {
-                                                                                                                Text(
-                                                                                                                        "Activate"
-                                                                                                                )
-                                                                                                        }
-                                                                                                        TextButton(
-                                                                                                                onClick = {
-                                                                                                                        selectedWindowId =
-                                                                                                                                window.id
-                                                                                                                        onRaiseWindow(
-                                                                                                                                window.id
+                                                                                                                TextButton(
+                                                                                                                        onClick = {
+                                                                                                                                selectedWindowId =
+                                                                                                                                        window.id
+                                                                                                                                onRaiseWindow(
+                                                                                                                                        window.id
+                                                                                                                                )
+                                                                                                                        }
+                                                                                                                ) {
+                                                                                                                        Text(
+                                                                                                                                "Raise"
                                                                                                                         )
                                                                                                                 }
-                                                                                                        ) {
-                                                                                                                Text(
-                                                                                                                        "Raise"
-                                                                                                                )
-                                                                                                        }
-                                                                                                        TextButton(
-                                                                                                                onClick = {
-                                                                                                                        selectedWindowId =
-                                                                                                                                window.id
-                                                                                                                        onMinimizeWindow(
-                                                                                                                                window.id
+                                                                                                                TextButton(
+                                                                                                                        onClick = {
+                                                                                                                                selectedWindowId =
+                                                                                                                                        window.id
+                                                                                                                                onMinimizeWindow(
+                                                                                                                                        window.id
+                                                                                                                                )
+                                                                                                                        }
+                                                                                                                ) {
+                                                                                                                        Text(
+                                                                                                                                "Minimize"
                                                                                                                         )
                                                                                                                 }
-                                                                                                        ) {
-                                                                                                                Text(
-                                                                                                                        "Minimize"
-                                                                                                                )
-                                                                                                        }
-                                                                                                        TextButton(
-                                                                                                                onClick = {
-                                                                                                                        selectedWindowId =
-                                                                                                                                window.id
-                                                                                                                        onCloseWindow(
-                                                                                                                                window.id
+                                                                                                                TextButton(
+                                                                                                                        onClick = {
+                                                                                                                                selectedWindowId =
+                                                                                                                                        window.id
+                                                                                                                                onCloseWindow(
+                                                                                                                                        window.id
+                                                                                                                                )
+                                                                                                                        }
+                                                                                                                ) {
+                                                                                                                        Text(
+                                                                                                                                "Close"
                                                                                                                         )
                                                                                                                 }
-                                                                                                        ) {
-                                                                                                                Text("Close")
                                                                                                         }
                                                                                                 }
                                                                                         }
                                                                                 }
-                                                                        }
                                                                 }
                                                         }
 
@@ -2508,9 +2643,10 @@ fun RemoteDesktopScreenContent(
                                                                 )
                                                                 Row(
                                                                         horizontalArrangement =
-                                                                                Arrangement.spacedBy(
-                                                                                        8.dp
-                                                                                )
+                                                                                Arrangement
+                                                                                        .spacedBy(
+                                                                                                8.dp
+                                                                                        )
                                                                 ) {
                                                                         OutlinedTextField(
                                                                                 value =
@@ -2569,13 +2705,10 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 }
                                                                         }
-                                                                ) {
-                                                                        Text("Resize selected")
-                                                                }
+                                                                ) { Text("Resize selected") }
 
                                                                 OutlinedTextField(
-                                                                        value =
-                                                                                targetDesktopText,
+                                                                        value = targetDesktopText,
                                                                         onValueChange = {
                                                                                 targetDesktopText =
                                                                                         it
@@ -2592,7 +2725,8 @@ fun RemoteDesktopScreenContent(
                                                                                 val desktop =
                                                                                         targetDesktopText
                                                                                                 .toIntOrNull()
-                                                                                if (desktop != null) {
+                                                                                if (desktop != null
+                                                                                ) {
                                                                                         onMoveWindowToDesktop(
                                                                                                 selectedWindow
                                                                                                         .id,
@@ -2600,9 +2734,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 }
                                                                         }
-                                                                ) {
-                                                                        Text("Move selected window")
-                                                                }
+                                                                ) { Text("Move selected window") }
                                                         }
                                                 }
                                         }

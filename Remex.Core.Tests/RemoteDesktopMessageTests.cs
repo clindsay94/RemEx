@@ -234,6 +234,265 @@ public class RemoteDesktopMessageTests
     }
 
     [Fact]
+    public void RoundTrip_DesktopPointerBatch_FullSample_PreservesAllFields()
+    {
+        var original = new RemexMessage
+        {
+            Type = MessageTypes.DesktopPointerBatch,
+            DesktopPointerBatch = new Remex.Core.Models.DesktopPointerBatch
+            {
+                StreamMappingId = "stream-1",
+                Samples =
+                [
+                    new Remex.Core.Models.DesktopPointerSample
+                    {
+                        ProtocolVersion = 1,
+                        Timestamp = 123456789L,
+                        PointerId = 1,
+                        DeviceKind = Remex.Core.Models.PointerDeviceKind.Stylus,
+                        ToolKind = Remex.Core.Models.PointerToolKind.Pen,
+                        Phase = Remex.Core.Models.PointerPhase.ContactMove,
+                        LogicalX = 800.5f,
+                        LogicalY = 450.25f,
+                        Dx = 2.0f,
+                        Dy = -1.5f,
+                        Pressure = 0.75f,
+                        HoverDistance = null,
+                        TiltX = 15.0f,
+                        TiltY = -10.0f,
+                        Orientation = 180.0f,
+                        ButtonMask = 0,
+                        StreamMappingId = "stream-1",
+                        CoalescedHistory = null,
+                    },
+                ],
+            },
+        };
+
+        var bytes = MessageSerializer.Serialize(original);
+        var deserialized = MessageSerializer.Deserialize(bytes);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(MessageTypes.DesktopPointerBatch, deserialized!.Type);
+        Assert.NotNull(deserialized.DesktopPointerBatch);
+        var batch = deserialized.DesktopPointerBatch!;
+        Assert.Equal("stream-1", batch.StreamMappingId);
+        Assert.Single(batch.Samples);
+        var sample = batch.Samples[0];
+        Assert.Equal(1, sample.ProtocolVersion);
+        Assert.Equal(123456789L, sample.Timestamp);
+        Assert.Equal(1, sample.PointerId);
+        Assert.Equal(Remex.Core.Models.PointerDeviceKind.Stylus, sample.DeviceKind);
+        Assert.Equal(Remex.Core.Models.PointerToolKind.Pen, sample.ToolKind);
+        Assert.Equal(Remex.Core.Models.PointerPhase.ContactMove, sample.Phase);
+        Assert.Equal(800.5f, sample.LogicalX);
+        Assert.Equal(450.25f, sample.LogicalY);
+        Assert.Equal(2.0f, sample.Dx);
+        Assert.Equal(-1.5f, sample.Dy);
+        Assert.Equal(0.75f, sample.Pressure);
+        Assert.Null(sample.HoverDistance);
+        Assert.Equal(15.0f, sample.TiltX);
+        Assert.Equal(-10.0f, sample.TiltY);
+        Assert.Equal(180.0f, sample.Orientation);
+        Assert.Equal(0, sample.ButtonMask);
+        Assert.Null(sample.CoalescedHistory);
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopPointerBatch_PhaseEnumWireValues()
+    {
+        // Verify each PointerPhase round-trips correctly via string enum conversion.
+        var phases = new[]
+        {
+            Remex.Core.Models.PointerPhase.HoverStart,
+            Remex.Core.Models.PointerPhase.HoverMove,
+            Remex.Core.Models.PointerPhase.HoverEnd,
+            Remex.Core.Models.PointerPhase.ContactStart,
+            Remex.Core.Models.PointerPhase.ContactMove,
+            Remex.Core.Models.PointerPhase.ContactEnd,
+            Remex.Core.Models.PointerPhase.ButtonPress,
+            Remex.Core.Models.PointerPhase.ButtonRelease,
+        };
+
+        foreach (var phase in phases)
+        {
+            var msg = new RemexMessage
+            {
+                Type = MessageTypes.DesktopPointerBatch,
+                DesktopPointerBatch = new Remex.Core.Models.DesktopPointerBatch
+                {
+                    Samples =
+                    [
+                        new Remex.Core.Models.DesktopPointerSample
+                        {
+                            Phase = phase,
+                            LogicalX = 0,
+                            LogicalY = 0,
+                        },
+                    ],
+                },
+            };
+            var deserialized = MessageSerializer.Deserialize(MessageSerializer.Serialize(msg));
+            Assert.NotNull(deserialized?.DesktopPointerBatch);
+            Assert.Equal(phase, deserialized!.DesktopPointerBatch!.Samples[0].Phase);
+        }
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopPointerBatch_ToolKindEnumWireValues()
+    {
+        // Verify each PointerToolKind round-trips correctly.
+        var toolKinds = new[]
+        {
+            Remex.Core.Models.PointerToolKind.None,
+            Remex.Core.Models.PointerToolKind.Pen,
+            Remex.Core.Models.PointerToolKind.Eraser,
+            Remex.Core.Models.PointerToolKind.Mouse,
+            Remex.Core.Models.PointerToolKind.Finger,
+        };
+
+        foreach (var toolKind in toolKinds)
+        {
+            var msg = new RemexMessage
+            {
+                Type = MessageTypes.DesktopPointerBatch,
+                DesktopPointerBatch = new Remex.Core.Models.DesktopPointerBatch
+                {
+                    Samples =
+                    [
+                        new Remex.Core.Models.DesktopPointerSample
+                        {
+                            ToolKind = toolKind,
+                            LogicalX = 0,
+                            LogicalY = 0,
+                        },
+                    ],
+                },
+            };
+            var deserialized = MessageSerializer.Deserialize(MessageSerializer.Serialize(msg));
+            Assert.NotNull(deserialized?.DesktopPointerBatch);
+            Assert.Equal(toolKind, deserialized!.DesktopPointerBatch!.Samples[0].ToolKind);
+        }
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopPointerBatch_NullOptionalFields_RoundTripCorrectly()
+    {
+        var msg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopPointerBatch,
+            DesktopPointerBatch = new Remex.Core.Models.DesktopPointerBatch
+            {
+                StreamMappingId = null,
+                Samples =
+                [
+                    new Remex.Core.Models.DesktopPointerSample
+                    {
+                        LogicalX = 100,
+                        LogicalY = 200,
+                        HoverDistance = null,
+                        TiltX = null,
+                        TiltY = null,
+                        Orientation = null,
+                        CoalescedHistory = null,
+                    },
+                ],
+            },
+        };
+
+        // Must deserialize correctly — null optional fields remain null after round-trip.
+        var deserialized = MessageSerializer.Deserialize(MessageSerializer.Serialize(msg));
+        Assert.NotNull(deserialized?.DesktopPointerBatch);
+        var sample = deserialized!.DesktopPointerBatch!.Samples[0];
+        Assert.Equal(100f, sample.LogicalX);
+        Assert.Equal(200f, sample.LogicalY);
+        Assert.Null(sample.HoverDistance);
+        Assert.Null(sample.TiltX);
+        Assert.Null(sample.TiltY);
+        Assert.Null(sample.Orientation);
+        Assert.Null(sample.CoalescedHistory);
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopPointerBatch_CoalescedHistory_RoundTrips()
+    {
+        var msg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopPointerBatch,
+            DesktopPointerBatch = new Remex.Core.Models.DesktopPointerBatch
+            {
+                Samples =
+                [
+                    new Remex.Core.Models.DesktopPointerSample
+                    {
+                        Timestamp = 1000,
+                        LogicalX = 300,
+                        LogicalY = 400,
+                        Phase = Remex.Core.Models.PointerPhase.ContactMove,
+                        CoalescedHistory =
+                        [
+                            new Remex.Core.Models.DesktopPointerSample
+                            {
+                                Timestamp = 990,
+                                LogicalX = 290,
+                                LogicalY = 395,
+                                Phase = Remex.Core.Models.PointerPhase.ContactMove,
+                            },
+                            new Remex.Core.Models.DesktopPointerSample
+                            {
+                                Timestamp = 995,
+                                LogicalX = 295,
+                                LogicalY = 397,
+                                Phase = Remex.Core.Models.PointerPhase.ContactMove,
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        var deserialized = MessageSerializer.Deserialize(MessageSerializer.Serialize(msg));
+        Assert.NotNull(deserialized?.DesktopPointerBatch);
+        var primary = deserialized!.DesktopPointerBatch!.Samples[0];
+        Assert.NotNull(primary.CoalescedHistory);
+        Assert.Equal(2, primary.CoalescedHistory!.Count);
+        Assert.Equal(990L, primary.CoalescedHistory[0].Timestamp);
+        Assert.Equal(290f, primary.CoalescedHistory[0].LogicalX);
+        Assert.Equal(995L, primary.CoalescedHistory[1].Timestamp);
+    }
+
+    [Fact]
+    public void RoundTrip_DesktopPointerBatch_MultipleSamples_PreservesOrder()
+    {
+        var samples = new[]
+        {
+            new Remex.Core.Models.DesktopPointerSample { Timestamp = 1, LogicalX = 10, LogicalY = 20, Phase = Remex.Core.Models.PointerPhase.ContactStart },
+            new Remex.Core.Models.DesktopPointerSample { Timestamp = 2, LogicalX = 15, LogicalY = 25, Phase = Remex.Core.Models.PointerPhase.ContactMove },
+            new Remex.Core.Models.DesktopPointerSample { Timestamp = 3, LogicalX = 20, LogicalY = 30, Phase = Remex.Core.Models.PointerPhase.ContactEnd },
+        };
+
+        var msg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopPointerBatch,
+            DesktopPointerBatch = new Remex.Core.Models.DesktopPointerBatch
+            {
+                Samples = new System.Collections.Generic.List<Remex.Core.Models.DesktopPointerSample>(samples),
+            },
+        };
+
+        var deserialized = MessageSerializer.Deserialize(MessageSerializer.Serialize(msg));
+        Assert.NotNull(deserialized?.DesktopPointerBatch);
+        var result = deserialized!.DesktopPointerBatch!.Samples;
+        Assert.Equal(3, result.Count);
+        Assert.Equal(1L, result[0].Timestamp);
+        Assert.Equal(Remex.Core.Models.PointerPhase.ContactStart, result[0].Phase);
+        Assert.Equal(2L, result[1].Timestamp);
+        Assert.Equal(Remex.Core.Models.PointerPhase.ContactMove, result[1].Phase);
+        Assert.Equal(3L, result[2].Timestamp);
+        Assert.Equal(Remex.Core.Models.PointerPhase.ContactEnd, result[2].Phase);
+    }
+
+    [Fact]
     public void RoundTrip_DesktopWindowResult_PreservesAllFields()
     {
         var original = new RemexMessage
