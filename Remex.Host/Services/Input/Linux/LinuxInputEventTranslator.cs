@@ -21,81 +21,118 @@ public static class LinuxInputEventTranslator
         System.StringComparer.OrdinalIgnoreCase)
     {
         // Modifier keys
-        ["shift"]       = 42,    // KEY_LEFTSHIFT
-        ["lshift"]      = 42,
-        ["rshift"]      = 54,    // KEY_RIGHTSHIFT
-        ["ctrl"]        = 29,    // KEY_LEFTCTRL
-        ["lctrl"]       = 29,
-        ["rctrl"]       = 97,    // KEY_RIGHTCTRL
-        ["alt"]         = 56,    // KEY_LEFTALT
-        ["lalt"]        = 56,
-        ["ralt"]        = 100,   // KEY_RIGHTALT
-        ["super"]       = 125,   // KEY_LEFTMETA
-        ["meta"]        = 125,
-        ["lmeta"]       = 125,
-        ["rmeta"]       = 126,   // KEY_RIGHTMETA
-        ["capslock"]    = 58,    // KEY_CAPSLOCK
+        ["shift"] = 42,    // KEY_LEFTSHIFT
+        ["lshift"] = 42,
+        ["rshift"] = 54,    // KEY_RIGHTSHIFT
+        ["ctrl"] = 29,    // KEY_LEFTCTRL
+        ["lctrl"] = 29,
+        ["rctrl"] = 97,    // KEY_RIGHTCTRL
+        ["alt"] = 56,    // KEY_LEFTALT
+        ["lalt"] = 56,
+        ["ralt"] = 100,   // KEY_RIGHTALT
+        ["super"] = 125,   // KEY_LEFTMETA
+        ["meta"] = 125,
+        ["lmeta"] = 125,
+        ["rmeta"] = 126,   // KEY_RIGHTMETA
+        ["capslock"] = 58,    // KEY_CAPSLOCK
 
         // Navigation
-        ["return"]      = 28,    // KEY_ENTER
-        ["enter"]       = 28,
-        ["kp_enter"]    = 96,    // KEY_KPENTER
-        ["backspace"]   = 14,    // KEY_BACKSPACE
-        ["tab"]         = 15,    // KEY_TAB
-        ["escape"]      = 1,     // KEY_ESC
-        ["esc"]         = 1,
-        ["delete"]      = 111,   // KEY_DELETE
-        ["del"]         = 111,
-        ["insert"]      = 110,   // KEY_INSERT
-        ["ins"]         = 110,
-        ["home"]        = 102,   // KEY_HOME
-        ["end"]         = 107,   // KEY_END
-        ["pageup"]      = 104,   // KEY_PAGEUP
-        ["prior"]       = 104,
-        ["pagedown"]    = 109,   // KEY_PAGEDOWN
-        ["next"]        = 109,
-        ["up"]          = 103,   // KEY_UP
-        ["down"]        = 108,   // KEY_DOWN
-        ["left"]        = 105,   // KEY_LEFT
-        ["right"]       = 106,   // KEY_RIGHT
+        ["return"] = 28,    // KEY_ENTER
+        ["enter"] = 28,
+        ["kp_enter"] = 96,    // KEY_KPENTER
+        ["backspace"] = 14,    // KEY_BACKSPACE
+        ["tab"] = 15,    // KEY_TAB
+        ["escape"] = 1,     // KEY_ESC
+        ["esc"] = 1,
+        ["delete"] = 111,   // KEY_DELETE
+        ["del"] = 111,
+        ["insert"] = 110,   // KEY_INSERT
+        ["ins"] = 110,
+        ["home"] = 102,   // KEY_HOME
+        ["end"] = 107,   // KEY_END
+        ["pageup"] = 104,   // KEY_PAGEUP
+        ["prior"] = 104,
+        ["pagedown"] = 109,   // KEY_PAGEDOWN
+        ["next"] = 109,
+        ["up"] = 103,   // KEY_UP
+        ["down"] = 108,   // KEY_DOWN
+        ["left"] = 105,   // KEY_LEFT
+        ["right"] = 106,   // KEY_RIGHT
 
         // Function keys
-        ["f1"]  = 59, ["f2"]  = 60, ["f3"]  = 61, ["f4"]  = 62,
-        ["f5"]  = 63, ["f6"]  = 64, ["f7"]  = 65, ["f8"]  = 66,
-        ["f9"]  = 67, ["f10"] = 68, ["f11"] = 87, ["f12"] = 88,
+        ["f1"] = 59,
+        ["f2"] = 60,
+        ["f3"] = 61,
+        ["f4"] = 62,
+        ["f5"] = 63,
+        ["f6"] = 64,
+        ["f7"] = 65,
+        ["f8"] = 66,
+        ["f9"] = 67,
+        ["f10"] = 68,
+        ["f11"] = 87,
+        ["f12"] = 88,
 
         // Printable — top row
-        ["grave"]   = 41,   // `
-        ["1"] = 2, ["2"] = 3, ["3"] = 4, ["4"] = 5, ["5"] = 6,
-        ["6"] = 7, ["7"] = 8, ["8"] = 9, ["9"] = 10, ["0"] = 11,
-        ["minus"]   = 12,
-        ["equal"]   = 13,
+        ["grave"] = 41,   // `
+        ["1"] = 2,
+        ["2"] = 3,
+        ["3"] = 4,
+        ["4"] = 5,
+        ["5"] = 6,
+        ["6"] = 7,
+        ["7"] = 8,
+        ["8"] = 9,
+        ["9"] = 10,
+        ["0"] = 11,
+        ["minus"] = 12,
+        ["equal"] = 13,
 
         // Second row
-        ["q"] = 16, ["w"] = 17, ["e"] = 18, ["r"] = 19, ["t"] = 20,
-        ["y"] = 21, ["u"] = 22, ["i"] = 23, ["o"] = 24, ["p"] = 25,
-        ["bracketleft"]  = 26,  // [
+        ["q"] = 16,
+        ["w"] = 17,
+        ["e"] = 18,
+        ["r"] = 19,
+        ["t"] = 20,
+        ["y"] = 21,
+        ["u"] = 22,
+        ["i"] = 23,
+        ["o"] = 24,
+        ["p"] = 25,
+        ["bracketleft"] = 26,  // [
         ["bracketright"] = 27,  // ]
-        ["backslash"]    = 43,
+        ["backslash"] = 43,
 
         // Third row
-        ["a"] = 30, ["s"] = 31, ["d"] = 32, ["f"] = 33, ["g"] = 34,
-        ["h"] = 35, ["j"] = 36, ["k"] = 37, ["l"] = 38,
+        ["a"] = 30,
+        ["s"] = 31,
+        ["d"] = 32,
+        ["f"] = 33,
+        ["g"] = 34,
+        ["h"] = 35,
+        ["j"] = 36,
+        ["k"] = 37,
+        ["l"] = 38,
         ["semicolon"] = 39,
         ["apostrophe"] = 40,
 
         // Fourth row
-        ["z"] = 44, ["x"] = 45, ["c"] = 46, ["v"] = 47, ["b"] = 48,
-        ["n"] = 49, ["m"] = 50,
-        ["comma"]  = 51,
+        ["z"] = 44,
+        ["x"] = 45,
+        ["c"] = 46,
+        ["v"] = 47,
+        ["b"] = 48,
+        ["n"] = 49,
+        ["m"] = 50,
+        ["comma"] = 51,
         ["period"] = 52,
-        ["slash"]  = 53,
+        ["slash"] = 53,
 
         // Misc
-        ["space"]     = 57,
-        ["print"]     = 99,   // KEY_SYSRQ
+        ["space"] = 57,
+        ["print"] = 99,   // KEY_SYSRQ
         ["scrolllock"] = 70,
-        ["pause"]     = 119,
+        ["pause"] = 119,
     };
 
     /// <summary>

@@ -178,16 +178,16 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
 
         return new LinuxFrameSnapshot
         {
-            Width        = desc.Width,
-            Height       = desc.Height,
-            Stride       = desc.Stride,
-            Format       = desc.Format,
-            TimestampNs  = desc.TimestampNs,
-            Seq          = desc.Seq,
-            BufferKind   = desc.Kind,
-            Data         = copy,
-            RawData      = desc.Data,
-            DmaBufFd     = desc.Kind == LinuxBufferKind.DmaBuf ? desc.Fd : -1,
+            Width = desc.Width,
+            Height = desc.Height,
+            Stride = desc.Stride,
+            Format = desc.Format,
+            TimestampNs = desc.TimestampNs,
+            Seq = desc.Seq,
+            BufferKind = desc.Kind,
+            Data = copy,
+            RawData = desc.Data,
+            DmaBufFd = desc.Kind == LinuxBufferKind.DmaBuf ? desc.Fd : -1,
         };
     }
 }

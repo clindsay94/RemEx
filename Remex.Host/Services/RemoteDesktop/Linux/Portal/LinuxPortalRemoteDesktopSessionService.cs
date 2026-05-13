@@ -25,7 +25,7 @@ public enum PortalSessionState
 
 /// <summary>
 /// Manages the lifecycle of an xdg-desktop-portal RemoteDesktop + ScreenCast session.
-/// 
+///
 /// Responsibilities:
 ///   - Open a combined RemoteDesktop + ScreenCast portal session via D-Bus
 ///   - Select sources (monitor, embedded cursor)
@@ -33,7 +33,7 @@ public enum PortalSessionState
 ///   - Start the session and surface the PipeWire node IDs to the caller
 ///   - Handle session restart on monitor hotplug or stream identity change
 ///   - Close the session cleanly on dispose
-/// 
+///
 /// D-Bus communication is performed via busctl subprocess calls for maximum portability
 /// while the project evaluates adding Tmds.DBus.Protocol as a direct dependency.
 /// Once that dependency is confirmed present in the host project, the implementation

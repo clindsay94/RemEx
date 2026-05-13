@@ -15,7 +15,7 @@ namespace Remex.Host.Services.RemoteDesktop.Linux;
 /// Evaluates all Linux remote desktop prerequisites and produces a
 /// <see cref="LinuxPrerequisiteReport"/> and an optional
 /// <see cref="LinuxPrerequisiteRepairPlan"/>.
-/// 
+///
 /// All detection is non-blocking when possible; blocking probes run on the thread pool.
 /// This class is stateless — callers may cache the report themselves.
 /// </summary>

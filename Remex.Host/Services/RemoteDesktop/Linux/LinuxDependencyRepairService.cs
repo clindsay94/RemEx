@@ -197,9 +197,9 @@ public sealed class LinuxDependencyRepairService
             bool ok = proc.ExitCode == 0;
             return new LinuxDependencyRepairResult
             {
-                Action       = action,
-                Success      = ok,
-                Output       = string.IsNullOrWhiteSpace(stdout) ? stderr : stdout,
+                Action = action,
+                Success = ok,
+                Output = string.IsNullOrWhiteSpace(stdout) ? stderr : stdout,
                 ErrorMessage = ok ? null : $"Exit {proc.ExitCode}: {stderr}",
             };
         }
@@ -207,8 +207,8 @@ public sealed class LinuxDependencyRepairService
         {
             return new LinuxDependencyRepairResult
             {
-                Action       = action,
-                Success      = false,
+                Action = action,
+                Success = false,
                 ErrorMessage = "Operation was cancelled.",
             };
         }
@@ -216,8 +216,8 @@ public sealed class LinuxDependencyRepairService
         {
             return new LinuxDependencyRepairResult
             {
-                Action       = action,
-                Success      = false,
+                Action = action,
+                Success = false,
                 ErrorMessage = ex.Message,
             };
         }
@@ -230,18 +230,18 @@ public sealed class LinuxDependencyRepairService
         if (!report.SessionBusAvailable)
             issues.Add(new LinuxDependencyIssue
             {
-                Component       = "D-Bus",
-                Description     = "Session D-Bus is not available. xdg-desktop-portal requires a running session bus.",
-                Severity        = LinuxDependencyIssueSeverity.Error,
+                Component = "D-Bus",
+                Description = "Session D-Bus is not available. xdg-desktop-portal requires a running session bus.",
+                Severity = LinuxDependencyIssueSeverity.Error,
                 RepairAvailable = false,
             });
 
         if (!report.PortalRemoteDesktopAvailable || !report.PortalScreenCastAvailable)
             issues.Add(new LinuxDependencyIssue
             {
-                Component       = "xdg-desktop-portal",
-                Description     = report.PortalUnavailableReason ?? "xdg-desktop-portal is unavailable.",
-                Severity        = LinuxDependencyIssueSeverity.Error,
+                Component = "xdg-desktop-portal",
+                Description = report.PortalUnavailableReason ?? "xdg-desktop-portal is unavailable.",
+                Severity = LinuxDependencyIssueSeverity.Error,
                 RepairAvailable = IsArchFamily(),
                 RepairDescription = IsArchFamily()
                     ? "Install xdg-desktop-portal and xdg-desktop-portal-kde via pacman"
@@ -251,9 +251,9 @@ public sealed class LinuxDependencyRepairService
         if (!report.PipeWireRunning)
             issues.Add(new LinuxDependencyIssue
             {
-                Component       = "PipeWire",
-                Description     = "PipeWire service is not running. Screen capture requires PipeWire.",
-                Severity        = LinuxDependencyIssueSeverity.Error,
+                Component = "PipeWire",
+                Description = "PipeWire service is not running. Screen capture requires PipeWire.",
+                Severity = LinuxDependencyIssueSeverity.Error,
                 RepairAvailable = true,
                 RepairDescription = "Restart PipeWire user service (systemctl --user restart pipewire)",
             });
@@ -261,9 +261,9 @@ public sealed class LinuxDependencyRepairService
         if (!report.PipeWireLibraryAvailable)
             issues.Add(new LinuxDependencyIssue
             {
-                Component       = "libpipewire-0.3",
-                Description     = report.PipeWireUnavailableReason ?? "libpipewire-0.3.so is not installed.",
-                Severity        = LinuxDependencyIssueSeverity.Error,
+                Component = "libpipewire-0.3",
+                Description = report.PipeWireUnavailableReason ?? "libpipewire-0.3.so is not installed.",
+                Severity = LinuxDependencyIssueSeverity.Error,
                 RepairAvailable = IsArchFamily(),
                 RepairDescription = IsArchFamily() ? "Install pipewire via pacman" : null,
             });
@@ -271,9 +271,9 @@ public sealed class LinuxDependencyRepairService
         if (!report.LibeiAvailable)
             issues.Add(new LinuxDependencyIssue
             {
-                Component       = "libei",
-                Description     = "libei is not installed. Wayland keyboard/pointer injection will use portal fallback.",
-                Severity        = LinuxDependencyIssueSeverity.Warning,
+                Component = "libei",
+                Description = "libei is not installed. Wayland keyboard/pointer injection will use portal fallback.",
+                Severity = LinuxDependencyIssueSeverity.Warning,
                 RepairAvailable = IsArchFamily(),
                 RepairDescription = IsArchFamily() ? "Install libei via pacman" : null,
             });
@@ -281,9 +281,9 @@ public sealed class LinuxDependencyRepairService
         if (report.UinputNodeExists && !report.UinputWritable)
             issues.Add(new LinuxDependencyIssue
             {
-                Component       = "uinput",
-                Description     = report.UinputUnavailableReason ?? "Cannot write to /dev/uinput. Pen/stylus injection unavailable.",
-                Severity        = LinuxDependencyIssueSeverity.Warning,
+                Component = "uinput",
+                Description = report.UinputUnavailableReason ?? "Cannot write to /dev/uinput. Pen/stylus injection unavailable.",
+                Severity = LinuxDependencyIssueSeverity.Warning,
                 RepairAvailable = true,
                 RepairDescription = "Add udev rule for /dev/uinput write access (requires sudo)",
             });

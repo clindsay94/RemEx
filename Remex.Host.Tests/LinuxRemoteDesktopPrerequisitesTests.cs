@@ -20,7 +20,7 @@ public class LinuxRemoteDesktopPrerequisitesTests
         var report = new LinuxPrerequisiteReport
         {
             IsWaylandSession = false,
-            IsX11Session     = false,
+            IsX11Session = false,
             SessionBusAvailable = true,
         };
         Assert.Equal(LinuxRemoteDesktopTier.Unsupported, DetermineTier(report));
@@ -31,7 +31,7 @@ public class LinuxRemoteDesktopPrerequisitesTests
     {
         var report = new LinuxPrerequisiteReport
         {
-            IsWaylandSession    = true,
+            IsWaylandSession = true,
             SessionBusAvailable = false,
         };
         Assert.Equal(LinuxRemoteDesktopTier.Unsupported, DetermineTier(report));
@@ -44,8 +44,8 @@ public class LinuxRemoteDesktopPrerequisitesTests
     {
         var report = new LinuxPrerequisiteReport
         {
-            IsWaylandSession    = false,
-            IsX11Session        = true,
+            IsWaylandSession = false,
+            IsX11Session = true,
             SessionBusAvailable = true,
             PortalRemoteDesktopAvailable = false,
         };
@@ -57,11 +57,11 @@ public class LinuxRemoteDesktopPrerequisitesTests
     {
         var report = new LinuxPrerequisiteReport
         {
-            IsWaylandSession    = true,
-            IsX11Session        = true, // XWayland fallback available
+            IsWaylandSession = true,
+            IsX11Session = true, // XWayland fallback available
             SessionBusAvailable = true,
             PortalRemoteDesktopAvailable = false,
-            PortalScreenCastAvailable    = false,
+            PortalScreenCastAvailable = false,
         };
         Assert.Equal(LinuxRemoteDesktopTier.X11Degraded, DetermineTier(report));
     }
@@ -73,15 +73,15 @@ public class LinuxRemoteDesktopPrerequisitesTests
     {
         var report = new LinuxPrerequisiteReport
         {
-            IsWaylandSession    = true,
+            IsWaylandSession = true,
             SessionBusAvailable = true,
             PortalRemoteDesktopAvailable = true,
-            PortalScreenCastAvailable    = true,
-            PipeWireRunning              = true,
-            PipeWireLibraryAvailable     = true,
-            LibeiAvailable               = false,
-            UinputNodeExists             = false,
-            UinputWritable               = false,
+            PortalScreenCastAvailable = true,
+            PipeWireRunning = true,
+            PipeWireLibraryAvailable = true,
+            LibeiAvailable = false,
+            UinputNodeExists = false,
+            UinputWritable = false,
         };
         Assert.Equal(LinuxRemoteDesktopTier.PortalNoPen, DetermineTier(report));
     }
@@ -93,15 +93,15 @@ public class LinuxRemoteDesktopPrerequisitesTests
     {
         var report = new LinuxPrerequisiteReport
         {
-            IsWaylandSession    = true,
+            IsWaylandSession = true,
             SessionBusAvailable = true,
             PortalRemoteDesktopAvailable = true,
-            PortalScreenCastAvailable    = true,
-            PipeWireRunning              = true,
-            PipeWireLibraryAvailable     = true,
-            LibeiAvailable               = true,
-            UinputNodeExists             = true,
-            UinputWritable               = true,
+            PortalScreenCastAvailable = true,
+            PipeWireRunning = true,
+            PipeWireLibraryAvailable = true,
+            LibeiAvailable = true,
+            UinputNodeExists = true,
+            UinputWritable = true,
         };
         Assert.Equal(LinuxRemoteDesktopTier.WaylandNative, DetermineTier(report));
     }
@@ -111,15 +111,15 @@ public class LinuxRemoteDesktopPrerequisitesTests
     {
         var report = new LinuxPrerequisiteReport
         {
-            IsWaylandSession    = true,
+            IsWaylandSession = true,
             SessionBusAvailable = true,
             PortalRemoteDesktopAvailable = true,
-            PortalScreenCastAvailable    = true,
-            PipeWireRunning              = true,
-            PipeWireLibraryAvailable     = true,
-            LibeiAvailable               = true,
-            UinputNodeExists             = false,
-            UinputWritable               = false,
+            PortalScreenCastAvailable = true,
+            PipeWireRunning = true,
+            PipeWireLibraryAvailable = true,
+            LibeiAvailable = true,
+            UinputNodeExists = false,
+            UinputWritable = false,
         };
         Assert.Equal(LinuxRemoteDesktopTier.WaylandNative, DetermineTier(report));
     }

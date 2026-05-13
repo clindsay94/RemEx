@@ -6,12 +6,12 @@ namespace Remex.Core.Models;
 [Flags]
 public enum DesktopStylusCapabilities
 {
-    None         = 0,
-    Pressure     = 1 << 0,
-    Tilt         = 1 << 1,
-    Hover        = 1 << 2,
+    None = 0,
+    Pressure = 1 << 0,
+    Tilt = 1 << 1,
+    Hover = 1 << 2,
     BarrelButton = 1 << 3,
-    Eraser       = 1 << 4,
+    Eraser = 1 << 4,
 }
 
 public record DesktopMeta

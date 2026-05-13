@@ -28,7 +28,7 @@ public enum LinuxBufferKind
 [SupportedOSPlatform("linux")]
 public enum LinuxCursorMode
 {
-    Hidden   = 1,
+    Hidden = 1,
     Embedded = 2,
     Metadata = 4,
 }
@@ -87,7 +87,7 @@ public sealed class LinuxFrameSnapshot
     /// <summary>
     /// Frame dimensions and metadata. Always populated.
     /// </summary>
-    public required int Width  { get; init; }
+    public required int Width { get; init; }
     public required int Height { get; init; }
     public required int Stride { get; init; }
     public required uint Format { get; init; }

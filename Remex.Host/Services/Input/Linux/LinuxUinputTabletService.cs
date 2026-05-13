@@ -128,7 +128,7 @@ public sealed class LinuxUinputTabletService : IDisposable
         int dist = (int)(distance * AbsMax);
 
         uint buttonMask = 0;
-        if (touch)   buttonMask |= 0x01;
+        if (touch) buttonMask |= 0x01;
         if (button1) buttonMask |= 0x02;
         if (button2) buttonMask |= 0x04;
 
@@ -137,7 +137,7 @@ public sealed class LinuxUinputTabletService : IDisposable
             absX: absX, absY: absY,
             pressure: press, tiltX: tx, tiltY: ty, distance: dist,
             buttonMask: buttonMask,
-            toolPen:    isEraser ? 0 : 1,
+            toolPen: isEraser ? 0 : 1,
             toolRubber: isEraser ? 1 : 0);
     }
 

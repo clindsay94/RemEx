@@ -46,8 +46,8 @@ public sealed record LinuxInputCapabilitySet
         EisAvailable || PortalNotifyAvailable || UinputTabletAvailable || XdotoolPath is not null;
 
     public bool CanInjectKeyboard => EisAvailable || PortalNotifyAvailable || XdotoolPath is not null;
-    public bool CanInjectPointer  => EisAvailable || PortalNotifyAvailable || XdotoolPath is not null;
-    public bool CanInjectPen      => UinputTabletAvailable;
+    public bool CanInjectPointer => EisAvailable || PortalNotifyAvailable || XdotoolPath is not null;
+    public bool CanInjectPen => UinputTabletAvailable;
 
     // ── Factory ──────────────────────────────────────────────────────
 
@@ -56,11 +56,11 @@ public sealed record LinuxInputCapabilitySet
     {
         return new LinuxInputCapabilitySet
         {
-            Tier                  = report.SelectedTier,
-            EisAvailable          = report.LibeiAvailable,
+            Tier = report.SelectedTier,
+            EisAvailable = report.LibeiAvailable,
             PortalNotifyAvailable = report.PortalRemoteDesktopAvailable,
             UinputTabletAvailable = report.UinputNodeExists && report.UinputWritable,
-            XdotoolPath           = report.SelectedTier == LinuxRemoteDesktopTier.X11Degraded
+            XdotoolPath = report.SelectedTier == LinuxRemoteDesktopTier.X11Degraded
                                       ? FindXdotool() : null,
         };
     }

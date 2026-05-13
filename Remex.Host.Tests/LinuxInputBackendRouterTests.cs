@@ -31,8 +31,8 @@ public class LinuxInputBackendRouterTests
     {
         var caps = LinuxInputCapabilitySet.FromReport(new LinuxPrerequisiteReport
         {
-            SelectedTier     = LinuxRemoteDesktopTier.X11Degraded,
-            IsX11Session     = true,
+            SelectedTier = LinuxRemoteDesktopTier.X11Degraded,
+            IsX11Session = true,
         });
         using var router = new LinuxInputBackendRouter(caps);
         // BackendName reports xdotool when EIS is not available (which it won't be
@@ -45,9 +45,9 @@ public class LinuxInputBackendRouterTests
     {
         var caps = LinuxInputCapabilitySet.FromReport(new LinuxPrerequisiteReport
         {
-            SelectedTier                     = LinuxRemoteDesktopTier.PortalNoPen,
-            IsWaylandSession                 = true,
-            PortalRemoteDesktopAvailable     = true, // PortalNotifyAvailable derives from this
+            SelectedTier = LinuxRemoteDesktopTier.PortalNoPen,
+            IsWaylandSession = true,
+            PortalRemoteDesktopAvailable = true, // PortalNotifyAvailable derives from this
         });
         using var router = new LinuxInputBackendRouter(caps);
         Assert.Equal("portal-notify", router.BackendName);
@@ -58,9 +58,9 @@ public class LinuxInputBackendRouterTests
     {
         var caps = LinuxInputCapabilitySet.FromReport(new LinuxPrerequisiteReport
         {
-            SelectedTier     = LinuxRemoteDesktopTier.WaylandNative,
+            SelectedTier = LinuxRemoteDesktopTier.WaylandNative,
             IsWaylandSession = true,
-            LibeiAvailable   = true,
+            LibeiAvailable = true,
         });
         using var router = new LinuxInputBackendRouter(caps);
         // Without the native library the EIS sender will not open. The router
@@ -75,10 +75,10 @@ public class LinuxInputBackendRouterTests
     {
         var caps = LinuxInputCapabilitySet.FromReport(new LinuxPrerequisiteReport
         {
-            SelectedTier     = LinuxRemoteDesktopTier.WaylandNative,
+            SelectedTier = LinuxRemoteDesktopTier.WaylandNative,
             IsWaylandSession = true,
             UinputNodeExists = true,
-            UinputWritable   = true,
+            UinputWritable = true,
         });
         Assert.True(caps.UinputTabletAvailable);
         Assert.True(caps.CanInjectPen);
@@ -89,10 +89,10 @@ public class LinuxInputBackendRouterTests
     {
         var caps = LinuxInputCapabilitySet.FromReport(new LinuxPrerequisiteReport
         {
-            SelectedTier     = LinuxRemoteDesktopTier.WaylandNative,
+            SelectedTier = LinuxRemoteDesktopTier.WaylandNative,
             IsWaylandSession = true,
             UinputNodeExists = true,
-            UinputWritable   = false,
+            UinputWritable = false,
         });
         Assert.False(caps.UinputTabletAvailable);
         Assert.False(caps.CanInjectPen);

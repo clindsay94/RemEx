@@ -39,9 +39,9 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
     {
         LinuxRemoteDesktopTier.WaylandNative =>
             _eis.IsAvailable ? "libei" : "portal-notify",
-        LinuxRemoteDesktopTier.PortalNoPen   => "portal-notify",
-        LinuxRemoteDesktopTier.X11Degraded   => "xdotool",
-        _                                    => null,
+        LinuxRemoteDesktopTier.PortalNoPen => "portal-notify",
+        LinuxRemoteDesktopTier.X11Degraded => "xdotool",
+        _ => null,
     };
 
     public LinuxInputBackendRouter(
@@ -220,10 +220,10 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
         {
             var psi = new ProcessStartInfo("xdotool", args)
             {
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
                 RedirectStandardOutput = true,
-                RedirectStandardError  = true,
+                RedirectStandardError = true,
             };
             using var proc = Process.Start(psi);
             proc?.WaitForExit(1000);
@@ -237,10 +237,10 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
         {
             var psi = new ProcessStartInfo("xdotool")
             {
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
                 RedirectStandardOutput = true,
-                RedirectStandardError  = true,
+                RedirectStandardError = true,
             };
             foreach (var a in args)
                 psi.ArgumentList.Add(a);

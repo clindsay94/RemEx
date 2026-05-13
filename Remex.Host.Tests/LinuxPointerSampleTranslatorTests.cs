@@ -19,27 +19,27 @@ public class LinuxPointerSampleTranslatorTests
 
     [Theory]
     [InlineData("Return", 28)]
-    [InlineData("enter",  28)]
+    [InlineData("enter", 28)]
     [InlineData("BackSpace", 14)]
-    [InlineData("tab",    15)]
+    [InlineData("tab", 15)]
     [InlineData("Escape", 1)]
-    [InlineData("esc",    1)]
+    [InlineData("esc", 1)]
     [InlineData("Delete", 111)]
-    [InlineData("shift",  42)]
-    [InlineData("ctrl",   29)]
-    [InlineData("alt",    56)]
-    [InlineData("super",  125)]
-    [InlineData("space",  57)]
-    [InlineData("a",      30)]
-    [InlineData("z",      44)]
-    [InlineData("F1",     59)]
-    [InlineData("F12",    88)]
-    [InlineData("up",     103)]
-    [InlineData("down",   108)]
-    [InlineData("left",   105)]
-    [InlineData("right",  106)]
-    [InlineData("Home",   102)]
-    [InlineData("End",    107)]
+    [InlineData("shift", 42)]
+    [InlineData("ctrl", 29)]
+    [InlineData("alt", 56)]
+    [InlineData("super", 125)]
+    [InlineData("space", 57)]
+    [InlineData("a", 30)]
+    [InlineData("z", 44)]
+    [InlineData("F1", 59)]
+    [InlineData("F12", 88)]
+    [InlineData("up", 103)]
+    [InlineData("down", 108)]
+    [InlineData("left", 105)]
+    [InlineData("right", 106)]
+    [InlineData("Home", 102)]
+    [InlineData("End", 107)]
     [InlineData("PageUp", 104)]
     [InlineData("PageDown", 109)]
     public void XkbNameToLinuxKeycode_ReturnsExpectedCode(string keyName, int expected)
@@ -86,14 +86,14 @@ public class LinuxPointerSampleTranslatorTests
 
     // ── DesktopPointerSample axis normalisation (uinput mapping) ──────
 
-    private const int AbsMax  = 65535;
+    private const int AbsMax = 65535;
     private const int TiltMin = -64;
-    private const int TiltMax =  63;
+    private const int TiltMax = 63;
 
     [Theory]
-    [InlineData(0.0,  0)]
-    [InlineData(1.0,  65535)]
-    [InlineData(0.5,  32767)]
+    [InlineData(0.0, 0)]
+    [InlineData(1.0, 65535)]
+    [InlineData(0.5, 32767)]
     public void NormalizedCoord_MapsToAbsRange(double norm, int expected)
     {
         int mapped = (int)(norm * AbsMax);
@@ -101,9 +101,9 @@ public class LinuxPointerSampleTranslatorTests
     }
 
     [Theory]
-    [InlineData(0.0,   0)]
-    [InlineData(1.0,   65535)]
-    [InlineData(0.5,   32767)]
+    [InlineData(0.0, 0)]
+    [InlineData(1.0, 65535)]
+    [InlineData(0.5, 32767)]
     public void NormalizedPressure_MapsToAbsRange(double pressure, int expected)
     {
         int mapped = (int)(pressure * AbsMax);
@@ -112,8 +112,8 @@ public class LinuxPointerSampleTranslatorTests
 
     [Theory]
     [InlineData(-1.0, -64)]
-    [InlineData( 1.0,  63)]
-    [InlineData( 0.0,   0)]
+    [InlineData(1.0, 63)]
+    [InlineData(0.0, 0)]
     public void NormalizedTilt_MapsToTiltRange(double tilt, int expected)
     {
         int mapped = tilt >= 0
