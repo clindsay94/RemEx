@@ -434,8 +434,8 @@
     <string name="cd_more_options">More options</string>
     <!-- File transfer settings tab -->
     <string name="settings_ft_shared_folders_title">Android Shared Folders</string>
-    <string name="settings_ft_shared_folders_desc">Add folders from this device to share when Android hosting is enabled. Your selections are saved and will be used automatically once the feature is available.</string>
-    <string name="settings_ft_coming_soon">Android hosting coming in a future update</string>
+    <string name="settings_ft_shared_folders_desc">Add folders from this device to share with the host. Your selections are saved and will be used automatically.</string>
+    <string name="settings_ft_coming_soon">Shared folders are active</string>
     <string name="settings_ft_no_folders">No folders added yet.</string>
     <string name="settings_ft_add_folder">Add folder…</string>
     <string name="settings_ft_remove_folder">Remove folder</string>

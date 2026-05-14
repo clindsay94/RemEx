@@ -46,6 +46,7 @@ class RemexConnectionService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        AndroidFileTransferHost.start(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -92,6 +93,7 @@ class RemexConnectionService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        AndroidFileTransferHost.stop()
         serviceScope.cancel()
         super.onDestroy()
     }
