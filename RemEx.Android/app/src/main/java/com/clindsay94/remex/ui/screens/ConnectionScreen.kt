@@ -137,7 +137,7 @@ fun ConnectionScreenContent(
                                         add(Manifest.permission.NEARBY_WIFI_DEVICES)
                                 }
                                 // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN discovery
-                                if (Build.VERSION.SDK_INT >= 36) { 
+                                if (Build.VERSION.SDK_INT >= 36) {
                                         add("android.permission.ACCESS_LOCAL_NETWORK")
                                 }
                         }
@@ -150,11 +150,11 @@ fun ConnectionScreenContent(
                         context,
                         Manifest.permission.NEARBY_WIFI_DEVICES
                 ) == PackageManager.PERMISSION_GRANTED
-                
+
                 val hasLocalNet = if (Build.VERSION.SDK_INT >= 36) {
                         ContextCompat.checkSelfPermission(context, "android.permission.ACCESS_LOCAL_NETWORK") == PackageManager.PERMISSION_GRANTED
                 } else true
-                
+
                 return hasNearby && hasLocalNet
         }
 
@@ -232,23 +232,23 @@ fun ConnectionScreenContent(
 
         // Initialize inputs from saved values only once they are loaded
         LaunchedEffect(connectionPrefs, desktopPrefs) {
-                val cp = connectionPrefs
-                val dp = desktopPrefs
-                if (cp != null && dp != null) {
-                        if (hostInput.isEmpty() && cp.host.isNotEmpty()) hostInput = cp.host
-                        if (portInput.isEmpty()) portInput = cp.port.toString()
-                        if (macInput.isEmpty()) macInput = cp.macAddress
-                        if (broadcastInput.isEmpty()) broadcastInput = cp.broadcastIp
-                        if (subnetInput.isEmpty()) subnetInput = cp.subnetMask
-                        if (qualityInput == 50f && dp.quality != 50)
-                                qualityInput = dp.quality.toFloat()
-                        if (targetFpsInput == 30f && dp.targetFps != 30)
-                                targetFpsInput = dp.targetFps.toFloat()
-                        if (scaleInput == 0.6f && dp.scale != 0.6f) scaleInput = dp.scale
+                if (connectionPrefs != null && desktopPrefs != null) {
+                        if (hostInput.isEmpty() && connectionPrefs.host.isNotEmpty()) hostInput =
+                            connectionPrefs.host
+                        if (portInput.isEmpty()) portInput = connectionPrefs.port.toString()
+                        if (macInput.isEmpty()) macInput = connectionPrefs.macAddress
+                        if (broadcastInput.isEmpty()) broadcastInput = connectionPrefs.broadcastIp
+                        if (subnetInput.isEmpty()) subnetInput = connectionPrefs.subnetMask
+                        if (qualityInput == 50f && desktopPrefs.quality != 50)
+                                qualityInput = desktopPrefs.quality.toFloat()
+                        if (targetFpsInput == 30f && desktopPrefs.targetFps != 30)
+                                targetFpsInput = desktopPrefs.targetFps.toFloat()
+                        if (scaleInput == 0.6f && desktopPrefs.scale != 0.6f) scaleInput =
+                            desktopPrefs.scale
                 }
         }
 
-        // Auto-fill host/port when a host is discovered
+        // Autofill host/port when a host is discovered
         LaunchedEffect(discoveredHost) {
                 discoveredHost?.let {
                         hostInput = it.host

@@ -83,23 +83,23 @@ public class LinuxPortalInputInjectorTests
     [Fact]
     public async Task EnsureStartedAsync_ReturnsFalse_InHeadlessEnvironment()
     {
-        // In CI / headless environments there is no session D-Bus or portal daemon.
-        // EnsureStartedAsync must not throw; it must return false and leave
-        // IsActive == false.
+        // Skip on machines with a live session bus — the real test environment
+        // would otherwise pop up the KDE RemoteDesktop permission dialog. This
+        // test only validates the no-portal failure path that fires in CI.
+        if (HasSessionBus()) return;
+
         await using var injector = new LinuxPortalInputInjector();
         var result = await injector.EnsureStartedAsync();
-
-        // If a portal happens to be present (developer machine) the test
-        // is inconclusive — we just verify no exception occurred.
-        if (!result)
-        {
-            Assert.False(injector.IsActive);
-        }
+        Assert.False(result);
+        Assert.False(injector.IsActive);
     }
 
     [Fact]
     public async Task EnsureStartedAsync_CanBeCalledMultipleTimes_Safely()
     {
+        // Same rationale — skip when a real portal is reachable.
+        if (HasSessionBus()) return;
+
         await using var injector = new LinuxPortalInputInjector();
 
         // Call twice concurrently; neither call should throw regardless of
@@ -111,6 +111,11 @@ public class LinuxPortalInputInjectorTests
         // Both calls should return the same effective result.
         Assert.Equal(results[0], results[1]);
     }
+
+    private static bool HasSessionBus() =>
+        !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"))
+        || !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
+        || !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR"));
 
     // ── DisposeAsync clears active state ──────────────────────────────
 

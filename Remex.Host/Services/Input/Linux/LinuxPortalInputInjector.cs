@@ -1,33 +1,49 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Tmds.DBus.Protocol;
 
 namespace Remex.Host.Services.Input.Linux;
 
 /// <summary>
 /// Injects pointer and keyboard events via the xdg-desktop-portal RemoteDesktop D-Bus API.
 ///
-/// This is the correct input injection path for Wayland sessions where neither xdotool
-/// (X11-only) nor ydotool (requires daemon) is reliable.  A RemoteDesktop-only portal
-/// session is created on first use; the user is prompted once to grant pointer/keyboard
-/// control, and the session persists for the lifetime of this injector instance.
+/// Wayland-only path. Maintains a persistent <see cref="Connection"/> so that the
+/// portal session (which is tied to the caller's unique bus name) survives across
+/// every Notify* invocation. Permission dialogue is shown once during
+/// <see cref="EnsureStartedAsync"/>; afterwards every Notify* method is fire-and-forget.
 ///
-/// Thread safety: <see cref="EnsureStartedAsync"/> serialises concurrent callers;
-/// all Notify* methods are safe to call from any thread after the session is active.
+/// Limitations:
+///   * <c>NotifyPointerMotionAbsolute</c> requires a unified ScreenCast + RemoteDesktop
+///     session (it needs a PipeWire stream id). Input-only sessions cannot dispatch
+///     absolute motion; the caller must convert to relative deltas. This method is
+///     therefore a no-op on input-only injectors and is kept only for API compatibility.
 /// </summary>
 [SupportedOSPlatform("linux")]
 internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 {
+    private const string PortalDestination = "org.freedesktop.portal.Desktop";
+    private const string PortalPath = "/org/freedesktop/portal/desktop";
+    private const string RemoteDesktopInterface = "org.freedesktop.portal.RemoteDesktop";
+    private const string RequestInterface = "org.freedesktop.portal.Request";
+    private const string SessionInterface = "org.freedesktop.portal.Session";
+
     private readonly ILogger _logger;
+
+    private Connection? _conn;
     private string? _sessionHandle;
+    private string? _normalizedSender;
     private volatile bool _active;
-    private int _startInProgress;   // 0 = idle, 1 = in-progress (Interlocked flag)
+    private int _startInProgress;
+    private int _handleTokenCounter;
 
     public bool IsActive => _active;
+
+    public string? SessionHandle => _sessionHandle;
 
     public LinuxPortalInputInjector(ILogger? logger = null)
     {
@@ -37,26 +53,28 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     // ── Session lifecycle ─────────────────────────────────────────────────
 
     /// <summary>
-    /// Ensures the portal input session is active.  Safe to call concurrently;
-    /// only one attempt proceeds at a time.  Returns true if the session is active
-    /// after the call.
+    /// Ensures the portal input session is active. Safe to call concurrently; only
+    /// one start attempt proceeds at a time. Returns true if the session is active.
     /// </summary>
     public async Task<bool> EnsureStartedAsync(CancellationToken ct = default)
     {
         if (_active) return true;
 
-        // Guard: only one start attempt in flight.
         if (Interlocked.CompareExchange(ref _startInProgress, 1, 0) != 0)
         {
-            // Another thread is already starting; wait briefly and check.
-            for (int i = 0; i < 20 && !_active; i++)
-                await Task.Delay(100, ct);
+            for (var i = 0; i < 1200 && !_active; i++)
+                await Task.Delay(100, ct).ConfigureAwait(false);
             return _active;
         }
 
         try
         {
-            return await StartSessionAsync(ct);
+            return await StartSessionAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Portal input session start failed.");
+            return false;
         }
         finally
         {
@@ -64,76 +82,255 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         }
     }
 
-    // ── Input injection ───────────────────────────────────────────────────
+    private async Task<bool> StartSessionAsync(CancellationToken ct)
+    {
+        if (!await EnsureConnectionAsync(ct).ConfigureAwait(false))
+            return false;
+
+        _logger.LogInformation(
+            "Starting xdg-desktop-portal RemoteDesktop input session (sender={Sender}).",
+            _conn!.UniqueName);
+
+        // Step 1: CreateSession — the session_handle is delivered in the Response signal,
+        // NOT in the immediate method reply (which only returns the Request object path).
+        var createResults = await CallPortalAsync(
+            method: "CreateSession",
+            signature: "a{sv}",
+            requestTimeout: TimeSpan.FromSeconds(30),
+            writeArgs: (ref MessageWriter w, string handleToken) =>
+            {
+                var sessionToken = $"remex_session_{handleToken}";
+                var dictStart = w.WriteDictionaryStart();
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("handle_token");
+                w.WriteVariantString(handleToken);
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("session_handle_token");
+                w.WriteVariantString(sessionToken);
+
+                w.WriteDictionaryEnd(dictStart);
+            },
+            ct: ct).ConfigureAwait(false);
+
+        if (createResults is null)
+        {
+            _logger.LogWarning("Portal CreateSession failed or returned non-zero response.");
+            return false;
+        }
+
+        if (!createResults.TryGetValue("session_handle", out var sessionVariant))
+        {
+            _logger.LogWarning("Portal CreateSession Response missing 'session_handle' key.");
+            return false;
+        }
+
+        var sessionHandle = sessionVariant.GetString();
+        _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
+
+        // Step 2: SelectDevices (Keyboard | Pointer = 3).
+        var selectResults = await CallPortalAsync(
+            method: "SelectDevices",
+            signature: "oa{sv}",
+            requestTimeout: TimeSpan.FromSeconds(30),
+            writeArgs: (ref MessageWriter w, string handleToken) =>
+            {
+                w.WriteObjectPath(sessionHandle);
+                var dictStart = w.WriteDictionaryStart();
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("handle_token");
+                w.WriteVariantString(handleToken);
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("types");
+                w.WriteVariantUInt32(3u); // Keyboard | Pointer
+
+                w.WriteDictionaryEnd(dictStart);
+            },
+            ct: ct).ConfigureAwait(false);
+
+        if (selectResults is null)
+        {
+            _logger.LogWarning("Portal SelectDevices failed or returned non-zero response.");
+            await CloseSessionInternalAsync().ConfigureAwait(false);
+            return false;
+        }
+
+        // Step 3: Start — shows the KDE permission dialog. Allow generous timeout.
+        _logger.LogInformation("Waiting for user to grant portal RemoteDesktop permission...");
+        var startResults = await CallPortalAsync(
+            method: "Start",
+            signature: "osa{sv}",
+            requestTimeout: TimeSpan.FromMinutes(2),
+            writeArgs: (ref MessageWriter w, string handleToken) =>
+            {
+                w.WriteObjectPath(sessionHandle);
+                w.WriteString(string.Empty); // parent_window
+                var dictStart = w.WriteDictionaryStart();
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("handle_token");
+                w.WriteVariantString(handleToken);
+
+                w.WriteDictionaryEnd(dictStart);
+            },
+            ct: ct).ConfigureAwait(false);
+
+        if (startResults is null)
+        {
+            _logger.LogWarning("User declined portal RemoteDesktop permission or dialog timed out.");
+            await CloseSessionInternalAsync().ConfigureAwait(false);
+            return false;
+        }
+
+        _sessionHandle = sessionHandle;
+        _active = true;
+        _logger.LogInformation("Portal RemoteDesktop input session is active.");
+        return true;
+    }
+
+    // ── Input injection (fire-and-forget) ─────────────────────────────────
 
     /// <summary>Injects a relative pointer motion event (trackpad-style).</summary>
     public void NotifyPointerMotionRelative(double dx, double dy)
     {
-        if (!_active || _sessionHandle is null) return;
+        if (!_active || _sessionHandle is null || _conn is null) return;
 
-        // gdbus call format:
-        //   gdbus call --session --dest org.freedesktop.portal.Desktop
-        //     --object-path /org/freedesktop/portal/desktop
-        //     --method org.freedesktop.portal.RemoteDesktop.NotifyPointerMotionRelative
-        //     '<session_handle>' '{}' <dx> <dy>
-        RunGdbusFireAndForget(
-            "org.freedesktop.portal.RemoteDesktop",
-            "NotifyPointerMotionRelative",
-            $"'{_sessionHandle}'", "'{}'",
-            FormatDouble(dx), FormatDouble(dy));
+        try
+        {
+            var writer = _conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDestination,
+                path: PortalPath,
+                @interface: RemoteDesktopInterface,
+                member: "NotifyPointerMotion",
+                signature: "oa{sv}dd",
+                flags: MessageFlags.NoReplyExpected);
+            writer.WriteObjectPath(_sessionHandle);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart);
+            writer.WriteDouble(dx);
+            writer.WriteDouble(dy);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "NotifyPointerMotion (relative) failed.");
+        }
     }
 
-    /// <summary>Injects an absolute pointer motion event.</summary>
+    /// <summary>
+    /// Absolute motion is NOT supported on input-only portal sessions — the portal
+    /// method <c>NotifyPointerMotionAbsolute</c> requires a stream id obtained from a
+    /// unified ScreenCast + RemoteDesktop session. This method is a no-op; callers
+    /// must convert absolute coordinates to relative deltas at a higher layer.
+    /// </summary>
     public void NotifyPointerMotionAbsolute(double x, double y)
     {
-        if (!_active || _sessionHandle is null) return;
-
-        RunGdbusFireAndForget(
-            "org.freedesktop.portal.RemoteDesktop",
-            "NotifyPointerMotionAbsolute",
-            $"'{_sessionHandle}'", "'{}'",
-            FormatDouble(x), FormatDouble(y));
+        // Intentional no-op; see remarks above.
     }
 
     /// <summary>Injects a pointer button press or release.</summary>
-    /// <param name="linuxButtonCode">Linux BTN_ code: 272=left, 273=right, 274=middle.</param>
-    /// <param name="pressed">True for press, false for release.</param>
+    /// <param name="linuxButtonCode">Linux BTN_ code: 0x110=left, 0x111=right, 0x112=middle.</param>
     public void NotifyPointerButton(int linuxButtonCode, bool pressed)
     {
-        if (!_active || _sessionHandle is null) return;
+        if (!_active || _sessionHandle is null || _conn is null) return;
 
-        // Signature: (o, a{sv}, i, u)  — session, options, button (int32), state (uint32)
-        RunGdbusFireAndForget(
-            "org.freedesktop.portal.RemoteDesktop",
-            "NotifyPointerButton",
-            $"'{_sessionHandle}'", "'{}'",
-            linuxButtonCode.ToString(),
-            pressed ? "1" : "0");
+        try
+        {
+            var writer = _conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDestination,
+                path: PortalPath,
+                @interface: RemoteDesktopInterface,
+                member: "NotifyPointerButton",
+                signature: "oa{sv}iu",
+                flags: MessageFlags.NoReplyExpected);
+            writer.WriteObjectPath(_sessionHandle);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart);
+            writer.WriteInt32(linuxButtonCode);
+            writer.WriteUInt32(pressed ? 1u : 0u);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "NotifyPointerButton failed.");
+        }
     }
 
     /// <summary>Injects a discrete (tick-based) scroll event.</summary>
+    /// <remarks>
+    /// Maps to <c>NotifyPointerAxisDiscrete</c>. Axis 0 = vertical, 1 = horizontal.
+    /// Each call emits one or both axes as separate messages because the portal
+    /// API only supports one axis per call.
+    /// </remarks>
     public void NotifyPointerScrollDiscrete(int dx, int dy)
     {
-        if (!_active || _sessionHandle is null) return;
+        if (!_active || _sessionHandle is null || _conn is null) return;
+        if (dx == 0 && dy == 0) return;
 
-        RunGdbusFireAndForget(
-            "org.freedesktop.portal.RemoteDesktop",
-            "NotifyPointerScrollDiscrete",
-            $"'{_sessionHandle}'", "'{}'",
-            dx.ToString(), dy.ToString());
+        if (dy != 0) SendAxisDiscrete(axis: 0u, steps: dy);
+        if (dx != 0) SendAxisDiscrete(axis: 1u, steps: dx);
+    }
+
+    private void SendAxisDiscrete(uint axis, int steps)
+    {
+        try
+        {
+            var writer = _conn!.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDestination,
+                path: PortalPath,
+                @interface: RemoteDesktopInterface,
+                member: "NotifyPointerAxisDiscrete",
+                signature: "oa{sv}ui",
+                flags: MessageFlags.NoReplyExpected);
+            writer.WriteObjectPath(_sessionHandle!);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart);
+            writer.WriteUInt32(axis);
+            writer.WriteInt32(steps);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "NotifyPointerAxisDiscrete failed.");
+        }
     }
 
     /// <summary>Injects a keyboard key press or release via Linux keycode.</summary>
     public void NotifyKeyboardKeycode(int keycode, bool pressed)
     {
-        if (!_active || _sessionHandle is null) return;
+        if (!_active || _sessionHandle is null || _conn is null) return;
 
-        RunGdbusFireAndForget(
-            "org.freedesktop.portal.RemoteDesktop",
-            "NotifyKeyboardKeycode",
-            $"'{_sessionHandle}'", "'{}'",
-            keycode.ToString(),
-            pressed ? "1" : "0");
+        try
+        {
+            var writer = _conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDestination,
+                path: PortalPath,
+                @interface: RemoteDesktopInterface,
+                member: "NotifyKeyboardKeycode",
+                signature: "oa{sv}iu",
+                flags: MessageFlags.NoReplyExpected);
+            writer.WriteObjectPath(_sessionHandle);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart);
+            writer.WriteInt32(keycode);
+            writer.WriteUInt32(pressed ? 1u : 0u);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "NotifyKeyboardKeycode failed.");
+        }
     }
 
     // ── IAsyncDisposable ──────────────────────────────────────────────────
@@ -141,200 +338,179 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _active = false;
-        if (_sessionHandle is not null)
+        await CloseSessionInternalAsync().ConfigureAwait(false);
+        _conn?.Dispose();
+        _conn = null;
+    }
+
+    private async Task CloseSessionInternalAsync()
+    {
+        if (_sessionHandle is null || _conn is null)
         {
-            try
-            {
-                await RunGdbusAsync(
-                    "org.freedesktop.portal.Session",
-                    "Close",
-                    sessionOverride: _sessionHandle,
-                    timeout: TimeSpan.FromSeconds(3));
-            }
-            catch { /* best effort */ }
+            _sessionHandle = null;
+            return;
+        }
+
+        try
+        {
+            var writer = _conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDestination,
+                path: _sessionHandle,
+                @interface: SessionInterface,
+                member: "Close",
+                flags: MessageFlags.NoReplyExpected);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+            await Task.Yield();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Closing portal session failed (best effort).");
+        }
+        finally
+        {
             _sessionHandle = null;
         }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
 
-    private async Task<bool> StartSessionAsync(CancellationToken ct)
+    private async Task<bool> EnsureConnectionAsync(CancellationToken ct)
     {
-        try
+        if (_conn is not null) return true;
+
+        var address = Address.Session;
+        if (string.IsNullOrEmpty(address))
         {
             _logger.LogInformation(
-                "Starting xdg-desktop-portal RemoteDesktop input session on Wayland.");
+                "No D-Bus session address available (DBUS_SESSION_BUS_ADDRESS unset); " +
+                "portal input injector cannot start.");
+            return false;
+        }
 
-            // ── Step 1: CreateSession ──────────────────────────────────────
-            var token = $"remex_{Environment.ProcessId:X}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-            var createOutput = await RunGdbusAsync(
-                "org.freedesktop.portal.RemoteDesktop",
-                "CreateSession",
-                args: $"\"{{ 'session-handle-token': <'{token}'> }}\"",
-                timeout: TimeSpan.FromSeconds(10),
-                ct: ct);
+        try
+        {
+            var conn = new Connection(address);
+            await conn.ConnectAsync().ConfigureAwait(false);
+            _conn = conn;
 
-            var sessionHandle = ParseSessionHandle(createOutput);
-            if (sessionHandle is null)
+            var unique = _conn.UniqueName;
+            if (string.IsNullOrEmpty(unique))
             {
-                _logger.LogWarning(
-                    "Portal CreateSession returned no session handle. " +
-                    "Output: {Output}", createOutput);
+                _logger.LogWarning("D-Bus connection has no unique name; portal session cannot proceed.");
                 return false;
             }
 
-            _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
-
-            // ── Step 2: SelectDevices (Pointer | Keyboard = 3) ─────────────
-            await RunGdbusAsync(
-                "org.freedesktop.portal.RemoteDesktop",
-                "SelectDevices",
-                args: $"'{sessionHandle}' \"{{ 'types': <uint32 3> }}\"",
-                timeout: TimeSpan.FromSeconds(10),
-                ct: ct);
-
-            // ── Step 3: Start — shows user dialog (up to 60 s) ────────────
-            _logger.LogInformation(
-                "Waiting for user to grant portal RemoteDesktop permission...");
-
-            var startOutput = await RunGdbusAsync(
-                "org.freedesktop.portal.RemoteDesktop",
-                "Start",
-                args: $"'{sessionHandle}' '' \"{{}}\"",
-                timeout: TimeSpan.FromSeconds(60),
-                ct: ct);
-
-            // Start returns a Response; on success the response_code is 0.
-            // If the user denied or the dialog timed out, log and fail.
-            if (startOutput is not null && startOutput.Contains("response_code") &&
-                !startOutput.Contains("response_code: 0") &&
-                !startOutput.Contains("'response': <uint32 0>"))
-            {
-                _logger.LogWarning(
-                    "User declined portal RemoteDesktop permission or dialog timed out. " +
-                    "Output: {Output}", startOutput);
-                return false;
-            }
-
-            _sessionHandle = sessionHandle;
-            _active = true;
-            _logger.LogInformation("Portal RemoteDesktop input session is active.");
+            _normalizedSender = unique.TrimStart(':').Replace('.', '_');
             return true;
         }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Portal input session start cancelled.");
-            return false;
-        }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Portal input session start failed.");
+            _logger.LogWarning(ex, "Failed to connect to D-Bus session bus.");
             return false;
         }
     }
 
-    private static string? ParseSessionHandle(string? output)
-    {
-        if (string.IsNullOrWhiteSpace(output)) return null;
+    private delegate void ArgWriter(ref MessageWriter writer, string handleToken);
 
-        // gdbus output for CreateSession:
-        //   (objectpath '/org/freedesktop/portal/desktop/session/...',)
-        // busctl output: /org/freedesktop/portal/desktop/session/...
-        const string prefix = "/org/freedesktop/portal/desktop/session/";
-        int idx = output.IndexOf(prefix, StringComparison.Ordinal);
-        if (idx < 0) return null;
-
-        int end = idx;
-        while (end < output.Length &&
-               output[end] != '\'' &&
-               output[end] != '"' &&
-               output[end] != ',' &&
-               output[end] != ')' &&
-               output[end] != ' ' &&
-               output[end] != '\n')
-        {
-            end++;
-        }
-        var handle = output[idx..end].Trim();
-        return string.IsNullOrWhiteSpace(handle) ? null : handle;
-    }
-
-    private async Task<string?> RunGdbusAsync(
-        string iface,
+    /// <summary>
+    /// Calls a RemoteDesktop portal method, subscribing to its <c>Response</c> signal
+    /// before invoking so no response is missed. Returns the results dictionary on
+    /// success (response code 0), or null if the user cancelled / response code != 0
+    /// / timeout / error.
+    /// </summary>
+    private async Task<Dictionary<string, VariantValue>?> CallPortalAsync(
         string method,
-        string? args = null,
-        string? sessionOverride = null,
-        TimeSpan? timeout = null,
-        CancellationToken ct = default)
+        string signature,
+        TimeSpan requestTimeout,
+        ArgWriter writeArgs,
+        CancellationToken ct)
     {
-        var objPath = sessionOverride is not null
-            ? $"'{sessionOverride}'"
-            : "/org/freedesktop/portal/desktop";
+        if (_conn is null || _normalizedSender is null) return null;
 
-        var argString = args is null ? string.Empty : $" {args}";
-        var cmdArgs =
-            $"call --session " +
-            $"--dest org.freedesktop.portal.Desktop " +
-            $"--object-path {objPath} " +
-            $"--method {iface}.{method}" +
-            argString;
+        var handleToken = $"remex_{Interlocked.Increment(ref _handleTokenCounter)}";
+        var requestPath = $"/org/freedesktop/portal/desktop/request/{_normalizedSender}/{handleToken}";
 
+        var tcs = new TaskCompletionSource<Dictionary<string, VariantValue>?>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var rule = new MatchRule
+        {
+            Type = MessageType.Signal,
+            Sender = PortalDestination,
+            Interface = RequestInterface,
+            Member = "Response",
+            Path = requestPath,
+        };
+
+        IDisposable? subscription = null;
         try
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            if (timeout.HasValue)
-                cts.CancelAfter(timeout.Value);
+            subscription = await _conn.AddMatchAsync(
+                rule,
+                static (Message msg, object? state) =>
+                {
+                    var reader = msg.GetBodyReader();
+                    var response = reader.ReadUInt32();
+                    var dict = reader.ReadDictionaryOfStringToVariantValue();
+                    return (response, dict);
+                },
+                (Exception? ex, (uint Response, Dictionary<string, VariantValue> Results) data,
+                    object? rs, object? hs) =>
+                {
+                    if (ex is not null)
+                    {
+                        tcs.TrySetException(ex);
+                        return;
+                    }
+                    if (data.Response != 0u)
+                    {
+                        // 1 = cancelled by user, 2 = other (e.g. compositor terminated session).
+                        tcs.TrySetResult(null);
+                        return;
+                    }
+                    tcs.TrySetResult(data.Results);
+                },
+                ObserverFlags.None).ConfigureAwait(false);
 
-            var psi = new ProcessStartInfo("gdbus", cmdArgs)
+            // Build and send the method call. We don't need the reply payload here —
+            // the actual results arrive in the Response signal — but we still want
+            // CallMethodAsync to surface protocol errors.
+            MessageBuffer buf;
             {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
+                var writer = _conn.GetMessageWriter();
+                writer.WriteMethodCallHeader(
+                    destination: PortalDestination,
+                    path: PortalPath,
+                    @interface: RemoteDesktopInterface,
+                    member: method,
+                    signature: signature);
+                writeArgs(ref writer, handleToken);
+                buf = writer.CreateMessage();
+            }
 
-            using var proc = Process.Start(psi);
-            if (proc is null) return null;
+            try
+            {
+                await _conn.CallMethodAsync(buf).ConfigureAwait(false);
+            }
+            catch (DBusException ex)
+            {
+                _logger.LogWarning(ex, "Portal {Method} returned a D-Bus error.", method);
+                return null;
+            }
 
-            var output = await proc.StandardOutput.ReadToEndAsync(cts.Token);
-            await proc.WaitForExitAsync(cts.Token);
-            return output;
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(requestTimeout);
+
+            using (timeoutCts.Token.Register(() => tcs.TrySetResult(null)))
+            {
+                return await tcs.Task.ConfigureAwait(false);
+            }
         }
-        catch (OperationCanceledException) { return null; }
-        catch (Exception ex)
+        finally
         {
-            _logger.LogDebug(ex, "gdbus {Method} failed.", method);
-            return null;
+            subscription?.Dispose();
         }
     }
-
-    /// <summary>Fire-and-forget gdbus call for high-frequency input events.</summary>
-    private void RunGdbusFireAndForget(string iface, string method, params string[] argValues)
-    {
-        var argString = argValues.Length > 0 ? " " + string.Join(" ", argValues) : string.Empty;
-        var cmdArgs =
-            $"call --session " +
-            $"--dest org.freedesktop.portal.Desktop " +
-            $"--object-path /org/freedesktop/portal/desktop " +
-            $"--method {iface}.{method}" +
-            argString;
-
-        try
-        {
-            var psi = new ProcessStartInfo("gdbus", cmdArgs)
-            {
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            var proc = Process.Start(psi);
-            // Do not wait — fire and forget. proc lifetime is OS-managed.
-        }
-        catch { /* best effort — silently ignored for high-frequency path */ }
-    }
-
-    /// <summary>Formats a double to 6 significant figures without culture-specific separators.</summary>
-    private static string FormatDouble(double v)
-        => v.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
 }

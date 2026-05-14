@@ -14,6 +14,7 @@ plugins {
     id("com.google.firebase.crashlytics")
 }
 val repoRootDir: File = rootProject.projectDir.parentFile
+val remexAndroidApplicationId = "com.clindsay94.remex"
 val remexCoreProjectDirLocal = File(repoRootDir, "Remex.Core")
 val androidLocalProperties = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
@@ -55,12 +56,12 @@ if (isPublishBuild) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 android {
-    namespace = "com.clindsay94.remex"
+    namespace = remexAndroidApplicationId
     //noinspection GradleDependency
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.clindsay94.remex"
+        applicationId = remexAndroidApplicationId
         minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 36
@@ -70,7 +71,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            abiFilters += listOf("arm64-v8a,x86_64")
         }
     }
 
@@ -144,6 +145,10 @@ android {
             )
         }
     }
+    dependenciesInfo {
+        includeInApk = true
+        includeInBundle = true
+    }
 }
 
 androidComponents {
@@ -169,7 +174,6 @@ val androidSdkDir = androidLocalProperties.getProperty("sdk.dir")
     ?: error("Missing sdk.dir in local.properties")
 val androidNdkDir = File(androidSdkDir, "ndk/$androidNdkVersion")
 val androidNdkDirForMsbuild = androidNdkDir.absolutePath.trimEnd('\\', '/') + File.separator
-val remexAndroidApplicationId = "com.clindsay94.remex"
 
 val remexGeneratedDebugArm64So = File(remexGeneratedDebugJniRoot, "arm64-v8a/libRemexCore.so")
 val remexGeneratedReleaseArm64So = File(remexGeneratedReleaseJniRoot, "arm64-v8a/libRemexCore.so")
@@ -648,6 +652,10 @@ val remexUninstallExistingDebugApp by project.tasks.registering {
         }
 
         process.waitFor(30, TimeUnit.SECONDS)
+        // Give system monitors (like Samsung's npumanager) time to settle after uninstall
+        // to avoid transient NameNotFoundException during rapid reinstall.
+        Thread.sleep(1000)
+
         val exitCode = process.exitValue()
         val outputText = output.toString()
         val noDevice = outputText.contains("no devices/emulators found", ignoreCase = true)
