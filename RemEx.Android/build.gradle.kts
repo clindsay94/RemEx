@@ -7,6 +7,15 @@ plugins {
     id("com.google.firebase.crashlytics") version "3.0.2" apply false
 }
 
+    val androidLocalProperties = java.util.Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
+}
+
+extra.set("remex.signing.keyPassword", androidLocalProperties.getProperty("remex.signing.keyPassword") ?: "")
+
 
 tasks.register("remexFreshAssembleDebug") {
     group = "remex"

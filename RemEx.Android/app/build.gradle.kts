@@ -4,7 +4,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
-import org.gradle.kotlin.dsl.kotlin as kotlin1
 
 plugins {
     alias(libs.plugins.android.application)
@@ -63,24 +62,17 @@ android {
     defaultConfig {
         applicationId = remexAndroidApplicationId
         minSdk = 26
+        targetSdk = 37
         //noinspection OldTargetApi
-        targetSdk = 36
         versionCode = remexVersionCode
         versionName = remexVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters += listOf("arm64-v8a,x86_64")
+            abiFilters += listOf("arm64-v8a", "x86_64")
         }
     }
-
-    bundle {
-        language { enableSplit = true }
-        density  { enableSplit = true }
-        abi      { enableSplit = true }
-    }
-
     signingConfigs {
         create("release") {
             storeFile =
@@ -104,14 +96,14 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin1 {
+    kotlin {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
-            freeCompilerArgs.addAll("-Xannotation-default-target=param-property")
+            jvmTarget.set(JvmTarget.JVM_17)
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
         }
     }
     buildFeatures {
