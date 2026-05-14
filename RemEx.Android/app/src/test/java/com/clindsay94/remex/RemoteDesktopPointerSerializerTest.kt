@@ -37,22 +37,17 @@ class RemoteDesktopPointerSerializerTest {
     // ── Envelope ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `toBatchJson produces correct message type`() {
+    fun `toBatchJson does not wrap in envelope`() {
         val json = JSONObject(RemoteDesktopPointerSerializer.toBatchJson(listOf(samplePen())))
-        assertEquals("desktop_pointer_batch", json.getString("type"))
-    }
-
-    @Test
-    fun `toBatchJson produces desktopPointerBatch envelope`() {
-        val json = JSONObject(RemoteDesktopPointerSerializer.toBatchJson(listOf(samplePen())))
-        assertTrue(json.has("desktopPointerBatch"))
+        assertFalse(json.has("type"))
+        assertFalse(json.has("desktopPointerBatch"))
+        assertTrue(json.has("samples"))
     }
 
     @Test
     fun `toBatchJson without streamMappingId omits that field`() {
         val json = JSONObject(RemoteDesktopPointerSerializer.toBatchJson(listOf(samplePen())))
-        val batch = json.getJSONObject("desktopPointerBatch")
-        assertFalse(batch.has("streamMappingId"))
+        assertFalse(json.has("streamMappingId"))
     }
 
     @Test
@@ -64,8 +59,7 @@ class RemoteDesktopPointerSerializerTest {
                                 streamMappingId = "stream-1"
                         )
                 )
-        val batch = json.getJSONObject("desktopPointerBatch")
-        assertEquals("stream-1", batch.getString("streamMappingId"))
+        assertEquals("stream-1", json.getString("streamMappingId"))
     }
 
     // ── Samples array ─────────────────────────────────────────────────────────
@@ -73,7 +67,7 @@ class RemoteDesktopPointerSerializerTest {
     @Test
     fun `toBatchJson with one sample produces samples array of length 1`() {
         val json = JSONObject(RemoteDesktopPointerSerializer.toBatchJson(listOf(samplePen())))
-        val samples = json.getJSONObject("desktopPointerBatch").getJSONArray("samples")
+        val samples = json.getJSONArray("samples")
         assertEquals(1, samples.length())
     }
 
@@ -82,7 +76,7 @@ class RemoteDesktopPointerSerializerTest {
         val s1 = samplePen(timestamp = 1000L)
         val s2 = samplePen(timestamp = 2000L)
         val json = JSONObject(RemoteDesktopPointerSerializer.toBatchJson(listOf(s1, s2)))
-        val samples = json.getJSONObject("desktopPointerBatch").getJSONArray("samples")
+        val samples = json.getJSONArray("samples")
         assertEquals(2, samples.length())
         assertEquals(1000L, samples.getJSONObject(0).getLong("timestamp"))
         assertEquals(2000L, samples.getJSONObject(1).getLong("timestamp"))

@@ -27,22 +27,15 @@ object RemoteDesktopPointerSerializer {
             samples: List<PointerSampleData>,
             streamMappingId: String? = null,
     ): String {
-        val batch =
-                JSONObject().apply {
-                    if (streamMappingId != null) put("streamMappingId", streamMappingId)
-                    put(
-                            "samples",
-                            JSONArray().also { arr ->
-                                samples.forEach { arr.put(sampleToJson(it)) }
-                            }
-                    )
-                }
-        return JSONObject()
-                .apply {
-                    put("type", "desktop_pointer_batch")
-                    put("desktopPointerBatch", batch)
-                }
-                .toString()
+        return JSONObject().apply {
+            if (streamMappingId != null) put("streamMappingId", streamMappingId)
+            put(
+                    "samples",
+                    JSONArray().also { arr ->
+                        samples.forEach { arr.put(sampleToJson(it)) }
+                    }
+            )
+        }.toString()
     }
 
     /**
