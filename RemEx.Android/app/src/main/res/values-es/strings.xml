@@ -63,7 +63,7 @@
     <string name="tutorial_page1_body">RemEx es tu centro de mando para la gestión remota de PC. Controla tu ordenador, lanza apps, monitoriza el rendimiento e incluso visualiza tu escritorio, todo desde tu teléfono.\n\nVamos a conectarte en unos pocos pasos.</string>
 
     <string name="tutorial_page2_title">Instala primero el Host</string>
-    <string name="tutorial_page2_body">Antes de conectarte, necesitas el software host de RemEx ejecutándose en tu PC.\n\nOpción 1 — Cliente de Escritorio RemEx\nDescarga y ejecuta Remex.Client.Desktop en tu PC. Incluye el host automáticamente; solo lánzalo y el host se iniciará en segundo plano.\n\nOpción 2 — RemEx Host (independiente)\nInstala y ejecuta Remex.Host como un servicio independiente. Es ideal para servidores sin monitor o si solo necesitas el host.\n\nAmbos son autónomos, sin necesidad de librerías extra. Descarga la carpeta de publicación más reciente desde la página de versiones de GitHub, extráela y ejecútala.</string>
+    <string name="tutorial_page2_body">Before you can connect, your PC needs the RemEx host running.\n\nOption 1 — RemEx Desktop Client\nInstall the desktop client on your PC. It bundles the host automatically, so launching the client also brings the host online in the background.\n\nOption 2 — RemEx Host\nInstall the standalone host if you want a background-only setup for a server or shared PC.\n\nGrab the latest release from GitHub, install it on your PC, and keep it running before you pair from Android.</string>
     <string name="tutorial_page2_link_label">Descargar desde GitHub Releases</string>
 
     <string name="tutorial_page3_title">Descubrimiento Automático</string>
@@ -73,14 +73,14 @@
     <string name="tutorial_page4_body">Si el descubrimiento automático falla, puedes conectarte manualmente. Primero, busca la IP local de tu PC:\n\nWindows:\n  Abre el Símbolo del sistema → escribe ipconfig\n  Busca \'Dirección IPv4\' (ej. 192.168.1.42)\n\nmacOS:\n  Ajustes del Sistema → Red, o ejecuta:\n  ipconfig getifaddr en0\n\nLinux:\n  Ejecuta ip addr o hostname -I\n\nTambién puedes ver la dirección IP en la ventana de Remex.Client.Desktop bajo la sección de estado de conexión.</string>
 
     <string name="tutorial_page5_title">Conexión Manual</string>
-    <string name="tutorial_page5_body">Una vez tengas tu dirección IP:\n\n1. Ve a la pantalla de Conexión (Ajustes → Conexión)\n2. Introduce la IP de tu PC\n3. Introduce el puerto (por defecto es 5005)\n4. Toca \'Guardar y Conectar\'\n\nRemEx establecerá la conexión y verás el estado de tu PC en el panel de control.\n\nRecuerda: Remex.Client.Desktop o Remex.Host deben estar ejecutándose en el PC de destino para que la conexión funcione.</string>
+    <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (More → Settings → Connection)\n2. Enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n5. If prompted, enter the 6-digit PIN shown on your PC to finish secure pairing\n\nYour connection details are saved for next time.</string>
 
     <string name="tutorial_page6_title">¡Todo listo!</string>
-    <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nDesde el panel de control puedes monitorizar estadísticas del sistema, lanzar aplicaciones, gestionar tareas y transmitir tu escritorio de forma remota.\n\nVe a Personalización para ajustar tu tema, formas de tarjetas, fuentes y colores.\n\nConsulta las Preguntas Frecuentes en Ajustes si tienes problemas. ¡Disfruta de RemEx!</string>
+    <string name="tutorial_page6_body">You\'re ready to take control.\n\nFrom the dashboard you can monitor system stats, launch apps, manage tasks, browse shared folders, and stream your desktop remotely.\n\nHead to Personalization to change language, theme, card shapes, and colors.\n\nOpen the FAQ anytime if you need help with pairing, file transfer, or remote desktop tuning.</string>
 
     <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
     <string name="tutorial_page_qr_title">Emparejamiento rápido con código QR</string>
-    <string name="tutorial_page_qr_body">La forma más rápida de conectarse es escaneando un código QR.\n\n1. Abre Remex.Client.Desktop en tu PC\n2. Ve a Conexión → Mostrar Código QR\n3. En tu teléfono, toca el icono QR en la pantalla de Conexión\n4. Apunta tu cámara al código\n\n¡Tu teléfono se guardará y conectará automáticamente, sin necesidad de escribir nada!</string>
+    <string name="tutorial_page_qr_body">The fastest way to connect is by scanning a QR code.\n\n1. Open RemEx Desktop Client on your PC\n2. Go to Settings → Connection → Show QR Code\n3. On your phone, tap the QR icon on the Connection screen\n4. Scan the code and confirm the pairing PIN if prompted\n\nRemEx saves the secure connection details automatically.</string>
 
     <!-- ═══ Connection Status Strings ═══ -->
     <string name="status_disconnected">Desconectado</string>
@@ -144,8 +144,8 @@
     <string name="settings_tab_about">About</string>
     <string name="settings_help_title">Ayuda e Información</string>
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
-    <string name="settings_replay_tutorial_body">Vuelve a ver la guía de inicio que cubre la configuración, el descubrimiento automático y cómo conectar con tu PC.</string>
-    <string name="settings_faq_hint">¿Tienes alguna duda? Consulta las FAQ disponibles en el menú (⋮ → FAQ).</string>
+    <string name="settings_replay_tutorial_body">Re-watch the 2.0 getting-started walkthrough for setup, QR pairing, manual connection, and daily-use tips.</string>
+    <string name="settings_faq_hint">Need help with pairing, permissions, file transfer, or remote desktop performance? Open FAQ from the More tab.</string>
 
     <!-- ═══ App Launcher Screen ═══ -->
     <string name="screen_app_launcher_title">Lanzador de Apps</string>
@@ -233,7 +233,7 @@
     <string name="connection_host_settings">Ajustes del Host</string>
     <string name="cd_dismiss_error">Descartar</string>
     <string name="connection_auto_discover_title">Autodescubrimiento en LAN</string>
-    <string name="connection_auto_discover_hint">Asegúrate de que el Host RemEx esté activo y ambos dispositivos estén en la misma red Wi-Fi.</string>
+    <string name="connection_auto_discover_hint">Make sure your PC is running RemEx Desktop Client or RemEx Host and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Buscando Host RemEx…</string>
     <string name="connection_found_host">Encontrado: %1$s — Buscar de nuevo</string>
     <string name="connection_discover_button">Descubrir Automáticamente</string>
@@ -241,12 +241,12 @@
     <string name="connection_scan_qr_code">Escanear código QR</string>
     <string name="connection_help_title">Cómo conectar manualmente</string>
     <string name="connection_help_step1_title">Instala RemEx Host en tu PC</string>
-    <string name="connection_help_step1_body">Descarga y ejecuta el instalador del Host RemEx en el PC que quieras controlar. Aparecerá en la bandeja del sistema.</string>
+    <string name="connection_help_step1_body">Install RemEx Desktop Client (bundles the host automatically) or RemEx Host on the PC you want to control. Keep it running before you connect from Android.</string>
     <string name="connection_help_step2_title">Conéctate a la misma Wi-Fi</string>
     <string name="connection_help_step2_body">Tu móvil y el PC deben estar en la misma red local. Los datos móviles no funcionarán.</string>
     <string name="connection_help_step3_title">Busca la IP de tu PC</string>
     <string name="connection_help_step4_title">Introduce la IP y pulsa Guardar y Conectar</string>
-    <string name="connection_help_step4_body">El puerto por defecto es 5005. Si configuraste una clave de acceso en el host, introdúcela también.</string>
+    <string name="connection_help_step4_body">The default port is 5005. If this device is not paired yet, enter the 6-digit PIN shown by the host to complete secure pairing.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Abre el Símbolo del sistema y escribe: ipconfig\nBusca "Dirección IPv4" en tu adaptador Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>
@@ -290,17 +290,21 @@
     <string name="qr_scanner_hint">Apunta la cámara al código QR mostrado en tu PC</string>
     <string name="qr_scanner_permission_required">Se necesita permiso de cámara para escanear códigos QR</string>
     <string name="qr_scanner_grant_permission">Conceder permiso</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
+    <string name="qr_error_old_format">This QR code was generated by an older RemEx host. Update the host and generate a new RemEx 2.x QR code.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
 
     <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
+    <string name="about_android_client_label">Android Client</string>
+    <string name="about_pc_host_label">PC Host</string>
+    <string name="about_view_github">View Source on GitHub</string>
+    <string name="about_status_unknown">Unknown</string>
     <string name="about_version_android">Android Version: %1$s</string>
     <string name="about_version_pc">PC Version: %1$s</string>
-    <string name="about_github_star">Give my repository a star on Github</string>
-    <string name="about_github_cat">(pls, they have my cat)</string>
+    <string name="about_github_star">Follow RemEx on GitHub</string>
+    <string name="about_github_cat">Browse releases, report issues, and star the project if RemEx helps you.</string>
     <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
     <string name="faq_header">Preguntas Frecuentes</string>
     <string name="cd_collapse">Contraer</string>
@@ -314,7 +318,7 @@
     <string name="faq_a2">Windows:\nUsa \'ipconfig\' en el símbolo del sistema. Busca \'Dirección IPv4\'.\n\nmacOS:\nEn Ajustes del Sistema → Red, o con el comando: ipconfig getifaddr en0\n\nLinux:\nUsa el comando: ip addr o hostname -I\n\nTambién puedes verla directamente en la ventana de Remex.Client.Desktop.</string>
 
     <string name="faq_q3">El autodescubrimiento no funciona. ¿Qué reviso?</string>
-    <string name="faq_a3">1. Que el Host esté realmente activo en el PC.\n2. Que ambos dispositivos compartan la misma red Wi-Fi/LAN.\n3. En Android 13+, concede el permiso de DISPOSITIVOS_WIFI_CERCANOS.\n4. Revisa si tu router tiene activado el \'Aislamiento de AP\', que bloquea la comunicación entre dispositivos.\n5. Las redes corporativas o de invitados suelen bloquear el tráfico mDNS.</string>
+    <string name="faq_a3">1. Make sure Remex.Client.Desktop or Remex.Host is actually running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN network.\n3. On Android 13+, the NEARBY_WIFI_DEVICES permission must be granted. On Android 17+, ACCESS_LOCAL_NETWORK must also be granted. RemEx will prompt for these when you tap \'Discover Automatically\'.\n4. Some routers have \'AP Isolation\' or \'Client Isolation\' enabled, which blocks device-to-device communication. Check your router settings.\n5. Corporate or guest Wi-Fi networks often block mDNS traffic. Try using a personal or home network instead.</string>
 
     <string name="faq_q4">¿Cuál es el puerto por defecto?</string>
     <string name="faq_a4">Es el 5005. Si está ocupado, el cliente usará el 5006. El puerto activo se muestra en la ventana de la aplicación de escritorio.\n\nSi cambias el puerto en el host, asegúrate de poner el mismo en la app móvil.</string>
@@ -342,7 +346,7 @@
     <string name="personalization_appearance_studio">Estudio de Apariencia</string>
     <string name="personalization_section_language">Idioma</string>
     <string name="personalization_app_language">Idioma de la App</string>
-    <string name="personalization_language_note">Cambia el idioma de la interfaz. Algunos textos pueden seguir en inglés hasta completar las traducciones.</string>
+    <string name="personalization_language_note">Changes the display language for this app and applies immediately. Some text may remain in English until translations are complete.</string>
     <string name="personalization_system_default">Predeterminado del sistema</string>
     <string name="personalization_section_theme">Tema y Estrategia</string>
     <string name="personalization_display_mode">Modo de Visualización</string>
