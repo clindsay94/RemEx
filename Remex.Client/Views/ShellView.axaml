@@ -505,57 +505,57 @@
                             <!-- Page 10: Glossary Command Palette -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=10}">
                                 <TextBlock Text="⌨️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: Command Palette" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Press Ctrl+Shift+P at any time to open the Command Palette. It allows you to search for features, navigate between screens, and execute quick actions instantly."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_CommandPalette_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_CommandPalette_Body}"/>
                             </StackPanel>
 
                             <!-- Page 11: Glossary App Launcher -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=11}">
                                 <TextBlock Text="🚀" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: App Launcher" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="The App Launcher lets you configure and execute predefined applications or scripts on your host PC with a single click. Ideal for starting games or servers remotely."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_AppLauncher_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_AppLauncher_Body}"/>
                             </StackPanel>
 
                             <!-- Page 12: Glossary Task Manager -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=12}">
                                 <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: Task Manager" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Just like the Windows Task Manager, this screen lets you view currently running processes, check their resource usage, and remotely terminate them if they are frozen."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_TaskManager_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_TaskManager_Body}"/>
                             </StackPanel>
 
                             <!-- Page 13: Glossary Sensor Canvas -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=13}">
                                 <TextBlock Text="🌡️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: Sensor Canvas" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="The Sensor Canvas is a fully customizable, drag-and-drop workspace. Pin hardware sensors (CPU, RAM, Temps) to monitor your PC's telemetry in real-time."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_SensorCanvas_Body}"/>
                             </StackPanel>
 
                             <!-- Page 14: Glossary File Transfer -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=14}">
                                 <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: File Transfer" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Securely browse, upload, and download files between your client and host PC. Host machines control access by defining 'Shared Folders' in their settings."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_FileTransfer_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_FileTransfer_Body}"/>
                             </StackPanel>
                             
                             <!-- Page 15: Glossary Remote Desktop -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=15}">
                                 <TextBlock Text="🖥️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: Remote Desktop" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Stream your host PC's screen directly to your client. Adjust the quality, scaling, and FPS in the settings to optimize performance over your network."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_RemoteDesktop_Body}"/>
                             </StackPanel>
 
                             <!-- Page 16: Glossary Quick Settings -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}">
                                 <TextBlock Text="⚙️" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: Quick Settings" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="On Android, you can add RemEx tiles directly to your notification shade's Quick Settings. Easily Lock or Sleep your PC without even opening the app."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_QuickSettings_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_QuickSettings_Body}"/>
                             </StackPanel>
                             
                             <!-- Page 17: Glossary Customization -->
                             <StackPanel Spacing="12" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=17}">
                                 <TextBlock Text="🎨" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Glossary: Customization" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
-                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="Personalize RemEx! Change themes, toggle dark/light mode, adjust card border radii, and customize the primary accent color via the Settings menu."/>
+                                <TextBlock Text="{conv:Localize Tutorial_Glossary_Customization_Title}" FontSize="22" FontWeight="Black" Foreground="#E0E0FF" HorizontalAlignment="Center"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#AAAACC" TextAlignment="Center" Text="{conv:Localize Tutorial_Glossary_Customization_Body}"/>
                             </StackPanel>
 
                             <!-- Page 18: You're All Set -->

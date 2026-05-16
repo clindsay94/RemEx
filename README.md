@@ -47,14 +47,14 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
 
 ### Native Android App
 
-1. **Install from Google Play:** [**Download on the Play Store**](https://play.google.com/store/apps/details?id=com.clindsay94.remex) (TBD)
+1. **Install from Google Play:** [**Download on the Play Store**](https://play.google.com/store/apps/details?id=com.clindsay94.remex)
 2. Use the new **PIN-based pairing** or **QR Scanner** on the connection screen to pair instantly with your PC!
 
 ---
 
 ## 💎 Key Features (v2.0.0)
 
-### ✨ Enhanced User Experience (New in v1.11.0)
+### ✨ Refined Android & Desktop UX
 - **Haptic Feedback:** Tactile vibration feedback for all Android interactions.
 - **Refined Themes:** 4 premium theme variants (CyberNOC, Monolith, SolarFlare, BaseDarkGlass).
 - **Improved Android UI:** Completely refactored RemoteDesktopScreen with optimized touch handling.
@@ -73,8 +73,8 @@ No more typing IP addresses. The desktop client now generates a secure QR code t
 ### 🖥️ Glassmorphic Dashboard (Avalonia)
 - **Cinematic Boot:** 5-second animated materialization effect on startup.
 - **Dark Glass Design:** Layered translucent cards with dynamic gradient theming.
-- **Live Localization:** Switch between 8 languages (en, es, hi, id, pl, pt-BR, tr, uk) instantly without restart.
-- **Interactive Onboarding:** 9-page tutorial that intelligently adapts to your operating system.
+- **Live Localization:** Switch between 8 languages (en, es, hi, id, pl, pt-BR, tr, uk) from Settings.
+- **Interactive Onboarding:** Desktop and Android both ship with refreshed getting-started walkthroughs for 2.0.
 
 ### 📡 Real-Time Telemetry & Desktop
 - **HWInfo (Windows) / lmsensors (Linux):** Massive sensor support with smart deduplication.
@@ -92,10 +92,10 @@ No more typing IP addresses. The desktop client now generates a secure QR code t
 ## 🚀 What's New in 2.0
 RemEx 2.0 is a major milestone focusing on security, performance, and flagship features:
 - **E2E Encryption:** Every connection is now secured via TLS 1.3 / WSS.
-- **Secure Pairing:** ECDH X25519 pairing with 6-digit PIN out-of-band binding.
+- **Secure Pairing:** ECDH P-256 pairing with a 6-digit PIN out-of-band binding.
 - **Remote File Transfer:** Browse, upload, download, and manage files on your remote host.
 - **Play Store Ready:** Fully optimized and hardened for production Google Play release.
-- **Critical Fixes:** Resolved 10+ high-severity bugs identified during the security audit.
+- **Critical Fixes:** Resolved all 11 high-severity findings identified during the security audit.
 
 ---
 

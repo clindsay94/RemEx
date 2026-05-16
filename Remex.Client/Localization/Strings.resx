@@ -402,7 +402,7 @@
     <value>✕ Disconnect</value>
   </data>
   <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>wss://host:port/ws</value>
   </data>
   <data name="Dashboard_MenuSize" xml:space="preserve">
     <value>📐 Size</value>
@@ -525,7 +525,7 @@
     <value>Remex — Ping / Pong</value>
   </data>
   <data name="Main_HostWatermark" xml:space="preserve">
-    <value>ws://host:5005/ws</value>
+    <value>wss://host:5005/ws</value>
   </data>
   <data name="Main_Status" xml:space="preserve">
     <value>Status:</value>
@@ -869,9 +869,9 @@
     <value>Welcome to RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx turns your PC into a remote command center. Monitor hardware sensors, launch apps, manage processes, and stream your desktop — all controllable from your Android device.
+    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
 
-Your PC runs the RemEx Host, which your phone connects to over your local network.</value>
+Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-based pairing.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -904,15 +904,16 @@ Your PC runs the RemEx Host, which your phone connects to over your local networ
     <value>Linux Service Setup</value>
   </data>
   <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>On Linux, RemEx Host can run as a systemd service for automatic startup.</value>
+    <value>On Linux, RemEx Host installs as a user-level systemd service so it can start with your session and stay available in the background.</value>
   </data>
   <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>sudo cp remex-host.service /etc/systemd/system/
-sudo systemctl enable remex-host
-sudo systemctl start remex-host</value>
+    <value>1. Download the latest Linux host archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-host folder.
+4. Use systemctl --user status remex-host to verify it is running.</value>
   </data>
   <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>For detailed instructions, see docs/linux-service-setup.md on GitHub</value>
+    <value>Tip: use the bundled install.sh script instead of copying service files by hand.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -977,7 +978,7 @@ sudo systemctl start remex-host</value>
 Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
-    <value>Then enter wss://&lt;IP&gt;:5005/ws in the Android app's connection settings.</value>
+    <value>Then enter the IP address and port in the Android app. If this device is not paired yet, enter the 6-digit PIN shown on the host.</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
@@ -1014,10 +1015,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>You're All Set!</value>
   </data>
   <data name="Tutorial_P10_Body1" xml:space="preserve">
-    <value>Use the sidebar to navigate between Home, Sensors, Remote Control, App Launcher, Task Manager, and Remote Desktop.</value>
+    <value>Use the sidebar to jump between Home, Sensor Workspace, Remote Control, App Launcher, Task Manager, File Transfer, Remote Desktop, and About.</value>
   </data>
   <data name="Tutorial_P10_Body2" xml:space="preserve">
-    <value>Open Settings (⚙) to customise your theme, connection, stream quality, and pin sensors to Home.</value>
+    <value>Open Settings (⚙) to adjust language, theme, connection defaults, shared folders, stream quality, and pinned sensors.</value>
   </data>
   <data name="Tutorial_P10_Replay" xml:space="preserve">
     <value>You can replay this tutorial anytime from Settings.</value>
@@ -1031,6 +1032,9 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSPHERE</value>
+  </data>
+  <data name="Shell_About" xml:space="preserve">
+    <value>About</value>
   </data>
   <data name="Shell_AutoSaveNote" xml:space="preserve">
     <value>Auto-saved on change. Persists across restarts.</value>
@@ -1051,7 +1055,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-detect (or set custom path)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>wss://host:port/ws</value>
   </data>
   <data name="Shell_Initializing" xml:space="preserve">
     <value>Initializing dashboard...</value>
@@ -1195,7 +1199,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>HELP</value>
   </data>
   <data name="Settings_HostAddressTooltip" xml:space="preserve">
-    <value>WebSocket address of the RemEx host (e.g. ws://192.168.1.42:5005/ws). Find your IP with ipconfig (Windows) or ip addr (Linux).</value>
+    <value>Secure WebSocket address of the RemEx host (e.g. wss://192.168.1.42:5005/ws). Find your IP with ipconfig (Windows) or ip addr (Linux), or use QR pairing for the fastest setup.</value>
   </data>
   <data name="Settings_HwInfoTooltip" xml:space="preserve">
     <value>HWInfo (optional, recommended) monitors 300+ hardware sensors including per-core CPU temps, GPU stats, fan speeds, and voltages. Without HWInfo, RemEx uses built-in Windows Performance Counters (basic CPU/RAM/Disk/Network). Download HWInfo at hwinfo.com → Settings → enable 'Shared Memory Support'. Note: HWInfo's shared memory auto-disables after 12 hours — re-enable it in HWInfo settings.</value>
@@ -1219,7 +1223,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>📖 Replay Tutorial</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
-    <value>Re-watch the getting-started tutorial</value>
+    <value>Re-watch the getting-started and glossary walkthrough</value>
   </data>
   <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
     <value>Save connection settings and reconnect to the host</value>
@@ -1536,7 +1540,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Host:</value>
   </data>
   <data name="RemoteDesktop_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>wss://host:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
     <value>Pad</value>
@@ -1613,10 +1617,58 @@ Linux: ip addr  or  hostname -I</value>
     <value>📱 Android App  →  connects to  →  🖥️ PC Host (this machine)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>For detailed instructions, configuration options, and troubleshooting, see the full guide:</value>
+    <value>The same release page also includes the Linux desktop client package if you want the full Avalonia UI on that machine.</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Skip the tutorial — you can replay it from Settings</value>
+  </data>
+  <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
+    <value>Glossary: Command Palette</value>
+  </data>
+  <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
+    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+  </data>
+  <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
+    <value>Glossary: App Launcher</value>
+  </data>
+  <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
+    <value>Launch curated apps and scripts on the host. Configure entries once on the PC, then start them remotely from RemEx.</value>
+  </data>
+  <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
+    <value>Glossary: Task Manager</value>
+  </data>
+  <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
+    <value>Inspect running host processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+  </data>
+  <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
+    <value>Glossary: Sensor Canvas</value>
+  </data>
+  <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
+    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+  </data>
+  <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
+    <value>Glossary: File Transfer</value>
+  </data>
+  <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
+    <value>Browse only the folders the host has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+  </data>
+  <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
+    <value>Glossary: Remote Desktop</value>
+  </data>
+  <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
+    <value>Stream your host screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+  </data>
+  <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
+    <value>Glossary: Quick Settings</value>
+  </data>
+  <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
+    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+  </data>
+  <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
+    <value>Glossary: Customization</value>
+  </data>
+  <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
+    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
   </data>
 
   <!-- App Launcher -->
@@ -1638,10 +1690,10 @@ Linux: ip addr  or  hostname -I</value>
 
   <!-- About Screen -->
   <data name="About_Header" xml:space="preserve">
-    <value>About</value>
+    <value>About RemEx</value>
   </data>
   <data name="About_Tagline" xml:space="preserve">
-    <value>RE(mote) EX(ecution) - Control Your PC</value>
+    <value>SECURE REMOTE PC CONTROL</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>Desktop Client</value>
@@ -1650,10 +1702,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC Host</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
-    <value>⭐ Consider giving a star on GitHub!</value>
+    <value>⭐ Follow RemEx on GitHub</value>
   </data>
   <data name="About_GitHubDesc" xml:space="preserve">
-    <value>Open source and free. (pls give a star, they have my cat!)</value>
+    <value>Browse releases, report issues, and star the project if RemEx helps you.</value>
   </data>
   <data name="About_ViewGitHub" xml:space="preserve">
     <value>View Source on GitHub</value>
@@ -1744,32 +1796,32 @@ Linux: ip addr  or  hostname -I</value>
     <value>Features</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>TLS 1.3 transport, secure PIN pairing, certificate pinning, remote file transfer, Android shared folders, and Quick Settings tiles</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
     <value>Fixes</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Linux settings freeze, cross-thread UI updates, pairing persistence, Wayland remote desktop input, S-Pen hover crashes, and sensor alert leaks</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
     <value>Issues (Known)</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Canvas snapshot still copies the saved file path instead of placing the bitmap directly on the clipboard.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
     <value>What do I need to run on my PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>You need either RemEx Desktop Client or RemEx Host running on your PC. The desktop client bundles the host automatically; the standalone host is ideal for background-only installs. Download the latest package from GitHub Releases, install it, and keep it running before pairing.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>How do I pair my phone or second PC?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -> Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
+    <value>Use Settings → Connection on the desktop client to show a QR code or pairing PIN. Scan the QR code from Android for the fastest setup, or enter the 6-digit PIN manually when the app prompts for secure pairing.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>
@@ -1781,7 +1833,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Make sure RemEx Desktop Client or RemEx Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. On Android 13+, allow Nearby Wi-Fi Devices; on Android 17+, allow Local Network access too.\n4. Check whether your router has AP/Client Isolation enabled.\n5. Corporate or guest networks often block mDNS discovery.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1799,7 +1851,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Remote Desktop is laggy. What can I do?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is usually enough).\n• Lower the Scale.\n• Verify your host supports DXGI (Windows) or X11/Wayland capture (Linux).\n• Prefer a fast local 5 GHz Wi-Fi network.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
     <value>What is Wake-on-LAN (WOL)?</value>
@@ -1811,12 +1863,12 @@ Linux: ip addr  or  hostname -I</value>
     <value>How do I transfer files?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Open File Transfer from the sidebar or command palette. You'll only see the folders the host has shared, and writable roots accept uploads while read-only roots stay download-only.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Can I lock my PC remotely?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Yes. Use the Remote Control screen or command palette on desktop, or add the Lock PC Quick Settings tile on Android for one-tap access.</value>
   </data>
 </root>
