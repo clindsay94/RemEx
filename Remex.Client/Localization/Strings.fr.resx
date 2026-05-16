@@ -869,9 +869,9 @@
     <value>Bienvenue sur RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx turns your PC into a remote command center. Monitor hardware sensors, launch apps, manage processes, and stream your desktop — all controllable from your Android device.
+    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
 
-Your PC runs the RemEx Host, which your phone connects to over your local network.</value>
+Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-based pairing.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -907,9 +907,10 @@ Your PC runs the RemEx Host, which your phone connects to over your local networ
     <value>Sur Linux, l'hôte RemEx peut s'exécuter en tant que service systemd pour un démarrage automatique.</value>
   </data>
   <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>sudo cp remex-host.service /etc/systemd/system/
-sudo systemctl enable remex-host
-sudo systemctl start remex-host</value>
+    <value>1. Download the latest Linux host archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-host folder.
+4. Use systemctl --user status remex-host to verify it is running.</value>
   </data>
   <data name="Tutorial_P3_Link" xml:space="preserve">
     <value>Pour des instructions détaillées, consultez docs/linux-service-setup.md sur GitHub</value>
@@ -1032,6 +1033,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSPHÈRE</value>
   </data>
+  <data name="Shell_About" xml:space="preserve">
+    <value>About</value>
+  </data>
   <data name="Shell_AutoSaveNote" xml:space="preserve">
     <value>Sauvegardé automatiquement lors du changement. Persiste au redémarrage.</value>
   </data>
@@ -1147,6 +1151,21 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_QrCodeTooltip" xml:space="preserve">
     <value>Générer un code QR pour connecter l'app RemEx Android</value>
   </data>
+  <data name="Settings_ShowPairingPin" xml:space="preserve">
+    <value>Show pairing PIN</value>
+  </data>
+  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
+    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+  </data>
+  <data name="Settings_PairingPinTitle" xml:space="preserve">
+    <value>PAIRING PIN</value>
+  </data>
+  <data name="Settings_PairingPinHint" xml:space="preserve">
+    <value>Enter this code on your phone to complete pairing</value>
+  </data>
+  <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
+    <value>Expires in {0}s</value>
+  </data>
   <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
     <value>Ouvrir l'espace capteurs par glisser-déposer pour surveiller la télémétrie du PC</value>
   </data>
@@ -1234,9 +1253,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Votre téléphone ne voit que les dossiers listés ici. Orientez les envois habituels vers un dossier accessible en écriture comme RemEx Transfers, et laissez le reste en lecture seule sauf si vous voulez que les appareils mobiles puissent le modifier.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Ajoutez les dossiers du PC que vous souhaitez exposer avec RemEx.
-2. Activez les envois uniquement pour les dossiers devant accepter des fichiers téléphone → PC.
-3. Ouvrez le Transfert de fichiers sur votre téléphone et parcourez les dossiers partagés depuis celui-ci.</value>
+    <value>1. Add the PC folders you want RemEx to expose.
+2. Turn on uploads only for folders that should accept phone → PC files.
+3. Open File Transfer on your phone and browse the shared folders from there.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Ajouter un dossier</value>
@@ -1602,6 +1621,54 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Passer le tutoriel — vous pouvez le revoir dans les Paramètres</value>
+  </data>
+  <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
+    <value>Glossary: Command Palette</value>
+  </data>
+  <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
+    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+  </data>
+  <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
+    <value>Glossary: App Launcher</value>
+  </data>
+  <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
+    <value>Launch curated apps and scripts on the host. Configure entries once on the PC, then start them remotely from RemEx.</value>
+  </data>
+  <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
+    <value>Glossary: Task Manager</value>
+  </data>
+  <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
+    <value>Inspect running host processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+  </data>
+  <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
+    <value>Glossary: Sensor Canvas</value>
+  </data>
+  <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
+    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+  </data>
+  <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
+    <value>Glossary: File Transfer</value>
+  </data>
+  <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
+    <value>Browse only the folders the host has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+  </data>
+  <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
+    <value>Glossary: Remote Desktop</value>
+  </data>
+  <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
+    <value>Stream your host screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+  </data>
+  <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
+    <value>Glossary: Quick Settings</value>
+  </data>
+  <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
+    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+  </data>
+  <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
+    <value>Glossary: Customization</value>
+  </data>
+  <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
+    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
   </data>
 
   <!-- App Launcher -->

@@ -133,9 +133,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Status | Release Date | End of Support |
 |---------|--------|--------------|----------------|
-| 1.11.0 | Current | Apr 15, 2026 | Apr 15, 2027 |
-| 1.10.0 | Supported | Mar 2026 | Mar 2027 |
-| 1.9.0 | Maintained | Feb 2026 | Feb 2027 |
+| 2.0.0 | Current | May 15, 2026 | May 15, 2027 |
+| 1.11.0 | Supported | Apr 15, 2026 | Apr 15, 2027 |
+| 1.10.0 | Maintained | Mar 2026 | Mar 2027 |
 | < 1.9.0 | Unsupported | - | - |
 
 ---
@@ -147,4 +147,4 @@ Releases follow [Semantic Versioning](https://semver.org/):
 - **MINOR** version for new functionality (backwards compatible)
 - **PATCH** version for bug fixes
 
-See [RELEASE_V1.11.0.md](RELEASE_V1.11.0.md) for detailed v1.11.0 release notes.
+See the entries above for the latest 2.0 release notes and support status.

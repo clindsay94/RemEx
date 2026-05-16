@@ -49,6 +49,10 @@ fun AboutScreen() {
     val isConnected by RemexClientManager.isConnected.collectAsState()
     val hostCapabilities by RemexClientManager.hostCapabilities.collectAsState(initial = "")
 
+    val connectedLabel = stringResource(R.string.status_connected)
+    val disconnectedLabel = stringResource(R.string.status_disconnected)
+    val unknownLabel = stringResource(R.string.about_status_unknown)
+
     val pcInfo =
             try {
                 if (isConnected && hostCapabilities.isNotEmpty()) {
@@ -62,15 +66,15 @@ fun AboutScreen() {
                     } else if (platform.isNotEmpty() || runtime.isNotEmpty()) {
                         "$platform ($runtime)"
                     } else {
-                        "Connected"
+                        connectedLabel
                     }
                 } else if (isConnected) {
-                    "Connected"
+                    connectedLabel
                 } else {
-                    "Disconnected"
+                    disconnectedLabel
                 }
             } catch (e: Exception) {
-                "Unknown"
+                unknownLabel
             }
 
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
@@ -120,7 +124,7 @@ fun AboutScreen() {
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     // M3: ListItem for structured icon + label + value rows
                     ListItem(
-                            headlineContent = { Text("Android Client") },
+                            headlineContent = { Text(stringResource(R.string.about_android_client_label)) },
                             leadingContent = {
                                 Icon(
                                         imageVector = Icons.Default.Smartphone,
@@ -142,7 +146,7 @@ fun AboutScreen() {
                             color = MaterialTheme.colorScheme.outlineVariant
                     )
                     ListItem(
-                            headlineContent = { Text("PC Host") },
+                            headlineContent = { Text(stringResource(R.string.about_pc_host_label)) },
                             leadingContent = {
                                 Icon(
                                         imageVector = Icons.Default.Terminal,
@@ -205,7 +209,7 @@ fun AboutScreen() {
                     ) {
                         Icon(Icons.Default.Code, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("View Source on GitHub")
+                        Text(stringResource(R.string.about_view_github))
                     }
                 }
             }

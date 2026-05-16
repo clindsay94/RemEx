@@ -3,7 +3,6 @@ package com.clindsay94.remex.ui.screens
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.*
@@ -209,8 +208,14 @@ fun PersonalizationScreen(
 
                     val currentLocales = AppCompatDelegate.getApplicationLocales()
                     val currentLangTag =
-                            if (currentLocales.isEmpty) "system"
-                            else currentLocales[0]?.toLanguageTag() ?: "system"
+                            if (currentLocales.isEmpty) {
+                                "system"
+                            } else {
+                                when (currentLocales[0]?.toLanguageTag()) {
+                                    "in", "id" -> "id"
+                                    else -> currentLocales[0]?.toLanguageTag() ?: "system"
+                                }
+                            }
 
                     val supportedLanguages =
                             listOf(
@@ -220,7 +225,7 @@ fun PersonalizationScreen(
                                     "es" to "Español",
                                     "fr" to "Français",
                                     "hi" to "हिन्दी",
-                                    "in" to "Bahasa Indonesia",
+                                    "id" to "Bahasa Indonesia",
                                     "pl" to "Polski",
                                     "pt-BR" to "Português (BR)",
                                     "tr" to "Türkçe",
@@ -304,18 +309,11 @@ fun PersonalizationScreen(
                                                 LocaleListCompat.forLanguageTags(tag)
                                             }
                                             AppCompatDelegate.setApplicationLocales(locales)
-                                            // On Android 12 and below, AppCompatDelegate only
-                                            // auto-recreates the activity when the host is
-                                            // AppCompatActivity. MainActivity extends
-                                            // ComponentActivity, so on pre-Tiramisu we have to
-                                            // recreate manually for the new locale to take
-                                            // effect immediately. On Android 13+, the system
-                                            // handles recreation via LocaleManager and the
-                                            // explicit call is a no-op (already in TRANSLATING
-                                            // state — recreate() is idempotent).
-                                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                                view.context.findActivity()?.recreate()
-                                            }
+                                            // MainActivity is a ComponentActivity, so force a
+                                            // recreate after changing locales to guarantee the
+                                            // new Resources configuration is applied immediately
+                                            // across all supported Android versions.
+                                            view.context.findActivity()?.recreate()
                                         }
                                 )
                             }
