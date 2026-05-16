@@ -347,6 +347,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
     // DONE_WITH_CONCERNS: The following two tests describe the intended behaviour but
     // cannot be wired up without a WebSocket abstraction + injectable timeout.
 
+    // TODO 2.0.1: Implement IWebSocketSender abstraction and injectable timeout for correlation tests
     [Fact(Skip =
         "DONE_WITH_CONCERNS: Requires injectable CommandTimeoutSeconds and IWebSocketSender. " +
         "When those exist, remove [Skip] and provide a mock sender that never delivers a response.")]
@@ -358,6 +359,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
         await Task.CompletedTask; // placeholder
     }
 
+    // TODO 2.0.1: Implement IWebSocketSender abstraction and injectable timeout for correlation tests
     [Fact(Skip =
         "DONE_WITH_CONCERNS: Requires IWebSocketSender mock that can replay correlated responses. " +
         "When available, fire two concurrent SendCommandAndWaitAsync calls, deliver matching " +

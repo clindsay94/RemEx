@@ -13,7 +13,7 @@ A high-performance, cross-platform **command center** for remote PC management.\
 Real-time hardware telemetry · Remote desktop · QR Pairing · App launcher · Process manager\
 Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full **native Android** app (Kotlin + Jetpack Compose) powered by a .NET NativeAOT JNI core.
 
-> **Leaving closed beta soon:** production launch is imminent on Google Play. Once the Android app is live on the Play Store, APKs will no longer be supplied from this repository.
+> **Production release:** RemEx 2.0.0 is available on Google Play. Once the app is live on the Play Store, direct APK downloads from this repository will be discontinued.
 
 ---
 

@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <ApplicationIcon>..\Remex.Client\Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

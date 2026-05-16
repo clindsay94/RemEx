@@ -7,24 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] — 2026-05-10
+## [2.0.0] — 2026-05-15
 
 ### Added
 - End-to-end encrypted transport (TLS 1.3 / WSS) for all client-host communication
 - Cryptographic device pairing replacing plaintext access keys (ECDH P-256 + 6-digit PIN)
 - SHA-256 SPKI certificate pinning on client
-- Remote file transfer (browse, upload, download, cancel)
+- Remote file transfer with SHA-256 integrity verification (browse, upload, download, cancel)
+- Android file-transfer hosting (shared folders on device accessible to host)
 - 8 Quick Settings tiles on Android (Lock, Shutdown, Restart, Restart to UEFI, Wake on LAN, Sleep, Hibernate, Monitor Off)
 - Two-stage haptic feedback on Android (sent vs acknowledged)
 - Battery optimization onboarding on Android
 - Firebase Crashlytics NDK integration
 - Target SDK 37 (Android 17) support with Local Network permission flow
+- Linux remote desktop input via Wayland portal integration
 
 ### Changed
 - Protocol version field added to `RemexMessage`; 1.x clients fail loudly
 - Material3 dependency moved from alpha to stable
 - Windows Installer (Inno Setup) updated with new branding and versioning
 - Linux build scripts updated with `New-REMEX.png` icon priority
+- Remote desktop pointer batches now use flattened JSON structure for efficiency
 
 ### Fixed
 - Settings view freeze on Linux (UI-thread marshalling)
@@ -36,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RefreshSensors` running on every Settings open/close
 - Hardcoded "Sort by:" string in `TaskManagerScreen`
 - Snapshot clipboard copies file path; redesigned as "Copy Path" with accurate label
+- Remote desktop input from Android on Linux (Wayland pointer events now injected correctly)
+- S-Pen hover event crash on Android
+- Linux xrandr parser robustness for exotic display configurations
+- Client pairing state now persists across restarts; paired client IDs survive reconnect
 - All 11 high-severity security audit findings resolved
 
 ### Security
@@ -43,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DataStore exclusion from Auto Backup verified via `data_extraction_rules.xml`
 - Network security config disables cleartext traffic on Android
 - ECDH curve switched to NIST P-256 (built-in .NET) for better stability over NSec/X25519
+- First-time pairing now requires explicit trust gesture; unknown certificates fail closed
+- WebSocket authorization gate enforces pairing on all `/ws/desktop` connections
 
 ---
 
