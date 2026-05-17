@@ -670,13 +670,13 @@
     <value>Встановлено — запуск міг не вдатися, перегляньте журнал.</value>
   </data>
   <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
+    <value>Встановлення служби systemd…</value>
   </data>
   <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
+    <value>Помилка встановлення служби.</value>
   </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
+    <value>Видалення служби systemd…</value>
   </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
@@ -730,73 +730,73 @@
     <value>Час очікування підключення минув</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found host: {0}</value>
+    <value>Знайдено хост: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>Знайдено {0} хостів. (Вибір хостів ще не реалізовано)</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Connected to host</value>
+    <value>Підключено до хоста</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host not connected</value>
+    <value>Хост не підключено</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Interactive host</value>
+    <value>Інтерактивний хост</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service host</value>
+    <value>Службовий хост</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Headless host</value>
+    <value>Безголовний хост</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
-    <value>Host</value>
+    <value>Хост</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
-    <value>Remote desktop available</value>
+    <value>Віддалений робочий стіл доступний</value>
   </data>
   <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
-    <value>Remote desktop unavailable</value>
+    <value>Віддалений робочий стіл недоступний</value>
   </data>
   <data name="Status_NotConnected" xml:space="preserve">
-    <value>Not connected.</value>
+    <value>Не підключено.</value>
   </data>
   <data name="Status_NoMessage" xml:space="preserve">
-    <value>No message</value>
+    <value>Немає повідомлень</value>
   </data>
   <data name="Status_CommandTimedOut" xml:space="preserve">
-    <value>Command timed out.</value>
+    <value>Час очікування команди минув.</value>
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
-    <value>Error: {0}</value>
+    <value>Помилка: {0}</value>
   </data>
   <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>User disconnected</value>
+    <value>Користувач відключився</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
-    <value>Send error: {0}</value>
+    <value>Помилка надсилання: {0}</value>
   </data>
   <data name="Status_PongFormat" xml:space="preserve">
-    <value>Pong! {0:F1} ms</value>
+    <value>Понг ! {0:F1} мс</value>
   </data>
   <data name="Status_ReceiveErrorFormat" xml:space="preserve">
-    <value>Receive error: {0}</value>
+    <value>Помилка отримання: {0}</value>
   </data>
   <data name="Status_ReconnectingFormat" xml:space="preserve">
-    <value>Reconnecting in {0}s…</value>
+    <value>Повторне підключення через {0}с…</value>
   </data>
   <data name="Status_QrCodeFailed" xml:space="preserve">
-    <value>Failed to generate QR code: {0}</value>
+    <value>Не вдалося створити QR-код : {0}</value>
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
-    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+    <value>{0} потребує підключеного хоста RemEx. Відкрийте Налаштування, щоб налаштувати підключення.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with host...</value>
+    <value>Сполучення з хостом...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
+    <value>PIN-код повинен складатися рівно з 6 цифр.</value>
   </data>
 
   <!-- WoL Status -->

@@ -670,13 +670,13 @@
     <value>Instalado — início pode ter falhado, veja o log.</value>
   </data>
   <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
+    <value>Instalando serviço systemd…</value>
   </data>
   <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
+    <value>Falha na instalação do serviço.</value>
   </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
+    <value>Removendo serviço systemd…</value>
   </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
@@ -730,73 +730,73 @@
     <value>Tempo limite de conexão esgotado</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found host: {0}</value>
+    <value>Host encontrado: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>{0} hosts encontrados. (A descoberta selecionável ainda não foi implementada)</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Connected to host</value>
+    <value>Conectado ao host</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host not connected</value>
+    <value>Host não conectado</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Interactive host</value>
+    <value>Host interativo</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service host</value>
+    <value>Host de serviço</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Headless host</value>
+    <value>Host sem interface</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
     <value>Host</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
-    <value>Remote desktop available</value>
+    <value>Área de trabalho remota disponível</value>
   </data>
   <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
-    <value>Remote desktop unavailable</value>
+    <value>Área de trabalho remota indisponível</value>
   </data>
   <data name="Status_NotConnected" xml:space="preserve">
-    <value>Not connected.</value>
+    <value>Não conectado.</value>
   </data>
   <data name="Status_NoMessage" xml:space="preserve">
-    <value>No message</value>
+    <value>Sem mensagem</value>
   </data>
   <data name="Status_CommandTimedOut" xml:space="preserve">
-    <value>Command timed out.</value>
+    <value>O comando expirou.</value>
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
-    <value>Error: {0}</value>
+    <value>Erro: {0}</value>
   </data>
   <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>User disconnected</value>
+    <value>Usuário desconectado</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
-    <value>Send error: {0}</value>
+    <value>Erro de envio: {0}</value>
   </data>
   <data name="Status_PongFormat" xml:space="preserve">
-    <value>Pong! {0:F1} ms</value>
+    <value>Pong ! {0:F1} ms</value>
   </data>
   <data name="Status_ReceiveErrorFormat" xml:space="preserve">
-    <value>Receive error: {0}</value>
+    <value>Erro de recebimento: {0}</value>
   </data>
   <data name="Status_ReconnectingFormat" xml:space="preserve">
-    <value>Reconnecting in {0}s…</value>
+    <value>Reconectando em {0}s…</value>
   </data>
   <data name="Status_QrCodeFailed" xml:space="preserve">
-    <value>Failed to generate QR code: {0}</value>
+    <value>Falha ao gerar o código QR : {0}</value>
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
-    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+    <value>{0} requer um host RemEx conectado. Abra as Configurações para configurar sua conexão.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with host...</value>
+    <value>Pareando com o host...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
+    <value>O PIN deve ter exatamente 6 dígitos.</value>
   </data>
 
   <!-- WoL Status -->

@@ -730,73 +730,73 @@
     <value>Upłynął limit czasu połączenia</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found host: {0}</value>
+    <value>Znaleziono hosta: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>Znaleziono {0} hostów. (Wybór hosta nie jest jeszcze zaimplementowany)</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Connected to host</value>
+    <value>Połączono z hostem</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host not connected</value>
+    <value>Host nie jest połączony</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Interactive host</value>
+    <value>Host interaktywny</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service host</value>
+    <value>Host usługi</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Headless host</value>
+    <value>Host bezgłowy</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
     <value>Host</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
-    <value>Remote desktop available</value>
+    <value>Pulpit zdalny dostępny</value>
   </data>
   <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
-    <value>Remote desktop unavailable</value>
+    <value>Pulpit zdalny niedostępny</value>
   </data>
   <data name="Status_NotConnected" xml:space="preserve">
-    <value>Not connected.</value>
+    <value>Brak połączenia.</value>
   </data>
   <data name="Status_NoMessage" xml:space="preserve">
-    <value>No message</value>
+    <value>Brak wiadomości</value>
   </data>
   <data name="Status_CommandTimedOut" xml:space="preserve">
-    <value>Command timed out.</value>
+    <value>Upłynął limit czasu polecenia.</value>
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
-    <value>Error: {0}</value>
+    <value>Błąd: {0}</value>
   </data>
   <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>User disconnected</value>
+    <value>Użytkownik rozłączony</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
-    <value>Send error: {0}</value>
+    <value>Błąd wysyłania: {0}</value>
   </data>
   <data name="Status_PongFormat" xml:space="preserve">
-    <value>Pong! {0:F1} ms</value>
+    <value>Pong ! {0:F1} ms</value>
   </data>
   <data name="Status_ReceiveErrorFormat" xml:space="preserve">
-    <value>Receive error: {0}</value>
+    <value>Błąd odbierania: {0}</value>
   </data>
   <data name="Status_ReconnectingFormat" xml:space="preserve">
-    <value>Reconnecting in {0}s…</value>
+    <value>Ponowne łączenie za {0}s…</value>
   </data>
   <data name="Status_QrCodeFailed" xml:space="preserve">
-    <value>Failed to generate QR code: {0}</value>
+    <value>Nie udało się wygenerować kodu QR : {0}</value>
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
-    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+    <value>{0} wymaga połączonego hosta RemEx. Otwórz Ustawienia, aby skonfigurować połączenie.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with host...</value>
+    <value>Parowanie z hostem...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
+    <value>PIN musi składać się z dokładnie 6 cyfr.</value>
   </data>
 
   <!-- WoL Status -->
@@ -1152,19 +1152,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wygeneruj kod QR, aby połączyć aplikację RemEx Android</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Pokaż kod PIN parowania</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Wyświetl 6-cyfrowy kod, którego telefon potrzebuje do sparowania z tym PC</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>KOD PIN PAROWANIA</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Wprowadź ten kod w telefonie, aby zakończyć parowanie</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>Wygasa za {0}s</value>
   </data>
   <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
     <value>Otwórz obszar czujników, aby monitorować telemetrię komputera</value>
@@ -1173,7 +1173,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wyświetlaj działające procesy i kończ zadania na komputerze</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Zamknij</value>
   </data>
 
   <!-- Settings (Phase 4) -->
@@ -1253,9 +1253,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Telefon widzi tylko foldery wymienione tutaj. Kieruj rutynowe przesyłki do folderu zapisywalnego, takiego jak RemEx Transfers, a resztę zostaw jako tylko do odczytu, jeśli nie chcesz, aby urządzenia mobilne mogły je modyfikować.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Dodaj foldery PC, które RemEx ma udostępniać.
+2. Włącz przesyłanie tylko dla folderów, które mają przyjmować pliki z telefonu na PC.
+3. Otwórz Transfer plików na telefonie i przeglądaj stamtąd udostępnione foldery.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Dodaj folder</value>

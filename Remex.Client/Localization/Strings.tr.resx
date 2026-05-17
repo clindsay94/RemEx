@@ -670,13 +670,13 @@
     <value>Yüklendi — başlatma başarısız olabilir, log'a bakın.</value>
   </data>
   <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
+    <value>systemd hizmeti kuruluyor…</value>
   </data>
   <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
+    <value>Hizmet kurulumu başarısız oldu.</value>
   </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
+    <value>systemd hizmeti kaldırılıyor…</value>
   </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
@@ -730,73 +730,73 @@
     <value>Bağlantı zaman aşımına uğradı</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found host: {0}</value>
+    <value>Host bulundu: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>{0} host bulundu. (Seçilebilir keşif henüz uygulanmadı)</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Connected to host</value>
+    <value>Host'a bağlandı</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host not connected</value>
+    <value>Host bağlı değil</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Interactive host</value>
+    <value>Etkileşimli host</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service host</value>
+    <value>Hizmet hostu</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Headless host</value>
+    <value>Arayüzsüz host</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
     <value>Host</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
-    <value>Remote desktop available</value>
+    <value>Uzak masaüstü mevcut</value>
   </data>
   <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
-    <value>Remote desktop unavailable</value>
+    <value>Uzak masaüstü mevcut değil</value>
   </data>
   <data name="Status_NotConnected" xml:space="preserve">
-    <value>Not connected.</value>
+    <value>Bağlı değil.</value>
   </data>
   <data name="Status_NoMessage" xml:space="preserve">
-    <value>No message</value>
+    <value>Mesaj yok</value>
   </data>
   <data name="Status_CommandTimedOut" xml:space="preserve">
-    <value>Command timed out.</value>
+    <value>Komut zaman aşımına uğradı.</value>
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
-    <value>Error: {0}</value>
+    <value>Hata: {0}</value>
   </data>
   <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>User disconnected</value>
+    <value>Kullanıcı bağlantısı kesildi</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
-    <value>Send error: {0}</value>
+    <value>Gönderim hatası: {0}</value>
   </data>
   <data name="Status_PongFormat" xml:space="preserve">
-    <value>Pong! {0:F1} ms</value>
+    <value>Pong ! {0:F1} ms</value>
   </data>
   <data name="Status_ReceiveErrorFormat" xml:space="preserve">
-    <value>Receive error: {0}</value>
+    <value>Alım hatası: {0}</value>
   </data>
   <data name="Status_ReconnectingFormat" xml:space="preserve">
-    <value>Reconnecting in {0}s…</value>
+    <value>{0} saniye içinde yeniden bağlanılıyor…</value>
   </data>
   <data name="Status_QrCodeFailed" xml:space="preserve">
-    <value>Failed to generate QR code: {0}</value>
+    <value>QR kodu oluşturulamadı : {0}</value>
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
-    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+    <value>{0} için bağlı bir RemEx hostu gerekir. Bağlantınızı yapılandırmak için Ayarlar'ı açın.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with host...</value>
+    <value>Host ile eşleştiriliyor...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
+    <value>PIN tam olarak 6 haneli olmalıdır.</value>
   </data>
 
   <!-- WoL Status -->

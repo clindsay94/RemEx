@@ -593,19 +593,19 @@
     <value>Pad de cursor tamaño completo activado</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a host to check remote desktop availability.</value>
+    <value>Conéctate a un host para comprobar la disponibilidad del escritorio remoto.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Conectando...</value>
   </data>
   <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Failed: {0}</value>
+    <value>Fallido: {0}</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Detenido</value>
   </data>
   <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Frame decode error ({0} bytes): {1}: {2}</value>
+    <value>Error de decodificación de frame ({0} bytes): {1}: {2}</value>
   </data>
 
   <!-- Service Status -->
@@ -670,13 +670,13 @@
     <value>Instalado — el inicio puede haber fallado, ver registro.</value>
   </data>
   <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
+    <value>Instalando servicio systemd...</value>
   </data>
   <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
+    <value>Fallo en la instalación del servicio.</value>
   </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
+    <value>Eliminando servicio systemd...</value>
   </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
@@ -736,67 +736,67 @@
     <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Connected to host</value>
+    <value>Conectado al host</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host not connected</value>
+    <value>Host no conectado</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Interactive host</value>
+    <value>Host interactivo</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service host</value>
+    <value>Host de servicio</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Headless host</value>
+    <value>Host sin interfaz</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
     <value>Host</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
-    <value>Remote desktop available</value>
+    <value>Escritorio remoto disponible</value>
   </data>
   <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
-    <value>Remote desktop unavailable</value>
+    <value>Escritorio remoto no disponible</value>
   </data>
   <data name="Status_NotConnected" xml:space="preserve">
-    <value>Not connected.</value>
+    <value>No conectado.</value>
   </data>
   <data name="Status_NoMessage" xml:space="preserve">
-    <value>No message</value>
+    <value>Sin mensaje</value>
   </data>
   <data name="Status_CommandTimedOut" xml:space="preserve">
-    <value>Command timed out.</value>
+    <value>Tiempo de espera del comando agotado.</value>
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
     <value>Error: {0}</value>
   </data>
   <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>User disconnected</value>
+    <value>Usuario desconectado</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
-    <value>Send error: {0}</value>
+    <value>Error de envío: {0}</value>
   </data>
   <data name="Status_PongFormat" xml:space="preserve">
     <value>Pong! {0:F1} ms</value>
   </data>
   <data name="Status_ReceiveErrorFormat" xml:space="preserve">
-    <value>Receive error: {0}</value>
+    <value>Error de recepción: {0}</value>
   </data>
   <data name="Status_ReconnectingFormat" xml:space="preserve">
-    <value>Reconnecting in {0}s…</value>
+    <value>Reconectando en {0}s…</value>
   </data>
   <data name="Status_QrCodeFailed" xml:space="preserve">
-    <value>Failed to generate QR code: {0}</value>
+    <value>Fallo al generar código QR: {0}</value>
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
-    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+    <value>{0} requiere un host de RemEx conectado. Abre Configuración para configurar tu conexión.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with host...</value>
+    <value>Emparejando con el host...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
+    <value>El PIN debe tener exactamente 6 dígitos.</value>
   </data>
 
   <!-- WoL Status -->
@@ -1735,58 +1735,58 @@ Chrome)</value>
 
   <!-- Confirmation dialogs -->
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Shut Down — Are you sure?</value>
+    <value>Apagar — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>The remote PC will shut down. All unsaved work will be lost.</value>
+    <value>El PC remoto se apagará. Todo el trabajo no guardado se perderá.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
-    <value>Shut Down</value>
+    <value>Apagar</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — Are you sure?</value>
+    <value>Reiniciar — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>The remote PC will restart. All unsaved work will be lost.</value>
+    <value>El PC remoto se reiniciará. Todo el trabajo no guardado se perderá.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
-    <value>Restart</value>
+    <value>Reiniciar</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Force Shutdown — Are you sure?</value>
+    <value>Forzar Apagado — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>This will immediately shut down the remote PC. All unsaved work will be lost.</value>
+    <value>Esto apagará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
-    <value>Force Shutdown</value>
+    <value>Forzar Apagado</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Force Restart — Are you sure?</value>
+    <value>Forzar Reinicio — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>This will immediately restart the remote PC. All unsaved work will be lost.</value>
+    <value>Esto reiniciará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
-    <value>Force Restart</value>
+    <value>Forzar Reinicio</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Reboot to UEFI — Are you sure?</value>
+    <value>Reiniciar a UEFI — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost.</value>
+    <value>El PC remoto se reiniciará y arrancará directamente en los ajustes del firmware UEFI. Todo el trabajo no guardado se perderá.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
-    <value>Reboot to UEFI</value>
+    <value>Reiniciar a UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with Host</value>
+    <value>Emparejar con el Host</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the host machine:</value>
+    <value>Introduce el PIN de 6 dígitos mostrado en la máquina host:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>Emparejar</value>
   </data>
 
   <!-- About and FAQ -->
