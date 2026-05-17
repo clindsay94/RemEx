@@ -54,7 +54,10 @@
       "Bash(grep -iE \"^[A-Za-z]*Connection[A-Za-z]*$\")",
       "Bash(grep -E \"DBusConnection|^Connection$\")",
       "Bash(awk '{print $2}')",
-      "Bash(xargs -I{} sh -c 'jq -r \"select\\(.type==\\\\\"assistant\\\\\"\\) | .message.content[]? | select\\(.type==\\\\\"tool_use\\\\\"\\) | [.name, \\(.input.command // \\\\\"\\\\\"\\)] | @tsv\" {} 2>/dev/null')"
+      "Bash(xargs -I{} sh -c 'jq -r \"select\\(.type==\\\\\"assistant\\\\\"\\) | .message.content[]? | select\\(.type==\\\\\"tool_use\\\\\"\\) | [.name, \\(.input.command // \\\\\"\\\\\"\\)] | @tsv\" {} 2>/dev/null')",
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(xargs ls -la)",
+      "Bash(./gradlew :app:testDebugUnitTest --console=plain --rerun-tasks)"
     ]
   },
   "outputStyle": "default"

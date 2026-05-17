@@ -42,6 +42,7 @@ public sealed class PairingHandler
             return MakeError("Missing pairing request payload.");
         }
 
+        var pairingSessionStarted = false;
         try
         {
             _logger.LogInformation("Pairing request received from client: {Name} v{Version} (ID: {ClientId})",
@@ -51,8 +52,12 @@ public sealed class PairingHandler
 
             // Start pairing session (generates host keypair and PIN)
             var state = await _pairingService.StartPairingAsync(ct);
+            pairingSessionStarted = true;
 
-            // Derive session key from client's public key
+            // Derive session key from client's public key. If this throws (e.g. malformed
+            // client public key, HKDF failure) the session in PairingService is still live;
+            // the catch below must call CancelPairing or the singleton state will block the
+            // next attempt for the full 120-second timeout.
             var pinHmacBase64 = await _pairingService.DeriveSessionKeyAsync(
                 message.PairingRequest.ClientPublicKeyBase64, ct);
 
@@ -76,6 +81,17 @@ public sealed class PairingHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to handle pairing request.");
+            if (pairingSessionStarted)
+            {
+                try
+                {
+                    _pairingService.CancelPairing();
+                }
+                catch (Exception cancelEx)
+                {
+                    _logger.LogWarning(cancelEx, "Failed to cancel pairing during error recovery.");
+                }
+            }
             return MakeError($"Pairing request failed: {ex.Message}");
         }
     }

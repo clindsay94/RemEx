@@ -229,8 +229,17 @@ public sealed class PingPongHandler(
                         var pairingResponse = await pairingHandler.HandlePairingRequestAsync(message, ct);
                         if (pairingResponse is not null)
                         {
+                            // Flip pairingStarted before sending: HandlePairingRequestAsync has
+                            // already taken the singleton session in PairingService, so the
+                            // cleanup at the bottom of HandleAsync must run even if SendAsync
+                            // throws (socket aborted mid-send). Previously the assignment lived
+                            // after SendAsync, so a mid-send failure left the session live for
+                            // the full 120-second pairing timeout and blocked retries.
+                            if (pairingResponse.Type == MessageTypes.PairingResponse)
+                            {
+                                pairingStarted = true;
+                            }
                             await MessageSerializer.SendAsync(webSocket, pairingResponse, ct);
-                            pairingStarted = pairingResponse.Type == MessageTypes.PairingResponse;
                         }
                         break;
 

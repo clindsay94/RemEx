@@ -119,6 +119,17 @@ android {
     buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
 
+    testOptions {
+        unitTests {
+            // Return defaults instead of throwing on unmocked android.* framework calls
+            // (e.g. android.util.Log used inside RemexCoreClient's catch blocks). Tests
+            // that exercise singletons whose static init touches Log would otherwise fail
+            // with "Method e in android.util.Log not mocked". See:
+            // https://developer.android.com/r/studio-ui/build/not-mocked
+            isReturnDefaultValues = true
+        }
+    }
+
     sourceSets {
         getByName("main") {
             // Keep packaging deterministic by ignoring src/main/jniLibs for Remex.Core.

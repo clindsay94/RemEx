@@ -247,32 +247,35 @@ public static class HostBootstrapper
         // Remote Desktop WebSocket endpoint (dedicated binary stream)
         app.Map("/ws/desktop", async (HttpContext context, PairedClientRegistry pairedClientRegistry) =>
         {
+            var authLogger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("Remex.Host.DesktopAuth");
+
             if (!context.WebSockets.IsWebSocketRequest)
             {
+                authLogger.LogWarning(
+                    "Rejected /ws/desktop: non-WebSocket request from {RemoteIp}.",
+                    context.Connection.RemoteIpAddress);
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("WebSocket connections only.");
                 return;
             }
 
             var remoteIp = context.Connection.RemoteIpAddress;
-            var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
             var clientId = context.Request.Query["clientId"].ToString();
+            var protocolVersion = context.Request.Query["protocolVersion"].ToString();
 
-            if (!isLoopback)
+            var evaluation = EvaluateDesktopAuth(remoteIp, clientId, protocolVersion, pairedClientRegistry);
+            if (evaluation.StatusCode != StatusCodes.Status200OK)
             {
-                if (string.IsNullOrWhiteSpace(clientId))
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsync("Paired client ID is required.");
-                    return;
-                }
-
-                if (!pairedClientRegistry.IsClientPaired(clientId))
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    await context.Response.WriteAsync("Client is not paired.");
-                    return;
-                }
+                authLogger.LogWarning(
+                    "Rejected /ws/desktop from {RemoteIp} (clientIdPrefix={ClientIdPrefix}, protocolVersion={ProtocolVersion}): {Reason}",
+                    remoteIp,
+                    RedactClientId(clientId),
+                    string.IsNullOrEmpty(protocolVersion) ? "<unset>" : protocolVersion,
+                    evaluation.Reason);
+                context.Response.StatusCode = evaluation.StatusCode;
+                await context.Response.WriteAsync(evaluation.Reason ?? "Unauthorized.");
+                return;
             }
 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
@@ -286,5 +289,56 @@ public static class HostBootstrapper
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Evaluates whether an inbound /ws/desktop request is allowed, mirroring the trust model
+    /// used by /ws (loopback bypass + paired-client registry). Returns the HTTP status and a
+    /// short reason string; <see cref="StatusCodes.Status200OK"/> means "accept".
+    /// </summary>
+    /// <remarks>
+    /// Extracted so the auth decision can be exercised by unit tests without standing up Kestrel.
+    /// The default <see cref="WebApplicationFactory"/> TestServer reports a null RemoteIpAddress,
+    /// which we treat as loopback — that bypasses the registry check, so the rejection paths
+    /// have to be validated through this helper directly.
+    /// </remarks>
+    internal static (int StatusCode, string? Reason) EvaluateDesktopAuth(
+        System.Net.IPAddress? remoteIp,
+        string clientId,
+        string protocolVersion,
+        PairedClientRegistry registry)
+    {
+        // Optional protocol-version handshake parameter: if supplied, must be "2".
+        // Clients that omit it are accepted for backwards compatibility — the current
+        // Android client doesn't set it yet — but a wrong value is a clear-cut reject.
+        if (!string.IsNullOrEmpty(protocolVersion) && protocolVersion != "2")
+        {
+            return (StatusCodes.Status400BadRequest,
+                $"Unsupported protocolVersion '{protocolVersion}'. Expected '2'.");
+        }
+
+        var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
+        if (isLoopback)
+        {
+            return (StatusCodes.Status200OK, null);
+        }
+
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            return (StatusCodes.Status401Unauthorized, "Paired client ID is required.");
+        }
+
+        if (!registry.IsClientPaired(clientId))
+        {
+            return (StatusCodes.Status403Forbidden, "Client is not paired.");
+        }
+
+        return (StatusCodes.Status200OK, null);
+    }
+
+    private static string RedactClientId(string clientId)
+    {
+        if (string.IsNullOrEmpty(clientId)) return "<empty>";
+        return clientId.Length <= 8 ? clientId : clientId[..8] + "…";
     }
 }
