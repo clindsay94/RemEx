@@ -280,761 +280,867 @@ fun DashboardScreenContent(
         // Surface establishes LocalContentColor from the theme so that header title text
         // and other non-card content inherits the correct on-surface color.
         Surface(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-                RemexScreenHeader(
-                        title = stringResource(R.string.screen_dashboard_title),
-                        actions = {
-                                if (canvasScale != 1f) {
-                                        IconButton(
-                                                onClick = {
-                                                        view.performHapticFeedback(
-                                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                                        )
-                                                        canvasScale = 1f
-                                                }
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.FilterCenterFocus,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_reset_zoom
-                                                                )
-                                                )
-                                        }
-                                }
-                                IconButton(
-                                        onClick = {
-                                                view.performHapticFeedback(
-                                                        HapticFeedbackConstants.KEYBOARD_TAP
-                                                )
-                                                showCardDrawer = !showCardDrawer
-                                        }
-                                ) {
-                                        Icon(
-                                                Icons.Default.Tune,
-                                                contentDescription =
-                                                        stringResource(R.string.cd_customize_cards)
-                                        )
-                                }
-                        }
-                )
-                Box(modifier = Modifier.fillMaxSize().transformable(state = transformableState)) {
-                        Box(
-                                modifier =
-                                        Modifier.fillMaxSize()
-                                                .horizontalScroll(hScrollState)
-                                                .verticalScroll(vScrollState)
-                        ) {
-                                Box(
-                                        modifier =
-                                                Modifier.width(canvasWidthDp.dp)
-                                                        .height(canvasHeightDp.dp)
-                                                        .onGloballyPositioned {
-                                                                canvasTopLeftPx =
-                                                                        it.positionInRoot()
-                                                        }
-                                                        .background(
-                                                                MaterialTheme.colorScheme.background
-                                                        )
-                                                        // Use graphicsLayer for zoom to avoid
-                                                        // expensive relayout on
-                                                        // every frame during pinch gestures (review
-                                                        // fix).
-                                                        .graphicsLayer {
-                                                                scaleX = canvasScaleState.floatValue
-                                                                scaleY = canvasScaleState.floatValue
-                                                                transformOrigin =
-                                                                        androidx.compose.ui.graphics
-                                                                                .TransformOrigin(
-                                                                                        0f,
-                                                                                        0f
-                                                                                )
-                                                        }
-                                ) {
-                                        visibleCards.forEach { card ->
-                                                val xPx = (card.xDp * density).roundToInt()
-                                                val yPx = (card.yDp * density).roundToInt()
-                                                val cardShapePreset =
-                                                        when {
-                                                                card.id == "pc_status" ->
-                                                                        pcCardShapePreset
-                                                                card.id.startsWith("sensor:") ->
-                                                                        telemetryCardShapePreset
-                                                                else -> 0f
-                                                        }
-
-                                                Card(
-                                                        modifier =
-                                                                Modifier.offset {
-                                                                        IntOffset(xPx, yPx)
-                                                                }
-                                                                        .width(card.widthDp.dp)
-                                                                        .height(card.heightDp.dp)
-                                                                        // pointerInput uses stable
-                                                                        // card.id key — reads
-                                                                        // canvasScaleState.floatValue directly (review
-                                                                        // fix).
-                                                                        .pointerInput(card.id) {
-                                                                                detectDragGestures(
-                                                                                        onDrag = {
-                                                                                                change,
-                                                                                                dragAmount
-                                                                                                ->
-                                                                                                change.consume()
-                                                                                                val currentScale =
-                                                                                                        canvasScaleState
-                                                                                                                .floatValue
-                                                                                                onMoveCard(
-                                                                                                        card.id,
-                                                                                                        dragAmount
-                                                                                                                .x /
-                                                                                                                (density *
-                                                                                                                        currentScale),
-                                                                                                        dragAmount
-                                                                                                                .y /
-                                                                                                                (density *
-                                                                                                                        currentScale)
-                                                                                                )
-                                                                                        },
-                                                                                        onDragEnd = {
-                                                                                                onSaveCardLayout()
-                                                                                        }
-                                                                                )
-                                                                        },
-                                                        shape =
-                                                                cardShape(
-                                                                        cardShapePreset,
-                                                                        cornerRadius
-                                                                ),
-                                                        colors =
-                                                                CardDefaults.cardColors(
-                                                                        containerColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primaryContainer
-                                                                                        .copy(
-                                                                                                alpha =
-                                                                                                        cardOpacity
-                                                                                        ),
-                                                                        contentColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onPrimaryContainer
-                                                                )
-                                                ) {
-                                                        Box(
-                                                                modifier =
-                                                                        Modifier.fillMaxSize()
-                                                                                .padding(4.dp)
-                                                        ) {
-                                                                when (card.type.name) {
-                                                                        "PC_STATUS" -> {
-                                                                                ConnectionOrbCard(
-                                                                                        isConnected =
-                                                                                                isConnected,
-                                                                                        isConnecting =
-                                                                                                isConnecting,
-                                                                                        shapePreset =
-                                                                                                pcCardShapePreset,
-                                                                                        cornerRadius =
-                                                                                                cornerRadius,
-                                                                                        onToggle = {
-                                                                                                view.performHapticFeedback(
-                                                                                                        HapticFeedbackConstants
-                                                                                                                .CONFIRM
-                                                                                                )
-                                                                                                onToggleConnection()
-                                                                                        },
-                                                                                        onNavigateToConnection =
-                                                                                                onNavigateToConnection
-                                                                                )
-                                                                        }
-                                                                        "WAKE_ON_LAN" -> {
-                                                                                WakeOnLanCard(
-                                                                                        onWake = {
-                                                                                                onWakePc()
-                                                                                        }
-                                                                                )
-                                                                        }
-                                                                        "TELEMETRY" -> {
-                                                                                val sensor =
-                                                                                        sensorMap[
-                                                                                                card.sensorId]
-                                                                                val history =
-                                                                                        telemetryHistory[
-                                                                                                        card.sensorId]
-                                                                                                .orEmpty()
-                                                                                TelemetryCardContent(
-                                                                                        title =
-                                                                                                card.title,
-                                                                                        sensor =
-                                                                                                sensor,
-                                                                                        history =
-                                                                                                history,
-                                                                                        mode =
-                                                                                                card.displayMode,
-                                                                                        onCycleDisplayMode = {
-                                                                                                onCycleTelemetryDisplayMode(
-                                                                                                        card.id
-                                                                                                )
-                                                                                        },
-                                                                                        isExpressiveShape =
-                                                                                                cardShapePreset >
-                                                                                                        0
-                                                                                )
-                                                                        }
-                                                                }
-
-                                                                // Resize handle — bottom-right
-                                                                // corner
-                                                                Surface(
-                                                                        shape = CircleShape,
-                                                                        // M3: use solid primary
-                                                                        // token, tonal elevation
-                                                                        // for depth
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary,
-                                                                        tonalElevation = 2.dp,
-                                                                        modifier =
-                                                                                Modifier.align(
-                                                                                                Alignment
-                                                                                                        .BottomEnd
-                                                                                        )
-                                                                                        .padding(
-                                                                                                12.dp
-                                                                                        )
-                                                                                        .size(24.dp)
-                                                                                        .pointerInput(
-                                                                                                "resize_${card.id}"
-                                                                                        ) {
-                                                                                                detectDragGestures(
-                                                                                                        onDrag = {
-                                                                                                                change,
-                                                                                                                dragAmount
-                                                                                                                ->
-                                                                                                                change.consume()
-                                                                                                                val currentScale =
-                                                                                                                        canvasScaleState
-                                                                                                                                .floatValue
-                                                                                                                onResizeCard(
-                                                                                                                        card.id,
-                                                                                                                        dragAmount
-                                                                                                                                .x /
-                                                                                                                                (density *
-                                                                                                                                        currentScale),
-                                                                                                                        dragAmount
-                                                                                                                                .y /
-                                                                                                                                (density *
-                                                                                                                                        currentScale)
-                                                                                                                )
-                                                                                                        },
-                                                                                                        onDragEnd = {
-                                                                                                                onSaveCardLayout()
-                                                                                                        }
-                                                                                                )
-                                                                                        }
-                                                                ) {
-                                                                        Icon(
-                                                                                Icons.Default
-                                                                                        .OpenInFull,
-                                                                                contentDescription =
-                                                                                        stringResource(
-                                                                                                R.string
-                                                                                                        .cd_resize_cards
-                                                                                        ),
-                                                                                tint =
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .onPrimary,
-                                                                                modifier =
-                                                                                        Modifier.size(
-                                                                                                        12.dp
-                                                                                                )
-                                                                                                .padding(
-                                                                                                        2.dp
-                                                                                                )
-                                                                        )
-                                                                }
-                                                        }
-                                                }
-                                        }
-                                }
-                        }
-
-                        // M3: ModalBottomSheet replaces side-panel drawer for standard M3 sheet UX
-                        if (showCardDrawer) {
-                                ModalBottomSheet(
-                                        onDismissRequest = { showCardDrawer = false },
-                                        sheetState =
-                                                rememberModalBottomSheetState(
-                                                        skipPartiallyExpanded = true
-                                                )
-                                ) {
-                                        Column(
-                                                modifier =
-                                                        Modifier.fillMaxWidth()
-                                                                .padding(
-                                                                        horizontal = 12.dp,
-                                                                        vertical = 8.dp
-                                                                )
-                                        ) {
-                                                Text(
-                                                        text =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .dashboard_card_drawer_title
-                                                                ),
-                                                        style = MaterialTheme.typography.titleLarge,
-                                                        fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                        text =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .dashboard_card_drawer_hint
-                                                                ),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color =
-                                                                MaterialTheme.colorScheme
-                                                                        .onSurfaceVariant,
-                                                        modifier =
-                                                                Modifier.padding(
-                                                                        top = 4.dp,
-                                                                        bottom = 12.dp
-                                                                )
-                                                )
-
-                                                // Scrollable list with always-visible scrollbar
-                                                val drawerScrollState = rememberScrollState()
-                                                val scrollbarColor =
-                                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                                                .copy(alpha = 0.4f)
-                                                val scrollbarTrackColor =
-                                                        MaterialTheme.colorScheme.surfaceVariant
-                                                                .copy(alpha = 0.3f)
-
-                                                Box(modifier = Modifier.heightIn(max = 400.dp)) {
-                                                        Column(
-                                                                modifier =
-                                                                        Modifier.fillMaxSize()
-                                                                                .padding(
-                                                                                        end = 12.dp
-                                                                                ) // room for
-                                                                                // scrollbar
-                                                                                .verticalScroll(
-                                                                                        drawerScrollState
-                                                                                ),
-                                                                verticalArrangement =
-                                                                        Arrangement.spacedBy(8.dp)
-                                                        ) {
-                                                                availableCards.forEach {
-                                                                        availableCard ->
-                                                                        var itemTopLeftPx by
-                                                                                remember(
-                                                                                        availableCard
-                                                                                                .id
-                                                                                ) {
-                                                                                        mutableStateOf(
-                                                                                                Offset.Zero
-                                                                                        )
-                                                                                }
-                                                                        Card(
-                                                                                modifier =
-                                                                                        Modifier.fillMaxWidth()
-                                                                                                .onGloballyPositioned {
-                                                                                                        itemTopLeftPx =
-                                                                                                                it.positionInRoot()
-                                                                                                }
-                                                                                                .pointerInput(
-                                                                                                        availableCard
-                                                                                                                .id,
-                                                                                                        density,
-                                                                                                        drawerLeftPx,
-                                                                                                        canvasTopLeftPx,
-                                                                                                        cards
-                                                                                                ) {
-                                                                                                        detectDragGesturesAfterLongPress(
-                                                                                                                onDragStart = {
-                                                                                                                        startOffset
-                                                                                                                        ->
-                                                                                                                        view.performHapticFeedback(
-                                                                                                                                HapticFeedbackConstants
-                                                                                                                                        .LONG_PRESS
-                                                                                                                        )
-                                                                                                                        draggingCardId =
-                                                                                                                                availableCard
-                                                                                                                                        .id
-                                                                                                                        draggingPointerPx =
-                                                                                                                                Offset(
-                                                                                                                                        x =
-                                                                                                                                                itemTopLeftPx
-                                                                                                                                                        .x +
-                                                                                                                                                        startOffset
-                                                                                                                                                                .x,
-                                                                                                                                        y =
-                                                                                                                                                itemTopLeftPx
-                                                                                                                                                        .y +
-                                                                                                                                                        startOffset
-                                                                                                                                                                .y
-                                                                                                                                )
-                                                                                                                },
-                                                                                                                onDragEnd = {
-                                                                                                                        val draggingId =
-                                                                                                                                draggingCardId
-                                                                                                                        if (draggingId ==
-                                                                                                                                        availableCard
-                                                                                                                                                .id &&
-                                                                                                                                        draggingPointerPx
-                                                                                                                                                .x <
-                                                                                                                                                drawerLeftPx -
-                                                                                                                                                        24f
-                                                                                                                        ) {
-                                                                                                                                val dragSize =
-                                                                                                                                        cards
-                                                                                                                                                .firstOrNull {
-                                                                                                                                                        it.id ==
-                                                                                                                                                                draggingId
-                                                                                                                                                }
-                                                                                                                                                ?.let {
-                                                                                                                                                        CardSizeDp(
-                                                                                                                                                                it.widthDp,
-                                                                                                                                                                it.heightDp
-                                                                                                                                                        )
-                                                                                                                                                }
-                                                                                                                                                ?: defaultCardSizeFor(
-                                                                                                                                                        draggingId
-                                                                                                                                                )
-                                                                                                                                val dropXDp =
-                                                                                                                                        ((draggingPointerPx
-                                                                                                                                                        .x -
-                                                                                                                                                        canvasTopLeftPx
-                                                                                                                                                                .x) /
-                                                                                                                                                        (density *
-                                                                                                                                                                canvasScale) -
-                                                                                                                                                        (dragSize.widthDp /
-                                                                                                                                                                2f))
-                                                                                                                                                .coerceAtLeast(
-                                                                                                                                                        0f
-                                                                                                                                                )
-                                                                                                                                val dropYDp =
-                                                                                                                                        ((draggingPointerPx
-                                                                                                                                                        .y -
-                                                                                                                                                        canvasTopLeftPx
-                                                                                                                                                                .y) /
-                                                                                                                                                        (density *
-                                                                                                                                                                canvasScale) -
-                                                                                                                                                        (dragSize.heightDp /
-                                                                                                                                                                2f))
-                                                                                                                                                .coerceAtLeast(
-                                                                                                                                                        0f
-                                                                                                                                                )
-                                                                                                                                onPlaceCardAt(
-                                                                                                                                        draggingId,
-                                                                                                                                        dropXDp,
-                                                                                                                                        dropYDp
-                                                                                                                                )
-                                                                                                                        }
-                                                                                                                        draggingCardId =
-                                                                                                                                null
-                                                                                                                },
-                                                                                                                onDragCancel = {
-                                                                                                                        draggingCardId =
-                                                                                                                                null
-                                                                                                                },
-                                                                                                                onDrag = {
-                                                                                                                        change,
-                                                                                                                        dragAmount
-                                                                                                                        ->
-                                                                                                                        change.consume()
-                                                                                                                        draggingPointerPx =
-                                                                                                                                Offset(
-                                                                                                                                        x =
-                                                                                                                                                draggingPointerPx
-                                                                                                                                                        .x +
-                                                                                                                                                        dragAmount
-                                                                                                                                                                .x,
-                                                                                                                                        y =
-                                                                                                                                                draggingPointerPx
-                                                                                                                                                        .y +
-                                                                                                                                                        dragAmount
-                                                                                                                                                                .y
-                                                                                                                                )
-                                                                                                                }
-                                                                                                        )
-                                                                                                },
-                                                                                onClick = {
-                                                                                        view.performHapticFeedback(
-                                                                                                HapticFeedbackConstants
-                                                                                                        .KEYBOARD_TAP
-                                                                                        )
-                                                                                        val checked =
-                                                                                                !enabledCards
-                                                                                                        .contains(
-                                                                                                                availableCard
-                                                                                                                        .id
-                                                                                                        )
-                                                                                        onSetCardEnabled(
-                                                                                                availableCard
-                                                                                                        .id,
-                                                                                                checked
-                                                                                        )
-                                                                                }
-                                                                        ) {
-                                                                                Row(
-                                                                                        modifier =
-                                                                                                Modifier.fillMaxWidth()
-                                                                                                        .padding(
-                                                                                                                10.dp
-                                                                                                        ),
-                                                                                        verticalAlignment =
-                                                                                                Alignment
-                                                                                                        .CenterVertically,
-                                                                                        horizontalArrangement =
-                                                                                                Arrangement
-                                                                                                        .spacedBy(
-                                                                                                                10.dp
-                                                                                                        )
-                                                                                ) {
-                                                                                        val checked =
-                                                                                                enabledCards
-                                                                                                        .contains(
-                                                                                                                availableCard
-                                                                                                                        .id
-                                                                                                        )
-                                                                                        Icon(
-                                                                                                imageVector =
-                                                                                                        if (checked
-                                                                                                        )
-                                                                                                                Icons.Default
-                                                                                                                        .CheckBox
-                                                                                                        else
-                                                                                                                Icons.Default
-                                                                                                                        .CheckBoxOutlineBlank,
-                                                                                                contentDescription =
-                                                                                                        null
-                                                                                        )
-                                                                                        Column(
-                                                                                                modifier =
-                                                                                                        Modifier.weight(
-                                                                                                                1f
-                                                                                                        )
-                                                                                        ) {
-                                                                                                Text(
-                                                                                                        availableCard
-                                                                                                                .title,
-                                                                                                        fontWeight =
-                                                                                                                FontWeight
-                                                                                                                        .SemiBold
-                                                                                                )
-                                                                                                Text(
-                                                                                                        availableCard
-                                                                                                                .subtitle,
-                                                                                                        style =
-                                                                                                                MaterialTheme
-                                                                                                                        .typography
-                                                                                                                        .bodySmall,
-                                                                                                        color =
-                                                                                                                MaterialTheme
-                                                                                                                        .colorScheme
-                                                                                                                        .onSurfaceVariant
-                                                                                                )
-                                                                                        }
-                                                                                }
-                                                                        }
-                                                                }
-                                                        }
-
-                                                        // Always-visible scrollbar track + thumb
-                                                        val scrollFraction =
-                                                                if (drawerScrollState.maxValue > 0
-                                                                ) {
-                                                                        drawerScrollState.value
-                                                                                .toFloat() /
-                                                                                drawerScrollState
-                                                                                        .maxValue
-                                                                                        .toFloat()
-                                                                } else 0f
-                                                        val thumbFraction =
-                                                                if (drawerScrollState.maxValue > 0
-                                                                ) {
-                                                                        val viewportHeight =
-                                                                                drawerScrollState
-                                                                                        .viewportSize
-                                                                                        .toFloat()
-                                                                        val totalContent =
-                                                                                viewportHeight +
-                                                                                        drawerScrollState
-                                                                                                .maxValue
-                                                                                                .toFloat()
-                                                                        (viewportHeight /
-                                                                                        totalContent)
-                                                                                .coerceIn(0.1f, 1f)
-                                                                } else 1f
-
-                                                        Canvas(
-                                                                modifier =
-                                                                        Modifier.align(
-                                                                                        Alignment
-                                                                                                .CenterEnd
-                                                                                )
-                                                                                .fillMaxHeight()
-                                                                                .width(6.dp)
-                                                                                .padding(
-                                                                                        vertical =
-                                                                                                4.dp
-                                                                                )
-                                                        ) {
-                                                                // Track
-                                                                drawRoundRect(
-                                                                        color = scrollbarTrackColor,
-                                                                        cornerRadius =
-                                                                                GeoCornerRadius(
-                                                                                        3.dp.toPx()
-                                                                                ),
-                                                                        size =
-                                                                                GeoSize(
-                                                                                        size.width,
-                                                                                        size.height
-                                                                                )
-                                                                )
-                                                                // Thumb
-                                                                val thumbHeight =
-                                                                        (size.height *
-                                                                                        thumbFraction)
-                                                                                .coerceAtLeast(
-                                                                                        24.dp.toPx()
-                                                                                )
-                                                                val thumbTravel =
-                                                                        size.height - thumbHeight
-                                                                val thumbY =
-                                                                        thumbTravel * scrollFraction
-                                                                drawRoundRect(
-                                                                        color = scrollbarColor,
-                                                                        topLeft =
-                                                                                Offset(0f, thumbY),
-                                                                        size =
-                                                                                GeoSize(
-                                                                                        size.width,
-                                                                                        thumbHeight
-                                                                                ),
-                                                                        cornerRadius =
-                                                                                GeoCornerRadius(
-                                                                                        3.dp.toPx()
-                                                                                )
-                                                                )
-                                                        }
-                                                }
-
-                                                Button(
+                Column(modifier = Modifier.fillMaxSize()) {
+                        RemexScreenHeader(
+                                title = stringResource(R.string.screen_dashboard_title),
+                                actions = {
+                                        if (canvasScale != 1f) {
+                                                IconButton(
                                                         onClick = {
                                                                 view.performHapticFeedback(
                                                                         HapticFeedbackConstants
                                                                                 .KEYBOARD_TAP
                                                                 )
-                                                                showCardDrawer = false
-                                                        },
-                                                        modifier = Modifier.fillMaxWidth()
-                                                ) { Text(stringResource(R.string.button_done)) }
-                                        }
-                                }
-                        }
-
-                        // Drag-from-drawer ghost preview
-                        if (draggingCard != null && draggingCardSize != null) {
-                                if (canDropOnCanvas) {
-                                        Box(
-                                                modifier =
-                                                        Modifier.fillMaxSize()
-                                                                .background(
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary.copy(
-                                                                                alpha = 0.06f
-                                                                        )
-                                                                )
-                                        )
-                                }
-
-                                val previewX =
-                                        if (canDropOnCanvas)
-                                                (dropTargetXDp * density * canvasScale).roundToInt()
-                                        else
-                                                (dragPointerCanvasPx.x -
-                                                                (draggingCardSize.widthDp *
-                                                                        density *
-                                                                        canvasScale / 2f))
-                                                        .roundToInt()
-                                                        .coerceAtLeast(0)
-                                val previewY =
-                                        if (canDropOnCanvas)
-                                                (dropTargetYDp * density * canvasScale).roundToInt()
-                                        else
-                                                (dragPointerCanvasPx.y -
-                                                                (draggingCardSize.heightDp *
-                                                                        density *
-                                                                        canvasScale / 2f))
-                                                        .roundToInt()
-                                                        .coerceAtLeast(0)
-
-                                Card(
-                                        modifier =
-                                                Modifier.offset { IntOffset(previewX, previewY) }
-                                                        .width(
-                                                                (draggingCardSize.widthDp *
-                                                                                canvasScale)
-                                                                        .dp
-                                                        )
-                                                        .height(
-                                                                (draggingCardSize.heightDp *
-                                                                                canvasScale)
-                                                                        .dp
-                                                        ),
-                                        border =
-                                                BorderStroke(
-                                                        width = if (canDropOnCanvas) 2.dp else 1.dp,
-                                                        color =
-                                                                if (canDropOnCanvas)
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary
-                                                                else
-                                                                        MaterialTheme.colorScheme
-                                                                                .outline
-                                                ),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                if (canDropOnCanvas)
-                                                                        MaterialTheme.colorScheme
-                                                                                .primaryContainer
-                                                                                .copy(alpha = 0.35f)
-                                                                else
-                                                                        MaterialTheme.colorScheme
-                                                                                .surfaceVariant
-                                                                                .copy(alpha = 0.75f)
-                                                )
-                                ) {
-                                        Box(
-                                                modifier = Modifier.fillMaxSize().padding(12.dp),
-                                                contentAlignment = Alignment.Center
-                                        ) {
-                                                Text(
-                                                        text =
-                                                                if (canDropOnCanvas)
+                                                                canvasScale = 1f
+                                                        }
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.FilterCenterFocus,
+                                                                contentDescription =
                                                                         stringResource(
                                                                                 R.string
-                                                                                        .dashboard_drop_to_place,
-                                                                                draggingCard.title
+                                                                                        .cd_reset_zoom
                                                                         )
-                                                                else draggingCard.title,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = FontWeight.SemiBold
+                                                        )
+                                                }
+                                        }
+                                        IconButton(
+                                                onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                                        )
+                                                        showCardDrawer = !showCardDrawer
+                                                }
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.Tune,
+                                                        contentDescription =
+                                                                stringResource(
+                                                                        R.string.cd_customize_cards
+                                                                )
                                                 )
+                                        }
+                                }
+                        )
+                        Box(
+                                modifier =
+                                        Modifier.fillMaxSize()
+                                                .transformable(state = transformableState)
+                        ) {
+                                Box(
+                                        modifier =
+                                                Modifier.fillMaxSize()
+                                                        .horizontalScroll(hScrollState)
+                                                        .verticalScroll(vScrollState)
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.width(canvasWidthDp.dp)
+                                                                .height(canvasHeightDp.dp)
+                                                                .onGloballyPositioned {
+                                                                        canvasTopLeftPx =
+                                                                                it.positionInRoot()
+                                                                }
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .background
+                                                                )
+                                                                // Use graphicsLayer for zoom to
+                                                                // avoid
+                                                                // expensive relayout on
+                                                                // every frame during pinch gestures
+                                                                // (review
+                                                                // fix).
+                                                                .graphicsLayer {
+                                                                        scaleX =
+                                                                                canvasScaleState
+                                                                                        .floatValue
+                                                                        scaleY =
+                                                                                canvasScaleState
+                                                                                        .floatValue
+                                                                        transformOrigin =
+                                                                                androidx.compose.ui
+                                                                                        .graphics
+                                                                                        .TransformOrigin(
+                                                                                                0f,
+                                                                                                0f
+                                                                                        )
+                                                                }
+                                        ) {
+                                                visibleCards.forEach { card ->
+                                                        val xPx = (card.xDp * density).roundToInt()
+                                                        val yPx = (card.yDp * density).roundToInt()
+                                                        val cardShapePreset =
+                                                                when {
+                                                                        card.id == "pc_status" ->
+                                                                                pcCardShapePreset
+                                                                        card.id.startsWith(
+                                                                                "sensor:"
+                                                                        ) ->
+                                                                                telemetryCardShapePreset
+                                                                        else -> 0f
+                                                                }
+
+                                                        Card(
+                                                                modifier =
+                                                                        Modifier.offset {
+                                                                                IntOffset(xPx, yPx)
+                                                                        }
+                                                                                .width(
+                                                                                        card.widthDp
+                                                                                                .dp
+                                                                                )
+                                                                                .height(
+                                                                                        card.heightDp
+                                                                                                .dp
+                                                                                )
+                                                                                // pointerInput uses
+                                                                                // stable
+                                                                                // card.id key —
+                                                                                // reads
+                                                                                // canvasScaleState.floatValue directly (review
+                                                                                // fix).
+                                                                                .pointerInput(
+                                                                                        card.id
+                                                                                ) {
+                                                                                        detectDragGestures(
+                                                                                                onDrag = {
+                                                                                                        change,
+                                                                                                        dragAmount
+                                                                                                        ->
+                                                                                                        change.consume()
+                                                                                                        val currentScale =
+                                                                                                                canvasScaleState
+                                                                                                                        .floatValue
+                                                                                                        onMoveCard(
+                                                                                                                card.id,
+                                                                                                                dragAmount
+                                                                                                                        .x /
+                                                                                                                        (density *
+                                                                                                                                currentScale),
+                                                                                                                dragAmount
+                                                                                                                        .y /
+                                                                                                                        (density *
+                                                                                                                                currentScale)
+                                                                                                        )
+                                                                                                },
+                                                                                                onDragEnd = {
+                                                                                                        onSaveCardLayout()
+                                                                                                }
+                                                                                        )
+                                                                                },
+                                                                shape =
+                                                                        cardShape(
+                                                                                cardShapePreset,
+                                                                                cornerRadius
+                                                                        ),
+                                                                colors =
+                                                                        CardDefaults.cardColors(
+                                                                                containerColor =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .primaryContainer
+                                                                                                .copy(
+                                                                                                        alpha =
+                                                                                                                cardOpacity
+                                                                                                ),
+                                                                                contentColor =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .onPrimaryContainer
+                                                                        )
+                                                        ) {
+                                                                Box(
+                                                                        modifier =
+                                                                                Modifier.fillMaxSize()
+                                                                                        .padding(
+                                                                                                4.dp
+                                                                                        )
+                                                                ) {
+                                                                        when (card.type.name) {
+                                                                                "PC_STATUS" -> {
+                                                                                        ConnectionOrbCard(
+                                                                                                isConnected =
+                                                                                                        isConnected,
+                                                                                                isConnecting =
+                                                                                                        isConnecting,
+                                                                                                shapePreset =
+                                                                                                        pcCardShapePreset,
+                                                                                                cornerRadius =
+                                                                                                        cornerRadius,
+                                                                                                onToggle = {
+                                                                                                        view.performHapticFeedback(
+                                                                                                                HapticFeedbackConstants
+                                                                                                                        .CONFIRM
+                                                                                                        )
+                                                                                                        onToggleConnection()
+                                                                                                },
+                                                                                                onNavigateToConnection =
+                                                                                                        onNavigateToConnection
+                                                                                        )
+                                                                                }
+                                                                                "WAKE_ON_LAN" -> {
+                                                                                        WakeOnLanCard(
+                                                                                                onWake = {
+                                                                                                        onWakePc()
+                                                                                                }
+                                                                                        )
+                                                                                }
+                                                                                "TELEMETRY" -> {
+                                                                                        val sensor =
+                                                                                                sensorMap[
+                                                                                                        card.sensorId]
+                                                                                        val history =
+                                                                                                telemetryHistory[
+                                                                                                                card.sensorId]
+                                                                                                        .orEmpty()
+                                                                                        TelemetryCardContent(
+                                                                                                title =
+                                                                                                        card.title,
+                                                                                                sensor =
+                                                                                                        sensor,
+                                                                                                history =
+                                                                                                        history,
+                                                                                                mode =
+                                                                                                        card.displayMode,
+                                                                                                onCycleDisplayMode = {
+                                                                                                        onCycleTelemetryDisplayMode(
+                                                                                                                card.id
+                                                                                                        )
+                                                                                                },
+                                                                                                isExpressiveShape =
+                                                                                                        cardShapePreset >
+                                                                                                                0
+                                                                                        )
+                                                                                }
+                                                                        }
+
+                                                                        // Resize handle —
+                                                                        // bottom-right
+                                                                        // corner
+                                                                        Surface(
+                                                                                shape = CircleShape,
+                                                                                // M3: use solid
+                                                                                // primary
+                                                                                // token, tonal
+                                                                                // elevation
+                                                                                // for depth
+                                                                                color =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .primary,
+                                                                                tonalElevation =
+                                                                                        2.dp,
+                                                                                modifier =
+                                                                                        Modifier.align(
+                                                                                                        Alignment
+                                                                                                                .BottomEnd
+                                                                                                )
+                                                                                                .padding(
+                                                                                                        12.dp
+                                                                                                )
+                                                                                                .size(
+                                                                                                        24.dp
+                                                                                                )
+                                                                                                .pointerInput(
+                                                                                                        "resize_${card.id}"
+                                                                                                ) {
+                                                                                                        detectDragGestures(
+                                                                                                                onDrag = {
+                                                                                                                        change,
+                                                                                                                        dragAmount
+                                                                                                                        ->
+                                                                                                                        change.consume()
+                                                                                                                        val currentScale =
+                                                                                                                                canvasScaleState
+                                                                                                                                        .floatValue
+                                                                                                                        onResizeCard(
+                                                                                                                                card.id,
+                                                                                                                                dragAmount
+                                                                                                                                        .x /
+                                                                                                                                        (density *
+                                                                                                                                                currentScale),
+                                                                                                                                dragAmount
+                                                                                                                                        .y /
+                                                                                                                                        (density *
+                                                                                                                                                currentScale)
+                                                                                                                        )
+                                                                                                                },
+                                                                                                                onDragEnd = {
+                                                                                                                        onSaveCardLayout()
+                                                                                                                }
+                                                                                                        )
+                                                                                                }
+                                                                        ) {
+                                                                                Icon(
+                                                                                        Icons.Default
+                                                                                                .OpenInFull,
+                                                                                        contentDescription =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .cd_resize_cards
+                                                                                                ),
+                                                                                        tint =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimary,
+                                                                                        modifier =
+                                                                                                Modifier.size(
+                                                                                                                12.dp
+                                                                                                        )
+                                                                                                        .padding(
+                                                                                                                2.dp
+                                                                                                        )
+                                                                                )
+                                                                        }
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                // M3: ModalBottomSheet replaces side-panel drawer for standard M3
+                                // sheet UX
+                                if (showCardDrawer) {
+                                        ModalBottomSheet(
+                                                onDismissRequest = { showCardDrawer = false },
+                                                sheetState =
+                                                        rememberModalBottomSheetState(
+                                                                skipPartiallyExpanded = true
+                                                        )
+                                        ) {
+                                                Column(
+                                                        modifier =
+                                                                Modifier.fillMaxWidth()
+                                                                        .padding(
+                                                                                horizontal = 12.dp,
+                                                                                vertical = 8.dp
+                                                                        )
+                                                ) {
+                                                        Text(
+                                                                text =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .dashboard_card_drawer_title
+                                                                        ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .titleLarge,
+                                                                fontWeight = FontWeight.Bold
+                                                        )
+                                                        Text(
+                                                                text =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .dashboard_card_drawer_hint
+                                                                        ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodySmall,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSurfaceVariant,
+                                                                modifier =
+                                                                        Modifier.padding(
+                                                                                top = 4.dp,
+                                                                                bottom = 12.dp
+                                                                        )
+                                                        )
+
+                                                        // Scrollable list with always-visible
+                                                        // scrollbar
+                                                        val drawerScrollState =
+                                                                rememberScrollState()
+                                                        val scrollbarColor =
+                                                                MaterialTheme.colorScheme
+                                                                        .onSurfaceVariant.copy(
+                                                                        alpha = 0.4f
+                                                                )
+                                                        val scrollbarTrackColor =
+                                                                MaterialTheme.colorScheme
+                                                                        .surfaceVariant.copy(
+                                                                        alpha = 0.3f
+                                                                )
+
+                                                        Box(
+                                                                modifier =
+                                                                        Modifier.heightIn(
+                                                                                max = 400.dp
+                                                                        )
+                                                        ) {
+                                                                Column(
+                                                                        modifier =
+                                                                                Modifier.fillMaxSize()
+                                                                                        .padding(
+                                                                                                end =
+                                                                                                        12.dp
+                                                                                        ) // room
+                                                                                        // for
+                                                                                        // scrollbar
+                                                                                        .verticalScroll(
+                                                                                                drawerScrollState
+                                                                                        ),
+                                                                        verticalArrangement =
+                                                                                Arrangement
+                                                                                        .spacedBy(
+                                                                                                8.dp
+                                                                                        )
+                                                                ) {
+                                                                        availableCards.forEach {
+                                                                                availableCard ->
+                                                                                var itemTopLeftPx by
+                                                                                        remember(
+                                                                                                availableCard
+                                                                                                        .id
+                                                                                        ) {
+                                                                                                mutableStateOf(
+                                                                                                        Offset.Zero
+                                                                                                )
+                                                                                        }
+                                                                                Card(
+                                                                                        modifier =
+                                                                                                Modifier.fillMaxWidth()
+                                                                                                        .onGloballyPositioned {
+                                                                                                                itemTopLeftPx =
+                                                                                                                        it.positionInRoot()
+                                                                                                        }
+                                                                                                        .pointerInput(
+                                                                                                                availableCard
+                                                                                                                        .id,
+                                                                                                                density,
+                                                                                                                drawerLeftPx,
+                                                                                                                canvasTopLeftPx,
+                                                                                                                cards
+                                                                                                        ) {
+                                                                                                                detectDragGesturesAfterLongPress(
+                                                                                                                        onDragStart = {
+                                                                                                                                startOffset
+                                                                                                                                ->
+                                                                                                                                view.performHapticFeedback(
+                                                                                                                                        HapticFeedbackConstants
+                                                                                                                                                .LONG_PRESS
+                                                                                                                                )
+                                                                                                                                draggingCardId =
+                                                                                                                                        availableCard
+                                                                                                                                                .id
+                                                                                                                                draggingPointerPx =
+                                                                                                                                        Offset(
+                                                                                                                                                x =
+                                                                                                                                                        itemTopLeftPx
+                                                                                                                                                                .x +
+                                                                                                                                                                startOffset
+                                                                                                                                                                        .x,
+                                                                                                                                                y =
+                                                                                                                                                        itemTopLeftPx
+                                                                                                                                                                .y +
+                                                                                                                                                                startOffset
+                                                                                                                                                                        .y
+                                                                                                                                        )
+                                                                                                                        },
+                                                                                                                        onDragEnd = {
+                                                                                                                                val draggingId =
+                                                                                                                                        draggingCardId
+                                                                                                                                if (draggingId ==
+                                                                                                                                                availableCard
+                                                                                                                                                        .id &&
+                                                                                                                                                draggingPointerPx
+                                                                                                                                                        .x <
+                                                                                                                                                        drawerLeftPx -
+                                                                                                                                                                24f
+                                                                                                                                ) {
+                                                                                                                                        val dragSize =
+                                                                                                                                                cards
+                                                                                                                                                        .firstOrNull {
+                                                                                                                                                                it.id ==
+                                                                                                                                                                        draggingId
+                                                                                                                                                        }
+                                                                                                                                                        ?.let {
+                                                                                                                                                                CardSizeDp(
+                                                                                                                                                                        it.widthDp,
+                                                                                                                                                                        it.heightDp
+                                                                                                                                                                )
+                                                                                                                                                        }
+                                                                                                                                                        ?: defaultCardSizeFor(
+                                                                                                                                                                draggingId
+                                                                                                                                                        )
+                                                                                                                                        val dropXDp =
+                                                                                                                                                ((draggingPointerPx
+                                                                                                                                                                .x -
+                                                                                                                                                                canvasTopLeftPx
+                                                                                                                                                                        .x) /
+                                                                                                                                                                (density *
+                                                                                                                                                                        canvasScale) -
+                                                                                                                                                                (dragSize.widthDp /
+                                                                                                                                                                        2f))
+                                                                                                                                                        .coerceAtLeast(
+                                                                                                                                                                0f
+                                                                                                                                                        )
+                                                                                                                                        val dropYDp =
+                                                                                                                                                ((draggingPointerPx
+                                                                                                                                                                .y -
+                                                                                                                                                                canvasTopLeftPx
+                                                                                                                                                                        .y) /
+                                                                                                                                                                (density *
+                                                                                                                                                                        canvasScale) -
+                                                                                                                                                                (dragSize.heightDp /
+                                                                                                                                                                        2f))
+                                                                                                                                                        .coerceAtLeast(
+                                                                                                                                                                0f
+                                                                                                                                                        )
+                                                                                                                                        onPlaceCardAt(
+                                                                                                                                                draggingId,
+                                                                                                                                                dropXDp,
+                                                                                                                                                dropYDp
+                                                                                                                                        )
+                                                                                                                                }
+                                                                                                                                draggingCardId =
+                                                                                                                                        null
+                                                                                                                        },
+                                                                                                                        onDragCancel = {
+                                                                                                                                draggingCardId =
+                                                                                                                                        null
+                                                                                                                        },
+                                                                                                                        onDrag = {
+                                                                                                                                change,
+                                                                                                                                dragAmount
+                                                                                                                                ->
+                                                                                                                                change.consume()
+                                                                                                                                draggingPointerPx =
+                                                                                                                                        Offset(
+                                                                                                                                                x =
+                                                                                                                                                        draggingPointerPx
+                                                                                                                                                                .x +
+                                                                                                                                                                dragAmount
+                                                                                                                                                                        .x,
+                                                                                                                                                y =
+                                                                                                                                                        draggingPointerPx
+                                                                                                                                                                .y +
+                                                                                                                                                                dragAmount
+                                                                                                                                                                        .y
+                                                                                                                                        )
+                                                                                                                        }
+                                                                                                                )
+                                                                                                        },
+                                                                                        onClick = {
+                                                                                                view.performHapticFeedback(
+                                                                                                        HapticFeedbackConstants
+                                                                                                                .KEYBOARD_TAP
+                                                                                                )
+                                                                                                val checked =
+                                                                                                        !enabledCards
+                                                                                                                .contains(
+                                                                                                                        availableCard
+                                                                                                                                .id
+                                                                                                                )
+                                                                                                onSetCardEnabled(
+                                                                                                        availableCard
+                                                                                                                .id,
+                                                                                                        checked
+                                                                                                )
+                                                                                        }
+                                                                                ) {
+                                                                                        Row(
+                                                                                                modifier =
+                                                                                                        Modifier.fillMaxWidth()
+                                                                                                                .padding(
+                                                                                                                        10.dp
+                                                                                                                ),
+                                                                                                verticalAlignment =
+                                                                                                        Alignment
+                                                                                                                .CenterVertically,
+                                                                                                horizontalArrangement =
+                                                                                                        Arrangement
+                                                                                                                .spacedBy(
+                                                                                                                        10.dp
+                                                                                                                )
+                                                                                        ) {
+                                                                                                val checked =
+                                                                                                        enabledCards
+                                                                                                                .contains(
+                                                                                                                        availableCard
+                                                                                                                                .id
+                                                                                                                )
+                                                                                                Icon(
+                                                                                                        imageVector =
+                                                                                                                if (checked
+                                                                                                                )
+                                                                                                                        Icons.Default
+                                                                                                                                .CheckBox
+                                                                                                                else
+                                                                                                                        Icons.Default
+                                                                                                                                .CheckBoxOutlineBlank,
+                                                                                                        contentDescription =
+                                                                                                                null
+                                                                                                )
+                                                                                                Column(
+                                                                                                        modifier =
+                                                                                                                Modifier.weight(
+                                                                                                                        1f
+                                                                                                                )
+                                                                                                ) {
+                                                                                                        Text(
+                                                                                                                availableCard
+                                                                                                                        .title,
+                                                                                                                fontWeight =
+                                                                                                                        FontWeight
+                                                                                                                                .SemiBold
+                                                                                                        )
+                                                                                                        Text(
+                                                                                                                availableCard
+                                                                                                                        .subtitle,
+                                                                                                                style =
+                                                                                                                        MaterialTheme
+                                                                                                                                .typography
+                                                                                                                                .bodySmall,
+                                                                                                                color =
+                                                                                                                        MaterialTheme
+                                                                                                                                .colorScheme
+                                                                                                                                .onSurfaceVariant
+                                                                                                        )
+                                                                                                }
+                                                                                        }
+                                                                                }
+                                                                        }
+                                                                }
+
+                                                                // Always-visible scrollbar track +
+                                                                // thumb
+                                                                val scrollFraction =
+                                                                        if (drawerScrollState
+                                                                                        .maxValue >
+                                                                                        0
+                                                                        ) {
+                                                                                drawerScrollState
+                                                                                        .value
+                                                                                        .toFloat() /
+                                                                                        drawerScrollState
+                                                                                                .maxValue
+                                                                                                .toFloat()
+                                                                        } else 0f
+                                                                val thumbFraction =
+                                                                        if (drawerScrollState
+                                                                                        .maxValue >
+                                                                                        0
+                                                                        ) {
+                                                                                val viewportHeight =
+                                                                                        drawerScrollState
+                                                                                                .viewportSize
+                                                                                                .toFloat()
+                                                                                val totalContent =
+                                                                                        viewportHeight +
+                                                                                                drawerScrollState
+                                                                                                        .maxValue
+                                                                                                        .toFloat()
+                                                                                (viewportHeight /
+                                                                                                totalContent)
+                                                                                        .coerceIn(
+                                                                                                0.1f,
+                                                                                                1f
+                                                                                        )
+                                                                        } else 1f
+
+                                                                Canvas(
+                                                                        modifier =
+                                                                                Modifier.align(
+                                                                                                Alignment
+                                                                                                        .CenterEnd
+                                                                                        )
+                                                                                        .fillMaxHeight()
+                                                                                        .width(6.dp)
+                                                                                        .padding(
+                                                                                                vertical =
+                                                                                                        4.dp
+                                                                                        )
+                                                                ) {
+                                                                        // Track
+                                                                        drawRoundRect(
+                                                                                color =
+                                                                                        scrollbarTrackColor,
+                                                                                cornerRadius =
+                                                                                        GeoCornerRadius(
+                                                                                                3.dp.toPx()
+                                                                                        ),
+                                                                                size =
+                                                                                        GeoSize(
+                                                                                                size.width,
+                                                                                                size.height
+                                                                                        )
+                                                                        )
+                                                                        // Thumb
+                                                                        val thumbHeight =
+                                                                                (size.height *
+                                                                                                thumbFraction)
+                                                                                        .coerceAtLeast(
+                                                                                                24.dp.toPx()
+                                                                                        )
+                                                                        val thumbTravel =
+                                                                                size.height -
+                                                                                        thumbHeight
+                                                                        val thumbY =
+                                                                                thumbTravel *
+                                                                                        scrollFraction
+                                                                        drawRoundRect(
+                                                                                color =
+                                                                                        scrollbarColor,
+                                                                                topLeft =
+                                                                                        Offset(
+                                                                                                0f,
+                                                                                                thumbY
+                                                                                        ),
+                                                                                size =
+                                                                                        GeoSize(
+                                                                                                size.width,
+                                                                                                thumbHeight
+                                                                                        ),
+                                                                                cornerRadius =
+                                                                                        GeoCornerRadius(
+                                                                                                3.dp.toPx()
+                                                                                        )
+                                                                        )
+                                                                }
+                                                        }
+
+                                                        Button(
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .KEYBOARD_TAP
+                                                                        )
+                                                                        showCardDrawer = false
+                                                                },
+                                                                modifier = Modifier.fillMaxWidth()
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_done
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                // Drag-from-drawer ghost preview
+                                if (draggingCard != null && draggingCardSize != null) {
+                                        if (canDropOnCanvas) {
+                                                Box(
+                                                        modifier =
+                                                                Modifier.fillMaxSize()
+                                                                        .background(
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .primary
+                                                                                        .copy(
+                                                                                                alpha =
+                                                                                                        0.06f
+                                                                                        )
+                                                                        )
+                                                )
+                                        }
+
+                                        val previewX =
+                                                if (canDropOnCanvas)
+                                                        (dropTargetXDp * density * canvasScale)
+                                                                .roundToInt()
+                                                else
+                                                        (dragPointerCanvasPx.x -
+                                                                        (draggingCardSize.widthDp *
+                                                                                density *
+                                                                                canvasScale / 2f))
+                                                                .roundToInt()
+                                                                .coerceAtLeast(0)
+                                        val previewY =
+                                                if (canDropOnCanvas)
+                                                        (dropTargetYDp * density * canvasScale)
+                                                                .roundToInt()
+                                                else
+                                                        (dragPointerCanvasPx.y -
+                                                                        (draggingCardSize.heightDp *
+                                                                                density *
+                                                                                canvasScale / 2f))
+                                                                .roundToInt()
+                                                                .coerceAtLeast(0)
+
+                                        Card(
+                                                modifier =
+                                                        Modifier.offset {
+                                                                        IntOffset(
+                                                                                previewX,
+                                                                                previewY
+                                                                        )
+                                                                }
+                                                                .width(
+                                                                        (draggingCardSize.widthDp *
+                                                                                        canvasScale)
+                                                                                .dp
+                                                                )
+                                                                .height(
+                                                                        (draggingCardSize.heightDp *
+                                                                                        canvasScale)
+                                                                                .dp
+                                                                ),
+                                                border =
+                                                        BorderStroke(
+                                                                width =
+                                                                        if (canDropOnCanvas) 2.dp
+                                                                        else 1.dp,
+                                                                color =
+                                                                        if (canDropOnCanvas)
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .primary
+                                                                        else
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .outline
+                                                        ),
+                                                colors =
+                                                        CardDefaults.cardColors(
+                                                                containerColor =
+                                                                        if (canDropOnCanvas)
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .primaryContainer
+                                                                                        .copy(
+                                                                                                alpha =
+                                                                                                        0.35f
+                                                                                        )
+                                                                        else
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .surfaceVariant
+                                                                                        .copy(
+                                                                                                alpha =
+                                                                                                        0.75f
+                                                                                        )
+                                                        )
+                                        ) {
+                                                Box(
+                                                        modifier =
+                                                                Modifier.fillMaxSize()
+                                                                        .padding(12.dp),
+                                                        contentAlignment = Alignment.Center
+                                                ) {
+                                                        Text(
+                                                                text =
+                                                                        if (canDropOnCanvas)
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .dashboard_drop_to_place,
+                                                                                        draggingCard
+                                                                                                .title
+                                                                                )
+                                                                        else draggingCard.title,
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodyMedium,
+                                                                fontWeight = FontWeight.SemiBold
+                                                        )
+                                                }
                                         }
                                 }
                         }
                 }
-        }
         } // Surface
 }
 
