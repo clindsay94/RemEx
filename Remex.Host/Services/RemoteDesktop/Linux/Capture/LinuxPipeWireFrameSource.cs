@@ -21,6 +21,12 @@ internal static class LinuxNativePipeWire
     [DllImport(LibName, EntryPoint = "remex_pw_session_create")]
     public static extern int SessionCreate(uint nodeId, out IntPtr handle);
 
+    [DllImport(LibName, EntryPoint = "remex_pw_session_create_v2")]
+    public static extern int SessionCreateV2(
+        [MarshalAs(UnmanagedType.LPStr)] string? portalSessionHandle,
+        uint nodeId,
+        out IntPtr handle);
+
     [DllImport(LibName, EntryPoint = "remex_pw_session_acquire_frame")]
     public static extern int AcquireFrame(IntPtr handle, out LinuxFrameBufferDescriptor descriptor, int timeoutMs);
 
@@ -56,11 +62,21 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
     public bool IsNativeAvailable => _nativeAvailable;
     public uint NodeId { get; private init; }
 
+    /// <summary>
+    /// D-Bus object path of the portal session (e.g. returned by PortalStartResult.SessionHandle).
+    /// When set, TryOpen calls remex_pw_session_create_v2 so the native bridge can call
+    /// OpenPipeWireRemote and get the portal-scoped PipeWire fd required on KDE/GNOME Wayland.
+    /// Null falls back to remex_pw_session_create (direct daemon connection).
+    /// </summary>
+    public string? PortalSessionHandle { get; private init; }
+
     public LinuxPipeWireFrameSource(
         uint nodeId,
+        string? portalSessionHandle = null,
         ILogger<LinuxPipeWireFrameSource>? logger = null)
     {
         NodeId = nodeId;
+        PortalSessionHandle = portalSessionHandle;
         _logger = logger ?? NullLogger<LinuxPipeWireFrameSource>.Instance;
     }
 
@@ -74,19 +90,23 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
 
         try
         {
-            int rc = LinuxNativePipeWire.SessionCreate(NodeId, out _nativeHandle);
+            int rc = PortalSessionHandle is not null
+                ? LinuxNativePipeWire.SessionCreateV2(PortalSessionHandle, NodeId, out _nativeHandle)
+                : LinuxNativePipeWire.SessionCreate(NodeId, out _nativeHandle);
+
             if (rc != 0)
             {
                 _logger.LogWarning(
-                    "remex_pw_session_create returned {Code}. PipeWire native path unavailable.",
-                    rc);
+                    "remex_pw_session_create{Suffix} returned {Code}. PipeWire native path unavailable.",
+                    PortalSessionHandle is not null ? "_v2" : string.Empty, rc);
                 _nativeAvailable = false;
                 return false;
             }
 
             _nativeAvailable = true;
             _logger.LogInformation(
-                "PipeWire capture session opened for node {NodeId}.", NodeId);
+                "PipeWire capture session opened for node {NodeId} (portal fd={HasFd}).",
+                NodeId, PortalSessionHandle is not null);
             return true;
         }
         catch (DllNotFoundException ex)

@@ -5,6 +5,8 @@ libremex_linux_bridge.so: \
   CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o \
   CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libdl.a \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libpipewire-0.3.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libsystemd.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libgcc_s_asneeded.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libgcc_s_asneeded.so \
@@ -47,6 +49,10 @@ CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o:
 CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libdl.a:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libpipewire-0.3.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libsystemd.so:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a:
 

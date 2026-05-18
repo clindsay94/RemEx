@@ -13,7 +13,9 @@ namespace Remex.Host.Services.RemoteDesktop.Linux.Capture;
 internal static class LinuxJpegEncoder
 {
     // SPA_VIDEO_FORMAT_* constants — what KDE Plasma / PipeWire portals report.
-    // Numeric values from spa/param/video/format-utils.h.
+    // Numeric values from spa/param/video/raw.h (spa_video_format enum).
+    private const uint SpaFormatRGBx = 7u;
+    private const uint SpaFormatBGRx = 8u;
     private const uint SpaFormatRGBA = 11u;
     private const uint SpaFormatBGRA = 12u;
     private const uint SpaFormatNV12 = 22u;
@@ -131,8 +133,16 @@ internal static class LinuxJpegEncoder
                 tag = "BGRA(SPA:12)";
                 return SKColorType.Bgra8888;
 
+            case SpaFormatBGRx:
+                tag = "BGRx(SPA:8)";
+                return SKColorType.Bgra8888;
+
             case SpaFormatRGBA:
                 tag = "RGBA(SPA:11)";
+                return SKColorType.Rgba8888;
+
+            case SpaFormatRGBx:
+                tag = "RGBx(SPA:7)";
                 return SKColorType.Rgba8888;
 
             // DRM fourcc (defensive fallback for compositors reporting DRM codes)

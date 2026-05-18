@@ -54,4 +54,126 @@ CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o: \
  /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
  /usr/include/bits/confname.h /usr/include/bits/getopt_posix.h \
  /usr/include/bits/getopt_core.h /usr/include/bits/unistd_ext.h \
- /usr/include/dlfcn.h /usr/include/bits/dlfcn.h
+ /usr/include/dlfcn.h /usr/include/bits/dlfcn.h \
+ /usr/include/pipewire-0.3/pipewire/pipewire.h \
+ /usr/include/spa-0.2/spa/support/plugin.h \
+ /usr/include/spa-0.2/spa/utils/defs.h /usr/include/inttypes.h \
+ /usr/include/signal.h /usr/include/bits/signum-generic.h \
+ /usr/include/bits/signum-arch.h /usr/include/bits/types/sig_atomic_t.h \
+ /usr/include/bits/types/siginfo_t.h /usr/include/bits/types/__sigval_t.h \
+ /usr/include/bits/siginfo-arch.h /usr/include/bits/siginfo-consts.h \
+ /usr/include/bits/types/sigval_t.h /usr/include/bits/types/sigevent_t.h \
+ /usr/include/bits/sigevent-consts.h /usr/include/bits/sigaction.h \
+ /usr/include/bits/sigcontext.h /usr/include/bits/types/stack_t.h \
+ /usr/include/sys/ucontext.h /usr/include/bits/sigstack.h \
+ /usr/include/bits/sigstksz.h /usr/include/bits/ss_flags.h \
+ /usr/include/bits/types/struct_sigstack.h /usr/include/bits/sigthread.h \
+ /usr/include/bits/signal_ext.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h \
+ /usr/include/spa-0.2/spa/utils/hook.h \
+ /usr/include/spa-0.2/spa/utils/list.h \
+ /usr/include/spa-0.2/spa/utils/dict.h \
+ /usr/include/pipewire-0.3/pipewire/array.h \
+ /usr/include/pipewire-0.3/pipewire/client.h \
+ /usr/include/spa-0.2/spa/param/param.h \
+ /usr/include/spa-0.2/spa/param/buffers.h \
+ /usr/include/spa-0.2/spa/param/profile.h \
+ /usr/include/spa-0.2/spa/param/port-config.h \
+ /usr/include/spa-0.2/spa/param/route.h \
+ /usr/include/pipewire-0.3/pipewire/type.h \
+ /usr/include/spa-0.2/spa/utils/type.h \
+ /usr/include/spa-0.2/spa/utils/string.h /usr/include/locale.h \
+ /usr/include/bits/locale.h /usr/include/pipewire-0.3/pipewire/proxy.h \
+ /usr/include/pipewire-0.3/pipewire/protocol.h \
+ /usr/include/pipewire-0.3/pipewire/context.h \
+ /usr/include/pipewire-0.3/pipewire/core.h \
+ /usr/include/pipewire-0.3/pipewire/properties.h \
+ /usr/include/spa-0.2/spa/utils/cleanup.h /usr/include/dirent.h \
+ /usr/include/bits/dirent.h /usr/include/bits/posix1_lim.h \
+ /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
+ /usr/include/bits/dirent_ext.h /usr/include/pipewire-0.3/pipewire/loop.h \
+ /usr/include/spa-0.2/spa/support/loop.h \
+ /usr/include/spa-0.2/spa/support/system.h \
+ /usr/include/pipewire-0.3/pipewire/utils.h /usr/include/sys/un.h \
+ /usr/include/bits/sockaddr.h /usr/include/spa-0.2/spa/pod/pod.h \
+ /usr/include/pipewire-0.3/pipewire/permission.h \
+ /usr/include/pipewire-0.3/pipewire/conf.h \
+ /usr/include/spa-0.2/spa/utils/json-core.h /usr/include/math.h \
+ /usr/include/bits/math-vector.h /usr/include/bits/libm-simd-decl-stubs.h \
+ /usr/include/bits/flt-eval-method.h /usr/include/bits/fp-logb.h \
+ /usr/include/bits/fp-fast.h /usr/include/bits/mathcalls-macros.h \
+ /usr/include/bits/mathcalls-helper-functions.h \
+ /usr/include/bits/mathcalls.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/float.h \
+ /usr/include/pipewire-0.3/pipewire/device.h \
+ /usr/include/pipewire-0.3/pipewire/buffers.h \
+ /usr/include/spa-0.2/spa/node/node.h \
+ /usr/include/spa-0.2/spa/buffer/buffer.h \
+ /usr/include/spa-0.2/spa/buffer/meta.h \
+ /usr/include/spa-0.2/spa/node/event.h \
+ /usr/include/spa-0.2/spa/pod/event.h \
+ /usr/include/spa-0.2/spa/node/command.h \
+ /usr/include/spa-0.2/spa/pod/command.h \
+ /usr/include/pipewire-0.3/pipewire/mem.h \
+ /usr/include/pipewire-0.3/pipewire/factory.h \
+ /usr/include/pipewire-0.3/pipewire/keys.h \
+ /usr/include/pipewire-0.3/pipewire/log.h \
+ /usr/include/spa-0.2/spa/support/log.h \
+ /usr/include/pipewire-0.3/pipewire/link.h \
+ /usr/include/pipewire-0.3/pipewire/main-loop.h \
+ /usr/include/pipewire-0.3/pipewire/map.h \
+ /usr/include/pipewire-0.3/pipewire/module.h \
+ /usr/include/pipewire-0.3/pipewire/node.h \
+ /usr/include/pipewire-0.3/pipewire/port.h \
+ /usr/include/pipewire-0.3/pipewire/stream.h \
+ /usr/include/pipewire-0.3/pipewire/filter.h \
+ /usr/include/spa-0.2/spa/node/io.h \
+ /usr/include/pipewire-0.3/pipewire/thread-loop.h \
+ /usr/include/pipewire-0.3/pipewire/data-loop.h \
+ /usr/include/spa-0.2/spa/support/thread.h \
+ /usr/include/pipewire-0.3/pipewire/timer-queue.h \
+ /usr/include/pipewire-0.3/pipewire/version.h \
+ /usr/include/spa-0.2/spa/param/video/format-utils.h \
+ /usr/include/spa-0.2/spa/param/format-utils.h \
+ /usr/include/spa-0.2/spa/pod/parser.h \
+ /usr/include/spa-0.2/spa/pod/body.h \
+ /usr/include/spa-0.2/spa/utils/atomic.h \
+ /usr/include/spa-0.2/spa/pod/vararg.h \
+ /usr/include/spa-0.2/spa/param/format.h \
+ /usr/include/spa-0.2/spa/param/video/format.h \
+ /usr/include/spa-0.2/spa/param/video/raw.h \
+ /usr/include/spa-0.2/spa/param/video/chroma.h \
+ /usr/include/spa-0.2/spa/param/video/color.h \
+ /usr/include/spa-0.2/spa/param/video/multiview.h \
+ /usr/include/spa-0.2/spa/param/video/dsp.h \
+ /usr/include/spa-0.2/spa/param/video/encoded.h \
+ /usr/include/spa-0.2/spa/param/video/h264.h \
+ /usr/include/spa-0.2/spa/param/video/mjpg.h \
+ /usr/include/spa-0.2/spa/param/video/raw-utils.h \
+ /usr/include/spa-0.2/spa/pod/iter.h \
+ /usr/include/spa-0.2/spa/pod/builder.h \
+ /usr/include/spa-0.2/spa/param/video/dsp-utils.h \
+ /usr/include/spa-0.2/spa/param/video/h264-utils.h \
+ /usr/include/spa-0.2/spa/param/video/h265-utils.h \
+ /usr/include/spa-0.2/spa/param/video/h265.h \
+ /usr/include/spa-0.2/spa/param/video/mjpg-utils.h \
+ /usr/include/spa-0.2/spa/utils/result.h /usr/include/systemd/sd-bus.h \
+ /usr/include/sys/uio.h /usr/include/bits/types/struct_iovec.h \
+ /usr/include/bits/uio_lim.h /usr/include/systemd/_sd-common.h \
+ /usr/include/systemd/sd-bus-protocol.h \
+ /usr/include/systemd/sd-bus-vtable.h /usr/include/systemd/sd-event.h \
+ /usr/include/sys/epoll.h /usr/include/sys/ioctl.h \
+ /usr/include/bits/ioctls.h /usr/include/asm/ioctls.h \
+ /usr/include/asm-generic/ioctls.h /usr/include/linux/ioctl.h \
+ /usr/include/asm/ioctl.h /usr/include/asm-generic/ioctl.h \
+ /usr/include/linux/sockios.h /usr/include/asm/bitsperlong.h \
+ /usr/include/asm-generic/bitsperlong.h /usr/include/asm/sockios.h \
+ /usr/include/asm-generic/sockios.h /usr/include/bits/ioctl-types.h \
+ /usr/include/sys/ttydefaults.h /usr/include/bits/epoll.h \
+ /usr/include/sys/inotify.h /usr/include/bits/inotify.h \
+ /usr/include/sys/signalfd.h /usr/include/bits/signalfd.h \
+ /usr/include/sys/wait.h /usr/include/bits/types/idtype_t.h \
+ /usr/include/systemd/sd-id128.h /usr/include/systemd/sd-json.h \
+ /usr/include/fcntl.h /usr/include/bits/fcntl.h \
+ /usr/include/bits/fcntl-linux.h /usr/include/bits/cloexec.h \
+ /usr/include/bits/stat.h /usr/include/bits/struct_stat.h

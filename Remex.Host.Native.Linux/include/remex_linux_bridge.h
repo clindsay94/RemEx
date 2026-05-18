@@ -81,6 +81,24 @@ extern "C"
     int remex_pw_session_create(uint32_t node_id, void **out_handle);
 
     /*
+     * remex_pw_session_create_v2
+     * Like remex_pw_session_create but accepts the portal D-Bus session handle
+     * so the native bridge can call OpenPipeWireRemote to get the PipeWire fd.
+     *
+     * portal_session_handle: D-Bus object path returned by the portal CreateSession
+     *   call (e.g. "/org/freedesktop/portal/desktop/session/...").
+     *   Pass NULL to skip the portal fd call and fall back to a plain daemon connect.
+     * node_id: PipeWire node ID from the portal Start result; 0 = auto-select.
+     * out_handle: receives an opaque session handle on success.
+     *
+     * Returns REMEX_OK on success, negative error code on failure.
+     */
+    int remex_pw_session_create_v2(
+        const char *portal_session_handle,
+        uint32_t node_id,
+        void **out_handle);
+
+    /*
      * remex_pw_session_acquire_frame
      * Acquires the latest available frame from the PipeWire stream.
      * Blocks up to timeout_ms milliseconds if no frame is ready.

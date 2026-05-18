@@ -40,6 +40,29 @@ target_include_directories(remex_linux_bridge PRIVATE
 find_package(Threads REQUIRED)
 target_link_libraries(remex_linux_bridge PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 
+# ── Optional: PipeWire (hard-link for header-only macro access) ────────────
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PIPEWIRE libpipewire-0.3)
+if(PIPEWIRE_FOUND)
+    target_compile_definitions(remex_linux_bridge PRIVATE REMEX_HAS_PIPEWIRE=1)
+    target_include_directories(remex_linux_bridge PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
+    target_link_libraries(remex_linux_bridge PRIVATE ${PIPEWIRE_LIBRARIES})
+    message(STATUS "PipeWire ${PIPEWIRE_VERSION} found — real capture enabled")
+else()
+    message(STATUS "PipeWire headers not found — stub capture only")
+endif()
+
+# ── Optional: sd-bus (for OpenPipeWireRemote portal fd acquisition) ────────
+pkg_check_modules(SYSTEMD libsystemd)
+if(SYSTEMD_FOUND)
+    target_compile_definitions(remex_linux_bridge PRIVATE REMEX_HAS_SDBUS=1)
+    target_include_directories(remex_linux_bridge PRIVATE ${SYSTEMD_INCLUDE_DIRS})
+    target_link_libraries(remex_linux_bridge PRIVATE ${SYSTEMD_LIBRARIES})
+    message(STATUS "libsystemd found — portal fd acquisition via sd-bus enabled")
+else()
+    message(STATUS "libsystemd not found — will connect to PipeWire daemon directly")
+endif()
+
 # ── Compiler warnings ──────────────────────────────────────────────────────
 target_compile_options(remex_linux_bridge PRIVATE
     -Wall

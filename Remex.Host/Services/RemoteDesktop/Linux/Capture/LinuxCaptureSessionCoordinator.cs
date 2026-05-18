@@ -67,9 +67,11 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
         var portalResult = await _portal.StartSessionAsync(ct);
 
         var nodeId = portalResult.NodeIds.Count > 0 ? portalResult.NodeIds[0] : 0u;
-        _logger.LogInformation("Using PipeWire node ID {NodeId}.", nodeId);
+        _logger.LogInformation(
+            "Using PipeWire node ID {NodeId} via portal session {Handle}.",
+            nodeId, portalResult.SessionHandle ?? "(none)");
 
-        StartCaptureLoop(nodeId);
+        StartCaptureLoop(nodeId, portalResult.SessionHandle);
         IsRunning = true;
     }
 
@@ -121,13 +123,13 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
 
     // ── Private implementation ─────────────────────────────────────────
 
-    private void StartCaptureLoop(uint nodeId)
+    private void StartCaptureLoop(uint nodeId, string? portalSessionHandle = null)
     {
         _captureCts?.Cancel();
         _frameSource?.Dispose();
 
         _captureCts = new CancellationTokenSource();
-        _frameSource = new LinuxPipeWireFrameSource(nodeId, null /* inherit logger via DI in real usage */);
+        _frameSource = new LinuxPipeWireFrameSource(nodeId, portalSessionHandle, null);
 
         bool nativeOpen = _frameSource.TryOpen();
         if (!nativeOpen)
