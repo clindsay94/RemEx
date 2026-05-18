@@ -76,6 +76,7 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.LinuxScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.LinuxInputSimulationService>();
             builder.Services.AddSingleton<IDesktopWindowControlService, LinuxDesktopWindowControlService>();
+            builder.Services.AddSingleton<Remex.Host.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>();
         }
 
         builder.Services.AddSingleton<TelemetryBackgroundService>();
@@ -101,6 +102,7 @@ public static class HostBootstrapper
         builder.Services.AddTransient<PairingHandler>();
         builder.Services.AddSingleton<IFileTransferService, FileTransferService>();
         builder.Services.AddTransient<FileTransferHandler>();
+        builder.Services.AddSingleton<Remex.Host.Services.RemoteDesktop.DesktopSessionRegistry>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
         // Try the requested port first; if it's unavailable, probe fallback ports.
@@ -278,14 +280,65 @@ public static class HostBootstrapper
                 return;
             }
 
-            using var ws = await context.WebSockets.AcceptWebSocketAsync();
-            using var handler = new RemoteDesktopHandler(
-                context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
-                context.RequestServices.GetRequiredService<IScreenCaptureService>(),
-                context.RequestServices.GetRequiredService<IInputSimulationService>(),
-                context.RequestServices.GetRequiredService<IDesktopWindowControlService>(),
-                context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
-            await handler.HandleAsync(ws, context.RequestAborted);
+            // Track B: cancel any prior StreamFramesAsync loop for this clientId and await
+            // its drain before accepting the new socket. This eliminates orphaned loops.
+            var registry = context.RequestServices
+                .GetRequiredService<Remex.Host.Services.RemoteDesktop.DesktopSessionRegistry>();
+            using var sessionCts = await registry.TakeOverAsync(
+                clientId,
+                TimeSpan.FromMilliseconds(2000),
+                context.RequestAborted);
+
+            // Declare before try so the finally block can always call MarkDrained and
+            // ReleaseAsync — even if AcceptWebSocketAsync or handler construction throws.
+            var captureStarted = false;
+            Remex.Host.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? lifetime = null;
+
+            try
+            {
+                using var ws = await context.WebSockets.AcceptWebSocketAsync();
+
+                // Track A: acquire the PipeWire lifetime (Linux only; returns null on other platforms).
+                // The cast guard keeps this code path CA1416-clean on Windows builds.
+                if (OperatingSystem.IsLinux())
+                {
+                    lifetime = context.RequestServices
+                        .GetService<Remex.Host.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>();
+                    if (lifetime is not null)
+                    {
+                        try
+                        {
+                            captureStarted = await lifetime.AcquireAsync(context.RequestAborted);
+                        }
+                        catch (Exception ex)
+                        {
+                            authLogger.LogWarning(
+                                ex, "PipeWire lifetime acquire failed; falling back to legacy capture.");
+                        }
+                    }
+                }
+
+                using var handler = new RemoteDesktopHandler(
+                    context.RequestServices.GetRequiredService<ILogger<RemoteDesktopHandler>>(),
+                    context.RequestServices.GetRequiredService<IScreenCaptureService>(),
+                    context.RequestServices.GetRequiredService<IInputSimulationService>(),
+                    context.RequestServices.GetRequiredService<IDesktopWindowControlService>(),
+                    context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
+
+                // Pass sessionCts.Token (not context.RequestAborted) so the registry
+                // can cancel this loop independently of the HTTP connection lifetime.
+                await handler.HandleAsync(ws, sessionCts.Token);
+            }
+            finally
+            {
+                // Signal drain completion before releasing the PipeWire lifetime so the
+                // next connection can start its portal session in parallel with drain ack.
+                // Always reached: covers AcceptWebSocketAsync failures and handler ctor failures
+                // in addition to the normal HandleAsync completion path.
+                registry.MarkDrained(clientId, sessionCts);
+                if (OperatingSystem.IsLinux() && lifetime is not null && captureStarted)
+                    await lifetime.ReleaseAsync();
+            }
         });
 
         return app;

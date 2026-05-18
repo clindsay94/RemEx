@@ -32,6 +32,12 @@ install)
     systemctl --user daemon-reload
     systemctl --user enable --now "$SERVICE_NAME"
 
+    if ldd "$INSTALL_DIR/libremex_linux_bridge.so" 2>/dev/null | grep -q "not found"; then
+        echo "WARNING: libremex_linux_bridge.so is missing a runtime dependency."
+        echo "         Run: ldd \"$INSTALL_DIR/libremex_linux_bridge.so\" to diagnose."
+        echo "         PipeWire capture will not be available; the legacy path will be used."
+    fi
+
     echo ""
     echo "RemEx Host installed and started."
     echo "  Status:     systemctl --user status $SERVICE_NAME"

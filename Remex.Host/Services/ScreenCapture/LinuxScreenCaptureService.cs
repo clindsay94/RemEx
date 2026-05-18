@@ -30,7 +30,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
     // Stage 2: PipeWire capture coordinator. Injected externally when the
     // WaylandNative or PortalNoPen tier is active; null for legacy (X11/fallback) path.
-    private LinuxCaptureSessionCoordinator? _captureCoordinator;
+    // volatile ensures the reference is visible across threads without a lock.
+    private volatile LinuxCaptureSessionCoordinator? _captureCoordinator;
 
     private enum DisplayServer { Unknown, X11, Wayland }
     private readonly DisplayServer _displayServer;
@@ -82,17 +83,20 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             try
             {
                 var frame = await _captureCoordinator.WaitForNextFrameAsync(timeoutMs: 80, ct: ct);
-                if (frame?.Data is not null && frame.Data.Length > 0)
+                if (frame is not null)
                 {
-                    // The frame data from PipeWire is in the stream's native pixel format.
-                    // For now, return the raw bytes; the encoder stage (RemoteDesktopHandler)
-                    // is responsible for JPEG encoding. When the encoder is updated to accept
-                    // LinuxFrameSnapshot directly, this path will bypass the intermediate copy.
-                    return frame.Data;
+                    var jpeg = LinuxJpegEncoder.Encode(
+                        frame, quality, scale, _logger, out var formatTag);
+                    if (jpeg.Length > 0) return jpeg;
+                    _logger.LogDebug(
+                        "PipeWire frame produced but JPEG encode returned empty " +
+                        "(format={Format}); falling back this tick.", formatTag);
                 }
-
-                _logger.LogDebug(
-                    "PipeWire frame not available; falling back to legacy capture for this tick.");
+                else
+                {
+                    _logger.LogDebug(
+                        "PipeWire frame not available; falling back to legacy capture for this tick.");
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

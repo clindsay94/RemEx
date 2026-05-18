@@ -86,6 +86,19 @@ if [[ "$SKIP_HOST" == false ]]; then
     dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
 
     echo ""
+    echo "── Building native Linux bridge (libremex_linux_bridge.so) ─────────────"
+    cmake -B "$REPO_ROOT/Remex.Host.Native.Linux/build" \
+          -S "$REPO_ROOT/Remex.Host.Native.Linux" \
+          -DCMAKE_BUILD_TYPE=Release
+    cmake --build "$REPO_ROOT/Remex.Host.Native.Linux/build" --target remex_linux_bridge
+    cp "$REPO_ROOT/Remex.Host.Native.Linux/build/libremex_linux_bridge.so" "$HOST_PUBLISH/"
+    if [[ ! -f "$HOST_PUBLISH/libremex_linux_bridge.so" ]]; then
+        echo "Error: libremex_linux_bridge.so missing after build." >&2
+        exit 1
+    fi
+    echo "Native bridge → $HOST_PUBLISH/libremex_linux_bridge.so"
+
+    echo ""
     echo "── Packaging host ───────────────────────────────────────────────────────"
     rm -rf "$HOST_STAGE"
     mkdir -p "$HOST_STAGE"
