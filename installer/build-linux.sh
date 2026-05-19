@@ -10,6 +10,18 @@
 
 set -euo pipefail
 
+# ── Prerequisite check ───────────────────────────────────────────────────────
+MISSING=()
+command -v dotnet  >/dev/null 2>&1 || MISSING+=("dotnet (install .NET 10 SDK)")
+command -v cmake   >/dev/null 2>&1 || MISSING+=("cmake")
+command -v pkg-config >/dev/null 2>&1 || MISSING+=("pkg-config")
+pkg-config --exists libpipewire-0.3 2>/dev/null || MISSING+=("libpipewire-0.3 dev headers (pacman: pipewire | apt: libpipewire-0.3-dev)")
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    echo "Error: missing required tools:" >&2
+    for m in "${MISSING[@]}"; do echo "  • $m" >&2; done
+    exit 1
+fi
+
 SKIP_CLIENT=false
 SKIP_HOST=false
 for arg in "$@"; do
@@ -41,6 +53,22 @@ fi
 echo "Version: $VERSION"
 mkdir -p "$OUTPUT_DIR"
 
+NATIVE_BRIDGE_DIR="$REPO_ROOT/Remex.Host.Native.Linux"
+NATIVE_BRIDGE_SO="$NATIVE_BRIDGE_DIR/build/libremex_linux_bridge.so"
+
+# ── Native bridge (shared by client and host) ────────────────────────────────
+echo ""
+echo "── Building native Linux bridge (libremex_linux_bridge.so) ─────────────"
+cmake -B "$NATIVE_BRIDGE_DIR/build" \
+      -S "$NATIVE_BRIDGE_DIR" \
+      -DCMAKE_BUILD_TYPE=Release
+cmake --build "$NATIVE_BRIDGE_DIR/build" --target remex_linux_bridge
+if [[ ! -f "$NATIVE_BRIDGE_SO" ]]; then
+    echo "Error: libremex_linux_bridge.so missing after cmake build." >&2
+    exit 1
+fi
+echo "Native bridge → $NATIVE_BRIDGE_SO"
+
 # ── Client ───────────────────────────────────────────────────────────────────
 if [[ "$SKIP_CLIENT" == false ]]; then
     CLIENT_PROJ="$REPO_ROOT/Remex.Client.Desktop"
@@ -50,6 +78,11 @@ if [[ "$SKIP_CLIENT" == false ]]; then
     echo ""
     echo "── Publishing Remex.Client.Desktop (linux-x64) ──────────────────────────"
     dotnet publish "$CLIENT_PROJ" -c Release -r linux-x64 --self-contained
+
+    echo ""
+    echo "── Copying native bridge into client publish ─────────────────────────────"
+    cp "$NATIVE_BRIDGE_SO" "$CLIENT_PUBLISH/"
+    echo "Native bridge → $CLIENT_PUBLISH/libremex_linux_bridge.so"
 
     echo ""
     echo "── Packaging client ─────────────────────────────────────────────────────"
@@ -86,14 +119,10 @@ if [[ "$SKIP_HOST" == false ]]; then
     dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
 
     echo ""
-    echo "── Building native Linux bridge (libremex_linux_bridge.so) ─────────────"
-    cmake -B "$REPO_ROOT/Remex.Host.Native.Linux/build" \
-          -S "$REPO_ROOT/Remex.Host.Native.Linux" \
-          -DCMAKE_BUILD_TYPE=Release
-    cmake --build "$REPO_ROOT/Remex.Host.Native.Linux/build" --target remex_linux_bridge
-    cp "$REPO_ROOT/Remex.Host.Native.Linux/build/libremex_linux_bridge.so" "$HOST_PUBLISH/"
+    echo "── Copying native bridge into host publish ───────────────────────────────"
+    cp "$NATIVE_BRIDGE_SO" "$HOST_PUBLISH/"
     if [[ ! -f "$HOST_PUBLISH/libremex_linux_bridge.so" ]]; then
-        echo "Error: libremex_linux_bridge.so missing after build." >&2
+        echo "Error: libremex_linux_bridge.so missing after copy." >&2
         exit 1
     fi
     echo "Native bridge → $HOST_PUBLISH/libremex_linux_bridge.so"

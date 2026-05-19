@@ -26,6 +26,12 @@ install)
 
     chmod +x "$INSTALL_DIR/Remex.Client.Desktop"
 
+    if ldd "$INSTALL_DIR/libremex_linux_bridge.so" 2>/dev/null | grep -q "not found"; then
+        echo "WARNING: libremex_linux_bridge.so is missing a runtime dependency."
+        echo "         Run: ldd \"$INSTALL_DIR/libremex_linux_bridge.so\" to diagnose."
+        echo "         PipeWire capture will not be available."
+    fi
+
     # Launcher symlink
     ln -sf "$INSTALL_DIR/Remex.Client.Desktop" "$BIN_DIR/remex-client"
 
@@ -39,6 +45,7 @@ install)
     sed "s|REMEX_INSTALL_DIR|$INSTALL_DIR|g" \
         "$SCRIPT_DIR/remex-client.desktop" > "$APP_DIR/remex-client.desktop"
     update-desktop-database "$APP_DIR" 2>/dev/null || true
+    kbuildsycoca6 2>/dev/null || true  # KDE Plasma cache refresh
 
     echo ""
     echo "RemEx Client installed."

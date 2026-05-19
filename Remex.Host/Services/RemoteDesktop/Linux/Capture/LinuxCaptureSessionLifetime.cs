@@ -24,6 +24,7 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
 {
     private readonly ILogger<LinuxCaptureSessionLifetime> _logger;
     private readonly IScreenCaptureService _screenCapture;
+    private readonly ILoggerFactory _loggerFactory;
 
     private readonly object _gate = new();
     private int _refcount;
@@ -33,10 +34,12 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
 
     public LinuxCaptureSessionLifetime(
         ILogger<LinuxCaptureSessionLifetime> logger,
-        IScreenCaptureService screenCapture)
+        IScreenCaptureService screenCapture,
+        ILoggerFactory loggerFactory)
     {
         _logger = logger;
         _screenCapture = screenCapture;
+        _loggerFactory = loggerFactory;
     }
 
     /// <summary>
@@ -92,14 +95,14 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
         {
             _portal = new LinuxPortalRemoteDesktopSessionService(
                 appId: "com.clindsay94.RemEx",
-                logger: null); // uses NullLogger internally
+                logger: _loggerFactory.CreateLogger<LinuxPortalRemoteDesktopSessionService>());
 
             // Subscribe before starting so we don't miss an early SessionLost event.
             _portal.SessionLost += OnPortalSessionLost;
 
             _coordinator = new LinuxCaptureSessionCoordinator(
                 _portal,
-                logger: null); // uses NullLogger internally
+                logger: _loggerFactory.CreateLogger<LinuxCaptureSessionCoordinator>());
 
             await _coordinator.StartAsync(ct);
 

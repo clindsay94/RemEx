@@ -26,24 +26,15 @@ Available as a polished glassmorphic **.NET / Avalonia** desktop app and a full 
    - Choose **Client only** or **Client + Windows Service** (service starts automatically at boot).
 3. Launch **RemEx** from the Start Menu or desktop shortcut.
 
-### Linux Desktop Client & Host (Automated)
+### Linux Desktop Client & Host
 
-1. Go to the [**Releases**](https://github.com/clindsay94/remex/releases) page and download:
-   - `remex-client-v2.0.0-linux-x64.tar.gz` (for the Desktop UI)
-   - `remex-host-v2.0.0-linux-x64.tar.gz` (for the background service)
-2. **Extract** the archives:
-   ```bash
-   tar -xzf remex-client-v2.0.0-linux-x64.tar.gz
-   tar -xzf remex-host-v2.0.0-linux-x64.tar.gz
-   ```
-3. **Install** via the provided scripts (installs to `~/.local/share/` and sets up `systemd` user services):
-   ```bash
-   # Install Client (adds to Applications menu)
-   ./remex-client-v2.0.0-linux-x64/install.sh install
+See **[`docs/LINUX_INSTALL.md`](docs/LINUX_INSTALL.md)** for the full installation guide including prerequisites, step-by-step instructions, verification checkpoints, and troubleshooting.
 
-   # Install Host (starts background service)
-   ./remex-host-v2.0.0-linux-x64/install.sh install
-   ```
+**Short version** (release package):
+```bash
+tar -xzf remex-client-v2.0.0-linux-x64.tar.gz
+./remex-client-v2.0.0-linux-x64/install.sh install
+```
 
 ### Native Android App
 
@@ -127,8 +118,9 @@ installer/               Build scripts for Windows (Inno Setup) and Linux (bash)
 ### Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - Android SDK (see [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md))
+- Linux packages: `cmake`, `pkg-config`, `pipewire` dev headers (see [`docs/LINUX_INSTALL.md`](docs/LINUX_INSTALL.md))
 
-### Desktop & Host
+### Desktop & Host (quick run)
 ```bash
 # Run Host
 dotnet run --project Remex.Host
@@ -137,10 +129,12 @@ dotnet run --project Remex.Host
 dotnet run --project Remex.Client.Desktop
 ```
 
-### Linux Packages
+### Linux Packages (full build + install)
 ```bash
-# Build both Client and Host .tar.gz packages
+# Build both Client and Host .tar.gz packages (handles dotnet publish + cmake internally)
 ./installer/build-linux.sh
+
+# Packages land in installer/Output/ — see docs/LINUX_INSTALL.md for install steps
 ```
 
 ### Android (Hardened Fresh Build)
