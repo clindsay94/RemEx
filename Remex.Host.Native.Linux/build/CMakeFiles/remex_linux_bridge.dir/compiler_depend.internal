@@ -464,6 +464,8 @@ libremex_linux_bridge.so
  /usr/lib/libgcc_s.so
  /usr/lib/libgcc_s.so.1
  /usr/lib/libgcc_s_asneeded.so
+ /usr/lib/libpipewire-0.3.so
+ /usr/lib/libsystemd.so
  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o
  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o
  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a

@@ -460,6 +460,8 @@ libremex_linux_bridge.so: /usr/lib/crti.o \
   /usr/lib/libgcc_s.so \
   /usr/lib/libgcc_s.so.1 \
   /usr/lib/libgcc_s_asneeded.so \
+  /usr/lib/libpipewire-0.3.so \
+  /usr/lib/libsystemd.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a \
@@ -618,6 +620,8 @@ CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o:
 /usr/include/bits/endianness.h:
 
 /usr/include/spa-0.2/spa/pod/event.h:
+
+/usr/lib/libpipewire-0.3.so:
 
 /usr/include/bits/stdlib-bsearch.h:
 
@@ -964,6 +968,8 @@ CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o:
 /usr/include/pipewire-0.3/pipewire/version.h:
 
 /usr/include/pthread.h:
+
+/usr/lib/libsystemd.so:
 
 /usr/include/bits/fp-fast.h:
 

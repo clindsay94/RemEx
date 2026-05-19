@@ -57,7 +57,10 @@
       "Bash(xargs -I{} sh -c 'jq -r \"select\\(.type==\\\\\"assistant\\\\\"\\) | .message.content[]? | select\\(.type==\\\\\"tool_use\\\\\"\\) | [.name, \\(.input.command // \\\\\"\\\\\"\\)] | @tsv\" {} 2>/dev/null')",
       "Bash(grep -E \"\\\\.cs$\")",
       "Bash(xargs ls -la)",
-      "Bash(./gradlew :app:testDebugUnitTest --console=plain --rerun-tasks)"
+      "Bash(./gradlew :app:testDebugUnitTest --console=plain --rerun-tasks)",
+      "Read(//tmp/claude-1000/**)",
+      "mcp__claude_ai_Microsoft_Learn__microsoft_docs_search",
+      "Bash(git *)"
     ]
   },
   "outputStyle": "default"
