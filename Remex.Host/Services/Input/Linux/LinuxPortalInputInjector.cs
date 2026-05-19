@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Remex.Host.Services.RemoteDesktop.Linux.Portal;
 using Tmds.DBus.Protocol;
 
 namespace Remex.Host.Services.Input.Linux;
@@ -26,11 +27,10 @@ namespace Remex.Host.Services.Input.Linux;
 [SupportedOSPlatform("linux")]
 internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 {
-    private const string PortalDestination = "org.freedesktop.portal.Desktop";
-    private const string PortalPath = "/org/freedesktop/portal/desktop";
-    private const string RemoteDesktopInterface = "org.freedesktop.portal.RemoteDesktop";
-    private const string RequestInterface = "org.freedesktop.portal.Request";
-    private const string SessionInterface = "org.freedesktop.portal.Session";
+    private const string PortalDestination = PortalDbusNames.PortalService;
+    private const string PortalPath = PortalDbusNames.PortalPath;
+    private const string RemoteDesktopInterface = PortalDbusNames.RemoteDesktopInterface;
+    private const string SessionInterface = PortalDbusNames.SessionInterface;
 
     private readonly ILogger _logger;
 
@@ -39,7 +39,6 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     private string? _normalizedSender;
     private volatile bool _active;
     private int _startInProgress;
-    private int _handleTokenCounter;
 
     public bool IsActive => _active;
 
@@ -93,7 +92,10 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
         // Step 1: CreateSession — the session_handle is delivered in the Response signal,
         // NOT in the immediate method reply (which only returns the Request object path).
-        var createResults = await CallPortalAsync(
+        var createResults = await PortalDbusHelper.CallPortalAsync(
+            _conn!,
+            _normalizedSender!,
+            RemoteDesktopInterface,
             method: "CreateSession",
             signature: "a{sv}",
             requestTimeout: TimeSpan.FromSeconds(30),
@@ -112,6 +114,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
                 w.WriteDictionaryEnd(dictStart);
             },
+            logger: _logger,
             ct: ct).ConfigureAwait(false);
 
         if (createResults is null)
@@ -130,7 +133,10 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
 
         // Step 2: SelectDevices (Keyboard | Pointer = 3).
-        var selectResults = await CallPortalAsync(
+        var selectResults = await PortalDbusHelper.CallPortalAsync(
+            _conn!,
+            _normalizedSender!,
+            RemoteDesktopInterface,
             method: "SelectDevices",
             signature: "oa{sv}",
             requestTimeout: TimeSpan.FromSeconds(30),
@@ -149,6 +155,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
                 w.WriteDictionaryEnd(dictStart);
             },
+            logger: _logger,
             ct: ct).ConfigureAwait(false);
 
         if (selectResults is null)
@@ -160,7 +167,10 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
         // Step 3: Start — shows the KDE permission dialog. Allow generous timeout.
         _logger.LogInformation("Waiting for user to grant portal RemoteDesktop permission...");
-        var startResults = await CallPortalAsync(
+        var startResults = await PortalDbusHelper.CallPortalAsync(
+            _conn!,
+            _normalizedSender!,
+            RemoteDesktopInterface,
             method: "Start",
             signature: "osa{sv}",
             requestTimeout: TimeSpan.FromMinutes(2),
@@ -176,6 +186,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
                 w.WriteDictionaryEnd(dictStart);
             },
+            logger: _logger,
             ct: ct).ConfigureAwait(false);
 
         if (startResults is null)
@@ -402,7 +413,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
                 return false;
             }
 
-            _normalizedSender = unique.TrimStart(':').Replace('.', '_');
+            _normalizedSender = PortalDbusHelper.NormalizeSender(unique);
             return true;
         }
         catch (Exception ex)
@@ -412,105 +423,4 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         }
     }
 
-    private delegate void ArgWriter(ref MessageWriter writer, string handleToken);
-
-    /// <summary>
-    /// Calls a RemoteDesktop portal method, subscribing to its <c>Response</c> signal
-    /// before invoking so no response is missed. Returns the results dictionary on
-    /// success (response code 0), or null if the user cancelled / response code != 0
-    /// / timeout / error.
-    /// </summary>
-    private async Task<Dictionary<string, VariantValue>?> CallPortalAsync(
-        string method,
-        string signature,
-        TimeSpan requestTimeout,
-        ArgWriter writeArgs,
-        CancellationToken ct)
-    {
-        if (_conn is null || _normalizedSender is null) return null;
-
-        var handleToken = $"remex_{Interlocked.Increment(ref _handleTokenCounter)}";
-        var requestPath = $"/org/freedesktop/portal/desktop/request/{_normalizedSender}/{handleToken}";
-
-        var tcs = new TaskCompletionSource<Dictionary<string, VariantValue>?>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var rule = new MatchRule
-        {
-            Type = MessageType.Signal,
-            Sender = PortalDestination,
-            Interface = RequestInterface,
-            Member = "Response",
-            Path = requestPath,
-        };
-
-        IDisposable? subscription = null;
-        try
-        {
-            subscription = await _conn.AddMatchAsync(
-                rule,
-                static (Message msg, object? state) =>
-                {
-                    var reader = msg.GetBodyReader();
-                    var response = reader.ReadUInt32();
-                    var dict = reader.ReadDictionaryOfStringToVariantValue();
-                    return (response, dict);
-                },
-                (Exception? ex, (uint Response, Dictionary<string, VariantValue> Results) data,
-                    object? rs, object? hs) =>
-                {
-                    if (ex is not null)
-                    {
-                        tcs.TrySetException(ex);
-                        return;
-                    }
-                    if (data.Response != 0u)
-                    {
-                        // 1 = cancelled by user, 2 = other (e.g. compositor terminated session).
-                        tcs.TrySetResult(null);
-                        return;
-                    }
-                    tcs.TrySetResult(data.Results);
-                },
-                ObserverFlags.None).ConfigureAwait(false);
-
-            // Build and send the method call. We don't need the reply payload here —
-            // the actual results arrive in the Response signal — but we still want
-            // CallMethodAsync to surface protocol errors.
-            MessageBuffer buf;
-            {
-                var writer = _conn.GetMessageWriter();
-                writer.WriteMethodCallHeader(
-                    destination: PortalDestination,
-                    path: PortalPath,
-                    @interface: RemoteDesktopInterface,
-                    member: method,
-                    signature: signature);
-                writeArgs(ref writer, handleToken);
-                buf = writer.CreateMessage();
-            }
-
-            try
-            {
-                await _conn.CallMethodAsync(buf).ConfigureAwait(false);
-            }
-            catch (DBusException ex)
-            {
-                _logger.LogWarning(ex, "Portal {Method} returned a D-Bus error.", method);
-                return null;
-            }
-
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(requestTimeout);
-
-            using (timeoutCts.Token.Register(() => tcs.TrySetResult(null)))
-            {
-                return await tcs.Task.ConfigureAwait(false);
-            }
-        }
-        finally
-        {
-            subscription?.Dispose();
-        }
-    }
 }

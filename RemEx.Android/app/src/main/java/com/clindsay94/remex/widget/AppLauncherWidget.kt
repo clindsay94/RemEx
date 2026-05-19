@@ -127,20 +127,20 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
     }
 
     val apps = allApps.filter { it.path in selectedPaths }.sortedBy { it.order }
-    
+
     val outerPadding = 8.dp
-    val availableWidth = size.width - (outerPadding * 2)
-    val availableHeight = size.height - (outerPadding * 2)
+    val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
+    val availableHeight = (size.height - (outerPadding * 2)).coerceAtLeast(0.dp)
 
     val iconSize = when {
         size.width >= 300.dp -> 56.dp
         size.width >= 200.dp -> 48.dp
         else -> 42.dp
     }
-    
+
     val itemPadding = 4.dp
     val cellSize = iconSize + (itemPadding * 2)
-    
+
     val columns = (availableWidth / cellSize).toInt().coerceAtLeast(1)
     val maxRows = (availableHeight / cellSize).toInt().coerceAtLeast(1)
     val maxItems = columns * maxRows

@@ -100,22 +100,22 @@ private fun RemoteControlContent() {
     }
 
     val outerPadding = 8.dp
-    val availableWidth = size.width - (outerPadding * 2)
-    val availableHeight = size.height - (outerPadding * 2)
+    val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
+    val availableHeight = (size.height - (outerPadding * 2)).coerceAtLeast(0.dp)
 
     val buttonMinWidth = 90.dp
     val buttonMinHeight = 36.dp
     val columns = (availableWidth / (buttonMinWidth + 4.dp)).toInt().coerceIn(1, 4)
-    
+
     val showTitle = size.height >= 80.dp
     val titleHeight = if (showTitle) 24.dp else 0.dp
-    val contentHeight = availableHeight - titleHeight
-    
+    val contentHeight = (availableHeight - titleHeight).coerceAtLeast(0.dp)
+
     val maxRows = (contentHeight / (buttonMinHeight + 4.dp)).toInt().coerceAtLeast(1)
     val maxItems = (columns * maxRows).coerceAtMost(commands.size)
     val visibleCommands = commands.take(maxItems)
-    
-    val itemWidth = (availableWidth / columns) - 4.dp
+
+    val itemWidth = ((availableWidth / columns) - 4.dp).coerceAtLeast(0.dp)
     val currentRows = (visibleCommands.size + columns - 1) / columns
     val itemHeight = (contentHeight / currentRows).coerceIn(buttonMinHeight, 60.dp)
 

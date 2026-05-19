@@ -292,8 +292,8 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         }
     }
 
-    override fun onTelemetryUpdate(telemetryData: String) {
-        _telemetry.tryEmit(telemetryData)
+    override fun onTelemetryUpdate(telemetryData: String?) {
+        telemetryData?.let { _telemetry.tryEmit(it) }
     }
 
     override fun onConnectionStateChanged(isConnected: Boolean) {
@@ -305,15 +305,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _isConnecting.value = isConnecting
     }
 
-    override fun onLauncherSync(launcherData: String) {
-        _launcherEntries.tryEmit(launcherData)
+    override fun onLauncherSync(launcherData: String?) {
+        launcherData?.let { _launcherEntries.tryEmit(it) }
     }
 
-    override fun onProcessListSync(processData: String) {
-        _processList.tryEmit(processData)
+    override fun onProcessListSync(processData: String?) {
+        processData?.let { _processList.tryEmit(it) }
     }
 
-    override fun onFrameReceived(frame: ByteArray) {
+    override fun onFrameReceived(frame: ByteArray?) {
+        if (frame == null) return
+
         // Log frame arrival (keep it compact to avoid logcat flooding)
         if (System.currentTimeMillis() % 1000 < 50) {
             Log.d("RemexManager", "onFrameReceived: ${frame.size} bytes")
@@ -324,33 +326,33 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _frames.tryEmit(frame.copyOf())
     }
 
-    override fun onHostInfoUpdate(hostInfoData: String) {
-        _hostCapabilities.tryEmit(hostInfoData)
+    override fun onHostInfoUpdate(hostInfoData: String?) {
+        hostInfoData?.let { _hostCapabilities.tryEmit(it) }
     }
 
-    override fun onDesktopError(errorText: String) {
-        _desktopErrors.tryEmit(errorText)
+    override fun onDesktopError(errorText: String?) {
+        errorText?.let { _desktopErrors.tryEmit(it) }
     }
 
-    override fun onDesktopMeta(metaData: String) {
-        _desktopMeta.tryEmit(metaData)
+    override fun onDesktopMeta(metaData: String?) {
+        metaData?.let { _desktopMeta.tryEmit(it) }
     }
 
-    override fun onDesktopWindowResult(resultData: String) {
-        _desktopWindowResults.tryEmit(resultData)
+    override fun onDesktopWindowResult(resultData: String?) {
+        resultData?.let { _desktopWindowResults.tryEmit(it) }
     }
 
-    override fun onDesktopStreamDescriptor(descriptor: String) {
-        _desktopStreamDescriptor.tryEmit(descriptor)
+    override fun onDesktopStreamDescriptor(descriptor: String?) {
+        descriptor?.let { _desktopStreamDescriptor.tryEmit(it) }
     }
 
-    override fun onFileTransferMessage(json: String) {
-        _fileTransferMessages.tryEmit(json)
+    override fun onFileTransferMessage(json: String?) {
+        json?.let { _fileTransferMessages.tryEmit(it) }
     }
 
-    override fun onConnectionError(reason: String) {
+    override fun onConnectionError(reason: String?) {
         _isConnected.value = false
         _isConnecting.value = false
-        _connectionError.tryEmit(reason)
+        reason?.let { _connectionError.tryEmit(it) }
     }
 }

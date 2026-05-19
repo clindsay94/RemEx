@@ -111,16 +111,16 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
     val showTitle = size.height >= 80.dp
     val showCategory = size.width >= 240.dp
     val useCards = size.height >= 60.dp
-    
+
     // Balanced padding for all sizes
     val outerPadding = 8.dp
-    val availableWidth = size.width - (outerPadding * 2)
+    val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
 
     val cardMinWidth = if (useCards) 100.dp else 80.dp
     val columns = (availableWidth / cardMinWidth).toInt().coerceIn(1, 4)
 
     val titleHeight = if (showTitle) 24.dp else 0.dp
-    val contentHeight = size.height - (outerPadding * 2) - titleHeight
+    val contentHeight = (size.height - (outerPadding * 2) - titleHeight).coerceAtLeast(0.dp)
     val cardMinHeight = if (useCards) 54.dp else 34.dp
     val maxRows = (contentHeight / (cardMinHeight + 4.dp)).toInt().coerceAtLeast(1)
     val maxItems = (columns * maxRows).coerceAtMost(sensors.size)
@@ -149,9 +149,9 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
                 Text("Waiting for data\u2026", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
         } else if (useCards) {
-            val cardWidth = (availableWidth / columns) - 4.dp
+            val cardWidth = ((availableWidth / columns) - 4.dp).coerceAtLeast(0.dp)
             val rows = visibleSensors.chunked(columns)
-            
+
             Column(modifier = GlanceModifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 rows.forEach { rowItems ->
                     Row(
@@ -208,7 +208,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             }
         } else {
             Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(4.dp), 
+                modifier = GlanceModifier.fillMaxWidth().padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

@@ -70,10 +70,14 @@ class RemexConnectionService : Service() {
 
         // Update notification when connection state changes
         notificationJob?.cancel()
+        val nm = getSystemService(NotificationManager::class.java)
         notificationJob = serviceScope.launch {
             RemexClientManager.isConnected.collect { connected ->
-                val nm = getSystemService(NotificationManager::class.java)
-                nm.notify(NOTIFICATION_ID, buildNotification(isConnected = connected))
+                try {
+                    nm?.notify(NOTIFICATION_ID, buildNotification(isConnected = connected))
+                } catch (e: Exception) {
+                    android.util.Log.e("RemexService", "Failed to update notification", e)
+                }
             }
         }
 
@@ -108,7 +112,7 @@ class RemexConnectionService : Service() {
             setShowBadge(false)
         }
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(channel)
+        nm?.createNotificationChannel(channel)
     }
 
     private fun buildNotification(isConnected: Boolean): Notification {
@@ -119,15 +123,25 @@ class RemexConnectionService : Service() {
             this, 0, tapIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = if (isConnected) getString(R.string.notification_title_connected) else getString(R.string.notification_title_connecting)
-        val text = if (isConnected) getString(R.string.notification_text_connected) else getString(R.string.notification_text_connecting)
+        val title = try {
+            if (isConnected) getString(R.string.notification_title_connected) else getString(R.string.notification_title_connecting)
+        } catch (e: Exception) {
+            if (isConnected) "Connected to PC" else "Connecting…"
+        }
+
+        val text = try {
+            if (isConnected) getString(R.string.notification_text_connected) else getString(R.string.notification_text_connecting)
+        } catch (e: Exception) {
+            if (isConnected) "RemEx is running in the background" else "Maintaining connection"
+        }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
             .setOngoing(true)
             .setSilent(true)
+            .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()

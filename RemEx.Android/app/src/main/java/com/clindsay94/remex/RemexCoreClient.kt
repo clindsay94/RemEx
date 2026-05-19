@@ -18,18 +18,18 @@ object RemexCoreClient {
     private var callback: RemexCallback? = null
 
     interface RemexCallback {
-        fun onTelemetryUpdate(telemetryData: String)
+        fun onTelemetryUpdate(telemetryData: String?)
         fun onConnectionStateChanged(isConnected: Boolean)
-        fun onLauncherSync(launcherData: String)
-        fun onProcessListSync(processData: String)
-        fun onFrameReceived(frame: ByteArray)
-        fun onHostInfoUpdate(hostInfoData: String)
-        fun onDesktopError(errorText: String)
-        fun onDesktopMeta(metaData: String)
-        fun onDesktopWindowResult(resultData: String)
-        fun onDesktopStreamDescriptor(descriptor: String)
-        fun onFileTransferMessage(json: String)
-        fun onConnectionError(reason: String)
+        fun onLauncherSync(launcherData: String?)
+        fun onProcessListSync(processData: String?)
+        fun onFrameReceived(frame: ByteArray?)
+        fun onHostInfoUpdate(hostInfoData: String?)
+        fun onDesktopError(errorText: String?)
+        fun onDesktopMeta(metaData: String?)
+        fun onDesktopWindowResult(resultData: String?)
+        fun onDesktopStreamDescriptor(descriptor: String?)
+        fun onFileTransferMessage(json: String?)
+        fun onConnectionError(reason: String?)
     }
 
     init {

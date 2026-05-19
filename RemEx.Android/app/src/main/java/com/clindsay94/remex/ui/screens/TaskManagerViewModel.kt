@@ -130,6 +130,33 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     }
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _killError = MutableStateFlow<String?>(null)
+    val killError: StateFlow<String?> = _killError.asStateFlow()
+
+    private val _loadError = MutableStateFlow<String?>(null)
+    /**
+     * Surfaced to the UI when the host stops responding to process_list_request after several
+     * consecutive timeouts. Distinct from [killError] (per-action) — this is a persistent
+     * "host is silent" banner that replaces the empty refresh-storm pattern.
+     */
+    val loadError: StateFlow<String?> = _loadError.asStateFlow()
+
+    private var lastResponseAt: Long = 0L
+    private var consecutiveTimeouts: Int = 0
+
+    private var initialRefreshJob: Job? = null
+    private var autoRefreshJob: Job? = null
+
+    // NOTE: This init block subscribes to RemexClientManager.processList, which is a
+    // MutableSharedFlow with replay=1. viewModelScope uses Dispatchers.Main.immediate,
+    // so when called from the main thread the launched coroutine runs synchronously
+    // up to the first real suspension — and SharedFlow delivers any cached replay
+    // value before suspending. That means the collector lambda runs DURING this init
+    // block, so any backing fields it touches (_isRefreshing, _loadError, etc.)
+    // MUST be declared above this block.
     init {
         viewModelScope.launch {
             RemexClientManager.processList.collect { data ->
@@ -174,26 +201,6 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         _sortField.value = field
         _sortDescending.value = field != ProcessSortField.NAME
     }
-
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
-    private val _killError = MutableStateFlow<String?>(null)
-    val killError: StateFlow<String?> = _killError.asStateFlow()
-
-    private val _loadError = MutableStateFlow<String?>(null)
-    /**
-     * Surfaced to the UI when the host stops responding to process_list_request after several
-     * consecutive timeouts. Distinct from [killError] (per-action) — this is a persistent
-     * "host is silent" banner that replaces the empty refresh-storm pattern.
-     */
-    val loadError: StateFlow<String?> = _loadError.asStateFlow()
-
-    private var lastResponseAt: Long = 0L
-    private var consecutiveTimeouts: Int = 0
-
-    private var initialRefreshJob: Job? = null
-    private var autoRefreshJob: Job? = null
 
     fun clearLoadError() {
         _loadError.value = null

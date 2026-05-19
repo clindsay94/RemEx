@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Tmds.DBus.Protocol;
 
 namespace Remex.Host.Services.RemoteDesktop.Linux.Portal;
 
@@ -24,20 +24,20 @@ public enum PortalSessionState
 }
 
 /// <summary>
-/// Manages the lifecycle of an xdg-desktop-portal RemoteDesktop + ScreenCast session.
+/// Manages the lifecycle of an xdg-desktop-portal combined
+/// RemoteDesktop + ScreenCast session.
 ///
 /// Responsibilities:
-///   - Open a combined RemoteDesktop + ScreenCast portal session via D-Bus
-///   - Select sources (monitor, embedded cursor)
+///   - Open a combined session via D-Bus (RemoteDesktop.CreateSession)
 ///   - Select devices (keyboard + pointer)
+///   - Select sources (monitor + embedded cursor)
 ///   - Start the session and surface the PipeWire node IDs to the caller
-///   - Handle session restart on monitor hotplug or stream identity change
 ///   - Close the session cleanly on dispose
 ///
-/// D-Bus communication is performed via busctl subprocess calls for maximum portability
-/// while the project evaluates adding Tmds.DBus.Protocol as a direct dependency.
-/// Once that dependency is confirmed present in the host project, the implementation
-/// can migrate to the native D-Bus client path without changing the public contract.
+/// All D-Bus interaction goes through <see cref="PortalDbusHelper.CallPortalAsync"/>,
+/// which implements the portal Request/Response handshake correctly: the method
+/// call returns immediately with a Request object path, and the actual result is
+/// delivered later via a <c>Response</c> signal on that Request.
 /// </summary>
 [SupportedOSPlatform("linux")]
 public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
@@ -45,14 +45,17 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
     private readonly ILogger<LinuxPortalRemoteDesktopSessionService> _logger;
     private readonly string _appId;
 
+    private Connection? _conn;
+    private string? _normalizedSender;
+
     private volatile PortalSessionState _state = PortalSessionState.Idle;
     private PortalStartResult? _lastResult;
     private string? _sessionHandle;
 
-    // Fired when a new session is established and PipeWire node IDs are available.
+    /// <summary>Fired when a new session is established and PipeWire node IDs are available.</summary>
     public event Action<PortalStartResult>? SessionStarted;
 
-    // Fired when the portal session is lost and a restart has been initiated.
+    /// <summary>Fired when the portal session is lost and a restart has been initiated.</summary>
     public event Action? SessionLost;
 
     public PortalSessionState State => _state;
@@ -73,35 +76,175 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
     public async Task<PortalStartResult> StartSessionAsync(CancellationToken ct = default)
     {
         _state = PortalSessionState.Creating;
-        _logger.LogInformation("Opening xdg-desktop-portal RemoteDesktop + ScreenCast session.");
+        _logger.LogInformation(
+            "Opening xdg-desktop-portal RemoteDesktop + ScreenCast session (app_id={AppId}).",
+            _appId);
 
         try
         {
-            // Step 1 — Create a combined portal session.
-            var sessionToken = $"remex_{Guid.NewGuid():N}";
-            var sessionHandle = await CallPortalMethodAsync(
-                "CreateSession",
-                $"--session-token={sessionToken}",
-                ct);
+            if (!await EnsureConnectionAsync(ct).ConfigureAwait(false))
+                throw new InvalidOperationException(
+                    "Failed to connect to D-Bus session bus (DBUS_SESSION_BUS_ADDRESS unset?).");
 
-            if (sessionHandle is null)
+            // Step 1 — CreateSession on RemoteDesktop. The session_handle is delivered
+            // via the Response signal, NOT the immediate method return.
+            var createResults = await PortalDbusHelper.CallPortalAsync(
+                _conn!,
+                _normalizedSender!,
+                PortalDbusNames.RemoteDesktopInterface,
+                method: "CreateSession",
+                signature: "a{sv}",
+                requestTimeout: TimeSpan.FromSeconds(30),
+                writeArgs: (ref MessageWriter w, string handleToken) =>
+                {
+                    var sessionToken = $"remex_session_{handleToken}";
+                    var dictStart = w.WriteDictionaryStart();
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("handle_token");
+                    w.WriteVariantString(handleToken);
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("session_handle_token");
+                    w.WriteVariantString(sessionToken);
+
+                    w.WriteDictionaryEnd(dictStart);
+                },
+                logger: _logger,
+                ct: ct).ConfigureAwait(false);
+
+            if (createResults is null)
             {
                 _state = PortalSessionState.Failed;
                 throw new InvalidOperationException(
-                    "Portal CreateSession returned no session handle. " +
+                    "Portal CreateSession failed or returned non-zero response. " +
                     "Ensure xdg-desktop-portal and a backend (xdg-desktop-portal-kde) are running.");
             }
 
+            if (!createResults.TryGetValue("session_handle", out var sessionVariant))
+            {
+                _state = PortalSessionState.Failed;
+                throw new InvalidOperationException(
+                    "Portal CreateSession Response missing 'session_handle' key.");
+            }
+
+            var sessionHandle = sessionVariant.GetString();
             _sessionHandle = sessionHandle;
+            _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
 
-            // Step 2 — Select devices (keyboard + pointer).
-            await SelectDevicesAsync(sessionHandle, ct);
+            // Step 2 — SelectDevices on RemoteDesktop (Keyboard | Pointer = 3).
+            var selectDevResults = await PortalDbusHelper.CallPortalAsync(
+                _conn!,
+                _normalizedSender!,
+                PortalDbusNames.RemoteDesktopInterface,
+                method: "SelectDevices",
+                signature: "oa{sv}",
+                requestTimeout: TimeSpan.FromSeconds(30),
+                writeArgs: (ref MessageWriter w, string handleToken) =>
+                {
+                    w.WriteObjectPath(sessionHandle);
+                    var dictStart = w.WriteDictionaryStart();
 
-            // Step 3 — Select sources (monitor, embedded cursor).
-            await SelectSourcesAsync(sessionHandle, ct);
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("handle_token");
+                    w.WriteVariantString(handleToken);
 
-            // Step 4 — Start the session.
-            var nodeIds = await StartSessionCoreAsync(sessionHandle, ct);
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("types");
+                    w.WriteVariantUInt32((uint)(PortalDeviceType.Keyboard | PortalDeviceType.Pointer));
+
+                    w.WriteDictionaryEnd(dictStart);
+                },
+                logger: _logger,
+                ct: ct).ConfigureAwait(false);
+
+            if (selectDevResults is null)
+            {
+                _state = PortalSessionState.Failed;
+                await CloseSessionCoreAsync().ConfigureAwait(false);
+                throw new InvalidOperationException("Portal SelectDevices failed.");
+            }
+
+            // Step 3 — SelectSources on ScreenCast (Monitor, Embedded cursor, no persist).
+            var selectSrcResults = await PortalDbusHelper.CallPortalAsync(
+                _conn!,
+                _normalizedSender!,
+                PortalDbusNames.ScreenCastInterface,
+                method: "SelectSources",
+                signature: "oa{sv}",
+                requestTimeout: TimeSpan.FromSeconds(30),
+                writeArgs: (ref MessageWriter w, string handleToken) =>
+                {
+                    w.WriteObjectPath(sessionHandle);
+                    var dictStart = w.WriteDictionaryStart();
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("handle_token");
+                    w.WriteVariantString(handleToken);
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("types");
+                    w.WriteVariantUInt32((uint)PortalSourceType.Monitor);
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("cursor_mode");
+                    w.WriteVariantUInt32((uint)PortalCursorMode.Embedded);
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("persist_mode");
+                    w.WriteVariantUInt32((uint)PortalPersistMode.DoNotPersist);
+
+                    w.WriteDictionaryEnd(dictStart);
+                },
+                logger: _logger,
+                ct: ct).ConfigureAwait(false);
+
+            if (selectSrcResults is null)
+            {
+                _state = PortalSessionState.Failed;
+                await CloseSessionCoreAsync().ConfigureAwait(false);
+                throw new InvalidOperationException("Portal SelectSources failed.");
+            }
+
+            // Step 4 — Start the session. Shows the permission dialog, so use a generous timeout.
+            _logger.LogInformation("Waiting for user to grant portal RemoteDesktop+ScreenCast permission...");
+            var startResults = await PortalDbusHelper.CallPortalAsync(
+                _conn!,
+                _normalizedSender!,
+                PortalDbusNames.RemoteDesktopInterface,
+                method: "Start",
+                signature: "osa{sv}",
+                requestTimeout: TimeSpan.FromMinutes(2),
+                writeArgs: (ref MessageWriter w, string handleToken) =>
+                {
+                    w.WriteObjectPath(sessionHandle);
+                    w.WriteString(string.Empty); // parent_window
+                    var dictStart = w.WriteDictionaryStart();
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("handle_token");
+                    w.WriteVariantString(handleToken);
+
+                    w.WriteDictionaryEnd(dictStart);
+                },
+                logger: _logger,
+                ct: ct).ConfigureAwait(false);
+
+            if (startResults is null)
+            {
+                _state = PortalSessionState.Failed;
+                await CloseSessionCoreAsync().ConfigureAwait(false);
+                throw new InvalidOperationException(
+                    "Portal Start failed: user declined permission or dialog timed out.");
+            }
+
+            var nodeIds = ParseStreamNodeIds(startResults, _logger);
+            if (nodeIds.Count == 0)
+            {
+                _logger.LogWarning(
+                    "Portal Start succeeded but returned no PipeWire streams. " +
+                    "Capture will fall back to legacy path.");
+            }
 
             var result = new PortalStartResult
             {
@@ -135,87 +278,88 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
         _state = PortalSessionState.Restarting;
         SessionLost?.Invoke();
 
-        await CloseSessionCoreAsync();
-        return await StartSessionAsync(ct);
+        await CloseSessionCoreAsync().ConfigureAwait(false);
+        return await StartSessionAsync(ct).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
     {
         _state = PortalSessionState.Closed;
-        await CloseSessionCoreAsync();
+        await CloseSessionCoreAsync().ConfigureAwait(false);
+
+        if (_conn is not null)
+        {
+            try { _conn.Dispose(); }
+            catch { /* best-effort */ }
+            _conn = null;
+        }
     }
 
-    // ── Portal D-Bus interaction ───────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────
 
-    private async Task SelectDevicesAsync(string sessionHandle, CancellationToken ct)
+    private async Task<bool> EnsureConnectionAsync(CancellationToken ct)
     {
-        _logger.LogDebug("SelectDevices: keyboard + pointer.");
+        if (_conn is not null) return true;
 
-        // Device types: 1=Keyboard, 2=Pointer — combined = 3
-        var args = BuildBusctlArgs(
-            "org.freedesktop.portal.RemoteDesktop",
-            "SelectDevices",
-            $"--session-handle={sessionHandle}",
-            "--types=3");   // Keyboard | Pointer
-
-        await RunBusctlAsync(args, ct);
-    }
-
-    private async Task SelectSourcesAsync(string sessionHandle, CancellationToken ct)
-    {
-        _logger.LogDebug("SelectSources: Monitor, EmbeddedCursor.");
-
-        // source_type=1 (Monitor), cursor_mode=2 (Embedded), persist=0 (none)
-        var args = BuildBusctlArgs(
-            "org.freedesktop.portal.ScreenCast",
-            "SelectSources",
-            $"--session-handle={sessionHandle}",
-            "--types=1",       // Monitor
-            "--cursor-mode=2", // Embedded
-            "--persist-mode=0");
-
-        await RunBusctlAsync(args, ct);
-    }
-
-    private async Task<IReadOnlyList<uint>> StartSessionCoreAsync(string sessionHandle, CancellationToken ct)
-    {
-        _logger.LogDebug("Starting portal session.");
-
-        var args = BuildBusctlArgs(
-            "org.freedesktop.portal.RemoteDesktop",
-            "Start",
-            $"--session-handle={sessionHandle}");
-
-        var output = await RunBusctlAsync(args, ct);
-
-        // Parse node IDs from busctl output. Format varies by portal version;
-        // look for 'node_id' in the variant map returned by Start.
-        var nodeIds = ParseNodeIds(output);
-
-        if (nodeIds.Count == 0)
+        var address = Address.Session;
+        if (string.IsNullOrEmpty(address))
         {
             _logger.LogWarning(
-                "Portal Start succeeded but returned no stream node IDs. " +
-                "PipeWire capture will attempt to open fd 0 as fallback.");
+                "DBUS_SESSION_BUS_ADDRESS unset; portal capture session cannot start.");
+            return false;
         }
 
-        return nodeIds;
+        try
+        {
+            var conn = new Connection(address);
+            await conn.ConnectAsync().ConfigureAwait(false);
+            _conn = conn;
+
+            var unique = _conn.UniqueName;
+            if (string.IsNullOrEmpty(unique))
+            {
+                _logger.LogWarning(
+                    "D-Bus connection has no unique name; portal session cannot proceed.");
+                return false;
+            }
+
+            _normalizedSender = PortalDbusHelper.NormalizeSender(unique);
+            _logger.LogDebug("D-Bus connected (sender={Sender}, normalized={Normalized}).",
+                unique, _normalizedSender);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to connect to D-Bus session bus.");
+            return false;
+        }
     }
 
     private async Task CloseSessionCoreAsync()
     {
-        if (_sessionHandle is null) return;
+        if (_sessionHandle is null || _conn is null)
+        {
+            _sessionHandle = null;
+            return;
+        }
 
         try
         {
             _logger.LogDebug("Closing portal session {Handle}.", _sessionHandle);
-            var args = $"--user call org.freedesktop.portal.Desktop " +
-                       $"{_sessionHandle} org.freedesktop.portal.Session Close";
-            await RunBusctlRawAsync(args, CancellationToken.None);
+            var writer = _conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDbusNames.PortalService,
+                path: _sessionHandle,
+                @interface: PortalDbusNames.SessionInterface,
+                member: "Close",
+                flags: MessageFlags.NoReplyExpected);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+            await Task.Yield();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error closing portal session (best effort).");
+            _logger.LogWarning(ex, "Closing portal session failed (best effort).");
         }
         finally
         {
@@ -223,88 +367,39 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
         }
     }
 
-    private static IReadOnlyList<uint> ParseNodeIds(string? output)
+    /// <summary>
+    /// Parses the <c>streams</c> entry from the Start Response results.
+    /// Signature: <c>a(ua{sv})</c> — array of (node_id, properties) structs.
+    /// </summary>
+    private static IReadOnlyList<uint> ParseStreamNodeIds(
+        Dictionary<string, VariantValue> results,
+        ILogger logger)
     {
-        if (string.IsNullOrWhiteSpace(output)) return Array.Empty<uint>();
-
-        var ids = new List<uint>();
-        // busctl output for Start includes stream descriptors; look for uint32 node_id values.
-        // This is a best-effort text parse — a proper D-Bus binding handles this cleanly.
-        var span = output.AsSpan();
-        const string marker = "node_id";
-        int pos = 0;
-        while ((pos = output.IndexOf(marker, pos, StringComparison.Ordinal)) >= 0)
+        if (!results.TryGetValue("streams", out var streamsVariant))
         {
-            pos += marker.Length;
-            // Skip whitespace and look for a digit sequence
-            while (pos < output.Length && !char.IsDigit(output[pos])) pos++;
-            int start = pos;
-            while (pos < output.Length && char.IsDigit(output[pos])) pos++;
-            if (start < pos && uint.TryParse(output.AsSpan(start, pos - start), out var id))
-                ids.Add(id);
+            logger.LogWarning("Portal Start Response has no 'streams' entry.");
+            return Array.Empty<uint>();
         }
-        return ids.AsReadOnly();
-    }
 
-    private async Task<string?> CallPortalMethodAsync(string method, string extraArgs, CancellationToken ct)
-    {
-        var args = BuildBusctlArgs("org.freedesktop.portal.RemoteDesktop", method, extraArgs);
-        var output = await RunBusctlAsync(args, ct);
-
-        // Extract session handle from output (string path returned by CreateSession)
-        if (output is null) return null;
-
-        foreach (var line in output.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("/org/freedesktop/portal/desktop/session/", StringComparison.Ordinal))
-                return trimmed;
-            if (trimmed.Contains("/session/"))
-            {
-                // Extract path segment
-                var idx = trimmed.IndexOf("/org/freedesktop/portal/desktop/session/", StringComparison.Ordinal);
-                if (idx >= 0)
-                {
-                    var path = trimmed[idx..].Split(' ')[0].TrimEnd('"', '\'');
-                    if (!string.IsNullOrWhiteSpace(path)) return path;
-                }
-            }
-        }
-        return null;
-    }
-
-    private static string BuildBusctlArgs(string iface, string method, params string[] extraArgs)
-    {
-        var extra = string.Join(" ", extraArgs);
-        return $"--user call {PortalDbusNames.PortalService} {PortalDbusNames.PortalPath} {iface} {method} {extra}";
-    }
-
-    private async Task<string?> RunBusctlAsync(string args, CancellationToken ct)
-        => await RunBusctlRawAsync(args, ct);
-
-    private static async Task<string?> RunBusctlRawAsync(string args, CancellationToken ct)
-    {
+        var nodeIds = new List<uint>();
         try
         {
-            var psi = new ProcessStartInfo("busctl", args)
+            // streamsVariant is a(ua{sv}) — array of structs. Each struct is a VariantValue
+            // whose first field (GetItem(0)) is the uint32 node_id.
+            var streams = streamsVariant.GetArray<VariantValue>();
+            foreach (var stream in streams)
             {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-
-            using var proc = Process.Start(psi);
-            if (proc is null) return null;
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(30)); // portal prompts can take time
-
-            var output = await proc.StandardOutput.ReadToEndAsync(cts.Token);
-            await proc.WaitForExitAsync(cts.Token);
-            return output;
+                nodeIds.Add(stream.GetItem(0).GetUInt32());
+            }
         }
-        catch (OperationCanceledException) { return null; }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Failed to parse 'streams' from portal Start Response. " +
+                "Variant type was {Type}, signature {Sig}.",
+                streamsVariant.Type, streamsVariant.GetType().Name);
+        }
+
+        return nodeIds.AsReadOnly();
     }
 }
