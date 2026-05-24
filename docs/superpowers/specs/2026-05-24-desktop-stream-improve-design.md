@@ -160,9 +160,11 @@ Then implement:
 
 - separate capture, encode, and send stages
 - latest-frame semantics between stages
-- adaptive quality/scale guardrails for ultra-wide and 4K-class desktops
+- adaptive quality/scale guardrails for ultra-wide and 4K-class desktops, with safe defaults first and optional later exposure as negotiated or user-configurable policy
 - faster defaults for large resolutions
 - early exit when a frame is unchanged
+
+Phase 1 should avoid protocol changes other than additional metrics and internal pacing/buffering behavior. It should not introduce delta tiles or new codec negotiation yet.
 
 **Expected outcome:** better FPS with minimal protocol change and clear evidence about where time is being spent.
 
@@ -237,6 +239,22 @@ Long term:
 - host encode time is no longer the dominant frame cost in the default configuration
 - Android decode/render stays stable without excessive memory churn
 - stream quality adapts predictably instead of relying on manually extreme settings like `quality=100`, `scale=1`, `fps=360`
+
+## Benchmark Scenario
+
+Use one baseline scenario for Phase 1 measurement so later changes are comparable:
+
+- Linux host on Wayland at 5120x1440
+- Android client on the current Compose desktop viewer
+- current WSS `/ws/desktop` transport
+- compare before/after for:
+  - achieved FPS
+  - average frame size
+  - capture wait time
+  - encode time
+  - WebSocket send time
+  - Android decode time
+  - dropped-frame count
 
 ## Recommended Next Step
 
