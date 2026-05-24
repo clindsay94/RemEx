@@ -48,6 +48,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.components.RemexScreenHeader
@@ -120,6 +122,49 @@ fun SettingsScreen(
             }
         }
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview() {
+    RemExTheme {
+        SettingsScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsCategoryListPreview() {
+    RemExTheme {
+        SettingsCategoryList(
+            selectedCategory = SettingsCategory.CONNECTION,
+            onCategoryClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun InputTabPreview() {
+    RemExTheme {
+        InputTab()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FileTransferSettingsTabPreview() {
+    RemExTheme {
+        FileTransferSettingsTab()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HelpTabPreview() {
+    RemExTheme {
+        HelpTab(onReplayTutorial = {}, onNavigateToAbout = {})
+    }
 }
 
 @Composable

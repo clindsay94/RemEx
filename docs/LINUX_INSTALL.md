@@ -13,27 +13,46 @@ If you are an end user, follow **[A]**. If you are a developer or contributor, f
 
 ### A1. Prerequisites
 
-RemEx needs the PipeWire runtime to capture the screen. It is installed by default on most modern distros, but verify:
+RemEx talks to the desktop via `xdg-desktop-portal` (RemoteDesktop + ScreenCast) and streams pixels through PipeWire. The portal-backend package is **desktop-specific** — install the one matching your DE.
+
+| Package | Purpose | Required | Arch / CachyOS / Manjaro | Ubuntu / Debian / Pop!_OS | Fedora |
+|---|---|---|---|---|---|
+| `xdg-desktop-portal` | Portal frontend (RemoteDesktop / ScreenCast) | Required | `sudo pacman -S xdg-desktop-portal` | `sudo apt install xdg-desktop-portal` | `sudo dnf install xdg-desktop-portal` |
+| `xdg-desktop-portal-kde` | Portal backend for KDE Plasma | KDE | `sudo pacman -S xdg-desktop-portal-kde` | `sudo apt install xdg-desktop-portal-kde` | `sudo dnf install xdg-desktop-portal-kde` |
+| `xdg-desktop-portal-gnome` | Portal backend for GNOME | GNOME | `sudo pacman -S xdg-desktop-portal-gnome` | `sudo apt install xdg-desktop-portal-gnome` | `sudo dnf install xdg-desktop-portal-gnome` |
+| `xdg-desktop-portal-wlr` | Portal backend for sway / Hyprland / other wlroots | Wayland WM | `sudo pacman -S xdg-desktop-portal-wlr` | `sudo apt install xdg-desktop-portal-wlr` | `sudo dnf install xdg-desktop-portal-wlr` |
+| `pipewire` + `wireplumber` | Screen capture stream | Required | `sudo pacman -S pipewire wireplumber` | `sudo apt install pipewire wireplumber` | `sudo dnf install pipewire wireplumber` |
+| `libei` | Wayland-native input injection | Recommended (Wayland) | `sudo pacman -S libei` | `sudo apt install libei1` | `sudo dnf install libei` |
+| `libevdev` | uinput virtual device support | Recommended | `sudo pacman -S libevdev` | `sudo apt install libevdev2` | `sudo dnf install libevdev` |
+| `ffmpeg` | MJPEG fallback encoder | Required for fallback | `sudo pacman -S ffmpeg` | `sudo apt install ffmpeg` | `sudo dnf install ffmpeg` |
+
+Optional but useful (RemEx probes for these at startup and uses whichever is present):
+
+| Tool | Purpose | Arch | Ubuntu/Debian |
+|---|---|---|---|
+| `kdotool` | Window / cursor control on KDE | `sudo pacman -S kdotool` (AUR) | not in repos — build from source |
+| `xdotool` | X11 input + window control | `sudo pacman -S xdotool` | `sudo apt install xdotool` |
+| `ydotool` | Wayland-generic uinput input | `sudo pacman -S ydotool` | `sudo apt install ydotool` |
+| `spectacle` | KDE screenshot fallback | `sudo pacman -S spectacle` | `sudo apt install kde-spectacle` |
+| `grim` + `slurp` | wlroots screenshot fallback | `sudo pacman -S grim slurp` | `sudo apt install grim slurp` |
+
+**Verify the portal stack is healthy:**
 
 ```bash
-# Check PipeWire is present
-pipewire --version
+# Frontend must expose RemoteDesktop and ScreenCast for KDE/GNOME
+busctl --user introspect org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop \
+  | grep -E 'RemoteDesktop|ScreenCast'
+
+# PipeWire must be running
+systemctl --user status pipewire wireplumber
+
+# Or use the bundled doctor (after install)
+~/.local/share/remex-host/Remex.Host --doctor
 ```
 
-If the command is not found, install it:
+**Checkpoint:** `busctl introspect` shows both `org.freedesktop.portal.RemoteDesktop` and `org.freedesktop.portal.ScreenCast`. PipeWire and WirePlumber are `Active: active (running)`. ✓
 
-```bash
-# Arch / CachyOS / Manjaro
-sudo pacman -S pipewire
-
-# Ubuntu / Debian / Pop!_OS
-sudo apt install pipewire
-
-# Fedora
-sudo dnf install pipewire
-```
-
-**Checkpoint:** `pipewire --version` prints a version number (e.g. `1.x.x`). ✓
+If `RemoteDesktop` is missing even though the backend is installed, jump to the troubleshooting entry **"RemoteDesktop interface unavailable even though xdg-desktop-portal-kde is installed"** below.
 
 ---
 
@@ -245,6 +264,51 @@ The MSBuild targets in the `.csproj` automatically copy `libremex_linux_bridge.s
 ---
 
 ## Troubleshooting
+
+### RemoteDesktop interface unavailable even though xdg-desktop-portal-kde is installed
+
+**Symptom (host log):**
+
+```
+warn: ...LinuxPortalRemoteDesktopSessionService[0]
+      Portal org.freedesktop.portal.RemoteDesktop.CreateSession returned a D-Bus error.
+      DBusException: org.freedesktop.DBus.Error.UnknownMethod:
+      No such interface "org.freedesktop.portal.RemoteDesktop" on object at path
+      /org/freedesktop/portal/desktop
+fail: ...LinuxCaptureSessionLifetime[0]
+      LinuxCaptureSessionLifetime: portal session creation failed; PipeWire capture unavailable.
+```
+
+**Cause.** The `xdg-desktop-portal` frontend (D-Bus name `org.freedesktop.portal.Desktop`) was started by `systemd --user` before Plasma/GNOME pushed `XDG_CURRENT_DESKTOP`, `WAYLAND_DISPLAY`, etc. into the user manager. Without those vars, the frontend's portal-file matcher (`UseIn=KDE` / `UseIn=GNOME`) can't pick the correct backend, so it never exposes the `RemoteDesktop` interface — even after the backend process is later activated. The frontend's exposed-interface table is frozen at startup.
+
+**One-line fix (try this first):**
+
+```bash
+systemctl --user import-environment \
+  XDG_CURRENT_DESKTOP XDG_SESSION_TYPE WAYLAND_DISPLAY \
+  DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_DATA_DIRS
+systemctl --user restart xdg-desktop-portal.service
+```
+
+Verify:
+
+```bash
+busctl --user introspect org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop \
+  | grep RemoteDesktop
+# Expected: org.freedesktop.portal.RemoteDesktop  interface
+```
+
+Then restart the host:
+
+```bash
+systemctl --user restart remex-host
+```
+
+**RemEx ships an automated check.** The host detects this state and self-repairs on the first failed `CreateSession` call per process. The installer's `install.sh install` runs the same `import-environment + restart` pre-emptively, and `~/.local/share/remex-host/Remex.Host --doctor` prints a detailed report plus an option to apply safe repairs.
+
+If `--doctor` reports that the backend package is missing entirely (rather than "frontend stale"), install it via the dependency table in section A1.
+
+---
 
 ### App does not appear in the application launcher after install
 

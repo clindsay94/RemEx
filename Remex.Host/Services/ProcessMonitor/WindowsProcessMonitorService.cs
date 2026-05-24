@@ -119,18 +119,36 @@ public class WindowsProcessMonitorService : IProcessMonitorService
         });
     }
 
-    public bool KillProcess(int processId)
+    public ProcessKillResult KillProcess(int processId)
     {
         try
         {
             var p = Process.GetProcessById(processId);
-            p.Kill();
-            return true;
+            p.Kill(entireProcessTree: true);
+            return new ProcessKillResult(true, "Process killed.");
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode is 5 or 1314)
+        {
+            _logger.LogWarning(ex, "Access denied killing process {Pid}; elevation is required.", processId);
+            return new ProcessKillResult(
+                false,
+                "Access denied. Run the host as Administrator or retry with KillProcessElevated.",
+                true);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Process {Pid} could not be found.", processId);
+            return new ProcessKillResult(false, "Process could not be found.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Process {Pid} has already exited.", processId);
+            return new ProcessKillResult(false, "Process has already exited.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to kill process {Pid}", processId);
-            return false;
+            return new ProcessKillResult(false, $"Failed to kill process {processId}.");
         }
     }
 

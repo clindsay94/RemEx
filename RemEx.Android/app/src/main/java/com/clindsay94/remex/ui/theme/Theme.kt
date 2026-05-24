@@ -24,6 +24,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import com.google.android.material.color.utilities.Hct
@@ -372,7 +380,6 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
-    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typographyForFontFamily(fontFamilyKey),
@@ -380,4 +387,40 @@ fun RemExTheme(
         motionScheme = MotionScheme.expressive(),
         content = content
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemExThemePreview() {
+    RemExTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("RemEx Theme", style = MaterialTheme.typography.headlineMedium)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.secondary, CircleShape))
+                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.tertiary, CircleShape))
+                    Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.error, CircleShape))
+                }
+
+                Button(onClick = {}) { Text("Primary Button") }
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Text("Elevated Card", modifier = Modifier.padding(16.dp))
+                }
+
+                Text("Shapes", style = MaterialTheme.typography.titleMedium)
+                LazyVerticalGrid(columns = GridCells.Fixed(4), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(8) { index ->
+                        Box(
+                            modifier = Modifier
+                                .aspectRatio(1f)
+                                .clip(cardShape(index.toFloat(), 12))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

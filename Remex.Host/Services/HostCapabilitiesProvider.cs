@@ -1,8 +1,11 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Remex.Core.Models;
+using Remex.Core.Services;
 using Remex.Host.Services.Input;
 using Remex.Host.Services.RemoteDesktop.Linux;
+using Remex.Host.Services.RemoteDesktop.Windows;
+using Remex.Host.Services.ScreenCapture;
 
 namespace Remex.Host.Services;
 
@@ -14,6 +17,11 @@ public interface IHostCapabilitiesProvider
     /// Returns the last Linux prerequisite report, or null on non-Linux hosts.
     /// </summary>
     LinuxPrerequisiteReport? GetLinuxPrerequisiteReport();
+
+    /// <summary>
+    /// Returns a live Windows remote desktop diagnostics snapshot, or null on non-Windows hosts.
+    /// </summary>
+    WindowsRemoteDesktopDiagnosticReport? GetWindowsRemoteDesktopDiagnosticReport();
 }
 
 public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
@@ -21,20 +29,35 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     // All inputs (OS, env vars, installed tools, session ID) are stable for the lifetime
     // of the host process. Cache the result to avoid spawning `which` subprocesses on
     // every health-check request or WebSocket handshake.
-    private readonly Lazy<HostCapabilities> _cached = new(Build, isThreadSafe: true);
-    private static LinuxPrerequisiteReport? _linuxReport;
+    private readonly IScreenCaptureService _screenCapture;
+    private readonly IInputSimulationService _inputSimulation;
+    private readonly Lazy<HostCapabilities> _cached;
+    private LinuxPrerequisiteReport? _linuxReport;
+
+    public HostCapabilitiesProvider(
+        IScreenCaptureService screenCapture,
+        IInputSimulationService inputSimulation)
+    {
+        _screenCapture = screenCapture;
+        _inputSimulation = inputSimulation;
+        _cached = new Lazy<HostCapabilities>(Build, isThreadSafe: true);
+    }
 
     public HostCapabilities GetCurrent() => _cached.Value;
 
     public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport()
         => OperatingSystem.IsLinux() ? _linuxReport : null;
 
-    private static HostCapabilities Build()
+    public WindowsRemoteDesktopDiagnosticReport? GetWindowsRemoteDesktopDiagnosticReport()
+        => OperatingSystem.IsWindows() ? EvaluateWindowsDiagnostics() : null;
+
+    private HostCapabilities Build()
     {
         var platform = GetPlatform();
         var isInteractiveSession = GetIsInteractiveSession();
         var runtimeMode = GetRuntimeMode(isInteractiveSession);
         var linuxBackend = OperatingSystem.IsLinux() ? LinuxDesktopBackendProbe.Probe() : null;
+        var windowsReport = OperatingSystem.IsWindows() ? EvaluateWindowsDiagnostics() : null;
 
         // Stage 1: evaluate the full Linux prerequisites report and cache it.
         LinuxPrerequisiteReport? prereqReport = null;
@@ -44,8 +67,8 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             _linuxReport = prereqReport;
         }
 
-        var (supportsRemoteDesktop, remoteDesktopReason) = SupportsRemoteDesktop(isInteractiveSession, linuxBackend, prereqReport);
-        var supportsInputSimulation = SupportsInputSimulation(isInteractiveSession, linuxBackend, prereqReport);
+        var (supportsRemoteDesktop, remoteDesktopReason) = SupportsRemoteDesktop(isInteractiveSession, linuxBackend, prereqReport, windowsReport);
+        var supportsInputSimulation = SupportsInputSimulation(isInteractiveSession, linuxBackend, prereqReport, windowsReport);
         var version = typeof(HostCapabilitiesProvider).Assembly.GetName().Version?.ToString() ?? "unknown";
 
         return new HostCapabilities
@@ -64,7 +87,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsCursorQuery = SupportsCursorQuery(isInteractiveSession, linuxBackend),
             SupportsAdvancedWindowControl = SupportsAdvancedWindowControl(isInteractiveSession, linuxBackend),
             SupportsInteractiveAppLaunch = !OperatingSystem.IsWindows() || isInteractiveSession || Process.GetCurrentProcess().SessionId == 0,
-            InputBackend = GetLinuxInputBackendName(linuxBackend, prereqReport),
+            InputBackend = GetInputBackendName(linuxBackend, prereqReport, windowsReport),
             WindowControlBackend = linuxBackend?.WindowControlBackendName,
             RemoteDesktopUnavailableReason = remoteDesktopReason,
         };
@@ -136,13 +159,15 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     private static (bool Supported, string? Reason) SupportsRemoteDesktop(
         bool isInteractiveSession,
         LinuxDesktopBackendStatus? linuxBackend,
-        LinuxPrerequisiteReport? prereqReport)
+        LinuxPrerequisiteReport? prereqReport,
+        WindowsRemoteDesktopDiagnosticReport? windowsReport)
     {
         if (OperatingSystem.IsWindows())
         {
-            return isInteractiveSession
-                ? (true, null)
-                : (false, "Remote desktop requires an interactive logged-in user session. The service can stay online for commands, but a logged-in companion is required for screen streaming and input.");
+            return windowsReport?.SupportsRemoteDesktopSession ?? isInteractiveSession
+                ? (true, windowsReport?.CaptureBackendDegradedReason)
+                : (false, windowsReport?.RemoteDesktopUnavailableReason
+                    ?? "Remote desktop requires an interactive logged-in user session. The service can stay online for commands, but a logged-in companion is required for screen streaming and input.");
         }
 
         if (OperatingSystem.IsLinux())
@@ -178,9 +203,10 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     private static bool SupportsInputSimulation(
         bool isInteractiveSession,
         LinuxDesktopBackendStatus? linuxBackend,
-        LinuxPrerequisiteReport? prereqReport)
+        LinuxPrerequisiteReport? prereqReport,
+        WindowsRemoteDesktopDiagnosticReport? windowsReport)
     {
-        if (OperatingSystem.IsWindows()) return isInteractiveSession;
+        if (OperatingSystem.IsWindows()) return windowsReport?.SupportsRemoteDesktopSession ?? isInteractiveSession;
         if (OperatingSystem.IsLinux())
         {
             if (!isInteractiveSession) return false;
@@ -195,10 +221,12 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return true;
     }
 
-    private static string? GetLinuxInputBackendName(
+    private string? GetInputBackendName(
         LinuxDesktopBackendStatus? linuxBackend,
-        LinuxPrerequisiteReport? prereqReport)
+        LinuxPrerequisiteReport? prereqReport,
+        WindowsRemoteDesktopDiagnosticReport? windowsReport)
     {
+        if (OperatingSystem.IsWindows()) return windowsReport?.InputBackend ?? _inputSimulation.BackendName;
         if (!OperatingSystem.IsLinux()) return null;
         if (prereqReport is null) return linuxBackend?.InputBackendName;
 
@@ -211,6 +239,12 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             _ => null,
         };
     }
+
+    [SupportedOSPlatform("windows")]
+    private WindowsRemoteDesktopDiagnosticReport EvaluateWindowsDiagnostics()
+        => WindowsRemoteDesktopDiagnostics.Evaluate(
+            _screenCapture as WindowsScreenCaptureService,
+            _inputSimulation as WindowsInputSimulationService);
 
     private static bool SupportsCursorQuery(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
     {

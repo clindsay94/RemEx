@@ -29,9 +29,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.graphics.toColorInt
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
@@ -60,33 +63,94 @@ fun PersonalizationScreen(
         viewModel: PersonalizationViewModel = viewModel(),
         showHeader: Boolean = true
 ) {
-    val view = LocalView.current
     val settingsState by viewModel.personalization.collectAsState()
-    val scrollBehavior = rememberRemexTopBarScrollBehavior()
 
     if (settingsState == null) {
-        Scaffold(
-                modifier =
-                        if (showHeader) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                        else Modifier,
-                topBar = {
-                    if (showHeader) {
-                        RemexFlexibleTopBar(
-                                title = stringResource(R.string.screen_personalization_title),
-                                scrollBehavior = scrollBehavior
-                        )
-                    }
-                }
-        ) { innerPadding ->
-            Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
-        }
+        PersonalizationLoading(showHeader = showHeader)
         return
     }
 
-    val settings = settingsState!!
+    PersonalizationScreenContent(
+        settings = settingsState!!,
+        showHeader = showHeader,
+        onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset ->
+            viewModel.save(
+                themeMode = themeMode,
+                themePalette = palette,
+                themeStyle = themeStyle,
+                themeSeedColor = seedColor,
+                themeSeedChroma = themeSeedChroma,
+                themeContrast = themeContrast,
+                fontFamily = fontFamily,
+                fontScale = fontScale,
+                cardCornerRadius = cornerRadius,
+                cardOpacity = cardOpacity,
+                pcCardShapePreset = pcCardShapePreset,
+                telemetryCardShapePreset = telemetryCardShapePreset,
+                appLauncherCardShapePreset = appLauncherCardShapePreset,
+                taskManagerCardShapePreset = taskManagerCardShapePreset,
+                remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
+                remoteControlCardShapePreset = remoteControlCardShapePreset,
+                remoteMouseCardShapePreset = remoteMouseCardShapePreset
+            )
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PersonalizationLoading(showHeader: Boolean) {
+    val scrollBehavior = rememberRemexTopBarScrollBehavior()
+    Scaffold(
+            modifier =
+                    if (showHeader) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                    else Modifier,
+            topBar = {
+                if (showHeader) {
+                    RemexFlexibleTopBar(
+                            title = stringResource(R.string.screen_personalization_title),
+                            scrollBehavior = scrollBehavior
+                    )
+                }
+            }
+    ) { innerPadding ->
+        Box(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator() }
+    }
+}
+
+@OptIn(
+        ExperimentalMaterial3Api::class,
+        ExperimentalLayoutApi::class
+)
+@Composable
+fun PersonalizationScreenContent(
+    settings: SettingsManager.PersonalizationPreferences,
+    showHeader: Boolean,
+    onSave: (
+        themeMode: String,
+        themePalette: String,
+        themeStyle: String,
+        themeSeedColor: String,
+        themeSeedChroma: Float,
+        themeContrast: Float,
+        fontFamily: String,
+        fontScale: Float,
+        cardCornerRadius: Int,
+        cardOpacity: Float,
+        pcCardShapePreset: Float,
+        telemetryCardShapePreset: Float,
+        appLauncherCardShapePreset: Float,
+        taskManagerCardShapePreset: Float,
+        remoteDesktopCardShapePreset: Float,
+        remoteControlCardShapePreset: Float,
+        remoteMouseCardShapePreset: Float
+    ) -> Unit
+) {
+    val view = LocalView.current
+    val scrollBehavior = rememberRemexTopBarScrollBehavior()
 
     var themeMode by remember { mutableStateOf(settings.themeMode) }
     var palette by remember { mutableStateOf(settings.themePalette) }
@@ -137,24 +201,24 @@ fun PersonalizationScreen(
             remoteMouseCardShapePreset,
             taskManagerCardShapePreset
     ) {
-        viewModel.save(
-                themeMode = themeMode,
-                themePalette = palette,
-                themeStyle = themeStyle,
-                themeSeedColor = seedColor,
-                themeSeedChroma = themeSeedChroma,
-                themeContrast = themeContrast,
-                fontFamily = fontFamily,
-                fontScale = fontScale,
-                cardCornerRadius = cornerRadius,
-                cardOpacity = cardOpacity,
-                pcCardShapePreset = pcCardShapePreset,
-                telemetryCardShapePreset = telemetryCardShapePreset,
-                appLauncherCardShapePreset = appLauncherCardShapePreset,
-                taskManagerCardShapePreset = taskManagerCardShapePreset,
-                remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
-                remoteControlCardShapePreset = remoteControlCardShapePreset,
-                remoteMouseCardShapePreset = remoteMouseCardShapePreset
+        onSave(
+                themeMode,
+                palette,
+                themeStyle,
+                seedColor,
+                themeSeedChroma,
+                themeContrast,
+                fontFamily,
+                fontScale,
+                cornerRadius,
+                cardOpacity,
+                pcCardShapePreset,
+                telemetryCardShapePreset,
+                appLauncherCardShapePreset,
+                taskManagerCardShapePreset,
+                remoteDesktopCardShapePreset,
+                remoteControlCardShapePreset,
+                remoteMouseCardShapePreset
         )
     }
 
@@ -309,10 +373,6 @@ fun PersonalizationScreen(
                                                 LocaleListCompat.forLanguageTags(tag)
                                             }
                                             AppCompatDelegate.setApplicationLocales(locales)
-                                            // MainActivity is a ComponentActivity, so force a
-                                            // recreate after changing locales to guarantee the
-                                            // new Resources configuration is applied immediately
-                                            // across all supported Android versions.
                                             view.context.findActivity()?.recreate()
                                         }
                                 )
@@ -343,7 +403,6 @@ fun PersonalizationScreen(
                             stringResource(R.string.personalization_display_mode),
                             style = MaterialTheme.typography.labelMedium
                     )
-                    // M3: SegmentedButton for small exclusive-choice groups
                     val displayModeOptions = listOf("system", "light", "dark")
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         displayModeOptions.forEachIndexed { index, option ->
@@ -400,7 +459,6 @@ fun PersonalizationScreen(
                             stringResource(R.string.personalization_palette_mode),
                             style = MaterialTheme.typography.labelMedium
                     )
-                    // M3: SegmentedButton for 2-item exclusive choices
                     val paletteModeOptions = listOf("default", "custom")
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         paletteModeOptions.forEachIndexed { index, option ->
@@ -647,9 +705,6 @@ fun PersonalizationScreen(
                                 current.roundToInt().coerceIn(0, materialShapeNames.lastIndex)
                         val shapeName = materialShapeNames[shapeIndex]
                         var lastHapticIndex by remember { mutableIntStateOf(current.toInt()) }
-                        // Morph the preview shape smoothly between fixed presets while
-                        // the slider value itself stays snapped to integer indices
-                        // (so haptics + value semantics still tick at fixed points).
                         val animatedShapePreset by
                                 animateFloatAsState(
                                         targetValue = current,
@@ -716,6 +771,36 @@ fun PersonalizationScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PersonalizationScreenPreview() {
+    RemExTheme {
+        PersonalizationScreenContent(
+            settings = SettingsManager.PersonalizationPreferences(
+                themeMode = "system",
+                themePalette = "default",
+                themeStyle = "tonal_spot",
+                themeSeedColor = "#6750A4",
+                themeSeedChroma = 48.0f,
+                themeContrast = 0.0f,
+                fontFamily = "default",
+                fontScale = 1.0f,
+                cardCornerRadius = 12,
+                cardOpacity = 1.0f,
+                pcCardShapePreset = 0f,
+                telemetryCardShapePreset = 0f,
+                appLauncherCardShapePreset = 0f,
+                taskManagerCardShapePreset = 0f,
+                remoteDesktopCardShapePreset = 0f,
+                remoteControlCardShapePreset = 0f,
+                remoteMouseCardShapePreset = 0f
+            ),
+            showHeader = true,
+            onSave = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
+        )
     }
 }
 

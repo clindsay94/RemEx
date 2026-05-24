@@ -134,18 +134,28 @@ public class LinuxProcessMonitorService : IProcessMonitorService
         });
     }
 
-    public bool KillProcess(int processId)
+    public ProcessKillResult KillProcess(int processId)
     {
         try
         {
             var p = Process.GetProcessById(processId);
             p.Kill();
-            return true;
+            return new ProcessKillResult(true, "Process killed.");
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Process {Pid} could not be found.", processId);
+            return new ProcessKillResult(false, "Process could not be found.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Process {Pid} has already exited.", processId);
+            return new ProcessKillResult(false, "Process has already exited.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to kill process {Pid}", processId);
-            return false;
+            return new ProcessKillResult(false, $"Failed to kill process {processId}.");
         }
     }
 

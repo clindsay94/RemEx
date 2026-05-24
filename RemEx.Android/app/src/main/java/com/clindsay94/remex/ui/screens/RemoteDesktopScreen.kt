@@ -50,6 +50,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -2742,6 +2744,53 @@ fun RemoteDesktopScreenContent(
                         }
                 }
         }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemoteDesktopScreenPreview() {
+    RemExTheme {
+        RemoteDesktopScreenContent(
+            uiState = RemoteDesktopUiState(
+                isStreaming = true,
+                capabilityState = RemoteDesktopCapabilityState(supportsRemoteDesktop = true),
+                isFullscreen = false
+            ),
+            currentBitmap = null,
+            config = RemoteDesktopConfigState(quality = 70, targetFps = 60),
+            onSetFullscreen = {},
+            onStartStreaming = {},
+            onStopStreaming = {},
+            onSendText = {},
+            onSendKeyPress = {},
+            onSendMouseDown = { _, _, _ -> },
+            onSendMouseClick = {},
+            onSendMouseUp = {},
+            onSendMouseMove = { _, _ -> },
+            onSendMouseAbsolute = { _, _ -> },
+            onSendMouseAbsoluteClick = { _, _, _ -> },
+            onSendMouseScroll = { _, _ -> },
+            onUpdateQuality = {},
+            onUpdateTargetFps = {},
+            onUpdateDirectTouch = {},
+            onUpdatePointerSpeed = {},
+            onUpdateScrollSensitivity = { _, _ -> },
+            windowResults = emptyList(),
+            windowActionError = null,
+            onQueryWindows = {},
+            onActivateWindow = {},
+            onRaiseWindow = {},
+            onMinimizeWindow = {},
+            onCloseWindow = {},
+            onResizeWindow = { _, _, _ -> },
+            onMoveWindowToDesktop = { _, _ -> },
+            getHostScreenSize = { Pair(1920, 1080) },
+            currentFrameTimestamp = 0L,
+            fps = 60f,
+            showFpsOverlay = true,
+            onToggleFpsOverlay = {}
+        )
+    }
 }
 
 @Composable

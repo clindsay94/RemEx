@@ -103,16 +103,7 @@ internal static class PortalDbusHelper
                 buf = writer.CreateMessage();
             }
 
-            try
-            {
-                await conn.CallMethodAsync(buf).ConfigureAwait(false);
-            }
-            catch (DBusException ex)
-            {
-                logger.LogWarning(ex, "Portal {Interface}.{Method} returned a D-Bus error.",
-                    interfaceName, method);
-                return null;
-            }
+            await conn.CallMethodAsync(buf).ConfigureAwait(false);
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(requestTimeout);

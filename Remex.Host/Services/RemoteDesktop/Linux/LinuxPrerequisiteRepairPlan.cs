@@ -21,6 +21,14 @@ public enum LinuxRepairActionKind
     /// <summary>Set a udev rule to grant write access to <c>/dev/uinput</c>.</summary>
     AddUinputUdevRule,
 
+    /// <summary>
+    /// Restart <c>xdg-desktop-portal.service</c> after re-importing the
+    /// session env from a live desktop process. Required when the portal
+    /// frontend started in a bare environment and froze its interface list
+    /// without the KDE / GNOME backend.
+    /// </summary>
+    RestartPortalFrontend,
+
     /// <summary>Manual step that requires user action outside the app.</summary>
     Manual,
 }
@@ -28,12 +36,28 @@ public enum LinuxRepairActionKind
 /// <summary>
 /// A single concrete action in a repair plan.
 /// </summary>
+/// <param name="Kind">Action category.</param>
+/// <param name="Description">Human-readable description shown in the repair UI.</param>
+/// <param name="Command">
+/// Whitespace-separated command line. Split with <c>Split(' ', 2)</c> by the
+/// executor — fine for simple commands, but does NOT understand shell quoting
+/// (single quotes pass through literally). For multi-token arguments or shell
+/// scripts, use <paramref name="ArgumentList"/> instead.
+/// </param>
+/// <param name="RequiresElevation">True when the action invokes sudo or modifies system files.</param>
+/// <param name="ArgumentList">
+/// Optional pre-tokenized argument list. When non-null the executor uses
+/// <c>ProcessStartInfo.ArgumentList</c> instead of parsing
+/// <paramref name="Command"/>, which lets arguments contain spaces and shell
+/// metacharacters without quoting hazards. The first element is the executable.
+/// </param>
 [SupportedOSPlatform("linux")]
 public sealed record LinuxRepairAction(
     LinuxRepairActionKind Kind,
     string Description,
     string? Command = null,
-    bool RequiresElevation = false);
+    bool RequiresElevation = false,
+    IReadOnlyList<string>? ArgumentList = null);
 
 /// <summary>
 /// An ordered repair plan produced by <see cref="LinuxRemoteDesktopPrerequisites"/>

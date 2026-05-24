@@ -56,6 +56,7 @@ public partial class App : Application
         collection.AddSingleton<HardwareThemeService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
         collection.AddSingleton<PinnedCertStore>();
+        collection.AddSingleton<IPairingPinQueryService, IpcPairingPinQueryService>();
 
         collection.AddSingleton<ConnectionViewModel>();
         collection.AddTransient<AppLauncherViewModel>();
@@ -150,6 +151,17 @@ public partial class App : Application
                 is Remex.Core.Services.Security.IPairingService pairingService)
             {
                 viewModel.Connection.AttachEmbeddedPairingService(pairingService);
+            }
+
+            if (OperatingSystem.IsWindows() && !CommandModeContext.IsServerMode)
+            {
+                var pairingPinQueryService = Services.GetService<IPairingPinQueryService>();
+                if (pairingPinQueryService != null)
+                {
+                    viewModel.Connection.AttachStandalonePairingPinQueryService(pairingPinQueryService);
+                    await viewModel.Connection.RefreshStandalonePairingPinAsync();
+                    viewModel.Connection.StartStandalonePairingPinPolling();
+                }
             }
 
             _ = viewModel.Connection.AutoConnectAsync();

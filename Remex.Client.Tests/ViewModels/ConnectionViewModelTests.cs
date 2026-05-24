@@ -11,7 +11,10 @@ using Remex.Client.ViewModels;
 using Remex.Core;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Models.IPC;
 using Remex.Core.Services.Network;
+using Remex.Core.Services.Security;
+using Remex.Client.Services.Security;
 using Xunit;
 
 namespace Remex.Client.Tests.ViewModels;
@@ -212,6 +215,118 @@ public class ConnectionViewModelTests : IDisposable
             .ReturnsAsync(new List<string>());
         await _viewModel.DiscoverHostsCommand.ExecuteAsync(null);
         _viewModel.StatusText.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void AttachEmbeddedPairingService_WhenPinAlreadyActive_ShouldSyncCurrentState()
+    {
+        var service = new FakePairingService("123456", DateTimeOffset.UtcNow.AddMinutes(2));
+
+        _viewModel.AttachEmbeddedPairingService(service);
+
+        _viewModel.HasActivePairingPin.Should().BeTrue();
+        _viewModel.ActivePairingPin.Should().Be("123456");
+        _viewModel.ShowPairingPin.Should().BeTrue();
+        _viewModel.PairingPinExpiresInText.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task RefreshStandalonePairingPinAsync_WhenPinAppearsLater_ShouldSyncCurrentState()
+    {
+        var queryService = new FakeStandalonePairingPinQueryService(
+            null,
+            new PairingPinInfo("654321", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds()));
+
+        _viewModel.AttachStandalonePairingPinQueryService(queryService);
+
+        await _viewModel.RefreshStandalonePairingPinAsync();
+        _viewModel.HasActivePairingPin.Should().BeFalse();
+
+        await _viewModel.RefreshStandalonePairingPinAsync();
+        _viewModel.HasActivePairingPin.Should().BeTrue();
+        _viewModel.ActivePairingPin.Should().Be("654321");
+        _viewModel.ShowPairingPin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RefreshStandalonePairingPinAsync_WhenEmbeddedHostInactive_ShouldSurfaceStandalonePin()
+    {
+        _viewModel.AttachEmbeddedPairingService(new FakePairingService(active: false));
+        _viewModel.AttachStandalonePairingPinQueryService(
+            new FakeStandalonePairingPinQueryService(
+                new PairingPinInfo("777777", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds())));
+
+        await _viewModel.RefreshStandalonePairingPinAsync();
+
+        _viewModel.HasActivePairingPin.Should().BeTrue();
+        _viewModel.ActivePairingPin.Should().Be("777777");
+        _viewModel.ShowPairingPin.Should().BeTrue();
+    }
+
+}
+
+internal sealed class FakePairingService : IPairingService
+{
+    private readonly string _pin;
+    private readonly long _expiresAtUnixMs;
+    private readonly bool _active;
+
+    public FakePairingService(string pin = "123456", DateTimeOffset? expiresAt = null, bool active = true)
+    {
+        _pin = pin;
+        _expiresAtUnixMs = (expiresAt ?? DateTimeOffset.UtcNow.AddMinutes(2)).ToUnixTimeMilliseconds();
+        _active = active;
+    }
+
+    public Task<PairingState> StartPairingAsync(CancellationToken ct) =>
+        Task.FromResult(new PairingState(string.Empty, _pin, _expiresAtUnixMs));
+
+    public Task<string> DeriveSessionKeyAsync(string clientPublicKeyBase64, CancellationToken ct) =>
+        Task.FromResult(string.Empty);
+
+    public string GetActivePin() => _pin;
+
+    public bool TryGetActivePinInfo(out string pin, out long expiresAtUnixMs)
+    {
+        pin = _pin;
+        expiresAtUnixMs = _expiresAtUnixMs;
+        if (!_active)
+        {
+            pin = string.Empty;
+            expiresAtUnixMs = 0;
+            return false;
+        }
+
+        pin = _pin;
+        expiresAtUnixMs = _expiresAtUnixMs;
+        return true;
+    }
+
+    public bool IsPairingActive => _active;
+
+    public Task<bool> VerifyClientHmacAsync(string clientHmacBase64, CancellationToken ct) =>
+        Task.FromResult(true);
+
+    public void CancelPairing()
+    {
+    }
+
+    public event Action<string, long>? PinDisplayed;
+    public event Action? PinCleared;
+}
+
+internal sealed class FakeStandalonePairingPinQueryService : IPairingPinQueryService
+{
+    private readonly Queue<PairingPinInfo?> _responses;
+
+    public FakeStandalonePairingPinQueryService(params PairingPinInfo?[] responses)
+    {
+        _responses = new Queue<PairingPinInfo?>(responses);
+    }
+
+    public Task<PairingPinInfo?> GetActivePairingPinAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_responses.Count > 0 ? _responses.Dequeue() : null);
     }
 }
 

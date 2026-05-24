@@ -8,172 +8,174 @@
     <ContentControl.Template>
         <ControlTemplate>
             <Grid x:DataType="vm:ShellViewModel">
-                <!-- ═══ Custom Gradient Mode ═══ -->
-                <!-- Static base — always visible when gradient mode is active -->
-                <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8">
-                    <Rectangle.Transitions>
-                        <Transitions>
-                            <DoubleTransition Property="Opacity" Duration="0:0:1" />
-                        </Transitions>
-                    </Rectangle.Transitions>
-                </Rectangle>
-                <!-- Animated opacity pulse — suppressed when reduced motion is on -->
-                <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated">
-                    <Rectangle.IsVisible>
-                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                            <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
-                            <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
-                        </MultiBinding>
-                    </Rectangle.IsVisible>
-                    <Rectangle.Styles>
-                        <Style Selector="Rectangle">
-                            <Style.Animations>
-                                <Animation Duration="0:0:10" IterationCount="Infinite" PlaybackDirection="Alternate">
-                                    <KeyFrame KeyTime="0:0:0">
-                                        <Setter Property="Opacity" Value="0.7"/>
-                                    </KeyFrame>
-                                    <KeyFrame KeyTime="0:0:10">
-                                        <Setter Property="Opacity" Value="0.9"/>
-                                    </KeyFrame>
-                                </Animation>
-                            </Style.Animations>
-                        </Style>
-                    </Rectangle.Styles>
-                </Rectangle>
-
-                <!-- ═══ Wallpaper Mode — Animated Aurora Mesh ═══ -->
-                <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
-                    <!-- Base dark layer -->
-                    <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
-
-                    <!-- Animated aurora layer 1 — primary accent glow -->
-                    <Rectangle Name="AuroraLayer1">
+                <Grid IsHitTestVisible="False">
+                    <!-- ═══ Custom Gradient Mode ═══ -->
+                    <!-- Static base — always visible when gradient mode is active -->
+                    <Rectangle IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGradient}}" Fill="{DynamicResource BackgroundGradientBrush}" Opacity="0.8">
+                        <Rectangle.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:1" />
+                            </Transitions>
+                        </Rectangle.Transitions>
+                    </Rectangle>
+                    <!-- Animated opacity pulse — suppressed when reduced motion is on -->
+                    <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" x:Name="GradientAnimated">
                         <Rectangle.IsVisible>
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
+                                <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsGradient}"/>
                                 <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
                             </MultiBinding>
                         </Rectangle.IsVisible>
-                        <Rectangle.Fill>
-                            <RadialGradientBrush Center="25%,35%" RadiusX="0.65" RadiusY="0.75">
-                                <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
-                                <GradientStop Offset="0.5" Color="#1600F3FF" />
-                                <GradientStop Offset="1" Color="#00000000" />
-                            </RadialGradientBrush>
-                        </Rectangle.Fill>
                         <Rectangle.Styles>
-                            <Style Selector="Rectangle#AuroraLayer1">
+                            <Style Selector="Rectangle">
                                 <Style.Animations>
-                                    <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                    <Animation Duration="0:0:10" IterationCount="Infinite" PlaybackDirection="Alternate">
                                         <KeyFrame KeyTime="0:0:0">
-                                            <Setter Property="Opacity" Value="0.40"/>
+                                            <Setter Property="Opacity" Value="0.7"/>
                                         </KeyFrame>
-                                        <KeyFrame KeyTime="0:0:4">
-                                            <Setter Property="Opacity" Value="0.70"/>
-                                        </KeyFrame>
-                                        <KeyFrame KeyTime="0:0:8">
-                                            <Setter Property="Opacity" Value="0.45"/>
+                                        <KeyFrame KeyTime="0:0:10">
+                                            <Setter Property="Opacity" Value="0.9"/>
                                         </KeyFrame>
                                     </Animation>
                                 </Style.Animations>
                             </Style>
                         </Rectangle.Styles>
                     </Rectangle>
-                    <!-- Animated aurora layer 2 — secondary accent sweep -->
-                    <Rectangle Name="AuroraLayer2">
-                        <Rectangle.IsVisible>
-                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
-                                <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
-                            </MultiBinding>
-                        </Rectangle.IsVisible>
-                        <Rectangle.Fill>
-                            <RadialGradientBrush Center="72%,65%" RadiusX="0.70" RadiusY="0.60">
-                                <GradientStop Offset="0" Color="{DynamicResource AccentHover}" />
-                                <GradientStop Offset="0.4" Color="#22F43F5E" />
-                                <GradientStop Offset="1" Color="#00000000" />
-                            </RadialGradientBrush>
-                        </Rectangle.Fill>
-                        <Rectangle.Styles>
-                            <Style Selector="Rectangle#AuroraLayer2">
-                                <Style.Animations>
-                                    <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate">
-                                        <KeyFrame KeyTime="0:0:0">
-                                            <Setter Property="Opacity" Value="0.28"/>
-                                        </KeyFrame>
-                                        <KeyFrame KeyTime="0:0:6">
-                                            <Setter Property="Opacity" Value="0.55"/>
-                                        </KeyFrame>
-                                        <KeyFrame KeyTime="0:0:12">
-                                            <Setter Property="Opacity" Value="0.22"/>
-                                        </KeyFrame>
-                                    </Animation>
-                                </Style.Animations>
-                            </Style>
-                        </Rectangle.Styles>
-                    </Rectangle>
-                    <!-- Accent glow top-center -->
-                    <Rectangle Name="AuroraLayer3">
-                        <Rectangle.IsVisible>
-                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
-                                <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
-                            </MultiBinding>
-                        </Rectangle.IsVisible>
-                        <Rectangle.Fill>
-                            <RadialGradientBrush Center="50%,8%" RadiusX="0.55" RadiusY="0.45">
-                                <GradientStop Offset="0" Color="{DynamicResource AccentPressed}" />
-                                <GradientStop Offset="1" Color="#00000000" />
-                            </RadialGradientBrush>
-                        </Rectangle.Fill>
-                        <Rectangle.Styles>
-                            <Style Selector="Rectangle#AuroraLayer3">
-                                <Style.Animations>
-                                    <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate">
-                                        <KeyFrame KeyTime="0:0:0">
-                                            <Setter Property="Opacity" Value="0.18"/>
-                                        </KeyFrame>
-                                        <KeyFrame KeyTime="0:0:15">
-                                            <Setter Property="Opacity" Value="0.42"/>
-                                        </KeyFrame>
-                                    </Animation>
-                                </Style.Animations>
-                            </Style>
-                        </Rectangle.Styles>
-                    </Rectangle>
-                </Panel>
 
-                <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
-                <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
-                    <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.8" />
-                    <Rectangle Opacity="{Binding Customization.GlassOpacity}">
-                        <Rectangle.Fill>
-                            <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
-                        </Rectangle.Fill>
-                    </Rectangle>
-                </Panel>
+                    <!-- ═══ Wallpaper Mode — Animated Aurora Mesh ═══ -->
+                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsWallpaper}}">
+                        <!-- Base dark layer -->
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
 
-                <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
-                <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
-                    <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
-                    <Rectangle Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
-                </Panel>
+                        <!-- Animated aurora layer 1 — primary accent glow -->
+                        <Rectangle Name="AuroraLayer1">
+                            <Rectangle.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
+                                    <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
+                                </MultiBinding>
+                            </Rectangle.IsVisible>
+                            <Rectangle.Fill>
+                                <RadialGradientBrush Center="25%,35%" RadiusX="0.65" RadiusY="0.75">
+                                    <GradientStop Offset="0" Color="{DynamicResource AccentPrimary}" />
+                                    <GradientStop Offset="0.5" Color="#1600F3FF" />
+                                    <GradientStop Offset="1" Color="#00000000" />
+                                </RadialGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Styles>
+                                <Style Selector="Rectangle#AuroraLayer1">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:8" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                            <KeyFrame KeyTime="0:0:0">
+                                                <Setter Property="Opacity" Value="0.40"/>
+                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:4">
+                                                <Setter Property="Opacity" Value="0.70"/>
+                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:8">
+                                                <Setter Property="Opacity" Value="0.45"/>
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </Rectangle.Styles>
+                        </Rectangle>
+                        <!-- Animated aurora layer 2 — secondary accent sweep -->
+                        <Rectangle Name="AuroraLayer2">
+                            <Rectangle.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
+                                    <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
+                                </MultiBinding>
+                            </Rectangle.IsVisible>
+                            <Rectangle.Fill>
+                                <RadialGradientBrush Center="72%,65%" RadiusX="0.70" RadiusY="0.60">
+                                    <GradientStop Offset="0" Color="{DynamicResource AccentHover}" />
+                                    <GradientStop Offset="0.4" Color="#22F43F5E" />
+                                    <GradientStop Offset="1" Color="#00000000" />
+                                </RadialGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Styles>
+                                <Style Selector="Rectangle#AuroraLayer2">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:12" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                            <KeyFrame KeyTime="0:0:0">
+                                                <Setter Property="Opacity" Value="0.28"/>
+                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:6">
+                                                <Setter Property="Opacity" Value="0.55"/>
+                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:12">
+                                                <Setter Property="Opacity" Value="0.22"/>
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </Rectangle.Styles>
+                        </Rectangle>
+                        <!-- Accent glow top-center -->
+                        <Rectangle Name="AuroraLayer3">
+                            <Rectangle.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="Customization.CanvasBackgroundType" Converter="{x:Static converters:StringMatchConverter.IsWallpaper}"/>
+                                    <Binding Path="IsReducedMotion" Converter="{x:Static BoolConverters.Not}"/>
+                                </MultiBinding>
+                            </Rectangle.IsVisible>
+                            <Rectangle.Fill>
+                                <RadialGradientBrush Center="50%,8%" RadiusX="0.55" RadiusY="0.45">
+                                    <GradientStop Offset="0" Color="{DynamicResource AccentPressed}" />
+                                    <GradientStop Offset="1" Color="#00000000" />
+                                </RadialGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Styles>
+                                <Style Selector="Rectangle#AuroraLayer3">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:15" IterationCount="Infinite" PlaybackDirection="Alternate">
+                                            <KeyFrame KeyTime="0:0:0">
+                                                <Setter Property="Opacity" Value="0.18"/>
+                                            </KeyFrame>
+                                            <KeyFrame KeyTime="0:0:15">
+                                                <Setter Property="Opacity" Value="0.42"/>
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </Rectangle.Styles>
+                        </Rectangle>
+                    </Panel>
 
-                <!-- ═══ Glass Mode — Frosted / see-through overlay ═══ -->
-                <!-- The window itself is transparent; this panel adds only a subtle frosted tint
-             so UI elements remain readable when the desktop shows behind the window. -->
-                <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGlass}}">
-                    <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.25" />
-                    <!-- Very light accent tint to tint the frost toward the theme color -->
-                    <Rectangle Fill="{DynamicResource AccentPrimaryBrush}" Opacity="0.08" />
-                </Panel>
+                    <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
+                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.8" />
+                        <Rectangle Opacity="{Binding Customization.GlassOpacity}">
+                            <Rectangle.Fill>
+                                <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
+                            </Rectangle.Fill>
+                        </Rectangle>
+                    </Panel>
 
-                <!-- ═══ Solid Mode — dark base + accent tint from color picker ═══ -->
-                <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsSolid}}">
-                    <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
-                    <!-- Accent tint driven by Glass Opacity slider so color picker affects the result -->
-                    <Rectangle Opacity="{Binding Customization.GlassOpacity}" Fill="{DynamicResource AccentPrimaryBrush}" />
-                </Panel>
+                    <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
+                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
+                        <Rectangle Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
+                    </Panel>
+
+                    <!-- ═══ Glass Mode — Frosted / see-through overlay ═══ -->
+                    <!-- The window itself is transparent; this panel adds only a subtle frosted tint
+                 so UI elements remain readable when the desktop shows behind the window. -->
+                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGlass}}">
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.25" />
+                        <!-- Very light accent tint to tint the frost toward the theme color -->
+                        <Rectangle Fill="{DynamicResource AccentPrimaryBrush}" Opacity="0.08" />
+                    </Panel>
+
+                    <!-- ═══ Solid Mode — dark base + accent tint from color picker ═══ -->
+                    <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsSolid}}">
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
+                        <!-- Accent tint driven by Glass Opacity slider so color picker affects the result -->
+                        <Rectangle Opacity="{Binding Customization.GlassOpacity}" Fill="{DynamicResource AccentPrimaryBrush}" />
+                    </Panel>
+                </Grid>
 
                 <!-- Main Content -->
                 <ContentPresenter Content="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" />

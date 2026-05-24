@@ -40,6 +40,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -189,9 +191,10 @@ fun AppLauncherScreenContent(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
 fun AppLauncherScreenPreview() {
-    MaterialTheme {
+    RemExTheme {
         AppLauncherScreenContent(
             uiState = AppLauncherUiState(
                 apps = listOf(

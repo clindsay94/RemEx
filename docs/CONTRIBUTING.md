@@ -60,7 +60,11 @@ The Linux build produces `.tar.gz` archives for both the client and host, includ
 Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php). The script publishes the desktop binary, then compiles the installer:
 ```powershell
 # From repo root
-.\installer\build-installer.ps1 -Version 1.10.0
+pwsh ./installer/build-installer.ps1
+
+# Force a specific flow if needed
+pwsh ./installer/build-installer.ps1 -Target Windows
+pwsh ./installer/build-installer.ps1 -Target Linux
 ```
 
 ### Native Android App (`RemEx.Android`)

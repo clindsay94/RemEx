@@ -38,6 +38,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     public int DesktopLeft { get; private set; }
     public int DesktopTop  { get; private set; }
     public bool IsAvailable => _duplOutput != IntPtr.Zero && !_disposed;
+    public string? UnavailableReason { get; private set; }
 
     // ── HRESULT constants ─────────────────────────────────────────────────────
     private const int S_OK                              = 0;
@@ -191,10 +192,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
         {
             InitializeDevice();
             InitializeDuplication();
+            UnavailableReason = null;
             _logger.LogInformation("DXGI Desktop Duplication initialized ({W}×{H}).", Width, Height);
         }
         catch (Exception ex)
         {
+            UnavailableReason = ex.Message;
             _logger.LogInformation(
                 "DXGI Desktop Duplication unavailable ({Msg}). GDI capture will be used.", ex.Message);
             ReleaseAll();
@@ -478,10 +481,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
         try
         {
             InitializeDuplication();
+            UnavailableReason = null;
             _logger.LogInformation("DXGI Desktop Duplication reinitialized ({W}×{H}).", Width, Height);
         }
         catch (Exception ex)
         {
+            UnavailableReason = ex.Message;
             _logger.LogWarning("DXGI reinitialize failed: {Msg}. Capture will fall back to GDI.", ex.Message);
         }
     }

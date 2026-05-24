@@ -8,6 +8,7 @@ using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host.Services.Input;
 using Remex.Host.Services.RemoteDesktop.Linux;
+using Remex.Host.Services.RemoteDesktop.Windows;
 using System.Collections.Generic;
 
 namespace Remex.Host.Tests;
@@ -70,14 +71,19 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
 
     private class MockHostCapabilitiesProvider : IHostCapabilitiesProvider
     {
-        public HostCapabilities GetCurrent() => new()
+        public HostCapabilities Current { get; init; } = new()
         {
             Platform = "test",
             SupportsRemoteDesktop = true,
             SupportsAdvancedWindowControl = true,
         };
 
-        public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport() => null;
+        public LinuxPrerequisiteReport? LinuxReport { get; init; }
+        public WindowsRemoteDesktopDiagnosticReport? WindowsReport { get; init; }
+
+        public HostCapabilities GetCurrent() => Current;
+        public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport() => LinuxReport;
+        public WindowsRemoteDesktopDiagnosticReport? GetWindowsRemoteDesktopDiagnosticReport() => WindowsReport;
     }
 
     private class MockDesktopWindowControlService : IDesktopWindowControlService
@@ -111,8 +117,9 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         };
     }
 
-    private WebApplicationFactory<Program> GetFactory()
+    private WebApplicationFactory<Program> GetFactory(MockHostCapabilitiesProvider? hostCapabilitiesProvider = null)
     {
+        hostCapabilitiesProvider ??= new MockHostCapabilitiesProvider();
         return _factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureServices(services =>
@@ -122,7 +129,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<IInputSimulationService>(sp => sp.GetRequiredService<MockInputSimulationService>());
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
                 services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
-                services.AddSingleton<IHostCapabilitiesProvider, MockHostCapabilitiesProvider>();
+                services.AddSingleton<IHostCapabilitiesProvider>(hostCapabilitiesProvider);
                 services.AddSingleton<IDesktopWindowControlService, MockDesktopWindowControlService>();
                 services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
                 {
@@ -391,5 +398,46 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         Assert.DoesNotContain(input.ReceivedEvents, evt => evt.StartsWith("move:", StringComparison.Ordinal));
 
         await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task DesktopStart_WhenWindowsDesktopBlocked_SendsActionableDesktopError()
+    {
+        var factory = GetFactory(new MockHostCapabilitiesProvider
+        {
+            Current = new HostCapabilities
+            {
+                Platform = "windows",
+                SupportsRemoteDesktop = true,
+                SupportsAdvancedWindowControl = true,
+            },
+            WindowsReport = new WindowsRemoteDesktopDiagnosticReport
+            {
+                SupportsRemoteDesktopSession = true,
+                CurrentDesktopReady = false,
+                InputDesktopAccessible = true,
+                InputDesktopName = "Winlogon",
+                CurrentDesktopUnavailableReason = "Windows is currently showing the Winlogon secure desktop (lock screen or credential/UAC prompt). Unlock the session or dismiss the secure prompt, then retry remote desktop.",
+                Issues =
+                [
+                    "Windows is currently showing the Winlogon secure desktop (lock screen or credential/UAC prompt). Unlock the session or dismiss the secure prompt, then retry remote desktop.",
+                ],
+            },
+        });
+
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig(),
+        }, CancellationToken.None);
+
+        var message = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+        Assert.NotNull(message);
+        Assert.Equal(MessageTypes.DesktopError, message!.Type);
+        Assert.Contains("Winlogon", message.ErrorText);
+        Assert.Contains("Unlock the session", message.ErrorText);
     }
 }

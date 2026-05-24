@@ -52,6 +52,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
@@ -1474,4 +1476,12 @@ private fun cubicBezier(p0: Offset, p1: Offset, p2: Offset, p3: Offset, t: Float
         val x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x
         val y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
         return Offset(x, y)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SplashScreenPreview() {
+    RemExTheme {
+        SplashScreen(onFinished = {})
+    }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,9 @@ public class WindowsInputSimulationService : IInputSimulationService
     {
         _logger = logger;
     }
+
+    public string? BackendName => "sendinput";
+    public string? LastInputFailureReason { get; private set; }
 
     public void MoveMouse(int x, int y)
     {
@@ -43,7 +47,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 }
             }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendOrThrow("absolute mouse move", input);
     }
 
     public void MouseMoveRelative(int dx, int dy)
@@ -62,7 +66,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 }
             }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendOrThrow("relative mouse move", input);
     }
 
     public void MouseDown(int button)
@@ -80,7 +84,7 @@ public class WindowsInputSimulationService : IInputSimulationService
             type = INPUT_MOUSE,
             u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flag } }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendOrThrow("mouse button down", input);
     }
 
     public void MouseUp(int button)
@@ -98,7 +102,7 @@ public class WindowsInputSimulationService : IInputSimulationService
             type = INPUT_MOUSE,
             u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flag } }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendOrThrow("mouse button up", input);
     }
 
     public void MouseClick(int button)
@@ -116,7 +120,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 type = INPUT_MOUSE,
                 u = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_WHEEL, mouseData = deltaY } }
             };
-            SendInput(1, [input], Marshal.SizeOf<INPUT>());
+            SendOrThrow("vertical mouse wheel", input);
         }
 
         if (deltaX != 0)
@@ -126,7 +130,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 type = INPUT_MOUSE,
                 u = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_HWHEEL, mouseData = deltaX } }
             };
-            SendInput(1, [input], Marshal.SizeOf<INPUT>());
+            SendOrThrow("horizontal mouse wheel", input);
         }
     }
 
@@ -151,7 +155,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 }
             }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendOrThrow("key down", input);
     }
 
     public void KeyUp(int keyCode)
@@ -175,7 +179,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 }
             }
         };
-        SendInput(1, [input], Marshal.SizeOf<INPUT>());
+        SendOrThrow("key up", input);
     }
 
     public void TypeText(string text)
@@ -208,8 +212,32 @@ public class WindowsInputSimulationService : IInputSimulationService
                     }
                 }
             };
-            SendInput(2, [downInput, upInput], Marshal.SizeOf<INPUT>());
+            SendOrThrow("unicode text input", downInput, upInput);
         }
+    }
+
+    private void SendOrThrow(string operation, params INPUT[] inputs)
+    {
+        var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+        if (sent == inputs.Length)
+        {
+            LastInputFailureReason = null;
+            return;
+        }
+
+        var error = Marshal.GetLastWin32Error();
+        LastInputFailureReason = error != 0
+            ? $"Windows SendInput failed during {operation} (Win32 {error}: {new Win32Exception(error).Message}). The desktop may be locked, showing a UAC/credential prompt, or Remex may not be running in the active user session."
+            : $"Windows SendInput was blocked during {operation}. The desktop may be locked, showing a UAC/credential prompt, or Remex may not be running in the active user session.";
+
+        _logger.LogWarning("Input injection failed during {Operation}: {Reason}", operation, LastInputFailureReason);
+
+        if (error != 0)
+        {
+            throw new Win32Exception(error, LastInputFailureReason);
+        }
+
+        throw new InvalidOperationException(LastInputFailureReason);
     }
 
     #region P/Invoke constants and structs

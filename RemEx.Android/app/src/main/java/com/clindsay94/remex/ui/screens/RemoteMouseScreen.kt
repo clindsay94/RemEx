@@ -50,6 +50,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -263,6 +265,43 @@ fun RemoteMouseScreenContent(
                     }
                 }
             } // end inner Column
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemoteMouseScreenPreview() {
+    RemExTheme {
+        RemoteMouseScreenContent(
+            isConnected = true,
+            shapePreset = 0f,
+            cornerRadius = 12,
+            vScrollSensitivity = 1.0f,
+            onNavigateToConnection = {},
+            onMouseMove = { _, _ -> },
+            onMouseClick = {},
+            onScroll = {},
+            onTextSent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FloatingMouseIslandPreview() {
+    RemExTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            FloatingMouseIslandContent(
+                shapePreset = 0f,
+                cornerRadius = 12,
+                vScrollSensitivity = 1.0f,
+                onDismiss = {},
+                onMouseMove = { _, _ -> },
+                onMouseClick = {},
+                onScroll = {},
+                onTextSent = {}
+            )
         }
     }
 }

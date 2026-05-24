@@ -33,6 +33,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
@@ -1230,6 +1232,38 @@ fun ConnectionScreenContent(
                         }
                 }
         }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ConnectionScreenPreview() {
+    RemExTheme {
+        ConnectionScreenContent(
+            connectionPrefs = SettingsManager.ConnectionPreferences(
+                host = "192.168.1.10",
+                port = 5005,
+                macAddress = "AA:BB:CC:DD:EE:FF",
+                broadcastIp = "192.168.1.255",
+                subnetMask = "255.255.255.0"
+            ),
+            desktopPrefs = SettingsManager.RemoteDesktopPreferences(
+                quality = 70,
+                targetFps = 60,
+                scale = 0.75f
+            ),
+            isConnecting = false,
+            isConnected = true,
+            status = "Connected",
+            connectionError = null,
+            capabilitySummary = "Desktop, Shell, TaskManager",
+            isDiscovering = false,
+            discoveredHost = null,
+            onNavigateToQrScanner = {},
+            onConnect = { _, _, _, _, _, _, _, _, _ -> },
+            onClearError = {},
+            onDiscoverHost = {}
+        )
+    }
 }
 
 @Composable

@@ -45,6 +45,10 @@
                 <Button Grid.Column="3" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Memory" Content="{local:Localize TaskMgr_SortRam}" Classes="sort-btn" VerticalAlignment="Center"/>
             </Grid>
 
+            <Border Background="{DynamicResource SystemErrorBackgroundBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" CornerRadius="12" Padding="12,8" IsVisible="{Binding KillError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding KillError}" Foreground="{DynamicResource SystemErrorBrush}" TextWrapping="Wrap"/>
+            </Border>
+
             <!-- Unified List Container (M3 Surface) -->
             <Border Classes="glass-card" Padding="0" ClipToBounds="True">
                 <ListBox ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Background="Transparent" BorderThickness="0" CornerRadius="24" IsEnabled="{Binding Connection.IsConnected}">

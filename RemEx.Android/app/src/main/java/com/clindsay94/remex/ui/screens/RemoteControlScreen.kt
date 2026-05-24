@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -278,6 +280,44 @@ fun RemoteControlScreenContent(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemoteControlScreenPreview() {
+    RemExTheme {
+        RemoteControlScreenContent(
+            uiState = RemoteControlUiState(
+                commandStatus = null,
+                shapePreset = 1f,
+                cornerRadius = 12,
+                isConnected = true
+            ),
+            onNavigateToConnection = {},
+            onWakePc = {},
+            onSendSystemCommand = { _, _ -> },
+            onClearCommandStatus = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CommandCardPreview() {
+    RemExTheme {
+        Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CommandCard(
+                card = remoteCommandCards.first(),
+                isAwaitingConfirmation = false,
+                timerText = "",
+                shape = com.clindsay94.remex.ui.theme.cardShape(0f, 8),
+                onTimerTextChanged = {},
+                onPrimaryClick = {},
+                onConfirm = {},
+                onCancel = {}
+            )
         }
     }
 }

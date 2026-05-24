@@ -302,6 +302,7 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
     fun killProcess(pid: Int) {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
+                _killError.value = null
                 val request =
                         JSONObject().apply {
                             put("action", "KillProcess")
@@ -313,14 +314,18 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                             )
                         }
                 val responseJson = RemexCoreClient.SendCommand(request.toString()).getOrNull()
-                val success = try {
-                    responseJson?.isNotBlank() == true &&
-                        JSONObject(responseJson).optBoolean("commandSuccess", true)
+                val (success, message) = try {
+                    if (responseJson?.isNotBlank() == true) {
+                        val response = JSONObject(responseJson)
+                        Pair(response.optBoolean("commandSuccess", true), response.optString("commandMessage").takeIf { it.isNotBlank() })
+                    } else {
+                        Pair(false, null)
+                    }
                 } catch (_: Exception) {
-                    responseJson?.isNotBlank() == true
+                    Pair(responseJson?.isNotBlank() == true, null)
                 }
                 if (!success) {
-                    _killError.value = "Failed to kill process $pid"
+                    _killError.value = message ?: "Failed to kill process $pid"
                 }
                 // Request a fresh process list immediately; the host will respond
                 // via the processList SharedFlow when it's ready.

@@ -6,7 +6,15 @@
 [Unit]
 Description=RemEx Host — remote desktop and telemetry server
 Documentation=https://github.com/clindsay94/remex
-After=network-online.target
+
+# Ordering: start AFTER the graphical session is up. graphical-session.target
+# is signaled by Plasma/GNOME *after* `systemctl --user import-environment` has
+# pushed XDG_CURRENT_DESKTOP / WAYLAND_DISPLAY / DBUS_SESSION_BUS_ADDRESS into
+# the user manager. Starting before that target leaves the host (and the portal
+# frontend it depends on) with a stale env and the RemoteDesktop interface
+# missing — see docs/LINUX_INSTALL.md troubleshooting.
+After=graphical-session.target xdg-desktop-portal.service network-online.target
+PartOf=graphical-session.target
 Wants=network-online.target
 
 [Service]
@@ -16,9 +24,10 @@ Restart=on-failure
 RestartSec=5
 TimeoutStopSec=10
 
-# The user service inherits the graphical session environment
-# (WAYLAND_DISPLAY, DISPLAY, DBUS_SESSION_BUS_ADDRESS, XDG_RUNTIME_DIR, etc.)
-# automatically via the systemd --user manager started by PAM/logind.
+# graphical-session.target propagates the full session env to the user manager,
+# so no explicit import is needed here.
 
 [Install]
-WantedBy=default.target
+# Bind to graphical-session.target instead of default.target so the host only
+# autostarts once Plasma/GNOME have completed env propagation.
+WantedBy=graphical-session.target

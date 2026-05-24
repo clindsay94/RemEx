@@ -113,6 +113,22 @@ public static unsafe class JniHelper
         }
     }
 
+    public static bool ExceptionCheck(IntPtr envPtr)
+    {
+        var env = (JNIEnv*)envPtr;
+        // ExceptionCheck is at index 228
+        var exceptionCheck = (delegate* unmanaged<IntPtr, byte>)env->Functions[228];
+        return exceptionCheck(envPtr) != 0;
+    }
+
+    public static void ExceptionClear(IntPtr envPtr)
+    {
+        var env = (JNIEnv*)envPtr;
+        // ExceptionClear is at index 17
+        var exceptionClear = (delegate* unmanaged<IntPtr, void>)env->Functions[17];
+        exceptionClear(envPtr);
+    }
+
     public static void CallVoidMethod(IntPtr envPtr, IntPtr obj, IntPtr methodId, IntPtr arg)
     {
         var env = (JNIEnv*)envPtr;

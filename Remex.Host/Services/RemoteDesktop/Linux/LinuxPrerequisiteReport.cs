@@ -42,6 +42,29 @@ public sealed record LinuxPrerequisiteReport
     public bool PortalScreenCastAvailable { get; init; }
     public string? PortalUnavailableReason { get; init; }
 
+    /// <summary>
+    /// True when a .portal backend file is installed locally that declares
+    /// <c>org.freedesktop.impl.portal.RemoteDesktop</c> and matches the current
+    /// <c>XDG_CURRENT_DESKTOP</c>. Used to distinguish "backend missing" from
+    /// "backend installed but frontend stale" — the latter is fixed by restarting
+    /// xdg-desktop-portal, not by installing more packages.
+    /// </summary>
+    public bool PortalBackendInstalled { get; init; }
+
+    /// <summary>
+    /// True when the matching backend's .portal file declares the
+    /// <c>RemoteDesktop</c> impl interface. Combined with
+    /// <see cref="PortalRemoteDesktopAvailable"/>=false, this signals the
+    /// stale-frontend case.
+    /// </summary>
+    public bool PortalBackendImplementsRemoteDesktop { get; init; }
+
+    /// <summary>
+    /// Suggested package name for the missing backend (e.g.
+    /// <c>xdg-desktop-portal-kde</c>), or null when not applicable.
+    /// </summary>
+    public string? PortalBackendPackageName { get; init; }
+
     // ── PipeWire ─────────────────────────────────────────────────────────
     public bool PipeWireRunning { get; init; }
     public bool WirePlumberRunning { get; init; }

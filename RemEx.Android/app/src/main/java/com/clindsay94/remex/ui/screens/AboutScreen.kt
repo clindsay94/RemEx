@@ -34,6 +34,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -44,10 +46,23 @@ import org.json.JSONObject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen() {
-    val context = LocalContext.current
-    val view = LocalView.current
     val isConnected by RemexClientManager.isConnected.collectAsState()
     val hostCapabilities by RemexClientManager.hostCapabilities.collectAsState(initial = "")
+
+    AboutScreenContent(
+        isConnected = isConnected,
+        hostCapabilities = hostCapabilities
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AboutScreenContent(
+    isConnected: Boolean,
+    hostCapabilities: String
+) {
+    val context = LocalContext.current
+    val view = LocalView.current
 
     val connectedLabel = stringResource(R.string.status_connected)
     val disconnectedLabel = stringResource(R.string.status_disconnected)
@@ -226,5 +241,16 @@ fun AboutScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AboutScreenPreview() {
+    RemExTheme {
+        AboutScreenContent(
+            isConnected = true,
+            hostCapabilities = "{\"version\":\"1.2.3\",\"platform\":\"Windows\",\"runtimeMode\":\"Native\"}"
+        )
     }
 }

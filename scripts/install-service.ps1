@@ -43,6 +43,39 @@ $ServiceName   = "RemexHost"
 $DisplayName   = "Remex Host"
 $Description   = "Remex remote execution and telemetry host service."
 $ProjectDir    = Join-Path $PSScriptRoot "..\Remex.Host"
+$EventLogName  = "Application"
+$EventSource   = "Remex.Host"
+
+function Test-EventSourceRegistered {
+    return [System.Diagnostics.EventLog]::SourceExists($EventSource)
+}
+
+function Ensure-EventSourceRegistered {
+    if (Test-EventSourceRegistered) {
+        Write-Host "Windows Event Log source '$EventSource' is already registered." -ForegroundColor Green
+        return
+    }
+
+    Write-Host "Registering Windows Event Log source '$EventSource'..." -ForegroundColor Cyan
+    try {
+        [System.Diagnostics.EventLog]::CreateEventSource($EventSource, $EventLogName)
+        Write-Host "Windows Event Log source '$EventSource' registered in '$EventLogName'." -ForegroundColor Green
+    } catch {
+        Write-Error "Failed to register Windows Event Log source '$EventSource': $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+function Write-DiagnosticsGuidance {
+    Write-Host ""
+    if (Test-EventSourceRegistered) {
+        Write-Host "Diagnostics: Event Viewer -> Windows Logs -> $EventLogName" -ForegroundColor Cyan
+        Write-Host "Filter by source '$EventSource' to inspect Remex Host service logs." -ForegroundColor Cyan
+    } else {
+        Write-Warning "Windows Event Log source '$EventSource' is not registered yet."
+        Write-Warning "Re-run .\install-service.ps1 -Action Install as Administrator to provision Event Viewer diagnostics."
+    }
+}
 
 # Resolve host binary location with multiple strategies
 $PublishDir = if ($HostPath -and (Test-Path $HostPath)) {
@@ -179,6 +212,7 @@ switch ($Action) {
 
         # Grant SeServiceLogonRight BEFORE creating service so it starts reliably
         Grant-LogOnAsService $Username
+        Ensure-EventSourceRegistered
 
         New-Service `
             -Name $ServiceName `
@@ -194,6 +228,7 @@ switch ($Action) {
         Write-Host ""
         Write-Host "Service '$DisplayName' installed and started as '$Username'." -ForegroundColor Green
         Write-Host "It will auto-start on boot. View in services.msc or use: .\install-service.ps1 -Action Status"
+        Write-DiagnosticsGuidance
     }
 
     "Uninstall" {
@@ -224,7 +259,7 @@ switch ($Action) {
             Write-Host "  Service : $($existing.DisplayName)" -ForegroundColor Cyan
             Write-Host "  Status  : $($existing.Status)"
             Write-Host "  Startup : $($existing.StartType)"
-            Write-Host ""
+            Write-DiagnosticsGuidance
         }
     }
 

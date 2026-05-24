@@ -86,32 +86,47 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                 throw new InvalidOperationException(
                     "Failed to connect to D-Bus session bus (DBUS_SESSION_BUS_ADDRESS unset?).");
 
-            // Step 1 — CreateSession on RemoteDesktop. The session_handle is delivered
-            // via the Response signal, NOT the immediate method return.
-            var createResults = await PortalDbusHelper.CallPortalAsync(
-                _conn!,
-                _normalizedSender!,
-                PortalDbusNames.RemoteDesktopInterface,
-                method: "CreateSession",
-                signature: "a{sv}",
-                requestTimeout: TimeSpan.FromSeconds(30),
-                writeArgs: (ref MessageWriter w, string handleToken) =>
-                {
-                    var sessionToken = $"remex_session_{handleToken}";
-                    var dictStart = w.WriteDictionaryStart();
+            string sessionInterface = PortalDbusNames.RemoteDesktopInterface;
+            bool isFallbackScreenCastOnly = false;
+            Dictionary<string, VariantValue>? createResults = null;
 
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("handle_token");
-                    w.WriteVariantString(handleToken);
+            // Step 1 — CreateSession on RemoteDesktop. If the portal frontend doesn't
+            // expose the interface, try one round of stale-frontend recovery before
+            // falling back to ScreenCast-only.
+            createResults = await TryCreateRemoteDesktopSessionAsync(ct).ConfigureAwait(false);
+            if (createResults is null)
+            {
+                isFallbackScreenCastOnly = true;
+                sessionInterface = PortalDbusNames.ScreenCastInterface;
+            }
 
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("session_handle_token");
-                    w.WriteVariantString(sessionToken);
+            if (isFallbackScreenCastOnly)
+            {
+                createResults = await PortalDbusHelper.CallPortalAsync(
+                    _conn!,
+                    _normalizedSender!,
+                    PortalDbusNames.ScreenCastInterface,
+                    method: "CreateSession",
+                    signature: "a{sv}",
+                    requestTimeout: TimeSpan.FromSeconds(30),
+                    writeArgs: (ref MessageWriter w, string handleToken) =>
+                    {
+                        var sessionToken = $"remex_session_{handleToken}";
+                        var dictStart = w.WriteDictionaryStart();
 
-                    w.WriteDictionaryEnd(dictStart);
-                },
-                logger: _logger,
-                ct: ct).ConfigureAwait(false);
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("handle_token");
+                        w.WriteVariantString(handleToken);
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("session_handle_token");
+                        w.WriteVariantString(sessionToken);
+
+                        w.WriteDictionaryEnd(dictStart);
+                    },
+                    logger: _logger,
+                    ct: ct).ConfigureAwait(false);
+            }
 
             if (createResults is null)
             {
@@ -133,36 +148,40 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
             _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
 
             // Step 2 — SelectDevices on RemoteDesktop (Keyboard | Pointer = 3).
-            var selectDevResults = await PortalDbusHelper.CallPortalAsync(
-                _conn!,
-                _normalizedSender!,
-                PortalDbusNames.RemoteDesktopInterface,
-                method: "SelectDevices",
-                signature: "oa{sv}",
-                requestTimeout: TimeSpan.FromSeconds(30),
-                writeArgs: (ref MessageWriter w, string handleToken) =>
-                {
-                    w.WriteObjectPath(sessionHandle);
-                    var dictStart = w.WriteDictionaryStart();
-
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("handle_token");
-                    w.WriteVariantString(handleToken);
-
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("types");
-                    w.WriteVariantUInt32((uint)(PortalDeviceType.Keyboard | PortalDeviceType.Pointer));
-
-                    w.WriteDictionaryEnd(dictStart);
-                },
-                logger: _logger,
-                ct: ct).ConfigureAwait(false);
-
-            if (selectDevResults is null)
+            // Skip this step for ScreenCast-only sessions.
+            if (!isFallbackScreenCastOnly)
             {
-                _state = PortalSessionState.Failed;
-                await CloseSessionCoreAsync().ConfigureAwait(false);
-                throw new InvalidOperationException("Portal SelectDevices failed.");
+                var selectDevResults = await PortalDbusHelper.CallPortalAsync(
+                    _conn!,
+                    _normalizedSender!,
+                    PortalDbusNames.RemoteDesktopInterface,
+                    method: "SelectDevices",
+                    signature: "oa{sv}",
+                    requestTimeout: TimeSpan.FromSeconds(30),
+                    writeArgs: (ref MessageWriter w, string handleToken) =>
+                    {
+                        w.WriteObjectPath(sessionHandle);
+                        var dictStart = w.WriteDictionaryStart();
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("handle_token");
+                        w.WriteVariantString(handleToken);
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("types");
+                        w.WriteVariantUInt32((uint)(PortalDeviceType.Keyboard | PortalDeviceType.Pointer));
+
+                        w.WriteDictionaryEnd(dictStart);
+                    },
+                    logger: _logger,
+                    ct: ct).ConfigureAwait(false);
+
+                if (selectDevResults is null)
+                {
+                    _state = PortalSessionState.Failed;
+                    await CloseSessionCoreAsync().ConfigureAwait(false);
+                    throw new InvalidOperationException("Portal SelectDevices failed.");
+                }
             }
 
             // Step 3 — SelectSources on ScreenCast (Monitor, Embedded cursor, no persist).
@@ -207,11 +226,18 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
             }
 
             // Step 4 — Start the session. Shows the permission dialog, so use a generous timeout.
-            _logger.LogInformation("Waiting for user to grant portal RemoteDesktop+ScreenCast permission...");
+            if (isFallbackScreenCastOnly)
+            {
+                _logger.LogInformation("Waiting for user to grant portal ScreenCast permission...");
+            }
+            else
+            {
+                _logger.LogInformation("Waiting for user to grant portal RemoteDesktop+ScreenCast permission...");
+            }
             var startResults = await PortalDbusHelper.CallPortalAsync(
                 _conn!,
                 _normalizedSender!,
-                PortalDbusNames.RemoteDesktopInterface,
+                sessionInterface,
                 method: "Start",
                 signature: "osa{sv}",
                 requestTimeout: TimeSpan.FromMinutes(2),
@@ -296,6 +322,71 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Attempts <c>RemoteDesktop.CreateSession</c>; on the specific D-Bus errors
+    /// indicating the interface isn't exposed, runs portal-frontend recovery
+    /// once per process and retries. Returns <c>null</c> when the interface
+    /// remains unavailable after recovery (caller falls back to ScreenCast-only).
+    /// </summary>
+    private async Task<Dictionary<string, VariantValue>?> TryCreateRemoteDesktopSessionAsync(
+        CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                return await PortalDbusHelper.CallPortalAsync(
+                    _conn!,
+                    _normalizedSender!,
+                    PortalDbusNames.RemoteDesktopInterface,
+                    method: "CreateSession",
+                    signature: "a{sv}",
+                    requestTimeout: TimeSpan.FromSeconds(30),
+                    writeArgs: (ref MessageWriter w, string handleToken) =>
+                    {
+                        var sessionToken = $"remex_session_{handleToken}";
+                        var dictStart = w.WriteDictionaryStart();
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("handle_token");
+                        w.WriteVariantString(handleToken);
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("session_handle_token");
+                        w.WriteVariantString(sessionToken);
+
+                        w.WriteDictionaryEnd(dictStart);
+                    },
+                    logger: _logger,
+                    ct: ct).ConfigureAwait(false);
+            }
+            catch (DBusException ex) when (
+                ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
+                ex.ErrorName == "org.freedesktop.DBus.Error.ServiceUnknown" ||
+                ex.ErrorName == "org.freedesktop.DBus.Error.UnknownInterface")
+            {
+                if (attempt == 0 && PortalRecoveryHelper.ShouldAttempt())
+                {
+                    _logger.LogWarning(ex,
+                        "RemoteDesktop portal interface missing. Attempting one-shot " +
+                        "recovery (restart xdg-desktop-portal with re-imported env)...");
+                    var recovered = await PortalRecoveryHelper.TryRecoverAsync(_logger, ct)
+                        .ConfigureAwait(false);
+                    if (recovered)
+                    {
+                        // Loop and retry CreateSession on the freshly-restarted frontend.
+                        continue;
+                    }
+                }
+                _logger.LogWarning(ex,
+                    "RemoteDesktop portal interface not available. Falling back to " +
+                    "ScreenCast-only session.");
+                return null;
+            }
+        }
+        return null;
+    }
 
     private async Task<bool> EnsureConnectionAsync(CancellationToken ct)
     {

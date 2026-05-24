@@ -28,6 +28,12 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         public Task SaveEntriesAsync(System.Collections.Generic.IEnumerable<Remex.Core.Models.AppEntry> entries) => Task.CompletedTask;
     }
 
+    private sealed class MockProcessMonitorService(Remex.Core.Models.ProcessKillResult killResult) : Remex.Core.Services.IProcessMonitorService
+    {
+        public Task<List<Remex.Core.Models.ProcessInfo>> GetProcessesAsync() => Task.FromResult(new List<Remex.Core.Models.ProcessInfo>());
+        public Remex.Core.Models.ProcessKillResult KillProcess(int processId) => killResult;
+    }
+
     [Fact]
     public async Task Command_Lock_ReturnsSuccess()
     {
@@ -56,9 +62,42 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.True(response!.CommandSuccess);
     }
 
+    [Fact]
+    public async Task Command_KillProcess_ReturnsPrivilegeHintWhenAccessDenied()
+    {
+        var factory = GetFactory(new Remex.Core.Models.ProcessKillResult(
+            false,
+            "Access denied. Run the host as Administrator or retry with KillProcessElevated.",
+            true));
+
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri($"ws://localhost{RemexConstants.WebSocketPath}"), CancellationToken.None);
+
+        var cmd = new RemexMessage
+        {
+            Type = MessageTypes.Command,
+            CommandAction = "KillProcess",
+            CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", "42" } }
+        };
+        await MessageSerializer.SendAsync(ws, cmd, CancellationToken.None);
+
+        RemexMessage? response = null;
+        while (true)
+        {
+            var msg = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+            if (msg?.Type == MessageTypes.CommandResponse) { response = msg; break; }
+            if (msg == null) break;
+        }
+
+        Assert.NotNull(response);
+        Assert.False(response!.CommandSuccess);
+        Assert.Equal("Access denied. Run the host as Administrator or retry with KillProcessElevated.", response.CommandMessage);
+    }
+
     private readonly WebApplicationFactory<Program> _factory;
 
-    private WebApplicationFactory<Program> GetFactory()
+    private WebApplicationFactory<Program> GetFactory(Remex.Core.Models.ProcessKillResult? killResult = null)
     {
         return _factory.WithWebHostBuilder(builder =>
         {
@@ -66,6 +105,8 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
             {
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
                 services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
+                services.AddSingleton<Remex.Core.Services.IProcessMonitorService>(
+                    new MockProcessMonitorService(killResult ?? new Remex.Core.Models.ProcessKillResult(true, "Process killed.")));
             });
         });
     }

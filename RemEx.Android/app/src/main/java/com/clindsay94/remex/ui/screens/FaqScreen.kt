@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
@@ -93,6 +95,14 @@ fun FaqScreen() {
 
             faqItems.forEach { item -> FaqCard(item) }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FaqScreenPreview() {
+    RemExTheme {
+        FaqScreen()
     }
 }
 

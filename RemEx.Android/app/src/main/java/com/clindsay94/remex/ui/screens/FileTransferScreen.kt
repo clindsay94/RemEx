@@ -66,6 +66,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -90,13 +92,75 @@ fun FileTransferScreen(
     val isSelectionMode by vm.isSelectionMode.collectAsState()
     val selectedEntryNames by vm.selectedEntryNames.collectAsState()
 
+    FileTransferScreenContent(
+        isConnected = isConnected,
+        remotePath = remotePath,
+        remoteEntries = remoteEntries,
+        remoteRoots = remoteRoots,
+        selectedRootId = selectedRootId,
+        isLoading = isLoading,
+        isTransferring = isTransferring,
+        transferProgress = transferProgress,
+        statusText = statusText,
+        isSelectionMode = isSelectionMode,
+        selectedEntryNames = selectedEntryNames,
+        onNavigateToConnection = onNavigateToConnection,
+        onSelectRoot = vm::selectRoot,
+        onRefreshRoots = vm::loadRemoteRoots,
+        onBrowseRemote = vm::browseRemote,
+        onCancelTransfer = vm::cancelTransfer,
+        onNavigateInto = vm::navigateInto,
+        onToggleEntrySelection = vm::toggleEntrySelection,
+        onEnterSelectionMode = vm::enterSelectionMode,
+        onClearSelection = vm::clearSelection,
+        onSelectAll = vm::selectAll,
+        onDeleteSelectedEntries = vm::deleteSelectedEntries,
+        onUploadFromUri = vm::uploadFromUri,
+        onDownloadToUri = vm::downloadToUri,
+        onRenameEntry = vm::renameEntry,
+        onDeleteEntry = vm::deleteEntry,
+        onPinCurrentFolder = vm::pinCurrentFolder
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun FileTransferScreenContent(
+    isConnected: Boolean,
+    remotePath: String,
+    remoteEntries: List<RemoteFileEntry>,
+    remoteRoots: List<RemoteSharedRoot>,
+    selectedRootId: String?,
+    isLoading: Boolean,
+    isTransferring: Boolean,
+    transferProgress: Float,
+    statusText: String,
+    isSelectionMode: Boolean,
+    selectedEntryNames: Set<String>,
+    onNavigateToConnection: () -> Unit,
+    onSelectRoot: (String) -> Unit,
+    onRefreshRoots: () -> Unit,
+    onBrowseRemote: () -> Unit,
+    onCancelTransfer: () -> Unit,
+    onNavigateInto: (RemoteFileEntry) -> Unit,
+    onToggleEntrySelection: (RemoteFileEntry) -> Unit,
+    onEnterSelectionMode: (RemoteFileEntry) -> Unit,
+    onClearSelection: () -> Unit,
+    onSelectAll: () -> Unit,
+    onDeleteSelectedEntries: () -> Unit,
+    onUploadFromUri: (android.net.Uri) -> Unit,
+    onDownloadToUri: (RemoteFileEntry, android.net.Uri) -> Unit,
+    onRenameEntry: (RemoteFileEntry, String) -> Unit,
+    onDeleteEntry: (RemoteFileEntry) -> Unit,
+    onPinCurrentFolder: () -> Unit
+) {
     val selectedRoot = remoteRoots.firstOrNull { it.rootId == selectedRootId }
     val padding = calculateAdaptivePadding(1f)
 
     // ── File pickers ──────────────────────────────────────────────────────────
     val uploadLauncher =
             rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-                if (uri != null) vm.uploadFromUri(uri)
+                if (uri != null) onUploadFromUri(uri)
             }
 
     var pendingDownloadEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
@@ -104,7 +168,7 @@ fun FileTransferScreen(
             rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
                 val entry = pendingDownloadEntry
                 pendingDownloadEntry = null
-                if (uri != null && entry != null) vm.downloadToUri(entry, uri)
+                if (uri != null && entry != null) onDownloadToUri(entry, uri)
             }
 
     // ── Rename dialog ─────────────────────────────────────────────────────────
@@ -123,14 +187,14 @@ fun FileTransferScreen(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = {
-                                vm.renameEntry(renameTarget!!, renameText)
+                                onRenameEntry(renameTarget!!, renameText)
                                 renameTarget = null
                             }),
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        vm.renameEntry(renameTarget!!, renameText)
+                        onRenameEntry(renameTarget!!, renameText)
                         renameTarget = null
                     }) { Text(stringResource(R.string.file_transfer_rename_confirm)) }
                 },
@@ -200,7 +264,7 @@ fun FileTransferScreen(
                             },
                             onClick = {
                                 contextMenuEntry = null
-                                vm.deleteEntry(entry)
+                                onDeleteEntry(entry)
                             },
                     )
                 }
@@ -211,8 +275,8 @@ fun FileTransferScreen(
                             leadingIcon = { Icon(Icons.Default.PushPin, null) },
                             onClick = {
                                 contextMenuEntry = null
-                                vm.navigateInto(entry)
-                                vm.pinCurrentFolder()
+                                onNavigateInto(entry)
+                                onPinCurrentFolder()
                             },
                     )
                 }
@@ -260,8 +324,8 @@ fun FileTransferScreen(
             SharedRootPicker(
                     roots = remoteRoots,
                     selectedRootId = selectedRootId,
-                    onSelectRoot = vm::selectRoot,
-                    onRefreshRoots = vm::loadRemoteRoots,
+                    onSelectRoot = onSelectRoot,
+                    onRefreshRoots = onRefreshRoots,
                     modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
             )
 
@@ -276,7 +340,7 @@ fun FileTransferScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        IconButton(onClick = { vm.clearSelection() }) {
+                        IconButton(onClick = { onClearSelection() }) {
                             Icon(Icons.Default.Close, stringResource(R.string.file_transfer_cancel_selection))
                         }
                         Text(
@@ -284,12 +348,12 @@ fun FileTransferScreen(
                                 style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.weight(1f),
                         )
-                        IconButton(onClick = { vm.selectAll() }) {
+                        IconButton(onClick = { onSelectAll() }) {
                             Icon(Icons.Default.SelectAll, stringResource(R.string.file_transfer_select_all))
                         }
                         if (selectedRoot?.canDelete == true) {
                             IconButton(
-                                    onClick = { vm.deleteSelectedEntries() },
+                                    onClick = { onDeleteSelectedEntries() },
                                     enabled = selectedEntryNames.isNotEmpty() && !isLoading,
                             ) {
                                 Icon(
@@ -318,7 +382,7 @@ fun FileTransferScreen(
                         Text(stringResource(R.string.file_transfer_upload))
                     }
                     OutlinedButton(
-                            onClick = { vm.browseRemote() },
+                            onClick = { onBrowseRemote() },
                             enabled = selectedRoot != null && !isLoading && !isTransferring,
                             modifier = Modifier.weight(1f),
                     ) {
@@ -327,7 +391,7 @@ fun FileTransferScreen(
                         Text(stringResource(R.string.file_transfer_browse))
                     }
                     if (isTransferring) {
-                        OutlinedButton(onClick = { vm.cancelTransfer() }, modifier = Modifier.weight(1f)) {
+                        OutlinedButton(onClick = { onCancelTransfer() }, modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.file_transfer_cancel))
                         }
                     }
@@ -383,10 +447,10 @@ fun FileTransferScreen(
                                     canDelete = selectedRoot?.canDelete == true,
                                     canRename = selectedRoot?.canRename == true,
                                     onTap = {
-                                        if (isSelectionMode) vm.toggleEntrySelection(entry)
-                                        else vm.navigateInto(entry)
+                                        if (isSelectionMode) onToggleEntrySelection(entry)
+                                        else onNavigateInto(entry)
                                     },
-                                    onLongPress = { vm.enterSelectionMode(entry) },
+                                    onLongPress = { onEnterSelectionMode(entry) },
                                     onDownload = {
                                         pendingDownloadEntry = entry
                                         createDocumentLauncher.launch(entry.name)
@@ -401,6 +465,49 @@ fun FileTransferScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FileTransferScreenPreview() {
+    RemExTheme {
+        FileTransferScreenContent(
+            isConnected = true,
+            remotePath = "C:\\Downloads",
+            remoteEntries = listOf(
+                RemoteFileEntry("document.pdf", false, 1024 * 1024),
+                RemoteFileEntry("photos", true, 0),
+                RemoteFileEntry("old_report.docx", false, 512 * 1024)
+            ),
+            remoteRoots = listOf(
+                RemoteSharedRoot("root1", "C Drive", true, true, true, true),
+                RemoteSharedRoot("root2", "Downloads", true, true, true, true)
+            ),
+            selectedRootId = "root2",
+            isLoading = false,
+            isTransferring = false,
+            transferProgress = 0f,
+            statusText = "Ready",
+            isSelectionMode = false,
+            selectedEntryNames = emptySet(),
+            onNavigateToConnection = {},
+            onSelectRoot = {},
+            onRefreshRoots = {},
+            onBrowseRemote = {},
+            onCancelTransfer = {},
+            onNavigateInto = {},
+            onToggleEntrySelection = {},
+            onEnterSelectionMode = {},
+            onClearSelection = {},
+            onSelectAll = {},
+            onDeleteSelectedEntries = {},
+            onUploadFromUri = {},
+            onDownloadToUri = { _, _ -> },
+            onRenameEntry = { _, _ -> },
+            onDeleteEntry = {},
+            onPinCurrentFolder = {}
+        )
     }
 }
 

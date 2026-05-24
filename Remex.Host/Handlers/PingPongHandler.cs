@@ -369,17 +369,24 @@ public sealed class PingPongHandler(
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))
                     {
-                        var killed = processMonitorService.KillProcess(pid);
-                        return MakeCommandResponse(killed, killed ? "Process killed." : "Failed to kill process.");
+                        var killResult = processMonitorService.KillProcess(pid);
+                        return MakeCommandResponse(
+                            killResult.Success,
+                            killResult.Success
+                                ? "Process killed."
+                                : killResult.Message);
                     }
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "KILLPROCESSELEVATED":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var epidStr) == true
                         && int.TryParse(epidStr, out var epid))
                     {
-                        // Use the same KillProcess for now as requested.
-                        var killed = processMonitorService.KillProcess(epid);
-                        return MakeCommandResponse(killed, killed ? "Elevated process kill executed." : "Failed to kill process (elevated).");
+                        var killResult = processMonitorService.KillProcess(epid);
+                        return MakeCommandResponse(
+                            killResult.Success,
+                            killResult.Success
+                                ? "Elevated process kill executed."
+                                : killResult.Message);
                     }
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "LOCK":

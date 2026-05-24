@@ -40,6 +40,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             _logger.LogWarning("DXGI Desktop Duplication unavailable — falling back to GDI CopyFromScreen. Windows Terminal focus bug may occur.");
     }
 
+    public string? BackendName => _dxgi.IsAvailable ? "dxgi" : "gdi";
+    public bool IsDxgiAvailable => _dxgi.IsAvailable;
+    public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
+    public string? LastCaptureFailureReason { get; private set; }
+
     public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
@@ -55,7 +60,10 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         {
             var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder());
             if (dxgiFrame is { Length: > 0 })
+            {
+                LastCaptureFailureReason = null;
                 return Task.FromResult(dxgiFrame);
+            }
         }
 
         // ── Fallback path: GDI CopyFromScreen ───────────────────────────────────
@@ -106,6 +114,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 var encoderParams = new EncoderParameters(1);
                 encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
                 outputBitmap.Save(ms, jpegEncoder, encoderParams);
+                LastCaptureFailureReason = null;
                 return Task.FromResult(ms.ToArray());
             }
             finally
@@ -116,6 +125,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
         catch (Exception ex)
         {
+            LastCaptureFailureReason = BuildCaptureFailureReason(Process.GetCurrentProcess().SessionId, ex.Message);
             if (!_session0Warned)
             {
                 var sessionId = Process.GetCurrentProcess().SessionId;
@@ -154,6 +164,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
         throw new InvalidOperationException("JPEG encoder not found.");
     }
+
+    private static string BuildCaptureFailureReason(int sessionId, string message)
+        => sessionId == 0
+            ? $"Screen capture failed in Session 0 ({message}). Run Remex Desktop interactively or configure the Windows service to log on as the signed-in user."
+            : $"Screen capture failed ({message}). The desktop may be locked, showing a secure prompt, or denying screen capture access.";
 
     #region P/Invoke
 

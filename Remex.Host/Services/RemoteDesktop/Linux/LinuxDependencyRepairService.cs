@@ -147,7 +147,7 @@ public sealed class LinuxDependencyRepairService
     private async Task<LinuxDependencyRepairResult> ExecuteActionAsync(
         LinuxRepairAction action, CancellationToken ct)
     {
-        if (action.Command is null)
+        if (action.ArgumentList is null && action.Command is null)
         {
             return new LinuxDependencyRepairResult
             {
@@ -159,19 +159,37 @@ public sealed class LinuxDependencyRepairService
 
         try
         {
-            // Split command into executable + args. Commands in the repair plan are
-            // always simple (no shell features like pipes or redirects needed here).
-            var parts = action.Command.Split(' ', 2, StringSplitOptions.TrimEntries);
-            var fileName = parts[0];
-            var arguments = parts.Length > 1 ? parts[1] : string.Empty;
-
-            var psi = new ProcessStartInfo(fileName, arguments)
+            ProcessStartInfo psi;
+            if (action.ArgumentList is { Count: > 0 } argList)
             {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
+                // Structured args — preferred path. No shell parsing happens; each
+                // argument reaches the process verbatim, so embedded spaces and
+                // shell metacharacters are safe.
+                psi = new ProcessStartInfo(argList[0])
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                for (var i = 1; i < argList.Count; i++)
+                    psi.ArgumentList.Add(argList[i]);
+            }
+            else
+            {
+                // Legacy path: whitespace-split. Used by simple "systemctl --user start X"
+                // style commands. Does not understand single-quote shell quoting.
+                var parts = action.Command!.Split(' ', 2, StringSplitOptions.TrimEntries);
+                var fileName = parts[0];
+                var arguments = parts.Length > 1 ? parts[1] : string.Empty;
+                psi = new ProcessStartInfo(fileName, arguments)
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+            }
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(120)); // package installs can be slow
@@ -183,7 +201,7 @@ public sealed class LinuxDependencyRepairService
                 {
                     Action = action,
                     Success = false,
-                    ErrorMessage = $"Failed to start process: {fileName}",
+                    ErrorMessage = $"Failed to start process: {psi.FileName}",
                 };
             }
 
@@ -237,16 +255,25 @@ public sealed class LinuxDependencyRepairService
             });
 
         if (!report.PortalRemoteDesktopAvailable || !report.PortalScreenCastAvailable)
+        {
+            // Stale-frontend case: backend on disk implements RemoteDesktop but
+            // the running frontend doesn't expose it. Recoverable without sudo
+            // and on any distro by restarting xdg-desktop-portal.service.
+            var stale = report.PortalBackendInstalled &&
+                        report.PortalBackendImplementsRemoteDesktop;
             issues.Add(new LinuxDependencyIssue
             {
                 Component = "xdg-desktop-portal",
                 Description = report.PortalUnavailableReason ?? "xdg-desktop-portal is unavailable.",
                 Severity = LinuxDependencyIssueSeverity.Error,
-                RepairAvailable = IsArchFamily(),
-                RepairDescription = IsArchFamily()
-                    ? "Install xdg-desktop-portal and xdg-desktop-portal-kde via pacman"
-                    : null,
+                RepairAvailable = stale || IsArchFamily(),
+                RepairDescription = stale
+                    ? "Restart xdg-desktop-portal frontend (no install required)"
+                    : IsArchFamily()
+                        ? $"Install xdg-desktop-portal and {report.PortalBackendPackageName ?? "the portal backend"} via pacman"
+                        : null,
             });
+        }
 
         if (!report.PipeWireRunning)
             issues.Add(new LinuxDependencyIssue

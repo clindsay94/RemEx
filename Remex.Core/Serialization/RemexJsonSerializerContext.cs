@@ -22,6 +22,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(CardState))]
 [JsonSerializable(typeof(CommandRequest))]
 [JsonSerializable(typeof(CommandResponse))]
+[JsonSerializable(typeof(PairingPinInfo))]
 [JsonSerializable(typeof(CustomizationSettings))]
 [JsonSerializable(typeof(DashboardProfile))]
 [JsonSerializable(typeof(DesktopConfig))]

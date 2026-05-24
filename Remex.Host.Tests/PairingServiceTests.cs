@@ -38,6 +38,62 @@ public sealed class PairingServiceTests
     }
 
     [Fact]
+    public async Task TryGetActivePinInfo_ReturnsCurrentSessionSnapshot()
+    {
+        var svc = CreateService();
+
+        var state = await svc.StartPairingAsync(CancellationToken.None);
+
+        Assert.True(svc.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs));
+        Assert.Equal(state.Pin, pin);
+        Assert.Equal(state.ExpiresAtUnixMs, expiresAtUnixMs);
+    }
+
+    [Fact]
+    public async Task TryGetActivePinInfo_ReturnsFalse_AfterSessionCancelled()
+    {
+        var svc = CreateService();
+
+        await svc.StartPairingAsync(CancellationToken.None);
+        svc.CancelPairing();
+
+        Assert.False(svc.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs));
+        Assert.Equal(string.Empty, pin);
+        Assert.Equal(0, expiresAtUnixMs);
+    }
+
+    [Fact]
+    public async Task TryGetActivePinInfo_ReturnsFalse_WhenSemaphoreIsContended()
+    {
+        var svc = CreateService();
+        await svc.StartPairingAsync(CancellationToken.None);
+
+        var lockField = typeof(PairingService).GetField("_lock", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var semaphore = (SemaphoreSlim)lockField.GetValue(svc)!;
+        await semaphore.WaitAsync();
+        try
+        {
+            var queryTask = Task.Run(() =>
+            {
+                var success = svc.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs);
+                return (success, pin, expiresAtUnixMs);
+            });
+
+            var completed = await Task.WhenAny(queryTask, Task.Delay(TimeSpan.FromMilliseconds(250)));
+            Assert.Same(queryTask, completed);
+
+            var result = await queryTask;
+            Assert.False(result.success);
+            Assert.Equal(string.Empty, result.pin);
+            Assert.Equal(0, result.expiresAtUnixMs);
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    [Fact]
     public async Task StartPairing_SetsIsPairingActive()
     {
         var svc = CreateService();

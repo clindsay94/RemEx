@@ -137,6 +137,14 @@ dotnet run --project Remex.Client.Desktop
 # Packages land in installer/Output/ — see docs/LINUX_INSTALL.md for install steps
 ```
 
+### Cross-platform Installer Script
+```bash
+# Auto-detects environment:
+# - Windows / WSL => Windows installer flow
+# - Linux         => Linux package flow
+pwsh ./installer/build-installer.ps1
+```
+
 ### Android (Hardened Fresh Build)
 We recommend using our fresh pipeline to ensure the NativeAOT `.so` is perfectly synced:
 ```powershell

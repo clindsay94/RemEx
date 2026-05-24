@@ -2,7 +2,12 @@ package com.clindsay94.remex.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Text
@@ -12,6 +17,8 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 
 /**
  * Project-wide flexible top app bar.
@@ -40,7 +47,7 @@ fun RemexFlexibleTopBar(
                 Text(
                     text = title,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (subtitle != null) {
                     Text(
@@ -75,3 +82,42 @@ fun rememberRemexCollapsingScrollBehavior(): TopAppBarScrollBehavior =
 @Composable
 fun remexFlexibleTopBarColors(): TopAppBarColors =
     TopAppBarDefaults.topAppBarColors()
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+private fun RemexFlexibleTopBarPreview() {
+    RemExTheme {
+        RemexFlexibleTopBar(
+            title = "Title"
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+private fun RemexFlexibleTopBarWithSubtitleAndActionsPreview() {
+    RemExTheme {
+        RemexFlexibleTopBar(
+            title = "Main Title",
+            subtitle = "Secondary subtitle",
+            navigationIcon = {
+                IconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More"
+                    )
+                }
+            }
+        )
+    }
+}

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Remex.Core;
@@ -9,6 +10,7 @@ using Remex.Core.Services;
 using Remex.Core.Services.Security;
 using Remex.Host.Handlers;
 using Remex.Host.Services;
+using Remex.Host.Services.RemoteDesktop.Windows;
 using Remex.Host.Services.Security;
 using Remex.Host.Services.Telemetry;
 using Remex.Host.Services.ProcessMonitor;
@@ -24,6 +26,9 @@ namespace Remex.Host;
 /// </summary>
 public static class HostBootstrapper
 {
+    internal const string WindowsEventLogName = "Application";
+    internal const string WindowsEventSourceName = "Remex.Host";
+
     /// <summary>
     /// Unique instance identifier for this host process.
     /// Used by remote desktop to detect self-connections (infinite mirror prevention).
@@ -51,6 +56,11 @@ public static class HostBootstrapper
 
         // Enable Windows Service lifetime (no-op when not running under SCM).
         builder.Host.UseWindowsService();
+
+        if (OperatingSystem.IsWindows())
+        {
+            ConfigureWindowsEventLog(builder.Logging);
+        }
 
         builder.Services.AddSingleton<Remex.Core.Services.Network.IWakeOnLanService, Remex.Core.Services.Network.WakeOnLanService>();
         builder.Services.AddSingleton<Remex.Core.Services.Network.INetworkListener, Remex.Core.Services.Network.RemexNetworkListener>();
@@ -156,6 +166,7 @@ public static class HostBootstrapper
         builder.Configuration["Host:Port"] = actualPort.ToString();
 
         var app = builder.Build();
+        var hostCapabilitiesProvider = app.Services.GetRequiredService<IHostCapabilitiesProvider>();
 
         // Session 0 detection: warn when running as a non-interactive Windows service
         if (OperatingSystem.IsWindows() && Process.GetCurrentProcess().SessionId == 0)
@@ -167,13 +178,20 @@ public static class HostBootstrapper
                 "Configure the service to 'Log on as' your Windows user account.");
         }
 
+        if (OperatingSystem.IsWindows())
+        {
+            var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Remex.Host");
+            var diagnostics = hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
+            LogWindowsRemoteDesktopDiagnostics(logger, diagnostics);
+        }
+
         // Surface missing Linux capture/input tools at startup, loud and early. This is the
         // root cause of the "RD is black, commands don't work" report on Linux hosts: the
         // services silently return empty bytes when their external tools aren't installed.
         if (OperatingSystem.IsLinux())
         {
             var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Remex.Host");
-            var caps = app.Services.GetRequiredService<IHostCapabilitiesProvider>().GetCurrent();
+            var caps = hostCapabilitiesProvider.GetCurrent();
             if (!caps.SupportsRemoteDesktop && caps.RemoteDesktopUnavailableReason is { } reason)
             {
                 // LogError so it shows up under default console verbosity.
@@ -193,6 +211,8 @@ public static class HostBootstrapper
             service = "Remex.Host",
             status = "running",
             capabilities = hostCapabilitiesProvider.GetCurrent(),
+            remoteDesktopDiagnostics = (object?)hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport()
+                ?? hostCapabilitiesProvider.GetLinuxPrerequisiteReport(),
         }));
 
         app.MapGet("/pairing-qr", (ICertificateService certService, IConfiguration config) =>
@@ -315,6 +335,7 @@ public static class HostBootstrapper
                             authLogger.LogWarning(
                                 ex, "PipeWire lifetime acquire failed; falling back to legacy capture.");
                         }
+
                     }
                 }
 
@@ -394,4 +415,42 @@ public static class HostBootstrapper
         if (string.IsNullOrEmpty(clientId)) return "<empty>";
         return clientId.Length <= 8 ? clientId : clientId[..8] + "…";
     }
+
+    private static void LogWindowsRemoteDesktopDiagnostics(ILogger logger, WindowsRemoteDesktopDiagnosticReport? diagnostics)
+    {
+        if (diagnostics is null)
+        {
+            return;
+        }
+
+        if (diagnostics.RemoteDesktopUnavailableReason is { } unavailableReason)
+        {
+            logger.LogError("Windows remote desktop unavailable: {Reason}", unavailableReason);
+            Console.Error.WriteLine($"[Remex.Host] {unavailableReason}");
+        }
+        else if (diagnostics.CurrentDesktopUnavailableReason is { } currentIssue)
+        {
+            logger.LogWarning("Windows remote desktop currently blocked: {Reason}", currentIssue);
+        }
+
+        if (diagnostics.CaptureBackendDegradedReason is { } degradedReason)
+        {
+            logger.LogWarning("Windows remote desktop capture degraded: {Reason}", degradedReason);
+        }
+
+        foreach (var issue in diagnostics.Issues)
+        {
+            logger.LogDebug("Windows remote desktop diagnostic detail: {Issue}", issue);
+        }
+    }
+
+    private static void ConfigureWindowsEventLog(ILoggingBuilder logging)
+    {
+        logging.AddEventLog(settings =>
+        {
+            settings.LogName = WindowsEventLogName;
+            settings.SourceName = WindowsEventSourceName;
+        });
+    }
+
 }

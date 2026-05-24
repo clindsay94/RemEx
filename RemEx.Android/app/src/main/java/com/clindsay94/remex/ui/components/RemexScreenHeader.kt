@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 
 @Composable
 fun RemexScreenHeader(
@@ -51,5 +53,16 @@ fun RemexScreenHeader(
                 content = actions
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemexScreenHeaderPreview() {
+    RemExTheme {
+        RemexScreenHeader(
+            title = "Screen Title",
+            subtitle = "Optional subtitle"
+        )
     }
 }

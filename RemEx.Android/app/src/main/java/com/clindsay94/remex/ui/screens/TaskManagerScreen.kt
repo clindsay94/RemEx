@@ -23,6 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -49,13 +51,13 @@ fun TaskManagerScreen(
     val killError by viewModel.killError.collectAsState()
     val loadError by viewModel.loadError.collectAsState()
 
-        LaunchedEffect(viewModel, isVisible, isConnected) {
-                viewModel.setAutoRefreshEnabled(isVisible && isConnected)
-        }
+    LaunchedEffect(viewModel, isVisible, isConnected) {
+        viewModel.setAutoRefreshEnabled(isVisible && isConnected)
+    }
 
-        DisposableEffect(viewModel) {
-                onDispose { viewModel.setAutoRefreshEnabled(enabled = false) }
-        }
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.setAutoRefreshEnabled(enabled = false) }
+    }
 
     TaskManagerScreenContent(
             processes = processes,
@@ -211,6 +213,49 @@ fun TaskManagerScreenContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TaskManagerScreenPreview() {
+    RemExTheme {
+        TaskManagerScreenContent(
+            processes = listOf(
+                ProcessInfo(1, "system", 10.5, 256.0),
+                ProcessInfo(1234, "remex-host.exe", 2.1, 128.0),
+                ProcessInfo(5678, "chrome.exe", 15.0, 1024.0)
+            ),
+            searchQuery = "",
+            sortField = ProcessSortField.CPU,
+            sortDescending = true,
+            shapePreset = 1f,
+            cornerRadius = 12,
+            isConnected = true,
+            isRefreshing = false,
+            onRefreshProcesses = {},
+            onUpdateSearchQuery = {},
+            onUpdateSortField = {},
+            onKillProcess = {},
+            onNavigateToConnection = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ProcessCardPreview() {
+    RemExTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            ProcessCard(
+                process = ProcessInfo(1234, "remex-host.exe", 5.0, 512.0),
+                maxRam = 1024.0,
+                maxCpu = 100.0,
+                shapePreset = 0f,
+                cornerRadius = 12,
+                onKill = {}
+            )
         }
     }
 }

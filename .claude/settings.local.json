@@ -60,7 +60,13 @@
       "Bash(./gradlew :app:testDebugUnitTest --console=plain --rerun-tasks)",
       "Read(//tmp/claude-1000/**)",
       "mcp__claude_ai_Microsoft_Learn__microsoft_docs_search",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(pacman -Ql xdg-desktop-portal-kde)",
+      "Bash(grep -E \"\\(\\\\.service|portal-kde$|xdg-desktop-portal-kde$\\)\")",
+      "Read(//usr/share/dbus-1/services/**)",
+      "Read(//usr/lib/systemd/user/**)",
+      "Bash(dbus-send --session --dest=org.freedesktop.impl.portal.desktop.kde --type=method_call --print-reply / org.freedesktop.DBus.Peer.Ping)",
+      "Bash(journalctl --user -u xdg-desktop-portal.service -b 0 --no-pager)"
     ]
   },
   "outputStyle": "default"

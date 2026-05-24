@@ -85,6 +85,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexScreenHeader
@@ -94,10 +96,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
 // Wrapper that isolates AnimatedVisibility from outer ColumnScope receiver.
-// When the transformable Box lives inside a Column, Kotlin's overload resolution
-// binds to ColumnScope.AnimatedVisibility and then fails because @LayoutScopeMarker
-// blocks the outer ColumnScope implicit receiver. Calling AnimatedVisibility from
-// a plain composable body resolves to the top-level overload cleanly.
 @Composable
 private fun PlainAnimatedVisibility(
         visible: Boolean,
@@ -218,8 +216,6 @@ fun DashboardScreenContent(
         var draggingCardId by remember { mutableStateOf<String?>(null) }
         var draggingPointerPx by remember { mutableStateOf(Offset.Zero) }
 
-        // Pinch-to-zoom: use a State object so pointerInput lambdas can read the
-        // current value without needing it as a restart key (review fix).
         val canvasScaleState = remember { mutableFloatStateOf(1f) }
         var canvasScale by canvasScaleState
         @Suppress("DEPRECATION")
@@ -243,7 +239,6 @@ fun DashboardScreenContent(
                         x = draggingPointerPx.x - canvasTopLeftPx.x,
                         y = draggingPointerPx.y - canvasTopLeftPx.y
                 )
-        // Drop target positions must account for the canvas scale
         val dropTargetXDp =
                 draggingCardSize?.let { size ->
                         ((dragPointerCanvasPx.x / (density * canvasScaleState.floatValue)) -
@@ -261,8 +256,6 @@ fun DashboardScreenContent(
 
         val visibleCards = cards.filter { enabledCards.contains(it.id) }
 
-        // Base canvas dimensions — independent of scale.
-        // graphicsLayer handles the visual zoom without relayout.
         val canvasWidthDp =
                 remember(visibleCards) {
                         val maxRight = visibleCards.maxOfOrNull { it.xDp + it.widthDp } ?: 0f
@@ -277,8 +270,6 @@ fun DashboardScreenContent(
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
 
-        // Surface establishes LocalContentColor from the theme so that header title text
-        // and other non-card content inherits the correct on-surface color.
         Surface(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                         RemexScreenHeader(
@@ -345,12 +336,6 @@ fun DashboardScreenContent(
                                                                         MaterialTheme.colorScheme
                                                                                 .background
                                                                 )
-                                                                // Use graphicsLayer for zoom to
-                                                                // avoid
-                                                                // expensive relayout on
-                                                                // every frame during pinch gestures
-                                                                // (review
-                                                                // fix).
                                                                 .graphicsLayer {
                                                                         scaleX =
                                                                                 canvasScaleState
@@ -394,12 +379,6 @@ fun DashboardScreenContent(
                                                                                         card.heightDp
                                                                                                 .dp
                                                                                 )
-                                                                                // pointerInput uses
-                                                                                // stable
-                                                                                // card.id key —
-                                                                                // reads
-                                                                                // canvasScaleState.floatValue directly (review
-                                                                                // fix).
                                                                                 .pointerInput(
                                                                                         card.id
                                                                                 ) {
@@ -515,16 +494,8 @@ fun DashboardScreenContent(
                                                                                 }
                                                                         }
 
-                                                                        // Resize handle —
-                                                                        // bottom-right
-                                                                        // corner
                                                                         Surface(
                                                                                 shape = CircleShape,
-                                                                                // M3: use solid
-                                                                                // primary
-                                                                                // token, tonal
-                                                                                // elevation
-                                                                                // for depth
                                                                                 color =
                                                                                         MaterialTheme
                                                                                                 .colorScheme
@@ -599,8 +570,6 @@ fun DashboardScreenContent(
                                         }
                                 }
 
-                                // M3: ModalBottomSheet replaces side-panel drawer for standard M3
-                                // sheet UX
                                 if (showCardDrawer) {
                                         ModalBottomSheet(
                                                 onDismissRequest = { showCardDrawer = false },
@@ -647,8 +616,6 @@ fun DashboardScreenContent(
                                                                         )
                                                         )
 
-                                                        // Scrollable list with always-visible
-                                                        // scrollbar
                                                         val drawerScrollState =
                                                                 rememberScrollState()
                                                         val scrollbarColor =
@@ -674,9 +641,7 @@ fun DashboardScreenContent(
                                                                                         .padding(
                                                                                                 end =
                                                                                                         12.dp
-                                                                                        ) // room
-                                                                                        // for
-                                                                                        // scrollbar
+                                                                                        )
                                                                                         .verticalScroll(
                                                                                                 drawerScrollState
                                                                                         ),
@@ -903,8 +868,6 @@ fun DashboardScreenContent(
                                                                         }
                                                                 }
 
-                                                                // Always-visible scrollbar track +
-                                                                // thumb
                                                                 val scrollFraction =
                                                                         if (drawerScrollState
                                                                                         .maxValue >
@@ -952,7 +915,6 @@ fun DashboardScreenContent(
                                                                                                         4.dp
                                                                                         )
                                                                 ) {
-                                                                        // Track
                                                                         drawRoundRect(
                                                                                 color =
                                                                                         scrollbarTrackColor,
@@ -966,7 +928,6 @@ fun DashboardScreenContent(
                                                                                                 size.height
                                                                                         )
                                                                         )
-                                                                        // Thumb
                                                                         val thumbHeight =
                                                                                 (size.height *
                                                                                                 thumbFraction)
@@ -1020,7 +981,6 @@ fun DashboardScreenContent(
                                         }
                                 }
 
-                                // Drag-from-drawer ghost preview
                                 if (draggingCard != null && draggingCardSize != null) {
                                         if (canDropOnCanvas) {
                                                 Box(
@@ -1141,7 +1101,42 @@ fun DashboardScreenContent(
                                 }
                         }
                 }
-        } // Surface
+        }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DashboardScreenPreview() {
+    RemExTheme {
+        DashboardScreenContent(
+            isConnected = true,
+            isConnecting = false,
+            telemetrySensors = listOf(
+                TelemetrySensor("sensor:cpu", "CPU Usage", "CPU", 25.0, "%"),
+                TelemetrySensor("sensor:ram", "RAM Usage", "Memory", 60.0, "%")
+            ),
+            telemetryHistory = emptyMap(),
+            cards = listOf(
+                HomeCardState("pc_status", "PC Status", HomeCardType.PC_STATUS, null, 0f, 0f, 200f, 150f, TelemetryDisplayMode.VALUE),
+                HomeCardState("sensor:cpu", "CPU", HomeCardType.TELEMETRY, "sensor:cpu", 210f, 0f, 150f, 150f, TelemetryDisplayMode.GAUGE),
+                HomeCardState("sensor:ram", "RAM", HomeCardType.TELEMETRY, "sensor:ram", 0f, 160f, 150f, 150f, TelemetryDisplayMode.LINE)
+            ),
+            enabledCards = setOf("pc_status", "sensor:cpu", "sensor:ram"),
+            cornerRadius = 12,
+            cardOpacity = 1.0f,
+            pcCardShapePreset = 0f,
+            telemetryCardShapePreset = 1f,
+            onNavigateToConnection = {},
+            onMoveCard = { _, _, _ -> },
+            onResizeCard = { _, _, _ -> },
+            onSaveCardLayout = {},
+            onToggleConnection = {},
+            onWakePc = {},
+            onCycleTelemetryDisplayMode = {},
+            onPlaceCardAt = { _, _, _ -> },
+            onSetCardEnabled = { _, _ -> }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -1228,22 +1223,13 @@ private fun ConnectionOrbCard(
                                                 )
                                                 .clickable {
                                                         when {
-                                                                // Already connected — toggle
-                                                                // (reconnect logic in
-                                                                // RemexClientManager)
                                                                 isConnected -> onToggle()
-                                                                // Already trying — wait, don't
-                                                                // double-trigger
-                                                                isConnecting -> {
-                                                                        /* do nothing */
-                                                                }
-                                                                // Offline — send user to the
-                                                                // connection screen
+                                                                isConnecting -> {}
                                                                 else -> onNavigateToConnection()
                                                         }
                                                 },
                                 contentAlignment = Alignment.Center
-                        ) { /* orb interior intentionally empty */}
+                        ) {}
 
                         Text(
                                 text =
@@ -1273,7 +1259,6 @@ private fun ConnectionOrbCard(
 private fun WakeOnLanCard(onWake: () -> Unit) {
         val view = LocalView.current
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                // M3: FilledTonalButton is the semantic match for secondary-container colors
                 FilledTonalButton(
                         onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
@@ -1308,9 +1293,6 @@ private fun TelemetryCardContent(
 ) {
         val view = LocalView.current
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                // Give extra padding for organic/expressive shapes so content doesn't clip into the
-                // shape
-                // edges
                 val paddingFactor = if (isExpressiveShape) 0.22f else 0.12f
                 val dynamicPadding =
                         (minOf(maxWidth, maxHeight) * paddingFactor).coerceAtLeast(16.dp)
@@ -1399,18 +1381,7 @@ private fun TelemetryCardContent(
                                                 )
                                         }
                                 }
-                                TelemetryDisplayMode.LINE -> {
-                                        Box(
-                                                modifier = Modifier.weight(1f).fillMaxWidth(),
-                                                contentAlignment = Alignment.Center
-                                        ) { Sparkline(history = history) }
-                                        Text(
-                                                valueText,
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold
-                                        )
-                                }
-                                TelemetryDisplayMode.BAR, TelemetryDisplayMode.AREA -> {
+                                TelemetryDisplayMode.LINE, TelemetryDisplayMode.BAR, TelemetryDisplayMode.AREA -> {
                                         Box(
                                                 modifier = Modifier.weight(1f).fillMaxWidth(),
                                                 contentAlignment = Alignment.Center

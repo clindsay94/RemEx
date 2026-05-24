@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
+using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -29,6 +30,7 @@ using Remex.Core.Models;
 using Remex.Core.Services.Network;
 using Remex.Core.Services.Security;
 using Remex.Core.Validation;
+using Remex.Client.Services.Security;
 
 namespace Remex.Client.ViewModels;
 
@@ -122,6 +124,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     }
 
     private DispatcherTimer? _pairingExpiryTimer;
+    private DispatcherTimer? _standalonePairingPinPollingTimer;
 
     /// <summary>
     /// LAN address phones on the same network should use to reach this PC's host.
@@ -150,6 +153,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     partial void OnHostAddressChanged(string value) => OnPropertyChanged(nameof(LanHostAddress));
 
     private IPairingService? _pairingService;
+    private IPairingPinQueryService? _standalonePairingPinQueryService;
 
     /// <summary>
     /// Subscribes to pairing-pin events on the in-process host's PairingService so the
@@ -158,6 +162,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     public void AttachEmbeddedPairingService(IPairingService service)
     {
         Guard.NotNull(service);
+        StopStandalonePairingPinPolling();
         _pairingService = service;
         service.PinDisplayed += (pin, expires) =>
             Dispatcher.UIThread.Post(() =>
@@ -175,6 +180,89 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 ShowPairingPin = false;
                 StopPairingExpiryTimer();
             });
+
+        if (service.TryGetActivePinInfo(out var activePin, out var activeExpiresAt))
+        {
+            ActivePairingPin = activePin;
+            ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activeExpiresAt);
+            ShowPairingPin = true;
+            StartPairingExpiryTimer();
+        }
+        else
+        {
+            ActivePairingPin = null;
+            ActivePairingExpiresAt = null;
+            ShowPairingPin = false;
+            StopPairingExpiryTimer();
+        }
+    }
+
+    public void AttachStandalonePairingPinQueryService(IPairingPinQueryService service)
+    {
+        Guard.NotNull(service);
+        _standalonePairingPinQueryService = service;
+    }
+
+    public void StartStandalonePairingPinPolling()
+    {
+        if (_standalonePairingPinQueryService is null || _standalonePairingPinPollingTimer is not null)
+        {
+            return;
+        }
+
+        _standalonePairingPinPollingTimer = new DispatcherTimer(
+            TimeSpan.FromSeconds(2),
+            DispatcherPriority.Background,
+            async (_, _) => await RefreshStandalonePairingPinAsync());
+        _standalonePairingPinPollingTimer.Start();
+    }
+
+    public async Task RefreshStandalonePairingPinAsync()
+    {
+        if (_standalonePairingPinQueryService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var activePin = await _standalonePairingPinQueryService.GetActivePairingPinAsync();
+            var applySnapshot = () =>
+            {
+                if (activePin is not null)
+                {
+                    if (ActivePairingPin != activePin.Pin || ActivePairingExpiresAt != DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs))
+                    {
+                        ActivePairingPin = activePin.Pin;
+                        ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
+                        ShowPairingPin = true;
+                        StartPairingExpiryTimer();
+                    }
+                    return;
+                }
+
+                if (HasActivePairingPin && (_pairingService is null || !_pairingService.IsPairingActive))
+                {
+                    ActivePairingPin = null;
+                    ActivePairingExpiresAt = null;
+                    ShowPairingPin = false;
+                    StopPairingExpiryTimer();
+                }
+            };
+
+            if (Application.Current is null || Dispatcher.UIThread.CheckAccess())
+            {
+                applySnapshot();
+            }
+            else
+            {
+                await Dispatcher.UIThread.InvokeAsync(applySnapshot);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Standalone pairing PIN refresh failed.");
+        }
     }
 
     private void StartPairingExpiryTimer()
@@ -198,6 +286,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     {
         _pairingExpiryTimer?.Stop();
         _pairingExpiryTimer = null;
+    }
+
+    private void StopStandalonePairingPinPolling()
+    {
+        _standalonePairingPinPollingTimer?.Stop();
+        _standalonePairingPinPollingTimer = null;
     }
 
     [RelayCommand]
@@ -1249,6 +1343,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         CancelAndDispose(ref _receiveCts);
         CancelAndDispose(ref _reconnectCts);
+        StopStandalonePairingPinPolling();
         DisposeWebSocket(ref _webSocket);
     }
 }

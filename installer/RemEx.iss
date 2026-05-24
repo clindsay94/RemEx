@@ -32,8 +32,6 @@ DisableProgramGroupPage=yes
 
 LicenseFile=terms.rtf
 SetupIconFile=..\Remex.Client.Desktop\icon.ico
-WizardImageFile=..\Remex.Client\Assets\New-REMEX.png
-WizardSmallImageFile=..\Remex.Client\Assets\New-REMEX.png
 WizardResizable=yes
 WizardStyle=modern
 

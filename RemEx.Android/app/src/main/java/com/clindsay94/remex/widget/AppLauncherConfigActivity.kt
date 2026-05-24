@@ -6,11 +6,14 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,9 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
@@ -55,13 +55,14 @@ data class ConfigAppEntry(
     val iconBase64: String?
 )
 
-class AppLauncherConfigActivity : AppCompatActivity() {
+class AppLauncherConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         appWidgetId = intent?.extras?.getInt(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
@@ -78,87 +79,15 @@ class AppLauncherConfigActivity : AppCompatActivity() {
         val availableApps = loadAvailableApps()
 
         setContent {
-            val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-            MaterialTheme(colorScheme = colorScheme) {
-                val selected = remember { mutableStateSetOf<String>() }
-
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(
-                                    stringResource(R.string.widget_config_app_launcher_title),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        )
-                    }
-                ) { padding ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                    ) {
-                        Text(
-                            stringResource(R.string.widget_config_app_launcher_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        if (availableApps.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        stringResource(R.string.widget_config_no_apps),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Text(
-                                        stringResource(R.string.widget_config_no_apps_hint),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                items(availableApps) { app ->
-                                    val checked = app.path in selected
-                                    AppCheckRow(
-                                        app = app,
-                                        checked = checked,
-                                        onToggle = {
-                                            if (checked) selected.remove(app.path)
-                                            else selected.add(app.path)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                lifecycleScope.launch {
-                                    saveAndUpdate(selected.toSet())
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            enabled = selected.isNotEmpty()
-                        ) {
-                            Text(stringResource(R.string.button_done))
+            RemExTheme {
+                AppLauncherConfigScreen(
+                    availableApps = availableApps,
+                    onDone = { selected ->
+                        lifecycleScope.launch {
+                            saveAndUpdate(selected)
                         }
                     }
-                }
+                )
             }
         }
     }
@@ -196,6 +125,98 @@ class AppLauncherConfigActivity : AppCompatActivity() {
         val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         setResult(RESULT_OK, result)
         finish()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppLauncherConfigScreen(
+    availableApps: List<ConfigAppEntry>,
+    onDone: (Set<String>) -> Unit
+) {
+    val selected = remember { mutableStateSetOf<String>() }
+
+    Scaffold(
+        topBar = {
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.widget_config_app_launcher_title)
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            Text(
+                stringResource(R.string.widget_config_app_launcher_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (availableApps.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            stringResource(R.string.widget_config_no_apps),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            stringResource(R.string.widget_config_no_apps_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    items(availableApps) { app ->
+                        val checked = app.path in selected
+                        AppCheckRow(
+                            app = app,
+                            checked = checked,
+                            onToggle = {
+                                if (checked) selected.remove(app.path)
+                                else selected.add(app.path)
+                            }
+                        )
+                    }
+                }
+            }
+
+            Button(
+                onClick = { onDone(selected.toSet()) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = selected.isNotEmpty()
+            ) {
+                Text(stringResource(R.string.button_done))
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AppLauncherConfigScreenPreview() {
+    RemExTheme {
+        AppLauncherConfigScreen(
+            availableApps = listOf(
+                ConfigAppEntry("Browser", "C:\\Path", null),
+                ConfigAppEntry("Editor", "D:\\Path", null)
+            ),
+            onDone = {}
+        )
     }
 }
 

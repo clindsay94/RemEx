@@ -114,6 +114,34 @@ public sealed class PairingService : IPairingService
         return _activePin;
     }
 
+    public bool TryGetActivePinInfo(out string pin, out long expiresAtUnixMs)
+    {
+        if (!_lock.Wait(0))
+        {
+            pin = string.Empty;
+            expiresAtUnixMs = 0;
+            return false;
+        }
+
+        try
+        {
+            if (_activePin is not null && IsPairingActive)
+            {
+                pin = _activePin;
+                expiresAtUnixMs = _expiresAtUnixMs;
+                return true;
+            }
+
+            pin = string.Empty;
+            expiresAtUnixMs = 0;
+            return false;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     public Task<bool> VerifyClientHmacAsync(string clientHmacBase64, CancellationToken ct)
     {
         return VerifyClientHmacCoreAsync(clientHmacBase64, ct);

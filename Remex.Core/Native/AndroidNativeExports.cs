@@ -103,44 +103,140 @@ public static class AndroidNativeExports
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
     }
 
+    private static IntPtr GetRequiredCallbackMethodId(IntPtr env, IntPtr clazz, string name, string signature)
+    {
+        var methodId = JniHelper.GetMethodID(env, clazz, name, signature);
+        if (methodId != IntPtr.Zero && !JniHelper.ExceptionCheck(env))
+        {
+            return methodId;
+        }
+
+        if (JniHelper.ExceptionCheck(env))
+        {
+            JniHelper.ExceptionClear(env);
+        }
+
+        JniHelper.AndroidLogE("RemexNative", $"RegisterCallbackNative could not bind callback method {name}{signature}.");
+        return IntPtr.Zero;
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
     public static void RegisterCallbackNative(IntPtr env, IntPtr thiz, IntPtr callbackObj)
     {
         lock (SyncRoot)
         {
-            if (_javaVm == IntPtr.Zero)
+            if (JniHelper.ExceptionCheck(env))
             {
-                JniHelper.GetJavaVM(env, out _javaVm);
+                JniHelper.ExceptionClear(env);
+                JniHelper.AndroidLogE("RemexNative", "RegisterCallbackNative cleared a pending JNI exception before registration.");
             }
 
-            if (_callbackGlobalRef != IntPtr.Zero)
+            if (_javaVm == IntPtr.Zero)
             {
-                JniHelper.DeleteGlobalRef(env, _callbackGlobalRef);
+                if (JniHelper.GetJavaVM(env, out _javaVm) != 0 || _javaVm == IntPtr.Zero)
+                {
+                    JniHelper.AndroidLogE("RemexNative", "RegisterCallbackNative failed to capture JavaVM.");
+                    return;
+                }
             }
 
             if (callbackObj == IntPtr.Zero)
             {
+                if (_callbackGlobalRef != IntPtr.Zero)
+                {
+                    JniHelper.DeleteGlobalRef(env, _callbackGlobalRef);
+                }
                 ClearCallbackState();
                 return;
             }
 
-            _callbackGlobalRef = JniHelper.NewGlobalRef(env, callbackObj);
-            var clazz = JniHelper.GetObjectClass(env, _callbackGlobalRef);
-            _onTelemetryUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onTelemetryUpdate", "(Ljava/lang/String;)V");
-            _onConnectionStateChangedMethodId = JniHelper.GetMethodID(env, clazz, "onConnectionStateChanged", "(Z)V");
-            _onLauncherSyncMethodId = JniHelper.GetMethodID(env, clazz, "onLauncherSync", "(Ljava/lang/String;)V");
-            _onProcessListSyncMethodId = JniHelper.GetMethodID(env, clazz, "onProcessListSync", "(Ljava/lang/String;)V");
-            _onFrameReceivedMethodId = JniHelper.GetMethodID(env, clazz, "onFrameReceived", "([B)V");
-            _onHostInfoUpdateMethodId = JniHelper.GetMethodID(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
-            _onDesktopErrorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
-            _onDesktopMetaMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
-            _onDesktopWindowResultMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
-            _onFileTransferMessageMethodId = JniHelper.GetMethodID(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
-            _onConnectionErrorMethodId = JniHelper.GetMethodID(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
-            _onDesktopStreamDescriptorMethodId = JniHelper.GetMethodID(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
+            var newCallbackGlobalRef = JniHelper.NewGlobalRef(env, callbackObj);
+            if (newCallbackGlobalRef == IntPtr.Zero)
+            {
+                if (JniHelper.ExceptionCheck(env))
+                {
+                    JniHelper.ExceptionClear(env);
+                }
 
-            // Clean up the local class ref
-            JniHelper.DeleteLocalRef(env, clazz);
+                JniHelper.AndroidLogE("RemexNative", "RegisterCallbackNative failed to create a global callback reference.");
+                return;
+            }
+
+            var clazz = JniHelper.GetObjectClass(env, newCallbackGlobalRef);
+            if (clazz == IntPtr.Zero)
+            {
+                JniHelper.DeleteGlobalRef(env, newCallbackGlobalRef);
+                if (JniHelper.ExceptionCheck(env))
+                {
+                    JniHelper.ExceptionClear(env);
+                }
+
+                JniHelper.AndroidLogE("RemexNative", "RegisterCallbackNative failed to resolve callback class.");
+                return;
+            }
+
+            var registrationSucceeded = false;
+            try
+            {
+                var onTelemetryUpdateMethodId = GetRequiredCallbackMethodId(env, clazz, "onTelemetryUpdate", "(Ljava/lang/String;)V");
+                var onConnectionStateChangedMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionStateChanged", "(Z)V");
+                var onLauncherSyncMethodId = GetRequiredCallbackMethodId(env, clazz, "onLauncherSync", "(Ljava/lang/String;)V");
+                var onProcessListSyncMethodId = GetRequiredCallbackMethodId(env, clazz, "onProcessListSync", "(Ljava/lang/String;)V");
+                var onFrameReceivedMethodId = GetRequiredCallbackMethodId(env, clazz, "onFrameReceived", "([B)V");
+                var onHostInfoUpdateMethodId = GetRequiredCallbackMethodId(env, clazz, "onHostInfoUpdate", "(Ljava/lang/String;)V");
+                var onDesktopErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopError", "(Ljava/lang/String;)V");
+                var onDesktopMetaMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
+                var onDesktopWindowResultMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
+                var onFileTransferMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
+                var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
+                var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
+
+                if (onTelemetryUpdateMethodId == IntPtr.Zero
+                    || onConnectionStateChangedMethodId == IntPtr.Zero
+                    || onLauncherSyncMethodId == IntPtr.Zero
+                    || onProcessListSyncMethodId == IntPtr.Zero
+                    || onFrameReceivedMethodId == IntPtr.Zero
+                    || onHostInfoUpdateMethodId == IntPtr.Zero
+                    || onDesktopErrorMethodId == IntPtr.Zero
+                    || onDesktopMetaMethodId == IntPtr.Zero
+                    || onDesktopWindowResultMethodId == IntPtr.Zero
+                    || onFileTransferMessageMethodId == IntPtr.Zero
+                    || onConnectionErrorMethodId == IntPtr.Zero
+                    || onDesktopStreamDescriptorMethodId == IntPtr.Zero)
+                {
+                    return;
+                }
+
+                var oldCallbackGlobalRef = _callbackGlobalRef;
+                _callbackGlobalRef = newCallbackGlobalRef;
+                _onTelemetryUpdateMethodId = onTelemetryUpdateMethodId;
+                _onConnectionStateChangedMethodId = onConnectionStateChangedMethodId;
+                _onLauncherSyncMethodId = onLauncherSyncMethodId;
+                _onProcessListSyncMethodId = onProcessListSyncMethodId;
+                _onFrameReceivedMethodId = onFrameReceivedMethodId;
+                _onHostInfoUpdateMethodId = onHostInfoUpdateMethodId;
+                _onDesktopErrorMethodId = onDesktopErrorMethodId;
+                _onDesktopMetaMethodId = onDesktopMetaMethodId;
+                _onDesktopWindowResultMethodId = onDesktopWindowResultMethodId;
+                _onFileTransferMessageMethodId = onFileTransferMessageMethodId;
+                _onConnectionErrorMethodId = onConnectionErrorMethodId;
+                _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
+                registrationSucceeded = true;
+
+                if (oldCallbackGlobalRef != IntPtr.Zero)
+                {
+                    JniHelper.DeleteGlobalRef(env, oldCallbackGlobalRef);
+                }
+            }
+            finally
+            {
+                JniHelper.DeleteLocalRef(env, clazz);
+
+                if (!registrationSucceeded)
+                {
+                    JniHelper.DeleteGlobalRef(env, newCallbackGlobalRef);
+                }
+            }
         }
     }
 

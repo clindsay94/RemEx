@@ -3,8 +3,12 @@ package com.clindsay94.remex.widget
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,9 +26,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,13 +42,14 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
-class RemoteControlConfigActivity : AppCompatActivity() {
+class RemoteControlConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         appWidgetId = intent?.extras?.getInt(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
@@ -62,66 +64,14 @@ class RemoteControlConfigActivity : AppCompatActivity() {
         setResult(RESULT_CANCELED)
 
         setContent {
-            val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-            MaterialTheme(colorScheme = colorScheme) {
-                val selected = remember { mutableStateSetOf<String>() }
-
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(
-                                    stringResource(R.string.widget_config_remote_control_title),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        )
-                    }
-                ) { padding ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                    ) {
-                        Text(
-                            stringResource(R.string.widget_config_remote_control_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        LazyColumn(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            items(WIDGET_REMOTE_COMMANDS) { cmd ->
-                                val checked = cmd.id in selected
-                                CommandCheckRow(
-                                    title = cmd.title,
-                                    checked = checked,
-                                    onToggle = {
-                                        if (checked) selected.remove(cmd.id)
-                                        else selected.add(cmd.id)
-                                    }
-                                )
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                lifecycleScope.launch {
-                                    saveAndUpdate(selected.toSet())
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            enabled = selected.isNotEmpty()
-                        ) {
-                            Text(stringResource(R.string.button_done))
+            RemExTheme {
+                RemoteControlConfigScreen(
+                    onDone = { selected ->
+                        lifecycleScope.launch {
+                            saveAndUpdate(selected)
                         }
                     }
-                }
+                )
             }
         }
     }
@@ -138,6 +88,70 @@ class RemoteControlConfigActivity : AppCompatActivity() {
         val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         setResult(RESULT_OK, result)
         finish()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RemoteControlConfigScreen(
+    onDone: (Set<String>) -> Unit
+) {
+    val selected = remember { mutableStateSetOf<String>() }
+
+    Scaffold(
+        topBar = {
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.widget_config_remote_control_title)
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            Text(
+                stringResource(R.string.widget_config_remote_control_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                items(WIDGET_REMOTE_COMMANDS) { cmd ->
+                    val checked = cmd.id in selected
+                    CommandCheckRow(
+                        title = cmd.title,
+                        checked = checked,
+                        onToggle = {
+                            if (checked) selected.remove(cmd.id)
+                            else selected.add(cmd.id)
+                        }
+                    )
+                }
+            }
+
+            Button(
+                onClick = { onDone(selected.toSet()) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = selected.isNotEmpty()
+            ) {
+                Text(stringResource(R.string.button_done))
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemoteControlConfigScreenPreview() {
+    RemExTheme {
+        RemoteControlConfigScreen(onDone = {})
     }
 }
 

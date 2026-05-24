@@ -37,6 +37,9 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     private ProcessInfo? _selectedProcess;
 
     [ObservableProperty]
+    private string? _killError;
+
+    [ObservableProperty]
     private string _searchText = string.Empty;
 
     [ObservableProperty]
@@ -118,10 +121,14 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     private async Task KillProcessAsync(ProcessInfo? process)
     {
         if (process == null) return;
+        KillError = null;
         var resp = await _connection.KillProcessWithResponseAsync(process.Id);
         if (!resp.Success)
         {
-            System.Diagnostics.Debug.WriteLine($"Kill process failed: {resp.Message}");
+            KillError = string.IsNullOrWhiteSpace(resp.Message)
+                ? $"Failed to kill process {process.Id}."
+                : resp.Message;
+            System.Diagnostics.Debug.WriteLine($"Kill process failed: {KillError}");
         }
         await RefreshProcessesAsync();
     }

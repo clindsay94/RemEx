@@ -12,6 +12,50 @@ BIN_DIR="$HOME/.local/bin"
 APP_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
 
+# ── Preflight (shared with the host installer) ─────────────────────────
+# The client itself doesn't open portal sessions, but most users install client
+# and host on the same machine. Resetting the portal frontend here means the
+# first host launch finds a healthy portal stack — avoids the in-process
+# recovery dance on a fresh install.
+preflight() {
+    local desktop="${XDG_CURRENT_DESKTOP:-}"
+    local backend_pkg=""
+
+    case "${desktop,,}" in
+        *kde*|*plasma*)              backend_pkg="xdg-desktop-portal-kde" ;;
+        *gnome*)                     backend_pkg="xdg-desktop-portal-gnome" ;;
+        *sway*|*hyprland*|*wlroots*) backend_pkg="xdg-desktop-portal-wlr" ;;
+    esac
+
+    if command -v pacman >/dev/null 2>&1; then
+        local required=(xdg-desktop-portal pipewire)
+        [ -n "$backend_pkg" ] && required+=("$backend_pkg")
+
+        local missing=()
+        for p in "${required[@]}"; do
+            pacman -Qi "$p" >/dev/null 2>&1 || missing+=("$p")
+        done
+
+        if [ ${#missing[@]} -gt 0 ]; then
+            echo ""
+            echo "Note: these packages are recommended for remote-desktop functionality on"
+            echo "      this machine (only required if you also run the host here):"
+            printf '  - %s\n' "${missing[@]}"
+            echo ""
+            echo "Install them with:"
+            echo "  sudo pacman -S --needed ${missing[*]}"
+            echo ""
+        fi
+    fi
+
+    systemctl --user import-environment \
+        XDG_CURRENT_DESKTOP XDG_SESSION_TYPE WAYLAND_DISPLAY \
+        DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_DATA_DIRS XDG_RUNTIME_DIR \
+        2>/dev/null || true
+
+    systemctl --user restart xdg-desktop-portal.service 2>/dev/null || true
+}
+
 case "$ACTION" in
 install)
     echo "Installing RemEx Client to $INSTALL_DIR ..."
@@ -46,6 +90,8 @@ install)
         "$SCRIPT_DIR/remex-client.desktop" > "$APP_DIR/remex-client.desktop"
     update-desktop-database "$APP_DIR" 2>/dev/null || true
     kbuildsycoca6 2>/dev/null || true  # KDE Plasma cache refresh
+
+    preflight
 
     echo ""
     echo "RemEx Client installed."

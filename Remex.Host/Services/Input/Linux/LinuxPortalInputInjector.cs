@@ -92,30 +92,9 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
         // Step 1: CreateSession — the session_handle is delivered in the Response signal,
         // NOT in the immediate method reply (which only returns the Request object path).
-        var createResults = await PortalDbusHelper.CallPortalAsync(
-            _conn!,
-            _normalizedSender!,
-            RemoteDesktopInterface,
-            method: "CreateSession",
-            signature: "a{sv}",
-            requestTimeout: TimeSpan.FromSeconds(30),
-            writeArgs: (ref MessageWriter w, string handleToken) =>
-            {
-                var sessionToken = $"remex_session_{handleToken}";
-                var dictStart = w.WriteDictionaryStart();
-
-                w.WriteDictionaryEntryStart();
-                w.WriteString("handle_token");
-                w.WriteVariantString(handleToken);
-
-                w.WriteDictionaryEntryStart();
-                w.WriteString("session_handle_token");
-                w.WriteVariantString(sessionToken);
-
-                w.WriteDictionaryEnd(dictStart);
-            },
-            logger: _logger,
-            ct: ct).ConfigureAwait(false);
+        // When the portal frontend doesn't expose RemoteDesktop, attempt a one-shot
+        // recovery (shared with the capture-session service via PortalRecoveryHelper).
+        var createResults = await CreateSessionWithRecoveryAsync(ct).ConfigureAwait(false);
 
         if (createResults is null)
         {
@@ -386,6 +365,72 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Wraps the RemoteDesktop <c>CreateSession</c> portal call with one-shot
+    /// stale-frontend recovery. On the first <c>UnknownMethod</c>/<c>ServiceUnknown</c>/<c>UnknownInterface</c>
+    /// error per process, restarts the portal frontend via
+    /// <see cref="Portal.PortalRecoveryHelper"/> and retries once. On any other
+    /// outcome, returns the original result (or null).
+    /// </summary>
+    private async Task<Dictionary<string, VariantValue>?> CreateSessionWithRecoveryAsync(
+        CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                return await PortalDbusHelper.CallPortalAsync(
+                    _conn!,
+                    _normalizedSender!,
+                    RemoteDesktopInterface,
+                    method: "CreateSession",
+                    signature: "a{sv}",
+                    requestTimeout: TimeSpan.FromSeconds(30),
+                    writeArgs: (ref MessageWriter w, string handleToken) =>
+                    {
+                        var sessionToken = $"remex_session_{handleToken}";
+                        var dictStart = w.WriteDictionaryStart();
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("handle_token");
+                        w.WriteVariantString(handleToken);
+
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("session_handle_token");
+                        w.WriteVariantString(sessionToken);
+
+                        w.WriteDictionaryEnd(dictStart);
+                    },
+                    logger: _logger,
+                    ct: ct).ConfigureAwait(false);
+            }
+            catch (DBusException ex) when (
+                ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
+                ex.ErrorName == "org.freedesktop.DBus.Error.ServiceUnknown" ||
+                ex.ErrorName == "org.freedesktop.DBus.Error.UnknownInterface")
+            {
+                if (attempt == 0 && PortalRecoveryHelper.ShouldAttempt())
+                {
+                    _logger.LogWarning(ex,
+                        "Input injector: RemoteDesktop portal interface missing. " +
+                        "Attempting one-shot recovery (restart xdg-desktop-portal)...");
+                    var recovered = await PortalRecoveryHelper
+                        .TryRecoverAsync(_logger, ct).ConfigureAwait(false);
+                    if (recovered)
+                    {
+                        // D-Bus routes by well-known name, so the existing
+                        // connection will reach the new portal frontend; no need
+                        // to rebind.
+                        continue;
+                    }
+                }
+                _logger.LogWarning(ex, "Input injector: RemoteDesktop interface unavailable.");
+                return null;
+            }
+        }
+        return null;
+    }
 
     private async Task<bool> EnsureConnectionAsync(CancellationToken ct)
     {

@@ -7,5 +7,5 @@ namespace Remex.Core.Services;
 public interface IProcessMonitorService
 {
     Task<List<ProcessInfo>> GetProcessesAsync();
-    bool KillProcess(int processId);
+    ProcessKillResult KillProcess(int processId);
 }

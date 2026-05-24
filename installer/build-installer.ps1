@@ -1,40 +1,269 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Builds the RemEx Windows installer.
+    Builds RemEx installer artifacts with automatic platform detection.
 
 .DESCRIPTION
-    1. Reads the canonical version from RemEx.Android/app/version.properties
-    2. Patches Directory.Build.props to match
-    3. Publishes the desktop client (self-contained, win-x64)
-    4. Compiles the Inno Setup script to produce the installer EXE
+    Target=Auto chooses the correct packaging flow by environment:
+      - Windows / WSL: Windows installer (Inno Setup)
+      - Linux: Linux client/host packages via build-linux.sh
+
+.PARAMETER Target
+    Auto (default), Windows, or Linux.
 
 .PARAMETER SkipPublish
-    Skip the dotnet publish step (use existing publish output).
+    Windows target only: skip dotnet publish and use existing win-x64 publish output.
 
 .PARAMETER SkipVersionSync
-    Skip syncing Directory.Build.props (use whatever version is already set).
+    Windows target only: skip syncing Directory.Build.props with version.properties.
+
+.PARAMETER SkipClient
+    Linux target only: pass --skip-client to build-linux.sh.
+
+.PARAMETER SkipHost
+    Linux target only: pass --skip-host to build-linux.sh.
+
+.PARAMETER ForwardedArgs
+    Additional args forwarded to build-linux.sh (Linux target only).
 
 .EXAMPLE
-    .\installer\build-installer.ps1
-    .\installer\build-installer.ps1 -SkipPublish
+    pwsh ./installer/build-installer.ps1
+
+.EXAMPLE
+    pwsh ./installer/build-installer.ps1 -Target Windows -SkipPublish
+
+.EXAMPLE
+    pwsh ./installer/build-installer.ps1 -Target Linux -- --skip-client
 #>
 param(
+    [ValidateSet("Auto", "Windows", "Linux")]
+    [string]$Target = "Auto",
     [switch]$SkipPublish,
-    [switch]$SkipVersionSync
+    [switch]$SkipVersionSync,
+    [switch]$SkipClient,
+    [switch]$SkipHost,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ForwardedArgs
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$RepoRoot    = Resolve-Path (Join-Path $PSScriptRoot "..")
-$VersionFile = Join-Path $RepoRoot "RemEx.Android" "app" "version.properties"
-$BuildProps  = Join-Path $RepoRoot "Directory.Build.props"
-$IssFile     = Join-Path $PSScriptRoot "RemEx.iss"
-$ClientProj  = Join-Path $RepoRoot "Remex.Client.Desktop"
+function Test-IsWsl {
+    if (-not $IsLinux) {
+        return $false
+    }
 
-# ------------------------------------------------------------------
-# 1. Read version from version.properties
-# ------------------------------------------------------------------
+    if (Test-Path "/proc/sys/fs/binfmt_misc/WSLInterop") {
+        return $true
+    }
+
+    try {
+        $versionText = Get-Content "/proc/version" -Raw
+        return $versionText -match "(?i)microsoft|wsl"
+    } catch {
+        return $false
+    }
+}
+
+function Resolve-TargetPlatform {
+    param([string]$RequestedTarget)
+
+    if ($RequestedTarget -ne "Auto") {
+        return $RequestedTarget
+    }
+
+    if ($IsWindows -or (Test-IsWsl)) {
+        return "Windows"
+    }
+
+    if ($IsLinux) {
+        return "Linux"
+    }
+
+    throw "Unsupported platform for Target=Auto. Specify -Target Windows or -Target Linux explicitly."
+}
+
+function Invoke-LinuxBuild {
+    param(
+        [string]$BuildLinuxScript,
+        [string[]]$LinuxArgs
+    )
+
+    if (-not (Test-Path $BuildLinuxScript)) {
+        Write-Error "Linux build script not found: $BuildLinuxScript"
+        exit 1
+    }
+
+    if ($SkipPublish -or $SkipVersionSync) {
+        Write-Warning "-SkipPublish and -SkipVersionSync are Windows-only flags and will be ignored for Linux target."
+    }
+
+    Write-Host "Target: Linux (using installer/build-linux.sh)" -ForegroundColor Cyan
+    & bash $BuildLinuxScript @LinuxArgs
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Linux packaging failed (exit $LASTEXITCODE)"
+        exit 1
+    }
+}
+
+function Find-Iscc {
+    param([bool]$IsWslEnvironment)
+
+    $command = Get-Command iscc, iscc.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($command -and $command.Source) {
+        return [pscustomobject]@{
+            Path          = $command.Source
+            UseWine       = $false
+            UseWslInterop = $false
+        }
+    }
+
+    if ($IsWslEnvironment) {
+        $wslCandidates = @(
+            "/mnt/c/Program Files (x86)/Inno Setup 6/ISCC.exe",
+            "/mnt/c/Program Files/Inno Setup 6/ISCC.exe"
+        )
+        foreach ($candidate in $wslCandidates) {
+            if (Test-Path $candidate) {
+                return [pscustomobject]@{
+                    Path          = $candidate
+                    UseWine       = $false
+                    UseWslInterop = $true
+                }
+            }
+        }
+    }
+
+    if ($IsWindows) {
+        $windowsCandidates = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files\Inno Setup 6\ISCC.exe"
+        )
+        foreach ($candidate in $windowsCandidates) {
+            if (Test-Path $candidate) {
+                return [pscustomobject]@{
+                    Path          = $candidate
+                    UseWine       = $false
+                    UseWslInterop = $false
+                }
+            }
+        }
+    }
+
+    $homeDir = $env:HOME
+    $userName = if ($env:USER) { $env:USER } else { $env:USERNAME }
+    $wineCandidates = @(
+        "$homeDir/.wine/drive_c/users/$userName/AppData/Local/Programs/Inno Setup 6/ISCC.exe",
+        "$homeDir/.wine/drive_c/Program Files (x86)/Inno Setup 6/ISCC.exe",
+        "$homeDir/.wine/drive_c/Program Files/Inno Setup 6/ISCC.exe"
+    )
+    foreach ($candidate in $wineCandidates) {
+        if (Test-Path $candidate) {
+            return [pscustomobject]@{
+                Path          = $candidate
+                UseWine       = $true
+                UseWslInterop = $false
+            }
+        }
+    }
+
+    return $null
+}
+
+function Invoke-WindowsBuild {
+    param(
+        [string]$RepoRoot,
+        [string]$Version,
+        [string]$BuildProps,
+        [string]$IssFile,
+        [string]$ClientProj,
+        [bool]$IsWslEnvironment
+    )
+
+    $extraArgs = @($ForwardedArgs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+
+    if ($SkipClient -or $SkipHost) {
+        Write-Warning "-SkipClient and -SkipHost apply only to Linux target and will be ignored for Windows target."
+    }
+    if ($extraArgs.Count -gt 0) {
+        Write-Error "Unexpected extra arguments for Windows target: $($extraArgs -join ' ')"
+        exit 1
+    }
+
+    if (-not $SkipVersionSync) {
+        $content = Get-Content $BuildProps -Raw
+        $patched = $content -replace '<Version>[^<]*</Version>', "<Version>$Version</Version>"
+        if ($content -ne $patched) {
+            Set-Content $BuildProps $patched -NoNewline
+            Write-Host "Patched Directory.Build.props -> $Version" -ForegroundColor Green
+        } else {
+            Write-Host "Directory.Build.props already at $Version" -ForegroundColor DarkGray
+        }
+    }
+
+    if (-not $SkipPublish) {
+        Write-Host "Publishing Remex.Client.Desktop (self-contained, win-x64)..." -ForegroundColor Cyan
+        dotnet publish $ClientProj -c Release -r win-x64 --self-contained
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "dotnet publish failed (exit $LASTEXITCODE)"
+            exit 1
+        }
+        Write-Host "Publish complete." -ForegroundColor Green
+    }
+
+    $isccInfo = Find-Iscc -IsWslEnvironment:$IsWslEnvironment
+    if ($null -eq $isccInfo) {
+        Write-Error "ISCC.exe not found. Install Inno Setup 6 (Windows) or install/configure Inno Setup under Wine (Linux)."
+        exit 1
+    }
+
+    Write-Host "Target: Windows installer (Inno Setup)" -ForegroundColor Cyan
+    if ($isccInfo.UseWine) {
+        if (-not (Get-Command wine -ErrorAction SilentlyContinue)) {
+            Write-Error "Wine is required to execute ISCC.exe from Linux but was not found in PATH."
+            exit 1
+        }
+
+        $wineIssFile = (& wine winepath -w $IssFile).Trim()
+        if ([string]::IsNullOrWhiteSpace($wineIssFile)) {
+            Write-Error "Failed to convert ISS path for Wine: $IssFile"
+            exit 1
+        }
+
+        & wine $isccInfo.Path "/DAppVersion=$Version" $wineIssFile
+    } elseif ($isccInfo.UseWslInterop) {
+        $winIsccPath = (& wslpath -w $isccInfo.Path).Trim()
+        $winIssFile = (& wslpath -w $IssFile).Trim()
+        $cmdLine = ('"{0}" "/DAppVersion={1}" "{2}"' -f $winIsccPath, $Version, $winIssFile)
+        & cmd.exe /c $cmdLine
+    } else {
+        & $isccInfo.Path "/DAppVersion=$Version" $IssFile
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "iscc failed (exit $LASTEXITCODE)"
+        exit 1
+    }
+
+    $outputExe = Join-Path $PSScriptRoot "Output\RemEx-v$Version-Setup.exe"
+    Write-Host ""
+    Write-Host "=====================================================" -ForegroundColor Green
+    Write-Host "  Windows installer built successfully!" -ForegroundColor Green
+    Write-Host "  Output: $outputExe" -ForegroundColor Green
+    Write-Host "=====================================================" -ForegroundColor Green
+}
+
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$VersionFile = Join-Path $RepoRoot "RemEx.Android" "app" "version.properties"
+$BuildProps = Join-Path $RepoRoot "Directory.Build.props"
+$IssFile = Join-Path $PSScriptRoot "RemEx.iss"
+$ClientProj = Join-Path $RepoRoot "Remex.Client.Desktop"
+$BuildLinuxScript = Join-Path $PSScriptRoot "build-linux.sh"
+$isWsl = Test-IsWsl
+$resolvedTarget = Resolve-TargetPlatform -RequestedTarget $Target
+
 if (-not (Test-Path $VersionFile)) {
     Write-Error "version.properties not found at: $VersionFile"
     exit 1
@@ -42,94 +271,37 @@ if (-not (Test-Path $VersionFile)) {
 
 $versionProps = Get-Content $VersionFile -Raw | ConvertFrom-StringData
 $version = $versionProps["versionName"]
-
 if (-not $version) {
     Write-Error "Could not read versionName from version.properties"
     exit 1
 }
 
 Write-Host "Version: $version" -ForegroundColor Cyan
+$environmentName = "Unknown"
+if ($IsWindows) {
+    $environmentName = "Windows"
+} elseif ($isWsl) {
+    $environmentName = "WSL"
+} elseif ($IsLinux) {
+    $environmentName = "Linux"
+}
+Write-Host "Environment: $environmentName" -ForegroundColor DarkGray
+Write-Host "Resolved target: $resolvedTarget" -ForegroundColor DarkGray
 
-# ------------------------------------------------------------------
-# 2. Patch Directory.Build.props
-# ------------------------------------------------------------------
-if (-not $SkipVersionSync) {
-    $content = Get-Content $BuildProps -Raw
-    $patched = $content -replace '<Version>[^<]*</Version>', "<Version>$version</Version>"
-    if ($content -ne $patched) {
-        Set-Content $BuildProps $patched -NoNewline
-        Write-Host "Patched Directory.Build.props -> $version" -ForegroundColor Green
-    } else {
-        Write-Host "Directory.Build.props already at $version" -ForegroundColor DarkGray
-    }
+if ($resolvedTarget -eq "Linux") {
+    $linuxArgs = @()
+    if ($SkipClient) { $linuxArgs += "--skip-client" }
+    if ($SkipHost) { $linuxArgs += "--skip-host" }
+    $extraArgs = @($ForwardedArgs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($extraArgs.Count -gt 0) { $linuxArgs += $extraArgs }
+    Invoke-LinuxBuild -BuildLinuxScript $BuildLinuxScript -LinuxArgs $linuxArgs
+    exit 0
 }
 
-# ------------------------------------------------------------------
-# 3. Publish the desktop client
-# ------------------------------------------------------------------
-if (-not $SkipPublish) {
-    Write-Host "Publishing Remex.Client.Desktop (self-contained, win-x64)..." -ForegroundColor Cyan
-    dotnet publish $ClientProj -c Release -r win-x64 --self-contained
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "dotnet publish failed (exit $LASTEXITCODE)"
-        exit 1
-    }
-    Write-Host "Publish complete." -ForegroundColor Green
-}
-
-# ------------------------------------------------------------------
-# 4. Compile the Inno Setup script
-# ------------------------------------------------------------------
-$iscc = Get-Command iscc -ErrorAction SilentlyContinue
-$useWine = $false
-
-if (-not $iscc) {
-    # Common install locations for Inno Setup 6 (Windows native paths)
-    $candidates = @(
-        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-        "C:\Program Files\Inno Setup 6\ISCC.exe"
-    )
-    foreach ($c in $candidates) {
-        if (Test-Path $c) { $iscc = $c; break }
-    }
-}
-
-if (-not $iscc) {
-    # Wine prefix locations (Linux)
-    $wineCandidates = @(
-        "$HOME/.wine/drive_c/users/$env:USER/AppData/Local/Programs/Inno Setup 6/ISCC.exe",
-        "$HOME/.wine/drive_c/Program Files (x86)/Inno Setup 6/ISCC.exe",
-        "$HOME/.wine/drive_c/Program Files/Inno Setup 6/ISCC.exe"
-    )
-    foreach ($c in $wineCandidates) {
-        if (Test-Path $c) { $iscc = $c; $useWine = $true; break }
-    }
-}
-
-if (-not $iscc) {
-    Write-Error "ISCC.exe (Inno Setup compiler) not found. Install Inno Setup 6 from https://jrsoftware.org/isinfo.php (Windows) or via Wine (Linux)."
-    exit 1
-}
-
-$isccPath = if ($iscc -is [string]) { $iscc } else { $iscc.Source }
-
-Write-Host "Compiling installer with Inno Setup..." -ForegroundColor Cyan
-if ($useWine) {
-    # Convert the Linux path to a Wine Windows path for ISCC, then invoke via wine
-    $wineIsccPath = & wine winepath -w $isccPath 2>/dev/null
-    $wineIssFile  = & wine winepath -w $IssFile   2>/dev/null
-    & wine $isccPath "/DAppVersion=$version" $wineIssFile
-} else {
-    & $isccPath "/DAppVersion=$version" $IssFile
-}
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "iscc failed (exit $LASTEXITCODE)"
-    exit 1
-}
-
-$outputExe = Join-Path $PSScriptRoot "Output\RemEx-v$version-Setup.exe"
-Write-Host ""
-Write-Host "=====================================================" -ForegroundColor Green
-Write-Host "  Installer built successfully!" -ForegroundColor Green
-Write-Host "  Output: $outputExe" -ForegroundColor Green
-Write-Host "=====================================================" -ForegroundColor Green
+Invoke-WindowsBuild `
+    -RepoRoot $RepoRoot `
+    -Version $version `
+    -BuildProps $BuildProps `
+    -IssFile $IssFile `
+    -ClientProj $ClientProj `
+    -IsWslEnvironment:$isWsl

@@ -13,6 +13,8 @@ using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
 using Remex.Core.Services.Network;
+using Remex.Core.Services.Security;
+using Remex.Host.Services.Security;
 
 namespace Remex.Host.Services.IPC;
 
@@ -21,6 +23,7 @@ public class LocalIpcServerService : BackgroundService
     private readonly ILogger<LocalIpcServerService> _logger;
     private readonly ISystemCommandService _commandService;
     private readonly IWakeOnLanService _wakeOnLanService;
+    private readonly IPairingService _pairingService;
     private const string PipeName = "RemExLocalIPC";
     private const string MutexName = @"Global\RemExServiceMutex";
     private Mutex? _mutex;
@@ -28,11 +31,13 @@ public class LocalIpcServerService : BackgroundService
     public LocalIpcServerService(
         ILogger<LocalIpcServerService> logger,
         ISystemCommandService commandService,
-        IWakeOnLanService wakeOnLanService)
+        IWakeOnLanService wakeOnLanService,
+        IPairingService pairingService)
     {
         _logger = logger;
         _commandService = commandService;
         _wakeOnLanService = wakeOnLanService;
+        _pairingService = pairingService;
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -222,6 +227,16 @@ public class LocalIpcServerService : BackgroundService
                     {
                         return new CommandResponse(false, "Missing MacAddress", "Wake-on-LAN requires a MacAddress parameter.");
                     }
+                case "GETPAIRINGPIN":
+                    if (_pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
+                    {
+                        return new CommandResponse(true, "Active pairing PIN retrieved.", null)
+                        {
+                            PairingPinInfo = new PairingPinInfo(pin, expiresAtUnixMs),
+                        };
+                    }
+
+                    return new CommandResponse(false, "No active pairing session.", null);
                 default:
                     return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
             }

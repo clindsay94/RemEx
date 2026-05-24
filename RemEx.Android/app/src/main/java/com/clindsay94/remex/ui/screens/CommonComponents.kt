@@ -54,6 +54,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.R
 import kotlinx.coroutines.delay
 
@@ -287,4 +289,38 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                                         )
                         )
         )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun NotConnectedBannerPreview() {
+    RemExTheme {
+        NotConnectedBanner(
+            isConnected = false,
+            onNavigateToConnection = {},
+            useDelay = false
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DisconnectedFullScreenPreview() {
+    RemExTheme {
+        DisconnectedFullScreen(
+            screenName = "Feature Name",
+            onNavigateToConnection = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ConnectionStatusChipPreview() {
+    RemExTheme {
+        Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ConnectionStatusChip(isConnected = true)
+            ConnectionStatusChip(isConnected = false)
+        }
+    }
 }

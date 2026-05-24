@@ -56,6 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import android.content.Intent
@@ -151,15 +153,24 @@ fun TutorialScreen(
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
+
+    TutorialScreenContent(
+        onFinished = {
+            scope.launch {
+                settingsManager.markOnboardingCompleted()
+                onFinished()
+            }
+        }
+    )
+}
+
+@Composable
+fun TutorialScreenContent(
+    onFinished: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { tutorialPages.size })
     val isLastPage = pagerState.currentPage == tutorialPages.size - 1
-
-    fun completeTutorial() {
-        scope.launch {
-            settingsManager.markOnboardingCompleted()
-            onFinished()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -173,7 +184,7 @@ fun TutorialScreen(
                 .padding(top = 16.dp, end = 8.dp),
             horizontalArrangement = Arrangement.End
         ) {
-            TextButton(onClick = { completeTutorial() }) {
+            TextButton(onClick = { onFinished() }) {
                     Text(
                         text = stringResource(R.string.tutorial_skip),
                     style = MaterialTheme.typography.labelLarge,
@@ -240,7 +251,7 @@ fun TutorialScreen(
             ) { lastPage ->
                 if (lastPage) {
                     Button(
-                        onClick = { completeTutorial() },
+                        onClick = { onFinished() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(stringResource(R.string.tutorial_get_started))
@@ -259,6 +270,22 @@ fun TutorialScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TutorialScreenPreview() {
+    RemExTheme {
+        TutorialScreenContent(onFinished = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TutorialPageContentPreview() {
+    RemExTheme {
+        TutorialPageContent(tutorialPages.first())
     }
 }
 

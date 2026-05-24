@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
@@ -13,6 +14,7 @@ using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host;
 using Remex.Host.Services.Input;
+using Remex.Host.Services.RemoteDesktop.Windows;
 
 namespace Remex.Host.Handlers;
 
@@ -89,6 +91,29 @@ public sealed class RemoteDesktopHandler : IDisposable
                 if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
                 {
                     await webSocket.CloseOutputAsync(WebSocketCloseStatus.PolicyViolation, "interactive desktop unavailable", ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogTrace(ex, "Best-effort WebSocket close failed.");
+            }
+
+            return;
+        }
+
+        var windowsDiagnostics = _hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
+        if (windowsDiagnostics is { SupportsRemoteDesktopSession: true, CurrentDesktopReady: false })
+        {
+            await SendDesktopError(
+                webSocket,
+                BuildWindowsDesktopUnavailableMessage(windowsDiagnostics),
+                ct);
+
+            try
+            {
+                if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
+                {
+                    await webSocket.CloseOutputAsync(WebSocketCloseStatus.PolicyViolation, "windows desktop unavailable", ct);
                 }
             }
             catch (Exception ex)
@@ -287,11 +312,17 @@ public sealed class RemoteDesktopHandler : IDisposable
             {
                 errorReported = true;
                 _logger.LogWarning("Screen capture failing consistently ({Count} consecutive). Sent {Total} frames total so far.", consecutiveFailures, totalFramesSent);
-                await SendDesktopError(webSocket,
-                    totalFramesSent == 0
-                        ? "Screen capture is not working on the host."
-                        : $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.",
-                    ct);
+                var errorText = totalFramesSent == 0
+                    ? "Screen capture is not working on the host."
+                    : $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.";
+
+                var windowsReport = _hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
+                if (windowsReport is not null)
+                {
+                    errorText = BuildWindowsCaptureFailureMessage(windowsReport, totalFramesSent);
+                }
+
+                await SendDesktopError(webSocket, errorText, ct);
             }
 
             // Throttle to target FPS using high-resolution Stopwatch
@@ -503,11 +534,11 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
         catch (System.ComponentModel.Win32Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to dispatch input (Win32 error): {Type}", input.EventType);
+            _logger.LogWarning(ex, "Failed to dispatch input (Win32 error): {Type}. {Hint}", input.EventType, GetWindowsInputFailureHint());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to dispatch input (invalid operation): {Type}", input.EventType);
+            _logger.LogWarning(ex, "Failed to dispatch input (invalid operation): {Type}. {Hint}", input.EventType, GetWindowsInputFailureHint());
         }
         catch (ArgumentException ex)
         {
@@ -599,5 +630,72 @@ public sealed class RemoteDesktopHandler : IDisposable
             // Expected if the task faulted or was already completed.
         }
         _inputQueue.Dispose();
+    }
+
+    private string BuildWindowsDesktopUnavailableMessage(WindowsRemoteDesktopDiagnosticReport report)
+    {
+        var lines = new List<string>();
+        AppendUniqueLine(lines, report.CurrentDesktopUnavailableReason);
+        AppendUniqueLine(lines, report.RemoteDesktopUnavailableReason);
+        AppendUniqueLine(lines, report.LastCaptureFailureReason);
+        AppendUniqueLine(lines, report.LastInputFailureReason);
+        if (!string.IsNullOrWhiteSpace(report.InputDesktopName))
+        {
+            AppendUniqueLine(lines, $"Active desktop: {report.InputDesktopName}.");
+        }
+
+        return lines.Count > 0
+            ? string.Join(Environment.NewLine, lines)
+            : "Windows remote desktop is currently unavailable.";
+    }
+
+    private string BuildWindowsCaptureFailureMessage(WindowsRemoteDesktopDiagnosticReport report, int totalFramesSent)
+    {
+        var lines = new List<string>
+        {
+            totalFramesSent == 0
+                ? "Screen capture failed before the first frame."
+                : $"Screen capture stopped working after {totalFramesSent} frames."
+        };
+
+        AppendUniqueLine(lines, report.CurrentDesktopUnavailableReason);
+        AppendUniqueLine(lines, report.LastCaptureFailureReason);
+        AppendUniqueLine(lines, report.CaptureBackendDegradedReason);
+        if (!string.IsNullOrWhiteSpace(report.InputDesktopName))
+        {
+            AppendUniqueLine(lines, $"Active desktop: {report.InputDesktopName}.");
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private string GetWindowsInputFailureHint()
+    {
+        var report = _hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
+        if (report is null)
+        {
+            return "Input injection requires Remex to run in the active logged-in desktop session.";
+        }
+
+        var hints = new List<string>();
+        AppendUniqueLine(hints, report.CurrentDesktopUnavailableReason);
+        AppendUniqueLine(hints, report.RemoteDesktopUnavailableReason);
+        AppendUniqueLine(hints, report.LastInputFailureReason);
+        if (!string.IsNullOrWhiteSpace(report.InputDesktopName))
+        {
+            AppendUniqueLine(hints, $"Active desktop: {report.InputDesktopName}.");
+        }
+
+        return hints.Count > 0
+            ? string.Join(" ", hints)
+            : "Input injection requires Remex to run in the active logged-in desktop session.";
+    }
+
+    private static void AppendUniqueLine(List<string> lines, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value) && !lines.Contains(value))
+        {
+            lines.Add(value);
+        }
     }
 }

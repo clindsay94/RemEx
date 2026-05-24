@@ -12,6 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -136,19 +139,56 @@ fun PairingScreen(
         viewModel: PairingViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    var pin by remember { mutableStateOf("") }
     val context = androidx.compose.ui.platform.LocalContext.current
     val settingsManager = remember(context) { SettingsManager(context.applicationContext) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        // Build the URL to pass to StartPairing.
-        // Path must match RemexConstants.WebSocketPath on the host side ("/ws").
         val hostUrl = "wss://$host:$port/ws"
         val clientId = withContext(Dispatchers.IO) { settingsManager.getOrCreateClientId() }
         viewModel.startPairing(hostUrl, "Android Client", "2.0.0", clientId)
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.pairing_title)) }) }) {
+    PairingScreenContent(
+        state = state,
+        onCancel = onCancel,
+        onSubmitPin = { pin ->
+            coroutineScope.launch {
+                val paired =
+                        viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
+                            try {
+                                RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
+                                RemexCoreClient.SetPinnedHostHash(host, spkiHash)
+                                PinnedHostStore.setPin(context, hostId, spkiHash)
+                                PinnedHostStore.setPin(context, host, spkiHash)
+                            } catch (e: Exception) {
+                                viewModel.setError(
+                                        e.message
+                                                ?: "Failed to save pinned host securely."
+                                )
+                                throw e
+                            }
+                        }
+                if (paired) {
+                    onPairSuccess()
+                }
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PairingScreenContent(
+    state: PairingUiState,
+    onCancel: () -> Unit,
+    onSubmitPin: (String) -> Unit
+) {
+    var pin by remember { mutableStateOf("") }
+
+    Scaffold(topBar = {
+        RemexFlexibleTopBar(title = stringResource(R.string.pairing_title))
+    }) {
             padding ->
         Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
@@ -201,33 +241,8 @@ fun PairingScreen(
                         enabled = !state.isLoading
                 ) { Text(stringResource(R.string.pairing_cancel)) }
 
-                val coroutineScope = rememberCoroutineScope()
                 Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                val paired =
-                                        viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
-                                            try {
-                                                RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
-                                                RemexCoreClient.SetPinnedHostHash(host, spkiHash)
-                                                PinnedHostStore.setPin(context, hostId, spkiHash)
-                                                PinnedHostStore.setPin(context, host, spkiHash)
-                                            } catch (e: Exception) {
-                                                // If setPin still fails after recovery attempts,
-                                                // surface it to the ViewModel
-                                                viewModel.setError(
-                                                        e.message
-                                                                ?: "Failed to save pinned host securely."
-                                                )
-                                                // Re-throw to prevent calling onPairSuccess()
-                                                throw e
-                                            }
-                                        }
-                                if (paired) {
-                                    onPairSuccess()
-                                }
-                            }
-                        },
+                        onClick = { onSubmitPin(pin) },
                         modifier = Modifier.weight(1f),
                         enabled = pin.length == 6 && !state.isLoading
                 ) {
@@ -243,5 +258,17 @@ fun PairingScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PairingScreenPreview() {
+    RemExTheme {
+        PairingScreenContent(
+            state = PairingUiState(isLoading = false, pairingError = "Invalid PIN entered."),
+            onCancel = {},
+            onSubmitPin = {}
+        )
     }
 }
