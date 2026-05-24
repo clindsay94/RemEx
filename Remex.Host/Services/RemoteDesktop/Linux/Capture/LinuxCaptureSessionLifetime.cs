@@ -104,7 +104,26 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
                 _portal,
                 logger: _loggerFactory.CreateLogger<LinuxCaptureSessionCoordinator>());
 
-            await _coordinator.StartAsync(ct);
+            var captureReady = await _coordinator.StartAsync(ct);
+            if (!captureReady)
+            {
+                _logger.LogError(
+                    "LinuxCaptureSessionLifetime: portal session opened but the PipeWire native bridge could not produce frames. " +
+                    "Keeping the capture coordinator detached so the legacy path is used without the extra PipeWire wait.");
+
+                _portal.SessionLost -= OnPortalSessionLost;
+                await _coordinator.DisposeAsync();
+                _coordinator = null;
+                _portal = null;
+
+                lock (_gate)
+                {
+                    _refcount = 0;
+                    _startTask = null;
+                }
+
+                return false;
+            }
 
             if (_screenCapture is LinuxScreenCaptureService svc)
                 svc.SetCaptureCoordinator(_coordinator);

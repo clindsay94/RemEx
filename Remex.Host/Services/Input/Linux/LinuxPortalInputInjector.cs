@@ -323,6 +323,35 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         }
     }
 
+    /// <summary>Injects a keyboard keysym press or release.</summary>
+    public void NotifyKeyboardKeysym(int keysym, bool pressed)
+    {
+        if (!_active || _sessionHandle is null || _conn is null) return;
+
+        try
+        {
+            var writer = _conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDestination,
+                path: PortalPath,
+                @interface: RemoteDesktopInterface,
+                member: "NotifyKeyboardKeysym",
+                signature: "oa{sv}iu",
+                flags: MessageFlags.NoReplyExpected);
+            writer.WriteObjectPath(_sessionHandle);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart);
+            writer.WriteInt32(keysym);
+            writer.WriteUInt32(pressed ? 1u : 0u);
+            var buf = writer.CreateMessage();
+            _conn.TrySendMessage(buf);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "NotifyKeyboardKeysym failed.");
+        }
+    }
+
     // ── IAsyncDisposable ──────────────────────────────────────────────────
 
     public async ValueTask DisposeAsync()

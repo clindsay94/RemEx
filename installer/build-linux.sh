@@ -67,22 +67,35 @@ if [[ ! -f "$NATIVE_BRIDGE_SO" ]]; then
     echo "Error: libremex_linux_bridge.so missing after cmake build." >&2
     exit 1
 fi
+if ! nm -D --defined-only "$NATIVE_BRIDGE_SO" | grep -q ' remex_pw_session_create_v2$'; then
+    echo "Error: libremex_linux_bridge.so does not export remex_pw_session_create_v2." >&2
+    exit 1
+fi
 echo "Native bridge → $NATIVE_BRIDGE_SO"
 
 # ── Client ───────────────────────────────────────────────────────────────────
 if [[ "$SKIP_CLIENT" == false ]]; then
     CLIENT_PROJ="$REPO_ROOT/Remex.Client.Desktop"
     CLIENT_PUBLISH="$CLIENT_PROJ/bin/Release/net10.0/linux-x64/publish"
+    CLIENT_BRIDGE="$CLIENT_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     CLIENT_STAGE="$OUTPUT_DIR/remex-client-v${VERSION}-linux-x64"
 
     echo ""
     echo "── Publishing Remex.Client.Desktop (linux-x64) ──────────────────────────"
+    rm -rf "$CLIENT_PUBLISH"
     dotnet publish "$CLIENT_PROJ" -c Release -r linux-x64 --self-contained
 
     echo ""
-    echo "── Copying native bridge into client publish ─────────────────────────────"
-    cp "$NATIVE_BRIDGE_SO" "$CLIENT_PUBLISH/"
-    echo "Native bridge → $CLIENT_PUBLISH/libremex_linux_bridge.so"
+    echo "── Verifying client native bridge publish layout ─────────────────────────"
+    if [[ ! -f "$CLIENT_BRIDGE" ]]; then
+        echo "Error: libremex_linux_bridge.so missing from client runtime path: $CLIENT_BRIDGE" >&2
+        exit 1
+    fi
+    if [[ -f "$CLIENT_PUBLISH/libremex_linux_bridge.so" ]]; then
+        echo "Error: stale client app-root libremex_linux_bridge.so should not be published." >&2
+        exit 1
+    fi
+    echo "Native bridge → $CLIENT_BRIDGE"
 
     echo ""
     echo "── Packaging client ─────────────────────────────────────────────────────"
@@ -112,20 +125,25 @@ fi
 if [[ "$SKIP_HOST" == false ]]; then
     HOST_PROJ="$REPO_ROOT/Remex.Host"
     HOST_PUBLISH="$HOST_PROJ/bin/Release/net10.0/linux-x64/publish"
+    HOST_BRIDGE="$HOST_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     HOST_STAGE="$OUTPUT_DIR/remex-host-v${VERSION}-linux-x64"
 
     echo ""
     echo "── Publishing Remex.Host (linux-x64) ───────────────────────────────────"
+    rm -rf "$HOST_PUBLISH"
     dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
 
     echo ""
-    echo "── Copying native bridge into host publish ───────────────────────────────"
-    cp "$NATIVE_BRIDGE_SO" "$HOST_PUBLISH/"
-    if [[ ! -f "$HOST_PUBLISH/libremex_linux_bridge.so" ]]; then
-        echo "Error: libremex_linux_bridge.so missing after copy." >&2
+    echo "── Verifying host native bridge publish layout ───────────────────────────"
+    if [[ ! -f "$HOST_BRIDGE" ]]; then
+        echo "Error: libremex_linux_bridge.so missing from host runtime path: $HOST_BRIDGE" >&2
         exit 1
     fi
-    echo "Native bridge → $HOST_PUBLISH/libremex_linux_bridge.so"
+    if [[ -f "$HOST_PUBLISH/libremex_linux_bridge.so" ]]; then
+        echo "Error: stale host app-root libremex_linux_bridge.so should not be published." >&2
+        exit 1
+    fi
+    echo "Native bridge → $HOST_BRIDGE"
 
     echo ""
     echo "── Packaging host ───────────────────────────────────────────────────────"

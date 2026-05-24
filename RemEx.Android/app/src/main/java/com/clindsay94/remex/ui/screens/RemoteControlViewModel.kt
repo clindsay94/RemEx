@@ -159,6 +159,21 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
         )
     }
 
+    fun sendKeyPress(keyCode: Int) {
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "keyDown")
+                    put("keyCode", keyCode)
+                }
+        )
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", "keyUp")
+                    put("keyCode", keyCode)
+                }
+        )
+    }
+
     fun clearCommandStatus() {
         _commandStatus.value = null
     }

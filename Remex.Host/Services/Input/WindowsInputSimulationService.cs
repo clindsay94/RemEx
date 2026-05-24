@@ -424,13 +424,20 @@ public class WindowsInputSimulationService : IInputSimulationService
     }
 
     /// <summary>
-    /// Maps an incoming protocol-level key code (typically Avalonia.Input.Key)
-    /// to a Win32 virtual-key code suitable for KEYBDINPUT.wVk.
-    /// Falls back to treating values in the 0–255 range as raw VK codes.
+    /// Maps an incoming protocol-level key code to a Win32 virtual-key code suitable
+    /// for KEYBDINPUT.wVk.
+    ///
+    /// Current RemEx clients send raw Win32-style virtual-key values, so prefer the
+    /// 0-255 range first. Older protocol senders that used Avalonia key enum values
+    /// can still fall back to the enum mapping below.
     /// </summary>
-    private static ushort? MapKeyCodeToVirtualKey(int keyCode)
+    internal static ushort? MapKeyCodeToVirtualKey(int keyCode)
     {
-        // First try to interpret the code as an Avalonia.Input.Key value.
+        if (keyCode >= 0 && keyCode <= 255)
+        {
+            return (ushort)keyCode;
+        }
+
         if (keyCode >= 0)
         {
             var key = (Key)keyCode;
@@ -537,13 +544,6 @@ public class WindowsInputSimulationService : IInputSimulationService
                 case Key.Decimal: return 0x6E;
                 case Key.Divide: return 0x6F;
             }
-        }
-
-        // Fallback: if the incoming value is already in the Win32 VK range,
-        // treat it as a raw virtual-key code.
-        if (keyCode >= 0 && keyCode <= 255)
-        {
-            return (ushort)keyCode;
         }
 
         // Cannot map this key code.

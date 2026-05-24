@@ -82,7 +82,8 @@ fun RemoteMouseScreen(
             onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
             onMouseClick = { button -> viewModel.sendMouseClick(button) },
             onScroll = { amount -> viewModel.sendScroll(amount) },
-            onTextSent = { text -> viewModel.sendText(text) }
+            onTextSent = { text -> viewModel.sendText(text) },
+            onSendKeyPress = { keyCode -> viewModel.sendKeyPress(keyCode) }
     )
 }
 
@@ -96,7 +97,8 @@ fun RemoteMouseScreenContent(
         onMouseMove: (Int, Int) -> Unit,
         onMouseClick: (Int) -> Unit,
         onScroll: (Int) -> Unit,
-        onTextSent: (String) -> Unit
+        onTextSent: (String) -> Unit,
+        onSendKeyPress: (Int) -> Unit
 ) {
     val view = LocalView.current
     val focusRequester = remember { FocusRequester() }
@@ -119,12 +121,14 @@ fun RemoteMouseScreenContent(
             ) {
                 BasicTextField(
                         value = textValue,
-                        onValueChange = {
-                            if (it.text.length > textValue.text.length) {
-                                val newChar = it.text.last().toString()
-                                onTextSent(newChar)
-                            }
-                            textValue = it
+                        onValueChange = { newValue ->
+                            textValue =
+                                    applyRemoteKeyboardEdit(
+                                            currentValue = textValue,
+                                            newValue = newValue,
+                                            onSendText = onTextSent,
+                                            onSendKeyPress = onSendKeyPress
+                                    )
                         },
                         modifier =
                                 Modifier.size(1.dp)
@@ -282,7 +286,8 @@ private fun RemoteMouseScreenPreview() {
             onMouseMove = { _, _ -> },
             onMouseClick = {},
             onScroll = {},
-            onTextSent = {}
+            onTextSent = {},
+            onSendKeyPress = {}
         )
     }
 }
@@ -300,7 +305,8 @@ private fun FloatingMouseIslandPreview() {
                 onMouseMove = { _, _ -> },
                 onMouseClick = {},
                 onScroll = {},
-                onTextSent = {}
+                onTextSent = {},
+                onSendKeyPress = {}
             )
         }
     }
@@ -328,6 +334,7 @@ fun FloatingMouseIsland(
             onMouseClick = { button -> viewModel.sendMouseClick(button) },
             onScroll = { amount -> viewModel.sendScroll(amount) },
             onTextSent = { text -> viewModel.sendText(text) },
+            onSendKeyPress = { keyCode -> viewModel.sendKeyPress(keyCode) },
             modifier = modifier,
             onDrag = onDrag,
             onDragStart = onDragStart,
@@ -345,6 +352,7 @@ fun FloatingMouseIslandContent(
         onMouseClick: (Int) -> Unit,
         onScroll: (Int) -> Unit,
         onTextSent: (String) -> Unit,
+        onSendKeyPress: (Int) -> Unit,
         modifier: Modifier = Modifier,
         onDrag: ((dragAmount: Offset) -> Unit)? = null,
         onDragStart: (() -> Unit)? = null,
@@ -358,12 +366,14 @@ fun FloatingMouseIslandContent(
 
     BasicTextField(
             value = textValue,
-            onValueChange = {
-                if (it.text.length > textValue.text.length) {
-                    val addedText = it.text.substring(textValue.text.length)
-                    onTextSent(addedText)
-                }
-                textValue = it
+            onValueChange = { newValue ->
+                textValue =
+                        applyRemoteKeyboardEdit(
+                                currentValue = textValue,
+                                newValue = newValue,
+                                onSendText = onTextSent,
+                                onSendKeyPress = onSendKeyPress
+                        )
             },
             modifier =
                     Modifier.size(1.dp).graphicsLayer { alpha = 0f }.focusRequester(focusRequester)

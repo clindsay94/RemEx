@@ -78,6 +78,14 @@ public class LinuxPortalInputInjectorTests
         Assert.Null(ex);
     }
 
+    [Fact]
+    public void NotifyKeyboardKeysym_DoesNotThrow_WhenInactive()
+    {
+        var injector = new LinuxPortalInputInjector();
+        var ex = Record.Exception(() => injector.NotifyKeyboardKeysym(0x61 /* 'a' */, pressed: true));
+        Assert.Null(ex);
+    }
+
     // ── EnsureStartedAsync in headless environments ────────────────────
 
     [Fact]

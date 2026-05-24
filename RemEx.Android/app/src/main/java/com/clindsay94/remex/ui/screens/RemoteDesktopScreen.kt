@@ -505,33 +505,13 @@ fun RemoteDesktopScreenContent(
                         BasicTextField(
                                 value = textValue,
                                 onValueChange = { newValue ->
-                                        val oldText = textValue.text
-                                        val newText = newValue.text
-
-                                        if (newText.length > oldText.length) {
-                                                // Characters added — split on newlines to send text
-                                                // + Enter correctly
-                                                val added = newText.substring(oldText.length)
-                                                val parts = added.split('\n')
-                                                parts.forEachIndexed { index, part ->
-                                                        if (part.isNotEmpty()) onSendText(part)
-                                                        if (index < parts.size - 1)
-                                                                onSendKeyPress(13)
-                                                }
-                                        } else if (newText.length < oldText.length) {
-                                                // Characters removed — send backspaces
-                                                val removed = oldText.length - newText.length
-                                                repeat(removed) { onSendKeyPress(8) }
-                                        } else if (newText != oldText) {
-                                                // Same length but different (IME replacement)
-                                                val removed = oldText.length
-                                                repeat(removed) { onSendKeyPress(8) }
-                                                onSendText(newText)
-                                        }
-
-                                        // Reset buffer to avoid unbounded growth and stale IME
-                                        // state
-                                        textValue = TextFieldValue("")
+                                        textValue =
+                                                applyRemoteKeyboardEdit(
+                                                        currentValue = textValue,
+                                                        newValue = newValue,
+                                                        onSendText = onSendText,
+                                                        onSendKeyPress = onSendKeyPress
+                                                )
                                 },
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                                 keyboardActions = KeyboardActions(onSend = { onSendKeyPress(13) }),

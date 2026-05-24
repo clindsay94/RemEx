@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Remex.Host.Services.RemoteDesktop.Linux;
 
 namespace Remex.Host.Services.Input.Linux;
 
@@ -13,6 +14,11 @@ namespace Remex.Host.Services.Input.Linux;
 internal static class LinuxNativeEis
 {
     private const string LibName = "remex_linux_bridge";
+
+    static LinuxNativeEis()
+    {
+        LinuxNativeBridgeLocator.EnsureDllImportResolverRegistered();
+    }
 
     [DllImport(LibName, EntryPoint = "remex_eis_sender_create")]
     public static extern int SenderCreate(

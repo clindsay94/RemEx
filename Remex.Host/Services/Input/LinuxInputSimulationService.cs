@@ -275,23 +275,53 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void KeyDown(int keyCode)
     {
+        int linuxKeyCode = LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode);
+        if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive && linuxKeyCode >= 0)
+        {
+            _portalInjector.NotifyKeyboardKeycode(linuxKeyCode, pressed: true);
+            return;
+        }
+
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("key", $"{keyCode}:1"); // 1 = press
-        else
-            RunTool("keydown", keyCode.ToString());
+        {
+            RunTool("key", $"{(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:1");
+            return;
+        }
+
+        RunTool("keydown", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString());
     }
 
     public void KeyUp(int keyCode)
     {
+        int linuxKeyCode = LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode);
+        if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive && linuxKeyCode >= 0)
+        {
+            _portalInjector.NotifyKeyboardKeycode(linuxKeyCode, pressed: false);
+            return;
+        }
+
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("key", $"{keyCode}:0"); // 0 = release
-        else
-            RunTool("keyup", keyCode.ToString());
+        {
+            RunTool("key", $"{(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:0");
+            return;
+        }
+
+        RunTool("keyup", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString());
     }
 
     public void TypeText(string text)
     {
         if (string.IsNullOrEmpty(text)) return;
+
+        if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive)
+        {
+            foreach (var keysym in LinuxInputEventTranslator.TextToPortalKeysyms(text))
+            {
+                _portalInjector.NotifyKeyboardKeysym(keysym, pressed: true);
+                _portalInjector.NotifyKeyboardKeysym(keysym, pressed: false);
+            }
+            return;
+        }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Runtime.Versioning;
+using System.Text;
 
 namespace Remex.Host.Services.Input.Linux;
 
@@ -143,6 +145,178 @@ public static class LinuxInputEventTranslator
     {
         if (string.IsNullOrWhiteSpace(keyName)) return -1;
         return XkbToKeycode.TryGetValue(keyName, out var code) ? code : -1;
+    }
+
+    /// <summary>
+    /// Converts a protocol-level key code (raw Win32 virtual-key style code used by
+    /// the current RemEx clients) into a Linux evdev keycode suitable for ydotool
+    /// and the portal <c>NotifyKeyboardKeycode</c> API.
+    /// </summary>
+    public static int ProtocolKeyCodeToLinuxKeycode(int keyCode) => keyCode switch
+    {
+        0x08 => 14,   // Backspace
+        0x09 => 15,   // Tab
+        0x0D => 28,   // Enter
+        0x1B => 1,    // Escape
+        0x20 => 57,   // Space
+        0x21 => 104,  // PageUp
+        0x22 => 109,  // PageDown
+        0x23 => 107,  // End
+        0x24 => 102,  // Home
+        0x25 => 105,  // Left
+        0x26 => 103,  // Up
+        0x27 => 106,  // Right
+        0x28 => 108,  // Down
+        0x2D => 110,  // Insert
+        0x2E => 111,  // Delete
+        0x30 => 11,
+        0x31 => 2,
+        0x32 => 3,
+        0x33 => 4,
+        0x34 => 5,
+        0x35 => 6,
+        0x36 => 7,
+        0x37 => 8,
+        0x38 => 9,
+        0x39 => 10,
+        0x41 => 30,
+        0x42 => 48,
+        0x43 => 46,
+        0x44 => 32,
+        0x45 => 18,
+        0x46 => 33,
+        0x47 => 34,
+        0x48 => 35,
+        0x49 => 23,
+        0x4A => 36,
+        0x4B => 37,
+        0x4C => 38,
+        0x4D => 50,
+        0x4E => 49,
+        0x4F => 24,
+        0x50 => 25,
+        0x51 => 16,
+        0x52 => 19,
+        0x53 => 31,
+        0x54 => 20,
+        0x55 => 22,
+        0x56 => 47,
+        0x57 => 17,
+        0x58 => 45,
+        0x59 => 21,
+        0x5A => 44,
+        0x5B => 125,  // Left Super
+        0x5C => 126,  // Right Super
+        0x70 => 59,   // F1
+        0x71 => 60,
+        0x72 => 61,
+        0x73 => 62,
+        0x74 => 63,
+        0x75 => 64,
+        0x76 => 65,
+        0x77 => 66,
+        0x78 => 67,
+        0x79 => 68,
+        0x7A => 87,
+        0x7B => 88,
+        0xA0 => 42,   // Left Shift
+        0xA1 => 54,   // Right Shift
+        0xA2 => 29,   // Left Ctrl
+        0xA3 => 97,   // Right Ctrl
+        0xA4 => 56,   // Left Alt
+        0xA5 => 100,  // Right Alt
+        0xBB => 13,   // Equal / plus
+        0xBC => 51,   // Comma
+        0xBD => 12,   // Minus
+        0xBE => 52,   // Period
+        0xBF => 53,   // Slash
+        0xC0 => 41,   // Grave
+        0xDB => 26,   // [
+        0xDC => 43,   // backslash
+        0xDD => 27,   // ]
+        0xDE => 40,   // apostrophe
+        _ => -1,
+    };
+
+    /// <summary>
+    /// Converts a protocol-level key code into an XKB / xdotool key name.
+    /// </summary>
+    public static string? ProtocolKeyCodeToXkbName(int keyCode) => keyCode switch
+    {
+        0x08 => "BackSpace",
+        0x09 => "Tab",
+        0x0D => "Return",
+        0x1B => "Escape",
+        0x20 => "space",
+        0x21 => "Prior",
+        0x22 => "Next",
+        0x23 => "End",
+        0x24 => "Home",
+        0x25 => "Left",
+        0x26 => "Up",
+        0x27 => "Right",
+        0x28 => "Down",
+        0x2D => "Insert",
+        0x2E => "Delete",
+        >= 0x30 and <= 0x39 => ((char)keyCode).ToString(),
+        >= 0x41 and <= 0x5A => ((char)(keyCode + 32)).ToString(),
+        0x5B => "Super_L",
+        0x5C => "Super_R",
+        >= 0x70 and <= 0x7B => $"F{keyCode - 0x6F}",
+        0xA0 => "Shift_L",
+        0xA1 => "Shift_R",
+        0xA2 => "Control_L",
+        0xA3 => "Control_R",
+        0xA4 => "Alt_L",
+        0xA5 => "Alt_R",
+        0xBB => "equal",
+        0xBC => "comma",
+        0xBD => "minus",
+        0xBE => "period",
+        0xBF => "slash",
+        0xC0 => "grave",
+        0xDB => "bracketleft",
+        0xDC => "backslash",
+        0xDD => "bracketright",
+        0xDE => "apostrophe",
+        _ => null,
+    };
+
+    /// <summary>
+    /// Converts a UTF-16 string into XKB keysyms for portal text injection.
+    /// </summary>
+    public static IReadOnlyList<int> TextToPortalKeysyms(string text)
+    {
+        var keysyms = new List<int>();
+        if (string.IsNullOrEmpty(text))
+        {
+            return keysyms;
+        }
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            keysyms.Add(RuneToPortalKeysym(rune));
+        }
+
+        return keysyms;
+    }
+
+    /// <summary>
+    /// Converts a Unicode rune into an XKB keysym value suitable for
+    /// <c>NotifyKeyboardKeysym</c>.
+    /// </summary>
+    public static int RuneToPortalKeysym(Rune rune)
+    {
+        return rune.Value switch
+        {
+            0x08 => 0xFF08, // BackSpace
+            0x09 => 0xFF09, // Tab
+            0x0A => 0xFF0D, // Line feed -> Return
+            0x0D => 0xFF0D, // Return
+            0x1B => 0xFF1B, // Escape
+            <= 0xFF => rune.Value,
+            _ => unchecked((int)(0x01000000u | (uint)rune.Value)),
+        };
     }
 
     /// <summary>

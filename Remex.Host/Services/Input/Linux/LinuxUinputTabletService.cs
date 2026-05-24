@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Remex.Host.Services.RemoteDesktop.Linux;
 
 namespace Remex.Host.Services.Input.Linux;
 
@@ -13,6 +14,11 @@ namespace Remex.Host.Services.Input.Linux;
 internal static class LinuxNativeUinput
 {
     private const string LibName = "remex_linux_bridge";
+
+    static LinuxNativeUinput()
+    {
+        LinuxNativeBridgeLocator.EnsureDllImportResolverRegistered();
+    }
 
     [DllImport(LibName, EntryPoint = "remex_uinput_tablet_create")]
     public static extern int TabletCreate(

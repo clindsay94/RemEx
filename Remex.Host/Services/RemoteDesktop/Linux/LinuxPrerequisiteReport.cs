@@ -71,6 +71,9 @@ public sealed record LinuxPrerequisiteReport
     public bool PipeWireLibraryAvailable { get; init; }
     public string? PipeWireLibraryPath { get; init; }
     public string? PipeWireUnavailableReason { get; init; }
+    public bool NativeBridgeAvailable { get; init; }
+    public string? NativeBridgePath { get; init; }
+    public string? NativeBridgeUnavailableReason { get; init; }
 
     // ── EIS / libei ──────────────────────────────────────────────────────
     public bool LibeiAvailable { get; init; }
@@ -112,6 +115,12 @@ public sealed record LinuxPrerequisiteReport
     /// True when the portal + PipeWire stack is available (with or without pen mode).
     /// </summary>
     public bool HasPortalCapture => SelectedTier >= LinuxRemoteDesktopTier.PortalNoPen;
+
+    /// <summary>
+    /// True when a portal-based capture tier can actually load the native PipeWire bridge.
+    /// X11-only streaming does not require the bridge.
+    /// </summary>
+    public bool PortalCaptureOperational => !HasPortalCapture || NativeBridgeAvailable;
 
     /// <summary>Timestamp when this report was collected (UTC).</summary>
     public DateTimeOffset CollectedAt { get; init; } = DateTimeOffset.UtcNow;

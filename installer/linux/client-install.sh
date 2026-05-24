@@ -11,6 +11,7 @@ INSTALL_DIR="$HOME/.local/share/remex-client"
 BIN_DIR="$HOME/.local/bin"
 APP_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+BRIDGE_PATH="$INSTALL_DIR/runtimes/linux-x64/native/libremex_linux_bridge.so"
 
 # ── Preflight (shared with the host installer) ─────────────────────────
 # The client itself doesn't open portal sessions, but most users install client
@@ -60,6 +61,7 @@ case "$ACTION" in
 install)
     echo "Installing RemEx Client to $INSTALL_DIR ..."
     mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$APP_DIR" "$ICON_DIR"
+    rm -f "$INSTALL_DIR/libremex_linux_bridge.so"
 
     # Copy all files except the install helper and desktop template
     find "$SCRIPT_DIR" -maxdepth 1 \
@@ -68,11 +70,17 @@ install)
         ! -name '.' \
         -exec cp -r {} "$INSTALL_DIR/" \;
 
+    rm -f "$INSTALL_DIR/libremex_linux_bridge.so"
+
     chmod +x "$INSTALL_DIR/Remex.Client.Desktop"
 
-    if ldd "$INSTALL_DIR/libremex_linux_bridge.so" 2>/dev/null | grep -q "not found"; then
+    if [[ ! -f "$BRIDGE_PATH" ]]; then
+        echo "WARNING: libremex_linux_bridge.so is missing from the .NET runtime probing path."
+        echo "         Expected: $BRIDGE_PATH"
+        echo "         PipeWire capture will not be available."
+    elif ldd "$BRIDGE_PATH" 2>/dev/null | grep -q "not found"; then
         echo "WARNING: libremex_linux_bridge.so is missing a runtime dependency."
-        echo "         Run: ldd \"$INSTALL_DIR/libremex_linux_bridge.so\" to diagnose."
+        echo "         Run: ldd \"$BRIDGE_PATH\" to diagnose."
         echo "         PipeWire capture will not be available."
     fi
 

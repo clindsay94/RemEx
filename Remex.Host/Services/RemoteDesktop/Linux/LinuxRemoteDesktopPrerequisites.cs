@@ -112,6 +112,7 @@ public sealed class LinuxRemoteDesktopPrerequisites
         var pwRunning = await IsUserServiceActiveAsync("pipewire", ct);
         var wpRunning = await IsUserServiceActiveAsync("wireplumber", ct);
         var pwLib = TryLoadLibrary(PipeWireLibCandidates);
+        var (nativeBridgeAvailable, nativeBridgePath, nativeBridgeReason) = ProbeNativeBridge();
         string? pwReason = null;
         if (!pwRunning)
         {
@@ -122,6 +123,8 @@ public sealed class LinuxRemoteDesktopPrerequisites
             issues.Add("WirePlumber session manager is not running. Start it with: systemctl --user start wireplumber");
         if (pwLib is null)
             issues.Add("libpipewire-0.3 shared library not found. Install pipewire development libraries.");
+        if (isWayland && portalRd && pwRunning && !nativeBridgeAvailable)
+            issues.Add(nativeBridgeReason ?? "libremex_linux_bridge.so is not loadable from the .NET runtime probing path.");
 
         // ── 5. EIS / libei ─────────────────────────────────────────────────
         var eisLib = TryLoadLibrary(LibeiCandidates);
@@ -197,6 +200,9 @@ public sealed class LinuxRemoteDesktopPrerequisites
             PipeWireLibraryAvailable = pwLib is not null,
             PipeWireLibraryPath = pwLib,
             PipeWireUnavailableReason = pwReason,
+            NativeBridgeAvailable = nativeBridgeAvailable,
+            NativeBridgePath = nativeBridgePath,
+            NativeBridgeUnavailableReason = nativeBridgeReason,
             LibeiAvailable = eisLib is not null,
             LibeiLibraryPath = eisLib,
             LibevdevAvailable = evdevLib is not null,
@@ -384,6 +390,38 @@ public sealed class LinuxRemoteDesktopPrerequisites
             uinputWritable
                 ? "libei unavailable — using portal Notify* input methods instead of EIS."
                 : "uinput not writable — full stylus pen mode unavailable.");
+    }
+
+    private static (bool Available, string? Path, string? Reason) ProbeNativeBridge()
+    {
+        var expectedPath = LinuxNativeBridgeLocator.GetExpectedPath();
+        if (LinuxNativeBridgeLocator.TryLoadExpectedPath(out var handle))
+        {
+            NativeLibrary.Free(handle);
+            return (true, expectedPath, null);
+        }
+
+        var legacyRootPath = LinuxNativeBridgeLocator.GetLegacyRootPath();
+        if (File.Exists(legacyRootPath))
+        {
+            return (false, legacyRootPath,
+                $"libremex_linux_bridge.so exists at {legacyRootPath}, but .NET 10 resolves this library from {expectedPath}. Rebuild or reinstall so the bridge is copied into runtimes/linux-x64/native.");
+        }
+
+        if (File.Exists(expectedPath))
+        {
+            return (false, expectedPath,
+                $"libremex_linux_bridge.so exists at {expectedPath}, but it could not be loaded. Run: ldd \"{expectedPath}\"");
+        }
+
+        if (NativeLibrary.TryLoad("remex_linux_bridge", out handle))
+        {
+            NativeLibrary.Free(handle);
+            return (true, "remex_linux_bridge (system loader search path)", null);
+        }
+
+        return (false, expectedPath,
+            $"libremex_linux_bridge.so is missing from {expectedPath}. The published Linux app must ship it under runtimes/linux-x64/native.");
     }
 
     private static async Task<(

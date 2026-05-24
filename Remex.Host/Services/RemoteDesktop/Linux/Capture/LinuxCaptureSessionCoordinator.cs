@@ -5,6 +5,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Remex.Host.Services.RemoteDesktop.Linux;
 using Remex.Host.Services.RemoteDesktop.Linux.Portal;
 
 namespace Remex.Host.Services.RemoteDesktop.Linux.Capture;
@@ -60,7 +61,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
     /// Starts the portal session and begins the PipeWire capture loop.
     /// Must be called once before reading frames.
     /// </summary>
-    public async Task StartAsync(CancellationToken ct = default)
+    public async Task<bool> StartAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Starting Linux capture session coordinator.");
 
@@ -71,8 +72,8 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
             "Using PipeWire node ID {NodeId} via portal session {Handle}.",
             nodeId, portalResult.SessionHandle ?? "(none)");
 
-        StartCaptureLoop(nodeId, portalResult.SessionHandle);
-        IsRunning = true;
+        IsRunning = StartCaptureLoop(nodeId, portalResult.SessionHandle);
+        return IsRunning;
     }
 
     /// <summary>
@@ -123,7 +124,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
 
     // ── Private implementation ─────────────────────────────────────────
 
-    private void StartCaptureLoop(uint nodeId, string? portalSessionHandle = null)
+    private bool StartCaptureLoop(uint nodeId, string? portalSessionHandle = null)
     {
         _captureCts?.Cancel();
         _frameSource?.Dispose();
@@ -134,13 +135,36 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
         bool nativeOpen = _frameSource.TryOpen();
         if (!nativeOpen)
         {
-            _logger.LogWarning(
-                "PipeWire native library not available. " +
-                "Capture coordinator will not produce frames until libremex_linux_bridge.so is installed.");
+            switch (_frameSource.LastOpenFailure)
+            {
+                case LinuxPipeWireOpenFailureKind.NativeLibraryNotFound:
+                    _logger.LogWarning(
+                        "PipeWire native bridge is not loadable from {ExpectedPath}. " +
+                        "Leaving the coordinator inactive so the host can fall back cleanly.",
+                        LinuxNativeBridgeLocator.GetExpectedPath());
+                    break;
+                case LinuxPipeWireOpenFailureKind.SessionCreateFailed:
+                    _logger.LogWarning(
+                        "PipeWire native session open failed for node {NodeId} with error {Code}. " +
+                        "Leaving the coordinator inactive so the host can fall back cleanly.",
+                        nodeId,
+                        _frameSource.LastOpenErrorCode);
+                    break;
+                default:
+                    _logger.LogWarning(
+                        "PipeWire capture could not be initialized ({Reason}). Leaving the coordinator inactive so the host can fall back cleanly.",
+                        _frameSource.LastOpenErrorMessage ?? "unknown error");
+                    break;
+            }
+
+            _captureCts.Dispose();
+            _captureCts = null;
+            return false;
         }
 
         var token = _captureCts.Token;
         _captureLoop = Task.Run(() => RunCaptureLoopAsync(token), token);
+        return true;
     }
 
     private async Task RunCaptureLoopAsync(CancellationToken ct)

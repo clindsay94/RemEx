@@ -29,6 +29,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifndef REMEX_EXPORT
+#define REMEX_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -78,7 +82,7 @@ extern "C"
      *
      * Returns REMEX_OK on success, negative error code on failure.
      */
-    int remex_pw_session_create(uint32_t node_id, void **out_handle);
+    REMEX_EXPORT int remex_pw_session_create(uint32_t node_id, void **out_handle);
 
     /*
      * remex_pw_session_create_v2
@@ -93,7 +97,7 @@ extern "C"
      *
      * Returns REMEX_OK on success, negative error code on failure.
      */
-    int remex_pw_session_create_v2(
+    REMEX_EXPORT int remex_pw_session_create_v2(
         const char *portal_session_handle,
         uint32_t node_id,
         void **out_handle);
@@ -109,7 +113,7 @@ extern "C"
      * Returns REMEX_OK on success, REMEX_ERR_NO_FRAME on timeout,
      *         or a negative error code on failure.
      */
-    int remex_pw_session_acquire_frame(
+    REMEX_EXPORT int remex_pw_session_acquire_frame(
         void *handle,
         remex_frame_descriptor_t *out_descriptor,
         int timeout_ms);
@@ -119,14 +123,14 @@ extern "C"
      * Returns the current frame buffer to PipeWire so it can be reused.
      * Must be called after processing each acquired frame.
      */
-    void remex_pw_session_release_frame(void *handle);
+    REMEX_EXPORT void remex_pw_session_release_frame(void *handle);
 
     /*
      * remex_pw_session_destroy
      * Destroys the PipeWire session and frees all associated resources.
      * Safe to call with a NULL handle.
      */
-    void remex_pw_session_destroy(void *handle);
+    REMEX_EXPORT void remex_pw_session_destroy(void *handle);
 
     /* ── EIS / libei sender ─────────────────────────────────────────────────── */
 
@@ -136,45 +140,45 @@ extern "C"
      * eis_socket_path: path to the EIS socket provided by the portal.
      * out_handle: receives an opaque EIS sender handle on success.
      */
-    int remex_eis_sender_create(const char *eis_socket_path, void **out_handle);
+    REMEX_EXPORT int remex_eis_sender_create(const char *eis_socket_path, void **out_handle);
 
     /*
      * remex_eis_send_pointer_motion
      * Sends a relative pointer motion event.
      */
-    int remex_eis_send_pointer_motion(void *handle, double dx, double dy);
+    REMEX_EXPORT int remex_eis_send_pointer_motion(void *handle, double dx, double dy);
 
     /*
      * remex_eis_send_pointer_motion_absolute
      * Sends an absolute pointer position event (normalized 0.0-1.0 coordinates).
      */
-    int remex_eis_send_pointer_motion_absolute(void *handle, double x, double y);
+    REMEX_EXPORT int remex_eis_send_pointer_motion_absolute(void *handle, double x, double y);
 
     /*
      * remex_eis_send_button
      * Sends a pointer button event. button follows Linux BTN_* constants.
      * pressed: 1 for press, 0 for release.
      */
-    int remex_eis_send_button(void *handle, uint32_t button, int pressed);
+    REMEX_EXPORT int remex_eis_send_button(void *handle, uint32_t button, int pressed);
 
     /*
      * remex_eis_send_scroll
      * Sends a scroll (axis) event. Values are in pixels.
      */
-    int remex_eis_send_scroll(void *handle, double dx, double dy);
+    REMEX_EXPORT int remex_eis_send_scroll(void *handle, double dx, double dy);
 
     /*
      * remex_eis_send_key
      * Sends a keyboard key event. keycode follows Linux KEY_* constants.
      * pressed: 1 for press, 0 for release.
      */
-    int remex_eis_send_key(void *handle, uint32_t keycode, int pressed);
+    REMEX_EXPORT int remex_eis_send_key(void *handle, uint32_t keycode, int pressed);
 
     /*
      * remex_eis_sender_destroy
      * Closes and frees the EIS sender. Safe to call with NULL.
      */
-    void remex_eis_sender_destroy(void *handle);
+    REMEX_EXPORT void remex_eis_sender_destroy(void *handle);
 
     /* ── uinput virtual tablet ──────────────────────────────────────────────── */
 
@@ -185,7 +189,7 @@ extern "C"
      * supports_pressure, supports_tilt, supports_distance: capability flags.
      * out_handle: receives an opaque tablet handle on success.
      */
-    int remex_uinput_tablet_create(
+    REMEX_EXPORT int remex_uinput_tablet_create(
         const char *device_name,
         int supports_pressure,
         int supports_tilt,
@@ -197,7 +201,7 @@ extern "C"
      * Sends a complete stylus frame: position, pressure, tilt, buttons, phase.
      * All values are raw integers matching the evdev axis ranges configured at device creation.
      */
-    int remex_uinput_tablet_send_stylus_event(
+    REMEX_EXPORT int remex_uinput_tablet_send_stylus_event(
         void *handle,
         int32_t abs_x,
         int32_t abs_y,
@@ -214,14 +218,14 @@ extern "C"
      * Clears all button and tool state. Call on disconnect or session teardown
      * to prevent stuck keys or stuck tool state.
      */
-    int remex_uinput_tablet_reset(void *handle);
+    REMEX_EXPORT int remex_uinput_tablet_reset(void *handle);
 
     /*
      * remex_uinput_tablet_destroy
      * Destroys the virtual device. Automatically calls reset first.
      * Safe to call with NULL.
      */
-    void remex_uinput_tablet_destroy(void *handle);
+    REMEX_EXPORT void remex_uinput_tablet_destroy(void *handle);
 
     /* ── uinput keyboard/pointer fallback ──────────────────────────────────── */
 
@@ -229,13 +233,13 @@ extern "C"
      * remex_uinput_kbptr_create
      * Creates a virtual keyboard + relative pointer device for the X11 fallback path.
      */
-    int remex_uinput_kbptr_create(const char *device_name, void **out_handle);
+    REMEX_EXPORT int remex_uinput_kbptr_create(const char *device_name, void **out_handle);
 
-    int remex_uinput_kbptr_send_key(void *handle, uint32_t keycode, int pressed);
-    int remex_uinput_kbptr_send_rel(void *handle, int32_t dx, int32_t dy);
-    int remex_uinput_kbptr_send_button(void *handle, uint32_t button, int pressed);
-    int remex_uinput_kbptr_reset(void *handle);
-    void remex_uinput_kbptr_destroy(void *handle);
+    REMEX_EXPORT int remex_uinput_kbptr_send_key(void *handle, uint32_t keycode, int pressed);
+    REMEX_EXPORT int remex_uinput_kbptr_send_rel(void *handle, int32_t dx, int32_t dy);
+    REMEX_EXPORT int remex_uinput_kbptr_send_button(void *handle, uint32_t button, int pressed);
+    REMEX_EXPORT int remex_uinput_kbptr_reset(void *handle);
+    REMEX_EXPORT void remex_uinput_kbptr_destroy(void *handle);
 
     /* ── Capability probe ───────────────────────────────────────────────────── */
 
@@ -245,7 +249,7 @@ extern "C"
      * Writes JSON into out_buf (null-terminated UTF-8).
      * Returns the number of bytes written (excluding null) or negative on error.
      */
-    int remex_probe_capabilities(char *out_buf, size_t buf_size);
+    REMEX_EXPORT int remex_probe_capabilities(char *out_buf, size_t buf_size);
 
 #ifdef __cplusplus
 }

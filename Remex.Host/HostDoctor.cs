@@ -57,7 +57,7 @@ internal static class HostDoctor
         {
             Console.WriteLine();
             Console.WriteLine("No repair actions required.");
-            return report.HasPortalCapture ? 0 : 1;
+            return report.CanStream && report.PortalCaptureOperational ? 0 : 1;
         }
 
         Console.WriteLine();
@@ -90,7 +90,7 @@ internal static class HostDoctor
             Console.WriteLine();
             Console.WriteLine("No safe (non-elevated, non-install) actions to run automatically.");
             Console.WriteLine("Run the install/sudo commands shown above by hand.");
-            return report.HasPortalCapture ? 0 : 1;
+            return report.CanStream && report.PortalCaptureOperational ? 0 : 1;
         }
 
         if (!Console.IsInputRedirected && Environment.UserInteractive)
@@ -100,7 +100,7 @@ internal static class HostDoctor
             if (answer is not ("y" or "yes"))
             {
                 Console.WriteLine("Skipped.");
-                return report.HasPortalCapture ? 0 : 1;
+                return report.CanStream && report.PortalCaptureOperational ? 0 : 1;
             }
         }
         else
@@ -131,7 +131,7 @@ internal static class HostDoctor
         var post = await prereqs.EvaluateAsync(ct).ConfigureAwait(false);
         Console.WriteLine($"  Tier: {post.SelectedTier}");
         Console.WriteLine($"  RemoteDesktop interface: {(post.PortalRemoteDesktopAvailable ? "available" : "missing")}");
-        return post.HasPortalCapture ? 0 : 1;
+        return post.CanStream && post.PortalCaptureOperational ? 0 : 1;
     }
 
     private static void PrintReport(LinuxPrerequisiteReport r)
@@ -150,6 +150,7 @@ internal static class HostDoctor
         Console.WriteLine($"  PipeWire service        : {(r.PipeWireRunning ? "running" : "stopped")}");
         Console.WriteLine($"  WirePlumber             : {(r.WirePlumberRunning ? "running" : "stopped")}");
         Console.WriteLine($"  libpipewire-0.3         : {(r.PipeWireLibraryAvailable ? r.PipeWireLibraryPath : "MISSING")}");
+        Console.WriteLine($"  native PipeWire bridge  : {(r.NativeBridgeAvailable ? r.NativeBridgePath : r.NativeBridgeUnavailableReason ?? "MISSING")}");
         Console.WriteLine($"  libei                   : {(r.LibeiAvailable ? r.LibeiLibraryPath : "MISSING")}");
         Console.WriteLine($"  libevdev                : {(r.LibevdevAvailable ? r.LibevdevLibraryPath : "MISSING")}");
         Console.WriteLine($"  /dev/uinput             : {(r.UinputNodeExists ? (r.UinputWritable ? "writable" : "exists (RO)") : "MISSING")}");

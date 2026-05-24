@@ -146,8 +146,8 @@ static int open_pipewire_remote_sdbus(const char *session_handle)
     r = sd_bus_call(bus, msg, 5000000 /* 5s timeout */, &error, &reply);
     if (r < 0)
     {
-        fprintf(stderr, "[remex] OpenPipeWireRemote call failed: %s\n",
-                sd_bus_error_is_set(&error) ? error.message : strerror(-r));
+        /* Non-fatal on unsandboxed hosts: fall back to a direct PipeWire daemon
+         * connection and let the caller decide whether capture still succeeds. */
         goto done;
     }
 

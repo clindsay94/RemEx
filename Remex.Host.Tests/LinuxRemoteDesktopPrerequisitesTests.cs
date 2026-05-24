@@ -156,6 +156,30 @@ public class LinuxRemoteDesktopPrerequisitesTests
         Assert.True(report.HasPortalCapture);
     }
 
+    [Fact]
+    public void PortalCaptureOperational_IsFalse_WhenPortalTierButNativeBridgeMissing()
+    {
+        var report = new LinuxPrerequisiteReport
+        {
+            SelectedTier = LinuxRemoteDesktopTier.WaylandNative,
+            NativeBridgeAvailable = false,
+        };
+
+        Assert.False(report.PortalCaptureOperational);
+    }
+
+    [Fact]
+    public void PortalCaptureOperational_IsTrue_WhenX11Degraded()
+    {
+        var report = new LinuxPrerequisiteReport
+        {
+            SelectedTier = LinuxRemoteDesktopTier.X11Degraded,
+            NativeBridgeAvailable = false,
+        };
+
+        Assert.True(report.PortalCaptureOperational);
+    }
+
     // ── Helper ────────────────────────────────────────────────────────
 
     /// <summary>

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Remex.Host.Services.RemoteDesktop.Linux;
 
 namespace Remex.Host.Services.RemoteDesktop.Linux.Capture;
 
@@ -17,6 +18,11 @@ namespace Remex.Host.Services.RemoteDesktop.Linux.Capture;
 internal static class LinuxNativePipeWire
 {
     private const string LibName = "remex_linux_bridge";
+
+    static LinuxNativePipeWire()
+    {
+        LinuxNativeBridgeLocator.EnsureDllImportResolverRegistered();
+    }
 
     [DllImport(LibName, EntryPoint = "remex_pw_session_create")]
     public static extern int SessionCreate(uint nodeId, out IntPtr handle);
@@ -42,6 +48,15 @@ internal static class LinuxNativePipeWire
         nuint bufSize);
 }
 
+[SupportedOSPlatform("linux")]
+public enum LinuxPipeWireOpenFailureKind
+{
+    None = 0,
+    NativeLibraryNotFound,
+    SessionCreateFailed,
+    UnexpectedError,
+}
+
 /// <summary>
 /// Managed wrapper around the native PipeWire capture session.
 /// Provides a simple pull-based frame acquisition interface:
@@ -61,6 +76,9 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
 
     public bool IsNativeAvailable => _nativeAvailable;
     public uint NodeId { get; private init; }
+    public LinuxPipeWireOpenFailureKind LastOpenFailure { get; private set; }
+    public int? LastOpenErrorCode { get; private set; }
+    public string? LastOpenErrorMessage { get; private set; }
 
     /// <summary>
     /// D-Bus object path of the portal session (e.g. returned by PortalStartResult.SessionHandle).
@@ -88,6 +106,10 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
     {
         if (_disposed) return false;
 
+        LastOpenFailure = LinuxPipeWireOpenFailureKind.None;
+        LastOpenErrorCode = null;
+        LastOpenErrorMessage = null;
+
         try
         {
             int rc = PortalSessionHandle is not null
@@ -96,6 +118,9 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
 
             if (rc != 0)
             {
+                LastOpenFailure = LinuxPipeWireOpenFailureKind.SessionCreateFailed;
+                LastOpenErrorCode = rc;
+                LastOpenErrorMessage = $"remex_pw_session_create returned {rc}";
                 _logger.LogWarning(
                     "remex_pw_session_create{Suffix} returned {Code}. PipeWire native path unavailable.",
                     PortalSessionHandle is not null ? "_v2" : string.Empty, rc);
@@ -111,6 +136,8 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
         }
         catch (DllNotFoundException ex)
         {
+            LastOpenFailure = LinuxPipeWireOpenFailureKind.NativeLibraryNotFound;
+            LastOpenErrorMessage = ex.Message;
             _logger.LogWarning(ex,
                 "libremex_linux_bridge.so not found. PipeWire capture unavailable.");
             _nativeAvailable = false;
@@ -118,6 +145,8 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
         }
         catch (Exception ex)
         {
+            LastOpenFailure = LinuxPipeWireOpenFailureKind.UnexpectedError;
+            LastOpenErrorMessage = ex.Message;
             _logger.LogError(ex, "Unexpected error opening PipeWire session.");
             _nativeAvailable = false;
             return false;

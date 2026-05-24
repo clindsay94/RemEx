@@ -64,6 +64,49 @@ public class LinuxPointerSampleTranslatorTests
         Assert.Equal(-1, LinuxInputEventTranslator.XkbNameToLinuxKeycode(keyName));
     }
 
+    [Theory]
+    [InlineData(0x0D, 28)]
+    [InlineData(0x08, 14)]
+    [InlineData(0x25, 105)]
+    [InlineData(0x41, 30)]
+    [InlineData(0x5A, 44)]
+    [InlineData(0xA0, 42)]
+    [InlineData(0xBB, 13)]
+    public void ProtocolKeyCodeToLinuxKeycode_ReturnsExpectedCode(int keyCode, int expected)
+    {
+        Assert.Equal(expected, LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode));
+    }
+
+    [Theory]
+    [InlineData(0x0D, "Return")]
+    [InlineData(0x08, "BackSpace")]
+    [InlineData(0x25, "Left")]
+    [InlineData(0x41, "a")]
+    [InlineData(0x5A, "z")]
+    [InlineData(0xA0, "Shift_L")]
+    [InlineData(0xBB, "equal")]
+    public void ProtocolKeyCodeToXkbName_ReturnsExpectedName(int keyCode, string expected)
+    {
+        Assert.Equal(expected, LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode));
+    }
+
+    [Theory]
+    [InlineData('A', 0x41)]
+    [InlineData('é', 0xE9)]
+    [InlineData('\n', 0xFF0D)]
+    public void RuneToPortalKeysym_ReturnsExpectedKeysym(char value, int expected)
+    {
+        Assert.Equal(expected, LinuxInputEventTranslator.RuneToPortalKeysym(new System.Text.Rune(value)));
+    }
+
+    [Fact]
+    public void TextToPortalKeysyms_HandlesSupplementaryUnicode()
+    {
+        var keysyms = LinuxInputEventTranslator.TextToPortalKeysyms("🙂");
+        Assert.Single(keysyms);
+        Assert.Equal(unchecked((int)(0x01000000u | 0x1F642u)), keysyms[0]);
+    }
+
     // ── Button index → BTN_ code ──────────────────────────────────────
 
     [Theory]

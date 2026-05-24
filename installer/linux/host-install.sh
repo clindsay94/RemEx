@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="$HOME/.local/share/remex-host"
 SERVICE_DIR="$HOME/.config/systemd/user"
 SERVICE_NAME="remex-host"
+BRIDGE_PATH="$INSTALL_DIR/runtimes/linux-x64/native/libremex_linux_bridge.so"
 
 # ── Preflight: portal & PipeWire dependency check ─────────────────────────
 # Detects the active desktop, lists missing packages (Arch family only), and
@@ -64,7 +65,19 @@ preflight() {
 case "$ACTION" in
 install)
     echo "Installing RemEx Host to $INSTALL_DIR ..."
+
+    # Upgrades can overwrite the currently-running self-contained executable.
+    # Stop the user service first so `cp` does not hit ETXTBSY on Remex.Host.
+    systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
+    for _ in {1..50}; do
+        if ! systemctl --user --quiet is-active "$SERVICE_NAME" 2>/dev/null; then
+            break
+        fi
+        sleep 0.1
+    done
+
     mkdir -p "$INSTALL_DIR" "$SERVICE_DIR"
+    rm -f "$INSTALL_DIR/libremex_linux_bridge.so"
 
     # Copy all files except install helper and service template
     find "$SCRIPT_DIR" -maxdepth 1 \
@@ -72,6 +85,8 @@ install)
         ! -name 'remex-host.service' \
         ! -name '.' \
         -exec cp -r {} "$INSTALL_DIR/" \;
+
+    rm -f "$INSTALL_DIR/libremex_linux_bridge.so"
 
     chmod +x "$INSTALL_DIR/Remex.Host"
 
@@ -87,9 +102,13 @@ install)
 
     systemctl --user enable --now "$SERVICE_NAME"
 
-    if ldd "$INSTALL_DIR/libremex_linux_bridge.so" 2>/dev/null | grep -q "not found"; then
+    if [[ ! -f "$BRIDGE_PATH" ]]; then
+        echo "WARNING: libremex_linux_bridge.so is missing from the .NET runtime probing path."
+        echo "         Expected: $BRIDGE_PATH"
+        echo "         PipeWire capture will not be available until the host is rebuilt/reinstalled."
+    elif ldd "$BRIDGE_PATH" 2>/dev/null | grep -q "not found"; then
         echo "WARNING: libremex_linux_bridge.so is missing a runtime dependency."
-        echo "         Run: ldd \"$INSTALL_DIR/libremex_linux_bridge.so\" to diagnose."
+        echo "         Run: ldd \"$BRIDGE_PATH\" to diagnose."
         echo "         PipeWire capture will not be available; the legacy path will be used."
     fi
 

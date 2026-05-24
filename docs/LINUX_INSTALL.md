@@ -224,7 +224,7 @@ tar -tzf installer/Output/remex-client-v2.0.0-linux-x64.tar.gz | grep libremex_l
 tar -tzf installer/Output/remex-host-v2.0.0-linux-x64.tar.gz | grep libremex_linux_bridge
 ```
 
-**Checkpoint:** Both `grep` commands print a line like `remex-client-.../libremex_linux_bridge.so`. ✓
+**Checkpoint:** Both `grep` commands print a line like `remex-client-.../runtimes/linux-x64/native/libremex_linux_bridge.so`. ✓
 
 If either grep returns nothing, the native bridge did not get packaged. Check that cmake built successfully — the build script prints `Native bridge → ...` when it succeeds.
 
@@ -257,7 +257,7 @@ dotnet publish Remex.Client.Desktop -c Release -r linux-x64 --self-contained
 ./Remex.Client.Desktop/bin/Release/net10.0/linux-x64/publish/Remex.Client.Desktop
 ```
 
-The MSBuild targets in the `.csproj` automatically copy `libremex_linux_bridge.so` into the publish directory during the publish step, so no manual copying is needed.
+The MSBuild targets in the `.csproj` automatically copy `libremex_linux_bridge.so` into `publish/runtimes/linux-x64/native/` during the publish step, so no manual copying is needed.
 
 ---
 
@@ -328,7 +328,7 @@ If it still does not appear, log out and back in.
 
 ### "PipeWire native library not available" in host logs
 
-The native bridge `.so` is not next to the executable. This usually means:
+The native bridge `.so` is missing from the .NET runtime probing path. This usually means:
 
 1. You installed the host package that was built **before** the fix that added the bridge to the client package — rebuild from source using **[B]** above.
 2. Or the host was installed manually without running `install.sh` — run `~/.local/share/remex-host/install.sh install` to redo it.
@@ -336,14 +336,14 @@ The native bridge `.so` is not next to the executable. This usually means:
 Verify the file exists after install:
 
 ```bash
-ls ~/.local/share/remex-host/libremex_linux_bridge.so
-ls ~/.local/share/remex-client/libremex_linux_bridge.so
+ls ~/.local/share/remex-host/runtimes/linux-x64/native/libremex_linux_bridge.so
+ls ~/.local/share/remex-client/runtimes/linux-x64/native/libremex_linux_bridge.so
 ```
 
 Check its runtime dependencies are satisfied:
 
 ```bash
-ldd ~/.local/share/remex-host/libremex_linux_bridge.so
+ldd ~/.local/share/remex-host/runtimes/linux-x64/native/libremex_linux_bridge.so
 ```
 
 Any line containing `not found` indicates a missing system library. Install the package that provides it (usually `pipewire`).
