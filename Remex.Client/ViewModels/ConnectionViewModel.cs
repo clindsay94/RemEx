@@ -298,6 +298,61 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     private void ShowPairingPinPanel() => ShowPairingPin = HasActivePairingPin;
 
     [RelayCommand]
+    public async Task RevealPairingPinAsync()
+    {
+        // 1. If embedded host is active, start pairing directly on it
+        if (_pairingService is not null)
+        {
+            try
+            {
+                if (_pairingService.IsPairingActive)
+                {
+                    _pairingService.CancelPairing();
+                }
+
+                var state = await _pairingService.StartPairingAsync(default);
+                ActivePairingPin = state.Pin;
+                ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(state.ExpiresAtUnixMs);
+                ShowPairingPin = true;
+                StartPairingExpiryTimer();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start embedded pairing session.");
+                StatusText = "Failed to generate pairing PIN";
+            }
+        }
+        // 2. If standalone host query service is active, request it over IPC
+        else if (_standalonePairingPinQueryService is not null)
+        {
+            try
+            {
+                var activePin = await _standalonePairingPinQueryService.GeneratePairingPinAsync();
+                if (activePin is not null)
+                {
+                    ActivePairingPin = activePin.Pin;
+                    ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
+                    ShowPairingPin = true;
+                    StartPairingExpiryTimer();
+                }
+                else
+                {
+                    StatusText = "Failed to generate pairing PIN from host service";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start standalone pairing session.");
+                StatusText = "Failed to generate pairing PIN from host service";
+            }
+        }
+        else
+        {
+            StatusText = "Pairing service is unavailable";
+        }
+    }
+
+    [RelayCommand]
     private void ClosePairingPin() => ShowPairingPin = false;
 
     /// <summary>Rolling window of latency samples (ms) for charting.</summary>
@@ -1142,10 +1197,46 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                            ?? App.EmbeddedHostServices?.GetService<ICertificateService>();
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
 
-            // QR bootstrap is the out-of-band trust exchange: it carries the host endpoint and
-            // the certificate SPKI hash the phone should pin. Manual PIN pairing remains available
-            // for discovery/manual connection flows, but QR should not create a host pairing
-            // session because any later PairingRequest would rotate that PIN and invalidate it.
+            // Generate a fresh pairing PIN to embed in the QR code so the mobile client
+            // can automatically pair without requiring the user to type any PIN manually.
+            string? pairingPin = null;
+            if (_pairingService is not null)
+            {
+                try
+                {
+                    if (_pairingService.IsPairingActive)
+                    {
+                        _pairingService.CancelPairing();
+                    }
+                    var state = await _pairingService.StartPairingAsync(default);
+                    pairingPin = state.Pin;
+                    ActivePairingPin = state.Pin;
+                    ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(state.ExpiresAtUnixMs);
+                    StartPairingExpiryTimer();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to start embedded pairing session for QR code.");
+                }
+            }
+            else if (_standalonePairingPinQueryService is not null)
+            {
+                try
+                {
+                    var activePin = await _standalonePairingPinQueryService.GeneratePairingPinAsync();
+                    if (activePin is not null)
+                    {
+                        pairingPin = activePin.Pin;
+                        ActivePairingPin = activePin.Pin;
+                        ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
+                        StartPairingExpiryTimer();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to start standalone pairing session for QR code.");
+                }
+            }
 
             var payload = JsonSerializer.Serialize(new
             {
@@ -1153,6 +1244,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 port,
                 hostId = Environment.MachineName,
                 spkiHashBase64 = spkiHash,
+                pin = pairingPin,
             });
 
             using var qrGenerator = new QRCodeGenerator();

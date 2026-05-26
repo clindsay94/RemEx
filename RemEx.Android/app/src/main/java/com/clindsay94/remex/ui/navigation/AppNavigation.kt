@@ -127,8 +127,8 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
                 splashShown = splashShown,
                 isConnected = isConnected,
                 onMarkSplashShown = onMarkSplashShown,
-                onQrScanned = { host, port ->
-                        connectionViewModel.applyQrResultAndConnect(host, port)
+                onQrScanned = { host, port, pin ->
+                        connectionViewModel.applyQrResultAndConnect(host, port, pin)
                 },
                 dashboardScreenContent = { onNav ->
                         DashboardScreen(onNavigateToConnection = onNav)
@@ -167,7 +167,7 @@ private fun AppNavigationContent(
         splashShown: Boolean,
         isConnected: Boolean,
         onMarkSplashShown: () -> Unit,
-        onQrScanned: (String, Int) -> Unit,
+        onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -631,7 +631,7 @@ private fun RemexNavHost(
         startDestination: String,
         hasCompletedOnboarding: Boolean,
         onMarkSplashShown: () -> Unit,
-        onQrScanned: (String, Int) -> Unit,
+        onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (() -> Unit) -> Unit,
         remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
         remoteMouseScreenContent: @Composable (() -> Unit) -> Unit,
@@ -744,8 +744,8 @@ private fun RemexNavHost(
                         },
                 ) {
                         QrScannerScreen(
-                                onScanned = { host, port ->
-                                        onQrScanned(host, port)
+                                onScanned = { host, port, pin ->
+                                        onQrScanned(host, port, pin)
                                         onSelectPrimaryPage(0)
                                         navController.navigate(PrimaryNavRoute) {
                                                 popUpTo(PrimaryNavRoute) { inclusive = true }
@@ -875,7 +875,7 @@ private fun AppNavigationPreview() {
                         splashShown = true,
                         isConnected = true,
                         onMarkSplashShown = {},
-                        onQrScanned = { _, _ -> },
+                        onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },
@@ -896,7 +896,7 @@ private fun AppNavigationDisconnectedPreview() {
                         splashShown = true,
                         isConnected = false,
                         onMarkSplashShown = {},
-                        onQrScanned = { _, _ -> },
+                        onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteMouseScreenContent = { Box(Modifier.fillMaxSize()) },

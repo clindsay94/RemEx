@@ -85,12 +85,22 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 var frame = await _captureCoordinator.WaitForNextFrameAsync(timeoutMs: 80, ct: ct);
                 if (frame is not null)
                 {
-                    var jpeg = LinuxJpegEncoder.Encode(
-                        frame, quality, scale, _logger, out var formatTag);
-                    if (jpeg.Length > 0) return jpeg;
-                    _logger.LogDebug(
-                        "PipeWire frame produced but JPEG encode returned empty " +
-                        "(format={Format}); falling back this tick.", formatTag);
+                    try
+                    {
+                        var jpeg = LinuxJpegEncoder.Encode(
+                            frame, quality, scale, _logger, out var formatTag);
+                        if (jpeg.Length > 0) return jpeg;
+                        _logger.LogDebug(
+                            "PipeWire frame produced but JPEG encode returned empty " +
+                            "(format={Format}); falling back this tick.", formatTag);
+                    }
+                    finally
+                    {
+                        if (frame.Data is not null)
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(frame.Data);
+                        }
+                    }
                 }
                 else
                 {

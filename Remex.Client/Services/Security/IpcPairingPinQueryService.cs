@@ -45,4 +45,32 @@ public sealed class IpcPairingPinQueryService : IPairingPinQueryService
             return null;
         }
     }
+
+    public async Task<PairingPinInfo?> GeneratePairingPinAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var client = new NamedPipeClientStream(".", _pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await client.ConnectAsync(2000, cancellationToken);
+
+            var request = new CommandRequest("GENERATEPAIRINGPIN", null);
+            var json = JsonSerializer.Serialize(request, RemexJson.Compact);
+            var bytes = Encoding.UTF8.GetBytes(json);
+
+            await client.WriteAsync(bytes, cancellationToken);
+
+            var buffer = new byte[8192];
+            var bytesRead = await client.ReadAsync(buffer, cancellationToken);
+            if (bytesRead <= 0)
+                return null;
+
+            var responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            var response = JsonSerializer.Deserialize<CommandResponse>(responseJson, RemexJson.Compact);
+            return response?.Success == true ? response.PairingPinInfo : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

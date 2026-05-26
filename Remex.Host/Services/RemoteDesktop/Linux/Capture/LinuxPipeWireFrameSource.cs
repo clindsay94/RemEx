@@ -220,8 +220,8 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
 
         if (desc.Kind == LinuxBufferKind.Memfd && desc.Data != IntPtr.Zero && desc.Size > 0)
         {
-            // Copy into managed memory so the caller can use it after ReleaseFrame.
-            copy = new byte[(int)desc.Size];
+            // Rent from ArrayPool to avoid GC allocations/pauses.
+            copy = System.Buffers.ArrayPool<byte>.Shared.Rent((int)desc.Size);
             Marshal.Copy(desc.Data, copy, 0, (int)desc.Size);
         }
 

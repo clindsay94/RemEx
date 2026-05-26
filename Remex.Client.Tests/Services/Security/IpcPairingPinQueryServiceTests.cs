@@ -27,7 +27,30 @@ public sealed class IpcPairingPinQueryServiceTests
         await serverTask;
     }
 
-    private static async Task RunServerAsync(string pipeName, PairingPinInfo pinInfo)
+    [Fact]
+    public async Task GeneratePairingPinAsync_UsesStandalonePipeAndGeneratesPin()
+    {
+        var pipeName = $"RemExLocalIPC.Tests.{Guid.NewGuid():N}";
+        var service = new IpcPairingPinQueryService(pipeName);
+        var pinInfo = new PairingPinInfo("135790", DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeMilliseconds());
+
+        var serverTask = RunServerAsync(pipeName, pinInfo, "GENERATEPAIRINGPIN");
+
+        var result = await service.GeneratePairingPinAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(pinInfo.Pin, result!.Pin);
+        Assert.Equal(pinInfo.ExpiresAtUnixMs, result.ExpiresAtUnixMs);
+
+        await serverTask;
+    }
+
+    private static Task RunServerAsync(string pipeName, PairingPinInfo pinInfo)
+    {
+        return RunServerAsync(pipeName, pinInfo, "GETPAIRINGPIN");
+    }
+
+    private static async Task RunServerAsync(string pipeName, PairingPinInfo pinInfo, string expectedAction)
     {
         await using var server = new NamedPipeServerStream(
             pipeName,
@@ -43,7 +66,7 @@ public sealed class IpcPairingPinQueryServiceTests
         var requestJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
         var request = JsonSerializer.Deserialize<CommandRequest>(requestJson, RemexJson.Compact);
         Assert.NotNull(request);
-        Assert.Equal("GETPAIRINGPIN", request!.Action);
+        Assert.Equal(expectedAction, request!.Action);
 
         var response = new CommandResponse(true, "ok", null) { PairingPinInfo = pinInfo };
         var responseJson = JsonSerializer.Serialize(response, RemexJson.Compact);

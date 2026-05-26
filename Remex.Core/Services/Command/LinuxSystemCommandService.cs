@@ -39,7 +39,16 @@ public class LinuxSystemCommandService : ISystemCommandService
 
     public void RestartToUefi(int delaySeconds = 0)
     {
-        throw new NotSupportedException("RestartToUefi is not supported on Linux.");
+        if (delaySeconds > 0)
+        {
+            System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(delaySeconds)).ContinueWith(_ =>
+            {
+                try { ExecuteProcess("systemctl", "reboot --firmware-setup"); } catch { }
+            });
+            return;
+        }
+
+        ExecuteProcess("systemctl", "reboot --firmware-setup");
     }
 
     public void Sleep()
@@ -54,12 +63,12 @@ public class LinuxSystemCommandService : ISystemCommandService
 
     public void SignOut()
     {
-        throw new NotSupportedException("SignOut is not supported on Linux generically via CLI.");
+        ExecuteProcess("loginctl", "terminate-session self");
     }
 
     public void Lock()
     {
-        throw new NotSupportedException("Lock is not supported on Linux generically via CLI.");
+        ExecuteProcess("loginctl", "lock-session");
     }
 
     public void MonitorOff()

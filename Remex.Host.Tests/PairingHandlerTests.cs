@@ -16,13 +16,10 @@ public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Pr
     {
         _factory = factory;
 
-        // xUnit constructs a fresh test class instance per test but the IClassFixture
-        // (WebApplicationFactory + its singleton PairingService) is shared across the
-        // whole class. Server-side cleanup runs asynchronously on the host's HandleAsync
-        // task continuation and isn't guaranteed to be finished by the time the next
-        // test begins, so an earlier test's residual session can throw "already active"
-        // / "already in progress" at the start of the next test. Hard-reset the singleton
-        // here so each test starts from a known-clean state regardless of run order.
+        // Allow any asynchronous background Kestrel cleanup thread from a previous test
+        // to fully complete and release the shared singleton lock.
+        Task.Delay(150).Wait();
+
         var pairingService = _factory.Services.GetRequiredService<PairingService>();
         pairingService.CancelPairing();
     }
@@ -182,6 +179,9 @@ public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Pr
 
     private async Task<WebSocket> ConnectAndStartPairingAsync()
     {
+        var pairingService = _factory.Services.GetRequiredService<PairingService>();
+        pairingService.CancelPairing();
+
         var wsClient = _factory.Server.CreateWebSocketClient();
         var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None);
 

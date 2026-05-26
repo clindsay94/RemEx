@@ -57,10 +57,9 @@ public sealed class PairingService : IPairingService
 
     public async Task<PairingState> StartPairingAsync(CancellationToken ct)
     {
-        // Try to acquire without waiting: if another session holds the lock, reject immediately
-        // rather than queuing — two simultaneous pairing sessions would corrupt each other's
-        // ECDH state (see design note above).
-        if (!await _lock.WaitAsync(0, ct))
+        // Acquire the lock, allowing up to 1000ms to resolve any transient background operations
+        // (like a cancellation from a previously disconnected socket) without throwing false errors.
+        if (!await _lock.WaitAsync(1000, ct))
         {
             throw new InvalidOperationException(
                 "A pairing session is already in progress. " +

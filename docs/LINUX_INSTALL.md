@@ -138,6 +138,30 @@ journalctl --user -u remex-host -f
 ~/.local/share/remex-host/install.sh uninstall
 ```
 
+### A8. Secure Remote Access via Tailscale
+
+By default, RemEx works on your local home network. If you need to access your PC securely from outside your home network (e.g., over cellular data or from a work Wi-Fi):
+
+1. **Automated Setup:** During host installation, the installer will interactively prompt you:
+   ```text
+   Would you like to configure Tailscale for secure remote access from outside your home network? [y/N]
+   ```
+   Answering `y` will check for Tailscale, install it if missing, and offer to start and authenticate it.
+
+2. **Manual Installation:**
+   ```bash
+   # Install Tailscale
+   curl -fsSL https://tailscale.com/install.sh | sh
+   
+   # Start the service and log in
+   sudo tailscale up
+   ```
+
+3. **Get Your Static IP:**
+   - On your Android phone, download the **Tailscale** app and log into the same account.
+   - Copy the private IP (starts with `100.x.y.z`) listed for your Linux host.
+   - Enter this IP in the RemEx Android app to connect securely from anywhere!
+
 ---
 
 ---

@@ -124,6 +124,54 @@ install)
         echo "         again after addressing them."
     fi
 
+    # Check if we should enable user lingering for boot persistence
+    if [ -t 0 ]; then
+        echo ""
+        read -rp "Would you like to enable boot persistence (so RemEx Host runs at boot before you log in)? [y/N] " LINGER_ANS
+        if [[ "$LINGER_ANS" =~ ^[Yy]$ ]]; then
+            echo "Enabling systemd user lingering for $USER..."
+            loginctl enable-linger "$USER" || echo "WARNING: could not enable lingering."
+        else
+            echo "Boot persistence skipped."
+        fi
+    else
+        echo ""
+        echo "Note: To enable boot persistence (run host at boot before login), run:"
+        echo "  loginctl enable-linger $USER"
+    fi
+
+    # Check if we should configure Tailscale for secure remote access
+    if [ -t 0 ]; then
+        echo ""
+        read -rp "Would you like to configure Tailscale for secure remote access from outside your home network? [y/N] " TS_ANS
+        if [[ "$TS_ANS" =~ ^[Yy]$ ]]; then
+            if command -v tailscale >/dev/null 2>&1; then
+                echo "Tailscale is already installed."
+                read -rp "Would you like to start and authenticate Tailscale now? [y/N] " TS_UP_ANS
+                if [[ "$TS_UP_ANS" =~ ^[Yy]$ ]]; then
+                    sudo tailscale up
+                fi
+            else
+                echo "Tailscale is not installed. Installing via the official one-liner script..."
+                if curl -fsSL https://tailscale.com/install.sh | sh; then
+                    echo "Tailscale successfully installed!"
+                    read -rp "Would you like to start and authenticate Tailscale now? [y/N] " TS_UP_ANS
+                    if [[ "$TS_UP_ANS" =~ ^[Yy]$ ]]; then
+                        sudo tailscale up
+                    fi
+                else
+                    echo "WARNING: Could not install Tailscale automatically. You can install it manually from https://tailscale.com"
+                fi
+            fi
+        else
+            echo "Remote access setup skipped."
+        fi
+    else
+        echo ""
+        echo "Note: To access your host securely from outside your home network, install Tailscale:"
+        echo "  curl -fsSL https://tailscale.com/install.sh | sh"
+    fi
+
     echo ""
     echo "RemEx Host installed and started."
     echo "  Status:     systemctl --user status $SERVICE_NAME"
@@ -131,9 +179,12 @@ install)
     echo "  Doctor:     $INSTALL_DIR/Remex.Host --doctor"
     echo "  Uninstall:  $INSTALL_DIR/install.sh uninstall"
     echo ""
-    echo "The host will start automatically when you log in."
-    echo "Make sure 'Enable lingering' is on if you want it to start at boot"
-    echo "before login:  loginctl enable-linger $USER"
+    if loginctl show-user "$USER" --property=Linger 2>/dev/null | grep -q "Linger=yes"; then
+        echo "The host is configured to run at boot (lingering is enabled)."
+    else
+        echo "The host will start automatically when you log in."
+        echo "To make it start at boot before login, run: loginctl enable-linger $USER"
+    fi
     ;;
 
 uninstall)

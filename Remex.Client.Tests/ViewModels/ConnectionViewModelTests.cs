@@ -328,6 +328,11 @@ internal sealed class FakeStandalonePairingPinQueryService : IPairingPinQuerySer
     {
         return Task.FromResult(_responses.Count > 0 ? _responses.Dequeue() : null);
     }
+
+    public Task<PairingPinInfo?> GeneratePairingPinAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_responses.Count > 0 ? _responses.Dequeue() : null);
+    }
 }
 
 // ---------------------------------------------------------------------------

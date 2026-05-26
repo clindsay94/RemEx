@@ -153,6 +153,31 @@ We recommend using our fresh pipeline to ensure the NativeAOT `.so` is perfectly
 
 ---
 
+## 🔒 Secure Remote Access (Tailscale)
+
+By default, RemEx runs on your local home network. If you want to securely access your desktop PC from outside your home (e.g., from work, a coffee shop, or cellular data), we highly recommend using **[Tailscale](https://tailscale.com)**.
+
+Tailscale establishes a zero-configuration, secure, end-to-end encrypted virtual private network (overlay) using WireGuard®. It allows your Android app to connect to your host from anywhere in the world without exposing your desktop to the public internet or configuring risky router port forwarding.
+
+### 🐧 On Linux Host
+During installation, the `install.sh` script will interactively query if you want to automatically set up Tailscale.
+To configure manually:
+1. Install Tailscale: `curl -fsSL https://tailscale.com/install.sh | sh`
+2. Connect and authenticate: `sudo tailscale up`
+
+### 🪟 On Windows Host
+1. Download and run the official [Tailscale for Windows Installer](https://tailscale.com/download/windows).
+2. Log in through your browser to add your Windows PC to your private tailnet.
+
+### 📱 On Android Client
+1. Download **Tailscale** from the Google Play Store.
+2. Sign in with the **same account** used on your host PC.
+3. Turn on the Tailscale VPN switch.
+4. Copy your host PC's Tailscale private IP address (starts with `100.x.y.z`).
+5. Open **RemEx**, enter that `100.x.y.z` IP address, and pair/connect instantly from anywhere!
+
+---
+
 ## 📖 Guidelines & Docs
 We've introduced strict development guidelines to maintain the "Production Ready" standard:
 - [**Android Setup Guide**](docs/ANDROID_SETUP.md)

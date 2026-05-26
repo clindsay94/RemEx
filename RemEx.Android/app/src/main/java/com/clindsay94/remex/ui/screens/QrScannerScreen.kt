@@ -44,7 +44,7 @@ import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> Unit) {
+fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -182,6 +182,11 @@ fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> 
                                                                             json.getString(
                                                                                     "spkiHashBase64"
                                                                             )
+                                                                    val pin =
+                                                                            json.optString(
+                                                                                    "pin",
+                                                                                    ""
+                                                                            )
 
                                                                     if (!scannedOnce.value) {
                                                                         scannedOnce.value = true
@@ -224,7 +229,8 @@ fun QrScannerScreen(onScanned: (host: String, port: Int) -> Unit, onBack: () -> 
                                                                                         null
                                                                                 onScanned(
                                                                                         host,
-                                                                                        port
+                                                                                        port,
+                                                                                        pin
                                                                                 )
                                                                             } catch (
                                                                                     e:

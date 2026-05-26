@@ -237,6 +237,30 @@ public class LocalIpcServerService : BackgroundService
                     }
 
                     return new CommandResponse(false, "No active pairing session.", null);
+
+                case "STARTPAIRING":
+                case "GENERATEPAIRINGPIN":
+                    try
+                    {
+                        if (_pairingService.IsPairingActive && _pairingService.TryGetActivePinInfo(out var activePin, out var activeExpires))
+                        {
+                            return new CommandResponse(true, "Active pairing PIN retrieved.", null)
+                            {
+                                PairingPinInfo = new PairingPinInfo(activePin, activeExpires),
+                            };
+                        }
+
+                        // Generate a fresh one
+                        var state = await _pairingService.StartPairingAsync(CancellationToken.None);
+                        return new CommandResponse(true, "Pairing session started and PIN generated.", null)
+                        {
+                            PairingPinInfo = new PairingPinInfo(state.Pin, state.ExpiresAtUnixMs),
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        return new CommandResponse(false, $"Failed to start pairing session: {ex.Message}", null);
+                    }
                 default:
                     return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
             }

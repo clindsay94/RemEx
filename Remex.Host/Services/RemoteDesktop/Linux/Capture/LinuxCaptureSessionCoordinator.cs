@@ -37,13 +37,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
 
     // Single-slot channel: only the most recent frame is kept.
     // Older frames are dropped to prevent queue growth under encode lag.
-    private readonly Channel<LinuxFrameSnapshot> _frameChannel =
-        Channel.CreateBounded<LinuxFrameSnapshot>(new BoundedChannelOptions(1)
-        {
-            FullMode = BoundedChannelFullMode.DropOldest,
-            SingleReader = false,
-            SingleWriter = true,
-        });
+    private readonly LinuxFrameChannel _frameChannel = new();
 
     public bool IsRunning { get; private set; }
 
@@ -81,8 +75,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
     /// </summary>
     public LinuxFrameSnapshot? TryReadLatestFrame()
     {
-        _frameChannel.Reader.TryRead(out var frame);
-        return frame;
+        return _frameChannel.TryRead();
     }
 
     /// <summary>
@@ -94,14 +87,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeoutMs);
-        try
-        {
-            return await _frameChannel.Reader.ReadAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            return null;
-        }
+        return await _frameChannel.ReadAsync(cts.Token);
     }
 
     public async ValueTask DisposeAsync()
@@ -119,7 +105,98 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
 
         _frameSource?.Dispose();
         _captureCts?.Dispose();
+        _frameChannel.Dispose();
         await _portal.DisposeAsync();
+    }
+
+    private sealed class LinuxFrameChannel : IDisposable
+    {
+        private readonly object _lock = new();
+        private LinuxFrameSnapshot? _slot;
+        private readonly SemaphoreSlim _semaphore = new(0);
+        private bool _disposed;
+
+        public void Write(LinuxFrameSnapshot newFrame)
+        {
+            LinuxFrameSnapshot? oldFrame = null;
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    if (newFrame.Data is not null)
+                        System.Buffers.ArrayPool<byte>.Shared.Return(newFrame.Data);
+                    return;
+                }
+
+                oldFrame = _slot;
+                _slot = newFrame;
+
+                if (oldFrame is null)
+                {
+                    _semaphore.Release();
+                }
+            }
+
+            if (oldFrame?.Data is not null)
+            {
+                System.Buffers.ArrayPool<byte>.Shared.Return(oldFrame.Data);
+            }
+        }
+
+        public LinuxFrameSnapshot? TryRead()
+        {
+            lock (_lock)
+            {
+                if (_slot is null || _disposed)
+                    return null;
+
+                var frame = _slot;
+                _slot = null;
+
+                // Drain semaphore
+                while (_semaphore.Wait(0)) { }
+
+                return frame;
+            }
+        }
+
+        public async Task<LinuxFrameSnapshot?> ReadAsync(CancellationToken ct)
+        {
+            try
+            {
+                await _semaphore.WaitAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+
+            lock (_lock)
+            {
+                if (_slot is null || _disposed)
+                    return null;
+
+                var frame = _slot;
+                _slot = null;
+                return frame;
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                if (_disposed) return;
+                _disposed = true;
+
+                if (_slot?.Data is not null)
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(_slot.Data);
+                    _slot = null;
+                }
+                _semaphore.Dispose();
+            }
+        }
     }
 
     // ── Private implementation ─────────────────────────────────────────
@@ -185,7 +262,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
                 if (frame is not null)
                 {
                     // Publish to channel; DropOldest policy handles back-pressure automatically.
-                    _frameChannel.Writer.TryWrite(frame);
+                    _frameChannel.Write(frame);
                     _frameSource.ReleaseFrame();
                 }
             }
