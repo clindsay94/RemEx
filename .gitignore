@@ -120,3 +120,5 @@ docs/ui-evaluation-report.md
 /.claude/Agents
 /.claude/skills
 RemEx.Android/app/google-services.json
+installer/Output/remex-client-v2.0.0-linux-x64.tar.gz
+installer/Output/remex-host-v2.0.0-linux-x64.tar.gz
