@@ -81,11 +81,11 @@
                 <StackPanel Spacing="20">
                     <TextBlock Text="{local:Localize Custom_AdvancedTuning}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                    <Grid ColumnDefinitions="*,2*">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Customize default border corner roundedness for general dashboard cards and panels">
                         <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center"/>
+                                <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Border corner radius in pixels"/>
                                 <Grid ColumnDefinitions="*,*" Width="200">
                                     <TextBlock Text="Square" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="Round" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -95,19 +95,19 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Customize border corner roundedness specifically for remote control action keys">
                         <TextBlock Text="{local:Localize Custom_RemoteCardShape}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="200" VerticalAlignment="Center"/>
+                            <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Remote button corner radius in pixels"/>
                             <TextBlock Text="{Binding RemoteCardCornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Adjust visual opacity blend level of premium glassmorphism background effect">
                         <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center"/>
+                                <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Glass frosting opacity percentage"/>
                                 <Grid ColumnDefinitions="*,*" Width="200">
                                     <TextBlock Text="Clear" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="Frosted" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -117,11 +117,11 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Adjust background accent neon aura glow intensity around panel edges">
                         <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center"/>
+                                <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Neon glow thickness/spread in pixels"/>
                                 <Grid ColumnDefinitions="*,*" Width="200">
                                     <TextBlock Text="None" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="Intense" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -133,15 +133,15 @@
 
                     <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
-                    <Grid ColumnDefinitions="*,2*">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Select color palette theme highlights">
                         <TextBlock Text="{local:Localize Custom_AccentColor}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF"/>
-                            <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF"/>
-                            <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF"/>
-                            <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800"/>
-                            <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E"/>
-                            <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E"/>
+                            <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="Select Neon Violet accent color theme"/>
+                            <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="Select Cyber Cyan accent color theme"/>
+                            <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="Select Hot Pink/Magenta accent color theme"/>
+                            <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="Select Solar Gold/Amber accent color theme"/>
+                            <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="Select Emerald Green accent color theme"/>
+                            <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="Select Crimson Rose accent color theme"/>
 
                             <!-- Saved custom swatches -->
                             <ItemsControl ItemsSource="{Binding CustomAccentColors}">

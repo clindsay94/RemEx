@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -612,6 +613,95 @@ fun PersonalizationScreenContent(
                             )
                         }
                     }
+                }
+            }
+
+            // ═══ Typography Studio ═══
+            Card(
+                    colors =
+                            CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                    modifier = Modifier.animateContentSize()
+            ) {
+                Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader(
+                            "Typography Studio",
+                            Icons.Default.TextFormat
+                    )
+
+                    Text(
+                            "Font Family",
+                            style = MaterialTheme.typography.labelMedium
+                    )
+
+                    var fontExpanded by remember { mutableStateOf(false) }
+                    val fontOptions = listOf(
+                            "default" to "System Default",
+                            "roboto" to "Roboto",
+                            "lato" to "Lato",
+                            "montserrat" to "Montserrat",
+                            "poppins" to "Poppins",
+                            "inter" to "Inter (Premium)",
+                            "outfit" to "Outfit (Modern Rounded)",
+                            "space_grotesk" to "Space Grotesk (Cyber)",
+                            "syne" to "Syne (Expressive)",
+                            "lexend" to "Lexend (Fluent)",
+                            "jetbrains_mono" to "JetBrains Mono (Tech)"
+                    )
+
+                    ExposedDropdownMenuBox(
+                            expanded = fontExpanded,
+                            onExpandedChange = {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                fontExpanded = it
+                            }
+                    ) {
+                        OutlinedTextField(
+                                value = fontOptions.find { it.first == fontFamily }?.second ?: "System Default",
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = fontExpanded)
+                                },
+                                modifier =
+                                        Modifier.menuAnchor(
+                                                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                                enabled = true
+                                        ).fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                                expanded = fontExpanded,
+                                onDismissRequest = { fontExpanded = false }
+                        ) {
+                            fontOptions.forEach { (key, name) ->
+                                DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                            fontFamily = key
+                                            fontExpanded = false
+                                        }
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                            "Font Scale: ${(fontScale * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelMedium
+                    )
+                    Slider(
+                            value = fontScale,
+                            onValueChange = { fontScale = it },
+                            onValueChangeFinished = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            },
+                            valueRange = 0.85f..1.4f
+                    )
                 }
             }
 

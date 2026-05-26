@@ -36,7 +36,8 @@ class MainActivity : ComponentActivity() {
                     themeSeedColor = prefs.themeSeedColor,
                     themeSeedChroma = prefs.themeSeedChroma,
                     themeContrast = prefs.themeContrast,
-                    fontFamilyKey = prefs.fontFamily
+                    fontFamilyKey = prefs.fontFamily,
+                    fontScale = prefs.fontScale
                 ) {
                     AppNavigation(
                         splashShown = splashShown,

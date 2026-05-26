@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.navigation
 
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -64,6 +65,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -95,6 +97,7 @@ import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
 import com.clindsay94.remex.ui.theme.RemExTheme
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 // M3 Expressive motion easing curves
@@ -241,7 +244,23 @@ private fun AppNavigationContent(
 
         // Back handler: show exit confirmation when at the primary root destination
         val isAtRoot = currentRoute == PrimaryNavRoute
-        BackHandler(enabled = isAtRoot) { showExitDialog = true }
+        var backProgress by remember { mutableStateOf(0f) }
+        var isBackGestureActive by remember { mutableStateOf(false) }
+
+        PredictiveBackHandler(enabled = isAtRoot) { backEventFlow ->
+                try {
+                        isBackGestureActive = true
+                        backEventFlow.collect { event ->
+                                backProgress = event.progress
+                        }
+                        showExitDialog = true
+                        isBackGestureActive = false
+                        backProgress = 0f
+                } catch (e: CancellationException) {
+                        isBackGestureActive = false
+                        backProgress = 0f
+                }
+        }
 
         LaunchedEffect(Unit) {
                 RemexClientManager.pairingRequired.collect { (host, port) ->
@@ -293,7 +312,18 @@ private fun AppNavigationContent(
         if (isNavBarLayout || !showNav) {
                 // ── Compact (phone) or full-screen routes: Scaffold-style with bottom
                 // NavigationBar ──
-                Column(modifier = Modifier.fillMaxSize()) {
+                Column(
+                        modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                        if (isBackGestureActive) {
+                                                scaleX = 1.0f - (backProgress * 0.08f)
+                                                scaleY = 1.0f - (backProgress * 0.08f)
+                                                translationX = backProgress * 48f * view.context.resources.displayMetrics.density
+                                                alpha = 1.0f - (backProgress * 0.2f)
+                                        }
+                                }
+                ) {
                         Box(modifier = Modifier.weight(1f)) {
                                 RemexNavHost(
                                         navController = navController,
@@ -417,7 +447,18 @@ private fun AppNavigationContent(
                 }
         } else {
                 // ── Medium / Expanded (tablet, foldable): NavigationRail ──
-                Row(modifier = Modifier.fillMaxSize()) {
+                Row(
+                        modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                        if (isBackGestureActive) {
+                                                scaleX = 1.0f - (backProgress * 0.08f)
+                                                scaleY = 1.0f - (backProgress * 0.08f)
+                                                translationX = backProgress * 48f * view.context.resources.displayMetrics.density
+                                                alpha = 1.0f - (backProgress * 0.2f)
+                                        }
+                                }
+                ) {
                         // M3: NavigationRail slides in from start
                         AnimatedVisibility(
                                 visible = showNav,

@@ -89,17 +89,17 @@
                                     </StackPanel>
                                     <TextBlock Text="{Binding ServiceAccountDisplay}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsServiceInstalled}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Cursor="Hand"/>
+                                <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Cursor="Hand" ToolTip.Tip="Refresh system service state"/>
                             </Grid>
 
                             <!-- Action buttons -->
                             <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding !IsServiceBusy}">
-                                <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand"/>
-                                <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand" ToolTip.Tip="Configure service login credentials (username/password)"/>
+                                <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand" ToolTip.Tip="Install the RemEx system service as an automatic background server"/>
 
-                                <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding !IsServiceRunning}" Cursor="Hand"/>
-                                <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="{DynamicResource SystemWarningBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding IsServiceRunning}" Cursor="Hand"/>
-                                <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" Cursor="Hand" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1"/>
+                                <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding !IsServiceRunning}" Cursor="Hand" ToolTip.Tip="Start background RemEx server service process"/>
+                                <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="{DynamicResource SystemWarningBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding IsServiceRunning}" Cursor="Hand" ToolTip.Tip="Stop background RemEx server service process"/>
+                                <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" Cursor="Hand" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" ToolTip.Tip="Completely uninstall background RemEx service from system"/>
                             </StackPanel>
 
                             <!-- Credential configuration panel -->
@@ -143,17 +143,17 @@
                                 </StackPanel>
                             </Border>
 
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" ToolTip.Tip="Configure RemEx host address (websocket protocol wss://)">
                                 <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Text="{Binding HostAddress}" Watermark="wss://host:port/ws" FontFamily="Consolas" Classes="modern"/>
-                                    <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
+                                    <TextBox Text="{Binding HostAddress}" Watermark="wss://host:port/ws" FontFamily="Consolas" Classes="modern" ToolTip.Tip="Input connection URL, e.g. wss://192.168.1.100:8443/ws"/>
+                                    <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand" ToolTip.Tip="Automatically discover local active RemEx hosts on your network using mDNS/NSD"/>
                                 </Grid>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Content="Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="Save the host configuration address and attempt connecting to it"/>
+                                <Button Content="Disconnect" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="Terminate active session connection to host PC"/>
                                 <Button Content="{local:Localize Home_QrCodeButton}"
                                         Command="{Binding Connection.GenerateQrCodeCommand}"
                                         Background="{DynamicResource CardBackgroundBrush}"
@@ -220,9 +220,9 @@
                     <Border Classes="glass-card" Padding="24">
                         <StackPanel Spacing="16">
                             <TextBlock Text="{local:Localize Settings_General}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="Change the application display language context">
                                 <TextBlock Text="{local:Localize Settings_Language}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" MinWidth="180" CornerRadius="8">
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" MinWidth="180" CornerRadius="8" ToolTip.Tip="Select your preferred language (changes apply immediately)">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding DisplayName}"/>
@@ -243,7 +243,7 @@
                         <StackPanel Spacing="20">
                             <TextBlock Text="{local:Localize Settings_RemoteDesktop}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" ToolTip.Tip="Configure compression quality level of desktop mirror image stream (lower quality increases network performance)">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{local:Localize RemoteDesktop_Quality}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding StreamQuality, StringFormat={}{0}%}"/>
@@ -251,12 +251,12 @@
                                 <Slider Minimum="10" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding StreamQuality}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                             </StackPanel>
 
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="Target frame rate for desktop compression engine (higher values look smoother but consume more network bandwidth)">
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
-                                <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedStreamFpsIndex}" MinWidth="80" CornerRadius="8" VerticalAlignment="Center">
+                                <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedStreamFpsIndex}" MinWidth="80" CornerRadius="8" VerticalAlignment="Center" ToolTip.Tip="Choose target FPS for streaming">
                                     <ComboBoxItem Content="5"/>
                                     <ComboBoxItem Content="10"/>
                                     <ComboBoxItem Content="15"/>
@@ -274,7 +274,7 @@
                         <StackPanel Spacing="20">
                             <TextBlock Text="{local:Localize Settings_Layout}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="Enable alignment guides so sensor tiles snap to standard increments on placement canvas">
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="{local:Localize Settings_SnapToGrid}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
@@ -282,7 +282,7 @@
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
-                            <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}">
+                            <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}" ToolTip.Tip="Grid placement increment bounds in absolute pixels">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{local:Localize Settings_GridSize}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>

@@ -342,6 +342,7 @@ fun RemExTheme(
     themeSeedChroma: Float = 48.0f,
     themeContrast: Float = 0.0f,
     fontFamilyKey: String = "default",
+    fontScale: Float = 1.0f,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -382,7 +383,7 @@ fun RemExTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = typographyForFontFamily(fontFamilyKey),
+        typography = typographyForFontFamily(fontFamilyKey, fontScale),
         shapes = remexShapes,
         motionScheme = MotionScheme.expressive(),
         content = content
