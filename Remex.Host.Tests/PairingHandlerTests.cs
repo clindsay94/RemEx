@@ -1,5 +1,7 @@
 using System.Net.WebSockets;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Core.Messages;
@@ -216,5 +218,209 @@ public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Pr
                 Assert.Fail(response.ErrorText ?? "Pairing request failed.");
             }
         }
+    }
+
+    private sealed class NonLoopbackStartupFilter : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+        {
+            return builder =>
+            {
+                builder.Use((context, nextMiddleware) =>
+                {
+                    context.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("192.168.1.100");
+                    return nextMiddleware();
+                });
+                next(builder);
+            };
+        }
+    }
+
+    [Fact]
+    public async Task PairingComplete_EnablesSecondSocket_OnlyWithSameClientId()
+    {
+        // 1. Create a non-loopback server factory by injecting NonLoopbackStartupFilter
+        var nonLoopbackFactory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>();
+            });
+        });
+
+        var pairingService = nonLoopbackFactory.Services.GetRequiredService<PairingService>();
+        pairingService.CancelPairing();
+
+        var wsClient = nonLoopbackFactory.Server.CreateWebSocketClient();
+
+        // 2. Step A: Connect as unpaired, send LayoutRequest, and verify rejection
+        using (var wsUnpaired = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            var unpairedRequest = new RemexMessage
+            {
+                Type = MessageTypes.LayoutRequest,
+                CorrelationId = "unpaired-req-id"
+            };
+            await MessageSerializer.SendAsync(wsUnpaired, unpairedRequest, CancellationToken.None);
+
+            RemexMessage? response = null;
+            // Loop because host sends host_info, launcher_sync, layout_sync on connect
+            for (int i = 0; i < 10; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(wsUnpaired, CancellationToken.None);
+                if (msg?.Type == MessageTypes.CommandResponse && msg.CorrelationId == "unpaired-req-id")
+                {
+                    response = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(response);
+            Assert.False(response!.CommandSuccess);
+            Assert.Contains("Pairing required", response.CommandMessage);
+        }
+
+        // 3. Step B: Perform a full pairing handshake
+        using (var wsPairing = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            using var clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            var clientPubBase64 = Convert.ToBase64String(clientEcdh.PublicKey.ExportSubjectPublicKeyInfo());
+
+            var pairingRequest = new RemexMessage
+            {
+                Type = MessageTypes.PairingRequest,
+                ClientId = "integration-test-client-1",
+                PairingRequest = new PairingRequest
+                {
+                    ClientPublicKeyBase64 = clientPubBase64,
+                    ClientName = "Integration Test Client",
+                    ClientVersion = "2.0.0",
+                    ClientId = "integration-test-client-1"
+                }
+            };
+            await MessageSerializer.SendAsync(wsPairing, pairingRequest, CancellationToken.None);
+
+            RemexMessage? pairingResponse = null;
+            for (int i = 0; i < 10; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(wsPairing, CancellationToken.None);
+                if (msg?.Type == MessageTypes.PairingResponse)
+                {
+                    pairingResponse = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(pairingResponse);
+            Assert.NotNull(pairingResponse!.PairingResponse);
+
+            // Read the plaintext PIN from the pairing service in the DI container
+            var activePin = pairingService.GetActivePin();
+
+            // Perform client-side key agreement & HKDF derivation
+            using var hostPeer = ECDiffieHellman.Create();
+            hostPeer.ImportSubjectPublicKeyInfo(Convert.FromBase64String(pairingResponse.PairingResponse.HostPublicKeyBase64), out _);
+            var clientSharedSecret = clientEcdh.DeriveRawSecretAgreement(hostPeer.PublicKey);
+            var certSpkiHash = Convert.FromBase64String(pairingResponse.PairingResponse.CertificateSpkiHashBase64);
+
+            var clientSessionKey = HKDF.DeriveKey(
+                HashAlgorithmName.SHA256,
+                clientSharedSecret,
+                outputLength: 32,
+                salt: certSpkiHash,
+                info: System.Text.Encoding.UTF8.GetBytes("remex-pair-v1"));
+
+            // Compute the ack HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
+            var clientHmac = Convert.ToBase64String(
+                HMACSHA256.HashData(clientSessionKey, System.Text.Encoding.UTF8.GetBytes("ack:" + activePin)));
+
+            var pairingComplete = new RemexMessage
+            {
+                Type = MessageTypes.PairingComplete,
+                ClientId = "integration-test-client-1",
+                PairingComplete = new PairingComplete
+                {
+                    ClientId = "integration-test-client-1",
+                    ClientPinHmacBase64 = clientHmac
+                }
+            };
+            await MessageSerializer.SendAsync(wsPairing, pairingComplete, CancellationToken.None);
+
+            RemexMessage? completeResponse = null;
+            for (int i = 0; i < 10; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(wsPairing, CancellationToken.None);
+                if (CompleteResponseIsPairingCompleteSuccess(msg))
+                {
+                    completeResponse = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(completeResponse);
+            Assert.True(completeResponse!.CommandSuccess);
+            Assert.Equal("Pairing verified.", completeResponse.CommandMessage);
+        }
+
+        // 4. Step C: Open a second socket with the same ClientId and verify that LayoutRequest succeeds
+        using (var wsSecond = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            var layoutRequest = new RemexMessage
+            {
+                Type = MessageTypes.LayoutRequest,
+                ClientId = "integration-test-client-1",
+                CorrelationId = "paired-req-id"
+            };
+            await MessageSerializer.SendAsync(wsSecond, layoutRequest, CancellationToken.None);
+
+            RemexMessage? response = null;
+            for (int i = 0; i < 10; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(wsSecond, CancellationToken.None);
+                if (msg?.Type == MessageTypes.LayoutSync)
+                {
+                    response = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(response);
+            Assert.NotNull(response!.DashboardProfile);
+        }
+
+        // 5. Step D: Open a third socket with a different ClientId and verify that LayoutRequest is rejected
+        using (var wsThird = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            var layoutRequest = new RemexMessage
+            {
+                Type = MessageTypes.LayoutRequest,
+                ClientId = "integration-test-client-2",
+                CorrelationId = "unregistered-req-id"
+            };
+            await MessageSerializer.SendAsync(wsThird, layoutRequest, CancellationToken.None);
+
+            RemexMessage? response = null;
+            for (int i = 0; i < 10; i++)
+            {
+                var msg = await MessageSerializer.ReceiveAsync(wsThird, CancellationToken.None);
+                if (msg?.Type == MessageTypes.CommandResponse && msg.CorrelationId == "unregistered-req-id")
+                {
+                    response = msg;
+                    break;
+                }
+            }
+
+            Assert.NotNull(response);
+            Assert.False(response!.CommandSuccess);
+            Assert.Contains("Pairing required", response.CommandMessage);
+        }
+
+        // Cleanup pairing service state for future tests
+        pairingService.CancelPairing();
+    }
+
+    private static bool CompleteResponseIsPairingCompleteSuccess(RemexMessage? msg)
+    {
+        return msg is { Type: MessageTypes.PairingComplete, CommandSuccess: true };
     }
 }
