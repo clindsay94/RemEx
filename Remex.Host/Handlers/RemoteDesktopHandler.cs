@@ -33,6 +33,7 @@ public sealed class RemoteDesktopHandler : IDisposable
     private int _quality = 50;
     private double _scale = 0.6;
     private int _targetFps = 30;
+    private bool _drawCursor = true;
 
     private int _desktopLeft = 0;
     private int _desktopTop = 0;
@@ -274,7 +275,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 captureStopwatch.Restart();
                 try
                 {
-                    var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct);
+                    var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _drawCursor, ct);
                     if (jpegBytes is { Length: > 0 })
                     {
                         consecutiveFailures = 0;
@@ -638,8 +639,9 @@ public sealed class RemoteDesktopHandler : IDisposable
         _quality = Math.Clamp(config.Quality, 1, 100);
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
         _targetFps = Math.Clamp(config.TargetFps, 1, 360);
+        _drawCursor = config.DrawCursor;
 
-        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}", _quality, _scale, _targetFps);
+        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}", _quality, _scale, _targetFps, _drawCursor);
     }
 
     /// <summary>

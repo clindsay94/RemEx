@@ -10,7 +10,8 @@ public interface IScreenCaptureService
     /// </summary>
     /// <param name="quality">JPEG quality 1-100.</param>
     /// <param name="scale">Resolution scale factor 0.25-1.0.</param>
-    Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default);
+    /// <param name="drawCursor">Whether to draw the cursor onto the bitmap.</param>
+    Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default);
 
     /// <summary>
     /// Gets the native screen dimensions and virtual desktop offsets for the captured area.

@@ -312,7 +312,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     /// (DXGI_ERROR_WAIT_TIMEOUT), reducing CPU/bandwidth on static screens.
     /// Thread-safe: concurrent callers get the last frame without blocking.
     /// </summary>
-    public byte[]? TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder)
+    public byte[]? TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor = true)
     {
         if (!IsAvailable) return null;
 
@@ -323,7 +323,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         try
         {
-            return CaptureInternal(quality, scale, jpegEncoder);
+            return CaptureInternal(quality, scale, jpegEncoder, drawCursor);
         }
         catch (Exception ex)
         {
@@ -336,7 +336,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
-    private byte[]? CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder)
+    private byte[]? CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor)
     {
         // AcquireNextFrame — slot 8 on IDXGIOutputDuplication
         // Timeout 50ms: wait up to 50ms for a new frame.
@@ -409,7 +409,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         try
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
-            _lastFrame = EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder);
+            _lastFrame = EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder, drawCursor);
             return _lastFrame;
         }
         finally
@@ -421,7 +421,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     }
 
     private static byte[] EncodeToJpeg(IntPtr pixelData, int rowPitch, int width, int height,
-        int quality, double scale, ImageCodecInfo jpegEncoder)
+        int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor)
     {
         // Wrap the DXGI-mapped BGRA memory as a read-only Bitmap (D3D11_MAP_READ).
         // We must NOT draw into this bitmap — the staging texture is mapped read-only.
@@ -435,7 +435,10 @@ internal sealed class DxgiDesktopCapture : IDisposable
             g.DrawImage(src, 0, 0, width, height);
         }
 
-        DrawCursorOnBitmap(writable);
+        if (drawCursor)
+        {
+            DrawCursorOnBitmap(writable);
+        }
 
         Bitmap output;
         if (scale < 1.0)

@@ -45,7 +45,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
     public string? LastCaptureFailureReason { get; private set; }
 
-    public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
+    public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
@@ -58,7 +58,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         // which GDI BitBlt/CopyFromScreen cannot capture.
         if (_dxgi.IsAvailable)
         {
-            var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder());
+            var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder(), drawCursor);
             if (dxgiFrame is { Length: > 0 })
             {
                 LastCaptureFailureReason = null;
@@ -91,7 +91,10 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 }
 
                 // Draw the system cursor onto the captured bitmap
-                DrawCursorOnBitmap(g);
+                if (drawCursor)
+                {
+                    DrawCursorOnBitmap(g);
+                }
             }
 
             Bitmap outputBitmap;

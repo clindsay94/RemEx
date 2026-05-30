@@ -28,4 +28,13 @@ public record DesktopConfig
         get => _targetFps;
         init => _targetFps = Math.Clamp(value, 1, 360);
     }
+
+    private bool _drawCursor = true;
+
+    [JsonPropertyName("drawCursor")]
+    public bool DrawCursor
+    {
+        get => _drawCursor;
+        init => _drawCursor = value;
+    }
 }

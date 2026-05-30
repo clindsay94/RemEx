@@ -75,7 +75,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         _captureCoordinator = coordinator;
     }
 
-    public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, CancellationToken ct = default)
+    public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
