@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux remote desktop input via Wayland portal integration
 
 ### Changed
+- Remote desktop streaming pipeline optimized to decouple background frame capture producer from WebSocket send consumer via a non-blocking latest-frame buffer.
+- Windows screen capture service now supports dynamic host-side cursor rendering (`drawCursor` config parameter), allowing host cursor drawing to be disabled when client drawing is enabled, completely avoiding DXGI CPU/bandwidth overhead on static screens.
+- Linux screen capture service timeout caching implemented to bypass slow fallback shell tools during static PipeWire frames.
 - Protocol version field added to `RemexMessage`; 1.x clients fail loudly
 - Material3 dependency moved from alpha to stable
 - Windows Installer (Inno Setup) updated with new branding and versioning
