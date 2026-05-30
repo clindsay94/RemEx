@@ -33,6 +33,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     // volatile ensures the reference is visible across threads without a lock.
     private volatile LinuxCaptureSessionCoordinator? _captureCoordinator;
 
+    // Cache of the last successfully captured JPEG frame for reuse on static screens/timeouts
+    private byte[]? _lastJpegFrame;
+
     private enum DisplayServer { Unknown, X11, Wayland }
     private readonly DisplayServer _displayServer;
     private readonly string _display; // $DISPLAY for X11, $WAYLAND_DISPLAY for Wayland
@@ -89,7 +92,11 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     {
                         var jpeg = LinuxJpegEncoder.Encode(
                             frame, quality, scale, _logger, out var formatTag);
-                        if (jpeg.Length > 0) return jpeg;
+                        if (jpeg.Length > 0)
+                        {
+                            _lastJpegFrame = jpeg;
+                            return jpeg;
+                        }
                         _logger.LogDebug(
                             "PipeWire frame produced but JPEG encode returned empty " +
                             "(format={Format}); falling back this tick.", formatTag);
@@ -104,8 +111,13 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 }
                 else
                 {
+                    // PipeWire timeout: screen is unchanged. Reuse last JPEG if available, avoiding shell-tool fallback.
+                    if (_lastJpegFrame is not null)
+                    {
+                        return _lastJpegFrame;
+                    }
                     _logger.LogDebug(
-                        "PipeWire frame not available; falling back to legacy capture for this tick.");
+                        "PipeWire frame not available and no cached frame; falling back to legacy capture.");
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -152,7 +164,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 return Array.Empty<byte>();
             }
 
-            return await File.ReadAllBytesAsync(tmpFile, ct);
+            var bytes = await File.ReadAllBytesAsync(tmpFile, ct);
+            _lastJpegFrame = bytes;
+            return bytes;
         }
         catch (Exception ex)
         {

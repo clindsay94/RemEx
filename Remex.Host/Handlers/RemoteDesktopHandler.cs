@@ -249,91 +249,178 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private async Task StreamFramesAsync(WebSocket webSocket, CancellationToken ct)
     {
-        // ── Main frame loop ──
-        var stopwatch = Stopwatch.StartNew();
+        var frameBuffer = new FrameBuffer();
+        var frameAvailable = new SemaphoreSlim(0);
+        var captureStopwatch = new Stopwatch();
+
+        // Track consecutive failures to report capture failure to client
         int consecutiveFailures = 0;
         bool errorReported = false;
+
+        // Timing metrics
+        double totalCaptureMs = 0;
+        double totalSendMs = 0;
+        int totalFramesCaptured = 0;
         int totalFramesSent = 0;
+        int totalFramesDropped = 0;
+        var metricsStopwatch = Stopwatch.StartNew();
 
-        while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        // Start capture/encode loop in a separate task
+        var captureTask = Task.Run(async () =>
         {
-            stopwatch.Restart();
-
-            try
+            byte[]? lastCapturedFrame = null;
+            while (!ct.IsCancellationRequested)
             {
-                byte[] jpegBytes;
+                captureStopwatch.Restart();
                 try
                 {
-                    jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct);
+                    var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, ct);
+                    if (jpegBytes is { Length: > 0 })
+                    {
+                        consecutiveFailures = 0;
+                        errorReported = false;
+
+                        var captureDuration = captureStopwatch.Elapsed.TotalMilliseconds;
+                        totalCaptureMs += captureDuration;
+                        totalFramesCaptured++;
+
+                        // Store the latest frame with thread-safe overwrite (latest-frame semantics)
+                        var oldFrame = Interlocked.Exchange(ref frameBuffer.Bytes, jpegBytes);
+                        if (oldFrame != null && !ReferenceEquals(oldFrame, jpegBytes))
+                        {
+                            totalFramesDropped++;
+                        }
+
+                        lastCapturedFrame = jpegBytes;
+
+                        // Notify sender loop
+                        try { frameAvailable.Release(); } catch (ObjectDisposedException) { }
+                    }
+                    else
+                    {
+                        consecutiveFailures++;
+                    }
                 }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                catch (OperationCanceledException) { break; }
+                catch (OutOfMemoryException ex)
+                {
+                    _logger.LogError(ex, "Out of memory during frame capture - aborting stream.");
+                    break;
+                }
+                catch (Exception ex)
                 {
                     consecutiveFailures++;
+                    _logger.LogWarning(ex, "Background capture thread encountered an error.");
+                }
+
+                // After 5 consecutive failures (~0.5s at 10fps), alert the client once
+                if (consecutiveFailures >= 5 && !errorReported)
+                {
+                    errorReported = true;
+                    _logger.LogWarning("Screen capture failing consistently ({Count} consecutive). Sent {Total} frames total so far.", consecutiveFailures, totalFramesSent);
+                    var errorText = totalFramesSent == 0
+                        ? "Screen capture is not working on the host."
+                        : $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.";
+
+                    var windowsReport = _hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
+                    if (windowsReport is not null)
+                    {
+                        errorText = BuildWindowsCaptureFailureMessage(windowsReport, totalFramesSent);
+                    }
+
+                    await SendDesktopError(webSocket, errorText, ct);
+                }
+
+                // Throttle to target FPS
+                var elapsed = captureStopwatch.Elapsed.TotalMilliseconds;
+                var targetDelay = 1000.0 / _targetFps;
+                var sleep = (int)(targetDelay - elapsed);
+                if (sleep > 1)
+                {
+                    try { await Task.Delay(sleep, ct); }
+                    catch (OperationCanceledException) { break; }
+                }
+            }
+        }, ct);
+
+        // Send loop (runs on StreamFramesAsync thread)
+        try
+        {
+            byte[]? lastSentFrame = null;
+            var sendStopwatch = new Stopwatch();
+
+            while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+            {
+                // Wait for a frame to be available
+                try { await frameAvailable.WaitAsync(ct); }
+                catch (OperationCanceledException) { break; }
+
+                // Retrieve the latest frame (and clear it from the buffer)
+                var currentFrame = Interlocked.Exchange(ref frameBuffer.Bytes, null);
+                if (currentFrame is not { Length: > 0 })
+                {
                     continue;
                 }
-                if (jpegBytes.Length > 0)
-                {
-                    consecutiveFailures = 0;
-                    errorReported = false;
 
+                // Early exit: skip sending if it is the exact same frame as last sent
+                if (ReferenceEquals(currentFrame, lastSentFrame))
+                {
+                    continue;
+                }
+
+                sendStopwatch.Restart();
+                try
+                {
                     await webSocket.SendAsync(
-                        new ArraySegment<byte>(jpegBytes),
+                        new ArraySegment<byte>(currentFrame),
                         WebSocketMessageType.Binary,
                         endOfMessage: true,
                         ct);
 
+                    totalSendMs += sendStopwatch.Elapsed.TotalMilliseconds;
                     totalFramesSent++;
+                    lastSentFrame = currentFrame;
                 }
-                else
-                {
-                    consecutiveFailures++;
-                }
-            }
-            catch (OperationCanceledException) { break; }
-            catch (WebSocketException) { break; }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                consecutiveFailures++;
-                _logger.LogWarning(ex, "Frame capture/send error (Win32 error, consecutive failures: {Count}).", consecutiveFailures);
-            }
-            catch (InvalidOperationException ex)
-            {
-                consecutiveFailures++;
-                _logger.LogWarning(ex, "Frame capture/send error (invalid operation, consecutive failures: {Count}).", consecutiveFailures);
-            }
-            catch (OutOfMemoryException ex)
-            {
-                _logger.LogError(ex, "Out of memory during frame capture - aborting stream.");
-                break;
-            }
-
-            // After 5 consecutive failures (~0.5s at 10fps), alert the client once
-            if (consecutiveFailures >= 5 && !errorReported)
-            {
-                errorReported = true;
-                _logger.LogWarning("Screen capture failing consistently ({Count} consecutive). Sent {Total} frames total so far.", consecutiveFailures, totalFramesSent);
-                var errorText = totalFramesSent == 0
-                    ? "Screen capture is not working on the host."
-                    : $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.";
-
-                var windowsReport = _hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
-                if (windowsReport is not null)
-                {
-                    errorText = BuildWindowsCaptureFailureMessage(windowsReport, totalFramesSent);
-                }
-
-                await SendDesktopError(webSocket, errorText, ct);
-            }
-
-            // Throttle to target FPS using high-resolution Stopwatch
-            var elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
-            var targetDelayMs = 1000.0 / _targetFps;
-            var sleepMs = (int)(targetDelayMs - elapsedMs);
-            if (sleepMs > 1)
-            {
-                try { await Task.Delay(sleepMs, ct); }
                 catch (OperationCanceledException) { break; }
+                catch (WebSocketException) { break; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error sending frame over WebSocket.");
+                    break;
+                }
+
+                // Periodically log metrics every 5 seconds
+                if (metricsStopwatch.ElapsedMilliseconds >= 5000)
+                {
+                    var elapsedSec = metricsStopwatch.Elapsed.TotalSeconds;
+                    metricsStopwatch.Restart();
+
+                    double avgCaptureMs = totalFramesCaptured > 0 ? totalCaptureMs / totalFramesCaptured : 0;
+                    double avgSendMs = totalFramesSent > 0 ? totalSendMs / totalFramesSent : 0;
+                    double effectiveFps = totalFramesSent / elapsedSec;
+
+                    _logger.LogInformation(
+                        "Stream Metrics: Sent {Sent} frames ({FPS:F1} FPS), Captured {Cap} frames, " +
+                        "Dropped {Drop} frames. Avg Capture+Encode: {AvgCap:F1}ms, Avg Send: {AvgSend:F1}ms.",
+                        totalFramesSent, effectiveFps, totalFramesCaptured, totalFramesDropped, avgCaptureMs, avgSendMs);
+
+                    totalFramesSent = 0;
+                    totalFramesCaptured = 0;
+                    totalFramesDropped = 0;
+                    totalCaptureMs = 0;
+                    totalSendMs = 0;
+                }
             }
+        }
+        finally
+        {
+            // Wait for capture task to exit
+            try
+            {
+                await captureTask;
+            }
+            catch { }
+            frameAvailable.Dispose();
         }
     }
 
@@ -697,5 +784,10 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             lines.Add(value);
         }
+    }
+
+    private sealed class FrameBuffer
+    {
+        public byte[]? Bytes;
     }
 }
