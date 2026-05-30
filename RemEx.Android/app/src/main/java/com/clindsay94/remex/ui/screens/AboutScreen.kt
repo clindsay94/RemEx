@@ -43,8 +43,6 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import org.json.JSONObject
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun AboutScreen() {
     val isConnected by RemexClientManager.isConnected.collectAsState()
     val hostCapabilities by RemexClientManager.hostCapabilities.collectAsState(initial = "")
@@ -63,7 +61,6 @@ fun AboutScreenContent(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
-
     val connectedLabel = stringResource(R.string.status_connected)
     val disconnectedLabel = stringResource(R.string.status_disconnected)
     val unknownLabel = stringResource(R.string.about_status_unknown)

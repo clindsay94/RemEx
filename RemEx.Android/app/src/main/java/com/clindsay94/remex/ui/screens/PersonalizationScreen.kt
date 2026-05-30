@@ -374,6 +374,10 @@ fun PersonalizationScreenContent(
                                                 LocaleListCompat.forLanguageTags(tag)
                                             }
                                             AppCompatDelegate.setApplicationLocales(locales)
+                                            // MainActivity is a ComponentActivity, so force a
+                                            // recreate after changing locales to guarantee the
+                                            // new Resources configuration is applied immediately
+                                            // across all supported Android versions.
                                             view.context.findActivity()?.recreate()
                                         }
                                 )
