@@ -38,7 +38,8 @@ data class RemoteDesktopCapabilityState(
 data class RemoteDesktopConfigState(
         val quality: Int = 50,
         val targetFps: Int = 30,
-        val scale: Float = 0.6f
+        val scale: Float = 0.6f,
+        val codec: String = "H264"
 )
 
 data class DesktopWindowModel(
@@ -113,6 +114,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _configState = MutableStateFlow(RemoteDesktopConfigState())
     val configState: StateFlow<RemoteDesktopConfigState> = _configState.asStateFlow()
 
+    private val _activeCodecState = MutableStateFlow("Mjpeg")
+    val activeCodecState: StateFlow<String> = _activeCodecState.asStateFlow()
+
+    private val _streamPixelWidth = MutableStateFlow(1920)
+    val streamPixelWidth: StateFlow<Int> = _streamPixelWidth.asStateFlow()
+
+    private val _streamPixelHeight = MutableStateFlow(1080)
+    val streamPixelHeight: StateFlow<Int> = _streamPixelHeight.asStateFlow()
+
     val savedDesktopDefaults =
             settingsManager.remoteDesktopPreferencesFlow.stateIn(
                     viewModelScope,
@@ -149,6 +159,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private var reconnectAttempts = 0
     private val maxReconnectAttempts = 5
 
+    var activeH264Decoder: H264StreamDecoder? = null
+
     init {
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
@@ -162,7 +174,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         viewModelScope.launch(Dispatchers.Default) {
-            RemexClientManager.frames.collect { bytes -> decodeFrame(bytes) }
+            RemexClientManager.frames.collect { bytes ->
+                val decoder = activeH264Decoder
+                if (_activeCodecState.value == "H264" && decoder != null) {
+                    decoder.decodeFrame(bytes)
+                    recordFrameTimestamp()
+                } else {
+                    decodeFrame(bytes)
+                }
+            }
         }
 
         viewModelScope.launch {
@@ -224,6 +244,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
                         _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
                     }
+                    val codecInfo = json.optJSONObject("codecInfo")
+                    val codec = codecInfo?.optString("codec", "Mjpeg") ?: "Mjpeg"
+                    _activeCodecState.value = codec
+                    // Parse encoded stream pixel dimensions for H.264 decoder initialization
+                    if (json.has("pixelWidth")) _streamPixelWidth.value = json.optInt("pixelWidth", 1920)
+                    if (json.has("pixelHeight")) _streamPixelHeight.value = json.optInt("pixelHeight", 1080)
+                    Log.i(TAG, "Desktop stream metadata parsed: activeCodec=$codec, streamRes=${_streamPixelWidth.value}x${_streamPixelHeight.value}")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop meta", e)
                 }
@@ -658,6 +685,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("quality", _configState.value.quality)
             put("scale", _configState.value.scale)
             put("targetFps", _configState.value.targetFps)
+            put("codec", _configState.value.codec)
         }
     }
 
@@ -710,5 +738,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectJob?.cancel()
         stopStreaming()
         recycleCurrentFrame()
+        activeH264Decoder?.release()
+        activeH264Decoder = null
     }
 }

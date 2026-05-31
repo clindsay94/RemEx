@@ -75,6 +75,163 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         _captureCoordinator = coordinator;
     }
 
+    private byte[]? _lastRawFrame;
+
+    public async Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+    {
+        scale = Math.Clamp(scale, 0.25, 1.0);
+
+        // ── Stage 2 fast path: PipeWire native capture ─────────────────
+        if (_captureCoordinator is { IsRunning: true })
+        {
+            try
+            {
+                var frame = await _captureCoordinator.WaitForNextFrameAsync(timeoutMs: 80, ct: ct);
+                if (frame is not null)
+                {
+                    try
+                    {
+                        var raw = EncodeRaw(frame, scale, _logger);
+                        if (raw is { Length: > 0 })
+                        {
+                            _lastRawFrame = raw;
+                            return raw;
+                        }
+                    }
+                    finally
+                    {
+                        if (frame.Data is not null)
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(frame.Data);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "PipeWire raw capture loop encountered an error.");
+            }
+
+            return _lastRawFrame;
+        }
+
+        // ── Fallback path (maim/spectacle) ───────────────────────────
+        try
+        {
+            var jpegBytes = await CaptureScreenAsync(50, scale, drawCursor, ct);
+            if (jpegBytes is { Length: > 0 })
+            {
+                using var ms = new MemoryStream(jpegBytes);
+                using var bmp = new System.Drawing.Bitmap(ms);
+                var rect = new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height);
+                var bmpData = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                try
+                {
+                    int bytesCount = Math.Abs(bmpData.Stride) * bmp.Height;
+                    byte[] bgraValues = new byte[bytesCount];
+                    System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
+                    return bgraValues;
+                }
+                finally
+                {
+                    bmp.UnlockBits(bmpData);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Linux fallback raw capture failed.");
+        }
+
+        return null;
+    }
+
+    private static byte[] EncodeRaw(LinuxFrameSnapshot frame, double scale, ILogger logger)
+    {
+        System.Runtime.InteropServices.GCHandle pinHandle = default;
+        try
+        {
+            var colorType = LinuxJpegEncoder.MapFormat(frame.Format, logger, out var formatTag);
+            if (colorType == SkiaSharp.SKColorType.Unknown)
+                return Array.Empty<byte>();
+
+            var info = new SkiaSharp.SKImageInfo(frame.Width, frame.Height, colorType, SkiaSharp.SKAlphaType.Premul);
+
+            SkiaSharp.SKImage? image;
+            if (frame.Data is not null)
+            {
+                pinHandle = System.Runtime.InteropServices.GCHandle.Alloc(frame.Data, System.Runtime.InteropServices.GCHandleType.Pinned);
+                var ptr = pinHandle.AddrOfPinnedObject();
+                image = SkiaSharp.SKImage.FromPixels(info, ptr, frame.Stride);
+            }
+            else if (frame.RawData != IntPtr.Zero)
+            {
+                image = SkiaSharp.SKImage.FromPixels(info, frame.RawData, frame.Stride);
+            }
+            else
+            {
+                return Array.Empty<byte>();
+            }
+
+            if (image is null) return Array.Empty<byte>();
+
+            using (image)
+            {
+                SkiaSharp.SKImage finalImage = image;
+                SkiaSharp.SKBitmap? scaledBitmap = null;
+                
+                if (scale < 0.99)
+                {
+                    var targetW = Math.Max(1, (int)(frame.Width * scale));
+                    var targetH = Math.Max(1, (int)(frame.Height * scale));
+                    var destInfo = new SkiaSharp.SKImageInfo(targetW, targetH, colorType, SkiaSharp.SKAlphaType.Premul);
+                    using var srcBitmap = SkiaSharp.SKBitmap.FromImage(image);
+                    scaledBitmap = new SkiaSharp.SKBitmap(destInfo);
+                    if (srcBitmap.ScalePixels(scaledBitmap, SkiaSharp.SKFilterQuality.Medium))
+                    {
+                        finalImage = SkiaSharp.SKImage.FromBitmap(scaledBitmap);
+                    }
+                    else
+                    {
+                        scaledBitmap.Dispose();
+                        scaledBitmap = null;
+                    }
+                }
+
+                try
+                {
+                    using var srcBmp = SkiaSharp.SKBitmap.FromImage(finalImage);
+                    if (srcBmp.ColorType == SkiaSharp.SKColorType.Bgra8888)
+                    {
+                        return srcBmp.Bytes;
+                    }
+                    else
+                    {
+                        using var bgraBmp = srcBmp.Copy(SkiaSharp.SKColorType.Bgra8888);
+                        return bgraBmp?.Bytes ?? Array.Empty<byte>();
+                    }
+                }
+                finally
+                {
+                    if (scaledBitmap is not null)
+                    {
+                        finalImage.Dispose();
+                        scaledBitmap.Dispose();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Linux raw encoding failed.");
+            return Array.Empty<byte>();
+        }
+        finally
+        {
+            if (pinHandle.IsAllocated) pinHandle.Free();
+        }
+    }
+
     public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);

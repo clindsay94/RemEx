@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] — 2026-05-30
+
+### Added
+- Zero-latency hardware-accelerated H.264 video streaming pipeline for remote desktop, utilizing host hardware encoders on Windows/Linux (NVENC, QSV, AMF, VAAPI, libx264) and client hardware decoders (`MediaCodec`) on Android.
+- Universal compatibility fallback that gracefully degrades to the high-performance MJPEG streaming pipeline if FFmpeg or hardware encoders are absent or fail on the host.
+- Zero-latency Annex B packet slicer on the host utilizing Access Unit Delimiter (AUD `0x00 0x00 0x00 0x01 0x09`) markers for sub-millisecond frame slicing.
+- Direct zero-copy surface composition on Android using Compose `AndroidView` interop with `TextureView` and hardware native `Surface` decoding.
+- Native cross-platform clipboard support in the desktop client to copy the canvas dashboard snapshot bitmap directly onto the system clipboard, resolving an outstanding 2.x known limitation.
+
+---
+
 ## [2.0.0] — 2026-05-15
 
 ### Added

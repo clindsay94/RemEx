@@ -14,6 +14,7 @@ using Remex.Core.Services;
 using Remex.Host.Services;
 using Remex.Host;
 using Remex.Host.Services.Input;
+using Remex.Host.Services.RemoteDesktop;
 using Remex.Host.Services.RemoteDesktop.Windows;
 
 namespace Remex.Host.Handlers;
@@ -37,6 +38,12 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private int _desktopLeft = 0;
     private int _desktopTop = 0;
+    private DesktopCodecKind _negotiatedCodec = DesktopCodecKind.Mjpeg;
+    private DesktopCodecKind _activeCodec = DesktopCodecKind.Mjpeg;
+
+    // Cached FFmpeg availability — probed once at handler construction, not per-stream-start
+    private static bool? _ffmpegAvailableCache;
+    private static readonly object _ffmpegCacheLock = new();
 
 
     public RemoteDesktopHandler(
@@ -151,6 +158,31 @@ public sealed class RemoteDesktopHandler : IDisposable
                         var streamMappingId = Guid.NewGuid().ToString("N");
                         var streamSerial = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+                        // Negotiate codec selection based on client preference and host availability
+                        _activeCodec = DesktopCodecKind.Mjpeg;
+                        if (_negotiatedCodec == DesktopCodecKind.H264)
+                        {
+                            bool ffmpegAvailable;
+                            lock (_ffmpegCacheLock)
+                            {
+                                if (_ffmpegAvailableCache == null)
+                                {
+                                    using var probeEncoder = new FFmpegH264Encoder(_logger);
+                                    _ffmpegAvailableCache = probeEncoder.IsAvailable;
+                                }
+                                ffmpegAvailable = _ffmpegAvailableCache.Value;
+                            }
+
+                            if (ffmpegAvailable)
+                            {
+                                _activeCodec = DesktopCodecKind.H264;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Client requested H.264 but FFmpeg encoder is unavailable on host. Falling back to MJPEG.");
+                            }
+                        }
+
                         var metaMsg = new RemexMessage
                         {
                             Type = MessageTypes.DesktopMeta,
@@ -175,8 +207,9 @@ public sealed class RemoteDesktopHandler : IDisposable
                                 CursorMode = "absolute",
                                 CodecInfo = new DesktopCodecInfo
                                 {
-                                    Codec = DesktopCodecKind.Mjpeg,
+                                    Codec = _activeCodec,
                                     TargetFps = _targetFps,
+                                    EncoderBackend = _activeCodec == DesktopCodecKind.H264 ? DesktopEncoderBackend.Software : null
                                 },
                                 StylusCapabilities = DesktopStylusCapabilities.None,
                             }
@@ -266,17 +299,53 @@ public sealed class RemoteDesktopHandler : IDisposable
         int totalFramesDropped = 0;
         var metricsStopwatch = Stopwatch.StartNew();
 
+        IH264Encoder? h264Encoder = null;
+        if (_activeCodec == DesktopCodecKind.H264)
+        {
+            var (sw, sh, _, _) = _screenCapture.GetScreenSize();
+            int targetW = (int)(sw * _scale);
+            int targetH = (int)(sh * _scale);
+            // Ensure width and height are even (required by most H.264 encoders)
+            targetW = (targetW / 2) * 2;
+            targetH = (targetH / 2) * 2;
+
+            var encoder = new FFmpegH264Encoder(_logger);
+            if (encoder.Initialize(targetW, targetH, _targetFps, 1500))
+            {
+                h264Encoder = encoder;
+            }
+            else
+            {
+                encoder.Dispose();
+                _logger.LogWarning("Failed to initialize H.264 encoder. Falling back to MJPEG.");
+                _activeCodec = DesktopCodecKind.Mjpeg;
+            }
+        }
+
         // Start capture/encode loop in a separate task
         var captureTask = Task.Run(async () =>
         {
-            byte[]? lastCapturedFrame = null;
             while (!ct.IsCancellationRequested)
             {
                 captureStopwatch.Restart();
                 try
                 {
-                    var jpegBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _drawCursor, ct);
-                    if (jpegBytes is { Length: > 0 })
+                    byte[]? frameBytes = null;
+                    if (_activeCodec == DesktopCodecKind.H264 && h264Encoder is not null)
+                    {
+                        bool forceKeyframe = (totalFramesCaptured % 60 == 0);
+                        var rawPixels = await _screenCapture.CaptureRawScreenAsync(_scale, _drawCursor, ct);
+                        if (rawPixels is { Length: > 0 })
+                        {
+                            frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
+                        }
+                    }
+                    else
+                    {
+                        frameBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _drawCursor, ct);
+                    }
+
+                    if (frameBytes is { Length: > 0 })
                     {
                         consecutiveFailures = 0;
                         errorReported = false;
@@ -286,13 +355,11 @@ public sealed class RemoteDesktopHandler : IDisposable
                         totalFramesCaptured++;
 
                         // Store the latest frame with thread-safe overwrite (latest-frame semantics)
-                        var oldFrame = Interlocked.Exchange(ref frameBuffer.Bytes, jpegBytes);
-                        if (oldFrame != null && !ReferenceEquals(oldFrame, jpegBytes))
+                        var oldFrame = Interlocked.Exchange(ref frameBuffer.Bytes, frameBytes);
+                        if (oldFrame != null && !ReferenceEquals(oldFrame, frameBytes))
                         {
                             totalFramesDropped++;
                         }
-
-                        lastCapturedFrame = jpegBytes;
 
                         // Notify sender loop
                         try { frameAvailable.Release(); } catch (ObjectDisposedException) { }
@@ -421,6 +488,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 await captureTask;
             }
             catch { }
+            h264Encoder?.Dispose();
             frameAvailable.Dispose();
         }
     }
@@ -640,8 +708,9 @@ public sealed class RemoteDesktopHandler : IDisposable
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
         _targetFps = Math.Clamp(config.TargetFps, 1, 360);
         _drawCursor = config.DrawCursor;
+        _negotiatedCodec = config.Codec;
 
-        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}", _quality, _scale, _targetFps, _drawCursor);
+        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}, codec={C}", _quality, _scale, _targetFps, _drawCursor, _negotiatedCodec);
     }
 
     /// <summary>

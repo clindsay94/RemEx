@@ -124,7 +124,7 @@ internal static class LinuxJpegEncoder
         }
     }
 
-    private static SKColorType MapFormat(uint format, ILogger logger, out string tag)
+    internal static SKColorType MapFormat(uint format, ILogger logger, out string tag)
     {
         switch (format)
         {

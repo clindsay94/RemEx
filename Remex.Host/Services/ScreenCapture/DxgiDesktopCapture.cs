@@ -336,6 +336,163 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
+    private byte[]? _lastRawFrame;
+
+    public byte[]? TryCaptureRaw(double scale, bool drawCursor)
+    {
+        if (!IsAvailable) return null;
+
+        if (!_lock.Wait(0))
+            return _lastRawFrame;
+
+        try
+        {
+            return CaptureRawInternal(scale, drawCursor);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("DXGI raw capture error: {Msg}", ex.Message);
+            return _lastRawFrame;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private byte[]? CaptureRawInternal(double scale, bool drawCursor)
+    {
+        IntPtr frameInfoPtr = Marshal.AllocHGlobal(48);
+        IntPtr dxgiResource = IntPtr.Zero;
+        int hr;
+        try
+        {
+            hr = GetSlot<AcquireNextFrameFn>(_duplOutput, 8)(_duplOutput, 50u, frameInfoPtr, out dxgiResource);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(frameInfoPtr);
+        }
+
+        if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+            return _lastRawFrame;
+
+        if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
+        {
+            _logger.LogInformation("DXGI access lost (hr=0x{Hr:X8}) — reinitializing.", hr);
+            TryReinitializeDuplication();
+            return _lastRawFrame;
+        }
+
+        if (hr != S_OK)
+        {
+            _logger.LogDebug("AcquireNextFrame hr=0x{Hr:X8}", hr);
+            return _lastRawFrame;
+        }
+
+        try
+        {
+            hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
+            if (hr != S_OK) return _lastRawFrame;
+
+            try
+            {
+                GetSlot<CopyResourceFn>(_d3dContext, 47)(_d3dContext, _stagingTexture, srcTex);
+            }
+            finally
+            {
+                Release(ref srcTex);
+            }
+        }
+        finally
+        {
+            Release(ref dxgiResource);
+            GetSlot<ReleaseFrameFn>(_duplOutput, 14)(_duplOutput);
+        }
+
+        IntPtr mappedPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
+        hr = GetSlot<MapFn>(_d3dContext, 14)(
+            _d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
+
+        if (hr != S_OK)
+        {
+            Marshal.FreeHGlobal(mappedPtr);
+            return _lastRawFrame;
+        }
+
+        try
+        {
+            var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
+            _lastRawFrame = EncodeToRawBgra(mapped.pData, (int)mapped.RowPitch, Width, Height, scale, drawCursor);
+            return _lastRawFrame;
+        }
+        finally
+        {
+            GetSlot<UnmapFn>(_d3dContext, 15)(_d3dContext, _stagingTexture, 0);
+            Marshal.FreeHGlobal(mappedPtr);
+        }
+    }
+
+    private static byte[] EncodeToRawBgra(IntPtr pixelData, int rowPitch, int width, int height,
+        double scale, bool drawCursor)
+    {
+        using var src = new Bitmap(width, height, rowPitch, PixelFormat.Format32bppArgb, pixelData);
+        using var writable = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(writable))
+        {
+            g.DrawImage(src, 0, 0, width, height);
+        }
+
+        if (drawCursor)
+        {
+            DrawCursorOnBitmap(writable);
+        }
+
+        Bitmap output;
+        if (scale < 1.0)
+        {
+            int sw = (int)(width * scale);
+            int sh = (int)(height * scale);
+            output = new Bitmap(sw, sh);
+            using var g = Graphics.FromImage(output);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+            g.DrawImage(writable, 0, 0, sw, sh);
+        }
+        else
+        {
+            output = writable;
+        }
+
+        try
+        {
+            return GetRawBgraBytes(output);
+        }
+        finally
+        {
+            if (!ReferenceEquals(output, writable))
+            {
+                output.Dispose();
+            }
+        }
+    }
+
+    private static byte[] GetRawBgraBytes(Bitmap bmp)
+    {
+        var rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
+        var bmpData = bmp.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        try
+        {
+            int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
+            byte[] bgraValues = new byte[bytes];
+            Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytes);
+            return bgraValues;
+        }
+        finally
+        {
+            bmp.UnlockBits(bmpData);
+        }
+    }
+
     private byte[]? CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor)
     {
         // AcquireNextFrame — slot 8 on IDXGIOutputDuplication

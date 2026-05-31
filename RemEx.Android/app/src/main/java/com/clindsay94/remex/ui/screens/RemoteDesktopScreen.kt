@@ -56,6 +56,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.viewinterop.AndroidView
+import android.util.Log
 import com.clindsay94.remex.R
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -143,6 +145,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val fps by viewModel.fps.collectAsState()
         val windowResults by viewModel.windowResults.collectAsState()
         val windowActionError by viewModel.windowActionError.collectAsState()
+        val activeCodec by viewModel.activeCodecState.collectAsState()
+        val streamPixelWidth by viewModel.streamPixelWidth.collectAsState()
+        val streamPixelHeight by viewModel.streamPixelHeight.collectAsState()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -199,7 +204,11 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 currentFrameTimestamp = currentFrame?.timestamp,
                 fps = fps,
                 showFpsOverlay = showFpsOverlay,
-                onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay }
+                onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay },
+                activeCodec = activeCodec,
+                streamPixelWidth = streamPixelWidth,
+                streamPixelHeight = streamPixelHeight,
+                onActiveH264DecoderChange = { decoder -> viewModel.activeH264Decoder = decoder }
         )
 }
 
@@ -241,7 +250,11 @@ fun RemoteDesktopScreenContent(
         currentFrameTimestamp: Long?,
         fps: Float = 0f,
         showFpsOverlay: Boolean = false,
-        onToggleFpsOverlay: () -> Unit = {}
+        onToggleFpsOverlay: () -> Unit = {},
+        activeCodec: String = "Mjpeg",
+        streamPixelWidth: Int = 1920,
+        streamPixelHeight: Int = 1080,
+        onActiveH264DecoderChange: (H264StreamDecoder?) -> Unit = {}
 ) {
         val activity = LocalActivity.current
         val scope = rememberCoroutineScope()
@@ -1540,29 +1553,63 @@ fun RemoteDesktopScreenContent(
                         ) {
                                 val safeFrame = currentBitmap
 
-                                if (safeFrame != null && !safeFrame.isRecycled) {
-                                        // Force Image to redraw when frame changes by using
-                                        // key(timestamp)
-                                        key(currentFrameTimestamp) {
-                                                Image(
-                                                        bitmap = safeFrame.asImageBitmap(),
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string
-                                                                                .cd_remote_desktop_frame
-                                                                ),
-                                                        modifier =
-                                                                Modifier.fillMaxSize()
-                                                                        .graphicsLayer {
-                                                                                scaleX = zoomFactor
-                                                                                scaleY = zoomFactor
-                                                                                translationX =
-                                                                                        panOffsetX
-                                                                                translationY =
-                                                                                        panOffsetY
-                                                                        },
-                                                        contentScale = ContentScale.Fit
+                                if (activeCodec == "H264" || (safeFrame != null && !safeFrame.isRecycled)) {
+                                        if (activeCodec == "H264") {
+                                                AndroidView(
+                                                        factory = { context ->
+                                                                android.view.TextureView(context).apply {
+                                                                        surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
+                                                                                override fun onSurfaceTextureAvailable(surfaceTexture: android.graphics.SurfaceTexture, width: Int, height: Int) {
+                                                                                        val surface = android.view.Surface(surfaceTexture)
+                                                                                        // Use the encoded stream dimensions from DesktopMeta, not the surface view size
+                                                                                        val decoder = H264StreamDecoder(streamPixelWidth, streamPixelHeight, surface)
+                                                                                        onActiveH264DecoderChange(decoder)
+                                                                                        Log.i(TAG, "H.264 stream surface created: encoded=${streamPixelWidth}x${streamPixelHeight}, surface=${width}x${height}")
+                                                                                }
+                                                                                override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
+                                                                                override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
+                                                                                        onActiveH264DecoderChange(null)
+                                                                                        Log.i(TAG, "H.264 stream surface destroyed.")
+                                                                                        return true
+                                                                                }
+                                                                                override fun onSurfaceTextureUpdated(surface: android.graphics.SurfaceTexture) {}
+                                                                        }
+                                                                }
+                                                        },
+                                                        modifier = Modifier.fillMaxSize()
+                                                                .graphicsLayer {
+                                                                        scaleX = zoomFactor
+                                                                        scaleY = zoomFactor
+                                                                        translationX = panOffsetX
+                                                                        translationY = panOffsetY
+                                                                }
                                                 )
+                                        } else {
+                                                if (safeFrame != null && !safeFrame.isRecycled) {
+                                                        // Force Image to redraw when frame changes by using
+                                                        // key(timestamp)
+                                                        key(currentFrameTimestamp) {
+                                                                Image(
+                                                                        bitmap = safeFrame.asImageBitmap(),
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_remote_desktop_frame
+                                                                                ),
+                                                                        modifier =
+                                                                                Modifier.fillMaxSize()
+                                                                                        .graphicsLayer {
+                                                                                                scaleX = zoomFactor
+                                                                                                scaleY = zoomFactor
+                                                                                                translationX =
+                                                                                                        panOffsetX
+                                                                                                translationY =
+                                                                                                        panOffsetY
+                                                                                        },
+                                                                        contentScale = ContentScale.Fit
+                                                                )
+                                                        }
+                                                }
                                         }
 
                                         // Cursor overlay: visible in absolute modes (direct

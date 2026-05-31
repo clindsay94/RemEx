@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
+using Avalonia.Input.Platform;
 using Remex.Client.Controls;
 using Remex.Client.ViewModels;
 
@@ -158,7 +159,7 @@ public partial class CanvasView : UserControl
         }
     }
 
-    private void OnCopySnapshot(object? sender, RoutedEventArgs e)
+    private async void OnCopySnapshot(object? sender, RoutedEventArgs e)
     {
         var canvas = this.FindControl<ZoomableCanvas>("MainCanvas");
         if (canvas is null) return;
@@ -178,13 +179,10 @@ public partial class CanvasView : UserControl
                 return;
             }
 
-            // Save to a temp file and put the path on the clipboard
-            var tempPath = Path.Combine(Path.GetTempPath(), "remex_snapshot_tmp.png");
-            rtb.Save(tempPath);
+            await topLevel.Clipboard.SetBitmapAsync(rtb);
+            await topLevel.Clipboard.FlushAsync();
 
-            _ = topLevel.Clipboard.SetTextAsync(tempPath);
-
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Path copied");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Copied to clipboard");
         }
         catch (Exception ex)
         {

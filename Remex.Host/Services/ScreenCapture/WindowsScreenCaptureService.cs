@@ -45,6 +45,97 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
     public string? LastCaptureFailureReason { get; private set; }
 
+    public Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+    {
+        scale = Math.Clamp(scale, 0.25, 1.0);
+
+        ct.ThrowIfCancellationRequested();
+
+        if (_dxgi.IsAvailable)
+        {
+            var dxgiFrame = _dxgi.TryCaptureRaw(scale, drawCursor);
+            if (dxgiFrame is { Length: > 0 })
+            {
+                LastCaptureFailureReason = null;
+                return Task.FromResult<byte[]?>(dxgiFrame);
+            }
+        }
+
+        try
+        {
+            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+            int captureWidth = (int)(screenWidth * scale);
+            int captureHeight = (int)(screenHeight * scale);
+
+            using var screenBitmap = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(screenBitmap))
+            {
+                try
+                {
+                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("CopyFromScreen failed (likely due to MPO or terminal focus). Attempting fallback without CaptureBlt. Error: {Msg}", ex.Message);
+                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                }
+
+                if (drawCursor)
+                {
+                    DrawCursorOnBitmap(g);
+                }
+            }
+
+            Bitmap outputBitmap;
+            if (scale < 1.0)
+            {
+                outputBitmap = new Bitmap(captureWidth, captureHeight);
+                using var g = Graphics.FromImage(outputBitmap);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                g.DrawImage(screenBitmap, 0, 0, captureWidth, captureHeight);
+            }
+            else
+            {
+                outputBitmap = screenBitmap;
+            }
+
+            try
+            {
+                var rect = new Rectangle(0, 0, outputBitmap.Width, outputBitmap.Height);
+                var bmpData = outputBitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                try
+                {
+                    int bytesCount = Math.Abs(bmpData.Stride) * outputBitmap.Height;
+                    byte[] bgraValues = new byte[bytesCount];
+                    Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
+                    LastCaptureFailureReason = null;
+                    return Task.FromResult<byte[]?>(bgraValues);
+                }
+                finally
+                {
+                    outputBitmap.UnlockBits(bmpData);
+                }
+            }
+            finally
+            {
+                if (scale < 1.0)
+                    outputBitmap.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            LastCaptureFailureReason = BuildCaptureFailureReason(Process.GetCurrentProcess().SessionId, ex.Message);
+            if (!_session0Warned)
+            {
+                var sessionId = Process.GetCurrentProcess().SessionId;
+                _logger.LogError(ex, "Failed to capture raw screen (Session {SessionId}).", sessionId);
+                _session0Warned = sessionId == 0;
+            }
+            return Task.FromResult<byte[]?>(null);
+        }
+    }
+
     public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);

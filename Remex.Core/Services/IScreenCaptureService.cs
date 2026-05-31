@@ -14,6 +14,12 @@ public interface IScreenCaptureService
     Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default);
 
     /// <summary>
+    /// Captures the primary screen and returns the raw 32-bit BGRA pixel bytes.
+    /// Used by video encoders (e.g. H.264) to bypass JPEG overhead.
+    /// </summary>
+    Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default) => Task.FromResult<byte[]?>(null);
+
+    /// <summary>
     /// Gets the native screen dimensions and virtual desktop offsets for the captured area.
     /// </summary>
     (int Width, int Height, int Left, int Top) GetScreenSize();

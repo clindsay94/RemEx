@@ -43,6 +43,7 @@ import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import org.json.JSONObject
 
+@Composable
 fun AboutScreen() {
     val isConnected by RemexClientManager.isConnected.collectAsState()
     val hostCapabilities by RemexClientManager.hostCapabilities.collectAsState(initial = "")
