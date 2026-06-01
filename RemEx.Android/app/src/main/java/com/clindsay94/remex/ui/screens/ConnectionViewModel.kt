@@ -151,7 +151,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun applyQrResultAndConnect(host: String, port: Int, pin: String) {
+    fun applyQrResultAndConnect(host: String, port: Int, _pin: String) {
         val cp = connectionPreferences.value
         val dp = remoteDesktopPreferences.value
         connect(
@@ -160,7 +160,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 macAddress = cp?.macAddress ?: "",
                 broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
                 subnetMask = cp?.subnetMask ?: "255.255.255.0",
-                pairingPin = pin,
+                pairingPin = _pin,
                 desktopQuality = dp?.quality ?: 50,
                 desktopTargetFps = dp?.targetFps ?: 30,
                 desktopScale = dp?.scale ?: 0.6f

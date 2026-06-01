@@ -238,6 +238,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
     private FileTransferViewModel? _fileTransferViewModel;
+    private DiagnosticLogsViewModel? _diagnosticLogsViewModel;
 
     [ObservableProperty]
     private Remex.Core.Models.CustomizationSettings _customization = new();
@@ -532,6 +533,13 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         NotifyIfDisconnected(LocalizationService.Instance["Nav_Files"]);
         _fileTransferViewModel ??= new FileTransferViewModel(Connection);
         SetTransitionAndNavigate(7, _fileTransferViewModel);
+    }
+
+    [RelayCommand]
+    public void NavigateToDiagnosticLogs()
+    {
+        _diagnosticLogsViewModel ??= new DiagnosticLogsViewModel(this);
+        SetTransitionAndNavigate(8, _diagnosticLogsViewModel);
     }
 
     [RelayCommand]

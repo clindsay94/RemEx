@@ -706,6 +706,37 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 AppendLog($"WARN: {versionWarning}");
             }
 
+            var scriptPath = FindInstallScript();
+            if (scriptPath != null)
+            {
+                if (App.StopEmbeddedHostAsync != null)
+                {
+                    ServiceStatusText = LocalizationService.Instance["Service_StoppingEmbedded"];
+                    AppendLog("Stopping embedded host to free port for service.");
+                    await App.StopEmbeddedHostAsync();
+                }
+
+                ServiceStatusText = LocalizationService.Instance["Service_Creating"];
+                AppendLog($"Installing Windows service via {scriptPath} as {user}");
+                var (installOk, installOut) = await RunElevatedAsync(
+                    "powershell.exe",
+                    $"-ExecutionPolicy Bypass -NoProfile -File \"{scriptPath}\" -Action Install -Username {ToPowerShellLiteral(user)} -Password {ToPowerShellLiteral(ServicePassword)} -HostPath {ToPowerShellLiteral(exePath)}");
+                AppendLog(installOut);
+
+                if (!installOk)
+                {
+                    ServiceStatusText = LocalizationService.Instance["Service_InstalledStartFailed"];
+                    return;
+                }
+
+                ServiceStatusText = LocalizationService.Instance["Service_InstalledStarted"];
+                var serviceAddr = $"wss://localhost:{Remex.Core.RemexConstants.DefaultPort}{Remex.Core.RemexConstants.WebSocketPath}";
+                _connection.HostAddress = serviceAddr;
+                AppendLog($"Reconnecting client to {serviceAddr}…");
+                _ = _connection.AutoConnectAsync();
+                return;
+            }
+
             // Step 2: Create the service
             ServiceStatusText = LocalizationService.Instance["Service_Creating"];
             AppendLog($"sc.exe create {ServiceName} as {user}");
@@ -732,7 +763,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             // Step 4: Grant LogonAsService right via the install script helper
             ServiceStatusText = LocalizationService.Instance["Service_GrantingRights"];
-            var scriptPath = FindInstallScript();
             if (scriptPath != null)
             {
                 var sanitizedUser = (user ?? string.Empty).Replace("'", "''");
@@ -896,6 +926,19 @@ WantedBy=multi-user.target";
 
         try
         {
+            var scriptPath = FindInstallScript();
+            if (scriptPath != null)
+            {
+                ServiceStatusText = LocalizationService.Instance["Service_DeletingService"];
+                AppendLog($"Uninstalling Windows service via {scriptPath}");
+                var (scriptOk, scriptOutput) = await RunElevatedAsync(
+                    "powershell.exe",
+                    $"-ExecutionPolicy Bypass -NoProfile -File \"{scriptPath}\" -Action Uninstall");
+                AppendLog(scriptOutput);
+                ServiceStatusText = scriptOk ? LocalizationService.Instance["Service_Uninstalling"] : LocalizationService.Instance["Service_UninstallFailed"];
+                return;
+            }
+
             if (IsServiceRunning)
             {
                 ServiceStatusText = LocalizationService.Instance["Service_Stopping"];
@@ -1354,6 +1397,9 @@ WantedBy=multi-user.target";
 
         return null;
     }
+
+    private static string ToPowerShellLiteral(string value)
+        => $"'{value.Replace("'", "''")}'";
 
     private void AppendLog(string message)
     {

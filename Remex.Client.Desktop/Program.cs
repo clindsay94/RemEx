@@ -1,6 +1,7 @@
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -47,18 +48,24 @@ class Program
             services.AddSingleton<Remex.Core.Services.IIconExtractionService, Remex.Client.Desktop.Services.DesktopIconExtractionService>();
         };
 
-        // Start the Remex Host WebSocket server in-process.
-        // If the default port is taken (e.g. by the Remex Windows Service),
-        // fall back to an alternative port so the desktop always has its own host
-        // with access to HWiNFO shared memory in the user session.
-        EmbeddedHostPort = TryStartHost(args, RemexConstants.DefaultPort)
-                        ?? TryStartHost(args, RemexConstants.DefaultPort + 1);
-
-        if (EmbeddedHostPort.HasValue)
+        if (IsWindowsServiceRunning("RemexHost"))
         {
-            App.OverrideHostPort = EmbeddedHostPort.Value;
-            App.EmbeddedHostInstanceId = HostBootstrapper.InstanceId;
-            App.EmbeddedHostServices = _hostApp?.Services;
+            App.OverrideHostPort = RemexConstants.DefaultPort;
+        }
+        else
+        {
+            // Start the Remex Host WebSocket server in-process.
+            // If the default port is taken, fall back to an alternative port so the
+            // desktop still has an interactive-session host when the service is absent.
+            EmbeddedHostPort = TryStartHost(args, RemexConstants.DefaultPort)
+                            ?? TryStartHost(args, RemexConstants.DefaultPort + 1);
+
+            if (EmbeddedHostPort.HasValue)
+            {
+                App.OverrideHostPort = EmbeddedHostPort.Value;
+                App.EmbeddedHostInstanceId = HostBootstrapper.InstanceId;
+                App.EmbeddedHostServices = _hostApp?.Services;
+            }
         }
 
         App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;
@@ -89,9 +96,19 @@ class Program
         try
         {
             // Quick check: is the port already in use?
-            using var probe = new TcpListener(IPAddress.Loopback, port);
-            probe.Start();
-            probe.Stop();
+            // Probe on both loopback interfaces (IPv4 and IPv6) to avoid dual-stack wildcard collisions.
+            using (var probeV4 = new TcpListener(IPAddress.Loopback, port))
+            {
+                probeV4.Start();
+                probeV4.Stop();
+            }
+
+            if (Socket.OSSupportsIPv6)
+            {
+                using var probeV6 = new TcpListener(IPAddress.IPv6Loopback, port);
+                probeV6.Start();
+                probeV6.Stop();
+            }
 
             _hostApp = HostBootstrapper.CreateApplication(args, port);
             _hostApp.StartAsync().GetAwaiter().GetResult();
@@ -104,6 +121,42 @@ class Program
             Console.Error.WriteLine($"[Remex] Could not start host on port {port}: {ex.Message}");
             _hostApp = null;
             return null;
+        }
+    }
+
+    private static bool IsWindowsServiceRunning(string serviceName)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return false;
+        }
+
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "sc.exe",
+                    Arguments = $"query {serviceName}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            return process.ExitCode == 0
+                && output.Contains("STATE", StringComparison.OrdinalIgnoreCase)
+                && output.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
         }
     }
 

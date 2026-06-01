@@ -21,7 +21,11 @@ public static class CommandModeContext
     public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         // Add Logging
-        services.AddLogging(configure => configure.AddConsole());
+        services.AddLogging(configure =>
+        {
+            configure.AddConsole();
+            configure.AddProvider(new Remex.Core.Logging.InMemoryLoggerProvider());
+        });
         services.AddSingleton(configuration);
 
         // Determine Mode via Mutex

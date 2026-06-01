@@ -7,6 +7,7 @@ namespace Remex.Core.Services.Security;
 public interface IPairingService
 {
     Task<PairingState> StartPairingAsync(CancellationToken ct);
+    Task<PairingState> GetOrStartPairingAsync(CancellationToken ct);
     Task<string> DeriveSessionKeyAsync(string clientPublicKeyBase64, CancellationToken ct);
     string GetActivePin();
     bool TryGetActivePinInfo(out string pin, out long expiresAtUnixMs);

@@ -118,9 +118,50 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                 baseDelayMs * (1L shl consecutiveFailures.coerceAtMost(20)),
                                 maxDelayMs
                         )
+
+                // mDNS Self-Healing: If we fail consecutively, try to discover the host automatically in the background
+                if (consecutiveFailures >= 3) {
+                    Log.i("RemexManager", "Heartbeat consecutive failures >= 3 ($consecutiveFailures). Triggering background mDNS self-healing discovery...")
+                    try {
+                        val discoveryManager = com.clindsay94.remex.data.NsdDiscoveryManager(settings.context)
+                        val discovered = discoveryManager.discoverHost(3000) // 3 seconds timeout
+                        if (discovered != null) {
+                            Log.i("RemexManager", "Self-healing discovered host: ${discovered.serviceName} at ${discovered.host}:${discovered.port}")
+                            val context = settings.context
+                            val hasPin = com.clindsay94.remex.security.PinnedHostStore.getPin(context, discovered.serviceName)?.isNotBlank() == true ||
+                                         com.clindsay94.remex.security.PinnedHostStore.getPin(context, discovered.host)?.isNotBlank() == true
+                            
+                            if (hasPin) {
+                                val currentPreferences = settings.connectionPreferencesFlow.first()
+                                val currentMac = currentPreferences?.macAddress ?: ""
+                                val currentBroadcast = currentPreferences?.broadcastIp ?: "255.255.255.255"
+                                val currentSubnet = currentPreferences?.subnetMask ?: "255.255.255.0"
+
+                                Log.i("RemexManager", "Discovered host is verified and trusted. Updating saved address to: ${discovered.host}:${discovered.port}")
+                                settings.saveConnectionSettings(
+                                    host = discovered.host,
+                                    port = discovered.port,
+                                    mac = currentMac,
+                                    broadcast = currentBroadcast,
+                                    subnetMask = currentSubnet
+                                )
+                                // Address updated; reset failures and proceed to connect immediately
+                                consecutiveFailures = 0
+                            } else {
+                                Log.w("RemexManager", "Discovered host '${discovered.serviceName}' is not verified, skipping auto-update.")
+                            }
+                        } else {
+                            Log.d("RemexManager", "Self-healing discovery found no hosts.")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("RemexManager", "Self-healing mDNS error", e)
+                    }
+                }
+
+                val currentHost = settings.hostFlow.first()
                 Log.i(
                         "RemexManager",
-                        "Heartbeat auto-connect to $host (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)"
+                        "Heartbeat auto-connect to $currentHost (attempt #${consecutiveFailures + 1}, backoff ${backoffMs}ms)"
                 )
                 connect(null, true)
                 consecutiveFailures++

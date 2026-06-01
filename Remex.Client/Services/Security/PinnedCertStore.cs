@@ -107,7 +107,7 @@ public sealed class PinnedCertStore
     public async Task<IReadOnlyDictionary<string, string>> GetAllPinsAsync()
     {
         await EnsureLoadedAsync();
-        return _pins;
+        return new Dictionary<string, string>(_pins, StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task EnsureLoadedAsync()

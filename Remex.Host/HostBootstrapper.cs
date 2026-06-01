@@ -57,6 +57,9 @@ public static class HostBootstrapper
         // Enable Windows Service lifetime (no-op when not running under SCM).
         builder.Host.UseWindowsService();
 
+        // Register custom in-memory logger provider to capture live host and Kestrel logs
+        builder.Logging.AddProvider(new Remex.Core.Logging.InMemoryLoggerProvider());
+
         if (OperatingSystem.IsWindows())
         {
             ConfigureWindowsEventLog(builder.Logging);
@@ -116,18 +119,35 @@ public static class HostBootstrapper
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
         // Try the requested port first; if it's unavailable, probe fallback ports.
+        // Probe on both IPv4 and IPv6 interfaces to completely avoid dual-stack wildcard collisions.
         int actualPort = port;
         for (int attempt = 0; attempt < 5; attempt++)
         {
             int testPort = port + attempt;
             try
             {
-                using var testSocket = new System.Net.Sockets.Socket(
+                using (var testSocketV4 = new System.Net.Sockets.Socket(
                     System.Net.Sockets.AddressFamily.InterNetwork,
                     System.Net.Sockets.SocketType.Stream,
-                    System.Net.Sockets.ProtocolType.Tcp);
-                testSocket.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, testPort));
-                testSocket.Close();
+                    System.Net.Sockets.ProtocolType.Tcp))
+                {
+                    testSocketV4.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, testPort));
+                    testSocketV4.Close();
+                }
+
+                if (System.Net.Sockets.Socket.OSSupportsIPv6)
+                {
+                    using (var testSocketV6 = new System.Net.Sockets.Socket(
+                        System.Net.Sockets.AddressFamily.InterNetworkV6,
+                        System.Net.Sockets.SocketType.Stream,
+                        System.Net.Sockets.ProtocolType.Tcp))
+                    {
+                        testSocketV6.DualMode = true;
+                        testSocketV6.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, testPort));
+                        testSocketV6.Close();
+                    }
+                }
+
                 actualPort = testPort;
                 break;
             }
@@ -142,9 +162,12 @@ public static class HostBootstrapper
         // (acceptable: startup path, no active sync context), then register the live
         // instance as the ICertificateService singleton so DI resolves the same object
         // that Kestrel was configured with.
-        var certService = new CertificateService(
-            Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddConsole())
-                .CreateLogger<CertificateService>());
+        var certLoggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(b =>
+        {
+            b.AddConsole();
+            b.AddProvider(new Remex.Core.Logging.InMemoryLoggerProvider());
+        });
+        var certService = new CertificateService(certLoggerFactory.CreateLogger<CertificateService>());
         var tlsCert = certService.GetOrCreateCertificateAsync(CancellationToken.None)
             .GetAwaiter().GetResult();
 

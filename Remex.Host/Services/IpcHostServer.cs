@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.IO.Pipes;
 using System.Text.Json;
 using System.Threading;
@@ -33,12 +34,28 @@ public class IpcHostServer : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var server = new NamedPipeServerStream(
-                _pipeName,
-                PipeDirection.InOut,
-                NamedPipeServerStream.MaxAllowedServerInstances,
-                PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            NamedPipeServerStream server;
+            try
+            {
+                server = new NamedPipeServerStream(
+                    _pipeName,
+                    PipeDirection.InOut,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Could not create IPC server pipe {PipeName}; another Remex instance may already own it.", _pipeName);
+                await Task.Delay(1000, stoppingToken);
+                continue;
+            }
+            catch (IOException ex)
+            {
+                _logger.LogWarning(ex, "Could not create IPC server pipe {PipeName}; retrying.", _pipeName);
+                await Task.Delay(1000, stoppingToken);
+                continue;
+            }
 
             try
             {
@@ -54,6 +71,7 @@ public class IpcHostServer : BackgroundService
                 await server.DisposeAsync();
                 _logger.LogError(ex, "Error waiting for IPC connection.");
                 await Task.Delay(1000, stoppingToken);
+                continue;
             }
 
             // Handle in background so we can listen for the next client immediately.

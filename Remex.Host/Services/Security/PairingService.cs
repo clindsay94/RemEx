@@ -67,8 +67,6 @@ public sealed class PairingService : IPairingService
         }
         try
         {
-            // Reject if a live session already exists (e.g. client started pairing but hasn't
-            // completed or timed out yet — prevents a second client from stomping the first).
             if (IsPairingActive)
             {
                 throw new InvalidOperationException(
@@ -76,29 +74,37 @@ public sealed class PairingService : IPairingService
                     "Wait for the current session to complete or expire before starting a new one.");
             }
 
-            // Generate ephemeral P-256 ECDH keypair
-            _hostEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            return StartPairingCore();
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
 
-            // Export public key
-            var hostPubDer = _hostEcdh.PublicKey.ExportSubjectPublicKeyInfo();
-            _hostPublicKeyBase64 = Convert.ToBase64String(hostPubDer);
+    public async Task<PairingState> GetOrStartPairingAsync(CancellationToken ct)
+    {
+        var acquisition = await AcquirePairingSessionAsync(ct);
+        return acquisition.State;
+    }
 
-            // Generate a 6-digit PIN
-            _activePin = GeneratePin();
-            _expiresAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(PairingTimeoutSeconds).ToUnixTimeMilliseconds();
+    public async Task<PairingSessionAcquisition> AcquirePairingSessionAsync(CancellationToken ct)
+    {
+        if (!await _lock.WaitAsync(1000, ct))
+        {
+            throw new InvalidOperationException(
+                "A pairing session is already in progress. " +
+                "Only one pairing session is permitted at a time.");
+        }
 
-            // Shared secret and session key will be derived when client public key arrives
-            _sharedSecret = null;
-            _sessionKey = null;
-            _clientPublicKeyBase64 = null;
+        try
+        {
+            if (IsPairingActive)
+            {
+                return new PairingSessionAcquisition(GetActiveStateCore(), StartedNewSession: false);
+            }
 
-            _logger.LogInformation("Pairing session started. PIN: {Pin}, Expires at: {Expiry}",
-                _activePin, DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
-
-            try { PinDisplayed?.Invoke(_activePin, _expiresAtUnixMs); }
-            catch (Exception ex) { _logger.LogWarning(ex, "PinDisplayed handler threw."); }
-
-            return new PairingState(_hostPublicKeyBase64, _activePin, _expiresAtUnixMs);
+            return new PairingSessionAcquisition(StartPairingCore(), StartedNewSession: true);
         }
         finally
         {
@@ -244,14 +250,36 @@ public sealed class PairingService : IPairingService
             if (_hostEcdh is null || _activePin is null)
                 throw new InvalidOperationException("No active pairing session.");
 
-            _clientPublicKeyBase64 = clientPublicKeyBase64;
+            if (_clientPublicKeyBase64 is not null)
+            {
+                if (string.Equals(_clientPublicKeyBase64, clientPublicKeyBase64, StringComparison.Ordinal))
+                {
+                    if (_sessionKey is not null)
+                    {
+                        _logger.LogInformation("Pairing request reused the active client binding; returning existing host HMAC.");
+                        return ComputeHostHmac();
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        "The active pairing session is already bound to a different client. " +
+                        "Wait for it to complete, expire, or cancel before retrying.");
+                }
+            }
 
             // Import client public key
             using var clientPeer = ECDiffieHellman.Create();
             clientPeer.ImportSubjectPublicKeyInfo(Convert.FromBase64String(clientPublicKeyBase64), out _);
 
+            if (_sharedSecret != null)
+            {
+                CryptographicOperations.ZeroMemory(_sharedSecret);
+                _sharedSecret = null;
+            }
+
             // Perform P-256 key agreement
-            _sharedSecret = _hostEcdh.DeriveRawSecretAgreement(clientPeer.PublicKey);
+            var sharedSecret = _hostEcdh.DeriveRawSecretAgreement(clientPeer.PublicKey);
 
             // Derive session key via HKDF-SHA256
             // Salt = certificate SPKI hash (binds to the TLS cert)
@@ -259,10 +287,12 @@ public sealed class PairingService : IPairingService
             var certSpkiHash = Convert.FromBase64String(_certificateService.GetSpkiSha256Base64());
             var sessionKeyBytes = HKDF.DeriveKey(
                 HashAlgorithmName.SHA256,
-                _sharedSecret,
+                sharedSecret,
                 outputLength: 32,
                 salt: certSpkiHash,
                 info: Encoding.UTF8.GetBytes("remex-pair-v1"));
+            _sharedSecret = sharedSecret;
+            _clientPublicKeyBase64 = clientPublicKeyBase64;
             _sessionKey = sessionKeyBytes;
 
             _logger.LogInformation("Session key derived from ECDH P-256.");
@@ -295,4 +325,50 @@ public sealed class PairingService : IPairingService
         var pin = RandomNumberGenerator.GetInt32(0, 1_000_000);
         return pin.ToString("D6");
     }
+
+    private PairingState StartPairingCore()
+    {
+        if (_sharedSecret != null)
+        {
+            CryptographicOperations.ZeroMemory(_sharedSecret);
+            _sharedSecret = null;
+        }
+
+        if (_sessionKey != null)
+        {
+            CryptographicOperations.ZeroMemory(_sessionKey);
+            _sessionKey = null;
+        }
+
+        _hostEcdh?.Dispose();
+        _hostEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+
+        var hostPubDer = _hostEcdh.PublicKey.ExportSubjectPublicKeyInfo();
+        _hostPublicKeyBase64 = Convert.ToBase64String(hostPubDer);
+
+        _activePin = GeneratePin();
+        _expiresAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(PairingTimeoutSeconds).ToUnixTimeMilliseconds();
+
+        _clientPublicKeyBase64 = null;
+
+        _logger.LogInformation("Pairing session started. PIN: {Pin}, Expires at: {Expiry}",
+            _activePin, DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
+
+        try { PinDisplayed?.Invoke(_activePin, _expiresAtUnixMs); }
+        catch (Exception ex) { _logger.LogWarning(ex, "PinDisplayed handler threw."); }
+
+        return new PairingState(_hostPublicKeyBase64, _activePin, _expiresAtUnixMs);
+    }
+
+    private PairingState GetActiveStateCore()
+    {
+        if (_activePin is null || _hostPublicKeyBase64 is null || !IsPairingActive)
+        {
+            throw new InvalidOperationException("No active pairing session.");
+        }
+
+        return new PairingState(_hostPublicKeyBase64, _activePin, _expiresAtUnixMs);
+    }
 }
+
+public sealed record PairingSessionAcquisition(PairingState State, bool StartedNewSession);

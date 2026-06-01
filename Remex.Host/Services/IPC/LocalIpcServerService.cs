@@ -242,16 +242,7 @@ public class LocalIpcServerService : BackgroundService
                 case "GENERATEPAIRINGPIN":
                     try
                     {
-                        if (_pairingService.IsPairingActive && _pairingService.TryGetActivePinInfo(out var activePin, out var activeExpires))
-                        {
-                            return new CommandResponse(true, "Active pairing PIN retrieved.", null)
-                            {
-                                PairingPinInfo = new PairingPinInfo(activePin, activeExpires),
-                            };
-                        }
-
-                        // Generate a fresh one
-                        var state = await _pairingService.StartPairingAsync(CancellationToken.None);
+                        var state = await _pairingService.GetOrStartPairingAsync(CancellationToken.None);
                         return new CommandResponse(true, "Pairing session started and PIN generated.", null)
                         {
                             PairingPinInfo = new PairingPinInfo(state.Pin, state.ExpiresAtUnixMs),

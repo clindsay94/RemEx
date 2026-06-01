@@ -1,13 +1,13 @@
-set(CMAKE_HOST_SYSTEM "Linux-7.0.9-1-cachyos")
+set(CMAKE_HOST_SYSTEM "Linux-6.6.114.1-microsoft-standard-WSL2")
 set(CMAKE_HOST_SYSTEM_NAME "Linux")
-set(CMAKE_HOST_SYSTEM_VERSION "7.0.9-1-cachyos")
+set(CMAKE_HOST_SYSTEM_VERSION "6.6.114.1-microsoft-standard-WSL2")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "x86_64")
 
 
 
-set(CMAKE_SYSTEM "Linux-7.0.9-1-cachyos")
+set(CMAKE_SYSTEM "Linux-6.6.114.1-microsoft-standard-WSL2")
 set(CMAKE_SYSTEM_NAME "Linux")
-set(CMAKE_SYSTEM_VERSION "7.0.9-1-cachyos")
+set(CMAKE_SYSTEM_VERSION "6.6.114.1-microsoft-standard-WSL2")
 set(CMAKE_SYSTEM_PROCESSOR "x86_64")
 
 set(CMAKE_CROSSCOMPILING "FALSE")

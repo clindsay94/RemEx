@@ -10,8 +10,9 @@
     (Install only) The Windows user account the service should run as.
     Format: DOMAIN\User or .\User for local accounts.
     When omitted the service runs as the current user (.\<current-username>).
-    Running as a real user account is REQUIRED so the service can interact
-    with the desktop session (lock workstation, launch apps, read HWiNFO).
+    Running as a real user account helps the service access that user's
+    profile and certificates, but interactive desktop features still require
+    the Remex Desktop app to be running in the signed-in session.
 
 .PARAMETER Password
     (Install only) The password for the user account. If omitted, you will
@@ -33,7 +34,7 @@ param(
     [string]$Username,
 
     [Parameter()]
-    [SecureString]$Password,
+    [string]$Password,
 
     [Parameter()]
     [string]$HostPath = ""
@@ -187,12 +188,21 @@ switch ($Action) {
             exit 1
         }
 
-        Publish-Host
-
         $exePath = Join-Path $PublishDir "Remex.Host.exe"
         if (-not (Test-Path $exePath)) {
-            Write-Error "Executable not found at: $exePath"
-            exit 1
+            if (-not (Test-Path $ProjectDir)) {
+                Write-Error "Executable not found at: $exePath"
+                Write-Error "Remex.Host project directory was not found at: $ProjectDir"
+                Write-Error "Pass -HostPath to an existing Remex.Host.exe when installing from a packaged build."
+                exit 1
+            }
+
+            Publish-Host
+
+            if (-not (Test-Path $exePath)) {
+                Write-Error "Executable not found at: $exePath"
+                exit 1
+            }
         }
 
         # Determine the user account for the service.
@@ -222,12 +232,62 @@ switch ($Action) {
             -StartupType Automatic `
             -Credential $cred
 
+        # Configure Windows Defender Firewall rules to allow inbound TCP/UDP connections for both the host and client
+        Write-Host "Configuring Windows Defender Firewall rules..." -ForegroundColor Cyan
+        try {
+            $hostRuleName = "RemexHostInbound"
+            $clientRuleName = "RemexClientInbound"
+
+            # 1. Firewall rule for Remex.Host.exe (background service / embedded host)
+            if (Test-Path $exePath) {
+                $existingHostRule = Get-NetFirewallRule -Name $hostRuleName -ErrorAction SilentlyContinue
+                if ($existingHostRule) {
+                    Remove-NetFirewallRule -Name $hostRuleName -ErrorAction SilentlyContinue
+                }
+                New-NetFirewallRule `
+                    -Name $hostRuleName `
+                    -DisplayName "Remex Host Service" `
+                    -Description "Allows incoming TCP/UDP connections for the Remex Host Service" `
+                    -Direction Inbound `
+                    -Program "$exePath" `
+                    -Action Allow `
+                    -Enabled True `
+                    -Profile Any `
+                    -ErrorAction Stop | Out-Null
+                Write-Host "Firewall rule 'Remex Host Service' configured successfully." -ForegroundColor Green
+            }
+
+            # 2. Firewall rule for Remex.Client.Desktop.exe (desktop UI / in-process host)
+            $clientExePath = Join-Path $PublishDir "Remex.Client.Desktop.exe"
+            if (Test-Path $clientExePath) {
+                $existingClientRule = Get-NetFirewallRule -Name $clientRuleName -ErrorAction SilentlyContinue
+                if ($existingClientRule) {
+                    Remove-NetFirewallRule -Name $clientRuleName -ErrorAction SilentlyContinue
+                }
+                New-NetFirewallRule `
+                    -Name $clientRuleName `
+                    -DisplayName "Remex Desktop Client" `
+                    -Description "Allows incoming TCP/UDP connections for the Remex Desktop Client" `
+                    -Direction Inbound `
+                    -Program "$clientExePath" `
+                    -Action Allow `
+                    -Enabled True `
+                    -Profile Any `
+                    -ErrorAction Stop | Out-Null
+                Write-Host "Firewall rule 'Remex Desktop Client' configured successfully." -ForegroundColor Green
+            }
+        } catch {
+            Write-Warning "Failed to configure Windows Firewall rules automatically: $($_.Exception.Message)"
+            Write-Warning "You may need to allow the executables through the firewall manually."
+        }
+
         Write-Host "Starting service..." -ForegroundColor Cyan
         Start-Service -Name $ServiceName
 
         Write-Host ""
         Write-Host "Service '$DisplayName' installed and started as '$Username'." -ForegroundColor Green
         Write-Host "It will auto-start on boot. View in services.msc or use: .\install-service.ps1 -Action Status"
+        Write-Warning "Interactive desktop features still require the Remex Desktop app to be running in the signed-in Windows session."
         Write-DiagnosticsGuidance
     }
 
@@ -246,6 +306,16 @@ switch ($Action) {
 
         Write-Host "Removing service '$ServiceName'..." -ForegroundColor Cyan
         sc.exe delete $ServiceName | Out-Null
+
+        # Remove firewall rules
+        Write-Host "Removing Windows Defender Firewall rules..." -ForegroundColor Yellow
+        try {
+            Remove-NetFirewallRule -Name "RemexHostInbound" -ErrorAction SilentlyContinue
+            Remove-NetFirewallRule -Name "RemexClientInbound" -ErrorAction SilentlyContinue
+            Write-Host "Firewall rules removed successfully." -ForegroundColor Green
+        } catch {
+            Write-Warning "Failed to remove Windows Firewall rules automatically: $($_.Exception.Message)"
+        }
 
         Write-Host "Service '$DisplayName' removed successfully." -ForegroundColor Green
     }

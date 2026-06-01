@@ -99,13 +99,51 @@ function Invoke-LinuxBuild {
         Write-Warning "-SkipPublish and -SkipVersionSync are Windows-only flags and will be ignored for Linux target."
     }
 
+    $bashScript = Get-BashSafeScriptPath -ScriptPath $BuildLinuxScript
     Write-Host "Target: Linux (using installer/build-linux.sh)" -ForegroundColor Cyan
-    & bash $BuildLinuxScript @LinuxArgs
+    if ($IsWindows -and (Get-Command wsl -ErrorAction SilentlyContinue)) {
+        $wslBuildScript = Convert-WindowsPathToWslPath -Path $bashScript
+        & wsl bash $wslBuildScript @LinuxArgs
+    } else {
+        & bash $bashScript @LinuxArgs
+    }
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Linux packaging failed (exit $LASTEXITCODE)"
         exit 1
     }
+}
+
+function Get-BashSafeScriptPath {
+    param([string]$ScriptPath)
+
+    $content = Get-Content $ScriptPath -Raw
+    if ($content.Contains("`r")) {
+        $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) ("remex-" + [System.IO.Path]::GetFileNameWithoutExtension($ScriptPath) + "-lf.sh")
+        $normalized = $content -replace "`r`n", "`n" -replace "`r", "`n"
+        [System.IO.File]::WriteAllText($tempPath, $normalized, [System.Text.UTF8Encoding]::new($false))
+        return $tempPath
+    }
+
+    return $ScriptPath
+}
+
+function Convert-WindowsPathToWslPath {
+    param([string]$Path)
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    if ($fullPath -match '^(?<Drive>[A-Za-z]):\\(?<Rest>.*)$') {
+        $drive = $Matches["Drive"].ToLowerInvariant()
+        $rest = $Matches["Rest"] -replace '\\', '/'
+        return "/mnt/$drive/$rest"
+    }
+
+    $wslPath = (& wsl wslpath -a ($fullPath -replace '\\', '/')).Trim()
+    if ([string]::IsNullOrWhiteSpace($wslPath)) {
+        throw "Failed to convert Windows path to WSL path: $fullPath"
+    }
+
+    return $wslPath
 }
 
 function Find-Iscc {

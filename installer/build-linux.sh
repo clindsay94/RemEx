@@ -37,6 +37,42 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LINUX_DIR="$SCRIPT_DIR/linux"
 OUTPUT_DIR="$SCRIPT_DIR/Output"
 
+reset_stale_cmake_cache() {
+    local source_dir="$1"
+    local build_dir="$2"
+    local cache_file="$build_dir/CMakeCache.txt"
+
+    if [[ ! -f "$cache_file" ]]; then
+        return
+    fi
+
+    local cached_source_dir=""
+    local cached_build_dir=""
+    cached_source_dir="$(grep '^CMAKE_HOME_DIRECTORY:INTERNAL=' "$cache_file" | cut -d= -f2- || true)"
+    cached_build_dir="$(grep '^CMAKE_CACHEFILE_DIR:INTERNAL=' "$cache_file" | cut -d= -f2- || true)"
+
+    if [[ "$cached_source_dir" != "$source_dir" || ( -n "$cached_build_dir" && "$cached_build_dir" != "$build_dir" ) ]]; then
+        echo "Detected stale CMake cache for $build_dir; clearing it before rebuild."
+        rm -rf "$build_dir"
+    fi
+}
+
+cleanup_linux_package_artifacts() {
+    shopt -s nullglob
+    local artifacts=(
+        "$OUTPUT_DIR"/remex-client-v*-linux-x64
+        "$OUTPUT_DIR"/remex-client-v*-linux-x64.tar.gz
+        "$OUTPUT_DIR"/remex-host-v*-linux-x64
+        "$OUTPUT_DIR"/remex-host-v*-linux-x64.tar.gz
+    )
+
+    if [[ ${#artifacts[@]} -gt 0 ]]; then
+        rm -rf "${artifacts[@]}"
+    fi
+
+    shopt -u nullglob
+}
+
 # ── Version ─────────────────────────────────────────────────────────────────
 VERSION_FILE="$REPO_ROOT/RemEx.Android/app/version.properties"
 if [[ ! -f "$VERSION_FILE" ]]; then
@@ -44,7 +80,7 @@ if [[ ! -f "$VERSION_FILE" ]]; then
     exit 1
 fi
 
-VERSION=$(grep '^versionName=' "$VERSION_FILE" | cut -d= -f2)
+VERSION="$(grep -m1 '^versionName=' "$VERSION_FILE" | cut -d= -f2- | tr -d '\r')"
 if [[ -z "$VERSION" ]]; then
     echo "Error: could not read versionName from version.properties" >&2
     exit 1
@@ -52,17 +88,20 @@ fi
 
 echo "Version: $VERSION"
 mkdir -p "$OUTPUT_DIR"
+cleanup_linux_package_artifacts
 
 NATIVE_BRIDGE_DIR="$REPO_ROOT/Remex.Host.Native.Linux"
-NATIVE_BRIDGE_SO="$NATIVE_BRIDGE_DIR/build/libremex_linux_bridge.so"
+NATIVE_BRIDGE_BUILD_DIR="$NATIVE_BRIDGE_DIR/build"
+NATIVE_BRIDGE_SO="$NATIVE_BRIDGE_BUILD_DIR/libremex_linux_bridge.so"
 
 # ── Native bridge (shared by client and host) ────────────────────────────────
 echo ""
 echo "── Building native Linux bridge (libremex_linux_bridge.so) ─────────────"
-cmake -B "$NATIVE_BRIDGE_DIR/build" \
+reset_stale_cmake_cache "$NATIVE_BRIDGE_DIR" "$NATIVE_BRIDGE_BUILD_DIR"
+cmake -B "$NATIVE_BRIDGE_BUILD_DIR" \
       -S "$NATIVE_BRIDGE_DIR" \
       -DCMAKE_BUILD_TYPE=Release
-cmake --build "$NATIVE_BRIDGE_DIR/build" --target remex_linux_bridge
+cmake --build "$NATIVE_BRIDGE_BUILD_DIR" --target remex_linux_bridge
 if [[ ! -f "$NATIVE_BRIDGE_SO" ]]; then
     echo "Error: libremex_linux_bridge.so missing after cmake build." >&2
     exit 1

@@ -305,12 +305,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         {
             try
             {
-                if (_pairingService.IsPairingActive)
-                {
-                    _pairingService.CancelPairing();
-                }
-
-                var state = await _pairingService.StartPairingAsync(default);
+                var state = await _pairingService.GetOrStartPairingAsync(default);
                 ActivePairingPin = state.Pin;
                 ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(state.ExpiresAtUnixMs);
                 ShowPairingPin = true;
@@ -686,31 +681,16 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
         // Define CTS outside try to be accessible in catch
         using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-        _webSocket = new ClientWebSocket();
         _receiveCts = new CancellationTokenSource();
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_receiveCts.Token, timeoutCts.Token);
 
         try
         {
             StatusText = LocalizationService.Instance["Status_Connecting"];
-            _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-
-            // 2.0 TLS pinning. Pre-load the pin snapshot synchronously usable by the TLS callback.
-            // The callback rejects unrecognized certs; first-time trust is only granted on
-            // loopback connections or when the pin store is empty (initial pair) — the PIN
-            // handshake then provides MITM protection during that one window.
-            await LoadPinSnapshotAsync();
-            var uri = new Uri(HostAddress);
-            _allowFirstTimeTrustForCurrentConnect =
-                IsLoopbackHost(uri) || (_pinSnapshot is not null && _pinSnapshot.Count == 0);
-
-            _webSocket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
+            var uri = await PrepareTlsValidationForConnectAsync(allowTrustOnFirstUseForEmptyStore: true);
+            _webSocket = CreateConfiguredWebSocket();
 
             await _webSocket.ConnectAsync(uri, linkedCts.Token);
-
-            // Trust window closes immediately after the handshake. Any subsequent reconnect must
-            // re-evaluate the snapshot/opt-in fresh, so don't leave the flag set.
-            _allowFirstTimeTrustForCurrentConnect = false;
 
             // Loopback connections target the in-process embedded host on the same machine.
             // Pairing exists to bootstrap trust with a *remote* host, so it adds no security
@@ -1065,16 +1045,19 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 await Task.Delay(TimeSpan.FromSeconds(delay), ct);
                 if (ct.IsCancellationRequested) break;
 
+                ClientWebSocket? ws = null;
                 try
                 {
                     Dispatcher.UIThread.Post(() => StatusText = LocalizationService.Instance["Status_Connecting"]);
-                    var ws = new ClientWebSocket();
-                    ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-                    ws.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
+                    var uri = await PrepareTlsValidationForConnectAsync(allowTrustOnFirstUseForEmptyStore: false);
+                    ws = CreateConfiguredWebSocket();
 
                     using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     connectCts.CancelAfter(TimeSpan.FromSeconds(10));
-                    await ws.ConnectAsync(new Uri(HostAddress), connectCts.Token);
+                    await ws.ConnectAsync(uri, connectCts.Token);
+
+                    if (IsLoopbackHost(uri))
+                        _isPairedWithCurrentHost = true;
 
                     // Success — adopt the new socket.
                     _webSocket = ws;
@@ -1098,8 +1081,13 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 }
                 catch
                 {
+                    ws?.Dispose();
                     // Exponential backoff: 2, 4, 8, 16, 30, 30, ...
                     delay = Math.Min(delay * 2, MaxReconnectDelaySeconds);
+                }
+                finally
+                {
+                    _allowFirstTimeTrustForCurrentConnect = false;
                 }
             }
         }
@@ -1204,11 +1192,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             {
                 try
                 {
-                    if (_pairingService.IsPairingActive)
-                    {
-                        _pairingService.CancelPairing();
-                    }
-                    var state = await _pairingService.StartPairingAsync(default);
+                    var state = await _pairingService.GetOrStartPairingAsync(default);
                     pairingPin = state.Pin;
                     ActivePairingPin = state.Pin;
                     ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(state.ExpiresAtUnixMs);
@@ -1313,7 +1297,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     /// <summary>
     /// TLS server-certificate validation callback. Enforces SPKI pinning against the snapshot
-    /// captured by <see cref="LoadPinSnapshotAsync"/> immediately before <c>ConnectAsync</c>.
+    /// captured by <see cref="LoadPinSnapshotAsync"/> immediately before each socket connect.
     ///
     /// Security model:
     ///   - If the snapshot contains the incoming cert's SPKI hash, accept (matched pin).
@@ -1402,6 +1386,24 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         }
 
         _pinSnapshot = await store.GetAllPinsAsync().ConfigureAwait(false);
+    }
+
+    private async Task<Uri> PrepareTlsValidationForConnectAsync(bool allowTrustOnFirstUseForEmptyStore)
+    {
+        var uri = new Uri(HostAddress);
+        await LoadPinSnapshotAsync();
+        _allowFirstTimeTrustForCurrentConnect =
+            IsLoopbackHost(uri) ||
+            (allowTrustOnFirstUseForEmptyStore && _pinSnapshot is not null && _pinSnapshot.Count == 0);
+        return uri;
+    }
+
+    private ClientWebSocket CreateConfiguredWebSocket()
+    {
+        var socket = new ClientWebSocket();
+        socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+        socket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
+        return socket;
     }
 
     private async Task<string?> PromptForPinAsync()

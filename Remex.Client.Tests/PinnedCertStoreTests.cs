@@ -78,6 +78,18 @@ public sealed class PinnedCertStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAllPins_ReturnsSnapshot_NotLiveDictionary()
+    {
+        await _store.SetPinAsync("host-1", "hash1==");
+
+        var snapshot = await _store.GetAllPinsAsync();
+        await _store.SetPinAsync("host-2", "hash2==");
+
+        Assert.Single(snapshot);
+        Assert.DoesNotContain("host-2", snapshot.Keys);
+    }
+
+    [Fact]
     public async Task SetPin_OverwritesExistingPin()
     {
         await _store.SetPinAsync("host-d", "old==");

@@ -50,14 +50,18 @@ public sealed class PairingHandler
                 message.PairingRequest.ClientVersion,
                 message.PairingRequest.ClientId ?? "Unknown");
 
-            // Start pairing session (generates host keypair and PIN)
-            var state = await _pairingService.StartPairingAsync(ct);
-            pairingSessionStarted = true;
+            // Reuse any desktop-generated active PIN session so QR/manual pairing and the
+            // subsequent pairing_request are talking about the same host-side cryptographic
+            // state. Only brand-new sessions are cancelled on failure recovery below.
+            var acquisition = await _pairingService.AcquirePairingSessionAsync(ct);
+            var state = acquisition.State;
+            pairingSessionStarted = acquisition.StartedNewSession;
 
             // Derive session key from client's public key. If this throws (e.g. malformed
             // client public key, HKDF failure) the session in PairingService is still live;
-            // the catch below must call CancelPairing or the singleton state will block the
-            // next attempt for the full 120-second timeout.
+            // the catch below must call CancelPairing only when this request created the
+            // session. Reused desktop-generated sessions must remain intact for the real
+            // operator-visible pairing flow.
             var pinHmacBase64 = await _pairingService.DeriveSessionKeyAsync(
                 message.PairingRequest.ClientPublicKeyBase64, ct);
 

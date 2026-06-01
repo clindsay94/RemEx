@@ -13,7 +13,9 @@
 #define AppExeName     "Remex.Client.Desktop.exe"
 #define AppHostExe     "Remex.Host.exe"
 #define ServiceScript  "scripts\install-service.ps1"
-#define SourceDir      "..\Remex.Client.Desktop\bin\Release\net10.0\win-x64\publish"
+#ifndef SourceDir
+  #define SourceDir      "..\Remex.Client.Desktop\bin\Release\net10.0\win-x64\publish"
+#endif
 
 [Setup]
 AppId={{A3F7C2B1-84E5-4D9A-B6F0-1C2D3E4F5A6B}
@@ -60,6 +62,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\scripts\install-service.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu
@@ -137,9 +140,9 @@ begin
   CredentialsPage := CreateInputQueryPage(
     ServiceModePage.ID,
     'Service Account Credentials',
-    'The Windows Service must run as a real user account to access the desktop session.',
+    'The Windows Service keeps RemEx online in the background, but Session 0 cannot provide interactive desktop features by itself.',
     'Enter the account that the RemEx Host service should run as. ' +
-    'Use the format .\Username for a local account (e.g. .\Connor).'
+    'Use the format .\Username for a local account (e.g. .\Connor). Keep the desktop app running in the signed-in session for remote desktop, Task Manager, and app launching.'
   );
   CredentialsPage.Add('Username (e.g. .\Connor):', False);
   CredentialsPage.Add('Password:', True);  // True = masked password field

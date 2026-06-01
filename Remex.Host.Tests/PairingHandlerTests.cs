@@ -112,6 +112,122 @@ public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
+    public async Task PairingRequest_ReusesExistingDesktopGeneratedSession()
+    {
+        var pairingService = _factory.Services.GetRequiredService<PairingService>();
+        try
+        {
+            var prestarted = await pairingService.StartPairingAsync(CancellationToken.None);
+
+            var wsClient = _factory.Server.CreateWebSocketClient();
+            using var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None);
+            using var clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+
+            var pairingRequest = new RemexMessage
+            {
+                Type = MessageTypes.PairingRequest,
+                ClientId = "reuse-test-client",
+                PairingRequest = new PairingRequest
+                {
+                    ClientPublicKeyBase64 = Convert.ToBase64String(clientEcdh.PublicKey.ExportSubjectPublicKeyInfo()),
+                    ClientName = "Reuse Test Client",
+                    ClientVersion = "2.0.0",
+                    ClientId = "reuse-test-client",
+                },
+            };
+
+            await MessageSerializer.SendAsync(ws, pairingRequest, CancellationToken.None);
+
+            RemexMessage? response = null;
+            for (var i = 0; i < 16; i++)
+            {
+                response = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+                if (response?.Type is MessageTypes.PairingResponse or MessageTypes.PairingError)
+                {
+                    break;
+                }
+            }
+
+            Assert.NotNull(response);
+            Assert.Equal(MessageTypes.PairingResponse, response!.Type);
+            Assert.NotNull(response.PairingResponse);
+            Assert.Equal(prestarted.HostPublicKeyBase64, response.PairingResponse!.HostPublicKeyBase64);
+            Assert.True(pairingService.IsPairingActive);
+            Assert.Equal(prestarted.Pin, pairingService.GetActivePin());
+        }
+        finally
+        {
+            pairingService.CancelPairing();
+        }
+    }
+
+    [Fact]
+    public async Task PairingRequest_WithMalformedKeyOnReusedSession_PreservesExistingSession()
+    {
+        var pairingService = _factory.Services.GetRequiredService<PairingService>();
+        try
+        {
+            var prestarted = await pairingService.StartPairingAsync(CancellationToken.None);
+
+            var badClient = _factory.Server.CreateWebSocketClient();
+            using var badSocket = await badClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None);
+
+            await MessageSerializer.SendAsync(
+                badSocket,
+                new RemexMessage
+                {
+                    Type = MessageTypes.PairingRequest,
+                    ClientId = "bad-reuse-client",
+                    PairingRequest = new PairingRequest
+                    {
+                        ClientPublicKeyBase64 = "this-is-not-a-public-key",
+                        ClientName = "Bad Reuse Client",
+                        ClientVersion = "2.0.0",
+                        ClientId = "bad-reuse-client",
+                    },
+                },
+                CancellationToken.None);
+
+            var error = await ReadHandshakeResponseAsync(badSocket);
+            Assert.NotNull(error);
+            Assert.Equal(MessageTypes.PairingError, error!.Type);
+            Assert.True(pairingService.IsPairingActive);
+            Assert.Equal(prestarted.Pin, pairingService.GetActivePin());
+
+            var goodClient = _factory.Server.CreateWebSocketClient();
+            using var goodSocket = await goodClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None);
+            using var clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+
+            await MessageSerializer.SendAsync(
+                goodSocket,
+                new RemexMessage
+                {
+                    Type = MessageTypes.PairingRequest,
+                    ClientId = "good-reuse-client",
+                    PairingRequest = new PairingRequest
+                    {
+                        ClientPublicKeyBase64 = Convert.ToBase64String(clientEcdh.PublicKey.ExportSubjectPublicKeyInfo()),
+                        ClientName = "Good Reuse Client",
+                        ClientVersion = "2.0.0",
+                        ClientId = "good-reuse-client",
+                    },
+                },
+                CancellationToken.None);
+
+            var response = await ReadHandshakeResponseAsync(goodSocket);
+            Assert.NotNull(response);
+            Assert.Equal(MessageTypes.PairingResponse, response!.Type);
+            Assert.Equal(prestarted.HostPublicKeyBase64, response.PairingResponse!.HostPublicKeyBase64);
+            Assert.True(pairingService.IsPairingActive);
+            Assert.Equal(prestarted.Pin, pairingService.GetActivePin());
+        }
+        finally
+        {
+            pairingService.CancelPairing();
+        }
+    }
+
+    [Fact]
     public async Task PairingRequest_WithMalformedClientPublicKey_CancelsStartedSession()
     {
         // Sibling regression of the same bug class as the SendAsync race: if
@@ -218,6 +334,20 @@ public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Pr
                 Assert.Fail(response.ErrorText ?? "Pairing request failed.");
             }
         }
+    }
+
+    private static async Task<RemexMessage?> ReadHandshakeResponseAsync(WebSocket socket)
+    {
+        for (var i = 0; i < 16; i++)
+        {
+            var response = await MessageSerializer.ReceiveAsync(socket, CancellationToken.None);
+            if (response?.Type is MessageTypes.PairingResponse or MessageTypes.PairingError)
+            {
+                return response;
+            }
+        }
+
+        return null;
     }
 
     private sealed class NonLoopbackStartupFilter : IStartupFilter

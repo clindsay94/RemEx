@@ -1,12 +1,18 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Remex.Client;
+using Remex.Client.Services.Security;
 using Remex.Client.ViewModels;
 using Remex.Core;
 using Remex.Core.Messages;
@@ -14,25 +20,48 @@ using Remex.Core.Models;
 using Remex.Core.Models.IPC;
 using Remex.Core.Services.Network;
 using Remex.Core.Services.Security;
-using Remex.Client.Services.Security;
 using Xunit;
 
 namespace Remex.Client.Tests.ViewModels;
 
 public class ConnectionViewModelTests : IDisposable
 {
+    private static readonly FieldInfo AppServicesBackingField =
+        typeof(App).GetField("<Services>k__BackingField", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    private static readonly MethodInfo PrepareTlsValidationForConnectMethod =
+        typeof(ConnectionViewModel).GetMethod(
+            "PrepareTlsValidationForConnectAsync",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private static readonly FieldInfo PinSnapshotField =
+        typeof(ConnectionViewModel).GetField(
+            "_pinSnapshot",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private static readonly FieldInfo AllowFirstTimeTrustField =
+        typeof(ConnectionViewModel).GetField(
+            "_allowFirstTimeTrustForCurrentConnect",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
     private readonly Mock<IMdnsDiscoveryService> _mockDiscoveryService;
     private readonly Mock<ILogger<ConnectionViewModel>> _mockLogger;
     private ConnectionViewModel _viewModel;
+    private readonly IServiceProvider? _originalAppServices;
 
     public ConnectionViewModelTests()
     {
         _mockDiscoveryService = new Mock<IMdnsDiscoveryService>();
         _mockLogger = new Mock<ILogger<ConnectionViewModel>>();
         _viewModel = new ConnectionViewModel(_mockDiscoveryService.Object, null, _mockLogger.Object);
+        _originalAppServices = App.Services;
     }
 
-    public void Dispose() => _viewModel?.Dispose();
+    public void Dispose()
+    {
+        AppServicesBackingField.SetValue(null, _originalAppServices);
+        _viewModel?.Dispose();
+    }
 
     [Fact]
     public void Constructor_WithAllNullDependencies_ShouldNotThrow()
@@ -263,6 +292,81 @@ public class ConnectionViewModelTests : IDisposable
         _viewModel.ShowPairingPin.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task RevealPairingPinAsync_WhenEmbeddedPairingAlreadyActive_ReusesExistingSession()
+    {
+        var service = new FakePairingService("123456", DateTimeOffset.UtcNow.AddMinutes(2), active: true);
+        _viewModel.AttachEmbeddedPairingService(service);
+
+        await _viewModel.RevealPairingPinAsync();
+
+        service.GetOrStartCalls.Should().Be(1);
+        service.StartCalls.Should().Be(0);
+        _viewModel.ActivePairingPin.Should().Be("123456");
+        _viewModel.ShowPairingPin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GenerateQrCodeCommand_WhenEmbeddedPairingAlreadyActive_ReusesExistingSession()
+    {
+        var service = new FakePairingService("654321", DateTimeOffset.UtcNow.AddMinutes(2), active: true);
+        _viewModel.AttachEmbeddedPairingService(service);
+        _viewModel.HostAddress = "wss://192.168.1.25:5005/ws";
+
+        var services = new ServiceCollection()
+            .AddSingleton<ICertificateService>(new FakeCertificateService())
+            .BuildServiceProvider();
+        AppServicesBackingField.SetValue(null, services);
+
+        await _viewModel.GenerateQrCodeCommand.ExecuteAsync(null);
+
+        service.GetOrStartCalls.Should().Be(1);
+        service.StartCalls.Should().Be(0);
+        _viewModel.ActivePairingPin.Should().Be("654321");
+    }
+
+    [Fact]
+    public async Task PrepareTlsValidationForConnectAsync_ReloadsPins_AndDisablesFirstTrustOnReconnect()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "remex-connection-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var storePath = Path.Combine(tempDir, "pinned_hosts.json");
+            var store = new PinnedCertStore(NullLogger<PinnedCertStore>.Instance, storePath);
+            var services = new ServiceCollection()
+                .AddSingleton(store)
+                .BuildServiceProvider();
+            AppServicesBackingField.SetValue(null, services);
+            _viewModel.HostAddress = "wss://192.168.1.25:5005/ws";
+
+            await InvokePrepareTlsValidationForConnectAsync(allowTrustOnFirstUseForEmptyStore: true);
+
+            ((IReadOnlyDictionary<string, string>)PinSnapshotField.GetValue(_viewModel)!).Should().BeEmpty();
+            ((bool)AllowFirstTimeTrustField.GetValue(_viewModel)!).Should().BeTrue();
+
+            await store.SetPinAsync("host-1", "hash-1==");
+
+            await InvokePrepareTlsValidationForConnectAsync(allowTrustOnFirstUseForEmptyStore: false);
+
+            var snapshot = (IReadOnlyDictionary<string, string>)PinSnapshotField.GetValue(_viewModel)!;
+            snapshot.Should().ContainKey("host-1");
+            ((bool)AllowFirstTimeTrustField.GetValue(_viewModel)!).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    private async Task InvokePrepareTlsValidationForConnectAsync(bool allowTrustOnFirstUseForEmptyStore)
+    {
+        var task = (Task<Uri>)PrepareTlsValidationForConnectMethod.Invoke(
+            _viewModel,
+            new object[] { allowTrustOnFirstUseForEmptyStore })!;
+        await task;
+    }
+
 }
 
 internal sealed class FakePairingService : IPairingService
@@ -270,6 +374,8 @@ internal sealed class FakePairingService : IPairingService
     private readonly string _pin;
     private readonly long _expiresAtUnixMs;
     private readonly bool _active;
+    public int StartCalls { get; private set; }
+    public int GetOrStartCalls { get; private set; }
 
     public FakePairingService(string pin = "123456", DateTimeOffset? expiresAt = null, bool active = true)
     {
@@ -278,8 +384,17 @@ internal sealed class FakePairingService : IPairingService
         _active = active;
     }
 
-    public Task<PairingState> StartPairingAsync(CancellationToken ct) =>
-        Task.FromResult(new PairingState(string.Empty, _pin, _expiresAtUnixMs));
+    public Task<PairingState> StartPairingAsync(CancellationToken ct)
+    {
+        StartCalls++;
+        return Task.FromResult(new PairingState(string.Empty, _pin, _expiresAtUnixMs));
+    }
+
+    public Task<PairingState> GetOrStartPairingAsync(CancellationToken ct)
+    {
+        GetOrStartCalls++;
+        return Task.FromResult(new PairingState(string.Empty, _pin, _expiresAtUnixMs));
+    }
 
     public Task<string> DeriveSessionKeyAsync(string clientPublicKeyBase64, CancellationToken ct) =>
         Task.FromResult(string.Empty);
@@ -313,6 +428,16 @@ internal sealed class FakePairingService : IPairingService
 
     public event Action<string, long>? PinDisplayed;
     public event Action? PinCleared;
+}
+
+internal sealed class FakeCertificateService : ICertificateService
+{
+    public Task<X509Certificate2> GetOrCreateCertificateAsync(CancellationToken ct) =>
+        Task.FromException<X509Certificate2>(new NotSupportedException());
+
+    public string GetSpkiSha256Base64() => "fake-spki-hash==";
+
+    public Task RegenerateAsync(CancellationToken ct) => Task.CompletedTask;
 }
 
 internal sealed class FakeStandalonePairingPinQueryService : IPairingPinQueryService

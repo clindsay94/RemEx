@@ -122,3 +122,7 @@ docs/ui-evaluation-report.md
 RemEx.Android/app/google-services.json
 installer/Output/remex-client-v2.0.0-linux-x64.tar.gz
 installer/Output/remex-host-v2.0.0-linux-x64.tar.gz
+/.claude/skills/gitnexus
+/.claude/skills/gitnexus/gitnexus-cli
+/build_output
+/installer/Output

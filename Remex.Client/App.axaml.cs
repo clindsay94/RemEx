@@ -64,6 +64,7 @@ public partial class App : Application
         collection.AddTransient<TaskManagerViewModel>();
         collection.AddSingleton<HomeViewModel>();
         collection.AddSingleton<ShellViewModel>();
+        collection.AddTransient<DiagnosticLogsViewModel>();
 
         RegisterPlatformServices?.Invoke(collection);
 

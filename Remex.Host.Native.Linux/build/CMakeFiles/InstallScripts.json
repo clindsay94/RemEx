@@ -1,7 +1,7 @@
 {
 	"InstallScripts" : 
 	[
-		"/home/connorl/RemEx/Remex.Host.Native.Linux/build/cmake_install.cmake"
+		"/mnt/z/RemEx/Remex.Host.Native.Linux/build/cmake_install.cmake"
 	],
 	"Parallel" : false
 }
