@@ -122,7 +122,13 @@ That gives RemEx the best product outcome: a simple mental model for users, cons
 - `captureMode`: `virtual_desktop` or `monitor`
 - `displayId`: required when `captureMode == monitor`
 
-The host must reject `desktop_start` or `desktop_config` requests that do not provide a valid explicit target.
+The host must reject `desktop_start` requests that do not provide a valid explicit target.
+
+To avoid ambiguity with existing quality/FPS updates, target changes should not reuse generic `desktop_config`. Add a dedicated request for active-target changes:
+
+- `desktop_target_switch`
+
+`desktop_config` remains the message for stream-quality and related session settings. `desktop_target_switch` is the only in-session message that changes the active display target.
 
 ### Display Enumeration
 
@@ -131,9 +137,18 @@ Add a dedicated request/response pair for display discovery before streaming beg
 - `desktop_display_query`
 - `desktop_display_list`
 
+`desktop_display_list` should also include:
+
+- `displayListVersion`
+- `supportedCaptureModes`
+- `targetSwitchMode` (`seamless`, `reselection_required`, or `unsupported`)
+- `enumerationMode` (`direct`, `consent_required`, or `virtual_desktop_only`)
+- `cursorTransportMode` (`metadata_overlay` or `embedded_only`)
+
 The display list response should contain one entry per active monitor with:
 
 - `displayId`
+- `persistentDisplayKey`
 - `name`
 - `isPrimary`
 - `desktopLeft`
@@ -143,7 +158,15 @@ The display list response should contain one entry per active monitor with:
 - `pixelWidth`
 - `pixelHeight`
 
-`displayId` only needs to be stable enough for one connected host session. It does not need to survive every hardware reconfiguration forever.
+`displayId` is a session-local runtime handle and must not be reused for a different physical/logical display for the lifetime of the connected host session.
+
+`persistentDisplayKey` is the best durable identity the host can provide for reconnect-time selection memory. On Windows this should prefer a connector/monitor identity derived from display device metadata. On Linux it should prefer compositor or connector identity when available and fall back to a heuristic composed from monitor name, origin, size, and primary status when no stronger identity exists.
+
+`displayListVersion` increments whenever the host topology changes. `desktop_start` and `desktop_target_switch` must echo the version they were built against. The host rejects requests built against an older version so stale selections fail explicitly instead of resolving to the wrong target.
+
+On Wayland/portal-backed runtimes, `desktop_display_query` is allowed to trigger the necessary host-managed consent/session creation step when `enumerationMode == consent_required`. If the runtime still cannot expose individual monitor identities after consent, the host must return `enumerationMode == virtual_desktop_only`, advertise only `virtual_desktop` in `supportedCaptureModes`, and omit per-monitor entries rather than inventing unstable monitor IDs.
+
+`desktop_display_query` must have explicit failure outcomes. If consent is denied, cancelled, timed out, or the portal/backend is unavailable, the host returns a query error and does not start or partially start a remote desktop stream. The client remains in the picker/error state and may retry the query or abort without any half-open remote desktop session being created.
 
 ### Active Surface Metadata
 
@@ -156,20 +179,40 @@ For both `virtual_desktop` and `monitor` modes:
 - `LogicalWidth` / `LogicalHeight` describe the active logical capture surface
 - `PixelWidth` / `PixelHeight` describe the actual transmitted frame size
 - `StreamSerial` increments when the active target changes
+- `StreamSerial` also increments whenever the active surface geometry changes, even if the selected target remains logically the same
 
 This preserves the existing mapping model while making monitor switching explicit and safe.
 
 ### Error Semantics
 
-The host must send explicit errors for:
+The host must classify failures as either **start-request validation errors**, **active-target loss**, or **transient capture loss**.
+
+The host must reject the request immediately for:
 
 - missing capture mode
 - `monitor` mode without `displayId`
 - invalid or stale `displayId`
-- display removal after a target has been selected
-- capture backend failure for the chosen target
 
 The host must **not** silently fall back to the primary monitor or another available display.
+
+If a selected target disappears or becomes permanently unavailable during an active session, the host must send an explicit **active-target-lost** notification, stop frame delivery, and move the remote desktop session into a **no active target** state. The connection remains open and may accept a new `desktop_target_switch` request; a reconnect is not required.
+
+If the backend encounters a non-recoverable failure for the current selected target during an active session, it should use the same **active-target-lost** path rather than silently switching to another target.
+
+Transient capture loss is different. Recoverable DXGI/portal/compositor loss must keep the session alive, preserve the selected target, and continue using the existing retry/backoff and throttled-logging behavior. During transient loss, the host may emit a non-terminal status notification, but it must not convert temporary backend loss into a terminal monitor-selection failure unless recovery is definitively no longer possible.
+
+### Topology Change Notifications
+
+Display topology changes require an explicit protocol signal. Add:
+
+- `desktop_display_list_changed`
+
+This notification tells the client to re-query the display list. It should include:
+
+- `displayListVersion`
+- whether the current active target is still valid
+
+If topology changes affect the active surface geometry, the host must resend `DesktopMeta` and `DesktopStreamDescriptor` and increment `StreamSerial`, even if the user is still viewing the same logical target.
 
 ## Cursor Architecture
 
@@ -193,6 +236,46 @@ That keeps cursor rendering aligned with monitor mode and virtual-desktop mode u
 
 - render cursor inside the active frame using relative coordinates
 - translate pointer input back into host coordinates by adding `DesktopLeft` / `DesktopTop`
+
+### Cursor Protocol Payload
+
+Client-rendered cursor mode requires explicit cursor metadata, not just `CursorX` and `CursorY`.
+
+Add:
+
+- `desktop_cursor_state`
+- `desktop_cursor_shape`
+
+For the new display-target protocol used by first-party clients, `DesktopConfig.DrawCursor` should be treated as disabled and host-side cursor composition should remain off. `desktop_cursor_state` becomes the authoritative runtime cursor feed.
+
+`DesktopMeta.CursorX` and `CursorY` may continue to mirror the latest relative pointer coordinates only as a transitional/back-compat field for older readers. First-party clients implementing this design should render from `desktop_cursor_state`, not from `DesktopMeta.CursorX` and `CursorY`.
+
+`desktop_cursor_state` should contain:
+
+- `cursorSerial`
+- `shapeSerial`
+- `visible`
+- `relativeX`
+- `relativeY`
+- `hotspotX`
+- `hotspotY`
+
+`desktop_cursor_shape` should contain:
+
+- `shapeSerial`
+- `width`
+- `height`
+- `hotspotX`
+- `hotspotY`
+- `pixelFormat` (ARGB for first-party clients)
+- `shapeBytes`
+
+The host must send an initial cursor bootstrap immediately after stream start and after every `StreamSerial` change:
+
+- one `desktop_cursor_state` with the current position/visibility
+- one `desktop_cursor_shape` for the active `shapeSerial`
+
+Clients cache the last cursor shape by `shapeSerial` and only replace the cached bitmap when the shape changes. If shape capture is temporarily unavailable, the host should continue sending position and visibility state, and the client should fall back to a standard local arrow cursor rather than showing no cursor.
 
 ### Windows Capture Detail
 
@@ -241,6 +324,18 @@ Linux capture should expose the same target-selection model:
 
 Linux must match Windows for target validation, metadata semantics, and explicit failure behavior even if the underlying capture mechanisms differ.
 
+For Wayland/portal-backed capture, the design must account for user-mediated source selection:
+
+- the host should map portal-provided sources into the shared display-list contract when the compositor exposes monitor sources
+- `desktop_display_query` may perform the consent/session-creation work needed to obtain those sources
+- if switching targets requires restarting the underlying portal capture session or renewed user consent, that is acceptable, but it must be surfaced explicitly rather than pretending switching is seamless
+- if the runtime cannot provide stable monitor-specific sources, Linux must explicitly degrade to `enumerationMode == virtual_desktop_only` instead of pretending monitor mode exists
+- the host should advertise whether in-session switching is seamless or requires capture-source reselection so the client can present the right UX
+- when first-party cursor overlay mode is used, the Linux backend must request metadata/hidden-cursor capture from the portal/backend when that capability exists
+- if the runtime only supports embedded-cursor capture, the host must advertise `cursorTransportMode == embedded_only`, keep the cursor inside the captured frame, and first-party clients must disable their overlay for that session to avoid double cursors
+
+The shared protocol remains the same even when the Linux backend needs a capture-session restart behind the scenes.
+
 ## Client Experience
 
 ### Start Flow
@@ -251,6 +346,8 @@ Starting remote desktop becomes:
 2. show capture picker
 3. send explicit `DesktopConfig`
 4. start streaming
+
+If `enumerationMode == consent_required`, step 1 may involve a host-managed local consent flow before the final display list is returned. If `enumerationMode == virtual_desktop_only`, the client should present only the all-displays path for that host/runtime.
 
 The picker should show:
 
@@ -263,16 +360,27 @@ The picker should show:
 
 The client should remember the last-used target **per host** as a convenience, but still send an explicit mode every session. Persistence is client-side only; it must not reintroduce host-side implicit defaults.
 
+The remembered selection should store:
+
+- `captureMode`
+- `persistentDisplayKey` when the mode is `monitor`
+
+On reconnect, the client should resolve the stored `persistentDisplayKey` against the latest display list. If no exact match exists, the client should discard the stale remembered monitor and require a fresh explicit user choice instead of guessing.
+
 ### In-Session Switching
 
 Users should be able to switch between **All displays** and a specific monitor during an active session from the remote desktop toolbar/menu.
 
 When switching:
 
+- the client sends `desktop_target_switch`
+- the request includes the current `displayListVersion`
 - the host updates the active target
 - `DesktopMeta` and `DesktopStreamDescriptor` are resent
 - `StreamSerial` increments
 - the client briefly shows a switching/loading state and resets stale per-stream state
+
+If `targetSwitchMode == reselection_required`, the UI should present that clearly and keep the session in an explicit switching state until the host confirms the new target or reports an `active-target-lost` or validation error. If `targetSwitchMode == unsupported`, the client should hide in-session switching while still allowing target choice before session start.
 
 ### Display Topology Changes
 
@@ -280,7 +388,7 @@ If the host display list changes while streaming:
 
 - the client refreshes the available target list
 - the current target remains active only if it is still valid
-- otherwise the host sends an explicit error and the client prompts for a new selection
+- otherwise the host sends `active-target-lost`, pauses the stream in the **no active target** state, and the client prompts for a new explicit selection
 
 ## Input Mapping
 
