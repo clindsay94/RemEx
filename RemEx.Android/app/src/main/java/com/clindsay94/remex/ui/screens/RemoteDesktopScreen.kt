@@ -318,7 +318,7 @@ fun RemoteDesktopScreenContent(
         val hScrollSensState = rememberUpdatedState(uiState.hScrollSensitivity)
         val vScrollSensState = rememberUpdatedState(uiState.vScrollSensitivity)
 
-        DisposableEffect(activity, uiState.isFullscreen) {
+        DisposableEffect(activity, uiState.isFullscreen, uiState.isStreaming) {
                 if (activity == null) {
                         onDispose {}
                 } else {
@@ -330,16 +330,25 @@ fun RemoteDesktopScreenContent(
                                 controller.systemBarsBehavior =
                                         WindowInsetsControllerCompat
                                                 .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                                activity.requestedOrientation =
-                                        ActivityInfo.SCREEN_ORIENTATION_SENSOR
                         } else {
                                 controller.show(WindowInsetsCompat.Type.systemBars())
-                                activity.requestedOrientation =
-                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                         }
+                        // The remote desktop is landscape content: switch to landscape whenever a
+                        // stream is active (or fullscreen) so it fills the screen instead of being
+                        // letterboxed into a tiny portrait strip. Idle (pre-stream) UI stays portrait.
+                        // MainActivity declares configChanges for orientation, so this rotation does
+                        // not recreate the activity or interrupt the stream.
+                        activity.requestedOrientation =
+                                if (uiState.isStreaming || uiState.isFullscreen) {
+                                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                                } else {
+                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                }
                         onDispose {
                                 WindowCompat.setDecorFitsSystemWindows(window, true)
                                 controller.show(WindowInsetsCompat.Type.systemBars())
+                                activity.requestedOrientation =
+                                        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                         }
                 }
         }
