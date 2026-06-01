@@ -104,7 +104,10 @@ data class RemoteDesktopUiState(
         val hScrollSensitivity: Float = 1.0f,
         val hostCursorX: Float = -1f,
         val hostCursorY: Float = -1f,
-        val isFullscreen: Boolean = false
+        val isFullscreen: Boolean = false,
+        // True from the moment the user taps Start until they stop or the connection fails. Drives an
+        // immediate rotation to landscape on tap, before the stream is actually up.
+        val streamRequested: Boolean = false
 )
 
 // Workaround: calling AnimatedVisibility inside a Box that lives inside a Column
@@ -151,6 +154,12 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
+        var streamRequested by rememberSaveable { mutableStateOf(false) }
+
+        // Drop the landscape request if the stream never came up (connection/host error).
+        LaunchedEffect(desktopError) {
+                if (desktopError != null) streamRequested = false
+        }
 
         val uiState =
                 RemoteDesktopUiState(
@@ -163,7 +172,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         hScrollSensitivity = hScrollSensitivity,
                         hostCursorX = hostCursorX,
                         hostCursorY = hostCursorY,
-                        isFullscreen = isFullscreen
+                        isFullscreen = isFullscreen,
+                        streamRequested = streamRequested
                 )
 
         RemoteDesktopScreenContent(
@@ -171,8 +181,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 currentBitmap = currentBitmap,
                 config = config,
                 onSetFullscreen = { isFullscreen = it },
-                onStartStreaming = { viewModel.startStreaming() },
-                onStopStreaming = { viewModel.stopStreaming() },
+                onStartStreaming = {
+                        streamRequested = true
+                        viewModel.startStreaming()
+                },
+                onStopStreaming = {
+                        streamRequested = false
+                        viewModel.stopStreaming()
+                },
                 onSendText = { viewModel.sendText(it) },
                 onSendKeyPress = { viewModel.sendKeyPress(it) },
                 onSendMouseDown = { b, x, y -> viewModel.sendMouseDown(b, x, y) },
@@ -318,7 +334,7 @@ fun RemoteDesktopScreenContent(
         val hScrollSensState = rememberUpdatedState(uiState.hScrollSensitivity)
         val vScrollSensState = rememberUpdatedState(uiState.vScrollSensitivity)
 
-        DisposableEffect(activity, uiState.isFullscreen, uiState.isStreaming) {
+        DisposableEffect(activity, uiState.isFullscreen, uiState.isStreaming, uiState.streamRequested) {
                 if (activity == null) {
                         onDispose {}
                 } else {
@@ -339,7 +355,7 @@ fun RemoteDesktopScreenContent(
                         // MainActivity declares configChanges for orientation, so this rotation does
                         // not recreate the activity or interrupt the stream.
                         activity.requestedOrientation =
-                                if (uiState.isStreaming || uiState.isFullscreen) {
+                                if (uiState.isStreaming || uiState.streamRequested || uiState.isFullscreen) {
                                         ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                                 } else {
                                         ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
