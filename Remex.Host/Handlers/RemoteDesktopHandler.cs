@@ -33,6 +33,10 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
 
+    // Upper bound on the target frame rate. Capped at 120 — higher is pointless (client displays top
+    // out at ~120 Hz) and just wastes capture/encode/bandwidth.
+    private const int MaxTargetFps = 120;
+
     private int _quality = 50;
     private double _scale = 0.6;
     private int _targetFps = 30;
@@ -43,6 +47,10 @@ public sealed class RemoteDesktopHandler : IDisposable
     private DesktopCodecKind _negotiatedCodec = DesktopCodecKind.Mjpeg;
     private DesktopCodecKind _activeCodec = DesktopCodecKind.Mjpeg;
     private DesktopClientCapabilities _clientCapabilities = new();
+
+    // Bumped whenever an encoder-affecting setting (quality/fps/scale) changes, so the capture loop
+    // knows to rebuild the H.264 encoder mid-stream.
+    private int _encoderConfigVersion;
 
     // Cached FFmpeg availability — probed once at handler construction, not per-stream-start
     private static bool? _ffmpegAvailableCache;
@@ -269,6 +277,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
         IH264Encoder? h264Encoder = null;
         long encoderSerial = -1;
+        int encoderConfigVersion = -1;
 
         // Start capture/encode loop in a separate task
         var captureTask = Task.Run(async () =>
@@ -279,14 +288,19 @@ public sealed class RemoteDesktopHandler : IDisposable
                 try
                 {
                     var captureSerial = sessionState.StreamSerial;
+                    var configVersion = Volatile.Read(ref _encoderConfigVersion);
                     byte[]? frameBytes = null;
                     DesktopCodecKind frameCodec = _activeCodec;
                     var frameFlags = DesktopFrameFlags.None;
-                    if (_activeCodec == DesktopCodecKind.H264 && encoderSerial != captureSerial)
+                    // Rebuild the encoder on a stream-serial change (target switch) OR when an
+                    // encoder-affecting setting (quality/fps/scale) changed mid-stream.
+                    if (_activeCodec == DesktopCodecKind.H264 &&
+                        (encoderSerial != captureSerial || encoderConfigVersion != configVersion))
                     {
                         h264Encoder?.Dispose();
                         h264Encoder = TryCreateH264Encoder();
                         encoderSerial = captureSerial;
+                        encoderConfigVersion = configVersion;
                         if (h264Encoder is null)
                         {
                             frameCodec = DesktopCodecKind.Mjpeg;
@@ -299,6 +313,13 @@ public sealed class RemoteDesktopHandler : IDisposable
                         }
                     }
 
+                    // Tracks whether the SCREEN CAPTURE step produced pixels this iteration. This is
+                    // distinct from whether we got an encodable frame: the H.264 encoder pipelines and
+                    // returns nothing for its first ~0.5–1s (warmup) even though capture is healthy.
+                    // Counting that warmup as a capture failure previously tripped the consecutive-failure
+                    // backoff, which throttled the encoder feed and permanently starved it (black screen).
+                    bool captureSucceeded = false;
+
                     if (_activeCodec == DesktopCodecKind.H264 && h264Encoder is not null)
                     {
                         bool forceKeyframe = frameFlags.HasFlag(DesktopFrameFlags.KeyFrame) || (totalFramesCaptured % 60 == 0);
@@ -308,22 +329,24 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                         if (rawPixels is { Length: > 0 })
                         {
+                            captureSucceeded = true;
+
                             // Self-heal: if the captured buffer size no longer matches the encoder's
                             // fixed input size (capture backend/DPI/geometry drifted since the encoder
-                            // was created), feeding it would desync the rawvideo pipe and produce 0
-                            // frames. Reinitialize the encoder to the new size instead and skip this frame.
+                            // was created), feeding it would desync the rawvideo pipe. Reinit instead.
                             if (rawPixels.Length != h264Encoder.ExpectedInputByteCount)
                             {
                                 _logger.LogWarning(
                                     "H.264 raw frame size {Actual} != encoder input size {Expected}; reinitializing encoder.",
                                     rawPixels.Length, h264Encoder.ExpectedInputByteCount);
                                 encoderSerial = -1; // force recreate on next iteration
-                                consecutiveFailures++;
                             }
                             else
                             {
                                 frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
-                                frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
+                                if (frameBytes is { Length: > 0 })
+                                    frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
+                                // else: encoder warmup/pipelining — frameBytes stays null. NOT a failure.
                             }
                         }
                     }
@@ -332,6 +355,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         frameBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _drawCursor, ct);
                         if (captureSerial != sessionState.StreamSerial)
                             continue;
+                        captureSucceeded = frameBytes is { Length: > 0 };
                     }
 
                     if (frameBytes is { Length: > 0 })
@@ -361,8 +385,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                         // Notify sender loop
                         try { frameAvailable.Release(); } catch (ObjectDisposedException) { }
                     }
-                    else
+                    else if (!captureSucceeded)
                     {
+                        // Genuine capture failure (DXGI/GDI returned nothing). Encoder-warmup nulls are
+                        // excluded so they never trip the capture-failure backoff that starves the feed.
                         consecutiveFailures++;
                     }
                 }
@@ -742,11 +768,26 @@ public sealed class RemoteDesktopHandler : IDisposable
             _clientCapabilities = config.ClientCapabilities;
         }
 
+        int oldQuality = _quality, oldFps = _targetFps;
+        double oldScale = _scale;
+
         _quality = Math.Clamp(config.Quality, 1, 100);
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
-        _targetFps = Math.Clamp(config.TargetFps, 1, 360);
-        _drawCursor = config.DrawCursor && !(_clientCapabilities.SupportsCursorState || _clientCapabilities.SupportsCursorShape);
+        _targetFps = Math.Clamp(config.TargetFps, 1, MaxTargetFps);
+        // Composite the cursor into the frame host-side. The client-side cursor-overlay path
+        // (desktop_cursor_state/shape) isn't reliably rendering yet, so host-side compositing is the
+        // dependable way to show a pointer. Revisit once the client overlay is verified to avoid a
+        // double cursor (then gate on !SupportsCursorState/Shape again).
+        _drawCursor = config.DrawCursor;
         _negotiatedCodec = config.Codec;
+
+        // If a setting that affects the H.264 encoder changed mid-stream, bump the config version so
+        // the capture loop rebuilds the encoder (the encoder is built once with fixed qp/fps/size and
+        // otherwise never picks up slider changes — which is why the quality slider appeared dead).
+        if (_quality != oldQuality || _targetFps != oldFps || Math.Abs(_scale - oldScale) > 0.0001)
+        {
+            Interlocked.Increment(ref _encoderConfigVersion);
+        }
 
         _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}, codec={C}", _quality, _scale, _targetFps, _drawCursor, _negotiatedCodec);
     }
@@ -1053,7 +1094,7 @@ public sealed class RemoteDesktopHandler : IDisposable
         int targetHeight = Services.ScreenCapture.CaptureScaling.ScaledEven(screenHeight, _scale);
 
         var encoder = new FFmpegH264Encoder(_logger);
-        if (encoder.Initialize(targetWidth, targetHeight, _targetFps, 1500))
+        if (encoder.Initialize(targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))
         {
             return encoder;
         }
@@ -1061,6 +1102,16 @@ public sealed class RemoteDesktopHandler : IDisposable
         encoder.Dispose();
         _logger.LogWarning("Failed to initialize H.264 encoder for {Width}x{Height}. Falling back to MJPEG.", targetWidth, targetHeight);
         return null;
+    }
+
+    /// <summary>
+    /// Maps the 1–100 quality slider to an H.264 constant-QP value. Higher quality → lower QP
+    /// (better picture, more bandwidth). quality 100 → QP 16, quality 1 → QP 38.
+    /// </summary>
+    private static int QualityToQp(int quality)
+    {
+        quality = Math.Clamp(quality, 1, 100);
+        return (int)Math.Round(38 - (quality - 1) / 99.0 * 22);
     }
 
     /// <summary>

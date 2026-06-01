@@ -21,8 +21,9 @@ public interface IH264Encoder : IDisposable
 
     /// <summary>
     /// Initializes the encoder with target stream specifications.
+    /// <paramref name="qp"/> is the constant quantization parameter (lower = higher quality/bitrate).
     /// </summary>
-    bool Initialize(int width, int height, int fps, int bitrateKbps);
+    bool Initialize(int width, int height, int fps, int qp);
 
     /// <summary>
     /// Encodes a raw 32-bit BGRA pixel frame to H.264 Annex B packets.

@@ -467,7 +467,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         try
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
-            _lastRawFrame = EncodeToRawBgra(mapped.pData, (int)mapped.RowPitch, Width, Height, scale, drawCursor);
+            _lastRawFrame = EncodeToRawBgra(mapped.pData, (int)mapped.RowPitch, Width, Height, scale, drawCursor, DesktopLeft, DesktopTop);
             return _lastRawFrame;
         }
         finally
@@ -478,7 +478,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     }
 
     private static byte[] EncodeToRawBgra(IntPtr pixelData, int rowPitch, int width, int height,
-        double scale, bool drawCursor)
+        double scale, bool drawCursor, int originX, int originY)
     {
         using var src = new Bitmap(width, height, rowPitch, PixelFormat.Format32bppArgb, pixelData);
         using var writable = new Bitmap(width, height, PixelFormat.Format32bppArgb);
@@ -489,7 +489,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         if (drawCursor)
         {
-            DrawCursorOnBitmap(writable);
+            DrawCursorOnBitmap(writable, originX, originY);
         }
 
         // Even-aligned target size — MUST match CaptureScaling.ScaledEven so the raw BGRA buffer is
@@ -612,7 +612,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         try
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
-            _lastFrame = EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder, drawCursor);
+            _lastFrame = EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder, drawCursor, DesktopLeft, DesktopTop);
             return _lastFrame;
         }
         finally
@@ -624,7 +624,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     }
 
     private static byte[] EncodeToJpeg(IntPtr pixelData, int rowPitch, int width, int height,
-        int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor)
+        int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, int originX, int originY)
     {
         // Wrap the DXGI-mapped BGRA memory as a read-only Bitmap (D3D11_MAP_READ).
         // We must NOT draw into this bitmap — the staging texture is mapped read-only.
@@ -640,7 +640,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         if (drawCursor)
         {
-            DrawCursorOnBitmap(writable);
+            DrawCursorOnBitmap(writable, originX, originY);
         }
 
         Bitmap output;
@@ -914,7 +914,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     /// <summary>
     /// Draws the system cursor at its current position onto a Bitmap.
     /// </summary>
-    private static void DrawCursorOnBitmap(Bitmap bitmap)
+    private static void DrawCursorOnBitmap(Bitmap bitmap, int originX, int originY)
     {
         var ci = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
         if (!GetCursorInfo(ref ci) || (ci.flags & CURSOR_SHOWING) == 0)
@@ -922,8 +922,11 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         if (GetIconInfo(ci.hCursor, out var iconInfo))
         {
-            int drawX = ci.ptScreenPos.X - iconInfo.xHotspot;
-            int drawY = ci.ptScreenPos.Y - iconInfo.yHotspot;
+            // ptScreenPos is in virtual-desktop coordinates; the bitmap is the captured monitor whose
+            // top-left is (originX, originY). Subtract the origin so the cursor lands correctly on
+            // non-primary monitors (origin (0,0) on the primary, so this is a no-op there).
+            int drawX = ci.ptScreenPos.X - originX - iconInfo.xHotspot;
+            int drawY = ci.ptScreenPos.Y - originY - iconInfo.yHotspot;
 
             if (iconInfo.hbmMask != IntPtr.Zero) DeleteObject(iconInfo.hbmMask);
             if (iconInfo.hbmColor != IntPtr.Zero) DeleteObject(iconInfo.hbmColor);

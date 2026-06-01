@@ -89,10 +89,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
     }
 
-    public bool Initialize(int width, int height, int fps, int bitrateKbps)
+    public bool Initialize(int width, int height, int fps, int qp)
     {
         if (!IsAvailable || _ffmpegPath == null) return false;
         if (_initialized) DisposeProcess();
+
+        // Constant-QP rate control. Lower QP = higher quality + bitrate. Clamp to a sane H.264 range.
+        qp = Math.Clamp(qp, 16, 45);
 
         _width = width;
         _height = height;
@@ -114,7 +117,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
 
         foreach (var codec in codecsToTry)
         {
-            if (TryStartFFmpeg(codec, width, height, fps, bitrateKbps))
+            if (TryStartFFmpeg(codec, width, height, fps, qp))
             {
                 _logger.LogInformation("FFmpeg H.264 encoder successfully initialized using codec: {Codec}", codec);
                 ActiveCodecName = codec;
@@ -127,7 +130,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         return false;
     }
 
-    private bool TryStartFFmpeg(string codec, int width, int height, int fps, int bitrateKbps)
+    private bool TryStartFFmpeg(string codec, int width, int height, int fps, int qp)
     {
         try
         {
@@ -136,7 +139,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             // Input: Raw BGRA frames from stdin
             argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {width}x{height} -r {fps} -i - -an ");
 
-            // Codec & Quality Optimization
+            // Codec & Quality Optimization. qp drives constant-QP rate control (lower = better quality).
             switch (codec)
             {
                 case "h264_nvenc":
@@ -144,29 +147,32 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                     // "lowlatency" is NOT valid and makes nvenc fail to start). `-aud 1` emits Access
                     // Unit Delimiters, which the stdout reader relies on to split encoded frames.
                     // `-pix_fmt yuv420p` keeps output to 8-bit 4:2:0 that every H.264 decoder accepts.
-                    argsBuilder.Append("-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp 28 -g 60 -aud 1 -pix_fmt yuv420p");
+                    argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -aud 1 -pix_fmt yuv420p");
                     break;
                 case "h264_vaapi":
                     // VA-API on Linux (Intel/AMD)
-                    argsBuilder.Append("-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp 28 -g 60 -aud 1");
+                    argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g 60 -aud 1");
                     break;
                 case "h264_qsv":
                     // Intel Quick Sync
-                    argsBuilder.Append("-c:v h264_qsv -preset veryfast -look_ahead 0 -g 60 -aud 1");
+                    argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -g 60 -aud 1");
                     break;
                 case "h264_amf":
                     // AMD AMF
-                    argsBuilder.Append("-c:v h264_amf -quality speed -rc cqp -qp_i 28 -qp_p 28 -g 60 -aud 1");
+                    argsBuilder.Append($"-c:v h264_amf -quality speed -rc cqp -qp_i {qp} -qp_p {qp} -g 60 -aud 1");
                     break;
                 default:
                     // libx264 software fallback with zero latency. libx264 has no generic
                     // `-aud` AVOption; AUD emission is requested via x264 params instead.
-                    argsBuilder.Append("-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf 28 -g 60 -x264-params aud=1");
+                    argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -g 60 -x264-params aud=1");
                     break;
             }
 
-            // Output raw Annex B H.264 stream to stdout
-            argsBuilder.Append(" -f h264 -");
+            // Output raw Annex B H.264 stream to stdout.
+            // -flush_packets 1 forces ffmpeg to flush stdout after every packet instead of
+            // block-buffering it, which is required for low-latency real-time piping (otherwise
+            // encoded frames sit in ffmpeg's buffer and the stream stalls).
+            argsBuilder.Append(" -flush_packets 1 -f h264 -");
 
             var psi = new ProcessStartInfo(_ffmpegPath!, argsBuilder.ToString())
             {
@@ -225,87 +231,52 @@ public sealed class FFmpegH264Encoder : IH264Encoder
 
     private void ReaderLoop(Stream stdout)
     {
-        var readBuffer = new byte[1024 * 128];
-        var frameBuffer = new MemoryStream();
-        var startCodeBuffer = new byte[4];
-        int startCodeCount = 0;
+        // Splits the Annex B stream into complete access units on AUD boundaries (00 00 00 01 09).
+        // Each access unit (one decodable frame, prefixed by its AUD, and SPS/PPS at IDRs) is queued
+        // intact. We rely on -aud 1 / x264 aud=1 so every frame begins with an AUD NAL.
+        var read = new byte[1 << 16];
+        var acc = new byte[1 << 20];
+        int accLen = 0;
 
         try
         {
             while (!_isDisposed && _ffmpegProcess is { HasExited: false })
             {
-                int bytesRead = stdout.Read(readBuffer, 0, readBuffer.Length);
+                int bytesRead = stdout.Read(read, 0, read.Length);
                 if (bytesRead <= 0) break;
 
-                int i = 0;
-                while (i < bytesRead)
+                // Append to accumulator, growing if needed.
+                if (accLen + bytesRead > acc.Length)
                 {
-                    byte b = readBuffer[i];
+                    int newSize = Math.Max(acc.Length * 2, accLen + bytesRead);
+                    Array.Resize(ref acc, newSize);
+                }
+                Buffer.BlockCopy(read, 0, acc, accLen, bytesRead);
+                accLen += bytesRead;
 
-                    // Standard Annex B start code parser: look for 0x00 0x00 0x00 0x01
-                    if (b == 0x00)
+                // Emit every complete access unit: the bytes between consecutive AUD start codes.
+                // Keep the trailing (possibly incomplete) access unit in the accumulator.
+                int lastCut = 0;
+                int limit = accLen - 5; // need 5 bytes to test 00 00 00 01 <nal>
+                for (int p = 1; p <= limit; p++)
+                {
+                    if (acc[p] == 0x00 && acc[p + 1] == 0x00 && acc[p + 2] == 0x00 && acc[p + 3] == 0x01 &&
+                        (acc[p + 4] & 0x1F) == 9)
                     {
-                        startCodeCount++;
-                    }
-                    else if (b == 0x01 && startCodeCount >= 2)
-                    {
-                        // Found a start code!
-                        int startCodeLen = startCodeCount >= 3 ? 4 : 3;
-
-                        // Slice the current frame buffer and queue it if it contains data
-                        if (frameBuffer.Length > (long)startCodeLen)
+                        if (p > lastCut)
                         {
-                            // Capture the frame bytes excluding the next start code we just scanned
-                            long frameLen = frameBuffer.Length - startCodeLen;
-                            var frameBytes = new byte[frameLen];
-                            Array.Copy(frameBuffer.GetBuffer(), 0, frameBytes, 0, frameLen);
-
-                            // Inspect if this contains an AUD (type 9) NAL unit to split frames
-                            // AUD NAL unit usually begins after the start code
-                            int nalIndex = 0;
-                            while (nalIndex < frameBytes.Length - 4)
-                            {
-                                if (frameBytes[nalIndex] == 0x00 && frameBytes[nalIndex + 1] == 0x00 &&
-                                    frameBytes[nalIndex + 2] == 0x00 && frameBytes[nalIndex + 3] == 0x01)
-                                {
-                                    int type = frameBytes[nalIndex + 4] & 0x1F;
-                                    if (type == 9) // Access Unit Delimiter (AUD)
-                                    {
-                                        // This indicates a frame boundary. Queue the previous frame data
-                                        if (nalIndex > 0)
-                                        {
-                                            var completeFrame = new byte[nalIndex];
-                                            Array.Copy(frameBytes, 0, completeFrame, 0, nalIndex);
-                                            QueueFrame(completeFrame);
-
-                                            // Shift the remaining NAL units to the start
-                                            var remainingLen = frameBytes.Length - nalIndex;
-                                            var temp = new byte[remainingLen];
-                                            Array.Copy(frameBytes, nalIndex, temp, 0, remainingLen);
-                                            frameBytes = temp;
-                                        }
-                                        break;
-                                    }
-                                }
-                                nalIndex++;
-                            }
-
-                            // Write the current frame bytes to buffer
-                            frameBuffer.SetLength(0);
-                            for (int k = 0; k < startCodeLen; k++)
-                                frameBuffer.WriteByte(0x00);
-                            frameBuffer.WriteByte(0x01);
+                            var frame = new byte[p - lastCut];
+                            Buffer.BlockCopy(acc, lastCut, frame, 0, p - lastCut);
+                            QueueFrame(frame);
+                            lastCut = p;
                         }
-
-                        startCodeCount = 0;
                     }
-                    else
-                    {
-                        startCodeCount = 0;
-                    }
+                }
 
-                    frameBuffer.WriteByte(b);
-                    i++;
+                if (lastCut > 0)
+                {
+                    accLen -= lastCut;
+                    Buffer.BlockCopy(acc, lastCut, acc, 0, accLen);
                 }
             }
         }
@@ -313,17 +284,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         {
             _logger.LogDebug(ex, "FFmpeg stdout reader loop exited.");
         }
-        finally
-        {
-            frameBuffer.Dispose();
-        }
     }
 
     private void QueueFrame(byte[] frame)
     {
         if (frame.Length <= 0) return;
         _encodedFrames.Enqueue(frame);
-        _frameSemaphore.Release();
     }
 
     public byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe)
@@ -339,26 +305,38 @@ public sealed class FFmpegH264Encoder : IH264Encoder
 
         try
         {
-            // Write raw frame pixels to stdin
+            // Submit the raw frame to the encoder. Writing may block briefly if the encoder is busy
+            // (natural backpressure) — that's fine, it paces capture to the encoder's consumption rate.
             _stdin.Write(rawPixelsBGRA, 0, rawPixelsBGRA.Length);
             _stdin.Flush();
-
-            // Wait for the next complete frame in the queue
-            // A 150ms timeout ensures we don't block the hot loop forever if FFmpeg lags
-            if (_frameSemaphore.Wait(150))
-            {
-                if (_encodedFrames.TryDequeue(out var frame))
-                {
-                    return frame;
-                }
-            }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error writing frame to FFmpeg stdin.");
+            return null;
         }
 
-        return null;
+        // Decoupled, non-blocking: return an encoded access unit if one is ready. The encoder
+        // pipelines (≈0.5–1s warmup before the first output), so returning null here is normal and
+        // must NOT be treated as a capture failure — the reader thread fills the queue continuously.
+        return _encodedFrames.TryDequeue(out var encoded) ? encoded : null;
+    }
+
+    /// <summary>
+    /// Non-blocking drain of any additional encoded access units already produced by the encoder,
+    /// beyond the one returned by <see cref="EncodeFrame"/>. Lets the caller flush a warmup burst
+    /// in order so encoded frames aren't left queued (which would add latency).
+    /// </summary>
+    public bool TryGetEncodedFrame(out byte[]? frame)
+    {
+        if (_encodedFrames.TryDequeue(out var f))
+        {
+            frame = f;
+            return true;
+        }
+
+        frame = null;
+        return false;
     }
 
     private static string? FindExecutable(string name)

@@ -167,7 +167,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 _configState.value =
                         RemoteDesktopConfigState(
                                 quality = prefs.quality.coerceIn(1, 100),
-                                targetFps = prefs.targetFps.coerceIn(1, 360),
+                                targetFps = prefs.targetFps.coerceIn(1, 120),
                                 scale = prefs.scale.coerceIn(0.25f, 1.0f)
                         )
             }
@@ -421,7 +421,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun updateTargetFps(value: Int) {
-        _configState.update { it.copy(targetFps = value.coerceIn(1, 360)) }
+        _configState.update { it.copy(targetFps = value.coerceIn(1, 120)) }
         persistDesktopDefaults()
         pushConfigIfStreaming()
     }

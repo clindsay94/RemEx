@@ -2318,7 +2318,7 @@ fun RemoteDesktopScreenContent(
                                                                                 it.toInt()
                                                                         )
                                                                 },
-                                                                valueRange = 1f..360f
+                                                                valueRange = 1f..120f
                                                         )
                                                 }
 
