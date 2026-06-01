@@ -1,5 +1,15 @@
 # Remote Desktop Display Target Design
 
+<!-- ============================================================================
+     REVIEW PASS — Claude (Opus 4.8), 2026-06-01
+     Inline reviewer comments are tagged `REVIEW-C1` … `REVIEW-C12` and live as
+     HTML comments next to the relevant section. Grep `REVIEW-C` to find them all.
+     Severity: C1–C4 = High (address before approval), C5–C8 = Medium, C9–C12 = Low.
+     Overall: product/protocol design is sound; comments cover implementation-reality
+     plumbing (capability negotiation, DXGI stitch reality, frame↔serial correlation,
+     encoder reinit on switch) that will cause rework if left implicit.
+============================================================================ -->
+
 ## Summary
 
 RemEx should move from implicit, platform-specific desktop capture behavior to a shared remote-desktop model where the client explicitly chooses what surface to stream:
@@ -115,6 +125,23 @@ That gives RemEx the best product outcome: a simple mental model for users, cons
 
 ## Protocol Design
 
+### Session Capability Negotiation
+
+This design requires explicit client/host negotiation rather than inferring behavior from the presence of new fields.
+
+`desktop_start` should include:
+
+- `desktopProtocolVersion`
+- `clientCapabilities`
+
+For first-party clients implementing this design, `clientCapabilities` must include:
+
+- `supportsDisplayTargeting`
+- `supportsCursorOverlay`
+- `supportsFrameEnvelope`
+
+The host enables the new display-target protocol only when the client advertises the required capability set. If those capabilities are missing, the host must either reject the new-mode start request explicitly or run a separate compatibility path outside the scope of this design. It must not silently mix host-composited cursor behavior, untagged frames, and target-switch semantics intended for the new protocol.
+
 ### Capture Target Contract
 
 `DesktopConfig` should gain a required capture-target section:
@@ -123,6 +150,18 @@ That gives RemEx the best product outcome: a simple mental model for users, cons
 - `displayId`: required when `captureMode == monitor`
 
 The host must reject `desktop_start` requests that do not provide a valid explicit target.
+
+<!-- REVIEW-C1 [High] CLIENT CAPABILITY / PROTOCOL-VERSION NEGOTIATION IS MISSING.
+     The whole "first-party clients render their own cursor; host-side composition off;
+     older readers fall back to CursorX/CursorY" model requires the host to know WHICH
+     kind of client it's talking to — but nothing in desktop_start/DesktopConfig declares
+     that. Relying on the implicit "presence of captureMode == new client" signal is
+     fragile and conflates two independent capabilities. Add an explicit handshake block,
+     e.g. clientCapabilities { protocolVersion, supportsDisplayTargeting, supportsClientCursor }.
+     Without it you cannot safely turn off host-side cursor compositing without breaking
+     the current Android/desktop clients. This gates C5/cursor-authority and the back-compat
+     story in the Cursor Architecture section. -->
+
 
 To avoid ambiguity with existing quality/FPS updates, target changes should not reuse generic `desktop_config`. Add a dedicated request for active-target changes:
 
@@ -181,7 +220,38 @@ For both `virtual_desktop` and `monitor` modes:
 - `StreamSerial` increments when the active target changes
 - `StreamSerial` also increments whenever the active surface geometry changes, even if the selected target remains logically the same
 
+<!-- REVIEW-C3 [High] FRAMES CARRY NO StreamSerial — STALE-FRAME REJECTION IS UNIMPLEMENTABLE AS DESIGNED.
+     Today frames are sent as bare binary WebSocket messages (webSocket.SendAsync(..., Binary));
+     metadata goes as separate JSON text messages. A binary frame cannot be correlated to a
+     StreamSerial, so the client has nothing to discard stale-target frames ON. This design
+     leans on StreamSerial for stale rejection but the transport provides no such handle.
+     Pick one: (a) add a small per-frame binary header carrying StreamSerial (+ codec/keyframe
+     flags), or (b) require the host to flush/drain the encode+send pipeline on switch before
+     emitting any new-target frame. (a) is more robust and also helps C4. -->
+
+<!-- REVIEW-C7 [Medium] DPI AWARENESS IS A PREREQUISITE. Correct SM_*VIRTUALSCREEN bounds and
+     per-monitor pixel sizing require the host process to be Per-Monitor-V2 DPI aware (app
+     manifest). Without PMv2, virtual-screen metrics and monitor rects come back DPI-virtualized
+     and capture sizing is wrong on mixed-DPI multi-monitor setups. The logical*/pixel* split is
+     good but implicitly assumes PMv2 — state it as a hard requirement. -->
+
 This preserves the existing mapping model while making monitor switching explicit and safe.
+
+### Frame Transport Correlation
+
+`StreamSerial` is only useful if video frames can be correlated to it. The current bare binary-frame transport is not enough for stale-frame rejection after a target change.
+
+For the new protocol, each video frame message should use a small binary envelope that includes:
+
+- `streamSerial`
+- `frameSequence`
+- `codec`
+- `flags` (for example keyframe/config markers)
+- encoded frame payload
+
+Each WebSocket binary message still carries one frame, but the client can now discard stale frames whose `streamSerial` no longer matches the current active stream.
+
+The host must also flush or drop any queued pre-switch capture/encode output before emitting frames for the new target. Metadata for the new target (`DesktopMeta` and `DesktopStreamDescriptor`) must be sent before the first frame carrying the new `streamSerial`.
 
 ### Error Semantics
 
@@ -198,6 +268,12 @@ The host must **not** silently fall back to the primary monitor or another avail
 If a selected target disappears or becomes permanently unavailable during an active session, the host must send an explicit **active-target-lost** notification, stop frame delivery, and move the remote desktop session into a **no active target** state. The connection remains open and may accept a new `desktop_target_switch` request; a reconnect is not required.
 
 If the backend encounters a non-recoverable failure for the current selected target during an active session, it should use the same **active-target-lost** path rather than silently switching to another target.
+
+<!-- REVIEW-C10 [Low] Define input behavior in the "no active target" state. With no active
+     surface there is no coordinate mapping, so DispatchInput has nothing to translate against.
+     Specify that the host drops/rejects DesktopInput (and pointer batches) while in no-active-target
+     rather than dispatching against stale _desktopLeft/_desktopTop. -->
+
 
 Transient capture loss is different. Recoverable DXGI/portal/compositor loss must keep the session alive, preserve the selected target, and continue using the existing retry/backoff and throttled-logging behavior. During transient loss, the host may emit a non-terminal status notification, but it must not convert temporary backend loss into a terminal monitor-selection failure unless recovery is definitively no longer possible.
 
@@ -236,6 +312,14 @@ That keeps cursor rendering aligned with monitor mode and virtual-desktop mode u
 
 - render cursor inside the active frame using relative coordinates
 - translate pointer input back into host coordinates by adding `DesktopLeft` / `DesktopTop`
+
+<!-- REVIEW-C8 [Medium] Define cursor behavior when the pointer is OUTSIDE the active surface.
+     In monitor mode the pointer is frequently on another display, so relative coords go
+     negative / beyond width-height. `visible` (CURSOR_SHOWING) only means "cursor shown at all",
+     not "on this surface". Add an explicit on-surface signal (host marks off-surface, or client
+     hides the overlay when relative coords fall outside [0,width)/[0,height)) so the client
+     doesn't pin a cursor to the frame edge. -->
+
 
 ### Cursor Protocol Payload
 
@@ -277,6 +361,12 @@ The host must send an initial cursor bootstrap immediately after stream start an
 
 Clients cache the last cursor shape by `shapeSerial` and only replace the cached bitmap when the shape changes. If shape capture is temporarily unavailable, the host should continue sending position and visibility state, and the client should fall back to a standard local arrow cursor rather than showing no cursor.
 
+<!-- REVIEW-C9 [Low] Cap/coalesce the desktop_cursor_state feed (e.g. <=30-60 Hz, send-on-change)
+     so it doesn't flood the WebSocket alongside input + frames. The current host already throttles
+     cursor updates to 10 Hz/send-on-change in StreamCursorPositionAsync — carry that discipline
+     forward; don't emit a state message per raw mouse event. -->
+
+
 ### Windows Capture Detail
 
 For Windows DXGI capture, cursor extraction should use Desktop Duplication pointer primitives (`PointerPosition` and pointer-shape data) instead of relying on the current GDI `DrawIconEx` path.
@@ -284,6 +374,18 @@ For Windows DXGI capture, cursor extraction should use Desktop Duplication point
 That gives the implementation a clean source of truth for pointer position and shape and avoids the current off-canvas coordinate bug on non-primary monitors.
 
 If temporary host-side composition is retained during migration, it must subtract the active surface origin before drawing onto a monitor-local bitmap.
+
+<!-- REVIEW-C5 [Medium] TWO CORRECTIONS to this paragraph:
+     (a) POSITION SOURCE: DXGI PointerPosition arrives only via AcquireNextFrame's frame info —
+         it is FRAME-COUPLED. Sourcing position from DXGI throws away the main benefit of a
+         separate cursor channel (smooth cursor at low frame rate / on a static screen). Source
+         position+visibility from an independent high-rate user32 poll (GetCursorPos/GetCursorInfo);
+         use DXGI for SHAPE only. "Use DXGI instead of GDI" is right for shape, wrong for position.
+     (b) SHAPE FORMAT: DXGI pointer shapes are frequently MONOCHROME or MASKED_COLOR
+         (DXGI_OUTDUPL_POINTER_SHAPE_TYPE) — the text I-beam is monochrome. The host must CONVERT
+         mask/masked-color shapes to ARGB before sending desktop_cursor_shape (XOR/AND mask handling).
+         Forwarding the raw DXGI buffer tagged "ARGB" renders common cursors as garbage. -->
+
 
 ## Host Architecture
 
@@ -314,6 +416,30 @@ Windows capture should support:
 
 Virtual-desktop mode must support negative monitor origins and mixed layouts.
 
+On Windows, stitched virtual-desktop capture is not a native single-output DXGI operation. Under Desktop Duplication it requires enumerating every active output, duplicating each output on the correct adapter, and compositing those surfaces into one virtual-desktop frame. This is a larger workstream than single-monitor capture and should be treated that way in planning.
+
+The implementation plan may stage Windows all-displays mode behind a dedicated compositor path while keeping per-monitor DXGI capture as the primary fast path. If a temporary fallback backend is used for virtual-desktop mode, it must still honor the same protocol, metadata, and target-selection rules.
+
+<!-- REVIEW-C2 [High] DXGI CANNOT NATIVELY STITCH THE VIRTUAL DESKTOP. Desktop Duplication
+     duplicates ONE output at a time (IDXGIOutput1::DuplicateOutput is per-output). "Stitched
+     virtual-desktop capture" under DXGI therefore means duplicating every output separately and
+     compositing them yourself — handling per-monitor origins, differing refresh rates, mixed DPI,
+     and possibly multiple adapters. That is a large, perf-sensitive workstream, not a bullet.
+     The plan needs an EXPLICIT decision for virtual_desktop mode:
+       - GDI CopyFromScreen over SM_*VIRTUALSCREEN bounds: simple, but MPO/overlay-plane blind
+         (won't capture Windows Terminal / GPU-composited content) and slower; or
+       - DXGI multi-output acquire + manual composite: correct/MPO-capable, but expensive and
+         the biggest single chunk of this feature.
+     This is the largest scoping risk in the doc — call it out so it's costed, not discovered. -->
+
+<!-- REVIEW-C6 [Medium] MULTI-ADAPTER TOPOLOGIES. To DuplicateOutput a given monitor, the D3D
+     device must be created on THAT output's adapter. On laptops (iGPU+dGPU) and multi-GPU
+     desktops, monitors hang off different adapters, so per-monitor capture needs a device per
+     adapter — not the single device the current DxgiDesktopCapture creates. Enumeration must walk
+     IDXGIFactory::EnumAdapters x IDXGIAdapter::EnumOutputs, and the capturing device must match the
+     selected output's adapter or DuplicateOutput fails (E_INVALIDARG / DXGI_ERROR_UNSUPPORTED). -->
+
+
 ### Linux
 
 Linux capture should expose the same target-selection model:
@@ -335,6 +461,12 @@ For Wayland/portal-backed capture, the design must account for user-mediated sou
 - if the runtime only supports embedded-cursor capture, the host must advertise `cursorTransportMode == embedded_only`, keep the cursor inside the captured frame, and first-party clients must disable their overlay for that session to avoid double cursors
 
 The shared protocol remains the same even when the Linux backend needs a capture-session restart behind the scenes.
+
+<!-- REVIEW-C12 [Low] Wayland: persist and reuse the portal restore_token
+     (org.freedesktop.portal.ScreenCast, persist_mode) so target switches and reconnects don't
+     re-prompt the user for consent every time. Tie it to the same per-host persistence as the
+     client's remembered selection (Client Experience > Remembered Choice). -->
+
 
 ## Client Experience
 
@@ -378,7 +510,21 @@ When switching:
 - the host updates the active target
 - `DesktopMeta` and `DesktopStreamDescriptor` are resent
 - `StreamSerial` increments
-- the client briefly shows a switching/loading state and resets stale per-stream state
+- the client briefly shows a switching/loading state, flushes decoder state for the previous `StreamSerial`, and resets stale per-stream state
+
+<!-- REVIEW-C4 [High] SWITCHING REQUIRES H.264 ENCODER REINIT + A FORCED KEYFRAME — AND
+     forceKeyframe IS CURRENTLY A NO-OP. Switching to a different-resolution monitor changes
+     encoder dimensions: the FFmpeg encoder must be disposed/reinitialized and emit fresh SPS/PPS
+     plus an IDR, or the client decoder shows garbage / green frames. The current pipeline cannot
+     force an IDR on demand (FFmpegH264Encoder.EncodeFrame documents forceKeyframe as a no-op;
+     keyframes are GOP-only via -g 60). For switching to work this design must specify:
+       1. host tears down + reinits the encoder on geometry/target change,
+       2. the first post-switch frame is a guaranteed keyframe (solve the forceKeyframe gap, e.g.
+          libx264 -force_key_frames / encoder restart), and
+       3. the client flushes its decoder on StreamSerial change.
+     This intersects the "preserve codec behavior" constraint (Constraints To Preserve) — keep the
+     AUD-emitting args from b1d7710 across the reinit. Pairs with C3 (frame must signal keyframe). -->
+
 
 If `targetSwitchMode == reselection_required`, the UI should present that clearly and keep the session in an explicit switching state until the host confirms the new target or reports an `active-target-lost` or validation error. If `targetSwitchMode == unsupported`, the client should hide in-session switching while still allowing target choice before session start.
 
@@ -399,6 +545,27 @@ Input translation should remain based on the active surface bounds:
 - final host dispatch adds `DesktopLeft` / `DesktopTop` to reach virtual-desktop absolute coordinates
 
 This matches the current direction of `DispatchInput` and keeps negative-origin and non-primary layouts correct as long as all metadata is tied to the selected surface.
+
+## Codec Reset Behavior On Target Switch
+
+Target switches and geometry changes are not just metadata events. They can change encoder dimensions and decoder configuration.
+
+For JPEG/MJPEG, the new `streamSerial` boundary plus fresh metadata is sufficient.
+
+For H.264:
+
+- switching to a different target or changing active-surface dimensions must force an encoder reset boundary
+- the encoder must be reinitialized when output dimensions change
+- the first frame emitted for the new `streamSerial` must include fresh decoder bootstrap data (AUD, SPS/PPS, and an IDR/keyframe)
+- the current `forceKeyframe` no-op behavior is not sufficient for this design
+- clients must flush/reset decoder state on every `StreamSerial` change before accepting frames for the new stream
+
+The implementation plan must therefore use either:
+
+1. encoder recreation on switch / dimension change, or
+2. a proven mechanism that can request an actual IDR plus fresh parameter sets on demand
+
+The host must not continue emitting stale-dimension delta frames across a target switch.
 
 ## Quality Bar And Testing
 
@@ -440,6 +607,14 @@ Linux:
 - switching targets resets stream state cleanly
 - stale selections are invalidated when the host topology changes
 - cursor overlay stays aligned in both monitor mode and virtual-desktop mode
+
+<!-- REVIEW-C11 [Low] MISSING TEST CASES. Add coverage for the failure modes the other comments
+     introduce:
+       - H.264 encoder reinit on resolution switch produces a valid keyframe + new SPS/PPS (C4)
+       - stale-target frames are rejected/flushed across a StreamSerial change (C3)
+       - mixed-DPI capture sizing: logical* vs pixel* are correct under PMv2 (C7)
+       - cursor overlay hidden/marked when pointer is off the active surface in monitor mode (C8)
+       - monochrome / masked-color cursor shapes convert to correct ARGB (C5) -->
 
 ### Manual Validation
 
