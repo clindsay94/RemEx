@@ -34,7 +34,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -46,6 +46,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -76,7 +78,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -88,6 +90,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -100,6 +104,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "message-v1"
     backtrace:
@@ -142,7 +147,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -154,6 +159,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -179,7 +186,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gmake"
       - "/mnt/c/WINDOWS/gmake"
       - "/mnt/c/WINDOWS/System32/Wbem/gmake"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gmake"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gmake"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gmake"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gmake"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gmake"
@@ -191,6 +198,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gmake"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gmake"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gmake"
+      - "/mnt/e/Utilities/Android Platform Tools/gmake"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gmake"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gmake"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gmake"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gmake"
@@ -220,7 +229,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -232,6 +241,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -244,6 +255,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -284,7 +296,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -296,6 +308,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -326,7 +340,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -338,6 +352,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -350,6 +366,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -391,7 +408,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -403,6 +420,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -415,6 +434,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "message-v1"
     backtrace:
@@ -471,7 +491,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -483,6 +503,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -510,7 +532,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -522,6 +544,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -534,6 +558,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -568,7 +593,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -580,6 +605,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -607,7 +634,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -619,6 +646,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -631,6 +660,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -665,7 +695,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -677,6 +707,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -704,7 +736,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -716,6 +748,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -728,6 +762,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -762,7 +797,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -774,6 +809,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -801,7 +838,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -813,6 +850,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -825,6 +864,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -859,7 +899,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -871,6 +911,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -898,7 +940,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -910,6 +952,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -922,6 +966,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -956,7 +1001,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -968,6 +1013,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -995,7 +1042,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1007,6 +1054,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1019,6 +1068,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1053,7 +1103,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1065,6 +1115,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1092,7 +1144,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1104,6 +1156,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1116,6 +1170,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1150,7 +1205,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1162,6 +1217,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1189,7 +1246,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1201,6 +1258,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1213,6 +1272,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1247,7 +1307,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1259,6 +1319,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1284,7 +1346,7 @@ events:
       - "/mnt/c/WINDOWS/system32/dlltool"
       - "/mnt/c/WINDOWS/dlltool"
       - "/mnt/c/WINDOWS/System32/Wbem/dlltool"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/dlltool"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/dlltool"
       - "/mnt/c/WINDOWS/System32/OpenSSH/dlltool"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/dlltool"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/dlltool"
@@ -1296,6 +1358,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/dlltool"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/dlltool"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/dlltool"
+      - "/mnt/e/Utilities/Android Platform Tools/dlltool"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/dlltool"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/dlltool"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/dlltool"
       - "/mnt/c/Users/Connor/.lmstudio/bin/dlltool"
@@ -1323,7 +1387,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1335,6 +1399,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1347,6 +1413,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1381,7 +1448,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1393,6 +1460,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1420,7 +1489,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1432,6 +1501,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1444,6 +1515,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1478,7 +1550,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1490,6 +1562,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1515,7 +1589,7 @@ events:
       - "/mnt/c/WINDOWS/system32/tapi"
       - "/mnt/c/WINDOWS/tapi"
       - "/mnt/c/WINDOWS/System32/Wbem/tapi"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/tapi"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/tapi"
       - "/mnt/c/WINDOWS/System32/OpenSSH/tapi"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/tapi"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/tapi"
@@ -1527,6 +1601,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/tapi"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/tapi"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/tapi"
+      - "/mnt/e/Utilities/Android Platform Tools/tapi"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/tapi"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/tapi"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/tapi"
       - "/mnt/c/Users/Connor/.lmstudio/bin/tapi"
@@ -1554,7 +1630,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1566,6 +1642,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1578,6 +1656,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1615,7 +1694,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1627,6 +1706,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1652,7 +1733,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gcc-ar-16.1"
       - "/mnt/c/WINDOWS/gcc-ar-16.1"
       - "/mnt/c/WINDOWS/System32/Wbem/gcc-ar-16.1"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gcc-ar-16.1"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gcc-ar-16.1"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gcc-ar-16.1"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16.1"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16.1"
@@ -1664,6 +1745,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gcc-ar-16.1"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gcc-ar-16.1"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gcc-ar-16.1"
+      - "/mnt/e/Utilities/Android Platform Tools/gcc-ar-16.1"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gcc-ar-16.1"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gcc-ar-16.1"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gcc-ar-16.1"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gcc-ar-16.1"
@@ -1688,7 +1771,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gcc-ar-16"
       - "/mnt/c/WINDOWS/gcc-ar-16"
       - "/mnt/c/WINDOWS/System32/Wbem/gcc-ar-16"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gcc-ar-16"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gcc-ar-16"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gcc-ar-16"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16"
@@ -1700,6 +1783,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gcc-ar-16"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gcc-ar-16"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gcc-ar-16"
+      - "/mnt/e/Utilities/Android Platform Tools/gcc-ar-16"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gcc-ar-16"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gcc-ar-16"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gcc-ar-16"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gcc-ar-16"
@@ -1724,7 +1809,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gcc-ar16"
       - "/mnt/c/WINDOWS/gcc-ar16"
       - "/mnt/c/WINDOWS/System32/Wbem/gcc-ar16"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gcc-ar16"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gcc-ar16"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gcc-ar16"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar16"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar16"
@@ -1736,6 +1821,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gcc-ar16"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gcc-ar16"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gcc-ar16"
+      - "/mnt/e/Utilities/Android Platform Tools/gcc-ar16"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gcc-ar16"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gcc-ar16"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gcc-ar16"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gcc-ar16"
@@ -1763,7 +1850,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1775,6 +1862,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1787,6 +1876,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "find-v1"
     backtrace:
@@ -1824,7 +1914,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -1836,6 +1926,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -1861,7 +1953,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gcc-ranlib-16.1"
       - "/mnt/c/WINDOWS/gcc-ranlib-16.1"
       - "/mnt/c/WINDOWS/System32/Wbem/gcc-ranlib-16.1"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gcc-ranlib-16.1"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gcc-ranlib-16.1"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gcc-ranlib-16.1"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16.1"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16.1"
@@ -1873,6 +1965,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gcc-ranlib-16.1"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gcc-ranlib-16.1"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gcc-ranlib-16.1"
+      - "/mnt/e/Utilities/Android Platform Tools/gcc-ranlib-16.1"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gcc-ranlib-16.1"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gcc-ranlib-16.1"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16.1"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gcc-ranlib-16.1"
@@ -1897,7 +1991,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gcc-ranlib-16"
       - "/mnt/c/WINDOWS/gcc-ranlib-16"
       - "/mnt/c/WINDOWS/System32/Wbem/gcc-ranlib-16"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gcc-ranlib-16"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gcc-ranlib-16"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gcc-ranlib-16"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16"
@@ -1909,6 +2003,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gcc-ranlib-16"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gcc-ranlib-16"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gcc-ranlib-16"
+      - "/mnt/e/Utilities/Android Platform Tools/gcc-ranlib-16"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gcc-ranlib-16"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gcc-ranlib-16"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gcc-ranlib-16"
@@ -1933,7 +2029,7 @@ events:
       - "/mnt/c/WINDOWS/system32/gcc-ranlib16"
       - "/mnt/c/WINDOWS/gcc-ranlib16"
       - "/mnt/c/WINDOWS/System32/Wbem/gcc-ranlib16"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/gcc-ranlib16"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/gcc-ranlib16"
       - "/mnt/c/WINDOWS/System32/OpenSSH/gcc-ranlib16"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib16"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib16"
@@ -1945,6 +2041,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/gcc-ranlib16"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/gcc-ranlib16"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/gcc-ranlib16"
+      - "/mnt/e/Utilities/Android Platform Tools/gcc-ranlib16"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/gcc-ranlib16"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/gcc-ranlib16"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/gcc-ranlib16"
       - "/mnt/c/Users/Connor/.lmstudio/bin/gcc-ranlib16"
@@ -1972,7 +2070,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -1984,6 +2082,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -1996,6 +2096,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
   -
     kind: "try_compile-v1"
     backtrace:
@@ -2005,8 +2106,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r"
-      binary: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r"
+      source: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e"
+      binary: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
@@ -2015,14 +2116,15 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r'
+        Change Dir: '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e'
         
-        Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/make -f Makefile cmTC_9e996/fast
-        make: Warning: File 'Makefile' has modification time 0.0034 s in the future
-        /usr/sbin/make  -f CMakeFiles/cmTC_9e996.dir/build.make CMakeFiles/cmTC_9e996.dir/build
-        make[1]: Entering directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r'
-        Building C object CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o
-        /usr/sbin/cc   -v -o CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+        Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/make -f Makefile cmTC_b9108/fast
+        make: Warning: File 'Makefile' has modification time 1.7 s in the future
+        /usr/sbin/make  -f CMakeFiles/cmTC_b9108.dir/build.make CMakeFiles/cmTC_b9108.dir/build
+        make[1]: Entering directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e'
+        make[1]: Warning: File 'CMakeFiles/cmTC_b9108.dir/build.make' has modification time 1.7 s in the future
+        Building C object CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o
+        /usr/sbin/cc   -v -o CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
         Using built-in specs.
         COLLECT_GCC=/usr/sbin/cc
         Target: x86_64-pc-linux-gnu
@@ -2030,8 +2132,8 @@ events:
         Thread model: posix
         Supported LTO compression algorithms: zlib zstd
         gcc version 16.1.1 20260430 (GCC) 
-        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_9e996.dir/'
-         /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/cc1 -quiet -v /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_9e996.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -version -o /tmp/ccEcqfhJ.s
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_b9108.dir/'
+         /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/cc1 -quiet -v /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_b9108.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -version -o /tmp/cceA1SNc.s
         GNU C23 (GCC) version 16.1.1 20260430 (x86_64-pc-linux-gnu)
         	compiled by GNU C version 16.1.1 20260430, GMP version 6.3.0, MPFR version 4.2.2, MPC version 1.4.1, isl version isl-0.27-GMP
         
@@ -2045,14 +2147,14 @@ events:
          /usr/include
         End of search list.
         Compiler executable checksum: d640c2d0cc84ebd71ee43ed7e2df63fb
-        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_9e996.dir/'
-         as -v --64 -o CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o /tmp/ccEcqfhJ.s
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_b9108.dir/'
+         as -v --64 -o CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o /tmp/cceA1SNc.s
         GNU assembler version 2.46.0 (x86_64-pc-linux-gnu) using BFD version (GNU Binutils) 2.46.0
         COMPILER_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/
         LIBRARY_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/:/lib/../lib/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../:/lib/:/usr/lib/
-        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.'
-        Linking C executable cmTC_9e996
-        /usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_9e996.dir/link.txt --verbose=1
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.'
+        Linking C executable cmTC_b9108
+        /usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_b9108.dir/link.txt --verbose=1
         Using built-in specs.
         COLLECT_GCC=/usr/sbin/cc
         COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper
@@ -2063,14 +2165,15 @@ events:
         gcc version 16.1.1 20260430 (GCC) 
         COMPILER_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/
         LIBRARY_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/:/lib/../lib/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../:/lib/:/usr/lib/
-        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_9e996' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_9e996.'
-         /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/collect2 -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccRccpVZ.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_9e996 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_b9108' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_b9108.'
+         /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/collect2 -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccO3wdLW.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_b9108 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o
         collect2 version 16.1.1 20260430
-        /usr/sbin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccRccpVZ.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_9e996 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o
+        /usr/sbin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccO3wdLW.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_b9108 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o
         GNU ld (GNU Binutils) 2.46.0
-        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_9e996' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_9e996.'
-        /usr/sbin/cc  -v -Wl,-v CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -o cmTC_9e996
-        make[1]: Leaving directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r'
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_b9108' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_b9108.'
+        /usr/sbin/cc  -v -Wl,-v CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -o cmTC_b9108
+        make[1]: warning:  Clock skew detected.  Your build may be incomplete.
+        make[1]: Leaving directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e'
         make: warning:  Clock skew detected.  Your build may be incomplete.
         
       exitCode: 0
@@ -2104,14 +2207,15 @@ events:
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r']
+        ignore line: [Change Dir: '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/make -f Makefile cmTC_9e996/fast]
-        ignore line: [make: Warning: File 'Makefile' has modification time 0.0034 s in the future]
-        ignore line: [/usr/sbin/make  -f CMakeFiles/cmTC_9e996.dir/build.make CMakeFiles/cmTC_9e996.dir/build]
-        ignore line: [make[1]: Entering directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ebi22r']
-        ignore line: [Building C object CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o]
-        ignore line: [/usr/sbin/cc   -v -o CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/make -f Makefile cmTC_b9108/fast]
+        ignore line: [make: Warning: File 'Makefile' has modification time 1.7 s in the future]
+        ignore line: [/usr/sbin/make  -f CMakeFiles/cmTC_b9108.dir/build.make CMakeFiles/cmTC_b9108.dir/build]
+        ignore line: [make[1]: Entering directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-VliZ9e']
+        ignore line: [make[1]: Warning: File 'CMakeFiles/cmTC_b9108.dir/build.make' has modification time 1.7 s in the future]
+        ignore line: [Building C object CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o]
+        ignore line: [/usr/sbin/cc   -v -o CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
         ignore line: [Using built-in specs.]
         ignore line: [COLLECT_GCC=/usr/sbin/cc]
         ignore line: [Target: x86_64-pc-linux-gnu]
@@ -2119,8 +2223,8 @@ events:
         ignore line: [Thread model: posix]
         ignore line: [Supported LTO compression algorithms: zlib zstd]
         ignore line: [gcc version 16.1.1 20260430 (GCC) ]
-        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_9e996.dir/']
-        ignore line: [ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/cc1 -quiet -v /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_9e996.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -version -o /tmp/ccEcqfhJ.s]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_b9108.dir/']
+        ignore line: [ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/cc1 -quiet -v /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_b9108.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -version -o /tmp/cceA1SNc.s]
         ignore line: [GNU C23 (GCC) version 16.1.1 20260430 (x86_64-pc-linux-gnu)]
         ignore line: [	compiled by GNU C version 16.1.1 20260430  GMP version 6.3.0  MPFR version 4.2.2  MPC version 1.4.1  isl version isl-0.27-GMP]
         ignore line: []
@@ -2134,14 +2238,14 @@ events:
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
         ignore line: [Compiler executable checksum: d640c2d0cc84ebd71ee43ed7e2df63fb]
-        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_9e996.dir/']
-        ignore line: [ as -v --64 -o CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o /tmp/ccEcqfhJ.s]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_b9108.dir/']
+        ignore line: [ as -v --64 -o CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o /tmp/cceA1SNc.s]
         ignore line: [GNU assembler version 2.46.0 (x86_64-pc-linux-gnu) using BFD version (GNU Binutils) 2.46.0]
         ignore line: [COMPILER_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/]
         ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/:/lib/../lib/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../:/lib/:/usr/lib/]
-        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.']
-        ignore line: [Linking C executable cmTC_9e996]
-        ignore line: [/usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_9e996.dir/link.txt --verbose=1]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.']
+        ignore line: [Linking C executable cmTC_b9108]
+        ignore line: [/usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_b9108.dir/link.txt --verbose=1]
         ignore line: [Using built-in specs.]
         ignore line: [COLLECT_GCC=/usr/sbin/cc]
         ignore line: [COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper]
@@ -2152,13 +2256,13 @@ events:
         ignore line: [gcc version 16.1.1 20260430 (GCC) ]
         ignore line: [COMPILER_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/]
         ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/:/lib/../lib/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../:/lib/:/usr/lib/]
-        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_9e996' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_9e996.']
-        link line: [ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/collect2 -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccRccpVZ.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_9e996 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_b9108' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_b9108.']
+        link line: [ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/collect2 -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccO3wdLW.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_b9108 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o]
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/collect2] ==> ignore
           arg [-plugin] ==> ignore
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so] ==> ignore
           arg [-plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper] ==> ignore
-          arg [-plugin-opt=-fresolution=/tmp/ccRccpVZ.res] ==> ignore
+          arg [-plugin-opt=-fresolution=/tmp/ccO3wdLW.res] ==> ignore
           arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
           arg [-plugin-opt=-pass-through=-lgcc_s_asneeded] ==> ignore
           arg [-plugin-opt=-pass-through=-latomic_asneeded] ==> ignore
@@ -2174,7 +2278,7 @@ events:
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-pie] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_9e996] ==> ignore
+          arg [cmTC_b9108] ==> ignore
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o] ==> obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o]
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o] ==> obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o]
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o] ==> obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o]
@@ -2186,7 +2290,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o] ==> ignore
           arg [-lgcc] ==> lib [gcc]
           arg [-lgcc_s_asneeded] ==> lib [gcc_s_asneeded]
           arg [-latomic_asneeded] ==> lib [atomic_asneeded]
@@ -2196,7 +2300,7 @@ events:
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o] ==> obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o]
           arg [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o] ==> obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o]
         ignore line: [collect2 version 16.1.1 20260430]
-        ignore line: [/usr/sbin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccRccpVZ.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_9e996 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9e996.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o]
+        ignore line: [/usr/sbin/ld -plugin /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccO3wdLW.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_b9108 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1 -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_b9108.dir/CMakeCCompilerABI.c.o -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crtn.o]
         linker tool for 'C': /usr/sbin/ld
         collapse obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/Scrt1.o] ==> [/usr/lib/Scrt1.o]
         collapse obj [/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/crti.o] ==> [/usr/lib/crti.o]
@@ -2235,8 +2339,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ExGvHt"
-      binary: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ExGvHt"
+      source: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-rAwZau"
+      binary: "/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-rAwZau"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
@@ -2246,20 +2350,20 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ExGvHt'
+        Change Dir: '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-rAwZau'
         
-        Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/make -f Makefile cmTC_290d2/fast
-        make: Warning: File 'Makefile' has modification time 1.3 s in the future
-        /usr/sbin/make  -f CMakeFiles/cmTC_290d2.dir/build.make CMakeFiles/cmTC_290d2.dir/build
-        make[1]: Entering directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ExGvHt'
-        make[1]: Warning: File 'CMakeFiles/cmTC_290d2.dir/build.make' has modification time 1.2 s in the future
-        Building C object CMakeFiles/cmTC_290d2.dir/src.c.o
-        /usr/sbin/cc -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu11 -fPIE -o CMakeFiles/cmTC_290d2.dir/src.c.o -c /mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ExGvHt/src.c
-        Linking C executable cmTC_290d2
-        /usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_290d2.dir/link.txt --verbose=1
-        /usr/sbin/cc CMakeFiles/cmTC_290d2.dir/src.c.o -o cmTC_290d2
+        Run Build Command(s): /usr/sbin/cmake -E env VERBOSE=1 /usr/sbin/make -f Makefile cmTC_0e5f8/fast
+        make: Warning: File 'Makefile' has modification time 0.93 s in the future
+        /usr/sbin/make  -f CMakeFiles/cmTC_0e5f8.dir/build.make CMakeFiles/cmTC_0e5f8.dir/build
+        make[1]: Entering directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-rAwZau'
+        make[1]: Warning: File 'CMakeFiles/cmTC_0e5f8.dir/build.make' has modification time 0.92 s in the future
+        Building C object CMakeFiles/cmTC_0e5f8.dir/src.c.o
+        /usr/sbin/cc -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu11 -fPIE -o CMakeFiles/cmTC_0e5f8.dir/src.c.o -c /mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-rAwZau/src.c
+        Linking C executable cmTC_0e5f8
+        /usr/sbin/cmake -E cmake_link_script CMakeFiles/cmTC_0e5f8.dir/link.txt --verbose=1
+        /usr/sbin/cc CMakeFiles/cmTC_0e5f8.dir/src.c.o -o cmTC_0e5f8
         make[1]: warning:  Clock skew detected.  Your build may be incomplete.
-        make[1]: Leaving directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-ExGvHt'
+        make[1]: Leaving directory '/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/CMakeScratch/TryCompile-rAwZau'
         make: warning:  Clock skew detected.  Your build may be incomplete.
         
       exitCode: 0
@@ -2297,7 +2401,7 @@ events:
       - "/mnt/c/WINDOWS/system32/"
       - "/mnt/c/WINDOWS/"
       - "/mnt/c/WINDOWS/System32/Wbem/"
-      - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe/"
       - "/mnt/c/WINDOWS/System32/OpenSSH/"
       - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
       - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
@@ -2309,6 +2413,8 @@ events:
       - "/mnt/c/Program Files/gsudo/Current/"
       - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin/"
       - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "/mnt/e/Utilities/Android Platform Tools/"
+      - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/agy/bin/"
       - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps/"
       - "/mnt/c/Users/Connor/.lmstudio/bin/"
@@ -2358,7 +2464,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -2370,6 +2476,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -2382,6 +2490,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
       CMAKE_INSTALL_PREFIX: "/usr/local"
       CMAKE_SYSTEM_PREFIX_PATH:
         - "/usr/local"
@@ -2432,7 +2541,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -2444,6 +2553,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -2456,6 +2567,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
       CMAKE_INSTALL_PREFIX: "/usr/local"
       CMAKE_SYSTEM_PREFIX_PATH:
         - "/usr/local"
@@ -2508,7 +2620,7 @@ events:
         - "/mnt/c/WINDOWS/system32"
         - "/mnt/c/WINDOWS"
         - "/mnt/c/WINDOWS/System32/Wbem"
-        - "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "/mnt/c/Program Files/WindowsApps/Microsoft.PowerShell_7.6.2.0_x64__8wekyb3d8bbwe/pwsh.exe"
         - "/mnt/c/WINDOWS/System32/OpenSSH/"
         - "/mnt/c/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
         - "/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
@@ -2520,6 +2632,8 @@ events:
         - "/mnt/c/Program Files/gsudo/Current"
         - "/mnt/e/Utilities/AndroidSDK/cmdline-tools/bin"
         - "/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+        - "/mnt/e/Utilities/Android Platform Tools"
+        - "/mnt/h/Portable/winget/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin"
         - "/mnt/c/Users/Connor/AppData/Local/agy/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WindowsApps"
         - "/mnt/c/Users/Connor/.lmstudio/bin"
@@ -2532,6 +2646,7 @@ events:
         - "/mnt/c/Users/Connor/AppData/Local/GitHubDesktop/bin"
         - "/mnt/c/Users/Connor/.local/bin"
         - "/mnt/c/Users/Connor/AppData/Local/Microsoft/WinGet/Links"
+        - "/mnt/e/Utilities/Android Platform Tools"
       CMAKE_INSTALL_PREFIX: "/usr/local"
       CMAKE_SYSTEM_PREFIX_PATH:
         - "/usr/local"

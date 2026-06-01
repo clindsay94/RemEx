@@ -45,3 +45,4 @@
     void onFileTransferProgress(java.lang.String);
     void onFileTransferComplete(java.lang.String);
 }
+
