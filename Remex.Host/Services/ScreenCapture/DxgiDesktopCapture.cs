@@ -504,6 +504,11 @@ internal sealed class DxgiDesktopCapture : IDisposable
             output = new Bitmap(sw, sh);
             using var g = Graphics.FromImage(output);
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+            // SourceCopy (not the default SourceOver): the GDI-drawn cursor pixels have alpha 0, and
+            // alpha-blended scaling would drop them — making the cursor invisible while the desktop
+            // (alpha 255) survives. SourceCopy copies RGB directly; alpha is irrelevant downstream
+            // (BGRA→yuv420p / JPEG ignore it).
+            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
             g.DrawImage(writable, 0, 0, sw, sh);
         }
         else
@@ -651,6 +656,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
             output = new Bitmap(sw, sh);
             using var g = Graphics.FromImage(output);
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+            // SourceCopy so the alpha-0 GDI cursor pixels survive scaling (see EncodeToRawBgra).
+            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
             g.DrawImage(writable, 0, 0, sw, sh);
         }
         else

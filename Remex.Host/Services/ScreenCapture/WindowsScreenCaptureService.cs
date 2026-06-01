@@ -345,6 +345,9 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         var outputBitmap = new Bitmap(captureWidth, captureHeight);
         using var graphics = Graphics.FromImage(outputBitmap);
         graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+        // SourceCopy so the alpha-0 GDI-drawn cursor pixels survive scaling instead of being dropped
+        // by alpha blending (which makes the cursor invisible while the opaque desktop survives).
+        graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
         graphics.DrawImage(sourceBitmap, 0, 0, captureWidth, captureHeight);
         return outputBitmap;
     }
