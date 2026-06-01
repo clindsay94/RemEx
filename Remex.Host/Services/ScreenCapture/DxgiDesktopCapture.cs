@@ -33,6 +33,11 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     private bool _disposed;
 
+    // Throttle for recovery attempts after the duplication is lost (e.g. secure desktop / UAC /
+    // lock screen returns E_ACCESSDENIED). Prevents hammering DuplicateOutput every frame.
+    private DateTime _nextReinitAttemptUtc = DateTime.MinValue;
+    private static readonly TimeSpan ReinitBackoff = TimeSpan.FromSeconds(1);
+
     public int Width  { get; private set; }
     public int Height { get; private set; }
     public int DesktopLeft { get; private set; }
@@ -647,7 +652,49 @@ internal sealed class DxgiDesktopCapture : IDisposable
         catch (Exception ex)
         {
             UnavailableReason = ex.Message;
-            _logger.LogWarning("DXGI reinitialize failed: {Msg}. Capture will fall back to GDI.", ex.Message);
+            // Schedule a backoff so TryRecover() doesn't retry immediately. This is normal while a
+            // secure desktop (UAC/lock) is up; recovery succeeds once the user returns to the desktop.
+            _nextReinitAttemptUtc = DateTime.UtcNow + ReinitBackoff;
+            _logger.LogWarning("DXGI reinitialize failed: {Msg}. Falling back to GDI; will retry shortly.", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Attempts to bring DXGI duplication back online after it was lost (ACCESS_LOST /
+    /// SESSION_DISCONNECTED that couldn't reinitialize in-line). Safe to call every frame:
+    /// it no-ops when already available, when disposed, or until the backoff window elapses.
+    /// Without this, a single transient loss (e.g. a UAC prompt) would strand capture on GDI
+    /// for the remainder of the session.
+    /// </summary>
+    public void TryRecover()
+    {
+        if (IsAvailable || _disposed) return;
+        if (DateTime.UtcNow < _nextReinitAttemptUtc) return;
+
+        // Non-blocking: if a capture is mid-flight, skip this attempt.
+        if (!_lock.Wait(0)) return;
+        try
+        {
+            if (IsAvailable || _disposed) return;
+            _nextReinitAttemptUtc = DateTime.UtcNow + ReinitBackoff;
+
+            // The D3D device usually survives a desktop switch; recreate it only if it was torn down
+            // (e.g. driver reset / TDR) so duplication has a valid device to bind to.
+            if (_d3dDevice == IntPtr.Zero)
+                InitializeDevice();
+
+            InitializeDuplication();
+            UnavailableReason = null;
+            _logger.LogInformation("DXGI Desktop Duplication recovered ({W}×{H}).", Width, Height);
+        }
+        catch (Exception ex)
+        {
+            UnavailableReason = ex.Message;
+            _logger.LogDebug("DXGI recovery attempt failed: {Msg}", ex.Message);
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 

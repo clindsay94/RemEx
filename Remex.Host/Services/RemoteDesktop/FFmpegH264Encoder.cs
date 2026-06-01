@@ -134,24 +134,28 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             switch (codec)
             {
                 case "h264_nvenc":
-                    // NVIDIA NVENC low latency
-                    argsBuilder.Append("-c:v h264_nvenc -preset p1 -tune lowlatency -rc constqp -qp 28 -g 60 -write_aud 1");
+                    // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
+                    // "lowlatency" is NOT valid and makes nvenc fail to start). `-aud 1` emits Access
+                    // Unit Delimiters, which the stdout reader relies on to split encoded frames.
+                    // `-pix_fmt yuv420p` keeps output to 8-bit 4:2:0 that every H.264 decoder accepts.
+                    argsBuilder.Append("-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp 28 -g 60 -aud 1 -pix_fmt yuv420p");
                     break;
                 case "h264_vaapi":
                     // VA-API on Linux (Intel/AMD)
-                    argsBuilder.Append("-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp 28 -g 60 -write_aud 1");
+                    argsBuilder.Append("-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp 28 -g 60 -aud 1");
                     break;
                 case "h264_qsv":
                     // Intel Quick Sync
-                    argsBuilder.Append("-c:v h264_qsv -preset veryfast -look_ahead 0 -g 60 -write_aud 1");
+                    argsBuilder.Append("-c:v h264_qsv -preset veryfast -look_ahead 0 -g 60 -aud 1");
                     break;
                 case "h264_amf":
                     // AMD AMF
-                    argsBuilder.Append("-c:v h264_amf -quality speed -rc cqp -qp_i 28 -qp_p 28 -g 60 -write_aud 1");
+                    argsBuilder.Append("-c:v h264_amf -quality speed -rc cqp -qp_i 28 -qp_p 28 -g 60 -aud 1");
                     break;
                 default:
-                    // libx264 software fallback with zero latency
-                    argsBuilder.Append("-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf 28 -g 60 -write_aud 1");
+                    // libx264 software fallback with zero latency. libx264 has no generic
+                    // `-aud` AVOption; AUD emission is requested via x264 params instead.
+                    argsBuilder.Append("-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf 28 -g 60 -x264-params aud=1");
                     break;
             }
 

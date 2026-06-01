@@ -399,10 +399,21 @@ public sealed class RemoteDesktopHandler : IDisposable
                     await SendDesktopError(webSocket, errorText, ct);
                 }
 
-                // Throttle to target FPS
-                var elapsed = captureStopwatch.Elapsed.TotalMilliseconds;
-                var targetDelay = 1000.0 / _targetFps;
-                var sleep = (int)(targetDelay - elapsed);
+                // Throttle. While capture is failing (locked desktop, lost session, DXGI recovering),
+                // back off well below the target FPS so we don't spin the CPU or hammer the failing
+                // capture path 30×/sec. Recovers immediately: consecutiveFailures resets to 0 on the
+                // first successful frame, restoring the normal FPS cadence.
+                int sleep;
+                if (consecutiveFailures >= 5)
+                {
+                    sleep = 500;
+                }
+                else
+                {
+                    var elapsed = captureStopwatch.Elapsed.TotalMilliseconds;
+                    var targetDelay = 1000.0 / _targetFps;
+                    sleep = (int)(targetDelay - elapsed);
+                }
                 if (sleep > 1)
                 {
                     try { await Task.Delay(sleep, ct); }

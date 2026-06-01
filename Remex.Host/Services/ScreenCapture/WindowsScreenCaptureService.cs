@@ -17,7 +17,20 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 {
     private readonly ILogger<WindowsScreenCaptureService> _logger;
     private readonly DxgiDesktopCapture _dxgi;
-    private bool _session0Warned;
+
+    // Throttle for capture-failure error logs. Without this, a sustained outage (locked desktop,
+    // disconnected session) logs one error + stack trace per frame at the target FPS, flooding logs.
+    private DateTime _lastCaptureErrorLogUtc = DateTime.MinValue;
+    private static readonly TimeSpan CaptureErrorLogInterval = TimeSpan.FromSeconds(5);
+
+    private bool ShouldLogCaptureError()
+    {
+        var now = DateTime.UtcNow;
+        if (now - _lastCaptureErrorLogUtc < CaptureErrorLogInterval)
+            return false;
+        _lastCaptureErrorLogUtc = now;
+        return true;
+    }
 
     public WindowsScreenCaptureService(ILogger<WindowsScreenCaptureService> logger)
     {
@@ -51,6 +64,10 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
         ct.ThrowIfCancellationRequested();
 
+        // If DXGI was lost (e.g. a UAC/lock secure desktop), attempt a throttled recovery so we
+        // don't stay stranded on GDI for the rest of the session. No-ops when already available.
+        _dxgi.TryRecover();
+
         if (_dxgi.IsAvailable)
         {
             var dxgiFrame = _dxgi.TryCaptureRaw(scale, drawCursor);
@@ -71,15 +88,12 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             using var screenBitmap = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(screenBitmap))
             {
-                try
-                {
-                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("CopyFromScreen failed (likely due to MPO or terminal focus). Attempting fallback without CaptureBlt. Error: {Msg}", ex.Message);
-                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
-                }
+                // NOTE: CopyPixelOperation.CaptureBlt cannot be OR-combined with SourceCopy through
+                // the managed Graphics.CopyFromScreen API — it validates the argument against single
+                // enum members and throws InvalidEnumArgumentException for any combined value (which
+                // previously fired on every frame and flooded the log). A genuine CAPTUREBLT capture
+                // would require a direct gdi32!BitBlt P/Invoke; plain SourceCopy is used here.
+                g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
 
                 if (drawCursor)
                 {
@@ -125,12 +139,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
         catch (Exception ex)
         {
-            LastCaptureFailureReason = BuildCaptureFailureReason(Process.GetCurrentProcess().SessionId, ex.Message);
-            if (!_session0Warned)
+            var sessionId = Process.GetCurrentProcess().SessionId;
+            LastCaptureFailureReason = BuildCaptureFailureReason(sessionId, ex.Message);
+            if (ShouldLogCaptureError())
             {
-                var sessionId = Process.GetCurrentProcess().SessionId;
                 _logger.LogError(ex, "Failed to capture raw screen (Session {SessionId}).", sessionId);
-                _session0Warned = sessionId == 0;
             }
             return Task.FromResult<byte[]?>(null);
         }
@@ -142,6 +155,10 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         scale = Math.Clamp(scale, 0.25, 1.0);
 
         ct.ThrowIfCancellationRequested();
+
+        // If DXGI was lost (e.g. a UAC/lock secure desktop), attempt a throttled recovery so we
+        // don't stay stranded on GDI for the rest of the session. No-ops when already available.
+        _dxgi.TryRecover();
 
         // ── Primary path: DXGI Desktop Duplication ──────────────────────────────
         // Correctly captures GPU-composited content including hardware overlay planes
@@ -169,17 +186,12 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             using var screenBitmap = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(screenBitmap))
             {
-                try
-                {
-                    // Add CaptureBlt to include layered windows and bypass some DWM single-window MPO exclusions
-                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("CopyFromScreen failed (likely due to MPO or terminal focus). Attempting fallback without CaptureBlt. Error: {Msg}", ex.Message);
-                    // Fallback to standard copy if CaptureBlt caused issues
-                    g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
-                }
+                // NOTE: CopyPixelOperation.CaptureBlt cannot be OR-combined with SourceCopy through
+                // the managed Graphics.CopyFromScreen API — it validates the argument against single
+                // enum members and throws InvalidEnumArgumentException for any combined value (which
+                // previously fired on every frame and flooded the log). A genuine CAPTUREBLT capture
+                // would require a direct gdi32!BitBlt P/Invoke; plain SourceCopy is used here.
+                g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
 
                 // Draw the system cursor onto the captured bitmap
                 if (drawCursor)
@@ -219,16 +231,15 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
         catch (Exception ex)
         {
-            LastCaptureFailureReason = BuildCaptureFailureReason(Process.GetCurrentProcess().SessionId, ex.Message);
-            if (!_session0Warned)
+            var sessionId = Process.GetCurrentProcess().SessionId;
+            LastCaptureFailureReason = BuildCaptureFailureReason(sessionId, ex.Message);
+            if (ShouldLogCaptureError())
             {
-                var sessionId = Process.GetCurrentProcess().SessionId;
                 _logger.LogError(ex, "Failed to capture screen (Session {SessionId}). {Hint}",
                     sessionId,
                     sessionId == 0
                         ? "Session 0 cannot capture the desktop. Run the Remex Desktop app interactively."
                         : "Ensure the desktop is not locked and the process has screen access.");
-                _session0Warned = sessionId == 0;
             }
             return Task.FromResult(Array.Empty<byte>());
         }
