@@ -308,8 +308,23 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                         if (rawPixels is { Length: > 0 })
                         {
-                            frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
-                            frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
+                            // Self-heal: if the captured buffer size no longer matches the encoder's
+                            // fixed input size (capture backend/DPI/geometry drifted since the encoder
+                            // was created), feeding it would desync the rawvideo pipe and produce 0
+                            // frames. Reinitialize the encoder to the new size instead and skip this frame.
+                            if (rawPixels.Length != h264Encoder.ExpectedInputByteCount)
+                            {
+                                _logger.LogWarning(
+                                    "H.264 raw frame size {Actual} != encoder input size {Expected}; reinitializing encoder.",
+                                    rawPixels.Length, h264Encoder.ExpectedInputByteCount);
+                                encoderSerial = -1; // force recreate on next iteration
+                                consecutiveFailures++;
+                            }
+                            else
+                            {
+                                frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
+                                frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
+                            }
                         }
                     }
                     else
@@ -1032,10 +1047,10 @@ public sealed class RemoteDesktopHandler : IDisposable
     private IH264Encoder? TryCreateH264Encoder()
     {
         var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
-        int targetWidth = (int)(screenWidth * _scale);
-        int targetHeight = (int)(screenHeight * _scale);
-        targetWidth = Math.Max(2, (targetWidth / 2) * 2);
-        targetHeight = Math.Max(2, (targetHeight / 2) * 2);
+        // Must use the same dimension function as the capture path (CaptureScaling.ScaledEven), or the
+        // raw BGRA buffer size won't match the encoder's fixed -s WxH input and nvenc emits 0 frames.
+        int targetWidth = Services.ScreenCapture.CaptureScaling.ScaledEven(screenWidth, _scale);
+        int targetHeight = Services.ScreenCapture.CaptureScaling.ScaledEven(screenHeight, _scale);
 
         var encoder = new FFmpegH264Encoder(_logger);
         if (encoder.Initialize(targetWidth, targetHeight, _targetFps, 1500))

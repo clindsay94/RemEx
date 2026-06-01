@@ -331,13 +331,17 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     private static Bitmap? ScaleBitmap(Bitmap sourceBitmap, double scale)
     {
-        if (scale >= 0.999)
+        // Even-aligned target size — MUST match CaptureScaling.ScaledEven so the delivered frame size
+        // equals what the H.264 encoder was started with. Returning null means "source is already the
+        // correct size" (caller uses it as-is), which only holds when the even-aligned size == source.
+        var captureWidth = CaptureScaling.ScaledEven(sourceBitmap.Width, scale);
+        var captureHeight = CaptureScaling.ScaledEven(sourceBitmap.Height, scale);
+
+        if (captureWidth == sourceBitmap.Width && captureHeight == sourceBitmap.Height)
         {
             return null;
         }
 
-        var captureWidth = Math.Max(1, (int)(sourceBitmap.Width * scale));
-        var captureHeight = Math.Max(1, (int)(sourceBitmap.Height * scale));
         var outputBitmap = new Bitmap(captureWidth, captureHeight);
         using var graphics = Graphics.FromImage(outputBitmap);
         graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;

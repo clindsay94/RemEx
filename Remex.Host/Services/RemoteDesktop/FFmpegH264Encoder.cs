@@ -27,6 +27,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     public bool IsAvailable { get; private set; }
 
     /// <summary>
+    /// Exact raw BGRA byte count this encoder expects per frame (width * height * 4).
+    /// 0 until <see cref="Initialize"/> succeeds.
+    /// </summary>
+    public int ExpectedInputByteCount => _initialized ? _width * _height * 4 : 0;
+
+    /// <summary>
     /// The FFmpeg codec string that was successfully started (e.g. "h264_nvenc", "libx264").
     /// Null if not yet initialized.
     /// </summary>

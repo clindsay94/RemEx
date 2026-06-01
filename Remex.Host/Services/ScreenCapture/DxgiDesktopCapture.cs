@@ -492,11 +492,15 @@ internal sealed class DxgiDesktopCapture : IDisposable
             DrawCursorOnBitmap(writable);
         }
 
+        // Even-aligned target size — MUST match CaptureScaling.ScaledEven so the raw BGRA buffer is
+        // exactly the size the H.264 encoder was started with (-s WxH). A 1-pixel mismatch desyncs
+        // the rawvideo pipe and nvenc emits 0 frames.
+        int sw = CaptureScaling.ScaledEven(width, scale);
+        int sh = CaptureScaling.ScaledEven(height, scale);
+
         Bitmap output;
-        if (scale < 1.0)
+        if (sw != width || sh != height)
         {
-            int sw = (int)(width * scale);
-            int sh = (int)(height * scale);
             output = new Bitmap(sw, sh);
             using var g = Graphics.FromImage(output);
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;

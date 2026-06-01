@@ -13,6 +13,13 @@ public interface IH264Encoder : IDisposable
     bool IsAvailable { get; }
 
     /// <summary>
+    /// The exact size, in bytes, of the raw BGRA frame this encoder expects per
+    /// <see cref="EncodeFrame"/> call (width * height * 4). 0 before initialization.
+    /// Callers must feed buffers of exactly this size or the encoder's rawvideo input desyncs.
+    /// </summary>
+    int ExpectedInputByteCount { get; }
+
+    /// <summary>
     /// Initializes the encoder with target stream specifications.
     /// </summary>
     bool Initialize(int width, int height, int fps, int bitrateKbps);
