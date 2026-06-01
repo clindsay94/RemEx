@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -62,6 +63,7 @@ public static class HostBootstrapper
 
         if (OperatingSystem.IsWindows())
         {
+            EnablePerMonitorV2DpiAwareness();
             ConfigureWindowsEventLog(builder.Logging);
         }
 
@@ -476,4 +478,22 @@ public static class HostBootstrapper
         });
     }
 
+    [SupportedOSPlatform("windows")]
+    private static void EnablePerMonitorV2DpiAwareness()
+    {
+        try
+        {
+            SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        }
+        catch
+        {
+            // Best effort: older Windows builds or restricted contexts may reject this.
+        }
+    }
+
+    private static readonly nint DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetProcessDpiAwarenessContext(nint dpiContext);
 }

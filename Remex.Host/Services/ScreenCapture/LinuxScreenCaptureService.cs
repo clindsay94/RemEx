@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Host.Services.RemoteDesktop.Linux.Capture;
 
@@ -22,11 +24,20 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     private readonly ILogger<LinuxScreenCaptureService> _logger;
     private int _screenWidth;
     private int _screenHeight;
+    private int _screenLeft;
+    private int _screenTop;
     // Primary monitor geometry — used to crop multi-monitor captures
     private int _primaryX;
     private int _primaryY;
     private int _primaryWidth;
     private int _primaryHeight;
+    private int _activeLeft;
+    private int _activeTop;
+    private int _activeWidth;
+    private int _activeHeight;
+    private DesktopCaptureTarget _activeTarget = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+    private List<DesktopDisplayInfo> _detectedDisplays = [];
+    private readonly object _targetSync = new();
 
     // Stage 2: PipeWire capture coordinator. Injected externally when the
     // WaylandNative or PortalNoPen tier is active; null for legacy (X11/fallback) path.
@@ -73,6 +84,17 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     public void SetCaptureCoordinator(LinuxCaptureSessionCoordinator? coordinator)
     {
         _captureCoordinator = coordinator;
+        if (coordinator is not null)
+        {
+            lock (_targetSync)
+            {
+                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                _activeLeft = _screenLeft;
+                _activeTop = _screenTop;
+                _activeWidth = _screenWidth;
+                _activeHeight = _screenHeight;
+            }
+        }
     }
 
     private byte[]? _lastRawFrame;
@@ -236,6 +258,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
+        var (sourceWidth, sourceHeight, _, _) = GetScreenSize();
 
         // ── Stage 2 fast path: PipeWire native capture ─────────────────
         if (_captureCoordinator is { IsRunning: true })
@@ -288,8 +311,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         var tmpFile = Path.Combine(Path.GetTempPath(), $"remex_capture_{Guid.NewGuid():N}.jpg");
         try
         {
-            int captureWidth = (int)(_screenWidth * scale);
-            int captureHeight = (int)(_screenHeight * scale);
+            int captureWidth = Math.Max(1, (int)(sourceWidth * scale));
+            int captureHeight = Math.Max(1, (int)(sourceHeight * scale));
             int result = -1;
 
             // Strategy 1: Use detected primary tool
@@ -337,9 +360,196 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     }
 
     public (int Width, int Height, int Left, int Top) GetScreenSize() =>
-        _primaryWidth > 0
-            ? (_primaryWidth, _primaryHeight, _primaryX, _primaryY)
-            : (_screenWidth, _screenHeight, 0, 0);
+        (_activeWidth, _activeHeight, _activeLeft, _activeTop);
+
+    public DesktopDisplayCatalog GetDisplayCatalog()
+    {
+        RefreshDisplayTopology();
+
+        if (_captureCoordinator is { IsRunning: true } || _displayServer != DisplayServer.X11)
+        {
+            return new DesktopDisplayCatalog
+            {
+                DisplayListVersion = ComputeDisplayListVersion(_detectedDisplays),
+                SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop],
+                Displays = [CreateFallbackDisplay()],
+            };
+        }
+
+        return new DesktopDisplayCatalog
+        {
+            DisplayListVersion = ComputeDisplayListVersion(_detectedDisplays),
+            SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop, DesktopCaptureMode.Monitor],
+            Displays = _detectedDisplays.ToArray(),
+        };
+    }
+
+    public bool TrySetCaptureTarget(DesktopCaptureTarget target, out string? error)
+    {
+        RefreshDisplayTopology();
+
+        lock (_targetSync)
+        {
+            if (_captureCoordinator is { IsRunning: true })
+            {
+                if (target.CaptureMode != DesktopCaptureMode.VirtualDesktop)
+                {
+                    error = "The active Linux capture session only supports the full desktop surface. Stop and restart the stream to pick a different source.";
+                    return false;
+                }
+
+                SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
+                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                error = null;
+                return true;
+            }
+
+            if (target.CaptureMode == DesktopCaptureMode.VirtualDesktop)
+            {
+                SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
+                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                error = null;
+                return true;
+            }
+
+            if (_displayServer != DisplayServer.X11)
+            {
+                error = "Per-monitor capture selection is currently unavailable for this Linux desktop session.";
+                return false;
+            }
+
+            var display = _detectedDisplays.FirstOrDefault(candidate =>
+                string.Equals(candidate.DisplayId, target.DisplayId, StringComparison.Ordinal));
+            if (display is null)
+            {
+                error = "Unknown display.";
+                return false;
+            }
+
+            SetActiveBounds(display.Width, display.Height, display.Left, display.Top);
+            _activeTarget = new DesktopCaptureTarget
+            {
+                CaptureMode = DesktopCaptureMode.Monitor,
+                DisplayId = display.DisplayId,
+            };
+            error = null;
+            return true;
+        }
+    }
+
+    private void RefreshDisplayTopology()
+    {
+        DetectScreenSize();
+
+        lock (_targetSync)
+        {
+            if (_captureCoordinator is { IsRunning: true } ||
+                _activeTarget.CaptureMode == DesktopCaptureMode.VirtualDesktop ||
+                string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+            {
+                SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
+                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                return;
+            }
+
+            var activeDisplay = _detectedDisplays.FirstOrDefault(display =>
+                string.Equals(display.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
+            if (activeDisplay is null)
+            {
+                SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
+                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                return;
+            }
+
+            SetActiveBounds(activeDisplay.Width, activeDisplay.Height, activeDisplay.Left, activeDisplay.Top);
+        }
+    }
+
+    private void SetActiveBounds(int width, int height, int left, int top)
+    {
+        _activeWidth = width;
+        _activeHeight = height;
+        _activeLeft = left;
+        _activeTop = top;
+    }
+
+    private DesktopDisplayInfo CreateFallbackDisplay() => new()
+    {
+        DisplayId = "default",
+        PersistentDisplayKey = "default",
+        Name = "Display",
+        IsPrimary = true,
+        Left = _screenLeft,
+        Top = _screenTop,
+        Width = _screenWidth,
+        Height = _screenHeight,
+    };
+
+    private string BuildCropScaleFilter(int captureWidth, int captureHeight)
+    {
+        var cropWidth = _activeWidth;
+        var cropHeight = _activeHeight;
+        var cropX = _activeLeft - _screenLeft;
+        var cropY = _activeTop - _screenTop;
+
+        if (cropWidth == _screenWidth &&
+            cropHeight == _screenHeight &&
+            cropX == 0 &&
+            cropY == 0)
+        {
+            return $"scale={captureWidth}:{captureHeight}";
+        }
+
+        return $"crop={cropWidth}:{cropHeight}:{cropX}:{cropY},scale={captureWidth}:{captureHeight}";
+    }
+
+    internal static IReadOnlyList<DesktopDisplayInfo> ParseXrandrDisplays(string[] lines)
+    {
+        var displays = new List<DesktopDisplayInfo>();
+        foreach (var line in lines)
+        {
+            if (!line.Contains(" connected", StringComparison.Ordinal))
+                continue;
+
+            if (!TryParseXrandrGeometry(line, out var width, out var height, out var left, out var top))
+                continue;
+
+            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length == 0)
+                continue;
+
+            var outputName = parts[0];
+            displays.Add(new DesktopDisplayInfo
+            {
+                DisplayId = outputName,
+                PersistentDisplayKey = outputName,
+                Name = outputName,
+                IsPrimary = line.Contains(" primary ", StringComparison.Ordinal),
+                Left = left,
+                Top = top,
+                Width = width,
+                Height = height,
+            });
+        }
+
+        return displays;
+    }
+
+    private static int ComputeDisplayListVersion(IEnumerable<DesktopDisplayInfo> displays)
+    {
+        var hash = new HashCode();
+        foreach (var display in displays.OrderBy(item => item.DisplayId, StringComparer.Ordinal))
+        {
+            hash.Add(display.DisplayId, StringComparer.Ordinal);
+            hash.Add(display.Left);
+            hash.Add(display.Top);
+            hash.Add(display.Width);
+            hash.Add(display.Height);
+            hash.Add(display.IsPrimary);
+        }
+
+        return Math.Abs(hash.ToHashCode()) + 1;
+    }
 
     private async Task<int> CaptureWaylandAsync(string tool, string tmpFile, int quality,
         int captureWidth, int captureHeight, CancellationToken ct)
@@ -360,7 +570,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     return grimResult;
 
                 // Convert PNG to JPEG with quality and scale
-                var ffmpegArgs = $"-i \"{pngFile}\" -vf scale={captureWidth}:{captureHeight} -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+                var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
                 return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
             }
             finally
@@ -397,13 +607,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             }
 
             // Crop to primary monitor first, then scale. If no primary detected, scale the full capture.
-            string vf;
-            if (_primaryWidth > 0)
-                vf = $"crop={_primaryWidth}:{_primaryHeight}:{_primaryX}:{_primaryY},scale={captureWidth}:{captureHeight}";
-            else
-                vf = $"scale={captureWidth}:{captureHeight}";
-
-            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{vf}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
             return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
         }
         finally
@@ -423,13 +627,13 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             // to include the OS cursor in the captured frame.
             var args = $"-q {quality} \"{tmpFile}\"";
             var result = await RunProcessAsync(tool, args, ct, env);
-            if (result != 0 || scale >= 0.99) return result;
+            if (result != 0) return result;
 
-            // Post-process with ffmpeg to scale down if needed
+            // Post-process to crop and/or scale to the active target.
             var scaledFile = tmpFile + ".scaled.jpg";
             try
             {
-                var ffmpegArgs = $"-i \"{tmpFile}\" -vf scale={captureWidth}:{captureHeight} -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
                 var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
                 if (scaleResult == 0 && File.Exists(scaledFile))
                 {
@@ -447,8 +651,29 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (toolName == "import")
         {
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
-            var args = $"-window root -quality {quality} -resize {captureWidth}x{captureHeight} \"{tmpFile}\"";
-            return await RunProcessAsync(tool, args, ct, env);
+            var args = $"-window root -quality {quality} \"{tmpFile}\"";
+            var result = await RunProcessAsync(tool, args, ct, env);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            var scaledFile = tmpFile + ".scaled.jpg";
+            try
+            {
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
+                if (scaleResult == 0 && File.Exists(scaledFile))
+                {
+                    File.Move(scaledFile, tmpFile, overwrite: true);
+                }
+
+                return scaleResult;
+            }
+            finally
+            {
+                try { if (File.Exists(scaledFile)) File.Delete(scaledFile); } catch { /* best effort */ }
+            }
         }
 
         return -1;
@@ -459,9 +684,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":0";
         var env = new Dictionary<string, string> { ["DISPLAY"] = display };
-        var args = $"-f x11grab -video_size {_screenWidth}x{_screenHeight} -i {display} " +
+        var args = $"-f x11grab -video_size {_screenWidth}x{_screenHeight} -i {display}+{_screenLeft},{_screenTop} " +
                    $"-frames:v 1 -q:v {Math.Max(1, 31 - quality * 31 / 100)} " +
-                   $"-vf scale={captureWidth}:{captureHeight} -y \"{tmpFile}\"";
+                   $"-vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -y \"{tmpFile}\"";
         return await RunProcessAsync("ffmpeg", args, ct, env);
     }
 
@@ -521,6 +746,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
     private void DetectScreenSize()
     {
+        _detectedDisplays = [];
+
         // Try xrandr first (works on both X11 and XWayland)
         if (TryDetectWithXrandr()) return;
 
@@ -558,14 +785,36 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             proc.WaitForExit(3000);
 
             var lines = SplitLines(output);
+            var displays = ParseXrandrDisplays(lines).ToList();
             if (TryGetVirtualDesktopBounds(lines, out var width, out var height, out var left, out var top))
             {
-                _primaryX = left;
-                _primaryY = top;
-                _primaryWidth = width;
-                _primaryHeight = height;
+                _screenLeft = left;
+                _screenTop = top;
                 _screenWidth = width;
                 _screenHeight = height;
+                _detectedDisplays = displays;
+
+                var primaryDisplay = displays.FirstOrDefault(display => display.IsPrimary) ?? displays.FirstOrDefault();
+                if (primaryDisplay is not null)
+                {
+                    _primaryX = primaryDisplay.Left;
+                    _primaryY = primaryDisplay.Top;
+                    _primaryWidth = primaryDisplay.Width;
+                    _primaryHeight = primaryDisplay.Height;
+                }
+                else
+                {
+                    _primaryX = left;
+                    _primaryY = top;
+                    _primaryWidth = width;
+                    _primaryHeight = height;
+                }
+
+                if (_activeWidth == 0 || _activeHeight == 0)
+                {
+                    SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
+                }
+
                 return true;
             }
         }
@@ -602,8 +851,25 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     var parts = line.Split(':')[1].Trim().Split(' ')[0].Split('x');
                     if (parts.Length == 2 && int.TryParse(parts[0], out int w) && int.TryParse(parts[1], out int h))
                     {
+                        _screenLeft = 0;
+                        _screenTop = 0;
                         _screenWidth = w;
                         _screenHeight = h;
+                        _detectedDisplays =
+                        [
+                            new DesktopDisplayInfo
+                            {
+                                DisplayId = "default",
+                                PersistentDisplayKey = "default",
+                                Name = "Display",
+                                IsPrimary = true,
+                                Left = 0,
+                                Top = 0,
+                                Width = w,
+                                Height = h,
+                            },
+                        ];
+                        SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
                         return true;
                     }
                 }
@@ -640,8 +906,25 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     var res = resPart.Split('x');
                     if (res.Length == 2 && int.TryParse(res[0], out int w) && int.TryParse(res[1], out int h))
                     {
+                        _screenLeft = 0;
+                        _screenTop = 0;
                         _screenWidth = w;
                         _screenHeight = h;
+                        _detectedDisplays =
+                        [
+                            new DesktopDisplayInfo
+                            {
+                                DisplayId = "default",
+                                PersistentDisplayKey = "default",
+                                Name = "Display",
+                                IsPrimary = true,
+                                Left = 0,
+                                Top = 0,
+                                Width = w,
+                                Height = h,
+                            },
+                        ];
+                        SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
                         return true;
                     }
                 }
@@ -653,9 +936,13 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
     private void SetDefaultSize()
     {
+        _screenLeft = 0;
+        _screenTop = 0;
         _screenWidth = 1920;
         _screenHeight = 1080;
         _primaryWidth = 0; // 0 = no primary detected, use full capture
+        _detectedDisplays = [CreateFallbackDisplay()];
+        SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
         _logger.LogWarning("Could not detect screen size, defaulting to {W}x{H}.", _screenWidth, _screenHeight);
     }
 

@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Models;
 using Remex.Core.Services;
 
 namespace Remex.Host.Services.ScreenCapture;
@@ -17,6 +20,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 {
     private readonly ILogger<WindowsScreenCaptureService> _logger;
     private readonly DxgiDesktopCapture _dxgi;
+    private readonly object _displayLock = new();
+
+    private List<DisplayDefinition> _displays = [];
+    private DesktopCaptureTarget _activeTarget = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+    private int _displayListVersion = 1;
 
     // Throttle for capture-failure error logs. Without this, a sustained outage (locked desktop,
     // disconnected session) logs one error + stack trace per frame at the target FPS, flooding logs.
@@ -48,27 +56,106 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         // Initialize DXGI Desktop Duplication. Falls back gracefully to GDI if unavailable.
         _dxgi = new DxgiDesktopCapture(logger);
         if (_dxgi.IsAvailable)
-            _logger.LogInformation("DXGI Desktop Duplication initialized ({W}x{H}). MPO/overlay planes will be captured correctly.", _dxgi.Width, _dxgi.Height);
+        {
+            _logger.LogInformation(
+                "DXGI Desktop Duplication initialized ({W}x{H}). MPO/overlay planes will be captured correctly.",
+                _dxgi.Width,
+                _dxgi.Height);
+        }
         else
+        {
             _logger.LogWarning("DXGI Desktop Duplication unavailable — falling back to GDI CopyFromScreen. Windows Terminal focus bug may occur.");
+        }
+
+        RefreshDisplays();
+        var primaryDisplay = _displays.FirstOrDefault(static display => display.IsPrimary);
+        if (primaryDisplay is not null)
+        {
+            _activeTarget = new DesktopCaptureTarget
+            {
+                CaptureMode = DesktopCaptureMode.Monitor,
+                DisplayId = primaryDisplay.DisplayId,
+            };
+        }
     }
 
-    public string? BackendName => _dxgi.IsAvailable ? "dxgi" : "gdi";
+    public string? BackendName => CanUseDxgiForCurrentTarget() ? "dxgi" : "gdi";
     public bool IsDxgiAvailable => _dxgi.IsAvailable;
     public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
     public string? LastCaptureFailureReason { get; private set; }
 
+    public DesktopDisplayCatalog GetDisplayCatalog()
+    {
+        lock (_displayLock)
+        {
+            RefreshDisplays();
+            return new DesktopDisplayCatalog
+            {
+                DisplayListVersion = _displayListVersion,
+                SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop, DesktopCaptureMode.Monitor],
+                Displays = _displays
+                    .Select(display => new DesktopDisplayInfo
+                    {
+                        DisplayId = display.DisplayId,
+                        PersistentDisplayKey = display.PersistentDisplayKey,
+                        Name = display.Name,
+                        IsPrimary = display.IsPrimary,
+                        Left = display.Bounds.Left,
+                        Top = display.Bounds.Top,
+                        Width = display.Bounds.Width,
+                        Height = display.Bounds.Height,
+                    })
+                    .ToArray(),
+            };
+        }
+    }
+
+    public bool TrySetCaptureTarget(DesktopCaptureTarget target, out string? error)
+    {
+        lock (_displayLock)
+        {
+            RefreshDisplays();
+
+            if (target.CaptureMode == DesktopCaptureMode.VirtualDesktop)
+            {
+                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                error = null;
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(target.DisplayId))
+            {
+                error = "A display ID is required for monitor capture.";
+                return false;
+            }
+
+            var selectedDisplay = _displays.FirstOrDefault(display =>
+                string.Equals(display.DisplayId, target.DisplayId, StringComparison.Ordinal));
+            if (selectedDisplay is null)
+            {
+                error = $"Display '{target.DisplayId}' is no longer available.";
+                return false;
+            }
+
+            _activeTarget = new DesktopCaptureTarget
+            {
+                CaptureMode = DesktopCaptureMode.Monitor,
+                DisplayId = selectedDisplay.DisplayId,
+            };
+
+            error = null;
+            return true;
+        }
+    }
+
     public Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         scale = Math.Clamp(scale, 0.25, 1.0);
-
         ct.ThrowIfCancellationRequested();
 
-        // If DXGI was lost (e.g. a UAC/lock secure desktop), attempt a throttled recovery so we
-        // don't stay stranded on GDI for the rest of the session. No-ops when already available.
         _dxgi.TryRecover();
 
-        if (_dxgi.IsAvailable)
+        if (CanUseDxgiForCurrentTarget())
         {
             var dxgiFrame = _dxgi.TryCaptureRaw(scale, drawCursor);
             if (dxgiFrame is { Length: > 0 })
@@ -80,61 +167,24 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
         try
         {
-            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-            int captureWidth = (int)(screenWidth * scale);
-            int captureHeight = (int)(screenHeight * scale);
+            var bounds = GetActiveBounds();
+            using var screenBitmap = CaptureBitmap(bounds, drawCursor);
+            using var outputBitmap = ScaleBitmap(screenBitmap, scale);
+            var bitmap = outputBitmap ?? screenBitmap;
 
-            using var screenBitmap = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
-            using (var g = Graphics.FromImage(screenBitmap))
-            {
-                // NOTE: CopyPixelOperation.CaptureBlt cannot be OR-combined with SourceCopy through
-                // the managed Graphics.CopyFromScreen API — it validates the argument against single
-                // enum members and throws InvalidEnumArgumentException for any combined value (which
-                // previously fired on every frame and flooded the log). A genuine CAPTUREBLT capture
-                // would require a direct gdi32!BitBlt P/Invoke; plain SourceCopy is used here.
-                g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
-
-                if (drawCursor)
-                {
-                    DrawCursorOnBitmap(g);
-                }
-            }
-
-            Bitmap outputBitmap;
-            if (scale < 1.0)
-            {
-                outputBitmap = new Bitmap(captureWidth, captureHeight);
-                using var g = Graphics.FromImage(outputBitmap);
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-                g.DrawImage(screenBitmap, 0, 0, captureWidth, captureHeight);
-            }
-            else
-            {
-                outputBitmap = screenBitmap;
-            }
-
+            var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             try
             {
-                var rect = new Rectangle(0, 0, outputBitmap.Width, outputBitmap.Height);
-                var bmpData = outputBitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-                try
-                {
-                    int bytesCount = Math.Abs(bmpData.Stride) * outputBitmap.Height;
-                    byte[] bgraValues = new byte[bytesCount];
-                    Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
-                    LastCaptureFailureReason = null;
-                    return Task.FromResult<byte[]?>(bgraValues);
-                }
-                finally
-                {
-                    outputBitmap.UnlockBits(bmpData);
-                }
+                var bytesCount = Math.Abs(bmpData.Stride) * bitmap.Height;
+                byte[] bgraValues = new byte[bytesCount];
+                Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
+                LastCaptureFailureReason = null;
+                return Task.FromResult<byte[]?>(bgraValues);
             }
             finally
             {
-                if (scale < 1.0)
-                    outputBitmap.Dispose();
+                bitmap.UnlockBits(bmpData);
             }
         }
         catch (Exception ex)
@@ -153,18 +203,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
-
         ct.ThrowIfCancellationRequested();
 
-        // If DXGI was lost (e.g. a UAC/lock secure desktop), attempt a throttled recovery so we
-        // don't stay stranded on GDI for the rest of the session. No-ops when already available.
         _dxgi.TryRecover();
 
-        // ── Primary path: DXGI Desktop Duplication ──────────────────────────────
-        // Correctly captures GPU-composited content including hardware overlay planes
-        // (MPO) used by Windows Terminal, Chrome GPU compositing, and DirectX apps —
-        // which GDI BitBlt/CopyFromScreen cannot capture.
-        if (_dxgi.IsAvailable)
+        if (CanUseDxgiForCurrentTarget())
         {
             var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder(), drawCursor);
             if (dxgiFrame is { Length: > 0 })
@@ -174,60 +217,20 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             }
         }
 
-        // ── Fallback path: GDI CopyFromScreen ───────────────────────────────────
-        // Cannot capture MPO planes but works for standard windows when DXGI is unavailable.
         try
         {
-            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-            int captureWidth = (int)(screenWidth * scale);
-            int captureHeight = (int)(screenHeight * scale);
+            var bounds = GetActiveBounds();
+            using var screenBitmap = CaptureBitmap(bounds, drawCursor);
+            using var outputBitmap = ScaleBitmap(screenBitmap, scale);
+            var bitmap = outputBitmap ?? screenBitmap;
 
-            using var screenBitmap = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
-            using (var g = Graphics.FromImage(screenBitmap))
-            {
-                // NOTE: CopyPixelOperation.CaptureBlt cannot be OR-combined with SourceCopy through
-                // the managed Graphics.CopyFromScreen API — it validates the argument against single
-                // enum members and throws InvalidEnumArgumentException for any combined value (which
-                // previously fired on every frame and flooded the log). A genuine CAPTUREBLT capture
-                // would require a direct gdi32!BitBlt P/Invoke; plain SourceCopy is used here.
-                g.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
-
-                // Draw the system cursor onto the captured bitmap
-                if (drawCursor)
-                {
-                    DrawCursorOnBitmap(g);
-                }
-            }
-
-            Bitmap outputBitmap;
-            if (scale < 1.0)
-            {
-                outputBitmap = new Bitmap(captureWidth, captureHeight);
-                using var g = Graphics.FromImage(outputBitmap);
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-                g.DrawImage(screenBitmap, 0, 0, captureWidth, captureHeight);
-            }
-            else
-            {
-                outputBitmap = screenBitmap;
-            }
-
-            try
-            {
-                using var ms = new MemoryStream();
-                var jpegEncoder = GetJpegEncoder();
-                var encoderParams = new EncoderParameters(1);
-                encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
-                outputBitmap.Save(ms, jpegEncoder, encoderParams);
-                LastCaptureFailureReason = null;
-                return Task.FromResult(ms.ToArray());
-            }
-            finally
-            {
-                if (scale < 1.0)
-                    outputBitmap.Dispose();
-            }
+            using var ms = new MemoryStream();
+            var jpegEncoder = GetJpegEncoder();
+            var encoderParams = new EncoderParameters(1);
+            encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
+            bitmap.Save(ms, jpegEncoder, encoderParams);
+            LastCaptureFailureReason = null;
+            return Task.FromResult(ms.ToArray());
         }
         catch (Exception ex)
         {
@@ -247,26 +250,198 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     public (int Width, int Height, int Left, int Top) GetScreenSize()
     {
-        if (_dxgi.IsAvailable && _dxgi.Width > 0 && _dxgi.Height > 0)
+        var bounds = GetActiveBounds();
+        if (CanUseDxgiForCurrentTarget())
+        {
             return (_dxgi.Width, _dxgi.Height, _dxgi.DesktopLeft, _dxgi.DesktopTop);
-        
-        // GDI captures primary monitor (always at 0,0 in Windows virtual space if it's the anchor)
-        // Actually, primary monitor is not ALWAYS at 0,0 if virtual desk is weird, but it usually is.
-        return (GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), 0, 0);
+        }
+
+        return (bounds.Width, bounds.Height, bounds.Left, bounds.Top);
+    }
+
+    internal bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot)
+    {
+        snapshot = null;
+
+        if (CanUseDxgiForCurrentTarget() && _dxgi.TryCaptureCurrentCursorShape(out snapshot) && snapshot is not null)
+        {
+            return true;
+        }
+
+        return WindowsCursorShapeCapture.TryCaptureCurrentShape(out snapshot) && snapshot is not null;
     }
 
     public void Dispose() => _dxgi.Dispose();
+
+    private Rectangle GetActiveBounds()
+    {
+        lock (_displayLock)
+        {
+            RefreshDisplays();
+
+            if (_activeTarget.CaptureMode == DesktopCaptureMode.Monitor &&
+                !string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+            {
+                var display = _displays.FirstOrDefault(candidate =>
+                    string.Equals(candidate.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
+                if (display is not null)
+                {
+                    return display.Bounds;
+                }
+            }
+
+            return GetVirtualDesktopBounds();
+        }
+    }
+
+    private bool CanUseDxgiForCurrentTarget()
+    {
+        if (!_dxgi.IsAvailable || string.IsNullOrWhiteSpace(_dxgi.OutputDeviceName))
+        {
+            return false;
+        }
+
+        lock (_displayLock)
+        {
+            if (_activeTarget.CaptureMode != DesktopCaptureMode.Monitor || string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+            {
+                return false;
+            }
+
+            var display = _displays.FirstOrDefault(candidate =>
+                string.Equals(candidate.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
+            return display is not null &&
+                   string.Equals(display.DeviceName, _dxgi.OutputDeviceName, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private Bitmap CaptureBitmap(Rectangle bounds, bool drawCursor)
+    {
+        var bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy);
+
+        if (drawCursor)
+        {
+            DrawCursorOnBitmap(graphics, bounds.Left, bounds.Top);
+        }
+
+        return bitmap;
+    }
+
+    private static Bitmap? ScaleBitmap(Bitmap sourceBitmap, double scale)
+    {
+        if (scale >= 0.999)
+        {
+            return null;
+        }
+
+        var captureWidth = Math.Max(1, (int)(sourceBitmap.Width * scale));
+        var captureHeight = Math.Max(1, (int)(sourceBitmap.Height * scale));
+        var outputBitmap = new Bitmap(captureWidth, captureHeight);
+        using var graphics = Graphics.FromImage(outputBitmap);
+        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+        graphics.DrawImage(sourceBitmap, 0, 0, captureWidth, captureHeight);
+        return outputBitmap;
+    }
+
+    private void RefreshDisplays()
+    {
+        var displays = EnumerateDisplays();
+        _displays = displays
+            .OrderByDescending(display => display.IsPrimary)
+            .ThenBy(display => display.Name, StringComparer.Ordinal)
+            .ToList();
+
+        var version = new HashCode();
+        foreach (var display in _displays)
+        {
+            version.Add(display.DisplayId, StringComparer.Ordinal);
+            version.Add(display.Bounds.Left);
+            version.Add(display.Bounds.Top);
+            version.Add(display.Bounds.Width);
+            version.Add(display.Bounds.Height);
+            version.Add(display.IsPrimary);
+        }
+
+        _displayListVersion = _displays.Count == 0 ? 1 : version.ToHashCode();
+
+        if (_activeTarget.CaptureMode == DesktopCaptureMode.Monitor &&
+            !string.IsNullOrWhiteSpace(_activeTarget.DisplayId) &&
+            _displays.All(display => !string.Equals(display.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal)))
+        {
+            var primaryDisplay = _displays.FirstOrDefault(static display => display.IsPrimary);
+            _activeTarget = primaryDisplay is null
+                ? new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop }
+                : new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.Monitor, DisplayId = primaryDisplay.DisplayId };
+        }
+    }
+
+    private static List<DisplayDefinition> EnumerateDisplays()
+    {
+        var displays = new List<DisplayDefinition>();
+        var callback = new MonitorEnumProc((IntPtr monitorHandle, IntPtr _, ref RECT monitorRect, IntPtr __) =>
+        {
+            var info = new MONITORINFOEX();
+            info.cbSize = Marshal.SizeOf<MONITORINFOEX>();
+            if (!GetMonitorInfo(monitorHandle, ref info))
+            {
+                return true;
+            }
+
+            var bounds = Rectangle.FromLTRB(
+                monitorRect.Left,
+                monitorRect.Top,
+                monitorRect.Right,
+                monitorRect.Bottom);
+
+            var deviceName = info.szDevice ?? string.Empty;
+            var displayId = string.IsNullOrWhiteSpace(deviceName)
+                ? $"monitor-{displays.Count + 1}"
+                : deviceName.Trim();
+            var name = (info.dwFlags & MONITORINFOF_PRIMARY) != 0
+                ? $"Primary Display ({displayId})"
+                : $"Display {displays.Count + 1} ({displayId})";
+
+            displays.Add(new DisplayDefinition(
+                displayId,
+                displayId,
+                deviceName,
+                name,
+                bounds,
+                (info.dwFlags & MONITORINFOF_PRIMARY) != 0));
+
+            return true;
+        });
+
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, callback, IntPtr.Zero);
+        return displays;
+    }
+
+    private static Rectangle GetVirtualDesktopBounds()
+        => new(
+            GetSystemMetrics(SM_XVIRTUALSCREEN),
+            GetSystemMetrics(SM_YVIRTUALSCREEN),
+            GetSystemMetrics(SM_CXVIRTUALSCREEN),
+            GetSystemMetrics(SM_CYVIRTUALSCREEN));
 
     private static ImageCodecInfo? _cachedJpegEncoder;
 
     private static ImageCodecInfo GetJpegEncoder()
     {
-        if (_cachedJpegEncoder != null) return _cachedJpegEncoder;
+        if (_cachedJpegEncoder != null)
+        {
+            return _cachedJpegEncoder;
+        }
+
         foreach (var codec in ImageCodecInfo.GetImageEncoders())
         {
             if (codec.MimeType == "image/jpeg")
+            {
                 return _cachedJpegEncoder = codec;
+            }
         }
+
         throw new InvalidOperationException("JPEG encoder not found.");
     }
 
@@ -277,15 +452,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     #region P/Invoke
 
-    private const int SM_CXSCREEN = 0;
-    private const int SM_CYSCREEN = 1;
-
-    [DllImport("user32.dll")]
-    private static extern int GetSystemMetrics(int nIndex);
-
-    // ── Cursor drawing P/Invoke ───────────────────────────────────────────────
-
-    private const int CURSOR_SHOWING = 0x00000001;
+    private const int SM_XVIRTUALSCREEN = 76;
+    private const int SM_YVIRTUALSCREEN = 77;
+    private const int SM_CXVIRTUALSCREEN = 78;
+    private const int SM_CYVIRTUALSCREEN = 79;
+    private const int MONITORINFOF_PRIMARY = 0x00000001;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT
@@ -293,6 +464,49 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         public int X;
         public int Y;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MONITORINFOEX
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public int dwFlags;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string szDevice;
+    }
+
+    private delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumDisplayMonitors(
+        IntPtr hdc,
+        IntPtr lprcClip,
+        MonitorEnumProc lpfnEnum,
+        IntPtr dwData);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
+
+    // ── Cursor drawing P/Invoke ───────────────────────────────────────────────
+
+    private const int CURSOR_SHOWING = 0x00000001;
+    private const uint DI_NORMAL = 0x0003;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct CURSORINFO
@@ -328,39 +542,53 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     [DllImport("gdi32.dll")]
     private static extern bool DeleteObject(IntPtr hObject);
 
-    private const uint DI_NORMAL = 0x0003;
-
     /// <summary>
     /// Draws the system cursor at its current position onto the given Graphics surface.
     /// Uses GetCursorInfo + DrawIconEx for reliable cursor rendering including animated cursors.
     /// </summary>
-    private static void DrawCursorOnBitmap(Graphics g)
+    private static void DrawCursorOnBitmap(Graphics graphics, int captureLeft, int captureTop)
     {
         var ci = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
         if (!GetCursorInfo(ref ci) || (ci.flags & CURSOR_SHOWING) == 0)
-            return;
-
-        // Get hotspot offset so the cursor is drawn at the correct position
-        if (GetIconInfo(ci.hCursor, out var iconInfo))
         {
-            int drawX = ci.ptScreenPos.X - iconInfo.xHotspot;
-            int drawY = ci.ptScreenPos.Y - iconInfo.yHotspot;
+            return;
+        }
 
-            // Clean up GDI bitmap handles from GetIconInfo
-            if (iconInfo.hbmMask != IntPtr.Zero) DeleteObject(iconInfo.hbmMask);
-            if (iconInfo.hbmColor != IntPtr.Zero) DeleteObject(iconInfo.hbmColor);
+        if (!GetIconInfo(ci.hCursor, out var iconInfo))
+        {
+            return;
+        }
 
-            IntPtr hdc = g.GetHdc();
-            try
-            {
-                DrawIconEx(hdc, drawX, drawY, ci.hCursor, 0, 0, 0, IntPtr.Zero, DI_NORMAL);
-            }
-            finally
-            {
-                g.ReleaseHdc(hdc);
-            }
+        var drawX = ci.ptScreenPos.X - captureLeft - iconInfo.xHotspot;
+        var drawY = ci.ptScreenPos.Y - captureTop - iconInfo.yHotspot;
+
+        if (iconInfo.hbmMask != IntPtr.Zero)
+        {
+            DeleteObject(iconInfo.hbmMask);
+        }
+        if (iconInfo.hbmColor != IntPtr.Zero)
+        {
+            DeleteObject(iconInfo.hbmColor);
+        }
+
+        var hdc = graphics.GetHdc();
+        try
+        {
+            DrawIconEx(hdc, drawX, drawY, ci.hCursor, 0, 0, 0, IntPtr.Zero, DI_NORMAL);
+        }
+        finally
+        {
+            graphics.ReleaseHdc(hdc);
         }
     }
 
     #endregion
+
+    private sealed record DisplayDefinition(
+        string DisplayId,
+        string PersistentDisplayKey,
+        string DeviceName,
+        string Name,
+        Rectangle Bounds,
+        bool IsPrimary);
 }

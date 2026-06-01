@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -16,6 +17,7 @@ using Remex.Host;
 using Remex.Host.Services.Input;
 using Remex.Host.Services.RemoteDesktop;
 using Remex.Host.Services.RemoteDesktop.Windows;
+using Remex.Host.Services.ScreenCapture;
 
 namespace Remex.Host.Handlers;
 
@@ -40,6 +42,7 @@ public sealed class RemoteDesktopHandler : IDisposable
     private int _desktopTop = 0;
     private DesktopCodecKind _negotiatedCodec = DesktopCodecKind.Mjpeg;
     private DesktopCodecKind _activeCodec = DesktopCodecKind.Mjpeg;
+    private DesktopClientCapabilities _clientCapabilities = new();
 
     // Cached FFmpeg availability — probed once at handler construction, not per-stream-start
     private static bool? _ffmpegAvailableCache;
@@ -84,6 +87,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
+        using var sendLock = new SemaphoreSlim(1, 1);
         var hostCapabilities = _hostCapabilitiesProvider.GetCurrent();
 
         if (!hostCapabilities.SupportsRemoteDesktop)
@@ -92,6 +96,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 webSocket,
                 hostCapabilities.RemoteDesktopUnavailableReason
                     ?? "Remote desktop is unavailable in the current host runtime.",
+                sendLock,
                 ct);
 
             try
@@ -115,6 +120,7 @@ public sealed class RemoteDesktopHandler : IDisposable
             await SendDesktopError(
                 webSocket,
                 BuildWindowsDesktopUnavailableMessage(windowsDiagnostics),
+                sendLock,
                 ct);
 
             try
@@ -143,20 +149,23 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                 switch (message.Type)
                 {
+                    case MessageTypes.DesktopDisplayQuery:
+                        await SendDisplayCatalogAsync(webSocket, sendLock, ct);
+                        break;
+
                     case MessageTypes.DesktopStart:
                         if (message.DesktopConfig is not null)
+                        {
+                            if (!TryApplyCaptureTarget(message.DesktopConfig, out var targetError))
+                            {
+                                await SendDesktopError(webSocket, targetError ?? "The requested desktop target is unavailable.", sendLock, ct);
+                                break;
+                            }
+
                             ApplyConfig(message.DesktopConfig);
+                        }
 
                         _logger.LogInformation("Desktop streaming started (quality={Q}, scale={S}, fps={F}).", _quality, _scale, _targetFps);
-
-                        // Send screen metadata
-                        var (sw, sh, sl, st) = _screenCapture.GetScreenSize();
-                        _desktopLeft = sl;
-                        _desktopTop = st;
-
-                        var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
-                        var streamMappingId = Guid.NewGuid().ToString("N");
-                        var streamSerial = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                         // Negotiate codec selection based on client preference and host availability
                         _activeCodec = DesktopCodecKind.Mjpeg;
@@ -183,61 +192,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                             }
                         }
 
-                        var metaMsg = new RemexMessage
-                        {
-                            Type = MessageTypes.DesktopMeta,
-                            DesktopMeta = new DesktopMeta
-                            {
-                                ScreenWidth = sw,
-                                ScreenHeight = sh,
-                                DesktopLeft = sl,
-                                DesktopTop = st,
-                                HostInstanceId = HostBootstrapper.InstanceId,
-                                CursorX = cursorX,
-                                CursorY = cursorY,
-                                // Stage 3 additions
-                                CaptureBackend = _screenCapture.BackendName,
-                                InputBackend = _inputSimulation.BackendName,
-                                StreamMappingId = streamMappingId,
-                                LogicalWidth = sw,
-                                LogicalHeight = sh,
-                                PixelWidth = sw,
-                                PixelHeight = sh,
-                                StreamSerial = streamSerial,
-                                CursorMode = "absolute",
-                                CodecInfo = new DesktopCodecInfo
-                                {
-                                    Codec = _activeCodec,
-                                    TargetFps = _targetFps,
-                                    EncoderBackend = _activeCodec == DesktopCodecKind.H264 ? DesktopEncoderBackend.Software : null
-                                },
-                                StylusCapabilities = DesktopStylusCapabilities.None,
-                            }
-                        };
-                        await MessageSerializer.SendAsync(webSocket, metaMsg, ct);
-
-                        // Stage 3: send stream descriptor so client has mapping context
-                        var descriptorMsg = new RemexMessage
-                        {
-                            Type = MessageTypes.DesktopStreamDescriptor,
-                            DesktopStreamDescriptor = new DesktopStreamDescriptor
-                            {
-                                StreamMappingId = streamMappingId,
-                                StreamSerial = streamSerial,
-                                LogicalWidth = sw,
-                                LogicalHeight = sh,
-                                PixelWidth = sw,
-                                PixelHeight = sh,
-                            }
-                        };
-                        await MessageSerializer.SendAsync(webSocket, descriptorMsg, ct);
+                        var sessionState = new DesktopSessionState(_clientCapabilities);
+                        var frameBuffer = new FrameBuffer();
+                        await SendCurrentStreamBootstrapAsync(webSocket, sessionState, sendLock, ct);
 
                         // Run stream + input receive + cursor update concurrently
                         using (var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                         {
-                            var streamTask = StreamFramesAsync(webSocket, streamCts.Token);
-                            var receiveTask = ReceiveInputLoopAsync(webSocket, streamCts, ct);
-                            var cursorTask = StreamCursorPositionAsync(webSocket, streamCts.Token);
+                            var streamTask = StreamFramesAsync(webSocket, frameBuffer, sessionState, sendLock, streamCts.Token);
+                            var receiveTask = ReceiveInputLoopAsync(webSocket, frameBuffer, sessionState, sendLock, streamCts, ct);
+                            var cursorTask = StreamCursorPositionAsync(webSocket, sessionState, sendLock, streamCts.Token);
 
                             // When either finishes, cancel the others
                             await Task.WhenAny(streamTask, receiveTask, cursorTask);
@@ -281,9 +245,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private async Task StreamFramesAsync(WebSocket webSocket, CancellationToken ct)
+    private async Task StreamFramesAsync(
+        WebSocket webSocket,
+        FrameBuffer frameBuffer,
+        DesktopSessionState sessionState,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
     {
-        var frameBuffer = new FrameBuffer();
         var frameAvailable = new SemaphoreSlim(0);
         var captureStopwatch = new Stopwatch();
 
@@ -300,27 +268,7 @@ public sealed class RemoteDesktopHandler : IDisposable
         var metricsStopwatch = Stopwatch.StartNew();
 
         IH264Encoder? h264Encoder = null;
-        if (_activeCodec == DesktopCodecKind.H264)
-        {
-            var (sw, sh, _, _) = _screenCapture.GetScreenSize();
-            int targetW = (int)(sw * _scale);
-            int targetH = (int)(sh * _scale);
-            // Ensure width and height are even (required by most H.264 encoders)
-            targetW = (targetW / 2) * 2;
-            targetH = (targetH / 2) * 2;
-
-            var encoder = new FFmpegH264Encoder(_logger);
-            if (encoder.Initialize(targetW, targetH, _targetFps, 1500))
-            {
-                h264Encoder = encoder;
-            }
-            else
-            {
-                encoder.Dispose();
-                _logger.LogWarning("Failed to initialize H.264 encoder. Falling back to MJPEG.");
-                _activeCodec = DesktopCodecKind.Mjpeg;
-            }
-        }
+        long encoderSerial = -1;
 
         // Start capture/encode loop in a separate task
         var captureTask = Task.Run(async () =>
@@ -330,19 +278,45 @@ public sealed class RemoteDesktopHandler : IDisposable
                 captureStopwatch.Restart();
                 try
                 {
+                    var captureSerial = sessionState.StreamSerial;
                     byte[]? frameBytes = null;
+                    DesktopCodecKind frameCodec = _activeCodec;
+                    var frameFlags = DesktopFrameFlags.None;
+                    if (_activeCodec == DesktopCodecKind.H264 && encoderSerial != captureSerial)
+                    {
+                        h264Encoder?.Dispose();
+                        h264Encoder = TryCreateH264Encoder();
+                        encoderSerial = captureSerial;
+                        if (h264Encoder is null)
+                        {
+                            frameCodec = DesktopCodecKind.Mjpeg;
+                            _activeCodec = DesktopCodecKind.Mjpeg;
+                        }
+                        else
+                        {
+                            frameCodec = DesktopCodecKind.H264;
+                            frameFlags = DesktopFrameFlags.KeyFrame;
+                        }
+                    }
+
                     if (_activeCodec == DesktopCodecKind.H264 && h264Encoder is not null)
                     {
-                        bool forceKeyframe = (totalFramesCaptured % 60 == 0);
+                        bool forceKeyframe = frameFlags.HasFlag(DesktopFrameFlags.KeyFrame) || (totalFramesCaptured % 60 == 0);
                         var rawPixels = await _screenCapture.CaptureRawScreenAsync(_scale, _drawCursor, ct);
+                        if (captureSerial != sessionState.StreamSerial)
+                            continue;
+
                         if (rawPixels is { Length: > 0 })
                         {
                             frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
+                            frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
                         }
                     }
                     else
                     {
                         frameBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _drawCursor, ct);
+                        if (captureSerial != sessionState.StreamSerial)
+                            continue;
                     }
 
                     if (frameBytes is { Length: > 0 })
@@ -355,8 +329,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                         totalFramesCaptured++;
 
                         // Store the latest frame with thread-safe overwrite (latest-frame semantics)
-                        var oldFrame = Interlocked.Exchange(ref frameBuffer.Bytes, frameBytes);
-                        if (oldFrame != null && !ReferenceEquals(oldFrame, frameBytes))
+                        var capturedFrame = new CapturedFrame
+                        {
+                            Bytes = frameBytes,
+                            StreamSerial = captureSerial,
+                            Sequence = sessionState.NextFrameSequence(),
+                            Flags = frameFlags,
+                            Codec = frameCodec,
+                        };
+                        var oldFrame = Interlocked.Exchange(ref frameBuffer.Frame, capturedFrame);
+                        if (oldFrame != null && !ReferenceEquals(oldFrame, capturedFrame))
                         {
                             totalFramesDropped++;
                         }
@@ -396,7 +378,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         errorText = BuildWindowsCaptureFailureMessage(windowsReport, totalFramesSent);
                     }
 
-                    await SendDesktopError(webSocket, errorText, ct);
+                    await SendDesktopError(webSocket, errorText, sendLock, ct);
                 }
 
                 // Throttle. While capture is failing (locked desktop, lost session, DXGI recovering),
@@ -425,7 +407,7 @@ public sealed class RemoteDesktopHandler : IDisposable
         // Send loop (runs on StreamFramesAsync thread)
         try
         {
-            byte[]? lastSentFrame = null;
+            CapturedFrame? lastSentFrame = null;
             var sendStopwatch = new Stopwatch();
 
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
@@ -435,8 +417,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 catch (OperationCanceledException) { break; }
 
                 // Retrieve the latest frame (and clear it from the buffer)
-                var currentFrame = Interlocked.Exchange(ref frameBuffer.Bytes, null);
-                if (currentFrame is not { Length: > 0 })
+                var currentFrame = Interlocked.Exchange(ref frameBuffer.Frame, null);
+                if (currentFrame?.Bytes is not { Length: > 0 })
                 {
                     continue;
                 }
@@ -450,11 +432,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                 sendStopwatch.Restart();
                 try
                 {
-                    await webSocket.SendAsync(
-                        new ArraySegment<byte>(currentFrame),
-                        WebSocketMessageType.Binary,
-                        endOfMessage: true,
-                        ct);
+                    var payload = sessionState.UseFrameEnvelope
+                        ? DesktopFrameEnvelope.Wrap(
+                            currentFrame.Bytes,
+                            currentFrame.StreamSerial,
+                            currentFrame.Sequence,
+                            currentFrame.Codec,
+                            currentFrame.Flags)
+                        : currentFrame.Bytes;
+
+                    await SendBinaryAsync(webSocket, payload, sendLock, ct);
 
                     totalSendMs += sendStopwatch.Elapsed.TotalMilliseconds;
                     totalFramesSent++;
@@ -504,7 +491,7 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private async Task SendDesktopError(WebSocket webSocket, string text, CancellationToken ct)
+    private async Task SendDesktopError(WebSocket webSocket, string text, SemaphoreSlim sendLock, CancellationToken ct)
     {
         try
         {
@@ -513,7 +500,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 Type = MessageTypes.DesktopError,
                 ErrorText = text,
             };
-            await MessageSerializer.SendAsync(webSocket, msg, ct);
+            await SendMessageAsync(webSocket, msg, sendLock, ct);
         }
         catch (Exception ex)
         {
@@ -521,43 +508,53 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
+    private async Task SendDisplayCatalogAsync(WebSocket webSocket, SemaphoreSlim sendLock, CancellationToken ct)
+    {
+        try
+        {
+            var message = new RemexMessage
+            {
+                Type = MessageTypes.DesktopDisplayList,
+                DesktopDisplayCatalog = _screenCapture.GetDisplayCatalog(),
+            };
+            await SendMessageAsync(webSocket, message, sendLock, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send DesktopDisplayList to client.");
+        }
+    }
+
     /// <summary>
     /// Periodically sends cursor position updates to the client (for trackpad mode).
     /// Updates every 100ms to provide smooth cursor tracking without excessive overhead.
     /// </summary>
-    private async Task StreamCursorPositionAsync(WebSocket webSocket, CancellationToken ct)
+    private async Task StreamCursorPositionAsync(WebSocket webSocket, DesktopSessionState sessionState, SemaphoreSlim sendLock, CancellationToken ct)
     {
-        var lastX = 0;
-        var lastY = 0;
+        var (lastX, lastY) = _inputSimulation.GetCursorPosition();
+        var lastShapeSerial = sessionState.GetCurrentCursorShape()?.ShapeSerial ?? 0;
 
         try
         {
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+                var currentShape = sessionState.GetCurrentCursorShape();
+                if (sessionState.UseCursorShape && OperatingSystem.IsWindows())
+                {
+                    currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
+                }
 
                 // Only send update if cursor moved (reduce network traffic)
-                if (cursorX != lastX || cursorY != lastY)
+                var currentShapeSerial = currentShape?.ShapeSerial ?? 0;
+                if (cursorX != lastX || cursorY != lastY || currentShapeSerial != lastShapeSerial)
                 {
-                    var (sw, sh, _, _) = _screenCapture.GetScreenSize();
-                    var metaMsg = new RemexMessage
-                    {
-                        Type = MessageTypes.DesktopMeta,
-                        DesktopMeta = new DesktopMeta
-                        {
-                            ScreenWidth = sw,
-                            ScreenHeight = sh,
-                            HostInstanceId = HostBootstrapper.InstanceId,
-                            CursorX = cursorX,
-                            CursorY = cursorY,
-                        }
-                    };
-
                     try
                     {
-                        await MessageSerializer.SendAsync(webSocket, metaMsg, ct);
+                        await SendCursorStateAsync(webSocket, sessionState, cursorX, cursorY, currentShape, sendLock, ct);
                         lastX = cursorX;
                         lastY = cursorY;
+                        lastShapeSerial = currentShapeSerial;
                     }
                     catch (WebSocketException)
                     {
@@ -576,7 +573,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private async Task ReceiveInputLoopAsync(WebSocket webSocket, CancellationTokenSource streamCts, CancellationToken ct)
+    private async Task ReceiveInputLoopAsync(
+        WebSocket webSocket,
+        FrameBuffer frameBuffer,
+        DesktopSessionState sessionState,
+        SemaphoreSlim sendLock,
+        CancellationTokenSource streamCts,
+        CancellationToken ct)
     {
         try
         {
@@ -604,12 +607,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                         ApplyConfig(message.DesktopConfig);
                         break;
 
+                    case MessageTypes.DesktopTargetSwitch when message.DesktopTargetSwitch is not null:
+                        await HandleTargetSwitchAsync(webSocket, frameBuffer, sessionState, message.DesktopTargetSwitch, sendLock, ct);
+                        break;
+
                     case MessageTypes.DesktopWindowQuery when message.DesktopWindowQuery is not null:
-                        await SendDesktopWindowResult(webSocket, _windowControl.QueryWindows(message.DesktopWindowQuery), message.CorrelationId, ct);
+                        await SendDesktopWindowResult(webSocket, _windowControl.QueryWindows(message.DesktopWindowQuery), message.CorrelationId, sendLock, ct);
                         break;
 
                     case MessageTypes.DesktopWindowAction when message.DesktopWindowAction is not null:
-                        await SendDesktopWindowResult(webSocket, _windowControl.ExecuteAction(message.DesktopWindowAction), message.CorrelationId, ct);
+                        await SendDesktopWindowResult(webSocket, _windowControl.ExecuteAction(message.DesktopWindowAction), message.CorrelationId, sendLock, ct);
                         break;
 
                     case MessageTypes.DesktopStop:
@@ -641,7 +648,7 @@ public sealed class RemoteDesktopHandler : IDisposable
         catch (WebSocketException) { }
     }
 
-    private async Task SendDesktopWindowResult(WebSocket webSocket, DesktopWindowResult result, string? correlationId, CancellationToken ct)
+    private async Task SendDesktopWindowResult(WebSocket webSocket, DesktopWindowResult result, string? correlationId, SemaphoreSlim sendLock, CancellationToken ct)
     {
         try
         {
@@ -652,7 +659,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 DesktopWindowResult = result,
             };
 
-            await MessageSerializer.SendAsync(webSocket, msg, ct);
+            await SendMessageAsync(webSocket, msg, sendLock, ct);
         }
         catch (Exception ex)
         {
@@ -715,13 +722,330 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private void ApplyConfig(DesktopConfig config)
     {
+        if (config.ClientCapabilities is not null)
+        {
+            _clientCapabilities = config.ClientCapabilities;
+        }
+
         _quality = Math.Clamp(config.Quality, 1, 100);
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
         _targetFps = Math.Clamp(config.TargetFps, 1, 360);
-        _drawCursor = config.DrawCursor;
+        _drawCursor = config.DrawCursor && !(_clientCapabilities.SupportsCursorState || _clientCapabilities.SupportsCursorShape);
         _negotiatedCodec = config.Codec;
 
         _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}, codec={C}", _quality, _scale, _targetFps, _drawCursor, _negotiatedCodec);
+    }
+
+    private bool TryApplyCaptureTarget(DesktopConfig config, out string? error)
+    {
+        var requestedExplicitTarget =
+            config.CaptureMode.HasValue ||
+            !string.IsNullOrWhiteSpace(config.DisplayId) ||
+            config.DisplayListVersion.HasValue;
+
+        if (config.ClientCapabilities?.SupportsDisplaySelection == true &&
+            config.DesktopProtocolVersion.GetValueOrDefault() >= 1 &&
+            !requestedExplicitTarget)
+        {
+            error = "Select a desktop target before starting the stream.";
+            return false;
+        }
+
+        if (!requestedExplicitTarget)
+        {
+            error = null;
+            return true;
+        }
+
+        if (!config.CaptureMode.HasValue)
+        {
+            error = "The requested desktop target did not specify a capture mode.";
+            return false;
+        }
+
+        var displayCatalog = _screenCapture.GetDisplayCatalog();
+        if (config.DisplayListVersion.HasValue &&
+            config.DisplayListVersion.Value != displayCatalog.DisplayListVersion)
+        {
+            error = "The available display list changed before the stream started. Refresh the display list and try again.";
+            return false;
+        }
+
+        if (!displayCatalog.SupportedCaptureModes.Contains(config.CaptureMode.Value))
+        {
+            error = $"The host does not support '{config.CaptureMode.Value}' capture mode.";
+            return false;
+        }
+
+        return TryApplyCaptureTarget(new DesktopCaptureTarget
+        {
+            CaptureMode = config.CaptureMode.Value,
+            DisplayId = config.DisplayId,
+        }, config.DisplayListVersion, out error);
+    }
+
+    private bool TryApplyCaptureTarget(DesktopCaptureTarget target, int? displayListVersion, out string? error)
+    {
+        var displayCatalog = _screenCapture.GetDisplayCatalog();
+        if (displayListVersion.HasValue &&
+            displayListVersion.Value != displayCatalog.DisplayListVersion)
+        {
+            error = "The available display list changed before the stream started. Refresh the display list and try again.";
+            return false;
+        }
+
+        if (!displayCatalog.SupportedCaptureModes.Contains(target.CaptureMode))
+        {
+            error = $"The host does not support '{target.CaptureMode}' capture mode.";
+            return false;
+        }
+
+        return _screenCapture.TrySetCaptureTarget(target, out error);
+    }
+
+    private async Task HandleTargetSwitchAsync(
+        WebSocket webSocket,
+        FrameBuffer frameBuffer,
+        DesktopSessionState sessionState,
+        DesktopTargetSwitchRequest request,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
+    {
+        if (!sessionState.SupportsTargetSwitch)
+        {
+            await SendDesktopError(webSocket, "This client session does not support in-session display switching.", sendLock, ct);
+            return;
+        }
+
+        if (!TryApplyCaptureTarget(request.Target, request.DisplayListVersion, out var error))
+        {
+            await SendDesktopError(webSocket, error ?? "The requested desktop target is unavailable.", sendLock, ct);
+            return;
+        }
+
+        Interlocked.Exchange(ref frameBuffer.Frame, null);
+        sessionState.ResetStream();
+        await SendCurrentStreamBootstrapAsync(webSocket, sessionState, sendLock, ct);
+    }
+
+    private async Task SendCurrentStreamBootstrapAsync(
+        WebSocket webSocket,
+        DesktopSessionState sessionState,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
+    {
+        var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
+        _desktopLeft = desktopLeft;
+        _desktopTop = desktopTop;
+        var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+
+        await SendMessageAsync(webSocket, new RemexMessage
+        {
+            Type = MessageTypes.DesktopMeta,
+            DesktopMeta = new DesktopMeta
+            {
+                ScreenWidth = screenWidth,
+                ScreenHeight = screenHeight,
+                DesktopLeft = desktopLeft,
+                DesktopTop = desktopTop,
+                HostInstanceId = HostBootstrapper.InstanceId,
+                CursorX = cursorX,
+                CursorY = cursorY,
+                CaptureBackend = _screenCapture.BackendName,
+                InputBackend = _inputSimulation.BackendName,
+                StreamMappingId = sessionState.StreamMappingId,
+                LogicalWidth = screenWidth,
+                LogicalHeight = screenHeight,
+                PixelWidth = screenWidth,
+                PixelHeight = screenHeight,
+                StreamSerial = sessionState.StreamSerial,
+                CursorMode = "absolute",
+                CodecInfo = new DesktopCodecInfo
+                {
+                    Codec = _activeCodec,
+                    TargetFps = _targetFps,
+                    EncoderBackend = _activeCodec == DesktopCodecKind.H264 ? DesktopEncoderBackend.Software : null
+                },
+                StylusCapabilities = DesktopStylusCapabilities.None,
+            }
+        }, sendLock, ct);
+
+        await SendMessageAsync(webSocket, new RemexMessage
+        {
+            Type = MessageTypes.DesktopStreamDescriptor,
+            DesktopStreamDescriptor = new DesktopStreamDescriptor
+            {
+                StreamMappingId = sessionState.StreamMappingId,
+                StreamSerial = sessionState.StreamSerial,
+                LogicalWidth = screenWidth,
+                LogicalHeight = screenHeight,
+                PixelWidth = screenWidth,
+                PixelHeight = screenHeight,
+            }
+        }, sendLock, ct);
+
+        if (sessionState.UseCursorState)
+        {
+            var currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: true, ct);
+            await SendCursorStateAsync(webSocket, sessionState, cursorX, cursorY, currentShape, sendLock, ct);
+        }
+    }
+
+    private async Task SendCursorUpdateAsync(
+        WebSocket webSocket,
+        DesktopSessionState sessionState,
+        int cursorX,
+        int cursorY,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
+    {
+        if (sessionState.UseCursorState)
+        {
+            var currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
+            await SendCursorStateAsync(webSocket, sessionState, cursorX, cursorY, currentShape, sendLock, ct);
+            return;
+        }
+
+        var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
+        _desktopLeft = desktopLeft;
+        _desktopTop = desktopTop;
+
+        await SendMessageAsync(webSocket, new RemexMessage
+        {
+            Type = MessageTypes.DesktopMeta,
+            DesktopMeta = new DesktopMeta
+            {
+                ScreenWidth = screenWidth,
+                ScreenHeight = screenHeight,
+                DesktopLeft = desktopLeft,
+                DesktopTop = desktopTop,
+                HostInstanceId = HostBootstrapper.InstanceId,
+                CursorX = cursorX,
+                CursorY = cursorY,
+                StreamSerial = sessionState.StreamSerial,
+            }
+        }, sendLock, ct);
+    }
+
+    private async Task SendCursorStateAsync(
+        WebSocket webSocket,
+        DesktopSessionState sessionState,
+        int cursorX,
+        int cursorY,
+        DesktopCursorShape? currentShape,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
+    {
+        var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
+        _desktopLeft = desktopLeft;
+        _desktopTop = desktopTop;
+
+        await SendMessageAsync(webSocket, new RemexMessage
+        {
+            Type = MessageTypes.DesktopCursorState,
+            DesktopCursorState = new DesktopCursorState
+            {
+                CursorSerial = sessionState.NextCursorSerial(),
+                StreamSerial = sessionState.StreamSerial,
+                X = cursorX,
+                Y = cursorY,
+                Visible = cursorX >= desktopLeft &&
+                          cursorY >= desktopTop &&
+                          cursorX < desktopLeft + screenWidth &&
+                          cursorY < desktopTop + screenHeight,
+                ShapeSerial = currentShape?.ShapeSerial ?? 0,
+                HotspotX = currentShape?.HotspotX ?? 0,
+                HotspotY = currentShape?.HotspotY ?? 0,
+            }
+        }, sendLock, ct);
+    }
+
+    private async Task<DesktopCursorShape?> SyncCursorShapeAsync(
+        WebSocket webSocket,
+        DesktopSessionState sessionState,
+        SemaphoreSlim sendLock,
+        bool forceSend,
+        CancellationToken ct)
+    {
+        if (!sessionState.UseCursorShape || !OperatingSystem.IsWindows())
+        {
+            return sessionState.GetCurrentCursorShape();
+        }
+
+        DesktopCursorShape? updatedShape = null;
+        if (_screenCapture is WindowsScreenCaptureService windowsCapture &&
+            windowsCapture.TryCaptureCurrentCursorShape(out var snapshot) &&
+            snapshot is not null)
+        {
+            updatedShape = sessionState.UpdateCursorShape(snapshot);
+        }
+
+        var currentShape = updatedShape ?? sessionState.GetCurrentCursorShape();
+        if (currentShape is not null && (forceSend || updatedShape is not null))
+        {
+            await SendMessageAsync(webSocket, new RemexMessage
+            {
+                Type = MessageTypes.DesktopCursorShape,
+                DesktopCursorShape = currentShape,
+            }, sendLock, ct);
+        }
+
+        return currentShape;
+    }
+
+    private async Task SendMessageAsync(WebSocket webSocket, RemexMessage message, SemaphoreSlim sendLock, CancellationToken ct)
+    {
+        await sendLock.WaitAsync(ct);
+        try
+        {
+            if (webSocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            await MessageSerializer.SendAsync(webSocket, message, ct);
+        }
+        finally
+        {
+            sendLock.Release();
+        }
+    }
+
+    private async Task SendBinaryAsync(WebSocket webSocket, byte[] payload, SemaphoreSlim sendLock, CancellationToken ct)
+    {
+        await sendLock.WaitAsync(ct);
+        try
+        {
+            if (webSocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            await webSocket.SendAsync(new ArraySegment<byte>(payload), WebSocketMessageType.Binary, endOfMessage: true, ct);
+        }
+        finally
+        {
+            sendLock.Release();
+        }
+    }
+
+    private IH264Encoder? TryCreateH264Encoder()
+    {
+        var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
+        int targetWidth = (int)(screenWidth * _scale);
+        int targetHeight = (int)(screenHeight * _scale);
+        targetWidth = Math.Max(2, (targetWidth / 2) * 2);
+        targetHeight = Math.Max(2, (targetHeight / 2) * 2);
+
+        var encoder = new FFmpegH264Encoder(_logger);
+        if (encoder.Initialize(targetWidth, targetHeight, _targetFps, 1500))
+        {
+            return encoder;
+        }
+
+        encoder.Dispose();
+        _logger.LogWarning("Failed to initialize H.264 encoder for {Width}x{Height}. Falling back to MJPEG.", targetWidth, targetHeight);
+        return null;
     }
 
     /// <summary>
@@ -870,6 +1194,114 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private sealed class FrameBuffer
     {
-        public byte[]? Bytes;
+        public CapturedFrame? Frame;
+    }
+
+    private sealed class CapturedFrame
+    {
+        public byte[] Bytes { get; init; } = Array.Empty<byte>();
+        public long StreamSerial { get; init; }
+        public long Sequence { get; init; }
+        public DesktopFrameFlags Flags { get; init; }
+        public DesktopCodecKind Codec { get; init; }
+    }
+
+    private sealed class DesktopSessionState
+    {
+        private readonly object _sync = new();
+        private long _streamSerial;
+        private long _frameSequence;
+        private long _cursorSerial;
+        private long _shapeSerial;
+        private string _streamMappingId;
+        private DesktopCursorShape? _currentCursorShape;
+
+        public DesktopSessionState(DesktopClientCapabilities capabilities)
+        {
+            Capabilities = capabilities;
+            _streamSerial = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _streamMappingId = Guid.NewGuid().ToString("N");
+        }
+
+        public DesktopClientCapabilities Capabilities { get; }
+
+        public bool UseFrameEnvelope => Capabilities.SupportsFrameEnvelope;
+
+        public bool SupportsTargetSwitch => Capabilities.SupportsTargetSwitch && Capabilities.SupportsFrameEnvelope;
+
+        public bool UseCursorState => Capabilities.SupportsCursorState;
+
+        public bool UseCursorShape => Capabilities.SupportsCursorShape;
+
+        public long StreamSerial => Interlocked.Read(ref _streamSerial);
+
+        public string StreamMappingId
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _streamMappingId;
+                }
+            }
+        }
+
+        public long NextFrameSequence() => Interlocked.Increment(ref _frameSequence);
+
+        public long NextCursorSerial() => Interlocked.Increment(ref _cursorSerial);
+
+        public DesktopCursorShape? GetCurrentCursorShape()
+        {
+            lock (_sync)
+            {
+                return _currentCursorShape;
+            }
+        }
+
+        public DesktopCursorShape? UpdateCursorShape(CursorShapeSnapshot snapshot)
+        {
+            lock (_sync)
+            {
+                if (_currentCursorShape is not null &&
+                    _currentCursorShape.Width == snapshot.Width &&
+                    _currentCursorShape.Height == snapshot.Height &&
+                    _currentCursorShape.HotspotX == snapshot.HotspotX &&
+                    _currentCursorShape.HotspotY == snapshot.HotspotY &&
+                    _currentCursorShape.ShapeBytes.AsSpan().SequenceEqual(snapshot.ShapeBytes))
+                {
+                    return null;
+                }
+
+                _shapeSerial++;
+                _currentCursorShape = new DesktopCursorShape
+                {
+                    ShapeSerial = _shapeSerial,
+                    Width = snapshot.Width,
+                    Height = snapshot.Height,
+                    HotspotX = snapshot.HotspotX,
+                    HotspotY = snapshot.HotspotY,
+                    ShapeBytes = snapshot.ShapeBytes,
+                };
+
+                return _currentCursorShape;
+            }
+        }
+
+        public void ResetStream()
+        {
+            lock (_sync)
+            {
+                var nextSerial = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                if (nextSerial <= _streamSerial)
+                {
+                    nextSerial = _streamSerial + 1;
+                }
+
+                _streamSerial = nextSerial;
+                _frameSequence = 0;
+                _cursorSerial = 0;
+                _streamMappingId = Guid.NewGuid().ToString("N");
+            }
+        }
     }
 }

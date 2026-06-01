@@ -2,12 +2,15 @@
 
 <!-- ============================================================================
      REVIEW PASS — Claude (Opus 4.8), 2026-06-01
-     Inline reviewer comments are tagged `REVIEW-C1` … `REVIEW-C12` and live as
-     HTML comments next to the relevant section. Grep `REVIEW-C` to find them all.
-     Severity: C1–C4 = High (address before approval), C5–C8 = Medium, C9–C12 = Low.
-     Overall: product/protocol design is sound; comments cover implementation-reality
-     plumbing (capability negotiation, DXGI stitch reality, frame↔serial correlation,
-     encoder reinit on switch) that will cause rework if left implicit.
+     Inline reviewer comments are tagged `REVIEW-C1` … `REVIEW-C12` (grep `REVIEW-C`).
+     Status:
+       - C1–C4 (High): RESOLVED in the spec body (Session Capability Negotiation,
+         Windows stitched-capture scoping, Frame Transport Correlation, Codec Reset
+         Behavior On Target Switch). The stale C1–C4 markers are collapsed to one-line
+         pointers; the prose is now authoritative.
+       - C5–C12 (Medium/Low): intentionally DEFERRED to implementation by the owner.
+         Left inline as implementation-time TODOs; not blockers for spec approval.
+     Overall: product/protocol design is sound and approvable.
 ============================================================================ -->
 
 ## Summary
@@ -151,16 +154,9 @@ The host enables the new display-target protocol only when the client advertises
 
 The host must reject `desktop_start` requests that do not provide a valid explicit target.
 
-<!-- REVIEW-C1 [High] CLIENT CAPABILITY / PROTOCOL-VERSION NEGOTIATION IS MISSING.
-     The whole "first-party clients render their own cursor; host-side composition off;
-     older readers fall back to CursorX/CursorY" model requires the host to know WHICH
-     kind of client it's talking to — but nothing in desktop_start/DesktopConfig declares
-     that. Relying on the implicit "presence of captureMode == new client" signal is
-     fragile and conflates two independent capabilities. Add an explicit handshake block,
-     e.g. clientCapabilities { protocolVersion, supportsDisplayTargeting, supportsClientCursor }.
-     Without it you cannot safely turn off host-side cursor compositing without breaking
-     the current Android/desktop clients. This gates C5/cursor-authority and the back-compat
-     story in the Cursor Architecture section. -->
+<!-- REVIEW-C1 [High] RESOLVED — see "Session Capability Negotiation" above
+     (desktopProtocolVersion + clientCapabilities gating). -->
+
 
 
 To avoid ambiguity with existing quality/FPS updates, target changes should not reuse generic `desktop_config`. Add a dedicated request for active-target changes:
@@ -220,14 +216,9 @@ For both `virtual_desktop` and `monitor` modes:
 - `StreamSerial` increments when the active target changes
 - `StreamSerial` also increments whenever the active surface geometry changes, even if the selected target remains logically the same
 
-<!-- REVIEW-C3 [High] FRAMES CARRY NO StreamSerial — STALE-FRAME REJECTION IS UNIMPLEMENTABLE AS DESIGNED.
-     Today frames are sent as bare binary WebSocket messages (webSocket.SendAsync(..., Binary));
-     metadata goes as separate JSON text messages. A binary frame cannot be correlated to a
-     StreamSerial, so the client has nothing to discard stale-target frames ON. This design
-     leans on StreamSerial for stale rejection but the transport provides no such handle.
-     Pick one: (a) add a small per-frame binary header carrying StreamSerial (+ codec/keyframe
-     flags), or (b) require the host to flush/drain the encode+send pipeline on switch before
-     emitting any new-target frame. (a) is more robust and also helps C4. -->
+<!-- REVIEW-C3 [High] RESOLVED — see "Frame Transport Correlation" below
+     (per-frame binary envelope with streamSerial + pipeline flush on switch). -->
+
 
 <!-- REVIEW-C7 [Medium] DPI AWARENESS IS A PREREQUISITE. Correct SM_*VIRTUALSCREEN bounds and
      per-monitor pixel sizing require the host process to be Per-Monitor-V2 DPI aware (app
@@ -420,17 +411,10 @@ On Windows, stitched virtual-desktop capture is not a native single-output DXGI 
 
 The implementation plan may stage Windows all-displays mode behind a dedicated compositor path while keeping per-monitor DXGI capture as the primary fast path. If a temporary fallback backend is used for virtual-desktop mode, it must still honor the same protocol, metadata, and target-selection rules.
 
-<!-- REVIEW-C2 [High] DXGI CANNOT NATIVELY STITCH THE VIRTUAL DESKTOP. Desktop Duplication
-     duplicates ONE output at a time (IDXGIOutput1::DuplicateOutput is per-output). "Stitched
-     virtual-desktop capture" under DXGI therefore means duplicating every output separately and
-     compositing them yourself — handling per-monitor origins, differing refresh rates, mixed DPI,
-     and possibly multiple adapters. That is a large, perf-sensitive workstream, not a bullet.
-     The plan needs an EXPLICIT decision for virtual_desktop mode:
-       - GDI CopyFromScreen over SM_*VIRTUALSCREEN bounds: simple, but MPO/overlay-plane blind
-         (won't capture Windows Terminal / GPU-composited content) and slower; or
-       - DXGI multi-output acquire + manual composite: correct/MPO-capable, but expensive and
-         the biggest single chunk of this feature.
-     This is the largest scoping risk in the doc — call it out so it's costed, not discovered. -->
+<!-- REVIEW-C2 [High] RESOLVED — the two paragraphs above acknowledge stitched virtual-desktop
+     capture as a per-adapter duplicate + composite workstream, stageable behind a compositor path.
+     (Implementation still owes the explicit GDI-vs-DXGI-composite decision; see C6 for multi-adapter.) -->
+
 
 <!-- REVIEW-C6 [Medium] MULTI-ADAPTER TOPOLOGIES. To DuplicateOutput a given monitor, the D3D
      device must be created on THAT output's adapter. On laptops (iGPU+dGPU) and multi-GPU
@@ -512,18 +496,10 @@ When switching:
 - `StreamSerial` increments
 - the client briefly shows a switching/loading state, flushes decoder state for the previous `StreamSerial`, and resets stale per-stream state
 
-<!-- REVIEW-C4 [High] SWITCHING REQUIRES H.264 ENCODER REINIT + A FORCED KEYFRAME — AND
-     forceKeyframe IS CURRENTLY A NO-OP. Switching to a different-resolution monitor changes
-     encoder dimensions: the FFmpeg encoder must be disposed/reinitialized and emit fresh SPS/PPS
-     plus an IDR, or the client decoder shows garbage / green frames. The current pipeline cannot
-     force an IDR on demand (FFmpegH264Encoder.EncodeFrame documents forceKeyframe as a no-op;
-     keyframes are GOP-only via -g 60). For switching to work this design must specify:
-       1. host tears down + reinits the encoder on geometry/target change,
-       2. the first post-switch frame is a guaranteed keyframe (solve the forceKeyframe gap, e.g.
-          libx264 -force_key_frames / encoder restart), and
-       3. the client flushes its decoder on StreamSerial change.
-     This intersects the "preserve codec behavior" constraint (Constraints To Preserve) — keep the
-     AUD-emitting args from b1d7710 across the reinit. Pairs with C3 (frame must signal keyframe). -->
+<!-- REVIEW-C4 [High] RESOLVED — see "Codec Reset Behavior On Target Switch" below
+     (encoder reinit on dimension change, guaranteed IDR + fresh SPS/PPS on new streamSerial,
+     client decoder flush; forceKeyframe no-op explicitly called insufficient). -->
+
 
 
 If `targetSwitchMode == reselection_required`, the UI should present that clearly and keep the session in an explicit switching state until the host confirms the new target or reports an `active-target-lost` or validation error. If `targetSwitchMode == unsupported`, the client should hide in-session switching while still allowing target choice before session start.

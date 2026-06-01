@@ -30,6 +30,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private IntPtr _duplOutput = IntPtr.Zero;
     private IntPtr _stagingTexture = IntPtr.Zero;
     private byte[]? _lastFrame;
+    private CursorShapeSnapshot? _lastPointerShape;
 
     private bool _disposed;
 
@@ -42,6 +43,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     public int Height { get; private set; }
     public int DesktopLeft { get; private set; }
     public int DesktopTop  { get; private set; }
+    public string? OutputDeviceName { get; private set; }
     public bool IsAvailable => _duplOutput != IntPtr.Zero && !_disposed;
     public string? UnavailableReason { get; private set; }
 
@@ -106,6 +108,14 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private delegate int  ReleaseFrameFn(IntPtr self);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int GetFramePointerShapeFn(
+        IntPtr self,
+        uint bufferSize,
+        IntPtr pointerShapeBuffer,
+        out uint requiredBufferSize,
+        out DXGI_OUTDUPL_POINTER_SHAPE_INFO pointerShapeInfo);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int  GetDescFn(IntPtr self, IntPtr pDesc);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -155,6 +165,36 @@ internal sealed class DxgiDesktopCapture : IDisposable
         public int  ModeFormat, ScanlineOrdering, Scaling;
         public int  Rotation;
         public int  DesktopImageInSystemMemory;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DXGI_OUTDUPL_POINTER_POSITION
+    {
+        public POINT Position;
+        [MarshalAs(UnmanagedType.Bool)] public bool Visible;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DXGI_OUTDUPL_FRAME_INFO
+    {
+        public long LastPresentTime;
+        public long LastMouseUpdateTime;
+        public uint AccumulatedFrames;
+        [MarshalAs(UnmanagedType.Bool)] public bool RectsCoalesced;
+        [MarshalAs(UnmanagedType.Bool)] public bool ProtectedContentMaskedOut;
+        public DXGI_OUTDUPL_POINTER_POSITION PointerPosition;
+        public uint TotalMetadataBufferSize;
+        public uint PointerShapeBufferSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DXGI_OUTDUPL_POINTER_SHAPE_INFO
+    {
+        public uint Type;
+        public uint Width;
+        public uint Height;
+        public uint Pitch;
+        public POINT HotSpot;
     }
 
     // D3D11_MAPPED_SUBRESOURCE
@@ -253,6 +293,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
                 var desc = Marshal.PtrToStructure<DXGI_OUTPUT_DESC>(outputDescPtr);
                 DesktopLeft = desc.DesktopCoordinates.Left;
                 DesktopTop  = desc.DesktopCoordinates.Top;
+                OutputDeviceName = desc.DeviceName;
                 _logger.LogDebug("Captured monitor coordinates: ({L}, {T})", DesktopLeft, DesktopTop);
             }
             finally { Marshal.FreeHGlobal(outputDescPtr); }
@@ -367,17 +408,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     private byte[]? CaptureRawInternal(double scale, bool drawCursor)
     {
-        IntPtr frameInfoPtr = Marshal.AllocHGlobal(48);
         IntPtr dxgiResource = IntPtr.Zero;
-        int hr;
-        try
-        {
-            hr = GetSlot<AcquireNextFrameFn>(_duplOutput, 8)(_duplOutput, 50u, frameInfoPtr, out dxgiResource);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(frameInfoPtr);
-        }
+        var hr = AcquireNextFrame(50u, out var frameInfo, out dxgiResource);
 
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
             return _lastRawFrame;
@@ -397,6 +429,13 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         try
         {
+            UpdatePointerShapeFromFrame(frameInfo);
+
+            if (frameInfo.AccumulatedFrames == 0 && _lastRawFrame is not null)
+            {
+                return _lastRawFrame;
+            }
+
             hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
             if (hr != S_OK) return _lastRawFrame;
 
@@ -503,17 +542,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
         // AcquireNextFrame — slot 8 on IDXGIOutputDuplication
         // Timeout 50ms: wait up to 50ms for a new frame.
         // Returns DXGI_ERROR_WAIT_TIMEOUT if no new frame; we reuse last JPEG (desktop unchanged).
-        IntPtr frameInfoPtr = Marshal.AllocHGlobal(48); // sizeof(DXGI_OUTDUPL_FRAME_INFO) = 48 bytes
         IntPtr dxgiResource = IntPtr.Zero;
-        int hr;
-        try
-        {
-            hr = GetSlot<AcquireNextFrameFn>(_duplOutput, 8)(_duplOutput, 50u, frameInfoPtr, out dxgiResource);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(frameInfoPtr);
-        }
+        var hr = AcquireNextFrame(50u, out var frameInfo, out dxgiResource);
 
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
             return _lastFrame; // Desktop unchanged — bandwidth-efficient reuse
@@ -533,6 +563,13 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         try
         {
+            UpdatePointerShapeFromFrame(frameInfo);
+
+            if (frameInfo.AccumulatedFrames == 0 && _lastFrame is not null)
+            {
+                return _lastFrame;
+            }
+
             // QI IDXGIResource → ID3D11Texture2D
             hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
             if (hr != S_OK) return _lastFrame;
@@ -695,6 +732,138 @@ internal sealed class DxgiDesktopCapture : IDisposable
         finally
         {
             _lock.Release();
+        }
+    }
+
+    public bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot)
+    {
+        snapshot = Volatile.Read(ref _lastPointerShape);
+        if (snapshot is not null)
+        {
+            return true;
+        }
+
+        if (!IsAvailable || !_lock.Wait(0))
+        {
+            snapshot = Volatile.Read(ref _lastPointerShape);
+            return snapshot is not null;
+        }
+
+        try
+        {
+            TryRefreshPointerShapeSnapshot();
+            snapshot = Volatile.Read(ref _lastPointerShape);
+            return snapshot is not null;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private int AcquireNextFrame(uint timeoutMs, out DXGI_OUTDUPL_FRAME_INFO frameInfo, out IntPtr dxgiResource)
+    {
+        IntPtr frameInfoPtr = Marshal.AllocHGlobal(Marshal.SizeOf<DXGI_OUTDUPL_FRAME_INFO>());
+        try
+        {
+            var hr = GetSlot<AcquireNextFrameFn>(_duplOutput, 8)(_duplOutput, timeoutMs, frameInfoPtr, out dxgiResource);
+            frameInfo = hr == S_OK
+                ? Marshal.PtrToStructure<DXGI_OUTDUPL_FRAME_INFO>(frameInfoPtr)
+                : default;
+            return hr;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(frameInfoPtr);
+        }
+    }
+
+    private void TryRefreshPointerShapeSnapshot()
+    {
+        if (!IsAvailable)
+        {
+            return;
+        }
+
+        IntPtr dxgiResource = IntPtr.Zero;
+        var hr = AcquireNextFrame(0, out var frameInfo, out dxgiResource);
+        if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+        {
+            return;
+        }
+
+        if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
+        {
+            _logger.LogInformation("DXGI pointer-shape refresh lost access (hr=0x{Hr:X8}) — reinitializing.", hr);
+            TryReinitializeDuplication();
+            return;
+        }
+
+        if (hr != S_OK)
+        {
+            _logger.LogDebug("DXGI pointer-shape refresh AcquireNextFrame hr=0x{Hr:X8}", hr);
+            return;
+        }
+
+        try
+        {
+            UpdatePointerShapeFromFrame(frameInfo);
+        }
+        finally
+        {
+            Release(ref dxgiResource);
+            GetSlot<ReleaseFrameFn>(_duplOutput, 14)(_duplOutput);
+        }
+    }
+
+    private void UpdatePointerShapeFromFrame(DXGI_OUTDUPL_FRAME_INFO frameInfo)
+    {
+        if (frameInfo.PointerShapeBufferSize == 0)
+        {
+            return;
+        }
+
+        IntPtr shapeBufferPtr = Marshal.AllocHGlobal((int)frameInfo.PointerShapeBufferSize);
+        try
+        {
+            var hr = GetSlot<GetFramePointerShapeFn>(_duplOutput, 11)(
+                _duplOutput,
+                frameInfo.PointerShapeBufferSize,
+                shapeBufferPtr,
+                out var requiredBufferSize,
+                out var pointerShapeInfo);
+
+            if (hr != S_OK || requiredBufferSize == 0)
+            {
+                _logger.LogDebug("GetFramePointerShape hr=0x{Hr:X8}, required={Required}", hr, requiredBufferSize);
+                return;
+            }
+
+            var rawShapeBytes = new byte[requiredBufferSize];
+            Marshal.Copy(shapeBufferPtr, rawShapeBytes, 0, (int)requiredBufferSize);
+
+            var shapeInfo = new DxgiPointerShapeDecoder.PointerShapeInfo(
+                pointerShapeInfo.Type,
+                (int)pointerShapeInfo.Width,
+                (int)pointerShapeInfo.Height,
+                (int)pointerShapeInfo.Pitch,
+                pointerShapeInfo.HotSpot.X,
+                pointerShapeInfo.HotSpot.Y);
+
+            if (DxgiPointerShapeDecoder.TryDecode(shapeInfo, rawShapeBytes, out var snapshot))
+            {
+                Volatile.Write(ref _lastPointerShape, snapshot);
+                return;
+            }
+
+            if (WindowsCursorShapeCapture.TryCaptureCurrentShape(out var fallbackSnapshot) && fallbackSnapshot is not null)
+            {
+                Volatile.Write(ref _lastPointerShape, fallbackSnapshot);
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(shapeBufferPtr);
         }
     }
 

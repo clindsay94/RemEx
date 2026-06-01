@@ -10,6 +10,7 @@ using Remex.Host.Services.Input;
 using Remex.Host.Services.RemoteDesktop.Linux;
 using Remex.Host.Services.RemoteDesktop.Windows;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Remex.Host.Tests;
 
@@ -46,11 +47,76 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
     {
         // Minimal valid JPEG: SOI + EOI markers
         private static readonly byte[] FakeJpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x02, 0x00, 0x00, 0xFF, 0xD9];
+        private readonly DesktopDisplayCatalog _catalog =
+            new()
+            {
+                DisplayListVersion = 42,
+                SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop, DesktopCaptureMode.Monitor],
+                Displays =
+                [
+                    new DesktopDisplayInfo
+                    {
+                        DisplayId = "DISPLAY1",
+                        PersistentDisplayKey = "DISPLAY1",
+                        Name = "Display 1",
+                        IsPrimary = true,
+                        Left = 0,
+                        Top = 0,
+                        Width = 1920,
+                        Height = 1080,
+                    },
+                    new DesktopDisplayInfo
+                    {
+                        DisplayId = "DISPLAY2",
+                        PersistentDisplayKey = "DISPLAY2",
+                        Name = "Display 2",
+                        IsPrimary = false,
+                        Left = -1280,
+                        Top = 0,
+                        Width = 1280,
+                        Height = 1024,
+                    },
+                ],
+            };
+
+        private DesktopCaptureTarget _target = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
 
         public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
             => Task.FromResult(FakeJpeg);
 
-        public (int Width, int Height, int Left, int Top) GetScreenSize() => (3200, 1080, -1280, 0);
+        public DesktopDisplayCatalog GetDisplayCatalog() => _catalog;
+
+        public bool TrySetCaptureTarget(DesktopCaptureTarget target, out string? error)
+        {
+            if (target.CaptureMode == DesktopCaptureMode.VirtualDesktop)
+            {
+                _target = target;
+                error = null;
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(target.DisplayId) ||
+                !_catalog.Displays.Any(display => display.DisplayId == target.DisplayId))
+            {
+                error = "Unknown display.";
+                return false;
+            }
+
+            _target = target;
+            error = null;
+            return true;
+        }
+
+        public (int Width, int Height, int Left, int Top) GetScreenSize()
+        {
+            if (_target.CaptureMode == DesktopCaptureMode.Monitor && !string.IsNullOrWhiteSpace(_target.DisplayId))
+            {
+                var display = _catalog.Displays.First(candidate => candidate.DisplayId == _target.DisplayId);
+                return (display.Width, display.Height, display.Left, display.Top);
+            }
+
+            return (3200, 1080, -1280, 0);
+        }
     }
 
     private class MockInputSimulationService : IInputSimulationService
@@ -211,6 +277,173 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
             try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
             catch { }
         }
+    }
+
+    [Fact]
+    public async Task DesktopDisplayQuery_ReturnsAvailableDisplays()
+    {
+        var factory = GetFactory();
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopDisplayQuery }, CancellationToken.None);
+
+        var buffer = new byte[4096];
+        WebSocketReceiveResult result;
+        using var ms = new System.IO.MemoryStream();
+        do
+        {
+            result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+            ms.Write(buffer, 0, result.Count);
+        }
+        while (!result.EndOfMessage);
+
+        var json = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        var message = System.Text.Json.JsonSerializer.Deserialize<RemexMessage>(json,
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+
+        Assert.NotNull(message);
+        Assert.Equal(MessageTypes.DesktopDisplayList, message!.Type);
+        Assert.NotNull(message.DesktopDisplayCatalog);
+        Assert.Equal(42, message.DesktopDisplayCatalog!.DisplayListVersion);
+        Assert.Equal(2, message.DesktopDisplayCatalog.Displays.Count);
+        Assert.Contains(message.DesktopDisplayCatalog.SupportedCaptureModes, mode => mode == DesktopCaptureMode.VirtualDesktop);
+        Assert.Contains(message.DesktopDisplayCatalog.SupportedCaptureModes, mode => mode == DesktopCaptureMode.Monitor);
+    }
+
+    [Fact]
+    public async Task DesktopStart_WithExplicitDisplayTarget_UsesSelectedMonitorBounds()
+    {
+        var factory = GetFactory();
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        var startMsg = new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig
+            {
+                Quality = 50,
+                Scale = 0.5,
+                TargetFps = 5,
+                DesktopProtocolVersion = 1,
+                ClientCapabilities = new DesktopClientCapabilities
+                {
+                    SupportsDisplaySelection = true,
+                },
+                CaptureMode = DesktopCaptureMode.Monitor,
+                DisplayId = "DISPLAY2",
+                DisplayListVersion = 42,
+            },
+        };
+        await MessageSerializer.SendAsync(ws, startMsg, CancellationToken.None);
+
+        var buffer = new byte[4096];
+        WebSocketReceiveResult result;
+        using var ms = new System.IO.MemoryStream();
+        do
+        {
+            result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+            ms.Write(buffer, 0, result.Count);
+        }
+        while (!result.EndOfMessage);
+
+        var metaJson = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        var metaMsg = System.Text.Json.JsonSerializer.Deserialize<RemexMessage>(metaJson,
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+        Assert.NotNull(metaMsg);
+        Assert.Equal(MessageTypes.DesktopMeta, metaMsg!.Type);
+        Assert.Equal(1280, metaMsg.DesktopMeta!.ScreenWidth);
+        Assert.Equal(1024, metaMsg.DesktopMeta.ScreenHeight);
+        Assert.Equal(-1280, metaMsg.DesktopMeta.DesktopLeft);
+        Assert.Equal(0, metaMsg.DesktopMeta.DesktopTop);
+    }
+
+    [Fact]
+    public async Task DesktopTargetSwitch_WithEnvelopeCapabilities_SendsNewStreamMetadata()
+    {
+        var factory = GetFactory();
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig
+            {
+                Quality = 50,
+                Scale = 0.5,
+                TargetFps = 5,
+                DesktopProtocolVersion = 1,
+                ClientCapabilities = new DesktopClientCapabilities
+                {
+                    SupportsDisplaySelection = true,
+                    SupportsFrameEnvelope = true,
+                    SupportsTargetSwitch = true,
+                    SupportsCursorState = true,
+                },
+                CaptureMode = DesktopCaptureMode.VirtualDesktop,
+                DisplayListVersion = 42,
+            },
+        }, CancellationToken.None);
+
+        var initialMeta = await ReceiveTextMessageAsync(ws, CancellationToken.None);
+        Assert.Equal(MessageTypes.DesktopMeta, initialMeta.Type);
+        var initialSerial = initialMeta.DesktopMeta!.StreamSerial;
+
+        var descriptor = await ReceiveTextMessageAsync(ws, CancellationToken.None);
+        Assert.Equal(MessageTypes.DesktopStreamDescriptor, descriptor.Type);
+        Assert.Equal(initialSerial, descriptor.DesktopStreamDescriptor!.StreamSerial);
+
+        var cursorState = await ReceiveTextMessageAsync(ws, CancellationToken.None);
+        Assert.Equal(MessageTypes.DesktopCursorState, cursorState.Type);
+        Assert.Equal(initialSerial, cursorState.DesktopCursorState!.StreamSerial);
+
+        var initialFrame = await ReceiveBinaryMessageAsync(ws, CancellationToken.None);
+        Assert.True(DesktopFrameEnvelope.TryRead(initialFrame, out var initialHeader, out _));
+        Assert.Equal(initialSerial, initialHeader.StreamSerial);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.DesktopTargetSwitch,
+            DesktopTargetSwitch = new DesktopTargetSwitchRequest
+            {
+                Target = new DesktopCaptureTarget
+                {
+                    CaptureMode = DesktopCaptureMode.Monitor,
+                    DisplayId = "DISPLAY2",
+                },
+                DisplayListVersion = 42,
+            },
+        }, CancellationToken.None);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        RemexMessage? switchedMeta = null;
+        while (!cts.IsCancellationRequested)
+        {
+            var (messageType, payload) = await ReceiveSocketMessageAsync(ws, cts.Token);
+            if (messageType == WebSocketMessageType.Text)
+            {
+                var message = DeserializeRemexMessage(payload);
+                if (message?.Type == MessageTypes.DesktopMeta &&
+                    message.DesktopMeta is not null &&
+                    message.DesktopMeta.StreamSerial != initialSerial)
+                {
+                    switchedMeta = message;
+                    break;
+                }
+            }
+        }
+
+        Assert.NotNull(switchedMeta);
+        Assert.Equal(1280, switchedMeta!.DesktopMeta!.ScreenWidth);
+        Assert.Equal(1024, switchedMeta.DesktopMeta.ScreenHeight);
+        Assert.Equal(-1280, switchedMeta.DesktopMeta.DesktopLeft);
+        Assert.NotEqual(initialSerial, switchedMeta.DesktopMeta.StreamSerial);
     }
 
     [Fact]
@@ -439,5 +672,44 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         Assert.Equal(MessageTypes.DesktopError, message!.Type);
         Assert.Contains("Winlogon", message.ErrorText);
         Assert.Contains("Unlock the session", message.ErrorText);
+    }
+
+    private static async Task<RemexMessage> ReceiveTextMessageAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        var (messageType, payload) = await ReceiveSocketMessageAsync(webSocket, ct);
+        Assert.Equal(WebSocketMessageType.Text, messageType);
+        var message = DeserializeRemexMessage(payload);
+        Assert.NotNull(message);
+        return message!;
+    }
+
+    private static async Task<byte[]> ReceiveBinaryMessageAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        var (messageType, payload) = await ReceiveSocketMessageAsync(webSocket, ct);
+        Assert.Equal(WebSocketMessageType.Binary, messageType);
+        return payload;
+    }
+
+    private static RemexMessage? DeserializeRemexMessage(byte[] payload) =>
+        System.Text.Json.JsonSerializer.Deserialize<RemexMessage>(
+            payload,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            });
+
+    private static async Task<(WebSocketMessageType MessageType, byte[] Payload)> ReceiveSocketMessageAsync(WebSocket webSocket, CancellationToken ct)
+    {
+        var buffer = new byte[4096];
+        using var ms = new System.IO.MemoryStream();
+        WebSocketReceiveResult result;
+        do
+        {
+            result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+            ms.Write(buffer, 0, result.Count);
+        }
+        while (!result.EndOfMessage);
+
+        return (result.MessageType, ms.ToArray());
     }
 }

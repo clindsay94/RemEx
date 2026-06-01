@@ -45,4 +45,19 @@ public record DesktopConfig
         get => _drawCursor;
         init => _drawCursor = value;
     }
+
+    [JsonPropertyName("desktopProtocolVersion")]
+    public int? DesktopProtocolVersion { get; init; }
+
+    [JsonPropertyName("clientCapabilities")]
+    public DesktopClientCapabilities? ClientCapabilities { get; init; }
+
+    [JsonPropertyName("captureMode")]
+    public DesktopCaptureMode? CaptureMode { get; init; }
+
+    [JsonPropertyName("displayId")]
+    public string? DisplayId { get; init; }
+
+    [JsonPropertyName("displayListVersion")]
+    public int? DisplayListVersion { get; init; }
 }

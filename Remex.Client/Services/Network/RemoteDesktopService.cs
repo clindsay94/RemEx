@@ -21,6 +21,7 @@ public class RemoteDesktopService : IDisposable
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<DesktopWindowResult>> _pendingWindowRequests = new();
     private bool _disposed;
+    private long _latestStreamSerial;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -33,6 +34,8 @@ public class RemoteDesktopService : IDisposable
     public event Action<DesktopWindowResult>? WindowResultReceived;
     /// <summary>Raised when the host sends a stream surface descriptor (Stage 3).</summary>
     public event Action<DesktopStreamDescriptor>? StreamDescriptorReceived;
+    public event Action<DesktopCursorState>? CursorStateReceived;
+    public event Action<DesktopCursorShape>? CursorShapeReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -41,21 +44,65 @@ public class RemoteDesktopService : IDisposable
     {
         Disconnect();
 
-        // Derive the desktop WS URL from the main host address
-        // e.g. "wss://localhost:5005/ws" → "wss://localhost:5005/ws/desktop"
-        var desktopUrl = hostAddress.TrimEnd('/');
-        if (desktopUrl.EndsWith("/ws"))
-            desktopUrl += "/desktop";
-        else
-            desktopUrl += "/ws/desktop";
-
-        _webSocket = new ClientWebSocket();
-        // 2.0: Accept self-signed certificates
-        _webSocket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
-        await _webSocket.ConnectAsync(new Uri(desktopUrl), ct);
+        _webSocket = CreateClientWebSocket();
+        await _webSocket.ConnectAsync(BuildDesktopUri(hostAddress), ct);
 
         _receiveCts = new CancellationTokenSource();
         _ = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
+    }
+
+    public async Task<DesktopDisplayCatalog> QueryDisplaysAsync(string hostAddress, CancellationToken ct = default)
+    {
+        using var socket = CreateClientWebSocket();
+        await socket.ConnectAsync(BuildDesktopUri(hostAddress), ct);
+
+        try
+        {
+            var query = new RemexMessage { Type = MessageTypes.DesktopDisplayQuery };
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(query, JsonOptions);
+            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, endOfMessage: true, ct);
+
+            while (socket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+            {
+                var (messageType, payload) = await ReceiveMessageAsync(socket, ct);
+                if (messageType == WebSocketMessageType.Close)
+                {
+                    break;
+                }
+
+                if (messageType != WebSocketMessageType.Text)
+                {
+                    continue;
+                }
+
+                var message = JsonSerializer.Deserialize<RemexMessage>(payload, JsonOptions);
+                if (message?.Type == MessageTypes.DesktopDisplayList && message.DesktopDisplayCatalog is not null)
+                {
+                    return message.DesktopDisplayCatalog;
+                }
+
+                if (message?.Type == MessageTypes.DesktopError && !string.IsNullOrWhiteSpace(message.ErrorText))
+                {
+                    throw new InvalidOperationException(message.ErrorText);
+                }
+            }
+        }
+        finally
+        {
+            if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived)
+            {
+                try
+                {
+                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Display query complete", CancellationToken.None);
+                }
+                catch
+                {
+                    // Best effort cleanup.
+                }
+            }
+        }
+
+        throw new InvalidOperationException("The host did not return any desktop display targets.");
     }
 
     public async Task StartStreamAsync(DesktopConfig config, CancellationToken ct = default)
@@ -72,6 +119,15 @@ public class RemoteDesktopService : IDisposable
     {
         var msg = new RemexMessage { Type = MessageTypes.DesktopStop };
         await SendJsonAsync(msg, ct);
+    }
+
+    public async Task SwitchTargetAsync(DesktopTargetSwitchRequest request, CancellationToken ct = default)
+    {
+        await SendJsonAsync(new RemexMessage
+        {
+            Type = MessageTypes.DesktopTargetSwitch,
+            DesktopTargetSwitch = request,
+        }, ct);
     }
 
     public async Task SendInputAsync(InputEvent input, CancellationToken ct = default)
@@ -158,6 +214,7 @@ public class RemoteDesktopService : IDisposable
 
         var receiveCts = _receiveCts;
         _receiveCts = null;
+        Interlocked.Exchange(ref _latestStreamSerial, 0);
 
         if (socket is not null)
         {
@@ -246,8 +303,26 @@ public class RemoteDesktopService : IDisposable
 
                 if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    // Binary = JPEG frame
-                    FrameReceived?.Invoke(ms.ToArray());
+                    var binaryPayload = ms.ToArray();
+                    if (DesktopFrameEnvelope.TryRead(binaryPayload, out var header, out var payload))
+                    {
+                        var latestSerial = Interlocked.Read(ref _latestStreamSerial);
+                        if (header.StreamSerial < latestSerial)
+                        {
+                            continue;
+                        }
+
+                        if (header.StreamSerial > latestSerial)
+                        {
+                            Interlocked.Exchange(ref _latestStreamSerial, header.StreamSerial);
+                        }
+
+                        FrameReceived?.Invoke(payload.ToArray());
+                    }
+                    else
+                    {
+                        FrameReceived?.Invoke(binaryPayload);
+                    }
                 }
                 else if (result.MessageType == WebSocketMessageType.Text)
                 {
@@ -257,6 +332,7 @@ public class RemoteDesktopService : IDisposable
 
                     if (msg?.Type == MessageTypes.DesktopMeta && msg.DesktopMeta is not null)
                     {
+                        UpdateStreamSerial(msg.DesktopMeta.StreamSerial);
                         MetaReceived?.Invoke(msg.DesktopMeta);
                     }
                     else if (msg?.Type == MessageTypes.DesktopError && msg.ErrorText is not null)
@@ -276,7 +352,17 @@ public class RemoteDesktopService : IDisposable
                     }
                     else if (msg?.Type == MessageTypes.DesktopStreamDescriptor && msg.DesktopStreamDescriptor is not null)
                     {
+                        UpdateStreamSerial(msg.DesktopStreamDescriptor.StreamSerial);
                         StreamDescriptorReceived?.Invoke(msg.DesktopStreamDescriptor);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopCursorState && msg.DesktopCursorState is not null)
+                    {
+                        UpdateStreamSerial(msg.DesktopCursorState.StreamSerial);
+                        CursorStateReceived?.Invoke(msg.DesktopCursorState);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopCursorShape && msg.DesktopCursorShape is not null)
+                    {
+                        CursorShapeReceived?.Invoke(msg.DesktopCursorShape);
                     }
                 }
             }
@@ -318,11 +404,58 @@ public class RemoteDesktopService : IDisposable
         return true;
     }
 
+    private ClientWebSocket CreateClientWebSocket()
+    {
+        var socket = new ClientWebSocket();
+        socket.Options.RemoteCertificateValidationCallback = AcceptSelfSignedCertificate;
+        return socket;
+    }
+
+    private static Uri BuildDesktopUri(string hostAddress)
+    {
+        var desktopUrl = hostAddress.TrimEnd('/');
+        if (desktopUrl.EndsWith("/ws", StringComparison.OrdinalIgnoreCase))
+            desktopUrl += "/desktop";
+        else
+            desktopUrl += "/ws/desktop";
+
+        return new Uri(desktopUrl);
+    }
+
+    private static async Task<(WebSocketMessageType MessageType, string Payload)> ReceiveMessageAsync(ClientWebSocket socket, CancellationToken ct)
+    {
+        var buffer = new byte[1024 * 64];
+        using var ms = new MemoryStream();
+        WebSocketReceiveResult result;
+
+        do
+        {
+            result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                return (result.MessageType, string.Empty);
+            }
+
+            ms.Write(buffer, 0, result.Count);
+        }
+        while (!result.EndOfMessage);
+
+        return (result.MessageType, Encoding.UTF8.GetString(ms.ToArray()));
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         Disconnect();
         _sendLock.Dispose();
+    }
+
+    private void UpdateStreamSerial(long streamSerial)
+    {
+        if (streamSerial > 0)
+        {
+            Interlocked.Exchange(ref _latestStreamSerial, streamSerial);
+        }
     }
 }

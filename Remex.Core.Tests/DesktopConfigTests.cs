@@ -57,13 +57,39 @@ public class DesktopConfigTests
     [Fact]
     public void Json_Roundtrip_Preserves_Values()
     {
-        var original = new DesktopConfig { Quality = 75, Scale = 0.8, TargetFps = 30 };
+        var original = new DesktopConfig
+        {
+            Quality = 75,
+            Scale = 0.8,
+            TargetFps = 30,
+            DesktopProtocolVersion = 1,
+            ClientCapabilities = new DesktopClientCapabilities
+            {
+                SupportsDisplaySelection = true,
+                SupportsFrameEnvelope = true,
+                SupportsTargetSwitch = true,
+                SupportsCursorState = true,
+                SupportsCursorShape = true,
+            },
+            CaptureMode = DesktopCaptureMode.Monitor,
+            DisplayId = "DISPLAY1",
+            DisplayListVersion = 42,
+        };
         var json = System.Text.Json.JsonSerializer.Serialize(original);
         var deserialized = System.Text.Json.JsonSerializer.Deserialize<DesktopConfig>(json);
         Assert.NotNull(deserialized);
         Assert.Equal(75, deserialized.Quality);
         Assert.Equal(0.8, deserialized.Scale, precision: 5);
         Assert.Equal(30, deserialized.TargetFps);
+        Assert.Equal(1, deserialized.DesktopProtocolVersion);
+        Assert.True(deserialized.ClientCapabilities?.SupportsDisplaySelection);
+        Assert.True(deserialized.ClientCapabilities?.SupportsFrameEnvelope);
+        Assert.True(deserialized.ClientCapabilities?.SupportsTargetSwitch);
+        Assert.True(deserialized.ClientCapabilities?.SupportsCursorState);
+        Assert.True(deserialized.ClientCapabilities?.SupportsCursorShape);
+        Assert.Equal(DesktopCaptureMode.Monitor, deserialized.CaptureMode);
+        Assert.Equal("DISPLAY1", deserialized.DisplayId);
+        Assert.Equal(42, deserialized.DisplayListVersion);
     }
 
     [Fact]

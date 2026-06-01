@@ -85,6 +85,34 @@
 
                     <!-- Right: Settings -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock Text="Display" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding AvailableDisplayTargets}"
+                                  SelectedItem="{Binding SelectedDisplayTarget}"
+                                  MinWidth="220"
+                                  FontSize="11"
+                                  VerticalAlignment="Center"
+                                  IsEnabled="{Binding !IsLoadingDisplays}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Content="Refresh"
+                                Command="{Binding RefreshDisplayTargetsCommand}"
+                                Classes="rd-btn"
+                                FontSize="11"
+                                Padding="10 6"
+                                IsEnabled="{Binding !IsStreaming}"/>
+                        <Button Content="Switch"
+                                Command="{Binding SwitchDisplayCommand}"
+                                Classes="rd-btn"
+                                FontSize="11"
+                                Padding="10 6"
+                                IsVisible="{Binding IsStreaming}"/>
+
+                        <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
+
                         <TextBlock Text="{local:Localize RemoteDesktop_Quality}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                         <StackPanel Spacing="1" VerticalAlignment="Center">
                             <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
@@ -228,6 +256,23 @@
 
                     <!-- Remote Cursor Indicator Crosshair (Stays locked to content) -->
                     <Canvas IsHitTestVisible="False">
+                        <Image Source="{Binding RemoteCursorBitmap}"
+                               Width="{Binding RemoteCursorBitmapWidth}"
+                               Height="{Binding RemoteCursorBitmapHeight}"
+                               IsVisible="{Binding HasRemoteCursorBitmap}"
+                               Opacity="{Binding IsRemoteCursorOverlayVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1.0|0.0'}"
+                               Canvas.Left="{Binding RemoteCursorBitmapLeft}"
+                               Canvas.Top="{Binding RemoteCursorBitmapTop}"/>
+                        <Path Data="M 0 0 L 0 18 L 4 14 L 8 24 L 11 22 L 7 12 L 14 12 Z"
+                              Fill="{DynamicResource AccentPrimaryBrush}"
+                              IsVisible="{Binding !HasRemoteCursorBitmap}"
+                              Opacity="{Binding IsRemoteCursorOverlayVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='0.95|0.0'}"
+                              Canvas.Left="{Binding RemoteCursorViewportX}"
+                              Canvas.Top="{Binding RemoteCursorViewportY}">
+                            <Path.RenderTransform>
+                                <TranslateTransform X="0" Y="0"/>
+                            </Path.RenderTransform>
+                        </Path>
                         <Path Data="M -15 0 L 15 0 M 0 -15 L 0 15" Classes="cursor-crosshair" Stroke="{DynamicResource AccentPrimaryBrush}" StrokeThickness="1.5" Opacity="{Binding IsCursorVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1.0|0.0'}" Canvas.Left="{Binding CursorIndicatorX}" Canvas.Top="{Binding CursorIndicatorY}"/>
 
                         <!-- Outer Target Circle -->

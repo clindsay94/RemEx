@@ -88,6 +88,14 @@ public sealed record RemexMessage
     [JsonPropertyName("desktopMeta")]
     public Remex.Core.Models.DesktopMeta? DesktopMeta { get; init; }
 
+    /// <summary>Remote desktop display enumeration response.</summary>
+    [JsonPropertyName("desktopDisplayCatalog")]
+    public Remex.Core.Models.DesktopDisplayCatalog? DesktopDisplayCatalog { get; init; }
+
+    /// <summary>Remote desktop in-session target switch request.</summary>
+    [JsonPropertyName("desktopTargetSwitch")]
+    public Remex.Core.Models.DesktopTargetSwitchRequest? DesktopTargetSwitch { get; init; }
+
     /// <summary>Remote desktop window query request.</summary>
     [JsonPropertyName("desktopWindowQuery")]
     public Remex.Core.Models.DesktopWindowQuery? DesktopWindowQuery { get; init; }
@@ -103,6 +111,14 @@ public sealed record RemexMessage
     /// <summary>Stream surface descriptor (Stage 3 — host → client).</summary>
     [JsonPropertyName("desktopStreamDescriptor")]
     public Remex.Core.Models.DesktopStreamDescriptor? DesktopStreamDescriptor { get; init; }
+
+    /// <summary>Explicit remote cursor state for first-party clients.</summary>
+    [JsonPropertyName("desktopCursorState")]
+    public Remex.Core.Models.DesktopCursorState? DesktopCursorState { get; init; }
+
+    /// <summary>Explicit remote cursor shape payload for first-party clients.</summary>
+    [JsonPropertyName("desktopCursorShape")]
+    public Remex.Core.Models.DesktopCursorShape? DesktopCursorShape { get; init; }
 
     /// <summary>Remote desktop window query/action response.</summary>
     [JsonPropertyName("desktopWindowResult")]
@@ -206,10 +222,15 @@ public static class MessageTypes
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
     public const string DesktopError = "desktop_error";
+    public const string DesktopDisplayQuery = "desktop_display_query";
+    public const string DesktopDisplayList = "desktop_display_list";
+    public const string DesktopTargetSwitch = "desktop_target_switch";
     /// <summary>High-rate pointer/stylus batch from Android to host (Stage 3).</summary>
     public const string DesktopPointerBatch = "desktop_pointer_batch";
     /// <summary>Stream surface descriptor from host to client (Stage 3).</summary>
     public const string DesktopStreamDescriptor = "desktop_stream_descriptor";
+    public const string DesktopCursorState = "desktop_cursor_state";
+    public const string DesktopCursorShape = "desktop_cursor_shape";
     public const string DesktopWindowQuery = "desktop_window_query";
     public const string DesktopWindowAction = "desktop_window_action";
     public const string DesktopWindowResult = "desktop_window_result";

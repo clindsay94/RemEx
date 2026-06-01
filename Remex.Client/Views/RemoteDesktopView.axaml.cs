@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -51,10 +52,13 @@ public partial class RemoteDesktopView : UserControl
     private Point _pinchStartCenter;
     private double _pinchStartOffsetX;
     private double _pinchStartOffsetY;
+    private RemoteDesktopViewModel? _attachedViewModel;
 
     public RemoteDesktopView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+        LayoutUpdated += OnLayoutUpdated;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -77,8 +81,7 @@ public partial class RemoteDesktopView : UserControl
         this.KeyDown += OnViewKeyDown;
         this.KeyUp += OnViewKeyUp;
 
-        if (DataContext is RemoteDesktopViewModel vm)
-            vm.ViewportZoomResetRequested += ResetViewport;
+        AttachViewModel(DataContext as RemoteDesktopViewModel);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -99,11 +102,60 @@ public partial class RemoteDesktopView : UserControl
         this.KeyDown -= OnViewKeyDown;
         this.KeyUp -= OnViewKeyUp;
 
-        if (DataContext is RemoteDesktopViewModel vm)
-            vm.ViewportZoomResetRequested -= ResetViewport;
+        DetachViewModel(_attachedViewModel);
 
         base.OnDetachedFromVisualTree(e);
     }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        DetachViewModel(_attachedViewModel);
+        AttachViewModel(DataContext as RemoteDesktopViewModel);
+    }
+
+    private void AttachViewModel(RemoteDesktopViewModel? vm)
+    {
+        if (vm is null)
+        {
+            return;
+        }
+
+        _attachedViewModel = vm;
+        vm.ViewportZoomResetRequested += ResetViewport;
+        vm.PropertyChanged += OnViewModelPropertyChanged;
+        UpdateRemoteCursorOverlay();
+    }
+
+    private void DetachViewModel(RemoteDesktopViewModel? vm)
+    {
+        if (vm is null)
+        {
+            return;
+        }
+
+        vm.ViewportZoomResetRequested -= ResetViewport;
+        vm.PropertyChanged -= OnViewModelPropertyChanged;
+        _attachedViewModel = null;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(RemoteDesktopViewModel.RemoteCursorHostX) or
+            nameof(RemoteDesktopViewModel.RemoteCursorHostY) or
+            nameof(RemoteDesktopViewModel.RemoteCursorHostVisible) or
+            nameof(RemoteDesktopViewModel.RemoteCursorBitmap) or
+            nameof(RemoteDesktopViewModel.CursorHotspotX) or
+            nameof(RemoteDesktopViewModel.CursorHotspotY) or
+            nameof(RemoteDesktopViewModel.CursorShapeWidth) or
+            nameof(RemoteDesktopViewModel.CursorShapeHeight) or
+            nameof(RemoteDesktopViewModel.IsStreaming) or
+            nameof(RemoteDesktopViewModel.CurrentFrame))
+        {
+            UpdateRemoteCursorOverlay();
+        }
+    }
+
+    private void OnLayoutUpdated(object? sender, EventArgs e) => UpdateRemoteCursorOverlay();
 
     // ═══════════════ Virtual cursor pad callback ═══════════════
 
@@ -211,6 +263,72 @@ public partial class RemoteDesktopView : UserControl
                         v.IsCursorVisible = false;
                 });
         }, TaskScheduler.Default);
+    }
+
+    private void UpdateRemoteCursorOverlay()
+    {
+        if (_attachedViewModel is null)
+        {
+            return;
+        }
+
+        if (!_attachedViewModel.IsStreaming ||
+            !_attachedViewModel.RemoteCursorHostVisible ||
+            _attachedViewModel.ScreenWidth <= 0 ||
+            _attachedViewModel.ScreenHeight <= 0)
+        {
+            _attachedViewModel.IsRemoteCursorOverlayVisible = false;
+            return;
+        }
+
+        var img = this.FindControl<Image>("ScreenImage");
+        if (img is null || img.Bounds.Width <= 0 || img.Bounds.Height <= 0)
+        {
+            _attachedViewModel.IsRemoteCursorOverlayVisible = false;
+            return;
+        }
+
+        double imgAspect = (double)_attachedViewModel.ScreenWidth / _attachedViewModel.ScreenHeight;
+        double controlAspect = img.Bounds.Width / img.Bounds.Height;
+
+        double renderWidth;
+        double renderHeight;
+        double offsetX;
+        double offsetY;
+
+        if (controlAspect > imgAspect)
+        {
+            renderHeight = img.Bounds.Height;
+            renderWidth = renderHeight * imgAspect;
+            offsetX = (img.Bounds.Width - renderWidth) / 2;
+            offsetY = 0;
+        }
+        else
+        {
+            renderWidth = img.Bounds.Width;
+            renderHeight = renderWidth / imgAspect;
+            offsetX = 0;
+            offsetY = (img.Bounds.Height - renderHeight) / 2;
+        }
+
+        var relativeX = (_attachedViewModel.RemoteCursorHostX - _attachedViewModel.DesktopLeft) / (double)_attachedViewModel.ScreenWidth;
+        var relativeY = (_attachedViewModel.RemoteCursorHostY - _attachedViewModel.DesktopTop) / (double)_attachedViewModel.ScreenHeight;
+        var overlayX = img.Bounds.Left + offsetX + (relativeX * renderWidth);
+        var overlayY = img.Bounds.Top + offsetY + (relativeY * renderHeight);
+        var scaleX = renderWidth / _attachedViewModel.ScreenWidth;
+        var scaleY = renderHeight / _attachedViewModel.ScreenHeight;
+
+        _attachedViewModel.RemoteCursorViewportX = overlayX;
+        _attachedViewModel.RemoteCursorViewportY = overlayY;
+        _attachedViewModel.RemoteCursorBitmapLeft = overlayX - (_attachedViewModel.CursorHotspotX * scaleX);
+        _attachedViewModel.RemoteCursorBitmapTop = overlayY - (_attachedViewModel.CursorHotspotY * scaleY);
+        _attachedViewModel.RemoteCursorBitmapWidth = _attachedViewModel.CursorShapeWidth * scaleX;
+        _attachedViewModel.RemoteCursorBitmapHeight = _attachedViewModel.CursorShapeHeight * scaleY;
+        _attachedViewModel.IsRemoteCursorOverlayVisible =
+            relativeX >= 0 &&
+            relativeX <= 1 &&
+            relativeY >= 0 &&
+            relativeY <= 1;
     }
 
     // ═══════════════ Viewport transform ═══════════════
