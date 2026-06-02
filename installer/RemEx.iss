@@ -83,6 +83,10 @@ Filename: "powershell.exe"; \
   Flags: runhidden waituntilterminated; \
   RunOnceId: "UninstallRemexService"
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{localappdata}\Remex"
+Type: filesandordirs; Name: "{commonappdata}\RemEx"
+
 ; ============================================================
 ;  Pascal [Code] — custom wizard pages
 ; ============================================================

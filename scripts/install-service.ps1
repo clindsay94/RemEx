@@ -293,19 +293,30 @@ switch ($Action) {
 
     "Uninstall" {
         $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if (-not $existing) {
+        if ($existing) {
+            if ($existing.Status -eq "Running") {
+                Write-Host "Stopping service..." -ForegroundColor Yellow
+                Stop-Service -Name $ServiceName -Force
+                Start-Sleep -Seconds 2
+            }
+
+            Write-Host "Removing service '$ServiceName'..." -ForegroundColor Cyan
+            sc.exe delete $ServiceName | Out-Null
+            Write-Host "Service '$DisplayName' removed successfully." -ForegroundColor Green
+        } else {
             Write-Warning "Service '$ServiceName' is not installed."
-            exit 0
         }
 
-        if ($existing.Status -eq "Running") {
-            Write-Host "Stopping service..." -ForegroundColor Yellow
-            Stop-Service -Name $ServiceName -Force
-            Start-Sleep -Seconds 2
+        # Remove event log source
+        if (Test-EventSourceRegistered) {
+            Write-Host "Removing Windows Event Log source '$EventSource'..." -ForegroundColor Yellow
+            try {
+                [System.Diagnostics.EventLog]::DeleteEventSource($EventSource)
+                Write-Host "Windows Event Log source '$EventSource' removed successfully." -ForegroundColor Green
+            } catch {
+                Write-Warning "Failed to remove Windows Event Log source '$EventSource': $($_.Exception.Message)"
+            }
         }
-
-        Write-Host "Removing service '$ServiceName'..." -ForegroundColor Cyan
-        sc.exe delete $ServiceName | Out-Null
 
         # Remove firewall rules
         Write-Host "Removing Windows Defender Firewall rules..." -ForegroundColor Yellow
@@ -316,8 +327,6 @@ switch ($Action) {
         } catch {
             Write-Warning "Failed to remove Windows Firewall rules automatically: $($_.Exception.Message)"
         }
-
-        Write-Host "Service '$DisplayName' removed successfully." -ForegroundColor Green
     }
 
     "Status" {

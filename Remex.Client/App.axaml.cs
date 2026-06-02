@@ -23,6 +23,7 @@ public partial class App : Application
     private TrayFlyoutWindow? _flyout;
     private NativeMenuItem? _themeToggleMenuItem;
     public static IServiceProvider Services { get; private set; } = null!;
+    public static bool IsShuttingDown { get; set; }
 
     public static int? OverrideHostPort { get; set; }
     public static Action<IServiceCollection>? RegisterPlatformServices { get; set; }
@@ -265,6 +266,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            IsShuttingDown = true;
             _flyout?.Close();
             _flyout = null;
 

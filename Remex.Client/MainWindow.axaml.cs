@@ -30,6 +30,12 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        if (App.IsShuttingDown)
+        {
+            base.OnClosing(e);
+            return;
+        }
+
         // Don't close, just hide to keep the app alive in the tray.
         // The user can exit via the tray menu.
         e.Cancel = true;
