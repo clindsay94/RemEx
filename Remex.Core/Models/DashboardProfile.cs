@@ -184,6 +184,10 @@ public record CustomizationSettings
     /// <summary>When true, the UI accent color attempts to sync with physical hardware (OpenRGB/FanControl).</summary>
     public bool SyncWithHardware { get; init; } = false;
 
+    /// <summary>Selected splash screen animation sequence style.</summary>
+    [JsonPropertyName("splashStyle")]
+    public string SplashStyle { get; init; } = "RemexCommand";
+
     /// <summary>Compatibility alias for older UI clients.</summary>
     [JsonIgnore]
     public string BaseTheme

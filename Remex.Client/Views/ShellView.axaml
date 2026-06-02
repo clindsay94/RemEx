@@ -389,7 +389,7 @@
             </Button>
 
             <!-- ═══ WELCOME SPLASH — BOOT SEQUENCE ═══ -->
-            <ctrl:BootSequenceControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" AccentColor="{DynamicResource AccentPrimary}" ZIndex="999"/>
+            <ctrl:BootSequenceControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" AccentColor="{DynamicResource AccentPrimary}" SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999"/>
 
             <!-- ═══ TUTORIAL OVERLAY (first-run or replay) ═══ -->
             <Border Grid.RowSpan="2" IsVisible="{Binding ShowTutorialOverlay}" Background="#E6141720" ZIndex="998">

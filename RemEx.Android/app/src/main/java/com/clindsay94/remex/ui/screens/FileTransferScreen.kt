@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -43,7 +42,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -399,8 +397,8 @@ fun FileTransferScreenContent(
             }
 
             if (isTransferring) {
-                LinearProgressIndicator(
-                        progress = { transferProgress },
+                RemexLinearWavyProgress(
+                        progress = transferProgress,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 )
             }
@@ -417,7 +415,7 @@ fun FileTransferScreenContent(
             when {
                 isLoading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        RemexLoadingIndicator(contained = true)
                     }
                 }
                 remoteRoots.isEmpty() -> {

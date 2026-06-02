@@ -134,6 +134,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _schemeVariant = settings.SchemeVariant;
         _canvasBackgroundType = settings.BackgroundMaterial;
         _syncWithHardware = settings.SyncWithHardware;
+        _splashStyle = settings.SplashStyle;
 
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
@@ -200,6 +201,16 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _syncWithHardware;
+
+    [ObservableProperty]
+    private string _splashStyle;
+
+    partial void OnSplashStyleChanged(string value) => ApplyAndSave();
+
+    public ObservableCollection<string> AvailableSplashStyles { get; } = new()
+    {
+        "RemexCommand", "CosmicZoom"
+    };
 
     partial void OnSelectedThemeChanged(AppTheme value)
     {
@@ -274,6 +285,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             SchemeVariant = SchemeVariant,
             BackgroundMaterial = CanvasBackgroundType,
             SyncWithHardware = SyncWithHardware,
+            SplashStyle = SplashStyle,
             CustomAccentColors = CustomAccentColors.Take(8).ToList()
         };
 
@@ -325,6 +337,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#6C4CFF";
                         GlowStrength = 2;
                         GlassOpacity = 0.1;
+                        SplashStyle = "RemexCommand";
                         break;
                     case AppTheme.Dynamic:
                         CornerRadius = 24;

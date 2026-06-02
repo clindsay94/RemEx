@@ -193,6 +193,8 @@ public static class HostBootstrapper
         var app = builder.Build();
         var hostCapabilitiesProvider = app.Services.GetRequiredService<IHostCapabilitiesProvider>();
 
+        PrintStartupBanner(actualPort.ToString());
+
         // Session 0 detection: warn when running as a non-interactive Windows service
         if (OperatingSystem.IsWindows() && Process.GetCurrentProcess().SessionId == 0)
         {
@@ -496,4 +498,36 @@ public static class HostBootstrapper
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetProcessDpiAwarenessContext(nint dpiContext);
+
+    private static void PrintStartupBanner(string port)
+    {
+        try
+        {
+            const string ansiCyan = "\x1b[1;36m";
+            const string ansiGold = "\x1b[1;33m";
+            const string ansiWhite = "\x1b[1;37m";
+            const string ansiReset = "\x1b[0m";
+
+            Console.WriteLine(ansiReset);
+            Console.WriteLine($"{ansiCyan}██████╗ ███████╗███╗   ███╗███████╗██╗  ██╗   {ansiGold}⚡{ansiReset}");
+            Console.WriteLine($"{ansiCyan}██╔══██╗██╔════╝████╗ ████║██╔════╝╚██╗██╔╝  {ansiGold}⚡⚡{ansiReset}");
+            Console.WriteLine($"{ansiCyan}██████╔╝█████╗  ██╔████╔██║█████╗   ╚███╔╝  {ansiGold}⚡⚡⚡{ansiReset}");
+            Console.WriteLine($"{ansiCyan}██╔══██╗██╔══╝  ██║╚██╔╝██║██╔══╝   ██╔██╗   {ansiGold}⚡{ansiReset}");
+            Console.WriteLine($"{ansiCyan}██║  ██║███████╗██║ ╚═╝ ██║███████╗██╔╝ ██╗  {ansiGold}⚡{ansiReset}");
+            Console.WriteLine($"{ansiCyan}╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝{ansiReset}");
+            Console.WriteLine($"{ansiWhite}------------------------------------------------------------{ansiReset}");
+            Console.WriteLine($"{ansiWhite}⚡ REMEX REMOTE EXECUTION COMMAND CENTER v2.0.0 ⚡{ansiReset}");
+            Console.WriteLine($"{ansiWhite}------------------------------------------------------------{ansiReset}");
+            Console.WriteLine($"{ansiCyan}Status:      {ansiWhite}Active & Listening{ansiReset}");
+            Console.WriteLine($"{ansiCyan}Host ID:     {ansiWhite}{HostId}{ansiReset}");
+            Console.WriteLine($"{ansiCyan}Platform:    {ansiWhite}.NET 10.0 ({RuntimeInformation.OSDescription}){ansiReset}");
+            Console.WriteLine($"{ansiCyan}API Port:    {ansiWhite}{port} (Secure TLS 1.3 Active){ansiReset}");
+            Console.WriteLine($"{ansiWhite}------------------------------------------------------------{ansiReset}");
+            Console.WriteLine(ansiReset);
+        }
+        catch
+        {
+            // Fallback in case of console writing issues
+        }
+    }
 }

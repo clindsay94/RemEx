@@ -118,12 +118,13 @@ private fun PersonalizationLoading(showHeader: Boolean) {
         Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
-        ) { CircularProgressIndicator() }
+        ) { RemexLoadingIndicator(contained = true) }
     }
 }
 
 @OptIn(
         ExperimentalMaterial3Api::class,
+        ExperimentalMaterial3ExpressiveApi::class,
         ExperimentalLayoutApi::class
 )
 @Composable
@@ -409,17 +410,17 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
                     val displayModeOptions = listOf("system", "light", "dark")
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        displayModeOptions.forEachIndexed { index, option ->
-                            SegmentedButton(
-                                    selected = themeMode == option,
-                                    onClick = { themeMode = option },
-                                    shape =
-                                            SegmentedButtonDefaults.itemShape(
-                                                    index,
-                                                    displayModeOptions.size
-                                            ),
-                                    label = { Text(option.replaceFirstChar { it.uppercase() }) }
+                    ButtonGroup(
+                            overflowIndicator = { menuState ->
+                                ButtonGroupDefaults.OverflowIndicator(menuState)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                    ) {
+                        displayModeOptions.forEach { option ->
+                            toggleableItem(
+                                    checked = themeMode == option,
+                                    onCheckedChange = { themeMode = option },
+                                    label = option.replaceFirstChar { it.uppercase() }
                             )
                         }
                     }
@@ -465,17 +466,17 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
                     val paletteModeOptions = listOf("default", "custom")
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        paletteModeOptions.forEachIndexed { index, option ->
-                            SegmentedButton(
-                                    selected = palette == option,
-                                    onClick = { palette = option },
-                                    shape =
-                                            SegmentedButtonDefaults.itemShape(
-                                                    index,
-                                                    paletteModeOptions.size
-                                            ),
-                                    label = { Text(option.replaceFirstChar { it.uppercase() }) }
+                    ButtonGroup(
+                            overflowIndicator = { menuState ->
+                                ButtonGroupDefaults.OverflowIndicator(menuState)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                    ) {
+                        paletteModeOptions.forEach { option ->
+                            toggleableItem(
+                                    checked = palette == option,
+                                    onCheckedChange = { palette = option },
+                                    label = option.replaceFirstChar { it.uppercase() }
                             )
                         }
                     }

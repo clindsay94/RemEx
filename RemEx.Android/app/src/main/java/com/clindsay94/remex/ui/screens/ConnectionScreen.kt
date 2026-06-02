@@ -278,7 +278,7 @@ fun ConnectionScreenContent(
                         Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
-                        ) { CircularProgressIndicator() }
+                        ) { RemexLoadingIndicator(contained = true) }
                 } else {
                         Column(
                                 modifier =
@@ -446,12 +446,11 @@ fun ConnectionScreenContent(
                                                         modifier = Modifier.fillMaxWidth()
                                                 ) {
                                                         if (isDiscovering) {
-                                                                CircularProgressIndicator(
+                                                                RemexLoadingIndicator(
                                                                         modifier =
                                                                                 Modifier.size(
-                                                                                        18.dp
+                                                                                        24.dp
                                                                                 ),
-                                                                        strokeWidth = 2.dp,
                                                                         color =
                                                                                 MaterialTheme
                                                                                         .colorScheme
@@ -1114,10 +1113,9 @@ fun ConnectionScreenContent(
                                         enabled = !isConnecting && hostInput.isNotEmpty()
                                 ) {
                                         if (isConnecting) {
-                                                CircularProgressIndicator(
+                                                RemexLoadingIndicator(
                                                         modifier = Modifier.size(24.dp),
-                                                        color = MaterialTheme.colorScheme.onPrimary,
-                                                        strokeWidth = 2.dp
+                                                        color = MaterialTheme.colorScheme.onPrimary
                                                 )
                                         } else {
                                                 Text(stringResource(R.string.button_save_connect))

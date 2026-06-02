@@ -10,9 +10,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -44,6 +47,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -136,6 +140,68 @@ private fun PlainAnimatedVisibility(
                 exit = exit,
                 content = content
         )
+}
+
+/** Small uppercase-ish section heading used to group controls in the settings sheet. */
+@Composable
+private fun SettingsSectionHeader(text: String) {
+        Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+        )
+}
+
+/** A compact labeled slider for the settings sheet. The label sits directly above the slider so a
+ *  pair of these can sit side-by-side in landscape without wasting vertical space. */
+@Composable
+private fun SettingSlider(
+        label: String,
+        value: Float,
+        onValueChange: (Float) -> Unit,
+        valueRange: ClosedFloatingPointRange<Float>,
+        modifier: Modifier = Modifier,
+        steps: Int = 0
+) {
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                        label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                )
+                Slider(
+                        value = value,
+                        onValueChange = onValueChange,
+                        valueRange = valueRange,
+                        steps = steps
+                )
+        }
+}
+
+/** Lays two settings controls out side-by-side in landscape (to use the wide aspect ratio) and
+ *  stacked in portrait. Each slot is handed the Modifier it should apply (weight vs fillMaxWidth). */
+@Composable
+private fun SettingsPair(
+        isLandscape: Boolean,
+        first: @Composable (Modifier) -> Unit,
+        second: @Composable (Modifier) -> Unit
+) {
+        if (isLandscape) {
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                        first(Modifier.weight(1f))
+                        second(Modifier.weight(1f))
+                }
+        } else {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        first(Modifier.fillMaxWidth())
+                        second(Modifier.fillMaxWidth())
+                }
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -290,7 +356,9 @@ fun RemoteDesktopScreenContent(
         val view = LocalView.current
 
         var showSettings by remember { mutableStateOf(false) }
-        val sheetState = rememberModalBottomSheetState()
+        // Skip the half-expanded state: in landscape the partial sheet is too short to reveal the
+        // input sliders, and the content is scrollable anyway. Always open fully expanded.
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         var zoomFactor by remember { mutableFloatStateOf(1f) }
         var panOffsetX by remember { mutableFloatStateOf(0f) }
@@ -2297,70 +2365,121 @@ fun RemoteDesktopScreenContent(
                                                 MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
                                         scrimColor = Color.Transparent
                                 ) {
+                                        val isLandscape =
+                                                LocalConfiguration.current.orientation ==
+                                                        Configuration.ORIENTATION_LANDSCAPE
                                         Column(
                                                 modifier =
                                                         Modifier.fillMaxWidth()
-                                                                .padding(24.dp)
-                                                                .padding(bottom = 32.dp),
+                                                                // Scrollable so every control is
+                                                                // reachable even when the sheet is
+                                                                // short (landscape).
+                                                                .verticalScroll(
+                                                                        rememberScrollState()
+                                                                )
+                                                                .padding(
+                                                                        horizontal = 24.dp,
+                                                                        vertical = 16.dp
+                                                                )
+                                                                .navigationBarsPadding()
+                                                                .imePadding(),
                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                         ) {
-                                                Text(
+                                                // Header: title + close button
+                                                Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement =
+                                                                Arrangement.SpaceBetween,
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically
+                                                ) {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .remote_desktop_config_title
+                                                                ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .titleLarge,
+                                                                fontWeight = FontWeight.Bold
+                                                        )
+                                                        IconButton(
+                                                                onClick = { showSettings = false }
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Close,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_close_settings
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+
+                                                // ── Stream section ──
+                                                SettingsSectionHeader(
                                                         stringResource(
-                                                                R.string.remote_desktop_config_title
-                                                        ),
-                                                        style = MaterialTheme.typography.titleLarge,
-                                                        fontWeight = FontWeight.Bold
+                                                                R.string
+                                                                        .remote_desktop_section_stream
+                                                        )
                                                 )
-
-                                                // Quality slider
-                                                Column(
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        Text(
-                                                                stringResource(
-                                                                        R.string
-                                                                                .remote_desktop_quality_label,
-                                                                        config.quality
-                                                                ),
-                                                                fontWeight = FontWeight.SemiBold
-                                                        )
-                                                        Slider(
-                                                                value = config.quality.toFloat(),
-                                                                onValueChange = {
-                                                                        onUpdateQuality(it.toInt())
-                                                                },
-                                                                valueRange = 1f..100f
-                                                        )
-                                                }
-
-                                                // FPS slider
-                                                Column(
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        Text(
-                                                                stringResource(
-                                                                        R.string
-                                                                                .remote_desktop_fps_label,
-                                                                        config.targetFps
-                                                                ),
-                                                                fontWeight = FontWeight.SemiBold
-                                                        )
-                                                        Slider(
-                                                                value = config.targetFps.toFloat(),
-                                                                onValueChange = {
-                                                                        onUpdateTargetFps(
-                                                                                it.toInt()
-                                                                        )
-                                                                },
-                                                                valueRange = 1f..120f
-                                                        )
-                                                }
+                                                SettingsPair(
+                                                        isLandscape = isLandscape,
+                                                        first = { m ->
+                                                                SettingSlider(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .remote_desktop_quality_label,
+                                                                                        config.quality
+                                                                                ),
+                                                                        value =
+                                                                                config.quality
+                                                                                        .toFloat(),
+                                                                        onValueChange = {
+                                                                                onUpdateQuality(
+                                                                                        it.toInt()
+                                                                                )
+                                                                        },
+                                                                        valueRange = 1f..100f,
+                                                                        modifier = m
+                                                                )
+                                                        },
+                                                        second = { m ->
+                                                                SettingSlider(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .remote_desktop_fps_label,
+                                                                                        config.targetFps
+                                                                                ),
+                                                                        value =
+                                                                                config.targetFps
+                                                                                        .toFloat(),
+                                                                        onValueChange = {
+                                                                                onUpdateTargetFps(
+                                                                                        it.toInt()
+                                                                                )
+                                                                        },
+                                                                        valueRange = 1f..120f,
+                                                                        modifier = m
+                                                                )
+                                                        }
+                                                )
 
                                                 HorizontalDivider()
 
-                                                // Direct Touch toggle
+                                                // ── Input & Controls section ──
+                                                SettingsSectionHeader(
+                                                        stringResource(
+                                                                R.string
+                                                                        .remote_desktop_section_input
+                                                        )
+                                                )
+
+                                                // Direct Touch toggle (full width — own row so it
+                                                // never collides with a slider beside it)
                                                 Row(
                                                         modifier = Modifier.fillMaxWidth(),
                                                         horizontalArrangement =
@@ -2392,6 +2511,7 @@ fun RemoteDesktopScreenContent(
                                                                                         .onSurfaceVariant
                                                                 )
                                                         }
+                                                        Spacer(Modifier.width(16.dp))
                                                         Switch(
                                                                 checked = uiState.directTouch,
                                                                 onCheckedChange = {
@@ -2400,110 +2520,103 @@ fun RemoteDesktopScreenContent(
                                                         )
                                                 }
 
-                                                // Pointer Speed slider
-                                                Column(
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        Text(
-                                                                String.format(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_pointer_speed_label
-                                                                        ),
-                                                                        uiState.pointerSpeed
-                                                                ),
-                                                                fontWeight = FontWeight.SemiBold
-                                                        )
-                                                        Slider(
-                                                                value = uiState.pointerSpeed,
-                                                                onValueChange = {
-                                                                        onUpdatePointerSpeed(it)
-                                                                },
-                                                                valueRange = 0.25f..3.0f,
-                                                                steps = 10
-                                                        )
-                                                }
+                                                SettingsPair(
+                                                        isLandscape = isLandscape,
+                                                        first = { m ->
+                                                                SettingSlider(
+                                                                        label =
+                                                                                String.format(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .remote_desktop_pointer_speed_label
+                                                                                        ),
+                                                                                        uiState.pointerSpeed
+                                                                                ),
+                                                                        value =
+                                                                                uiState.pointerSpeed,
+                                                                        onValueChange = {
+                                                                                onUpdatePointerSpeed(
+                                                                                        it
+                                                                                )
+                                                                        },
+                                                                        valueRange = 0.25f..3.0f,
+                                                                        steps = 10,
+                                                                        modifier = m
+                                                                )
+                                                        },
+                                                        second = { m ->
+                                                                SettingSlider(
+                                                                        label =
+                                                                                String.format(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .remote_desktop_cursor_size_label
+                                                                                        ),
+                                                                                        uiState.cursorScale
+                                                                                ),
+                                                                        value =
+                                                                                uiState.cursorScale,
+                                                                        onValueChange = {
+                                                                                onUpdateCursorScale(
+                                                                                        it
+                                                                                )
+                                                                        },
+                                                                        valueRange = 0.5f..2.5f,
+                                                                        steps = 7,
+                                                                        modifier = m
+                                                                )
+                                                        }
+                                                )
 
-                                                // Cursor Size slider (size of the on-screen pointer)
-                                                Column(
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        Text(
-                                                                "Cursor Size: ${
-                                                                        String.format(
-                                                                                "%.1f",
-                                                                                uiState.cursorScale
-                                                                        )
-                                                                }x",
-                                                                fontWeight = FontWeight.SemiBold
-                                                        )
-                                                        Slider(
-                                                                value = uiState.cursorScale,
-                                                                onValueChange = {
-                                                                        onUpdateCursorScale(it)
-                                                                },
-                                                                valueRange = 0.5f..2.5f,
-                                                                steps = 7
-                                                        )
-                                                }
-
-                                                // Vertical Scroll Sensitivity slider
-                                                Column(
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        Text(
-                                                                String.format(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_v_scroll_sensitivity_label
-                                                                        ),
-                                                                        uiState.vScrollSensitivity
-                                                                ),
-                                                                fontWeight = FontWeight.SemiBold
-                                                        )
-                                                        Slider(
-                                                                value = uiState.vScrollSensitivity,
-                                                                onValueChange = {
-                                                                        onUpdateScrollSensitivity(
-                                                                                it,
-                                                                                uiState.hScrollSensitivity
-                                                                        )
-                                                                },
-                                                                valueRange = 0.1f..5.0f,
-                                                                steps = 20
-                                                        )
-                                                }
-
-                                                // Horizontal Scroll Sensitivity slider
-                                                Column(
-                                                        verticalArrangement =
-                                                                Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                        Text(
-                                                                String.format(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .remote_desktop_h_scroll_sensitivity_label
-                                                                        ),
-                                                                        uiState.hScrollSensitivity
-                                                                ),
-                                                                fontWeight = FontWeight.SemiBold
-                                                        )
-                                                        Slider(
-                                                                value = uiState.hScrollSensitivity,
-                                                                onValueChange = {
-                                                                        onUpdateScrollSensitivity(
+                                                SettingsPair(
+                                                        isLandscape = isLandscape,
+                                                        first = { m ->
+                                                                SettingSlider(
+                                                                        label =
+                                                                                String.format(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .remote_desktop_v_scroll_short
+                                                                                        ),
+                                                                                        uiState.vScrollSensitivity
+                                                                                ),
+                                                                        value =
                                                                                 uiState.vScrollSensitivity,
-                                                                                it
-                                                                        )
-                                                                },
-                                                                valueRange = 0.1f..5.0f,
-                                                                steps = 20
-                                                        )
-                                                }
+                                                                        onValueChange = {
+                                                                                onUpdateScrollSensitivity(
+                                                                                        it,
+                                                                                        uiState.hScrollSensitivity
+                                                                                )
+                                                                        },
+                                                                        valueRange = 0.1f..5.0f,
+                                                                        steps = 20,
+                                                                        modifier = m
+                                                                )
+                                                        },
+                                                        second = { m ->
+                                                                SettingSlider(
+                                                                        label =
+                                                                                String.format(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .remote_desktop_h_scroll_short
+                                                                                        ),
+                                                                                        uiState.hScrollSensitivity
+                                                                                ),
+                                                                        value =
+                                                                                uiState.hScrollSensitivity,
+                                                                        onValueChange = {
+                                                                                onUpdateScrollSensitivity(
+                                                                                        uiState.vScrollSensitivity,
+                                                                                        it
+                                                                                )
+                                                                        },
+                                                                        valueRange = 0.1f..5.0f,
+                                                                        steps = 20,
+                                                                        modifier = m
+                                                                )
+                                                        }
+                                                )
 
                                                 Text(
                                                         text =

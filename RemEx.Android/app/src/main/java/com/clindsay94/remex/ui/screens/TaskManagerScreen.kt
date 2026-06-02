@@ -183,7 +183,7 @@ fun TaskManagerScreenContent(
                             contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(strokeCap = StrokeCap.Round)
+                            RemexLoadingIndicator()
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                     stringResource(R.string.task_manager_fetching),
@@ -294,19 +294,20 @@ private fun SearchBar(query: String, onUpdateQuery: (String) -> Unit, shape: Sha
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 private fun FilterSortSection(
         currentSortField: ProcessSortField,
         sortDescending: Boolean,
         onUpdateSortField: (ProcessSortField) -> Unit
 ) {
     val view = LocalView.current
+    // Labels resolved here (composable scope) because ButtonGroup's content lambda is non-composable.
     val fields =
             listOf(
-                    ProcessSortField.CPU to R.string.sort_cpu,
-                    ProcessSortField.RAM to R.string.sort_ram,
-                    ProcessSortField.NAME to R.string.sort_name,
-                    ProcessSortField.PID to R.string.sort_pid
+                    ProcessSortField.CPU to stringResource(R.string.sort_cpu),
+                    ProcessSortField.RAM to stringResource(R.string.sort_ram),
+                    ProcessSortField.NAME to stringResource(R.string.sort_name),
+                    ProcessSortField.PID to stringResource(R.string.sort_pid)
             )
     Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
@@ -318,17 +319,22 @@ private fun FilterSortSection(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        // M3: SegmentedButton for sort field selection (4 items — fits well)
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
-            fields.forEachIndexed { index, (field, labelRes) ->
-                SegmentedButton(
-                        selected = currentSortField == field,
-                        onClick = {
+        // M3 Expressive: connected ButtonGroup — each item is a ToggleButton that
+        // morphs its shape on selection/press and squishes its neighbours.
+        ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState)
+                },
+                modifier = Modifier.weight(1f)
+        ) {
+            fields.forEach { (field, label) ->
+                toggleableItem(
+                        checked = currentSortField == field,
+                        onCheckedChange = {
                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             onUpdateSortField(field)
                         },
-                        shape = SegmentedButtonDefaults.itemShape(index, fields.size),
-                        label = { Text(stringResource(labelRes)) }
+                        label = label
                 )
             }
         }

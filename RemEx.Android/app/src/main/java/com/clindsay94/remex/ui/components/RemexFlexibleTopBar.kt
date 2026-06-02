@@ -23,6 +23,12 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 /**
  * Project-wide flexible top app bar.
  *
+ * NOTE: This intentionally uses the stable [MediumTopAppBar] rather than the
+ * Expressive `MediumFlexibleTopAppBar`. As of material3 1.5.0-alpha20 the flexible
+ * variant measures to an invalid (negative) constraint on some screens and crashes
+ * at layout time with `IllegalArgumentException: maxWidth must be >= than minWidth`.
+ * Revisit swapping to the flexible variant once that alpha bug is fixed upstream.
+ *
  * Usage:
  *     val scrollBehavior = rememberRemexCollapsingScrollBehavior()
  *     Scaffold(

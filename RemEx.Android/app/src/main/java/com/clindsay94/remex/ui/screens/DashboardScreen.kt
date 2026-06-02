@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -48,10 +49,11 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -273,45 +275,7 @@ fun DashboardScreenContent(
         Surface(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                         RemexScreenHeader(
-                                title = stringResource(R.string.screen_dashboard_title),
-                                actions = {
-                                        if (canvasScale != 1f) {
-                                                IconButton(
-                                                        onClick = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .KEYBOARD_TAP
-                                                                )
-                                                                canvasScale = 1f
-                                                        }
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.FilterCenterFocus,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .cd_reset_zoom
-                                                                        )
-                                                        )
-                                                }
-                                        }
-                                        IconButton(
-                                                onClick = {
-                                                        view.performHapticFeedback(
-                                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                                        )
-                                                        showCardDrawer = !showCardDrawer
-                                                }
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.Tune,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_customize_cards
-                                                                )
-                                                )
-                                        }
-                                }
+                                title = stringResource(R.string.screen_dashboard_title)
                         )
                         Box(
                                 modifier =
@@ -1099,6 +1063,67 @@ fun DashboardScreenContent(
                                                 }
                                         }
                                 }
+
+                                // M3 Expressive: floating quick-action toolbar that hovers over
+                                // the freeform card canvas — connection toggle, card customization,
+                                // and reset-view, all without stealing space from the canvas.
+                                HorizontalFloatingToolbar(
+                                        expanded = true,
+                                        modifier =
+                                                Modifier.align(Alignment.BottomCenter)
+                                                        .navigationBarsPadding()
+                                                        .padding(bottom = 24.dp)
+                                ) {
+                                        FilledTonalIconButton(
+                                                onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.CONFIRM
+                                                        )
+                                                        onToggleConnection()
+                                                }
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.PowerSettingsNew,
+                                                        contentDescription =
+                                                                stringResource(
+                                                                        R.string.dashboard_pc_status
+                                                                )
+                                                )
+                                        }
+                                        IconButton(
+                                                onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                                        )
+                                                        showCardDrawer = !showCardDrawer
+                                                }
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.Tune,
+                                                        contentDescription =
+                                                                stringResource(
+                                                                        R.string.cd_customize_cards
+                                                                )
+                                                )
+                                        }
+                                        IconButton(
+                                                onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                                        )
+                                                        canvasScale = 1f
+                                                },
+                                                enabled = canvasScale != 1f
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.FilterCenterFocus,
+                                                        contentDescription =
+                                                                stringResource(
+                                                                        R.string.cd_reset_zoom
+                                                                )
+                                                )
+                                        }
+                                }
                         }
                 }
         }
@@ -1362,24 +1387,12 @@ private fun TelemetryCardContent(
                                                                         .fastSpatialSpec(),
                                                         label = "gauge_bounce"
                                                 )
-                                        Box(
-                                                contentAlignment = Alignment.Center,
-                                                modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                                CircularProgressIndicator(
-                                                        progress = { animatedProgress },
-                                                        modifier = Modifier.size(64.dp),
-                                                        strokeWidth = 6.dp,
-                                                        strokeCap = StrokeCap.Round
-                                                )
-                                                Text(
+                                        RemexCircularWavyGauge(
+                                                progress = animatedProgress,
+                                                centerLabel =
                                                         "${(percent * 100).roundToInt()}%",
-                                                        style =
-                                                                MaterialTheme.typography
-                                                                        .labelMedium,
-                                                        fontWeight = FontWeight.Bold
-                                                )
-                                        }
+                                                modifier = Modifier.fillMaxWidth()
+                                        )
                                 }
                                 TelemetryDisplayMode.LINE, TelemetryDisplayMode.BAR, TelemetryDisplayMode.AREA -> {
                                         Box(
@@ -1405,24 +1418,12 @@ private fun TelemetryCardContent(
                                                                         .fastSpatialSpec(),
                                                         label = "circle_gauge_bounce"
                                                 )
-                                        Box(
-                                                contentAlignment = Alignment.Center,
-                                                modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                                CircularProgressIndicator(
-                                                        progress = { animatedProgress },
-                                                        modifier = Modifier.size(64.dp),
-                                                        strokeWidth = 6.dp,
-                                                        strokeCap = StrokeCap.Round
-                                                )
-                                                Text(
+                                        RemexCircularWavyGauge(
+                                                progress = animatedProgress,
+                                                centerLabel =
                                                         "${(percent * 100).roundToInt()}%",
-                                                        style =
-                                                                MaterialTheme.typography
-                                                                        .labelMedium,
-                                                        fontWeight = FontWeight.Bold
-                                                )
-                                        }
+                                                modifier = Modifier.fillMaxWidth()
+                                        )
                                 }
                         }
                 }

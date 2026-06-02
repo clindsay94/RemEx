@@ -206,6 +206,12 @@
     <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Tap = Click • Long Press = Right Click • 2 Fingers = Scroll • Pen = Absolute</string>
+    <string name="remote_desktop_section_stream">Stream</string>
+    <string name="remote_desktop_section_input">Input &amp; Controls</string>
+    <string name="remote_desktop_cursor_size_label">Cursor Size: %.1fx</string>
+    <string name="remote_desktop_v_scroll_short">V-Scroll: %.1fx</string>
+    <string name="remote_desktop_h_scroll_short">H-Scroll: %.1fx</string>
+    <string name="cd_close_settings">Close settings</string>
 
     <!-- ═══ Dashboard Screen ═══ -->
     <string name="screen_dashboard_title">RemEx Home Base</string>

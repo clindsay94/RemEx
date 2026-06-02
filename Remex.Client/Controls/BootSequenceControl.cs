@@ -21,6 +21,16 @@ public class BootSequenceControl : Control
         set => SetValue(AccentColorProperty, value);
     }
 
+    public static readonly StyledProperty<string> SplashStyleProperty =
+        AvaloniaProperty.Register<BootSequenceControl, string>(
+            nameof(SplashStyle), "RemexCommand");
+
+    public string SplashStyle
+    {
+        get => GetValue(SplashStyleProperty);
+        set => SetValue(SplashStyleProperty, value);
+    }
+
     public event Action? SequenceCompleted;
 
     private readonly DispatcherTimer _timer;
@@ -42,10 +52,16 @@ public class BootSequenceControl : Control
     private double _zoomScale = 1.0;
     private double _zoomProgress = 0.0;
     private double _fadeOverlay = 0.0;
+    
+    // Cosmic splash parameters (Flash and screen shake/shudder displacement offsets)
+    private double _shudderX;
+    private double _shudderY;
+    private double _flashOverlay;
 
     static BootSequenceControl()
     {
         AffectsRender<BootSequenceControl>(AccentColorProperty);
+        AffectsRender<BootSequenceControl>(SplashStyleProperty);
     }
 
     public BootSequenceControl()
@@ -98,53 +114,134 @@ public class BootSequenceControl : Control
         _stopwatch.Restart();
         _elapsed += dt;
 
-        // Particle updates
-        for (int i = 0; i < 25; i++)
+        if (SplashStyle == "CosmicZoom")
         {
-            _particles[i].Lifetime += dt;
-            _particles[i].X += _particles[i].Vx;
-            _particles[i].Y += _particles[i].Vy * dt;
-            double t = _particles[i].Lifetime / _particles[i].MaxLifetime;
-            if (t < 0.2) _particles[i].Alpha = (t / 0.2) * 0.7;
-            else if (t < 0.8) _particles[i].Alpha = 0.7;
-            else _particles[i].Alpha = (1.0 - (t - 0.8) / 0.2) * 0.7;
-
-            if (_particles[i].Lifetime >= _particles[i].MaxLifetime)
+            // Update particles for Cosmic Starfield!
+            // Particles radiate outwards from the center (0.5, 0.5)
+            for (int i = 0; i < 25; i++)
             {
-                _particles[i].X = _rng.NextDouble();
-                _particles[i].Y = 0.4 + _rng.NextDouble() * 0.6;
-                _particles[i].Vx = (_rng.NextDouble() - 0.5) * 0.016;
-                _particles[i].Vy = -(0.02 + _rng.NextDouble() * 0.02);
-                _particles[i].Lifetime = 0;
-                _particles[i].MaxLifetime = 1.5 + _rng.NextDouble() * 1.5;
+                double dx = _particles[i].X - 0.5;
+                double dy = _particles[i].Y - 0.5;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
+                if (dist < 0.01) dist = 0.01;
+
+                // Speed increases as it gets further (warp/hyperdrive effect)
+                double speed = (0.02 + dist * 0.8) * dt * 60;
+                _particles[i].X += (dx / dist) * speed;
+                _particles[i].Y += (dy / dist) * speed;
+
+                // Alpha fades in as it goes outwards, then fades out at the outer edges
+                _particles[i].Alpha = Math.Clamp(dist * 3.0, 0, 0.9) * Math.Clamp((0.5 - dist) * 4.0, 0, 1.0);
+
+                // Reset if offscreen or too far
+                if (_particles[i].X < 0 || _particles[i].X > 1 || _particles[i].Y < 0 || _particles[i].Y > 1 || dist > 0.5)
+                {
+                    // Reset to near center
+                    double angle = _rng.NextDouble() * Math.PI * 2;
+                    double startDist = 0.01 + _rng.NextDouble() * 0.06;
+                    _particles[i].X = 0.5 + Math.Cos(angle) * startDist;
+                    _particles[i].Y = 0.5 + Math.Sin(angle) * startDist;
+                    _particles[i].Vx = Math.Cos(angle) * 0.1; // Direction vectors
+                    _particles[i].Vy = Math.Sin(angle) * 0.1;
+                    _particles[i].Lifetime = 0;
+                    _particles[i].Alpha = 0;
+                }
+            }
+
+            // Cinematic Zoom-In stages:
+            if (_elapsed < 1.8)
+            {
+                // Acts I: Slow quadratic zoom of Letter R from distance
+                double t = _elapsed / 1.8;
+                _zoomScale = 0.04 + Math.Pow(t, 2) * 0.96;
+                
+                _shudderX = 0;
+                _shudderY = 0;
+                _flashOverlay = 0;
+            }
+            else
+            {
+                // Act II: Lightning strike at 1.8s. Screen flashes white/cyan and shudders violently.
+                double strikeElapsed = _elapsed - 1.8;
+                double strikeDuration = 0.5; // Decays over 500ms
+                
+                if (strikeElapsed < strikeDuration)
+                {
+                    double t = strikeElapsed / strikeDuration;
+                    _flashOverlay = 1.0 - t; // Linear flash decay
+                    
+                    // Shudder/vibration offsets: decaying shake intensity
+                    double shakeIntensity = (1.0 - t) * 12.0;
+                    _shudderX = (_rng.NextDouble() - 0.5) * shakeIntensity;
+                    _shudderY = (_rng.NextDouble() - 0.5) * shakeIntensity;
+                }
+                else
+                {
+                    _flashOverlay = 0;
+                    _shudderX = 0;
+                    _shudderY = 0;
+                }
+                
+                // Keep logo at peak scale with subtle breath
+                _zoomScale = 1.0 + Math.Sin((_elapsed - 1.8) * 3) * 0.02;
+            }
+
+            // Act III: Smooth exit fade to black before transition
+            if (_elapsed > 2.5)
+            {
+                _fadeOverlay = Math.Clamp((_elapsed - 2.5) / 0.5, 0, 1);
             }
         }
-
-        for (int i = 0; i < 12; i++)
+        else
         {
-            _streamParticles[i].T += _streamParticles[i].Speed * dt * 60;
-            if (_streamParticles[i].T > 1.0) _streamParticles[i].T -= 1.0;
+            // Particle updates (Original RemexCommand)
+            for (int i = 0; i < 25; i++)
+            {
+                _particles[i].Lifetime += dt;
+                _particles[i].X += _particles[i].Vx;
+                _particles[i].Y += _particles[i].Vy * dt;
+                double t = _particles[i].Lifetime / _particles[i].MaxLifetime;
+                if (t < 0.2) _particles[i].Alpha = (t / 0.2) * 0.7;
+                else if (t < 0.8) _particles[i].Alpha = 0.7;
+                else _particles[i].Alpha = (1.0 - (t - 0.8) / 0.2) * 0.7;
+
+                if (_particles[i].Lifetime >= _particles[i].MaxLifetime)
+                {
+                    _particles[i].X = _rng.NextDouble();
+                    _particles[i].Y = 0.4 + _rng.NextDouble() * 0.6;
+                    _particles[i].Vx = (_rng.NextDouble() - 0.5) * 0.016;
+                    _particles[i].Vy = -(0.02 + _rng.NextDouble() * 0.02);
+                    _particles[i].Lifetime = 0;
+                    _particles[i].MaxLifetime = 1.5 + _rng.NextDouble() * 1.5;
+                }
+            }
+
+            for (int i = 0; i < 12; i++)
+            {
+                _streamParticles[i].T += _streamParticles[i].Speed * dt * 60;
+                if (_streamParticles[i].T > 1.0) _streamParticles[i].T -= 1.0;
+            }
+
+            // Animation logic (Complimentary: Monitor scans first, Phone waves)
+            _scanProgress = Math.Clamp(_elapsed / 2.0, 0, 1.2);
+
+            if (_elapsed > 0.8)
+                _waveProgress = Math.Clamp((_elapsed - 0.8) / 2.0, 0, 1.2);
+
+            if (_elapsed > 1.6)
+                _connectionGlow = Math.Clamp((_elapsed - 1.6) / 0.4, 0, 1);
+
+            if (_elapsed > 2.0)
+            {
+                double zt = Math.Clamp((_elapsed - 2.0) / 0.7, 0, 1);
+                double ease = zt < 0.5 ? 4 * zt * zt * zt : 1 - Math.Pow(-2 * zt + 2, 3) / 2;
+                _zoomScale = 1.0 + ease * 5.0;
+                _zoomProgress = ease;
+            }
+
+            if (_elapsed > 2.3)
+                _fadeOverlay = Math.Clamp((_elapsed - 2.3) / 0.4, 0, 1);
         }
-
-        // Animation logic (Complimentary: Monitor scans first, Phone waves)
-        _scanProgress = Math.Clamp(_elapsed / 2.0, 0, 1.2);
-
-        if (_elapsed > 0.8)
-            _waveProgress = Math.Clamp((_elapsed - 0.8) / 2.0, 0, 1.2);
-
-        if (_elapsed > 1.6)
-            _connectionGlow = Math.Clamp((_elapsed - 1.6) / 0.4, 0, 1);
-
-        if (_elapsed > 2.0)
-        {
-            double zt = Math.Clamp((_elapsed - 2.0) / 0.7, 0, 1);
-            double ease = zt < 0.5 ? 4 * zt * zt * zt : 1 - Math.Pow(-2 * zt + 2, 3) / 2;
-            _zoomScale = 1.0 + ease * 5.0;
-            _zoomProgress = ease;
-        }
-
-        if (_elapsed > 2.3)
-            _fadeOverlay = Math.Clamp((_elapsed - 2.3) / 0.4, 0, 1);
 
         if (_elapsed >= 3.0 && !_completed)
         {
@@ -174,168 +271,310 @@ public class BootSequenceControl : Control
 
         ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, bounds);
 
-        double s = _zoomScale;
-        double monCxT = w * 0.22;
-        double monCyT = h * 0.20;
-        double targetDx = (w / 2.0 - monCxT) * (s - 1.0);
-        double targetDy = (h / 2.0 - monCyT) * (s - 1.0);
-
-        var matrix = Matrix.CreateScale(s, s) * Matrix.CreateTranslation(targetDx * _zoomProgress, targetDy * _zoomProgress);
-        using var transform = ctx.PushTransform(matrix);
-
-        // Geometry
-        double monitorW = w * 0.52;
-        double monitorH = monitorW * 0.62;
-        double monitorX = w * 0.22 - monitorW / 2.0;
-        double monitorY = h * 0.20 - monitorH / 2.0;
-        double monitorCx = monitorX + monitorW / 2.0;
-        double monitorCy = monitorY + monitorH / 2.0;
-
-        double phoneW = w * 0.22;
-        double phoneH = phoneW * 1.8;
-        double phoneX = w * 0.75 - phoneW / 2.0;
-        double phoneY = h * 0.72 - phoneH / 2.0;
-        double phoneCx = phoneX + phoneW / 2.0;
-        double phoneCy = phoneY + phoneH / 2.0;
-
-        // Centers (Complimentary logic: Monitor is scan center, Phone is wave center)
-        Point scanCenter = new Point(monitorCx, monitorCy);
-        Point waveCenter = new Point(phoneCx, phoneCy);
-
-        double maxRadiusPx = Math.Sqrt(w * w + h * h);
-        double scanRadius = maxRadiusPx * _scanProgress;
-        double waveRadius = maxRadiusPx * _waveProgress;
-
-        // Background traces
-        var traceRng = new Random(55);
-        for (int i = 0; i < 20; i++)
+        if (SplashStyle == "CosmicZoom")
         {
-            double sx = traceRng.NextDouble() * w;
-            double sy = traceRng.NextDouble() * h;
-            double seg1 = 30 + traceRng.NextDouble() * 80;
-            double seg2 = 20 + traceRng.NextDouble() * 60;
-            bool horiz = traceRng.NextDouble() > 0.5;
-            double d1 = traceRng.NextDouble() > 0.5 ? 1 : -1;
-            double d2 = traceRng.NextDouble() > 0.5 ? 1 : -1;
+            // ── COSMIC ZOOM ANIMATION ──
             
-            double tx, ty, ex, ey;
-            if (horiz) { tx = sx + seg1 * d1; ty = sy; ex = tx; ey = ty + seg2 * d2; }
-            else { tx = sx; ty = sy + seg1 * d1; ex = tx + seg2 * d2; ey = ty; }
-
-            var geo = new StreamGeometry();
-            using (var gctx = geo.Open())
+            // Draw Cosmic Starfield
+            for (int i = 0; i < 25; i++)
             {
-                gctx.BeginFigure(new Point(sx, sy), false);
-                gctx.LineTo(new Point(tx, ty));
-                gctx.LineTo(new Point(ex, ey));
+                double sx = _particles[i].X * w;
+                double sy = _particles[i].Y * h;
+                double dx = _particles[i].X - 0.5;
+                double dy = _particles[i].Y - 0.5;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
+                double radius = 0.5 + dist * 3.5; // Stars get larger as they approach the camera
+
+                var opacityBrush = new ImmutableSolidColorBrush(Color.FromArgb((byte)(_particles[i].Alpha * 255), 255, 255, 255));
+                ctx.DrawEllipse(opacityBrush, null, new Point(sx, sy), radius, radius);
+            }
+
+            // Draw target rings / circular HUD lines in background
+            var radBrush = new ImmutableSolidColorBrush(Color.FromArgb(12, primary.R, primary.G, primary.B));
+            var radPen = new Pen(radBrush, 1.0);
+            double maxRad = Math.Min(w, h) * 0.45;
+            foreach (var rf in new[] { 0.25, 0.45, 0.65, 0.85 })
+                ctx.DrawEllipse(null, radPen, new Point(w/2, h/2), rf * maxRad, rf * maxRad);
+
+            // Draw center crosshair target
+            ctx.DrawLine(radPen, new Point(w/2 - 20, h/2), new Point(w/2 + 20, h/2));
+            ctx.DrawLine(radPen, new Point(w/2, h/2 - 20), new Point(w/2, h/2 + 20));
+
+            // Draw expanding energy shockwave circles during lightning strike
+            if (_elapsed > 1.8)
+            {
+                double waveT = Math.Clamp((_elapsed - 1.8) / 0.5, 0, 1);
+                double shockRadius = 40 + waveT * 280;
+                double shockOpacity = 1.0 - waveT;
+                
+                var shockPen = new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(shockOpacity * 150), primary.R, primary.G, primary.B)), 3.0 + (1.0 - waveT) * 8.0);
+                ctx.DrawEllipse(null, shockPen, new Point(w/2, h/2), shockRadius, shockRadius);
+
+                var secondaryShockPen = new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(shockOpacity * 80), 255, 215, 0)), 1.5 + (1.0 - waveT) * 4.0);
+                ctx.DrawEllipse(null, secondaryShockPen, new Point(w/2, h/2), shockRadius * 0.7, shockRadius * 0.7);
+            }
+
+            // Draw Zoomed Brand Logo & Text in center (Applying global scale & shudder displacement)
+            double s = _zoomScale;
+            double offsetX = (w / 2) * (1 - s) + _shudderX;
+            double offsetY = (h / 2) * (1 - s) + _shudderY;
+
+            var matrix = Matrix.CreateScale(s, s) * Matrix.CreateTranslation(offsetX, offsetY);
+            using var transform = ctx.PushTransform(matrix);
+
+            double logoX = w / 2 - 54;
+            double logoY = h / 2 - 54 - 30; // Shift up slightly to leave space for text below
+
+            // 1. Sleek high-tech Outline Letter "R" (Stenciled neon look)
+            var rGeo = new StreamGeometry();
+            using (var gctx = rGeo.Open())
+            {
+                // Left stem
+                gctx.BeginFigure(new Point(logoX + 28, logoY + 90), false);
+                gctx.LineTo(new Point(logoX + 28, logoY + 18));
+                gctx.LineTo(new Point(logoX + 64, logoY + 18));
+                // Right loop
+                gctx.ArcTo(new Point(logoX + 64, logoY + 54), new Size(18, 18), 0, false, SweepDirection.Clockwise);
+                gctx.LineTo(new Point(logoX + 28, logoY + 54));
                 gctx.EndFigure(false);
-            }
-            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(new Color(15, surface.R, surface.G, surface.B)), 1.5), geo);
-            ctx.DrawEllipse(new ImmutableSolidColorBrush(new Color(15, surface.R, surface.G, surface.B)), null, new Point(tx, ty), 4, 4);
-        }
 
-        // Radial grid
-        var radBrush = new ImmutableSolidColorBrush(new Color(8, surfaceVariant.R, surfaceVariant.G, surfaceVariant.B));
-        var radPen = new Pen(radBrush, 1.0);
-        double maxRad = Math.Min(w, h) * 0.45;
-        foreach (var rf in new[] { 0.25, 0.45, 0.65, 0.85 })
-            ctx.DrawEllipse(null, radPen, new Point(w/2, h/2), rf * maxRad, rf * maxRad);
-
-        for (int i = 0; i < 8; i++)
-        {
-            double a = i * Math.PI / 4.0;
-            ctx.DrawLine(radPen, new Point(w/2, h/2), new Point(w/2 + maxRad * Math.Cos(a), h/2 + maxRad * Math.Sin(a)));
-        }
-
-        // Wireframe (clipped by scan)
-        if (scanRadius > 0)
-        {
-            var scanGeo = new StreamGeometry();
-            using (var gctx = scanGeo.Open())
-            {
-                gctx.BeginFigure(new Point(scanCenter.X + scanRadius, scanCenter.Y), true);
-                gctx.ArcTo(new Point(scanCenter.X - scanRadius, scanCenter.Y), new Size(scanRadius, scanRadius), 0, false, SweepDirection.Clockwise);
-                gctx.ArcTo(new Point(scanCenter.X + scanRadius, scanCenter.Y), new Size(scanRadius, scanRadius), 0, false, SweepDirection.Clockwise);
-                gctx.EndFigure(true);
-            }
-            using var clip = ctx.PushGeometryClip(scanGeo);
-
-            var primPen = new Pen(new ImmutableSolidColorBrush(primary), 3.0);
-            var secPen = new Pen(new ImmutableSolidColorBrush(secondary), 2.0);
-            
-            ctx.DrawRectangle(null, primPen, new Rect(monitorX, monitorY, monitorW, monitorH), monitorW * 0.06, monitorW * 0.06);
-            ctx.DrawLine(primPen, new Point(monitorCx, monitorY + monitorH), new Point(monitorCx, monitorY + monitorH + monitorH * 0.18));
-            
-            ctx.DrawRectangle(null, secPen, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
-
-            DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
-            DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
-            DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
-        }
-
-        // Solid (clipped by wave)
-        if (waveRadius > 0)
-        {
-            var waveGeo = new StreamGeometry();
-            using (var gctx = waveGeo.Open())
-            {
-                gctx.BeginFigure(new Point(waveCenter.X + waveRadius, waveCenter.Y), true);
-                gctx.ArcTo(new Point(waveCenter.X - waveRadius, waveCenter.Y), new Size(waveRadius, waveRadius), 0, false, SweepDirection.Clockwise);
-                gctx.ArcTo(new Point(waveCenter.X + waveRadius, waveCenter.Y), new Size(waveRadius, waveRadius), 0, false, SweepDirection.Clockwise);
-                gctx.EndFigure(true);
-            }
-            using var clip = ctx.PushGeometryClip(waveGeo);
-
-            ctx.DrawRectangle(new ImmutableSolidColorBrush(new Color(255, (byte)(primary.R*0.3), (byte)(primary.G*0.3), (byte)(primary.B*0.3))), null, new Rect(monitorX, monitorY, monitorW, monitorH), monitorW * 0.06, monitorW * 0.06);
-            ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(monitorX + monitorW*0.04, monitorY + monitorW*0.04, monitorW - monitorW*0.08, monitorH - monitorW*0.08), monitorW * 0.03, monitorW * 0.03);
-            ctx.DrawRectangle(new ImmutableSolidColorBrush(Colors.White), null, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
-            ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(phoneX + phoneW*0.08, phoneY + phoneW*0.12, phoneW - phoneW*0.16, phoneH - phoneW*0.2), phoneW * 0.08, phoneW * 0.08);
-
-            DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
-            DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
-            DrawText(ctx, "ote", new Point(w * 0.50 + 25, h * 0.48 - 35), 24, primary, false);
-            DrawText(ctx, "ecution", new Point(w * 0.50 + 35, h * 0.48 + 15), 24, primary, false);
-            DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
-
-            // Connection Stream
-            Point connStart = new Point(monitorCx + monitorW * 0.3, monitorCy + monitorH * 0.3);
-            Point connEnd = new Point(phoneCx, phoneCy - phoneH * 0.35);
-            Point connCtrl1 = new Point(monitorCx + w * 0.2, monitorCy + h * 0.15);
-            Point connCtrl2 = new Point(phoneCx - w * 0.15, phoneCy - h * 0.25);
-
-            var streamGeo = new StreamGeometry();
-            using (var gctx = streamGeo.Open())
-            {
-                gctx.BeginFigure(connStart, false);
-                gctx.CubicBezierTo(connCtrl1, connCtrl2, connEnd);
+                // Diagonal leg kick
+                gctx.BeginFigure(new Point(logoX + 46, logoY + 54), false);
+                gctx.LineTo(new Point(logoX + 72, logoY + 90));
                 gctx.EndFigure(false);
             }
 
-            double glowAlpha = 0.08 + _connectionGlow * 0.25;
-            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(new Color((byte)(glowAlpha*255), secondary.R, secondary.G, secondary.B)), 6 + _connectionGlow * 18), streamGeo);
-            
-            var corePen = new Pen(new ImmutableSolidColorBrush(new Color((byte)((0.25 + _connectionGlow * 0.6)*255), secondary.R, secondary.G, secondary.B)), 1.5 + _connectionGlow * 2);
-            corePen.DashStyle = new DashStyle(new double[] { 10, 10 }, _elapsed * -60);
-            ctx.DrawGeometry(null, corePen, streamGeo);
+            // Glow backings for letter R
+            double rPulse = Math.Sin(_elapsed * 8) * 1.5;
+            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Color.FromArgb(90, primary.R, primary.G, primary.B)), 8.0 + rPulse), rGeo);
+            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(primary), 4.5), rGeo);
+            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Colors.White), 1.5), rGeo);
 
-            foreach (var sp in _streamParticles)
+            // 2. Gold-Orange Gradient Lightning Bolt (⚡) - Materializes after 1.8s
+            if (_elapsed > 1.8)
             {
-                Point pos = CubicBezier(connStart, connCtrl1, connCtrl2, connEnd, sp.T);
-                ctx.DrawEllipse(new ImmutableSolidColorBrush(new Color((byte)(sp.Alpha*255), secondary.R, secondary.G, secondary.B)), null, pos, sp.Radius, sp.Radius);
+                double strikeFade = Math.Clamp((_elapsed - 1.8) / 0.5, 0, 1);
+                
+                // Lightning geometry shifted slightly to dynamically align with R cutout
+                var lightningGeo = new StreamGeometry();
+                using (var gctx = lightningGeo.Open())
+                {
+                    gctx.BeginFigure(new Point(logoX + 31.5 + 24, logoY + 9.0), true);
+                    gctx.LineTo(new Point(logoX + 31.5 + 24, logoY + 58.5));
+                    gctx.LineTo(new Point(logoX + 45.0 + 24, logoY + 58.5));
+                    gctx.LineTo(new Point(logoX + 45.0 + 24, logoY + 99.0));
+                    gctx.LineTo(new Point(logoX + 76.5 + 24, logoY + 45.0));
+                    gctx.LineTo(new Point(logoX + 58.5 + 24, logoY + 45.0));
+                    gctx.LineTo(new Point(logoX + 76.5 + 24, logoY + 9.0));
+                    gctx.EndFigure(true);
+                }
+
+                // Electric Gold/Orange gradient
+                var goldBrush = new LinearGradientBrush
+                {
+                    Opacity = strikeFade,
+                    StartPoint = new RelativePoint(0.3, 0.1, RelativeUnit.Relative),
+                    EndPoint = new RelativePoint(0.7, 0.9, RelativeUnit.Relative),
+                    GradientStops = new GradientStops
+                    {
+                        new GradientStop(Color.Parse("#FFFFD700"), 0.0), // Gold
+                        new GradientStop(Color.Parse("#FFFF8C00"), 0.5), // Orange
+                        new GradientStop(Color.Parse("#FFFF4500"), 1.0)  // Neon Red-Orange
+                    }
+                };
+
+                // Gold lightning glow
+                var glowBrush = new ImmutableSolidColorBrush(Color.FromArgb((byte)(strikeFade * 120), 255, 140, 0));
+                ctx.DrawGeometry(null, new Pen(glowBrush, 6.0 + Math.Sin(_elapsed * 15) * 2.0), lightningGeo);
+                ctx.DrawGeometry(goldBrush, new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(strikeFade * 180), 255, 255, 255)), 1.5), lightningGeo);
+            }
+
+            // 3. Fading title text "REMOTE EXECUTION"
+            if (_elapsed > 1.8)
+            {
+                double titleFade = Math.Clamp((_elapsed - 1.8) / 0.5, 0, 1);
+                var textColor = Color.FromArgb((byte)(titleFade * 255), 255, 255, 255);
+                var accentTextColor = Color.FromArgb((byte)(titleFade * 255), primary.R, primary.G, primary.B);
+                
+                DrawText(ctx, "REMOTE", new Point(w / 2 - 120, h / 2 + 50), 38, textColor, true);
+                DrawText(ctx, "EXECUTION", new Point(w / 2 - 120, h / 2 + 92), 38, accentTextColor, true);
+                DrawText(ctx, "⚡ COMMAND CENTER", new Point(w / 2 - 68, h / 2 + 146), 11, Color.FromArgb((byte)(titleFade * 150), 220, 240, 255), false);
             }
         }
+        else
+        {
+            // ── ORIGINAL REMEXCOMMAND BOOT SEQUENCE ──
+            
+            double s = _zoomScale;
+            double monCxT = w * 0.22;
+            double monCyT = h * 0.20;
+            double targetDx = (w / 2.0 - monCxT) * (s - 1.0);
+            double targetDy = (h / 2.0 - monCyT) * (s - 1.0);
 
-        // Render Rings (radar edges)
-        if (scanRadius > 0 && scanRadius < maxRadiusPx * 1.2)
-            ctx.DrawEllipse(null, new Pen(new ImmutableSolidColorBrush(new Color(50, primary.R, primary.G, primary.B)), 18), scanCenter, scanRadius, scanRadius);
-        
-        if (waveRadius > 0 && waveRadius < maxRadiusPx * 1.2)
-            ctx.DrawEllipse(null, new Pen(new ImmutableSolidColorBrush(new Color(45, secondary.R, secondary.G, secondary.B)), 14), waveCenter, waveRadius, waveRadius);
+            var matrix = Matrix.CreateScale(s, s) * Matrix.CreateTranslation(targetDx * _zoomProgress, targetDy * _zoomProgress);
+            using var transform = ctx.PushTransform(matrix);
+
+            // Geometry
+            double monitorW = w * 0.52;
+            double monitorH = monitorW * 0.62;
+            double monitorX = w * 0.22 - monitorW / 2.0;
+            double monitorY = h * 0.20 - monitorH / 2.0;
+            double monitorCx = monitorX + monitorW / 2.0;
+            double monitorCy = monitorY + monitorH / 2.0;
+
+            double phoneW = w * 0.22;
+            double phoneH = phoneW * 1.8;
+            double phoneX = w * 0.75 - phoneW / 2.0;
+            double phoneY = h * 0.72 - phoneH / 2.0;
+            double phoneCx = phoneX + phoneW / 2.0;
+            double phoneCy = phoneY + phoneH / 2.0;
+
+            // Centers
+            Point scanCenter = new Point(monitorCx, monitorCy);
+            Point waveCenter = new Point(phoneCx, phoneCy);
+
+            double maxRadiusPx = Math.Sqrt(w * w + h * h);
+            double scanRadius = maxRadiusPx * _scanProgress;
+            double waveRadius = maxRadiusPx * _waveProgress;
+
+            // Background traces
+            var traceRng = new Random(55);
+            for (int i = 0; i < 20; i++)
+            {
+                double sx = traceRng.NextDouble() * w;
+                double sy = traceRng.NextDouble() * h;
+                double seg1 = 30 + traceRng.NextDouble() * 80;
+                double seg2 = 20 + traceRng.NextDouble() * 60;
+                bool horiz = traceRng.NextDouble() > 0.5;
+                double d1 = traceRng.NextDouble() > 0.5 ? 1 : -1;
+                double d2 = traceRng.NextDouble() > 0.5 ? 1 : -1;
+                
+                double tx, ty, ex, ey;
+                if (horiz) { tx = sx + seg1 * d1; ty = sy; ex = tx; ey = ty + seg2 * d2; }
+                else { tx = sx; ty = sy + seg1 * d1; ex = tx + seg2 * d2; ey = ty; }
+
+                var geo = new StreamGeometry();
+                using (var gctx = geo.Open())
+                {
+                    gctx.BeginFigure(new Point(sx, sy), false);
+                    gctx.LineTo(new Point(tx, ty));
+                    gctx.LineTo(new Point(ex, ey));
+                    gctx.EndFigure(false);
+                }
+                ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(new Color(15, surface.R, surface.G, surface.B)), 1.5), geo);
+                ctx.DrawEllipse(new ImmutableSolidColorBrush(new Color(15, surface.R, surface.G, surface.B)), null, new Point(tx, ty), 4, 4);
+            }
+
+            // Radial grid
+            var radBrush = new ImmutableSolidColorBrush(new Color(8, surfaceVariant.R, surfaceVariant.G, surfaceVariant.B));
+            var radPen = new Pen(radBrush, 1.0);
+            double maxRad = Math.Min(w, h) * 0.45;
+            foreach (var rf in new[] { 0.25, 0.45, 0.65, 0.85 })
+                ctx.DrawEllipse(null, radPen, new Point(w/2, h/2), rf * maxRad, rf * maxRad);
+
+            for (int i = 0; i < 8; i++)
+            {
+                double a = i * Math.PI / 4.0;
+                ctx.DrawLine(radPen, new Point(w/2, h/2), new Point(w/2 + maxRad * Math.Cos(a), h/2 + maxRad * Math.Sin(a)));
+            }
+
+            // Wireframe (clipped by scan)
+            if (scanRadius > 0)
+            {
+                var scanGeo = new StreamGeometry();
+                using (var gctx = scanGeo.Open())
+                {
+                    gctx.BeginFigure(new Point(scanCenter.X + scanRadius, scanCenter.Y), true);
+                    gctx.ArcTo(new Point(scanCenter.X - scanRadius, scanCenter.Y), new Size(scanRadius, scanRadius), 0, false, SweepDirection.Clockwise);
+                    gctx.ArcTo(new Point(scanCenter.X + scanRadius, scanCenter.Y), new Size(scanRadius, scanRadius), 0, false, SweepDirection.Clockwise);
+                    gctx.EndFigure(true);
+                }
+                using var clip = ctx.PushGeometryClip(scanGeo);
+
+                var primPen = new Pen(new ImmutableSolidColorBrush(primary), 3.0);
+                var secPen = new Pen(new ImmutableSolidColorBrush(secondary), 2.0);
+                
+                ctx.DrawRectangle(null, primPen, new Rect(monitorX, monitorY, monitorW, monitorH), monitorW * 0.06, monitorW * 0.06);
+                ctx.DrawLine(primPen, new Point(monitorCx, monitorY + monitorH), new Point(monitorCx, monitorY + monitorH + monitorH * 0.18));
+                
+                ctx.DrawRectangle(null, secPen, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
+
+                DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
+                DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
+                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+            }
+
+            // Solid (clipped by wave)
+            if (waveRadius > 0)
+            {
+                var waveGeo = new StreamGeometry();
+                using (var gctx = waveGeo.Open())
+                {
+                    gctx.BeginFigure(new Point(waveCenter.X + waveRadius, waveCenter.Y), true);
+                    gctx.ArcTo(new Point(waveCenter.X - waveRadius, waveCenter.Y), new Size(waveRadius, waveRadius), 0, false, SweepDirection.Clockwise);
+                    gctx.ArcTo(new Point(waveCenter.X + waveRadius, waveCenter.Y), new Size(waveRadius, waveRadius), 0, false, SweepDirection.Clockwise);
+                    gctx.EndFigure(true);
+                }
+                using var clip = ctx.PushGeometryClip(waveGeo);
+
+                ctx.DrawRectangle(new ImmutableSolidColorBrush(new Color(255, (byte)(primary.R*0.3), (byte)(primary.G*0.3), (byte)(primary.B*0.3))), null, new Rect(monitorX, monitorY, monitorW, monitorH), monitorW * 0.06, monitorW * 0.06);
+                ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(monitorX + monitorW*0.04, monitorY + monitorW*0.04, monitorW - monitorW*0.08, monitorH - monitorW*0.08), monitorW * 0.03, monitorW * 0.03);
+                ctx.DrawRectangle(new ImmutableSolidColorBrush(Colors.White), null, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
+                ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(phoneX + phoneW*0.08, phoneY + phoneW*0.12, phoneW - phoneW*0.16, phoneH - phoneW*0.2), phoneW * 0.08, phoneW * 0.08);
+
+                DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
+                DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
+                DrawText(ctx, "ote", new Point(w * 0.50 + 25, h * 0.48 - 35), 24, primary, false);
+                DrawText(ctx, "ecution", new Point(w * 0.50 + 35, h * 0.48 + 15), 24, primary, false);
+                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+
+                // Connection Stream
+                Point connStart = new Point(monitorCx + monitorW * 0.3, monitorCy + monitorH * 0.3);
+                Point connEnd = new Point(phoneCx, phoneCy - phoneH * 0.35);
+                Point connCtrl1 = new Point(monitorCx + w * 0.2, monitorCy + h * 0.15);
+                Point connCtrl2 = new Point(phoneCx - w * 0.15, phoneCy - h * 0.25);
+
+                var streamGeo = new StreamGeometry();
+                using (var gctx = streamGeo.Open())
+                {
+                    gctx.BeginFigure(connStart, false);
+                    gctx.CubicBezierTo(connCtrl1, connCtrl2, connEnd);
+                    gctx.EndFigure(false);
+                }
+
+                double glowAlpha = 0.08 + _connectionGlow * 0.25;
+                ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(new Color((byte)(glowAlpha*255), secondary.R, secondary.G, secondary.B)), 6 + _connectionGlow * 18), streamGeo);
+                
+                var corePen = new Pen(new ImmutableSolidColorBrush(new Color((byte)((0.25 + _connectionGlow * 0.6)*255), secondary.R, secondary.G, secondary.B)), 1.5 + _connectionGlow * 2);
+                corePen.DashStyle = new DashStyle(new double[] { 10, 10 }, _elapsed * -60);
+                ctx.DrawGeometry(null, corePen, streamGeo);
+
+                foreach (var sp in _streamParticles)
+                {
+                    Point pos = CubicBezier(connStart, connCtrl1, connCtrl2, connEnd, sp.T);
+                    ctx.DrawEllipse(new ImmutableSolidColorBrush(new Color((byte)(sp.Alpha*255), secondary.R, secondary.G, secondary.B)), null, pos, sp.Radius, sp.Radius);
+                }
+            }
+
+            // Render Rings (radar edges)
+            if (scanRadius > 0 && scanRadius < maxRadiusPx * 1.2)
+                ctx.DrawEllipse(null, new Pen(new ImmutableSolidColorBrush(new Color(50, primary.R, primary.G, primary.B)), 18), scanCenter, scanRadius, scanRadius);
+            
+            if (waveRadius > 0 && waveRadius < maxRadiusPx * 1.2)
+                ctx.DrawEllipse(null, new Pen(new ImmutableSolidColorBrush(new Color(45, secondary.R, secondary.G, secondary.B)), 14), waveCenter, waveRadius, waveRadius);
+        }
+
+        // Full-screen White Screen Flash overlay during lightning strike (at 1.8s)
+        if (SplashStyle == "CosmicZoom" && _flashOverlay > 0)
+        {
+            var flashBrush = new ImmutableSolidColorBrush(Color.FromArgb((byte)(_flashOverlay * 255), 230, 248, 255));
+            ctx.DrawRectangle(flashBrush, null, bounds);
+        }
 
         // Fade overlay
         if (_fadeOverlay > 0)
         {
-            ctx.DrawRectangle(new ImmutableSolidColorBrush(new Color((byte)(_fadeOverlay * 255), substrate.R, substrate.G, substrate.B)), null, bounds);
+            ctx.DrawRectangle(new ImmutableSolidColorBrush(Color.FromArgb((byte)(_fadeOverlay * 255), substrate.R, substrate.G, substrate.B)), null, bounds);
         }
     }
 

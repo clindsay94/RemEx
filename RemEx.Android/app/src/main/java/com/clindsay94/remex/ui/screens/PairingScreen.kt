@@ -247,10 +247,9 @@ fun PairingScreenContent(
                         enabled = pin.length == 6 && !state.isLoading
                 ) {
                     if (state.isLoading) {
-                        CircularProgressIndicator(
+                        RemexLoadingIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
+                                color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
                         Text(stringResource(R.string.pairing_submit))

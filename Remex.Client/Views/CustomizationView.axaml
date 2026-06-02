@@ -197,6 +197,11 @@
                         <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="200"/>
                     </Grid>
 
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Select the style of startup welcome splash screen sequence animation">
+                        <TextBlock Text="Splash Screen" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding SplashStyle}" ItemsSource="{Binding AvailableSplashStyles}" HorizontalAlignment="Left" Width="200"/>
+                    </Grid>
+
                     <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
                     <!-- Hardware Sync -->

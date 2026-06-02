@@ -31,9 +31,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.SuggestionChip
@@ -289,6 +293,89 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                                         )
                         )
         )
+}
+
+/**
+ * M3 Expressive indeterminate loading indicator — the morphing-polygon spinner that is the
+ * signature "alive" loading affordance of Material 3 Expressive. Use this everywhere a plain
+ * spinner used to sit (connecting, pairing, fetching).
+ *
+ * @param contained when true, draws the indicator inside the expressive tonal container shape.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun RemexLoadingIndicator(
+        modifier: Modifier = Modifier,
+        contained: Boolean = false,
+        color: androidx.compose.ui.graphics.Color? = null,
+) {
+        when {
+                contained -> ContainedLoadingIndicator(modifier = modifier)
+                color != null -> LoadingIndicator(modifier = modifier, color = color)
+                else -> LoadingIndicator(modifier = modifier)
+        }
+}
+
+/**
+ * M3 Expressive circular wavy gauge with a centred percent/value label. Replaces the old
+ * `CircularProgressIndicator` gauges on the dashboard with the living, wavy expressive ring.
+ *
+ * @param progress 0f..1f fill amount (already animated by the caller if desired).
+ * @param centerLabel text drawn in the middle of the ring (e.g. "73%").
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun RemexCircularWavyGauge(
+        progress: Float,
+        centerLabel: String,
+        modifier: Modifier = Modifier,
+        size: androidx.compose.ui.unit.Dp = 64.dp,
+) {
+        Box(contentAlignment = Alignment.Center, modifier = modifier) {
+                CircularWavyProgressIndicator(
+                        progress = { progress.coerceIn(0f, 1f) },
+                        modifier = Modifier.size(size),
+                )
+                Text(
+                        text = centerLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                )
+        }
+}
+
+/**
+ * M3 Expressive linear wavy progress bar. The track animates as a flowing wave while in motion —
+ * ideal for file-transfer and long-running task progress.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun RemexLinearWavyProgress(
+        progress: Float,
+        modifier: Modifier = Modifier,
+) {
+        LinearWavyProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = modifier,
+        )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Preview(showBackground = true)
+@Composable
+private fun RemexExpressiveProgressPreview() {
+        RemExTheme {
+                Column(
+                        modifier = Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                        RemexLoadingIndicator()
+                        RemexLoadingIndicator(contained = true)
+                        RemexCircularWavyGauge(progress = 0.73f, centerLabel = "73%")
+                        RemexLinearWavyProgress(progress = 0.45f, modifier = Modifier.fillMaxWidth())
+                }
+        }
 }
 
 @Preview(showBackground = true)
