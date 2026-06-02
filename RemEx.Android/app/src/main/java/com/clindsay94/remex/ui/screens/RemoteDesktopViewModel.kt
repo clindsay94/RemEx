@@ -244,13 +244,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
                         _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
                     }
+                    // Only update the codec when codecInfo is actually present. Live cursor-position
+                    // updates arrive as lightweight DesktopMeta messages with no codecInfo, and must
+                    // NOT reset the codec to Mjpeg — that would break an active H.264 stream.
                     val codecInfo = json.optJSONObject("codecInfo")
-                    val codec = codecInfo?.optString("codec", "Mjpeg") ?: "Mjpeg"
-                    _activeCodecState.value = codec
+                    if (codecInfo != null) {
+                        _activeCodecState.value = codecInfo.optString("codec", "Mjpeg")
+                    }
                     // Parse encoded stream pixel dimensions for H.264 decoder initialization
                     if (json.has("pixelWidth")) _streamPixelWidth.value = json.optInt("pixelWidth", 1920)
                     if (json.has("pixelHeight")) _streamPixelHeight.value = json.optInt("pixelHeight", 1080)
-                    Log.i(TAG, "Desktop stream metadata parsed: activeCodec=$codec, streamRes=${_streamPixelWidth.value}x${_streamPixelHeight.value}")
+                    Log.i(TAG, "Desktop stream metadata parsed: activeCodec=${_activeCodecState.value}, streamRes=${_streamPixelWidth.value}x${_streamPixelHeight.value}")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop meta", e)
                 }

@@ -592,7 +592,11 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     try
                     {
-                        await SendCursorStateAsync(webSocket, sessionState, cursorX, cursorY, currentShape, sendLock, ct);
+                        // Route through SendCursorUpdateAsync so it honors client capabilities:
+                        // cursor-state clients get a desktop_cursor_state message; legacy clients
+                        // (e.g. Android, which doesn't consume cursor_state) get a DesktopMeta carrying
+                        // cursorX/cursorY so their cursor overlay actually tracks the host pointer.
+                        await SendCursorUpdateAsync(webSocket, sessionState, cursorX, cursorY, sendLock, ct);
                         lastX = cursorX;
                         lastY = cursorY;
                         lastShapeSerial = currentShapeSerial;
