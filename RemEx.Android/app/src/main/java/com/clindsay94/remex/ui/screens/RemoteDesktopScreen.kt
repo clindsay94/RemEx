@@ -33,10 +33,13 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
@@ -93,6 +96,10 @@ private data class TapContext(
         val position: Offset,
         val isStylus: Boolean
 )
+
+/** The rectangle (within the view box) that the video content actually occupies: size + top-left
+ *  offset. H.264 fills the whole box (stretched TextureView); MJPEG is letterboxed via Fit. */
+private data class ContentRect(val w: Float, val h: Float, val x: Float, val y: Float)
 
 data class RemoteDesktopUiState(
         val isStreaming: Boolean = false,
@@ -369,6 +376,40 @@ fun RemoteDesktopScreenContent(
                 }
         }
 
+        // The rectangle the video content occupies within the view box. H.264 stretches to fill
+        // (TextureView fillMaxSize) so it's the whole box; MJPEG letterboxes via ContentScale.Fit.
+        // Input mapping, cursor overlay, and the video must all agree on this rect or coordinates drift.
+        fun contentRect(): ContentRect {
+                if (imageSize.width == 0 || imageSize.height == 0) {
+                        return ContentRect(0f, 0f, 0f, 0f)
+                }
+                if (activeCodec == "H264") {
+                        return ContentRect(
+                                imageSize.width.toFloat(),
+                                imageSize.height.toFloat(),
+                                0f,
+                                0f
+                        )
+                }
+                val bmpWidth =
+                        (if (streamPixelWidth > 0) streamPixelWidth
+                        else currentBitmap?.width ?: 1920).toFloat()
+                val bmpHeight =
+                        (if (streamPixelHeight > 0) streamPixelHeight
+                        else currentBitmap?.height ?: 1080).toFloat()
+                val bmpAspect = bmpWidth / bmpHeight
+                val boxAspect = imageSize.width.toFloat() / imageSize.height.toFloat()
+                return if (bmpAspect > boxAspect) {
+                        val ew = imageSize.width.toFloat()
+                        val eh = ew / bmpAspect
+                        ContentRect(ew, eh, 0f, (imageSize.height - eh) / 2f)
+                } else {
+                        val eh = imageSize.height.toFloat()
+                        val ew = eh * bmpAspect
+                        ContentRect(ew, eh, (imageSize.width - ew) / 2f, 0f)
+                }
+        }
+
         fun mapLocalToHost(localOffset: Offset): Offset {
                 if (imageSize.width == 0 || imageSize.height == 0) return Offset.Zero
                 // Guard against Offset.Unspecified (NaN) and any other non-finite values
@@ -382,32 +423,34 @@ fun RemoteDesktopScreenContent(
                 val adjustedX = (localOffset.x - centerX - panOffsetX) / zoomFactor + centerX
                 val adjustedY = (localOffset.y - centerY - panOffsetY) / zoomFactor + centerY
 
-                val bmpWidth = currentBitmap?.width?.toFloat() ?: 1920f
-                val bmpHeight = currentBitmap?.height?.toFloat() ?: 1080f
-                val bmpAspect = bmpWidth / bmpHeight
-                val boxAspect = imageSize.width.toFloat() / imageSize.height.toFloat()
-
-                val effectiveW: Float
-                val effectiveH: Float
-                val letterboxX: Float
-                val letterboxY: Float
-
-                if (bmpAspect > boxAspect) {
-                        effectiveW = imageSize.width.toFloat()
-                        effectiveH = effectiveW / bmpAspect
-                        letterboxX = 0f
-                        letterboxY = (imageSize.height - effectiveH) / 2f
-                } else {
-                        effectiveH = imageSize.height.toFloat()
-                        effectiveW = effectiveH * bmpAspect
-                        letterboxX = (imageSize.width - effectiveW) / 2f
-                        letterboxY = 0f
-                }
-
-                val relativeX = ((adjustedX - letterboxX) / effectiveW).coerceIn(0f, 1f)
-                val relativeY = ((adjustedY - letterboxY) / effectiveH).coerceIn(0f, 1f)
+                val rect = contentRect()
+                if (rect.w <= 0f || rect.h <= 0f) return Offset.Zero
+                val relativeX = ((adjustedX - rect.x) / rect.w).coerceIn(0f, 1f)
+                val relativeY = ((adjustedY - rect.y) / rect.h).coerceIn(0f, 1f)
 
                 return Offset(relativeX * hostW + hostLeft, relativeY * hostH + hostTop)
+        }
+
+        // Inverse of mapLocalToHost: maps a host cursor position to a local (screen) position so we
+        // can draw the cursor overlay where the actual Windows cursor is.
+        fun mapHostToLocal(hostX: Float, hostY: Float): Offset? {
+                if (imageSize.width == 0 || imageSize.height == 0) return null
+                if (hostX < 0f || hostY < 0f) return null
+                val (hostW, hostH) = getHostScreenSize()
+                val (hostLeft, hostTop) = getHostDesktopOffset()
+                if (hostW <= 0 || hostH <= 0) return null
+                val rect = contentRect()
+                if (rect.w <= 0f || rect.h <= 0f) return null
+                val relX = ((hostX - hostLeft) / hostW.toFloat()).coerceIn(0f, 1f)
+                val relY = ((hostY - hostTop) / hostH.toFloat()).coerceIn(0f, 1f)
+                val adjX = relX * rect.w + rect.x
+                val adjY = relY * rect.h + rect.y
+                val centerX = imageSize.width / 2f
+                val centerY = imageSize.height / 2f
+                return Offset(
+                        (adjX - centerX) * zoomFactor + panOffsetX + centerX,
+                        (adjY - centerY) * zoomFactor + panOffsetY + centerY
+                )
         }
 
         Scaffold(
@@ -1637,110 +1680,45 @@ fun RemoteDesktopScreenContent(
                                                 }
                                         }
 
-                                        // Cursor overlay: visible in absolute modes (direct
-                                        // touch/stylus) OR when host
-                                        // provides cursor position (trackpad mode)
-                                        // Sentinel -1f from ViewModel means "no cursor reported
-                                        // yet".
-                                        // (0,0) is a valid on-screen position (top-left corner).
-                                        val hasHostCursor =
-                                                uiState.hostCursorX >= 0f &&
-                                                        uiState.hostCursorY >= 0f
-                                        val showCursor =
-                                                uiState.isStreaming &&
-                                                        (cursorVisible &&
-                                                                (uiState.directTouch ||
-                                                                        isStylusActive) ||
-                                                                (!uiState.directTouch &&
-                                                                        hasHostCursor))
+                                        // Cursor overlay: draw the host's actual cursor as an arrow at
+                                        // its mapped on-screen position, so the user can see exactly
+                                        // where they're pointing. Uses the same content rect as input
+                                        // mapping, so the arrow, the video, and where clicks land all
+                                        // agree. hostCursorX/Y are host-desktop coords; -1 = none yet.
+                                        val cursorLocal =
+                                                if (uiState.isStreaming) {
+                                                        mapHostToLocal(
+                                                                uiState.hostCursorX,
+                                                                uiState.hostCursorY
+                                                        )
+                                                } else {
+                                                        null
+                                                }
 
-                                        if (showCursor) {
-                                                val cursorSizeDp =
-                                                        if (isStylusActive) 6.dp else 12.dp
-
-                                                // Use local cursor position if in touch mode,
-                                                // otherwise map host cursor to
-                                                // screen
-                                                val (hostWidth, hostHeight) = getHostScreenSize()
-                                                val (hostLeft, hostTop) = getHostDesktopOffset()
-                                                val displayCursorX =
-                                                        if (uiState.directTouch || isStylusActive) {
-                                                                cursorX
-                                                        } else {
-                                                                // Map host cursor coordinates to
-                                                                // screen coordinates using
-                                                                // actual host dimensions
-                                                                imageSize.width *
-                                                                        ((uiState.hostCursorX -
-                                                                                hostLeft) /
-                                                                                hostWidth.toFloat())
-                                                        }
-                                                val displayCursorY =
-                                                        if (uiState.directTouch || isStylusActive) {
-                                                                cursorY
-                                                        } else {
-                                                                imageSize.height *
-                                                                        ((uiState.hostCursorY -
-                                                                                hostTop) /
-                                                                                hostHeight
-                                                                                        .toFloat())
-                                                        }
-
-                                                Box(
-                                                        modifier =
-                                                                Modifier.offset {
-                                                                                val halfPx =
-                                                                                        (cursorSizeDp /
-                                                                                                        2)
-                                                                                                .roundToPx()
-                                                                                // Apply the same
-                                                                                // zoom/pan
-                                                                                // transform the
-                                                                                // underlying Image
-                                                                                // uses so the
-                                                                                // cursor tracks
-                                                                                // the frame as the
-                                                                                // user zooms or
-                                                                                // pans.
-                                                                                val transformedX =
-                                                                                        displayCursorX *
-                                                                                                zoomFactor +
-                                                                                                panOffsetX
-                                                                                val transformedY =
-                                                                                        displayCursorY *
-                                                                                                zoomFactor +
-                                                                                                panOffsetY
-                                                                                IntOffset(
-                                                                                        transformedX
-                                                                                                .roundToInt() -
-                                                                                                halfPx,
-                                                                                        transformedY
-                                                                                                .roundToInt() -
-                                                                                                halfPx
-                                                                                )
-                                                                        }
-                                                                        .size(cursorSizeDp)
-                                                                        .clip(CircleShape)
-                                                                        .background(
-                                                                                if (isStylusActive)
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .tertiary
-                                                                                else
-                                                                                        Color.White
-                                                                                                .copy(
-                                                                                                        alpha =
-                                                                                                                0.7f
-                                                                                                )
-                                                                        )
-                                                                        .border(
-                                                                                1.5.dp,
-                                                                                Color.Black.copy(
-                                                                                        alpha = 0.5f
-                                                                                ),
-                                                                                CircleShape
-                                                                        )
-                                                )
+                                        if (cursorLocal != null) {
+                                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                                        // 1 arrow unit ≈ 1.4.dp → ~26dp tall pointer.
+                                                        val s = 1.4.dp.toPx()
+                                                        val ox = cursorLocal.x
+                                                        val oy = cursorLocal.y
+                                                        val arrow =
+                                                                Path().apply {
+                                                                        moveTo(ox, oy)
+                                                                        lineTo(ox, oy + 16f * s)
+                                                                        lineTo(ox + 4f * s, oy + 12.5f * s)
+                                                                        lineTo(ox + 6.5f * s, oy + 18.5f * s)
+                                                                        lineTo(ox + 8.5f * s, oy + 17.5f * s)
+                                                                        lineTo(ox + 6f * s, oy + 11.5f * s)
+                                                                        lineTo(ox + 10.5f * s, oy + 11.5f * s)
+                                                                        close()
+                                                                }
+                                                        drawPath(arrow, Color.White)
+                                                        drawPath(
+                                                                arrow,
+                                                                Color.Black,
+                                                                style = Stroke(width = 1.5.dp.toPx())
+                                                        )
+                                                }
                                         }
                                 } else {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -686,6 +686,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("scale", _configState.value.scale)
             put("targetFps", _configState.value.targetFps)
             put("codec", _configState.value.codec)
+            // The client renders the cursor itself as an overlay, so the host should not composite
+            // it into the frame (avoids a doubled/offset cursor and saves host work).
+            put("drawCursor", false)
         }
     }
 
