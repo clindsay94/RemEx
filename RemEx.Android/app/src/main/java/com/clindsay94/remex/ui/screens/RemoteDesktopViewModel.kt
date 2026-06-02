@@ -154,6 +154,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     .map { it.horizontalScrollSensitivity }
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
+    val cursorScale: StateFlow<Float> =
+            settingsManager
+                    .remoteDesktopPreferencesFlow
+                    .map { it.cursorScale }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
     /** Tracks reconnection attempts to avoid stacking. */
     private var reconnectJob: Job? = null
     private var reconnectAttempts = 0
@@ -443,6 +449,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     fun updatePointerSpeed(speed: Float) {
         viewModelScope.launch {
             settingsManager.saveRemoteDesktopPointerSpeed(speed.coerceIn(0.25f, 3.0f))
+        }
+    }
+
+    fun updateCursorScale(value: Float) {
+        viewModelScope.launch {
+            settingsManager.saveRemoteDesktopCursorScale(value.coerceIn(0.5f, 2.5f))
         }
     }
 

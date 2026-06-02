@@ -31,6 +31,7 @@ class SettingsManager(val context: Context) {
                 val DESKTOP_SCALE_KEY = floatPreferencesKey("desktop_scale")
                 val DESKTOP_DIRECT_TOUCH_KEY = booleanPreferencesKey("desktop_direct_touch")
                 val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
+                val DESKTOP_CURSOR_SCALE_KEY = floatPreferencesKey("desktop_cursor_scale")
                 val VERTICAL_SCROLL_SENSITIVITY_KEY =
                         floatPreferencesKey("vertical_scroll_sensitivity")
                 val HORIZONTAL_SCROLL_SENSITIVITY_KEY =
@@ -98,7 +99,8 @@ class SettingsManager(val context: Context) {
                 val directTouch: Boolean = false,
                 val pointerSpeed: Float = 1.0f,
                 val verticalScrollSensitivity: Float = 1.0f,
-                val horizontalScrollSensitivity: Float = 1.0f
+                val horizontalScrollSensitivity: Float = 1.0f,
+                val cursorScale: Float = 1.0f
         )
 
         data class PersonalizationPreferences(
@@ -272,7 +274,8 @@ class SettingsManager(val context: Context) {
                                 verticalScrollSensitivity =
                                         preferences[VERTICAL_SCROLL_SENSITIVITY_KEY] ?: 1.0f,
                                 horizontalScrollSensitivity =
-                                        preferences[HORIZONTAL_SCROLL_SENSITIVITY_KEY] ?: 1.0f
+                                        preferences[HORIZONTAL_SCROLL_SENSITIVITY_KEY] ?: 1.0f,
+                                cursorScale = preferences[DESKTOP_CURSOR_SCALE_KEY] ?: 1.0f
                         )
                 }
 
@@ -366,6 +369,12 @@ class SettingsManager(val context: Context) {
         suspend fun saveRemoteDesktopPointerSpeed(speed: Float) {
                 context.dataStore.edit { preferences ->
                         preferences[DESKTOP_POINTER_SPEED_KEY] = speed.coerceIn(0.25f, 3.0f)
+                }
+        }
+
+        suspend fun saveRemoteDesktopCursorScale(scale: Float) {
+                context.dataStore.edit { preferences ->
+                        preferences[DESKTOP_CURSOR_SCALE_KEY] = scale.coerceIn(0.5f, 2.5f)
                 }
         }
 

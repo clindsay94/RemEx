@@ -109,6 +109,7 @@ data class RemoteDesktopUiState(
         val pointerSpeed: Float = 1.0f,
         val vScrollSensitivity: Float = 1.0f,
         val hScrollSensitivity: Float = 1.0f,
+        val cursorScale: Float = 1.0f,
         val hostCursorX: Float = -1f,
         val hostCursorY: Float = -1f,
         val isFullscreen: Boolean = false,
@@ -150,6 +151,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val pointerSpeed by viewModel.pointerSpeed.collectAsState()
         val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
         val hScrollSensitivity by viewModel.horizontalScrollSensitivity.collectAsState()
+        val cursorScale by viewModel.cursorScale.collectAsState()
         val hostCursorX by viewModel.hostCursorX.collectAsState()
         val hostCursorY by viewModel.hostCursorY.collectAsState()
         val fps by viewModel.fps.collectAsState()
@@ -177,6 +179,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         pointerSpeed = pointerSpeed,
                         vScrollSensitivity = vScrollSensitivity,
                         hScrollSensitivity = hScrollSensitivity,
+                        cursorScale = cursorScale,
                         hostCursorX = hostCursorX,
                         hostCursorY = hostCursorY,
                         isFullscreen = isFullscreen,
@@ -211,6 +214,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onUpdateDirectTouch = { viewModel.updateDirectTouch(it) },
                 onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
                 onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
+                onUpdateCursorScale = { viewModel.updateCursorScale(it) },
                 windowResults = windowResults,
                 windowActionError = windowActionError,
                 onQueryWindows = { viewModel.queryWindows(it) },
@@ -259,6 +263,7 @@ fun RemoteDesktopScreenContent(
         onUpdateDirectTouch: (Boolean) -> Unit,
         onUpdatePointerSpeed: (Float) -> Unit,
         onUpdateScrollSensitivity: (Float, Float) -> Unit,
+        onUpdateCursorScale: (Float) -> Unit = {},
         windowResults: List<DesktopWindowModel>,
         windowActionError: String?,
         onQueryWindows: (String) -> Unit,
@@ -1053,13 +1058,13 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 scrollAccumX +=
                                                                                                                                         moveDelta
                                                                                                                                                 .x *
-                                                                                                                                                0.5f *
+                                                                                                                                                1.5f *
                                                                                                                                                 hScrollSensState
                                                                                                                                                         .value
                                                                                                                                 scrollAccumY +=
                                                                                                                                         moveDelta
                                                                                                                                                 .y *
-                                                                                                                                                0.5f *
+                                                                                                                                                1.5f *
                                                                                                                                                 vScrollSensState
                                                                                                                                                         .value
                                                                                                                                 val sx =
@@ -1697,8 +1702,9 @@ fun RemoteDesktopScreenContent(
 
                                         if (cursorLocal != null) {
                                                 Canvas(modifier = Modifier.fillMaxSize()) {
-                                                        // 1 arrow unit ≈ 1.4.dp → ~26dp tall pointer.
-                                                        val s = 1.4.dp.toPx()
+                                                        // 1 arrow unit ≈ 1.4.dp → ~26dp tall pointer at
+                                                        // scale 1.0; cursorScale (0.5–2.5) resizes it.
+                                                        val s = 1.4.dp.toPx() * uiState.cursorScale
                                                         val ox = cursorLocal.x
                                                         val oy = cursorLocal.y
                                                         val arrow =
@@ -1842,27 +1848,49 @@ fun RemoteDesktopScreenContent(
                                 }
 
                                 if (uiState.isFullscreen) {
-                                        FilledTonalIconButton(
-                                                onClick = { onSetFullscreen(false) },
+                                        Row(
                                                 modifier =
                                                         Modifier.align(Alignment.TopEnd)
                                                                 .padding(16.dp),
-                                                colors =
-                                                        IconButtonDefaults
-                                                                .filledTonalIconButtonColors(
-                                                                        containerColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .surfaceContainerHighest
-                                                                )
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                                Icon(
-                                                        Icons.Default.FullscreenExit,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_exit_fullscreen
-                                                                )
-                                                )
+                                                // Settings button — open the (translucent) settings
+                                                // overlay without having to leave fullscreen first.
+                                                FilledTonalIconButton(
+                                                        onClick = { showSettings = true },
+                                                        colors =
+                                                                IconButtonDefaults
+                                                                        .filledTonalIconButtonColors(
+                                                                                containerColor =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .surfaceContainerHighest
+                                                                        )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.Tune,
+                                                                contentDescription = "Settings"
+                                                        )
+                                                }
+                                                FilledTonalIconButton(
+                                                        onClick = { onSetFullscreen(false) },
+                                                        colors =
+                                                                IconButtonDefaults
+                                                                        .filledTonalIconButtonColors(
+                                                                                containerColor =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .surfaceContainerHighest
+                                                                        )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.FullscreenExit,
+                                                                contentDescription =
+                                                                        stringResource(
+                                                                                R.string.cd_exit_fullscreen
+                                                                        )
+                                                        )
+                                                }
                                         }
                                 }
 
@@ -2262,7 +2290,12 @@ fun RemoteDesktopScreenContent(
                         if (showSettings) {
                                 ModalBottomSheet(
                                         onDismissRequest = { showSettings = false },
-                                        sheetState = sheetState
+                                        sheetState = sheetState,
+                                        // Translucent so the desktop stays partly visible behind the
+                                        // settings, and no dim scrim over the stream.
+                                        containerColor =
+                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                                        scrimColor = Color.Transparent
                                 ) {
                                         Column(
                                                 modifier =
@@ -2389,6 +2422,30 @@ fun RemoteDesktopScreenContent(
                                                                 },
                                                                 valueRange = 0.25f..3.0f,
                                                                 steps = 10
+                                                        )
+                                                }
+
+                                                // Cursor Size slider (size of the on-screen pointer)
+                                                Column(
+                                                        verticalArrangement =
+                                                                Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                        Text(
+                                                                "Cursor Size: ${
+                                                                        String.format(
+                                                                                "%.1f",
+                                                                                uiState.cursorScale
+                                                                        )
+                                                                }x",
+                                                                fontWeight = FontWeight.SemiBold
+                                                        )
+                                                        Slider(
+                                                                value = uiState.cursorScale,
+                                                                onValueChange = {
+                                                                        onUpdateCursorScale(it)
+                                                                },
+                                                                valueRange = 0.5f..2.5f,
+                                                                steps = 7
                                                         )
                                                 }
 
