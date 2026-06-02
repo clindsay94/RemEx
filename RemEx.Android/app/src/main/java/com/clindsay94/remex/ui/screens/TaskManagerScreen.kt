@@ -319,23 +319,27 @@ private fun FilterSortSection(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        // M3 Expressive: connected ButtonGroup — each item is a ToggleButton that
-        // morphs its shape on selection/press and squishes its neighbours.
-        ButtonGroup(
-                overflowIndicator = { menuState ->
-                    ButtonGroupDefaults.OverflowIndicator(menuState)
-                },
-                modifier = Modifier.weight(1f)
+        // M3 Expressive ToggleButtons in a plain Row. NOTE: we deliberately do NOT use the
+        // Expressive ButtonGroup — its measure policy crashes in material3 1.5.0-alpha20
+        // (ButtonGroupMeasurePolicy → Constraints.copy with negative width, ButtonGroup.kt:816).
+        // A standalone ToggleButton still gives the round↔squircle shape morph on selection.
+        Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             fields.forEach { (field, label) ->
-                toggleableItem(
+                ToggleButton(
                         checked = currentSortField == field,
                         onCheckedChange = {
                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             onUpdateSortField(field)
                         },
-                        label = label
-                )
+                        modifier = Modifier.weight(1f),
+                        contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
+                ) {
+                    Text(label, maxLines = 1)
+                }
             }
         }
         // Sort direction IconButton stays separate for clear affordance

@@ -2,7 +2,10 @@ package com.clindsay94.remex.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -29,8 +31,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -110,15 +114,28 @@ private fun FaqScreenPreview() {
 private fun FaqCard(item: FaqItem) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val view = LocalView.current
+
+    // Expressive motion: chevron rotates smoothly and the card tonal-lifts when expanded.
+    val chevronRotation by animateFloatAsState(
+            targetValue = if (expanded) 180f else 0f,
+            label = "faq_chevron"
+    )
+    val containerColor by animateColorAsState(
+            targetValue =
+                    if (expanded) MaterialTheme.colorScheme.surfaceContainerHigh
+                    else MaterialTheme.colorScheme.surfaceContainer,
+            label = "faq_container"
+    )
 
     // M3: Card(onClick) is the preferred M3 API over Card + clickable
     Card(
-            onClick = { expanded = !expanded },
+            onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                expanded = !expanded
+            },
             modifier = Modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
+            colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -134,13 +151,11 @@ private fun FaqCard(item: FaqItem) {
                         modifier = Modifier.weight(1f)
                 )
                 Icon(
-                        imageVector =
-                                if (expanded) Icons.Default.ExpandLess
-                                else Icons.Default.ExpandMore,
+                        imageVector = Icons.Default.ExpandMore,
                         contentDescription =
                                 if (expanded) stringResource(R.string.cd_collapse)
                                 else stringResource(R.string.cd_expand),
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(24.dp).rotate(chevronRotation),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

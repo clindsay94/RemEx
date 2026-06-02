@@ -410,18 +410,20 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
                     val displayModeOptions = listOf("system", "light", "dark")
-                    ButtonGroup(
-                            overflowIndicator = { menuState ->
-                                ButtonGroupDefaults.OverflowIndicator(menuState)
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                    // M3 Expressive ToggleButtons (round↔squircle morph on selection). Plain Row,
+                    // not ButtonGroup (whose measure policy crashes in 1.5.0-alpha20).
+                    Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         displayModeOptions.forEach { option ->
-                            toggleableItem(
+                            ToggleButton(
                                     checked = themeMode == option,
                                     onCheckedChange = { themeMode = option },
-                                    label = option.replaceFirstChar { it.uppercase() }
-                            )
+                                    modifier = Modifier.weight(1f)
+                            ) {
+                                Text(option.replaceFirstChar { it.uppercase() }, maxLines = 1)
+                            }
                         }
                     }
 
@@ -466,18 +468,19 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
                     val paletteModeOptions = listOf("default", "custom")
-                    ButtonGroup(
-                            overflowIndicator = { menuState ->
-                                ButtonGroupDefaults.OverflowIndicator(menuState)
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                    // M3 Expressive ToggleButtons (see note above re: ButtonGroup crash).
+                    Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         paletteModeOptions.forEach { option ->
-                            toggleableItem(
+                            ToggleButton(
                                     checked = palette == option,
                                     onCheckedChange = { palette = option },
-                                    label = option.replaceFirstChar { it.uppercase() }
-                            )
+                                    modifier = Modifier.weight(1f)
+                            ) {
+                                Text(option.replaceFirstChar { it.uppercase() }, maxLines = 1)
+                            }
                         }
                     }
 

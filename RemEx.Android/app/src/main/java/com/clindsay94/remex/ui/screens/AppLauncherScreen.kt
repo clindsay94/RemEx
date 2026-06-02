@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Default
 import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -95,7 +97,7 @@ fun AppLauncherScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppLauncherScreenContent(
     uiState: AppLauncherUiState,
@@ -111,22 +113,15 @@ fun AppLauncherScreenContent(
         topBar = {
             RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_app_launcher_title),
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onRefreshApps()
-                    }, enabled = uiState.isConnected) {
-                        Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
-                    }
-                }
+                scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->
+      Box(modifier = modifier.fillMaxSize().padding(innerPadding)) {
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = onRefreshApps,
-            modifier = modifier.fillMaxSize().padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 if (!uiState.isConnected && uiState.apps.isEmpty()) {
@@ -188,6 +183,31 @@ fun AppLauncherScreenContent(
                 }
             }
         }
+
+        // M3 Expressive: floating quick-action toolbar (Refresh + open Connection).
+        HorizontalFloatingToolbar(
+            expanded = true,
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
+        ) {
+            FilledTonalIconButton(onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                onRefreshApps()
+            }) {
+                Icon(Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
+            }
+            IconButton(onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                onNavigateToConnection()
+            }) {
+                Icon(
+                    Default.SettingsEthernet,
+                    contentDescription = stringResource(R.string.button_connect)
+                )
+            }
+        }
+      }
     }
 }
 
