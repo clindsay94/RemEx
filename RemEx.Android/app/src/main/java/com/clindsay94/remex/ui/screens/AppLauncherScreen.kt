@@ -5,9 +5,12 @@ import androidx.compose.ui.platform.LocalView
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
@@ -263,7 +267,7 @@ fun AppLauncherScreenPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppGridItem(
     app: AppEntry,
@@ -275,9 +279,19 @@ fun AppGridItem(
     val shape = cardShape(shapePreset, cornerRadius)
     val adaptivePadding = calculateAdaptivePadding(shapePreset)
 
+    // Tactile spring press-scale on tap.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "appTileScale"
+    )
+
     Card(
         onClick = onClick,
-        modifier = modifier,
+        interactionSource = interaction,
+        modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale },
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
