@@ -204,7 +204,8 @@ fun AppLauncherScreenContent(
                                     onClick = {
                                         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                         onLaunchApp(app)
-                                    }
+                                    },
+                                    modifier = Modifier.animateItem()
                                 )
                             }
                         }
@@ -268,13 +269,15 @@ fun AppGridItem(
     app: AppEntry,
     shapePreset: Float,
     cornerRadius: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val shape = cardShape(shapePreset, cornerRadius)
     val adaptivePadding = calculateAdaptivePadding(shapePreset)
 
     Card(
         onClick = onClick,
+        modifier = modifier,
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {

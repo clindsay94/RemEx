@@ -438,6 +438,7 @@ fun FileTransferScreenContent(
                 else -> {
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(remoteEntries, key = { it.name }) { entry ->
+                          Column(modifier = Modifier.animateItem()) {
                             RemoteFileRow(
                                     entry = entry,
                                     isTransferring = isTransferring,
@@ -459,6 +460,7 @@ fun FileTransferScreenContent(
                             HorizontalDivider(
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                             )
+                          }
                         }
                     }
                 }
