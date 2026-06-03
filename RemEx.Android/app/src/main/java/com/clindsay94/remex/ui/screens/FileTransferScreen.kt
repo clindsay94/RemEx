@@ -36,6 +36,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -122,7 +123,11 @@ fun FileTransferScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
 fun FileTransferScreenContent(
     isConnected: Boolean,
@@ -438,7 +443,11 @@ fun FileTransferScreenContent(
                 else -> {
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(remoteEntries, key = { it.name }) { entry ->
-                          Column(modifier = Modifier.animateItem()) {
+                          Column(
+                            modifier = Modifier.animateItem(
+                                placementSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            )
+                          ) {
                             RemoteFileRow(
                                     entry = entry,
                                     isTransferring = isTransferring,

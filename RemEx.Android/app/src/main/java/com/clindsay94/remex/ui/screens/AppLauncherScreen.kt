@@ -222,7 +222,11 @@ fun AppLauncherScreenContent(
                                         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                         onLaunchApp(app)
                                     },
-                                    modifier = Modifier.animateItem()
+                                    modifier =
+                                        Modifier.animateItem(
+                                            placementSpec =
+                                                MaterialTheme.motionScheme.fastSpatialSpec()
+                                        )
                                 )
                             }
                         }

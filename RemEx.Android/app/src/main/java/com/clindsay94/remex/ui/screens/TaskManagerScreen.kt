@@ -221,7 +221,12 @@ fun TaskManagerScreenContent(
                                     shapePreset = shapePreset,
                                     cornerRadius = cornerRadius,
                                     onKill = { onKillProcess(process.id) },
-                                    modifier = Modifier.animateItem()
+                                    modifier =
+                                            Modifier.animateItem(
+                                                    placementSpec =
+                                                            MaterialTheme.motionScheme
+                                                                    .fastSpatialSpec()
+                                            )
                             )
                         }
                     }
