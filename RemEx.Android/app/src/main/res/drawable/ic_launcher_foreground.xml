@@ -5,15 +5,39 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     
-    <!-- Brand Lightning Bolt (⚡) with Electric Orange/Gold Gradient -->
+    <!-- Stenciled Outline "R" - Neon Glow Shadow -->
     <path
-        android:pathData="M31.5,9.0 V58.5 H45.0 V99.0 L76.5,45.0 H58.5 L76.5,9.0 H31.5 Z"
+        android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+        android:strokeColor="#7F00F3FF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Stenciled Outline "R" - Primary Neon Accent Core -->
+    <path
+        android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+        android:strokeColor="#FF00F3FF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Stenciled Outline "R" - White Hot Core -->
+    <path
+        android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Overlapping Gold-Orange Gradient Lightning Bolt (⚡) -->
+    <path
+        android:pathData="M 45.5 9 L 45.5 58.5 L 59 58.5 L 59 99 L 90.5 45 L 72.5 45 L 90.5 9 Z"
         android:fillType="nonZero">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="31.5"
+                android:startX="45.5"
                 android:startY="9.0"
-                android:endX="76.5"
+                android:endX="90.5"
                 android:endY="99.0"
                 android:type="linear">
                 <item android:offset="0.0" android:color="#FFFFD700" /> <!-- Electric Gold -->
@@ -23,9 +47,9 @@
         </aapt:attr>
     </path>
     
-    <!-- Outer Gloss / Drop Shadow effect for Depth -->
+    <!-- Lightning Bolt White Edge Glow / Contrast Stroke -->
     <path
-        android:pathData="M31.5,9.0 V58.5 H45.0 V99.0 L76.5,45.0 H58.5 L76.5,9.0 H31.5 Z"
+        android:pathData="M 45.5 9 L 45.5 58.5 L 59 58.5 L 59 99 L 90.5 45 L 72.5 45 L 90.5 9 Z"
         android:strokeWidth="1.5"
         android:strokeColor="#50FFFFFF" />
 </vector>

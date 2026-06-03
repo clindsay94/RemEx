@@ -314,80 +314,9 @@ public class BootSequenceControl : Control
                 ctx.DrawEllipse(null, secondaryShockPen, new Point(w/2, h/2), shockRadius * 0.7, shockRadius * 0.7);
             }
 
-            // Draw Zoomed Brand Logo & Text in center (Applying global scale & shudder displacement)
+            // Draw Zoomed Brand Logo in center (Applying global scale & shudder displacement)
             double s = _zoomScale;
-            double offsetX = (w / 2) * (1 - s) + _shudderX;
-            double offsetY = (h / 2) * (1 - s) + _shudderY;
-
-            var matrix = Matrix.CreateScale(s, s) * Matrix.CreateTranslation(offsetX, offsetY);
-            using var transform = ctx.PushTransform(matrix);
-
-            double logoX = w / 2 - 54;
-            double logoY = h / 2 - 54 - 30; // Shift up slightly to leave space for text below
-
-            // 1. Sleek high-tech Outline Letter "R" (Stenciled neon look)
-            var rGeo = new StreamGeometry();
-            using (var gctx = rGeo.Open())
-            {
-                // Left stem
-                gctx.BeginFigure(new Point(logoX + 28, logoY + 90), false);
-                gctx.LineTo(new Point(logoX + 28, logoY + 18));
-                gctx.LineTo(new Point(logoX + 64, logoY + 18));
-                // Right loop
-                gctx.ArcTo(new Point(logoX + 64, logoY + 54), new Size(18, 18), 0, false, SweepDirection.Clockwise);
-                gctx.LineTo(new Point(logoX + 28, logoY + 54));
-                gctx.EndFigure(false);
-
-                // Diagonal leg kick
-                gctx.BeginFigure(new Point(logoX + 46, logoY + 54), false);
-                gctx.LineTo(new Point(logoX + 72, logoY + 90));
-                gctx.EndFigure(false);
-            }
-
-            // Glow backings for letter R
-            double rPulse = Math.Sin(_elapsed * 8) * 1.5;
-            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Color.FromArgb(90, primary.R, primary.G, primary.B)), 8.0 + rPulse), rGeo);
-            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(primary), 4.5), rGeo);
-            ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Colors.White), 1.5), rGeo);
-
-            // 2. Gold-Orange Gradient Lightning Bolt (⚡) - Materializes after 1.8s
-            if (_elapsed > 1.8)
-            {
-                double strikeFade = Math.Clamp((_elapsed - 1.8) / 0.5, 0, 1);
-                
-                // Lightning geometry shifted slightly to dynamically align with R cutout
-                var lightningGeo = new StreamGeometry();
-                using (var gctx = lightningGeo.Open())
-                {
-                    gctx.BeginFigure(new Point(logoX + 31.5 + 24, logoY + 9.0), true);
-                    gctx.LineTo(new Point(logoX + 31.5 + 24, logoY + 58.5));
-                    gctx.LineTo(new Point(logoX + 45.0 + 24, logoY + 58.5));
-                    gctx.LineTo(new Point(logoX + 45.0 + 24, logoY + 99.0));
-                    gctx.LineTo(new Point(logoX + 76.5 + 24, logoY + 45.0));
-                    gctx.LineTo(new Point(logoX + 58.5 + 24, logoY + 45.0));
-                    gctx.LineTo(new Point(logoX + 76.5 + 24, logoY + 9.0));
-                    gctx.EndFigure(true);
-                }
-
-                // Electric Gold/Orange gradient
-                var goldBrush = new LinearGradientBrush
-                {
-                    Opacity = strikeFade,
-                    StartPoint = new RelativePoint(0.3, 0.1, RelativeUnit.Relative),
-                    EndPoint = new RelativePoint(0.7, 0.9, RelativeUnit.Relative),
-                    GradientStops = new GradientStops
-                    {
-                        new GradientStop(Color.Parse("#FFFFD700"), 0.0), // Gold
-                        new GradientStop(Color.Parse("#FFFF8C00"), 0.5), // Orange
-                        new GradientStop(Color.Parse("#FFFF4500"), 1.0)  // Neon Red-Orange
-                    }
-                };
-
-                // Gold lightning glow
-                var glowBrush = new ImmutableSolidColorBrush(Color.FromArgb((byte)(strikeFade * 120), 255, 140, 0));
-                ctx.DrawGeometry(null, new Pen(glowBrush, 6.0 + Math.Sin(_elapsed * 15) * 2.0), lightningGeo);
-                ctx.DrawGeometry(goldBrush, new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(strikeFade * 180), 255, 255, 255)), 1.5), lightningGeo);
-            }
+            DrawStylizedRLogo(ctx, w, h, s, primary, 1.0, _elapsed > 1.8 ? Math.Clamp((_elapsed - 1.8) / 0.5, 0, 1) : 0.0, _shudderX, _shudderY, -30);
 
             // 3. Fading title text "REMOTE EXECUTION"
             if (_elapsed > 1.8)
@@ -499,9 +428,11 @@ public class BootSequenceControl : Control
                 
                 ctx.DrawRectangle(null, secPen, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
 
-                DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
-                DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
-                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+                // Draw the stenciled new "R" logo in place of standard "R"
+                DrawStylizedRLogo(ctx, w, h, 0.5, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
+                DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 54, h * 0.48 - 60), 54, Colors.White, true);
+                DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 14, h * 0.48 - 10), 54, Colors.White, true);
+                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
             }
 
             // Solid (clipped by wave)
@@ -522,11 +453,13 @@ public class BootSequenceControl : Control
                 ctx.DrawRectangle(new ImmutableSolidColorBrush(Colors.White), null, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
                 ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(phoneX + phoneW*0.08, phoneY + phoneW*0.12, phoneW - phoneW*0.16, phoneH - phoneW*0.2), phoneW * 0.08, phoneW * 0.08);
 
-                DrawText(ctx, "REM", new Point(w * 0.50 - 80, h * 0.48 - 60), 54, Colors.White, true);
-                DrawText(ctx, "EX", new Point(w * 0.50 - 40, h * 0.48 - 10), 54, Colors.White, true);
-                DrawText(ctx, "ote", new Point(w * 0.50 + 25, h * 0.48 - 35), 24, primary, false);
-                DrawText(ctx, "ecution", new Point(w * 0.50 + 35, h * 0.48 + 15), 24, primary, false);
-                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 65, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+                // Draw the stenciled new "R" logo in place of standard "R"
+                DrawStylizedRLogo(ctx, w, h, 0.5, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
+                DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 54, h * 0.48 - 60), 54, Colors.White, true);
+                DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 14, h * 0.48 - 10), 54, Colors.White, true);
+                DrawText(ctx, "ote", new Point(w * 0.50 - 90 + 54 + 74, h * 0.48 - 35), 24, primary, false);
+                DrawText(ctx, "ecution", new Point(w * 0.50 - 90 + 14 + 58, h * 0.48 + 15), 24, primary, false);
+                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
 
                 // Connection Stream
                 Point connStart = new Point(monitorCx + monitorW * 0.3, monitorCy + monitorH * 0.3);
@@ -578,9 +511,80 @@ public class BootSequenceControl : Control
         }
     }
 
+    private void DrawStylizedRLogo(DrawingContext ctx, double w, double h, double scale, Color accentColor, double opacity, double lightningFade, double shudderX = 0, double shudderY = 0, double yOffset = -30, Point? customPos = null)
+    {
+        // Calculate coordinates based on centering or custom layout
+        double tx = customPos.HasValue ? customPos.Value.X + shudderX : w / 2 - 54 * scale + shudderX;
+        double ty = customPos.HasValue ? customPos.Value.Y + yOffset * scale + shudderY : h / 2 - 54 * scale + yOffset * scale + shudderY;
+
+        var matrix = Matrix.CreateScale(scale, scale) * Matrix.CreateTranslation(tx, ty);
+        using var transform = ctx.PushTransform(matrix);
+
+        // Stenciled outline "R" geometry (at 0,0 relative origin)
+        var rGeo = new StreamGeometry();
+        using (var gctx = rGeo.Open())
+        {
+            gctx.BeginFigure(new Point(28, 90), false);
+            gctx.LineTo(new Point(28, 18));
+            gctx.LineTo(new Point(64, 18));
+            gctx.ArcTo(new Point(64, 54), new Size(18, 18), 0, false, SweepDirection.Clockwise);
+            gctx.LineTo(new Point(28, 54));
+            gctx.EndFigure(false);
+
+            gctx.BeginFigure(new Point(46, 54), false);
+            gctx.LineTo(new Point(72, 90));
+            gctx.EndFigure(false);
+        }
+
+        // Glow backing
+        double pulse = Math.Sin(_elapsed * 8) * 1.5;
+        ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(opacity * 90), accentColor.R, accentColor.G, accentColor.B)), 8.0 + pulse), rGeo);
+        ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(opacity * 255), accentColor.R, accentColor.G, accentColor.B)), 4.5), rGeo);
+        ctx.DrawGeometry(null, new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(opacity * 255), 255, 255, 255)), 1.5), rGeo);
+
+        // Lightning Bolt
+        if (lightningFade > 0)
+        {
+            var lightningGeo = new StreamGeometry();
+            using (var gctx = lightningGeo.Open())
+            {
+                gctx.BeginFigure(new Point(31.5 + 24, 9.0), true);
+                gctx.LineTo(new Point(31.5 + 24, 58.5));
+                gctx.LineTo(new Point(45.0 + 24, 58.5));
+                gctx.LineTo(new Point(45.0 + 24, 99.0));
+                gctx.LineTo(new Point(76.5 + 24, 45.0));
+                gctx.LineTo(new Point(58.5 + 24, 45.0));
+                gctx.LineTo(new Point(76.5 + 24, 9.0));
+                gctx.EndFigure(true);
+            }
+
+            var goldBrush = new LinearGradientBrush
+            {
+                Opacity = opacity * lightningFade,
+                StartPoint = new RelativePoint(0.3, 0.1, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(0.7, 0.9, RelativeUnit.Relative),
+                GradientStops = new GradientStops
+                {
+                    new GradientStop(Color.Parse("#FFFFD700"), 0.0),
+                    new GradientStop(Color.Parse("#FFFF8C00"), 0.5),
+                    new GradientStop(Color.Parse("#FFFF4500"), 1.0)
+                }
+            };
+
+            var glowBrush = new ImmutableSolidColorBrush(Color.FromArgb((byte)(opacity * lightningFade * 120), 255, 140, 0));
+            ctx.DrawGeometry(null, new Pen(glowBrush, 6.0 + Math.Sin(_elapsed * 15) * 2.0), lightningGeo);
+            ctx.DrawGeometry(goldBrush, new Pen(new ImmutableSolidColorBrush(Color.FromArgb((byte)(opacity * lightningFade * 180), 255, 255, 255)), 1.5), lightningGeo);
+        }
+    }
+
     private void DrawText(DrawingContext ctx, string text, Point pos, double size, Color color, bool bold)
     {
-        var tf = new Typeface(FontFamily.Default, FontStyle.Normal, bold ? FontWeight.Black : FontWeight.Medium);
+        FontFamily ff = FontFamily.Default;
+        if (this.TryFindResource("JetBrainsMono", out object? f) && f is FontFamily customFf)
+        {
+            ff = customFf;
+        }
+        var tf = new Typeface(ff, FontStyle.Normal, bold ? FontWeight.Black : FontWeight.Medium);
         var fmt = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, size, new ImmutableSolidColorBrush(color));
         ctx.DrawText(fmt, pos);
     }

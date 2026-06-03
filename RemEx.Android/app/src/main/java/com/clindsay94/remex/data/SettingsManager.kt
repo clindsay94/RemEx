@@ -38,6 +38,7 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("horizontal_scroll_sensitivity")
                 val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
                 val SPLASH_SHOWN_KEY = booleanPreferencesKey("splash_shown")
+                val SPLASH_STYLE_KEY = stringPreferencesKey("splash_style")
                 val CLIENT_ID_KEY = stringPreferencesKey("client_id")
 
                 val HOME_LAYOUT_JSON_KEY = stringPreferencesKey("home_layout_json")
@@ -120,7 +121,8 @@ class SettingsManager(val context: Context) {
                 val taskManagerCardShapePreset: Float = 18.0f,
                 val remoteDesktopCardShapePreset: Float = 18.0f,
                 val remoteControlCardShapePreset: Float = 18.0f,
-                val remoteMouseCardShapePreset: Float = 18.0f
+                val remoteMouseCardShapePreset: Float = 18.0f,
+                val splashStyle: String = "RemexCommand"
         )
 
         val appLauncherCardShapePresetFlow: Flow<Float> =
@@ -299,12 +301,10 @@ class SettingsManager(val context: Context) {
                                         preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
                                 taskManagerCardShapePreset =
                                         preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
-                                remoteDesktopCardShapePreset =
-                                        preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
-                                remoteControlCardShapePreset =
-                                        preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
-                                remoteMouseCardShapePreset =
-                                        preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                                remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                splashStyle = preferences[SPLASH_STYLE_KEY] ?: "RemexCommand"
                         )
                 }
 
@@ -429,7 +429,8 @@ class SettingsManager(val context: Context) {
                 taskManagerCardShapePreset: Float,
                 remoteDesktopCardShapePreset: Float,
                 remoteControlCardShapePreset: Float,
-                remoteMouseCardShapePreset: Float
+                remoteMouseCardShapePreset: Float,
+                splashStyle: String
         ) {
                 context.dataStore.edit { preferences ->
                         preferences[THEME_MODE_KEY] = themeMode
@@ -451,6 +452,7 @@ class SettingsManager(val context: Context) {
                         preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] =
                                 remoteControlCardShapePreset
                         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
+                        preferences[SPLASH_STYLE_KEY] = splashStyle
                 }
         }
 

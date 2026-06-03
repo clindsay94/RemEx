@@ -74,7 +74,7 @@ fun PersonalizationScreen(
     PersonalizationScreenContent(
         settings = settingsState!!,
         showHeader = showHeader,
-        onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset ->
+        onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
             viewModel.save(
                 themeMode = themeMode,
                 themePalette = palette,
@@ -92,7 +92,8 @@ fun PersonalizationScreen(
                 taskManagerCardShapePreset = taskManagerCardShapePreset,
                 remoteDesktopCardShapePreset = remoteDesktopCardShapePreset,
                 remoteControlCardShapePreset = remoteControlCardShapePreset,
-                remoteMouseCardShapePreset = remoteMouseCardShapePreset
+                remoteMouseCardShapePreset = remoteMouseCardShapePreset,
+                splashStyle = splashStyle
             )
         }
     )
@@ -148,7 +149,8 @@ fun PersonalizationScreenContent(
         taskManagerCardShapePreset: Float,
         remoteDesktopCardShapePreset: Float,
         remoteControlCardShapePreset: Float,
-        remoteMouseCardShapePreset: Float
+        remoteMouseCardShapePreset: Float,
+        splashStyle: String
     ) -> Unit
 ) {
     val view = LocalView.current
@@ -183,6 +185,7 @@ fun PersonalizationScreenContent(
     var taskManagerCardShapePreset by remember {
         mutableFloatStateOf(settings.taskManagerCardShapePreset)
     }
+    var splashStyle by remember { mutableStateOf(settings.splashStyle) }
 
     LaunchedEffect(
             themeMode,
@@ -201,7 +204,8 @@ fun PersonalizationScreenContent(
             remoteDesktopCardShapePreset,
             remoteControlCardShapePreset,
             remoteMouseCardShapePreset,
-            taskManagerCardShapePreset
+            taskManagerCardShapePreset,
+            splashStyle
     ) {
         onSave(
                 themeMode,
@@ -220,7 +224,8 @@ fun PersonalizationScreenContent(
                 taskManagerCardShapePreset,
                 remoteDesktopCardShapePreset,
                 remoteControlCardShapePreset,
-                remoteMouseCardShapePreset
+                remoteMouseCardShapePreset,
+                splashStyle
         )
     }
 
@@ -439,10 +444,55 @@ fun PersonalizationScreenContent(
                                             "fruit_salad",
                                             "rainbow",
                                             "vibrant"
-                                    ),
+                                     ),
                             selected = themeStyle,
                             onSelected = { themeStyle = it }
                     )
+                }
+            }
+
+            // ═══ Splash Animation Studio ═══
+            Card(
+                    colors =
+                            CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                    modifier = Modifier.animateContentSize()
+            ) {
+                Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader(
+                            stringResource(R.string.personalization_section_splash),
+                            Icons.Default.Tune
+                    )
+
+                    Text(
+                            stringResource(R.string.personalization_splash_style),
+                            style = MaterialTheme.typography.labelMedium
+                    )
+                    val splashStyleOptions = listOf("RemexCommand", "CosmicZoom")
+                    Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        splashStyleOptions.forEach { option ->
+                            ToggleButton(
+                                    checked = splashStyle == option,
+                                    onCheckedChange = { splashStyle = option },
+                                    modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    if (option == "RemexCommand") 
+                                        stringResource(R.string.personalization_splash_original) 
+                                    else 
+                                        stringResource(R.string.personalization_splash_cosmic), 
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -894,13 +944,14 @@ private fun PersonalizationScreenPreview() {
                 taskManagerCardShapePreset = 0f,
                 remoteDesktopCardShapePreset = 0f,
                 remoteControlCardShapePreset = 0f,
-                remoteMouseCardShapePreset = 0f
+                remoteMouseCardShapePreset = 0f,
+                splashStyle = "RemexCommand"
             ),
-            showHeader = true,
-            onSave = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
-        )
-    }
-}
+             showHeader = true,
+             onSave = { _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
+         )
+     }
+ }
 
 @Composable
 private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {

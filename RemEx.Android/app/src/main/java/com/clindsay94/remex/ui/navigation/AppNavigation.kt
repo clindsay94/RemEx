@@ -123,6 +123,8 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
 
         val hasCompletedOnboarding by
                 settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
+        val personalization by
+                settingsManager.personalizationPreferencesFlow.collectAsState(initial = SettingsManager.PersonalizationPreferences())
         val isConnected by RemexClientManager.isConnected.collectAsState()
 
         AppNavigationContent(
@@ -130,6 +132,7 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
                 splashShown = splashShown,
                 isConnected = isConnected,
                 onMarkSplashShown = onMarkSplashShown,
+                splashStyle = personalization.splashStyle,
                 onQrScanned = { host, port, pin ->
                         connectionViewModel.applyQrResultAndConnect(host, port, pin)
                 },
@@ -170,6 +173,7 @@ private fun AppNavigationContent(
         splashShown: Boolean,
         isConnected: Boolean,
         onMarkSplashShown: () -> Unit,
+        splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
         remoteControlScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -330,6 +334,7 @@ private fun AppNavigationContent(
                                         startDestination = startDestination,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         onMarkSplashShown = onMarkSplashShown,
+                                        splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
                                         remoteControlScreenContent = remoteControlScreenContent,
@@ -572,6 +577,7 @@ private fun AppNavigationContent(
                                         startDestination = startDestination,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         onMarkSplashShown = onMarkSplashShown,
+                                        splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
                                         remoteControlScreenContent = remoteControlScreenContent,
@@ -672,6 +678,7 @@ private fun RemexNavHost(
         startDestination: String,
         hasCompletedOnboarding: Boolean,
         onMarkSplashShown: () -> Unit,
+        splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (() -> Unit) -> Unit,
         remoteControlScreenContent: @Composable (() -> Unit) -> Unit,
@@ -720,6 +727,7 @@ private fun RemexNavHost(
                         exitTransition = { fadeOut(tween(500)) },
                 ) {
                         SplashScreen(
+                                splashStyle = splashStyle,
                                 onFinished = {
                                         onMarkSplashShown()
                                         onSelectPrimaryPage(0)
@@ -916,6 +924,7 @@ private fun AppNavigationPreview() {
                         splashShown = true,
                         isConnected = true,
                         onMarkSplashShown = {},
+                        splashStyle = "RemexCommand",
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },
@@ -937,6 +946,7 @@ private fun AppNavigationDisconnectedPreview() {
                         splashShown = true,
                         isConnected = false,
                         onMarkSplashShown = {},
+                        splashStyle = "RemexCommand",
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
                         remoteControlScreenContent = { Box(Modifier.fillMaxSize()) },

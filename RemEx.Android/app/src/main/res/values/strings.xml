@@ -377,6 +377,11 @@
     <string name="personalization_shape_pc_orb">PC Connection Orb</string>
     <string name="personalization_preview">PREVIEW</string>
 
+    <string name="personalization_section_splash">Splash Animation</string>
+    <string name="personalization_splash_style">Splash Screen Animation</string>
+    <string name="personalization_splash_original">Original Scan</string>
+    <string name="personalization_splash_cosmic">Cosmic Zoom</string>
+
     <!-- ═══ Widget Configuration Activities ═══ -->
     <string name="widget_config_app_launcher_title">Configure App Launcher</string>
     <string name="widget_config_app_launcher_hint">Select the apps to show on your widget:</string>

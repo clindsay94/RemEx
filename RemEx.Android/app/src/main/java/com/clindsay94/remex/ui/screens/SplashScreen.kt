@@ -108,9 +108,11 @@ private class StreamParticle(var t: Float, var speed: Float, var radius: Float, 
  * 7. Final Transition: The camera pulls into the Monitor screen to enter the app.
  */
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
+fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         val scope = rememberCoroutineScope()
         val view = LocalView.current
+        var elapsed by remember { mutableStateOf(0f) }
+        var completed by remember { mutableStateOf(false) }
 
         // Colors from theme
         val background = MaterialTheme.colorScheme.background
@@ -173,11 +175,35 @@ fun SplashScreen(onFinished: () -> Unit) {
                 )
 
         val remMeasured = textMeasurer.measure("REM", remStyle)
+        val emMeasured = textMeasurer.measure("EM", remStyle)
+        val remoteMeasured = textMeasurer.measure("REMOTE", remStyle)
+        val executionMeasured = textMeasurer.measure("EXECUTION", exStyle)
+        val commandCenterMeasured = textMeasurer.measure("⚡ COMMAND CENTER", completionStyle)
         val oteMeasured = textMeasurer.measure("ote", completionStyle)
         val exMeasured = textMeasurer.measure("EX", exStyle)
         val ecuMeasured = textMeasurer.measure("ecution", completionStyle)
         val commandMeasured = textMeasurer.measure("COMMAND ", tagStyle)
         val yourPcMeasured = textMeasurer.measure("YOUR PC", tagStyle)
+
+        val cosmicTitleStyle = TextStyle(
+                color = Color.White,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 4.sp
+        )
+        val cosmicAccentStyle = cosmicTitleStyle.copy(color = primary)
+        val cosmicSubStyle = TextStyle(
+                color = Color(0xFFDCF0FF),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+        )
+
+        val remoteCosmicMeasured = textMeasurer.measure("REMOTE", cosmicTitleStyle)
+        val executionCosmicMeasured = textMeasurer.measure("EXECUTION", cosmicAccentStyle)
+        val commandCenterCosmicMeasured = textMeasurer.measure("⚡ COMMAND CENTER", cosmicSubStyle)
 
         // Random background elements
         val particles = remember {
@@ -256,46 +282,75 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val rng = java.util.Random(99L)
                         while (!isSkipping) {
                                 val dt = 0.016f
-                                // Embers
-                                for (p in particles) {
-                                        p.lifetime += dt
-                                        p.x += p.vx
-                                        p.y += p.vy * dt
-                                        val t = p.lifetime / p.maxLifetime
-                                        p.alpha =
-                                                when {
-                                                        t < 0.2f -> (t / 0.2f) * 0.7f
-                                                        t < 0.8f -> 0.7f
-                                                        else -> (1f - (t - 0.8f) / 0.2f) * 0.7f
+                                if (splashStyle == "CosmicZoom") {
+                                        // Update particles for Cosmic Starfield!
+                                        for (p in particles) {
+                                                val dx = p.x - 0.5f
+                                                val dy = p.y - 0.5f
+                                                var dist = kotlin.math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                                                if (dist < 0.01f) dist = 0.01f
+
+                                                val speed = (0.02f + dist * 0.8f) * dt * 60f
+                                                p.x += (dx / dist) * speed
+                                                p.y += (dy / dist) * speed
+
+                                                p.alpha = (dist * 3.0f).coerceIn(0f, 0.9f) * ((0.5f - dist) * 4.0f).coerceIn(0f, 1.0f)
+
+                                                if (p.x < 0f || p.x > 1f || p.y < 0f || p.y > 1f || dist > 0.5f) {
+                                                        val angle = rng.nextFloat() * Math.PI * 2
+                                                        val startDist = 0.01f + rng.nextFloat() * 0.06f
+                                                        p.x = (0.5f + kotlin.math.cos(angle) * startDist).toFloat()
+                                                        p.y = (0.5f + kotlin.math.sin(angle) * startDist).toFloat()
+                                                        p.vx = kotlin.math.cos(angle).toFloat() * 0.1f
+                                                        p.vy = kotlin.math.sin(angle).toFloat() * 0.1f
+                                                        p.lifetime = 0f
+                                                        p.alpha = 0f
                                                 }
-                                        if (p.lifetime >= p.maxLifetime) {
-                                                p.x = rng.nextFloat()
-                                                p.y = 0.4f + rng.nextFloat() * 0.6f
-                                                p.vx = (rng.nextFloat() - 0.5f) * 0.016f
-                                                p.vy = -(0.02f + rng.nextFloat() * 0.02f)
-                                                p.lifetime = 0f
-                                                p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+                                        }
+                                } else {
+                                        // Embers
+                                        for (p in particles) {
+                                                p.lifetime += dt
+                                                p.x += p.vx
+                                                p.y += p.vy * dt
+                                                val t = p.lifetime / p.maxLifetime
+                                                p.alpha =
+                                                        when {
+                                                                t < 0.2f -> (t / 0.2f) * 0.7f
+                                                                t < 0.8f -> 0.7f
+                                                                else -> (1f - (t - 0.8f) / 0.2f) * 0.7f
+                                                        }
+                                                if (p.lifetime >= p.maxLifetime) {
+                                                        p.x = rng.nextFloat()
+                                                        p.y = 0.4f + rng.nextFloat() * 0.6f
+                                                        p.vx = (rng.nextFloat() - 0.5f) * 0.016f
+                                                        p.vy = -(0.02f + rng.nextFloat() * 0.02f)
+                                                        p.lifetime = 0f
+                                                        p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+                                                }
                                         }
                                 }
-                                // Floating shapes morphing
-                                for (s in floatingShapes) {
-                                        s.x += s.vx
-                                        s.y += s.vy
-                                        s.rotation += s.rotationSpeed
-                                        s.morphProgress += s.morphSpeed
-                                        if (s.morphProgress > 1f) {
-                                                s.morphProgress = 0f
-                                                val shapes = materialShapesList
-                                                val startShape = s.currentEndShape
-                                                val nextIdx = rng.nextInt(shapes.size)
-                                                val endShape = shapes[nextIdx]
-                                                s.morph = Morph(startShape, endShape)
-                                                s.currentEndShape = endShape
+                                // Floating shapes morphing (skip for CosmicZoom performance/aesthetic)
+                                if (splashStyle != "CosmicZoom") {
+                                        for (s in floatingShapes) {
+                                                s.x += s.vx
+                                                s.y += s.vy
+                                                s.rotation += s.rotationSpeed
+                                                s.morphProgress += s.morphSpeed
+                                                if (s.morphProgress > 1f) {
+                                                        s.morphProgress = 0f
+                                                        val shapes = materialShapesList
+                                                        val startShape = s.currentEndShape
+                                                        val nextIdx = rng.nextInt(shapes.size)
+                                                        val endShape = shapes[nextIdx]
+                                                        s.morph = Morph(startShape, endShape)
+                                                        s.currentEndShape = endShape
+                                                }
+                                                if (s.x < -0.1f) s.x = 1.1f
+                                                if (s.x > 1.1f) s.x = -0.1f
+                                                if (s.y < -0.1f) s.y = 1.1f
+                                                if (s.y > 1.1f) s.y = -0.1f
                                         }
-                                        if (s.x < -0.1f) s.x = 1.1f
-                                        if (s.x > 1.1f) s.x = -0.1f
-                                        if (s.y < -0.1f) s.y = 1.1f
-                                        if (s.y > 1.1f) s.y = -0.1f
                                 }
                                 // Stream particles along Bezier
                                 for (sp in streamParticles) {
@@ -306,66 +361,78 @@ fun SplashScreen(onFinished: () -> Unit) {
                                 // recomposition
                                 kotlinx.coroutines.withContext(
                                         kotlinx.coroutines.Dispatchers.Main
-                                ) { particleFrame++ }
+                                ) {
+                                        particleFrame++
+                                        elapsed += dt
+                                }
                                 delay(16L)
                         }
                 }
 
-                // Phase 1: Scan radar from phone (bottom-right)
-                scope.launch {
-                        scanProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
-                }
-
-                // Scan line spring animations — stagger each line with bouncy spring physics
-                scanLineAnimatables.forEachIndexed { index, anim ->
-                        scope.launch {
-                                delay(200L + index * 180L) // stagger each line
-                                anim.animateTo(
-                                        targetValue = 1f,
-                                        animationSpec =
-                                                spring(
-                                                        dampingRatio =
-                                                                Spring.DampingRatioMediumBouncy,
-                                                        stiffness = Spring.StiffnessLow
-                                                )
-                                )
-                        }
-                }
-
-                // Phase 2: Wave radar from monitor (top-left), delayed 800ms
-                delay(800)
-                if (!isSkipping) {
-                        waveProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
-
+                if (splashStyle == "CosmicZoom") {
+                        delay(3000L)
                         if (!isSkipping) {
-                                // Phase 3: Connection flash/glow
-                                connectionGlow.animateTo(
-                                        1f,
-                                        tween(400, easing = FastOutSlowInEasing)
-                                )
+                                completed = true
+                                onFinished()
+                        }
+                } else {
+                        // Phase 1: Scan radar from phone (bottom-right)
+                        scope.launch {
+                                scanProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
+                        }
+
+                        // Scan line spring animations — stagger each line with bouncy spring physics
+                        scanLineAnimatables.forEachIndexed { index, anim ->
+                                scope.launch {
+                                        delay(200L + index * 180L) // stagger each line
+                                        anim.animateTo(
+                                                targetValue = 1f,
+                                                animationSpec =
+                                                        spring(
+                                                                dampingRatio =
+                                                                        Spring.DampingRatioMediumBouncy,
+                                                                stiffness = Spring.StiffnessLow
+                                                        )
+                                        )
+                                }
+                        }
+
+                        // Phase 2: Wave radar from monitor (top-left), delayed 800ms
+                        delay(800)
+                        if (!isSkipping) {
+                                waveProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
 
                                 if (!isSkipping) {
-                                        // Phase 4: Monitor Pull-In
-                                        scope.launch {
-                                                zoomScale.animateTo(
-                                                        6f,
-                                                        tween(700, easing = FastOutSlowInEasing)
-                                                )
-                                        }
-                                        scope.launch {
-                                                zoomProgress.animateTo(
-                                                        1f,
-                                                        tween(700, easing = FastOutSlowInEasing)
-                                                )
-                                        }
-                                        // Fade overlay starts slightly after zoom begins
-                                        delay(300)
+                                        // Phase 3: Connection flash/glow
+                                        connectionGlow.animateTo(
+                                                1f,
+                                                tween(400, easing = FastOutSlowInEasing)
+                                        )
+
                                         if (!isSkipping) {
-                                                fadeOverlay.animateTo(
-                                                        1f,
-                                                        tween(400, easing = LinearEasing)
-                                                )
-                                                onFinished()
+                                                // Phase 4: Monitor Pull-In
+                                                scope.launch {
+                                                        zoomScale.animateTo(
+                                                                6f,
+                                                                tween(700, easing = FastOutSlowInEasing)
+                                                        )
+                                                }
+                                                scope.launch {
+                                                        zoomProgress.animateTo(
+                                                                1f,
+                                                                tween(700, easing = FastOutSlowInEasing)
+                                                        )
+                                                }
+                                                // Fade overlay starts slightly after zoom begins
+                                                delay(300)
+                                                if (!isSkipping) {
+                                                        fadeOverlay.animateTo(
+                                                                1f,
+                                                                tween(400, easing = LinearEasing)
+                                                        )
+                                                        completed = true
+                                                        onFinished()
+                                                }
                                         }
                                 }
                         }
@@ -389,23 +456,190 @@ fun SplashScreen(onFinished: () -> Unit) {
                 Canvas(
                         modifier =
                                 Modifier.fillMaxSize().graphicsLayer {
-                                        val s = zoomScale.value
-                                        scaleX = s
-                                        scaleY = s
-                                        // Translate so the monitor screen center becomes viewport
-                                        // center
-                                        val w = size.width
-                                        val h = size.height
-                                        val monCx = w * 0.22f
-                                        val monCy = h * 0.20f
-                                        val targetDx = (w / 2f - monCx) * (s - 1f)
-                                        val targetDy = (h / 2f - monCy) * (s - 1f)
-                                        translationX = targetDx * zoomProgress.value
-                                        translationY = targetDy * zoomProgress.value
+                                        if (splashStyle != "CosmicZoom") {
+                                                val s = zoomScale.value
+                                                scaleX = s
+                                                scaleY = s
+                                                // Translate so the monitor screen center becomes viewport
+                                                // center
+                                                val w = size.width
+                                                val h = size.height
+                                                val monCx = w * 0.22f
+                                                val monCy = h * 0.20f
+                                                val targetDx = (w / 2f - monCx) * (s - 1f)
+                                                val targetDy = (h / 2f - monCy) * (s - 1f)
+                                                translationX = targetDx * zoomProgress.value
+                                                translationY = targetDy * zoomProgress.value
+                                        }
                                 }
                 ) {
                         val width = size.width
                         val height = size.height
+
+                        if (splashStyle == "CosmicZoom") {
+                                val cx = width / 2f
+                                val cy = height / 2f
+                                
+                                // ── COSMIC ZOOM ANIMATION ──
+                                
+                                // Draw Cosmic Starfield
+                                for (p in particles) {
+                                        val sx = p.x * width
+                                        val sy = p.y * height
+                                        val dx = p.x - 0.5f
+                                        val dy = p.y - 0.5f
+                                        val dist = kotlin.math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                                        val radius = 0.5f + dist * 3.5f
+                                        
+                                        drawCircle(
+                                                color = Color.White.copy(alpha = p.alpha),
+                                                radius = radius.dp.toPx(),
+                                                center = Offset(sx, sy)
+                                        )
+                                }
+
+                                // Target rings / circular HUD lines in background
+                                val radColor = primary.copy(alpha = 0.05f)
+                                val maxRad = kotlin.math.min(width, height) * 0.45f
+                                for (rf in listOf(0.25f, 0.45f, 0.65f, 0.85f)) {
+                                        drawCircle(
+                                                color = radColor,
+                                                radius = rf * maxRad,
+                                                center = Offset(cx, cy),
+                                                style = Stroke(width = 1.dp.toPx())
+                                        )
+                                }
+
+                                // Draw center crosshair target
+                                drawLine(
+                                        color = radColor,
+                                        start = Offset(cx - 20.dp.toPx(), cy),
+                                        end = Offset(cx + 20.dp.toPx(), cy),
+                                        strokeWidth = 1.dp.toPx()
+                                )
+                                drawLine(
+                                        color = radColor,
+                                        start = Offset(cx, cy - 20.dp.toPx()),
+                                        end = Offset(cx, cy + 20.dp.toPx()),
+                                        strokeWidth = 1.dp.toPx()
+                                )
+
+                                // Draw expanding energy shockwave circles during lightning strike
+                                if (elapsed > 1.8f) {
+                                        val waveT = ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f)
+                                        val shockRadius = (40f + waveT * 280f).dp.toPx()
+                                        val shockOpacity = 1f - waveT
+                                        
+                                        drawCircle(
+                                                color = primary.copy(alpha = shockOpacity * 0.6f),
+                                                radius = shockRadius,
+                                                center = Offset(cx, cy),
+                                                style = Stroke(width = (3f + (1f - waveT) * 8f).dp.toPx())
+                                        )
+                                        drawCircle(
+                                                color = Color(0xFFFFD700).copy(alpha = shockOpacity * 0.3f),
+                                                radius = shockRadius * 0.7f,
+                                                center = Offset(cx, cy),
+                                                style = Stroke(width = (1.5f + (1f - waveT) * 4f).dp.toPx())
+                                        )
+                                }
+
+                                // Cinematic Zoom-In stages:
+                                val zoomScaleVal: Float
+                                val shudderX: Float
+                                val shudderY: Float
+                                val flashOverlayVal: Float
+                                
+                                if (elapsed < 1.8f) {
+                                        val t = elapsed / 1.8f
+                                        zoomScaleVal = 0.04f + t * t * 0.96f
+                                        shudderX = 0f
+                                        shudderY = 0f
+                                        flashOverlayVal = 0f
+                                } else {
+                                        val strikeElapsed = elapsed - 1.8f
+                                        val strikeDuration = 0.5f
+                                        flashOverlayVal = if (strikeElapsed < strikeDuration) 1f - (strikeElapsed / strikeDuration) else 0f
+                                        
+                                        val shakeIntensity = if (strikeElapsed < strikeDuration) (1f - (strikeElapsed / strikeDuration)) * 12f else 0f
+                                        val rng = java.util.Random((elapsed * 1000f).toLong())
+                                        shudderX = if (shakeIntensity > 0f) (rng.nextFloat() - 0.5f) * shakeIntensity.dp.toPx() else 0f
+                                        shudderY = if (shakeIntensity > 0f) (rng.nextFloat() - 0.5f) * shakeIntensity.dp.toPx() else 0f
+                                        
+                                        zoomScaleVal = 1.0f + kotlin.math.sin((elapsed - 1.8f) * 3f) * 0.02f
+                                }
+
+                                // Draw Zoomed Brand Logo in center (Applying global scale & shudder displacement)
+                                drawStylizedRLogo(
+                                        w = width,
+                                        h = height,
+                                        scale = zoomScaleVal,
+                                        accentColor = primary,
+                                        opacity = 1.0f,
+                                        lightningFade = if (elapsed > 1.8f) ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f) else 0f,
+                                        elapsed = elapsed,
+                                        shudderX = shudderX,
+                                        shudderY = shudderY,
+                                        yOffset = -30f
+                                )
+
+                                // Fading title text "REMOTE EXECUTION"
+                                if (elapsed > 1.8f) {
+                                        val titleFade = ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f)
+                                        
+                                        val remoteW = remoteCosmicMeasured.size.width.toFloat()
+                                        val remoteH = remoteCosmicMeasured.size.height.toFloat()
+                                        val executionW = executionCosmicMeasured.size.width.toFloat()
+                                        val executionH = executionCosmicMeasured.size.height.toFloat()
+                                        val subW = commandCenterCosmicMeasured.size.width.toFloat()
+                                        
+                                        val remoteX = cx - remoteW / 2f
+                                        val remoteY = cy + 50.dp.toPx()
+                                        val executionX = cx - executionW / 2f
+                                        val executionY = remoteY + remoteH * 1.05f
+                                        val subX = cx - subW / 2f
+                                        val subY = executionY + executionH * 1.1f
+                                        
+                                        drawText(
+                                                remoteCosmicMeasured,
+                                                color = Color.White.copy(alpha = titleFade),
+                                                topLeft = Offset(remoteX, remoteY)
+                                        )
+                                        drawText(
+                                                executionCosmicMeasured,
+                                                color = primary.copy(alpha = titleFade),
+                                                topLeft = Offset(executionX, executionY)
+                                        )
+                                        drawText(
+                                                commandCenterCosmicMeasured,
+                                                color = Color(0xFFDCF0FF).copy(alpha = titleFade * 0.6f),
+                                                topLeft = Offset(subX, subY)
+                                        )
+                                }
+
+                                // Full-screen White Screen Flash overlay during lightning strike
+                                if (flashOverlayVal > 0f) {
+                                        drawRect(
+                                                color = Color(0xFFE6F8FF).copy(alpha = flashOverlayVal),
+                                                size = size
+                                        )
+                                }
+
+                                // Fade overlay
+                                val fadeOverlayVal = if (elapsed > 2.5f) {
+                                        ((elapsed - 2.5f) / 0.5f).coerceIn(0f, 1f)
+                                } else {
+                                        0f
+                                }
+                                if (fadeOverlayVal > 0f) {
+                                        drawRect(
+                                                color = background.copy(alpha = fadeOverlayVal),
+                                                size = size
+                                        )
+                                }
+                        } else {
+                                val width = size.width
+                                val height = size.height
 
                         // ─── Device geometry ─────────────────────────────────────────
                         // Monitor: upper-left quadrant, large
@@ -451,20 +685,22 @@ fun SplashScreen(onFinished: () -> Unit) {
                         val textBlockCy = height * 0.48f
                         val textBlockCx = width * 0.50f
 
-                        // Line 1: "REM" + "(ote)"
-                        val line1W =
-                                remMeasured.size.width.toFloat() + oteMeasured.size.width.toFloat()
+                        // Line 1: [R Logo] + "EM" + "(ote)"
+                        val emXOffset = 54f // px offset to clear R logo loop
+                        val rBarOffset = 14f // px offset of R logo vertical bar
+                        
+                        val line1W = emXOffset + emMeasured.size.width.toFloat() + oteMeasured.size.width.toFloat()
                         val remXPos = textBlockCx - line1W / 2f
                         val remYPos = textBlockCy - remMeasured.size.height * 1.1f
-                        val oteXPos = remXPos + remMeasured.size.width
+                        val emXPos = remXPos + emXOffset
+                        val oteXPos = emXPos + emMeasured.size.width.toFloat()
 
-                        // Line 2: "EX" + "(ecution)" — indented right
-                        val indent = remMeasured.size.width * 0.3f
-                        val exXPos = remXPos + indent
+                        // Line 2: "EX" + "(ecution)" — aligned under R vertical bar
+                        val exXPos = remXPos + rBarOffset
                         val exYPos = remYPos + remMeasured.size.height * 0.95f
-                        val ecuXPos = exXPos + exMeasured.size.width
+                        val ecuXPos = exXPos + exMeasured.size.width.toFloat()
 
-                        // Line 3: "Command Your PC" — centered
+                        // Line 3: "Command Your PC" — centered relative to the text block
                         val tagFullW = commandMeasured.size.width + yourPcMeasured.size.width
                         val tagXCmd = textBlockCx - tagFullW / 2f
                         val tagXYpc = tagXCmd + commandMeasured.size.width
@@ -1317,10 +1553,20 @@ fun SplashScreen(onFinished: () -> Unit) {
                         if (scanRadius > 0f) {
                                 clipPath(scanClip) {
                                         drawWireframe()
+                                        drawStylizedRLogo(
+                                                w = width,
+                                                h = height,
+                                                scale = 0.5f,
+                                                accentColor = primary,
+                                                opacity = 1.0f,
+                                                lightningFade = 1.0f,
+                                                elapsed = elapsed,
+                                                customPos = Offset(remXPos, remYPos)
+                                        )
                                         drawText(
-                                                remMeasured,
+                                                emMeasured,
                                                 color = Color.White,
-                                                topLeft = Offset(remXPos, remYPos)
+                                                topLeft = Offset(emXPos, remYPos)
                                         )
                                         drawText(
                                                 exMeasured,
@@ -1385,11 +1631,21 @@ fun SplashScreen(onFinished: () -> Unit) {
                                 clipPath(waveClip) {
                                         drawSolid()
                                         drawConnectionStream()
-                                        // Overwrite REM/EX with bright white + add completions
+                                        // Overwrite R logo + EM / EX with bright white + add completions
+                                        drawStylizedRLogo(
+                                                w = width,
+                                                h = height,
+                                                scale = 0.5f,
+                                                accentColor = primary,
+                                                opacity = 1.0f,
+                                                lightningFade = 1.0f,
+                                                elapsed = elapsed,
+                                                customPos = Offset(remXPos, remYPos)
+                                        )
                                         drawText(
-                                                remMeasured,
+                                                emMeasured,
                                                 color = Color.White,
-                                                topLeft = Offset(remXPos, remYPos)
+                                                topLeft = Offset(emXPos, remYPos)
                                         )
                                         drawText(
                                                 exMeasured,
@@ -1403,7 +1659,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                                                 topLeft =
                                                         Offset(
                                                                 oteXPos,
-                                                                remYPos +
+                                                        remYPos +
                                                                         (remMeasured.size.height -
                                                                                 oteMeasured
                                                                                         .size
@@ -1451,6 +1707,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                                         style = Stroke(2.dp.toPx())
                                 )
                         }
+                        }
 
                         // ═════════════════════════════════════════════════════════════
                         // PHASE 4: Fade overlay (drawn on top of everything)
@@ -1463,6 +1720,122 @@ fun SplashScreen(onFinished: () -> Unit) {
                         }
                 }
         }
+}
+
+/** Draws the stenciled new "R" logo with glowing accents and optional gradient lightning bolt */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStylizedRLogo(
+        w: Float,
+        h: Float,
+        scale: Float,
+        accentColor: Color,
+        opacity: Float,
+        lightningFade: Float,
+        elapsed: Float,
+        shudderX: Float = 0f,
+        shudderY: Float = 0f,
+        yOffset: Float = -30f,
+        customPos: Offset? = null
+) {
+        val tx = if (customPos != null) customPos.x + shudderX else w / 2f - 54f * scale + shudderX
+        val ty = if (customPos != null) customPos.y + yOffset * scale + shudderY else h / 2f - 54f * scale + yOffset * scale + shudderY
+
+        val rPath = Path().apply {
+                moveTo(28f, 90f)
+                lineTo(28f, 18f)
+                lineTo(64f, 18f)
+                arcTo(Rect(46f, 18f, 82f, 54f), 270f, 180f, false)
+                lineTo(28f, 54f)
+                
+                moveTo(46f, 54f)
+                lineTo(72f, 90f)
+        }
+
+        val pulse = kotlin.math.sin(elapsed * 8f) * 1.5f
+
+        // Apply translation and scale transforms
+        drawContext.canvas.save()
+        drawContext.canvas.translate(tx, ty)
+        drawContext.canvas.scale(scale, scale)
+
+        // Glow backing
+        drawPath(
+                path = rPath,
+                color = accentColor.copy(alpha = opacity * 0.35f),
+                style = Stroke(
+                        width = 8f + pulse,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                )
+        )
+        // Main accent line
+        drawPath(
+                path = rPath,
+                color = accentColor.copy(alpha = opacity),
+                style = Stroke(
+                        width = 4.5f,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                )
+        )
+        // Core white line
+        drawPath(
+                path = rPath,
+                color = Color.White.copy(alpha = opacity),
+                style = Stroke(
+                        width = 1.5f,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                )
+        )
+
+        // Lightning bolt overlay
+        if (lightningFade > 0f) {
+                val lightningPath = Path().apply {
+                        moveTo(31.5f + 24f, 9f)
+                        lineTo(31.5f + 24f, 58.5f)
+                        lineTo(45f + 24f, 58.5f)
+                        lineTo(45f + 24f, 99f)
+                        lineTo(76.5f + 24f, 45f)
+                        lineTo(58.5f + 24f, 45f)
+                        lineTo(76.5f + 24f, 9f)
+                        close()
+                }
+
+                val goldBrush = Brush.linearGradient(
+                        colors = listOf(Color(0xFFFFD700), Color(0xFFFF8C00), Color(0xFFFF4500)),
+                        start = Offset(69f, 18f),
+                        end = Offset(87f, 90f)
+                )
+
+                // Glow backing for lightning
+                drawPath(
+                        path = lightningPath,
+                        color = Color(0xFFFF8C00).copy(alpha = opacity * lightningFade * (120f / 255f)),
+                        style = Stroke(
+                                width = 6f + kotlin.math.sin(elapsed * 15f) * 2f,
+                                cap = StrokeCap.Round,
+                                join = StrokeJoin.Round
+                        )
+                )
+                // Fill gold gradient
+                drawPath(
+                        path = lightningPath,
+                        brush = goldBrush,
+                        alpha = opacity * lightningFade
+                )
+                // White outline stroke
+                drawPath(
+                        path = lightningPath,
+                        color = Color.White.copy(alpha = opacity * lightningFade * (180f / 255f)),
+                        style = Stroke(
+                                width = 1.5f,
+                                cap = StrokeCap.Round,
+                                join = StrokeJoin.Round
+                        )
+                )
+        }
+
+        drawContext.canvas.restore()
 }
 
 /** Cubic Bezier point calculation */

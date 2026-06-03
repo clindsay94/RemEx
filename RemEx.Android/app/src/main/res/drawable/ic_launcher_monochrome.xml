@@ -3,8 +3,18 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    
+    <!-- Stenciled Outline "R" (Monochrome stroke) -->
+    <path
+        android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+        android:strokeColor="#000000"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Overlapping Lightning Bolt (Monochrome fill) -->
     <path
         android:fillColor="#000000"
         android:fillType="nonZero"
-        android:pathData="M31.5,9.0 V58.5 H45.0 V99.0 L76.5,45.0 H58.5 L76.5,9.0 H31.5 Z" />
+        android:pathData="M 45.5 9 L 45.5 58.5 L 59 58.5 L 59 99 L 90.5 45 L 72.5 45 L 90.5 9 Z" />
 </vector>
