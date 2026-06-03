@@ -22,6 +22,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
@@ -40,6 +41,8 @@ import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.clindsay94.remex.MainActivity
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.first
@@ -48,6 +51,7 @@ import org.json.JSONObject
 
 val SELECTED_APPS_KEY = stringPreferencesKey("selected_apps")
 val APP_PATH_PARAM = ActionParameters.Key<String>("app_path")
+val APP_NAME_PARAM = ActionParameters.Key<String>("app_name")
 
 data class WidgetAppEntry(
     val name: String,
@@ -112,11 +116,12 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
             modifier = GlanceModifier.fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(16.dp)
+                .clickable(actionStartActivity<MainActivity>())
                 .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Tap to configure",
+                "Tap to open RemEx",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
@@ -170,7 +175,10 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
                                 .padding(itemPadding)
                                 .clickable(
                                     actionRunCallback<LaunchAppCallback>(
-                                        actionParametersOf(APP_PATH_PARAM to app.path)
+                                        actionParametersOf(
+                                            APP_PATH_PARAM to app.path,
+                                            APP_NAME_PARAM to app.name
+                                        )
                                     )
                                 ),
                             contentAlignment = Alignment.Center
@@ -215,16 +223,23 @@ class LaunchAppCallback : ActionCallback {
         parameters: ActionParameters
     ) {
         val path = parameters[APP_PATH_PARAM] ?: return
-        if (RemexCoreClient.isLibraryLoaded) {
-            val settings = SettingsManager(context)
-            val request = JSONObject().apply {
-                put("action", "LaunchApp")
-                put("parameters", JSONObject().apply {
-                    put("TargetPath", path)
-                })
-            }
-            RemexCoreClient.SendCommand(request.toString()).getOrNull()
+        val name = parameters[APP_NAME_PARAM] ?: "app"
+        if (!RemexCoreClient.isLibraryLoaded) {
+            widgetToast(context, "RemEx isn't ready yet — open the app")
+            return
         }
+        if (!RemexClientManager.isConnected.value) {
+            widgetToast(context, "Not connected — open RemEx to connect")
+            return
+        }
+        val request = JSONObject().apply {
+            put("action", "LaunchApp")
+            put("parameters", JSONObject().apply {
+                put("TargetPath", path)
+            })
+        }
+        RemexCoreClient.SendCommand(request.toString()).getOrNull()
+        widgetToast(context, "Launching $name…")
     }
 }
 

@@ -11,12 +11,15 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalSize
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import com.clindsay94.remex.MainActivity
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -92,11 +95,12 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             modifier = GlanceModifier.fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(16.dp)
+                .clickable(actionStartActivity<MainActivity>())
                 .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Tap to configure",
+                "Tap to open RemEx",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
@@ -130,6 +134,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
         modifier = GlanceModifier.fillMaxSize()
             .background(GlanceTheme.colors.surface)
             .cornerRadius(16.dp)
+            .clickable(actionStartActivity<MainActivity>())
             .padding(outerPadding)
     ) {
         if (showTitle) {

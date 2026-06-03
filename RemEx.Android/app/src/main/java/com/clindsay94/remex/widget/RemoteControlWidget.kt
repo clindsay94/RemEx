@@ -16,6 +16,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
@@ -35,6 +36,8 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.clindsay94.remex.MainActivity
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.first
@@ -85,11 +88,12 @@ private fun RemoteControlContent() {
             modifier = GlanceModifier.fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(16.dp)
+                .clickable(actionStartActivity<MainActivity>())
                 .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Tap to configure",
+                "Tap to open RemEx",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
@@ -184,21 +188,36 @@ class RemoteCommandCallback : ActionCallback {
         parameters: ActionParameters
     ) {
         val action = parameters[COMMAND_ACTION_PARAM] ?: return
-        if (RemexCoreClient.isLibraryLoaded) {
-            val settings = SettingsManager(context)
-            if (action == "WakeOnLan") {
-                val mac = settings.macAddressFlow.first()
-                val broadcast = settings.broadcastIpFlow.first()
-                if (mac.isNotBlank()) {
-                    RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
-                }
-            } else {
-                val request = JSONObject().apply {
-                    put("action", action)
-                    put("parameters", JSONObject())
-                }
-                RemexCoreClient.SendCommand(request.toString()).getOrNull()
+        val title = WIDGET_REMOTE_COMMANDS.firstOrNull { it.action == action }?.title ?: "Command"
+
+        if (!RemexCoreClient.isLibraryLoaded) {
+            widgetToast(context, "RemEx isn't ready yet — open the app")
+            return
+        }
+
+        val settings = SettingsManager(context)
+        if (action == "WakeOnLan") {
+            // Wake-on-LAN is a broadcast packet — it works precisely when the PC is
+            // asleep/disconnected, so it must NOT require a live connection.
+            val mac = settings.macAddressFlow.first()
+            val broadcast = settings.broadcastIpFlow.first()
+            if (mac.isBlank()) {
+                widgetToast(context, "Set your PC's MAC address in RemEx first")
+                return
             }
+            RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
+            widgetToast(context, "Wake-on-LAN sent")
+        } else {
+            if (!RemexClientManager.isConnected.value) {
+                widgetToast(context, "Not connected — open RemEx to connect")
+                return
+            }
+            val request = JSONObject().apply {
+                put("action", action)
+                put("parameters", JSONObject())
+            }
+            RemexCoreClient.SendCommand(request.toString()).getOrNull()
+            widgetToast(context, "$title sent")
         }
     }
 }

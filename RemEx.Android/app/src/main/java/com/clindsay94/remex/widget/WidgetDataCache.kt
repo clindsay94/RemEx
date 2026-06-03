@@ -9,6 +9,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/** Show a short toast from a widget action callback (always on the main thread). */
+suspend fun widgetToast(context: Context, message: String) {
+    withContext(Dispatchers.Main) {
+        android.widget.Toast
+            .makeText(context.applicationContext, message, android.widget.Toast.LENGTH_SHORT)
+            .show()
+    }
+}
 
 object WidgetDataCache {
     private const val TAG = "WidgetDataCache"
