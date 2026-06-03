@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -65,6 +66,7 @@ import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private class Particle(
@@ -273,6 +275,14 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                 scope.launch {
                         skipAlpha.animateTo(0f, tween(200, easing = FastOutSlowInEasing))
                         onFinished()
+                }
+        }
+
+        // Haptic "thud" fired once, synced to the lightning strike at elapsed ≈ 1.8s.
+        LaunchedEffect(Unit) {
+                snapshotFlow { elapsed >= 1.8f }.first { it }
+                if (!isSkipping) {
+                        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 }
         }
 
@@ -550,23 +560,31 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                 val shudderY: Float
                                 val flashOverlayVal: Float
                                 
+                                // Resting size of the hero "R" — bumped up for real presence.
+                                val restScale = 3.4f
                                 if (elapsed < 1.8f) {
                                         val t = elapsed / 1.8f
-                                        zoomScaleVal = 0.08f + t * t * 2.12f
+                                        // Ease-in zoom toward just under rest; the strike pops it the rest of the way.
+                                        zoomScaleVal = 0.1f + t * t * (restScale - 0.3f)
                                         shudderX = 0f
                                         shudderY = 0f
                                         flashOverlayVal = 0f
                                 } else {
                                         val strikeElapsed = elapsed - 1.8f
-                                        val strikeDuration = 0.5f
+                                        val strikeDuration = 0.6f
                                         flashOverlayVal = if (strikeElapsed < strikeDuration) 1f - (strikeElapsed / strikeDuration) else 0f
-                                        
-                                        val shakeIntensity = if (strikeElapsed < strikeDuration) (1f - (strikeElapsed / strikeDuration)) * 12f else 0f
+
+                                        // Punchier camera shake on impact.
+                                        val shakeIntensity = if (strikeElapsed < strikeDuration) (1f - (strikeElapsed / strikeDuration)) * 30f else 0f
                                         val rng = java.util.Random((elapsed * 1000f).toLong())
                                         shudderX = if (shakeIntensity > 0f) (rng.nextFloat() - 0.5f) * shakeIntensity.dp.toPx() else 0f
                                         shudderY = if (shakeIntensity > 0f) (rng.nextFloat() - 0.5f) * shakeIntensity.dp.toPx() else 0f
-                                        
-                                        zoomScaleVal = 2.2f + kotlin.math.sin((elapsed - 1.8f) * 3f) * 0.04f
+
+                                        // Impact "pop": big elastic overshoot above rest then settle, plus breathing.
+                                        val punch = if (strikeElapsed < 0.32f)
+                                                kotlin.math.sin((strikeElapsed / 0.32f) * PI.toFloat()) * 0.85f
+                                        else 0f
+                                        zoomScaleVal = restScale + punch + kotlin.math.sin((elapsed - 1.8f) * 3f) * 0.05f
                                 }
 
                                 // Draw Zoomed Brand Logo in center (Applying global scale & shudder displacement)
@@ -622,6 +640,35 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         drawRect(
                                                 color = Color(0xFFE6F8FF).copy(alpha = flashOverlayVal),
                                                 size = size
+                                        )
+                                }
+
+                                // Chromatic-aberration bloom shockwave on impact: three RGB-split
+                                // rings burst outward from the logo and fade in ~0.25s.
+                                val bloomT = (elapsed - 1.8f) / 0.25f
+                                if (bloomT in 0f..1f) {
+                                        val bloomAlpha = (1f - bloomT) * 0.55f
+                                        val bloomRadius = 40.dp.toPx() + bloomT * 360.dp.toPx()
+                                        val split = (1f - bloomT) * 16.dp.toPx()
+                                        val bloomStroke = Stroke(width = (2f + (1f - bloomT) * 7f).dp.toPx())
+                                        val bloomCy = cy - 30f * restScale
+                                        drawCircle(
+                                                color = Color(0xFFFF2D55).copy(alpha = bloomAlpha),
+                                                radius = bloomRadius,
+                                                center = Offset(cx - split, bloomCy),
+                                                style = bloomStroke
+                                        )
+                                        drawCircle(
+                                                color = Color(0xFF00E5FF).copy(alpha = bloomAlpha),
+                                                radius = bloomRadius,
+                                                center = Offset(cx + split, bloomCy),
+                                                style = bloomStroke
+                                        )
+                                        drawCircle(
+                                                color = Color(0xFF45FF8F).copy(alpha = bloomAlpha * 0.8f),
+                                                radius = bloomRadius,
+                                                center = Offset(cx, bloomCy - split),
+                                                style = bloomStroke
                                         )
                                 }
 

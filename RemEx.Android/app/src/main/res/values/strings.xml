@@ -152,6 +152,7 @@
     <!-- ═══ App Launcher Screen ═══ -->
     <string name="screen_app_launcher_title">App Launcher</string>
     <string name="app_launcher_no_apps">No apps found</string>
+    <string name="app_launcher_recent">Recent</string>
     <string name="button_fetch_from_host">Fetch from Host</string>
 
     <!-- ═══ Remote Control Screen ═══ -->
@@ -221,6 +222,10 @@
     <string name="dashboard_menu_unlock_layout">Unlock layout</string>
     <string name="dashboard_menu_clear_cards">Clear all cards</string>
     <string name="dashboard_menu_options">Canvas options</string>
+    <string name="dashboard_menu_undo">Undo</string>
+    <string name="dashboard_menu_redo">Redo</string>
+    <string name="dashboard_pin_card">Pin card</string>
+    <string name="dashboard_unpin_card">Unpin card</string>
     <string name="dashboard_pc_status">PC Status</string>
     <string name="dashboard_pc_status_subtitle">Connection status orb</string>
     <string name="dashboard_wake_pc">Wake PC</string>

@@ -40,7 +40,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
@@ -143,6 +146,8 @@ fun DashboardScreen(
         val cardOpacity by viewModel.cardOpacity.collectAsState()
         val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
         val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
+        val canUndo by viewModel.canUndo.collectAsState()
+        val canRedo by viewModel.canRedo.collectAsState()
 
         DashboardScreenContent(
                 isConnected = isConnected,
@@ -165,7 +170,14 @@ fun DashboardScreen(
                         viewModel.cycleTelemetryDisplayMode(cardId)
                 },
                 onPlaceCardAt = { cardId, x, y -> viewModel.placeCardAt(cardId, x, y) },
-                onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) }
+                onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) },
+                canUndo = canUndo,
+                canRedo = canRedo,
+                onUndo = { viewModel.undo() },
+                onRedo = { viewModel.redo() },
+                onBeginInteraction = { viewModel.beginInteraction() },
+                onTogglePin = { cardId -> viewModel.togglePin(cardId) },
+                onClearAllCards = { viewModel.clearAllCards() }
         )
 }
 
@@ -190,7 +202,14 @@ fun DashboardScreenContent(
         onWakePc: () -> Unit,
         onCycleTelemetryDisplayMode: (String) -> Unit,
         onPlaceCardAt: (String, Float, Float) -> Unit,
-        onSetCardEnabled: (String, Boolean) -> Unit
+        onSetCardEnabled: (String, Boolean) -> Unit,
+        canUndo: Boolean = false,
+        canRedo: Boolean = false,
+        onUndo: () -> Unit = {},
+        onRedo: () -> Unit = {},
+        onBeginInteraction: () -> Unit = {},
+        onTogglePin: (String) -> Unit = {},
+        onClearAllCards: () -> Unit = {}
 ) {
         val view = LocalView.current
 
@@ -317,6 +336,61 @@ fun DashboardScreenContent(
                                                                         Text(
                                                                                 stringResource(
                                                                                         R.string
+                                                                                                .dashboard_menu_undo
+                                                                                )
+                                                                        )
+                                                                },
+                                                                leadingIcon = {
+                                                                        Icon(
+                                                                                Icons.AutoMirrored
+                                                                                        .Filled.Undo,
+                                                                                contentDescription =
+                                                                                        null
+                                                                        )
+                                                                },
+                                                                enabled = canUndo,
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .KEYBOARD_TAP
+                                                                        )
+                                                                        canvasMenuOpen = false
+                                                                        onUndo()
+                                                                }
+                                                        )
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .dashboard_menu_redo
+                                                                                )
+                                                                        )
+                                                                },
+                                                                leadingIcon = {
+                                                                        Icon(
+                                                                                Icons.AutoMirrored
+                                                                                        .Filled.Redo,
+                                                                                contentDescription =
+                                                                                        null
+                                                                        )
+                                                                },
+                                                                enabled = canRedo,
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .KEYBOARD_TAP
+                                                                        )
+                                                                        canvasMenuOpen = false
+                                                                        onRedo()
+                                                                }
+                                                        )
+                                                        HorizontalDivider()
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
                                                                                                 .cd_customize_cards
                                                                                 )
                                                                         )
@@ -417,12 +491,7 @@ fun DashboardScreenContent(
                                                                                         .CONFIRM
                                                                         )
                                                                         canvasMenuOpen = false
-                                                                        enabledCards.forEach {
-                                                                                onSetCardEnabled(
-                                                                                        it,
-                                                                                        false
-                                                                                )
-                                                                        }
+                                                                        onClearAllCards()
                                                                 }
                                                         )
                                                 }
@@ -497,11 +566,15 @@ fun DashboardScreenContent(
                                                                                 )
                                                                                 .pointerInput(
                                                                                         card.id,
-                                                                                        layoutLocked
+                                                                                        layoutLocked,
+                                                                                        card.pinned
                                                                                 ) {
-                                                                                        if (layoutLocked)
+                                                                                        if (layoutLocked || card.pinned)
                                                                                                 return@pointerInput
                                                                                         detectDragGestures(
+                                                                                                onDragStart = {
+                                                                                                        onBeginInteraction()
+                                                                                                },
                                                                                                 onDrag = {
                                                                                                         change,
                                                                                                         dragAmount
@@ -613,6 +686,53 @@ fun DashboardScreenContent(
                                                                                 }
                                                                         }
 
+                                                                        // Per-card pin toggle — pinned cards can't be dragged/resized.
+                                                                        Surface(
+                                                                                shape = CircleShape,
+                                                                                color =
+                                                                                        if (card.pinned)
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .primary
+                                                                                        else
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .surfaceVariant
+                                                                                                        .copy(alpha = 0.85f),
+                                                                                tonalElevation = 2.dp,
+                                                                                onClick = {
+                                                                                        view.performHapticFeedback(
+                                                                                                HapticFeedbackConstants.CONFIRM
+                                                                                        )
+                                                                                        onTogglePin(card.id)
+                                                                                },
+                                                                                modifier =
+                                                                                        Modifier.align(
+                                                                                                        Alignment.BottomStart
+                                                                                                )
+                                                                                                .padding(12.dp)
+                                                                                                .size(24.dp)
+                                                                        ) {
+                                                                                Icon(
+                                                                                        Icons.Default.PushPin,
+                                                                                        contentDescription =
+                                                                                                stringResource(
+                                                                                                        if (card.pinned)
+                                                                                                                R.string.dashboard_unpin_card
+                                                                                                        else
+                                                                                                                R.string.dashboard_pin_card
+                                                                                                ),
+                                                                                        tint =
+                                                                                                if (card.pinned)
+                                                                                                        MaterialTheme.colorScheme.onPrimary
+                                                                                                else
+                                                                                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                                        modifier =
+                                                                                                Modifier.size(14.dp)
+                                                                                                        .padding(1.dp)
+                                                                                )
+                                                                        }
+
                                                                         Surface(
                                                                                 shape = CircleShape,
                                                                                 color =
@@ -634,11 +754,15 @@ fun DashboardScreenContent(
                                                                                                 )
                                                                                                 .pointerInput(
                                                                                                         "resize_${card.id}",
-                                                                                                        layoutLocked
+                                                                                                        layoutLocked,
+                                                                                                        card.pinned
                                                                                                 ) {
-                                                                                                        if (layoutLocked)
+                                                                                                        if (layoutLocked || card.pinned)
                                                                                                                 return@pointerInput
                                                                                                         detectDragGestures(
+                                                                                                                onDragStart = {
+                                                                                                                        onBeginInteraction()
+                                                                                                                },
                                                                                                                 onDrag = {
                                                                                                                         change,
                                                                                                                         dragAmount

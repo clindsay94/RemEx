@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -50,6 +51,14 @@ class AppLauncherViewModel(
             initialValue = emptyList()
         )
 
+    // In-memory recents (most-recently-launched first). Resets on process death; feeds the
+    // App Launcher "Recent" carousel. Persisting across restarts can be added via DataStore later.
+    private val _recentPaths = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
+    val recentApps: StateFlow<List<AppEntry>> =
+        combine(_recentPaths, apps) { paths, all ->
+            paths.mapNotNull { p -> all.firstOrNull { it.path == p } }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private fun parseLauncherEntries(data: String): List<AppEntry> {
         return try {
             val array = JSONArray(data)
@@ -68,6 +77,8 @@ class AppLauncherViewModel(
     }
 
     fun launchApp(app: AppEntry) {
+        // Record as most-recent (dedup, cap at 8) for the Recent carousel.
+        _recentPaths.value = (listOf(app.path) + _recentPaths.value).distinct().take(8)
         viewModelScope.launch(Dispatchers.IO) {
             if (remexCoreClient.isLibraryLoaded) {
                 val request = JSONObject().apply {

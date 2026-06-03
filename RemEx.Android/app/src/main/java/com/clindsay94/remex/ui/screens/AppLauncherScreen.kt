@@ -6,14 +6,20 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -54,6 +60,7 @@ import com.clindsay94.remex.ui.theme.cardShape
 
 data class AppLauncherUiState(
     val apps: List<AppEntry> = emptyList(),
+    val recentApps: List<AppEntry> = emptyList(),
     val shapePreset: Float = 0f,
     val cornerRadius: Int = 8,
     val isConnected: Boolean = false,
@@ -76,6 +83,7 @@ fun AppLauncherScreen(
     }
 ) {
     val apps by viewModel.apps.collectAsState()
+    val recentApps by viewModel.recentApps.collectAsState()
     val shapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
     val cornerRadius by viewModel.cardCornerRadius.collectAsState()
     val isConnected by RemexClientManager.isConnected.collectAsState()
@@ -83,6 +91,7 @@ fun AppLauncherScreen(
 
     val uiState = AppLauncherUiState(
         apps = apps,
+        recentApps = recentApps,
         shapePreset = shapePreset,
         cornerRadius = cornerRadius,
         isConnected = isConnected,
@@ -161,23 +170,43 @@ fun AppLauncherScreenContent(
                     val dedupedApps = remember(uiState.apps) {
                         uiState.apps.distinctBy { "${it.name}|${it.path}" }
                     }
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 100.dp),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(dedupedApps, key = { "${it.name}|${it.path}" }) { app ->
-                            AppGridItem(
-                                app = app,
-                                shapePreset = uiState.shapePreset,
-                                cornerRadius = uiState.cornerRadius,
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                    onLaunchApp(app)
-                                }
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // M3 Expressive: a "Recent" multi-browse carousel above the full grid —
+                        // the best-of-both featured strip + complete launcher.
+                        if (uiState.recentApps.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.app_launcher_recent),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(
+                                    start = 16.dp, top = 12.dp, bottom = 8.dp
+                                )
                             )
+                            RecentAppCarousel(
+                                apps = uiState.recentApps,
+                                onLaunchApp = onLaunchApp,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            contentPadding = PaddingValues(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(dedupedApps, key = { "${it.name}|${it.path}" }) { app ->
+                                AppGridItem(
+                                    app = app,
+                                    shapePreset = uiState.shapePreset,
+                                    cornerRadius = uiState.cornerRadius,
+                                    onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        onLaunchApp(app)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -306,6 +335,81 @@ fun AppGridItem(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
             )
+        }
+    }
+}
+
+/**
+ * M3 Expressive "Recent" strip — a HorizontalMultiBrowseCarousel of recently-launched apps.
+ * The keyline layout scales items toward the edges; [maskClip] gives the expressive item masking.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun RecentAppCarousel(
+    apps: List<AppEntry>,
+    onLaunchApp: (AppEntry) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val view = LocalView.current
+    val carouselState = rememberCarouselState { apps.size }
+    HorizontalMultiBrowseCarousel(
+        state = carouselState,
+        preferredItemWidth = 140.dp,
+        itemSpacing = 10.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth().height(150.dp)
+    ) { i ->
+        val app = apps[i]
+        Box(
+            modifier = Modifier
+                .height(150.dp)
+                .maskClip(MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable {
+                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    onLaunchApp(app)
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                val bitmap = remember(app.iconBase64) {
+                    app.iconBase64?.let {
+                        try {
+                            val bytes = Base64.decode(it, Base64.DEFAULT)
+                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                }
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = app.name,
+                        modifier = Modifier.size(52.dp)
+                    )
+                } else {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Launch,
+                        contentDescription = app.name,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = app.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }

@@ -45,7 +45,8 @@ data class HomeCardState(
     val yDp: Float = 12f,
     val widthDp: Float = 160f,
     val heightDp: Float = 140f,
-    val displayMode: TelemetryDisplayMode = TelemetryDisplayMode.GAUGE
+    val displayMode: TelemetryDisplayMode = TelemetryDisplayMode.GAUGE,
+    val pinned: Boolean = false
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,6 +70,65 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _enabledCardIds = MutableStateFlow(setOf("pc_status", "wake_pc", "sensor:cpu", "sensor:gpu", "sensor:ram"))
     val enabledCardIds: StateFlow<Set<String>> = _enabledCardIds.asStateFlow()
+
+    // ── Undo / redo history for canvas edits ────────────────────────────────────
+    private data class LayoutSnapshot(val cards: List<HomeCardState>, val enabled: Set<String>)
+    private val undoStack = ArrayDeque<LayoutSnapshot>()
+    private val redoStack = ArrayDeque<LayoutSnapshot>()
+    private val maxHistory = 30
+
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
+
+    private fun snapshot() = LayoutSnapshot(_homeCards.value, _enabledCardIds.value)
+
+    /** Capture the current layout before a mutating interaction (drag, resize, toggle, …). */
+    fun beginInteraction() {
+        undoStack.addLast(snapshot())
+        if (undoStack.size > maxHistory) undoStack.removeFirst()
+        redoStack.clear()
+        _canUndo.value = true
+        _canRedo.value = false
+    }
+
+    fun undo() {
+        if (undoStack.isEmpty()) return
+        redoStack.addLast(snapshot())
+        val s = undoStack.removeLast()
+        _homeCards.value = s.cards
+        _enabledCardIds.value = s.enabled
+        _canUndo.value = undoStack.isNotEmpty()
+        _canRedo.value = true
+        persistHomeLayout()
+    }
+
+    fun redo() {
+        if (redoStack.isEmpty()) return
+        undoStack.addLast(snapshot())
+        val s = redoStack.removeLast()
+        _homeCards.value = s.cards
+        _enabledCardIds.value = s.enabled
+        _canRedo.value = redoStack.isNotEmpty()
+        _canUndo.value = true
+        persistHomeLayout()
+    }
+
+    /** Toggle a card's pinned state — pinned cards can't be dragged or resized. */
+    fun togglePin(cardId: String) {
+        _homeCards.update { cards ->
+            cards.map { if (it.id == cardId) it.copy(pinned = !it.pinned) else it }
+        }
+        persistHomeLayout()
+    }
+
+    /** Remove every card from the canvas (undoable). */
+    fun clearAllCards() {
+        beginInteraction()
+        _enabledCardIds.value = emptySet()
+        persistHomeLayout()
+    }
 
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
@@ -151,6 +211,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun setCardEnabled(cardId: String, enabled: Boolean) {
+        beginInteraction()
         if (enabled) {
             _enabledCardIds.update { it + cardId }
             ensureCardExists(cardId)
@@ -191,6 +252,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun cycleTelemetryDisplayMode(cardId: String) {
+        beginInteraction()
         _homeCards.update { cards ->
             cards.map { card ->
                 if (card.id == cardId && card.type == HomeCardType.TELEMETRY) {
@@ -216,6 +278,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun placeCardAt(cardId: String, xDp: Float, yDp: Float) {
+        beginInteraction()
         _enabledCardIds.update { it + cardId }
         ensureCardExists(cardId)
 
@@ -394,7 +457,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     yDp = obj.optDouble("yDp", 12.0).toFloat(),
                     widthDp = obj.optDouble("widthDp", 160.0).toFloat(),
                     heightDp = obj.optDouble("heightDp", 140.0).toFloat(),
-                    displayMode = mode
+                    displayMode = mode,
+                    pinned = obj.optBoolean("pinned", false)
                 )
             }
 
@@ -418,6 +482,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     put("widthDp", card.widthDp)
                     put("heightDp", card.heightDp)
                     put("displayMode", card.displayMode.name)
+                    put("pinned", card.pinned)
                 }
                 layoutArray.put(obj)
             }
