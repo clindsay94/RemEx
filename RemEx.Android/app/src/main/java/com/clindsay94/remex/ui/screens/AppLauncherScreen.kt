@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -131,10 +132,19 @@ fun AppLauncherScreenContent(
         }
     ) { innerPadding ->
       Box(modifier = modifier.fillMaxSize().padding(innerPadding)) {
+        val pullState = rememberPullToRefreshState()
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = onRefreshApps,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            state = pullState,
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    state = pullState,
+                    isRefreshing = uiState.isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 if (!uiState.isConnected && uiState.apps.isEmpty()) {

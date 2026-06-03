@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,7 +82,7 @@ fun TaskManagerScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TaskManagerScreenContent(
         processes: List<ProcessInfo>,
@@ -139,10 +141,19 @@ fun TaskManagerScreenContent(
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
+        val pullState = rememberPullToRefreshState()
         PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = onRefreshProcesses,
-                modifier = Modifier.fillMaxSize().padding(innerPadding)
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                            state = pullState,
+                            isRefreshing = isRefreshing,
+                            modifier = Modifier.align(Alignment.TopCenter)
+                    )
+                }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 NotConnectedBanner(
