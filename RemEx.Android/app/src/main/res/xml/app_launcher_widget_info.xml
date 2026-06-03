@@ -6,9 +6,12 @@
     android:minResizeHeight="110dp"
     android:targetCellWidth="2"
     android:targetCellHeight="2"
+    android:maxResizeWidth="500dp"
+    android:maxResizeHeight="400dp"
     android:updatePeriodMillis="1800000"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
     android:previewImage="@drawable/widget_preview_launcher"
     android:description="@string/widget_launcher_description"
     android:configure="com.clindsay94.remex.widget.AppLauncherConfigActivity" />

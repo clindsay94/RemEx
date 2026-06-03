@@ -6,9 +6,12 @@
     android:minResizeHeight="40dp"
     android:targetCellWidth="2"
     android:targetCellHeight="1"
+    android:maxResizeWidth="500dp"
+    android:maxResizeHeight="300dp"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
     android:previewImage="@drawable/widget_preview_remote"
     android:description="@string/widget_remote_description"
     android:configure="com.clindsay94.remex.widget.RemoteControlConfigActivity" />
