@@ -1708,7 +1708,7 @@ private fun TelemetryCardContent(
                                         RemexCircularWavyGauge(
                                                 progress = animatedProgress,
                                                 centerLabel =
-                                                        "${(percent * 100).roundToInt()}%",
+                                                        "${(animatedProgress * 100).roundToInt()}%",
                                                 modifier = Modifier.fillMaxWidth()
                                         )
                                 }
@@ -1739,7 +1739,7 @@ private fun TelemetryCardContent(
                                         RemexCircularWavyGauge(
                                                 progress = animatedProgress,
                                                 centerLabel =
-                                                        "${(percent * 100).roundToInt()}%",
+                                                        "${(animatedProgress * 100).roundToInt()}%",
                                                 modifier = Modifier.fillMaxWidth()
                                         )
                                 }
