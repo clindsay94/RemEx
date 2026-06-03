@@ -135,7 +135,10 @@ fun AppLauncherScreenContent(
         val pullState = rememberPullToRefreshState()
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            onRefresh = onRefreshApps,
+            onRefresh = {
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                onRefreshApps()
+            },
             modifier = Modifier.fillMaxSize(),
             state = pullState,
             indicator = {

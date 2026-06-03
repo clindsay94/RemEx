@@ -144,7 +144,10 @@ fun TaskManagerScreenContent(
         val pullState = rememberPullToRefreshState()
         PullToRefreshBox(
                 isRefreshing = isRefreshing,
-                onRefresh = onRefreshProcesses,
+                onRefresh = {
+                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    onRefreshProcesses()
+                },
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 state = pullState,
                 indicator = {
