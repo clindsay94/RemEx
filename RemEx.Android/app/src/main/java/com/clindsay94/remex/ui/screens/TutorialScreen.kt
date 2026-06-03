@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,8 +50,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.util.lerp
+import kotlin.math.abs
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -164,6 +170,7 @@ fun TutorialScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TutorialScreenContent(
     onFinished: () -> Unit
@@ -193,12 +200,24 @@ fun TutorialScreenContent(
             }
         }
 
-        // Pager content
+        // Pager content with depth parallax (pages scale + fade as they slide)
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            TutorialPageContent(tutorialPages[page])
+            val pageOffset =
+                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+            TutorialPageContent(
+                page = tutorialPages[page],
+                isFirst = page == 0,
+                modifier = Modifier.graphicsLayer {
+                    val t = 1f - abs(pageOffset).coerceIn(0f, 1f)
+                    val scale = lerp(0.88f, 1f, t)
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = lerp(0.4f, 1f, t)
+                }
+            )
         }
 
         // Page indicator dots
@@ -214,7 +233,8 @@ fun TutorialScreenContent(
 
                 val width by animateDpAsState(
                     targetValue = if (isSelected) 24.dp else 8.dp,
-                    animationSpec = tween(300),
+                    // Spatial spring: the active dot springs out with a subtle overshoot.
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                     label = "dotWidth"
                 )
                 val color by animateColorAsState(
@@ -222,7 +242,7 @@ fun TutorialScreenContent(
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.outlineVariant,
-                    animationSpec = tween(300),
+                    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                     label = "dotColor"
                 )
 
@@ -290,7 +310,11 @@ private fun TutorialPageContentPreview() {
 }
 
 @Composable
-private fun TutorialPageContent(page: TutorialPage) {
+private fun TutorialPageContent(
+    page: TutorialPage,
+    isFirst: Boolean = false,
+    modifier: Modifier = Modifier
+) {
     val uriHandler = LocalUriHandler.current
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.secondary
@@ -312,32 +336,65 @@ private fun TutorialPageContent(page: TutorialPage) {
     )
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Animated illustration
-        if (page.illustration != TutorialIllustration.NONE) {
-            Box(
-                modifier = Modifier
-                    .size(160.dp)
-                    .clip(RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawIllustration(page.illustration, primary, secondary, onBg, pulse, rotation)
+        when {
+            // Page 1 — warm branded welcome: the app's logo in the Flower badge.
+            isFirst -> {
+                Box(
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(RoundedCornerShape(percent = 30))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.size(168.dp)
+                    )
                 }
+                Spacer(modifier = Modifier.height(28.dp))
             }
-            Spacer(modifier = Modifier.height(20.dp))
-        } else {
-            Text(
-                text = page.emoji,
-                fontSize = 72.sp
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            // Animated line illustration on a soft expressive tonal backdrop.
+            page.illustration != TutorialIllustration.NONE -> {
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .clip(RoundedCornerShape(percent = 35))
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Canvas(modifier = Modifier.size(150.dp)) {
+                        drawIllustration(
+                            page.illustration, primary, secondary, onBg, pulse, rotation
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            // Emoji pages (e.g. battery) get the same friendly tonal badge.
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .size(160.dp)
+                        .clip(RoundedCornerShape(percent = 35))
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = page.emoji, fontSize = 72.sp)
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
 
         Text(

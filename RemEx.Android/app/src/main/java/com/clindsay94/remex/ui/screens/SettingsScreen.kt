@@ -6,8 +6,15 @@ import android.os.Parcelable
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +25,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Input
@@ -167,12 +177,12 @@ private fun HelpTabPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SettingsCategoryList(
     selectedCategory: SettingsCategory?,
     onCategoryClick: (SettingsCategory) -> Unit
 ) {
-    val view = LocalView.current
     Scaffold(
         topBar = {
             RemexScreenHeader(title = stringResource(R.string.screen_settings_title))
@@ -181,25 +191,96 @@ private fun SettingsCategoryList(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(SettingsCategory.entries) { category ->
-                NavigationDrawerItem(
-                    label = { Text(stringResource(category.titleRes)) },
-                    icon = { Icon(category.icon, contentDescription = null) },
+                ExpressiveSettingsRow(
+                    category = category,
                     selected = category == selectedCategory,
-                    onClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        onCategoryClick(category)
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    badge = {
-                        if (category != selectedCategory) {
-                             Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
-                        }
-                    }
+                    onClick = { onCategoryClick(category) }
                 )
             }
+        }
+    }
+}
+
+/**
+ * Expressive settings row: a tonal icon badge, animated selection color (effects spring) and a
+ * spring-physics press-scale (spatial spring) — M3 Expressive list styling.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ExpressiveSettingsRow(
+    category: SettingsCategory,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val view = LocalView.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "settingsRowScale"
+    )
+    val containerColor by animateColorAsState(
+        targetValue =
+            if (selected) MaterialTheme.colorScheme.secondaryContainer
+            else MaterialTheme.colorScheme.surfaceContainerLow,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "settingsRowColor"
+    )
+    val badgeColor =
+        if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.primaryContainer
+    val onBadgeColor =
+        if (selected) MaterialTheme.colorScheme.onPrimary
+        else MaterialTheme.colorScheme.onPrimaryContainer
+
+    Surface(
+        onClick = {
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            onClick()
+        },
+        interactionSource = interaction,
+        shape = MaterialTheme.shapes.large,
+        color = containerColor,
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(percent = 30))
+                    .background(badgeColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    category.icon,
+                    contentDescription = null,
+                    tint = onBadgeColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Text(
+                text = stringResource(category.titleRes),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

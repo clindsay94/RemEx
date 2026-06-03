@@ -217,6 +217,10 @@
     <string name="screen_dashboard_title">RemEx Home Base</string>
     <string name="cd_reset_zoom">Reset zoom</string>
     <string name="cd_customize_cards">Customize cards</string>
+    <string name="dashboard_menu_lock_layout">Lock layout</string>
+    <string name="dashboard_menu_unlock_layout">Unlock layout</string>
+    <string name="dashboard_menu_clear_cards">Clear all cards</string>
+    <string name="dashboard_menu_options">Canvas options</string>
     <string name="dashboard_pc_status">PC Status</string>
     <string name="dashboard_pc_status_subtitle">Connection status orb</string>
     <string name="dashboard_wake_pc">Wake PC</string>

@@ -40,9 +40,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterCenterFocus
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
@@ -51,9 +57,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +79,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -214,6 +225,8 @@ fun DashboardScreenContent(
         val sensorMap = remember(telemetrySensors) { telemetrySensors.associateBy { it.id } }
 
         var showCardDrawer by remember { mutableStateOf(false) }
+        var layoutLocked by rememberSaveable { mutableStateOf(false) }
+        var canvasMenuOpen by remember { mutableStateOf(false) }
         var canvasTopLeftPx by remember { mutableStateOf(Offset.Zero) }
         var drawerLeftPx by remember { mutableFloatStateOf(Float.MAX_VALUE) }
         var draggingCardId by remember { mutableStateOf<String?>(null) }
@@ -276,7 +289,145 @@ fun DashboardScreenContent(
         Surface(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                         RemexScreenHeader(
-                                title = stringResource(R.string.screen_dashboard_title)
+                                title = stringResource(R.string.screen_dashboard_title),
+                                actions = {
+                                        Box {
+                                                IconButton(onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.KEYBOARD_TAP
+                                                        )
+                                                        canvasMenuOpen = true
+                                                }) {
+                                                        Icon(
+                                                                Icons.Default.MoreVert,
+                                                                contentDescription =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .dashboard_menu_options
+                                                                        )
+                                                        )
+                                                }
+                                                // M3 Expressive overflow menu — canvas management.
+                                                DropdownMenu(
+                                                        expanded = canvasMenuOpen,
+                                                        onDismissRequest = { canvasMenuOpen = false }
+                                                ) {
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_customize_cards
+                                                                                )
+                                                                        )
+                                                                },
+                                                                leadingIcon = {
+                                                                        Icon(
+                                                                                Icons.Default.Tune,
+                                                                                contentDescription =
+                                                                                        null
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        canvasMenuOpen = false
+                                                                        showCardDrawer = true
+                                                                }
+                                                        )
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        if (layoutLocked)
+                                                                                                R.string
+                                                                                                        .dashboard_menu_unlock_layout
+                                                                                        else
+                                                                                                R.string
+                                                                                                        .dashboard_menu_lock_layout
+                                                                                )
+                                                                        )
+                                                                },
+                                                                leadingIcon = {
+                                                                        Icon(
+                                                                                if (layoutLocked)
+                                                                                        Icons.Default
+                                                                                                .LockOpen
+                                                                                else
+                                                                                        Icons.Default
+                                                                                                .Lock,
+                                                                                contentDescription =
+                                                                                        null
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .CONFIRM
+                                                                        )
+                                                                        canvasMenuOpen = false
+                                                                        layoutLocked = !layoutLocked
+                                                                }
+                                                        )
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_reset_zoom
+                                                                                )
+                                                                        )
+                                                                },
+                                                                leadingIcon = {
+                                                                        Icon(
+                                                                                Icons.Default
+                                                                                        .FilterCenterFocus,
+                                                                                contentDescription =
+                                                                                        null
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        canvasMenuOpen = false
+                                                                        canvasScale = 1f
+                                                                }
+                                                        )
+                                                        HorizontalDivider()
+                                                        DropdownMenuItem(
+                                                                text = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .dashboard_menu_clear_cards
+                                                                                )
+                                                                        )
+                                                                },
+                                                                leadingIcon = {
+                                                                        Icon(
+                                                                                Icons.Default
+                                                                                        .DeleteSweep,
+                                                                                contentDescription =
+                                                                                        null,
+                                                                                tint =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .error
+                                                                        )
+                                                                },
+                                                                onClick = {
+                                                                        view.performHapticFeedback(
+                                                                                HapticFeedbackConstants
+                                                                                        .CONFIRM
+                                                                        )
+                                                                        canvasMenuOpen = false
+                                                                        enabledCards.forEach {
+                                                                                onSetCardEnabled(
+                                                                                        it,
+                                                                                        false
+                                                                                )
+                                                                        }
+                                                                }
+                                                        )
+                                                }
+                                        }
+                                }
                         )
                         Box(
                                 modifier =
@@ -345,8 +496,11 @@ fun DashboardScreenContent(
                                                                                                 .dp
                                                                                 )
                                                                                 .pointerInput(
-                                                                                        card.id
+                                                                                        card.id,
+                                                                                        layoutLocked
                                                                                 ) {
+                                                                                        if (layoutLocked)
+                                                                                                return@pointerInput
                                                                                         detectDragGestures(
                                                                                                 onDrag = {
                                                                                                         change,
@@ -479,8 +633,11 @@ fun DashboardScreenContent(
                                                                                                         24.dp
                                                                                                 )
                                                                                                 .pointerInput(
-                                                                                                        "resize_${card.id}"
+                                                                                                        "resize_${card.id}",
+                                                                                                        layoutLocked
                                                                                                 ) {
+                                                                                                        if (layoutLocked)
+                                                                                                                return@pointerInput
                                                                                                         detectDragGestures(
                                                                                                                 onDrag = {
                                                                                                                         change,
@@ -1066,65 +1223,100 @@ fun DashboardScreenContent(
                                         }
                                 }
 
-                                // M3 Expressive: floating quick-action toolbar that hovers over
-                                // the freeform card canvas — connection toggle, card customization,
-                                // and reset-view, all without stealing space from the canvas.
-                                HorizontalFloatingToolbar(
-                                        expanded = true,
+                                // M3 Expressive: expandable FAB menu — a ToggleFAB that fans out
+                                // the dashboard's quick actions (connect, customize, reset view).
+                                var fabMenuExpanded by remember { mutableStateOf(false) }
+                                FloatingActionButtonMenu(
+                                        expanded = fabMenuExpanded,
+                                        button = {
+                                                ToggleFloatingActionButton(
+                                                        checked = fabMenuExpanded,
+                                                        onCheckedChange = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .KEYBOARD_TAP
+                                                                )
+                                                                fabMenuExpanded = it
+                                                        }
+                                                ) {
+                                                        Icon(
+                                                                if (fabMenuExpanded)
+                                                                        Icons.Default.Close
+                                                                else Icons.Default.Add,
+                                                                contentDescription =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .nav_more_label
+                                                                        )
+                                                        )
+                                                }
+                                        },
                                         modifier =
-                                                Modifier.align(Alignment.BottomCenter)
+                                                Modifier.align(Alignment.BottomEnd)
                                                         .navigationBarsPadding()
-                                                        .padding(bottom = 24.dp)
                                 ) {
-                                        FilledTonalIconButton(
+                                        FloatingActionButtonMenuItem(
                                                 onClick = {
                                                         view.performHapticFeedback(
                                                                 HapticFeedbackConstants.CONFIRM
                                                         )
+                                                        fabMenuExpanded = false
                                                         onToggleConnection()
-                                                }
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.PowerSettingsNew,
-                                                        contentDescription =
+                                                },
+                                                icon = {
+                                                        Icon(
+                                                                Icons.Default.PowerSettingsNew,
+                                                                contentDescription = null
+                                                        )
+                                                },
+                                                text = {
+                                                        Text(
                                                                 stringResource(
                                                                         R.string.dashboard_pc_status
                                                                 )
-                                                )
-                                        }
-                                        IconButton(
+                                                        )
+                                                }
+                                        )
+                                        FloatingActionButtonMenuItem(
                                                 onClick = {
                                                         view.performHapticFeedback(
                                                                 HapticFeedbackConstants.KEYBOARD_TAP
                                                         )
-                                                        showCardDrawer = !showCardDrawer
-                                                }
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.Tune,
-                                                        contentDescription =
+                                                        fabMenuExpanded = false
+                                                        showCardDrawer = true
+                                                },
+                                                icon = {
+                                                        Icon(
+                                                                Icons.Default.Tune,
+                                                                contentDescription = null
+                                                        )
+                                                },
+                                                text = {
+                                                        Text(
                                                                 stringResource(
                                                                         R.string.cd_customize_cards
                                                                 )
-                                                )
-                                        }
-                                        IconButton(
+                                                        )
+                                                }
+                                        )
+                                        FloatingActionButtonMenuItem(
                                                 onClick = {
                                                         view.performHapticFeedback(
                                                                 HapticFeedbackConstants.KEYBOARD_TAP
                                                         )
+                                                        fabMenuExpanded = false
                                                         canvasScale = 1f
                                                 },
-                                                enabled = canvasScale != 1f
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.FilterCenterFocus,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_reset_zoom
-                                                                )
-                                                )
-                                        }
+                                                icon = {
+                                                        Icon(
+                                                                Icons.Default.FilterCenterFocus,
+                                                                contentDescription = null
+                                                        )
+                                                },
+                                                text = {
+                                                        Text(stringResource(R.string.cd_reset_zoom))
+                                                }
+                                        )
                                 }
                         }
                 }

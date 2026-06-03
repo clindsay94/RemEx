@@ -171,7 +171,7 @@ fun RemoteControlScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RemoteControlScreenContent(
         uiState: RemoteControlUiState,
@@ -206,13 +206,16 @@ fun RemoteControlScreenContent(
             snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         val cardsByCategory = remember { remoteCommandCards.groupBy { it.category } }
+        val view = LocalView.current
 
+      Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
         LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentPadding = PaddingValues(16.dp)
+                modifier = Modifier.fillMaxSize(),
+                // Extra bottom inset so the floating toolbar never covers the last row.
+                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 104.dp)
         ) {
             item(span = { GridItemSpan(2) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -281,6 +284,34 @@ fun RemoteControlScreenContent(
                 }
             }
         }
+
+        // M3 Expressive: floating quick-actions for the most-used safe commands.
+        HorizontalFloatingToolbar(
+            expanded = true,
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp)
+        ) {
+            FilledTonalIconButton(onClick = {
+                view.hapticCommandSent()
+                onWakePc()
+            }) {
+                Icon(Icons.Default.Sensors, contentDescription = stringResource(R.string.rc_wake_pc))
+            }
+            IconButton(onClick = {
+                view.hapticCommandSent()
+                onSendSystemCommand("Lock", 0)
+            }) {
+                Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.rc_lock_pc))
+            }
+            IconButton(onClick = {
+                view.hapticCommandSent()
+                onSendSystemCommand("Sleep", 0)
+            }) {
+                Icon(Icons.Default.Bedtime, contentDescription = stringResource(R.string.rc_sleep))
+            }
+        }
+      }
     }
 }
 

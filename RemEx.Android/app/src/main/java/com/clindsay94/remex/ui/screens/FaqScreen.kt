@@ -110,21 +110,25 @@ private fun FaqScreenPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FaqCard(item: FaqItem) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val view = LocalView.current
 
-    // Expressive motion: chevron rotates smoothly and the card tonal-lifts when expanded.
+    // Expressive motion physics: the chevron rotates on a spatial spring (slight overshoot/bounce),
+    // and the card tonal-lifts on an effects spring when expanded.
     val chevronRotation by animateFloatAsState(
             targetValue = if (expanded) 180f else 0f,
+            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
             label = "faq_chevron"
     )
     val containerColor by animateColorAsState(
             targetValue =
                     if (expanded) MaterialTheme.colorScheme.surfaceContainerHigh
                     else MaterialTheme.colorScheme.surfaceContainer,
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
             label = "faq_container"
     )
 
