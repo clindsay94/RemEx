@@ -1,0 +1,60 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.6"
+        android:scaleY="0.6">
+        <!-- Stenciled Outline "R" - Neon Glow Shadow -->
+        <path
+            android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+            android:strokeColor="#7F00F3FF"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Stenciled Outline "R" - Primary Neon Accent Core -->
+        <path
+            android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+            android:strokeColor="#FF00F3FF"
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Stenciled Outline "R" - White Hot Core -->
+        <path
+            android:pathData="M 18 90 L 18 18 L 54 18 A 18 18 0 0 1 54 54 L 18 54 M 36 54 L 62 90"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Overlapping Gold-Orange Gradient Lightning Bolt (⚡) -->
+        <path
+            android:pathData="M 45.5 9 L 45.5 58.5 L 59 58.5 L 59 99 L 90.5 45 L 72.5 45 L 90.5 9 Z"
+            android:fillType="nonZero">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="45.5"
+                    android:startY="9.0"
+                    android:endX="90.5"
+                    android:endY="99.0"
+                    android:type="linear">
+                    <item android:offset="0.0" android:color="#FFFFD700" /> <!-- Electric Gold -->
+                    <item android:offset="0.5" android:color="#FFFF8C00" /> <!-- Dark Orange -->
+                    <item android:offset="1.0" android:color="#FFFF4500" /> <!-- Neon Red-Orange -->
+                </gradient>
+            </aapt:attr>
+        </path>
+        
+        <!-- Lightning Bolt White Edge Glow / Contrast Stroke -->
+        <path
+            android:pathData="M 45.5 9 L 45.5 58.5 L 59 58.5 L 59 99 L 90.5 45 L 72.5 45 L 90.5 9 Z"
+            android:strokeWidth="1.5"
+            android:strokeColor="#50FFFFFF" />
+    </group>
+</vector>

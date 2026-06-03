@@ -153,7 +153,7 @@ public class BootSequenceControl : Control
             {
                 // Acts I: Slow quadratic zoom of Letter R from distance
                 double t = _elapsed / 1.8;
-                _zoomScale = 0.04 + Math.Pow(t, 2) * 0.96;
+                _zoomScale = 0.08 + Math.Pow(t, 2) * 2.12;
                 
                 _shudderX = 0;
                 _shudderY = 0;
@@ -183,7 +183,7 @@ public class BootSequenceControl : Control
                 }
                 
                 // Keep logo at peak scale with subtle breath
-                _zoomScale = 1.0 + Math.Sin((_elapsed - 1.8) * 3) * 0.02;
+                _zoomScale = 2.2 + Math.Sin((_elapsed - 1.8) * 3) * 0.04;
             }
 
             // Act III: Smooth exit fade to black before transition
@@ -429,9 +429,9 @@ public class BootSequenceControl : Control
                 ctx.DrawRectangle(null, secPen, new Rect(phoneX, phoneY, phoneW, phoneH), phoneW * 0.15, phoneW * 0.15);
 
                 // Draw the stenciled new "R" logo in place of standard "R"
-                DrawStylizedRLogo(ctx, w, h, 0.5, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
-                DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 54, h * 0.48 - 60), 54, Colors.White, true);
-                DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 14, h * 0.48 - 10), 54, Colors.White, true);
+                DrawStylizedRLogo(ctx, w, h, 0.8, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
+                DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 88, h * 0.48 - 60), 54, Colors.White, true);
+                DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 22, h * 0.48 - 10), 54, Colors.White, true);
                 DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
             }
 
@@ -454,11 +454,11 @@ public class BootSequenceControl : Control
                 ctx.DrawRectangle(new ImmutableSolidColorBrush(substrate), null, new Rect(phoneX + phoneW*0.08, phoneY + phoneW*0.12, phoneW - phoneW*0.16, phoneH - phoneW*0.2), phoneW * 0.08, phoneW * 0.08);
 
                 // Draw the stenciled new "R" logo in place of standard "R"
-                DrawStylizedRLogo(ctx, w, h, 0.5, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
-                DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 54, h * 0.48 - 60), 54, Colors.White, true);
-                DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 14, h * 0.48 - 10), 54, Colors.White, true);
-                DrawText(ctx, "ote", new Point(w * 0.50 - 90 + 54 + 74, h * 0.48 - 35), 24, primary, false);
-                DrawText(ctx, "ecution", new Point(w * 0.50 - 90 + 14 + 58, h * 0.48 + 15), 24, primary, false);
+                DrawStylizedRLogo(ctx, w, h, 0.8, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
+                DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 88, h * 0.48 - 60), 54, Colors.White, true);
+                DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 22, h * 0.48 - 10), 54, Colors.White, true);
+                DrawText(ctx, "ote", new Point(w * 0.50 - 90 + 88 + 74, h * 0.48 - 35), 24, primary, false);
+                DrawText(ctx, "ecution", new Point(w * 0.50 - 90 + 22 + 58, h * 0.48 + 15), 24, primary, false);
                 DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
 
                 // Connection Stream

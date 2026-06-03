@@ -133,9 +133,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             
                             if (hasPin) {
                                 val currentPreferences = settings.connectionPreferencesFlow.first()
-                                val currentMac = currentPreferences?.macAddress ?: ""
-                                val currentBroadcast = currentPreferences?.broadcastIp ?: "255.255.255.255"
-                                val currentSubnet = currentPreferences?.subnetMask ?: "255.255.255.0"
+                                val currentMac = currentPreferences.macAddress ?: ""
+                                val currentBroadcast = currentPreferences.broadcastIp ?: "255.255.255.255"
+                                val currentSubnet = currentPreferences.subnetMask ?: "255.255.255.0"
 
                                 Log.i("RemexManager", "Discovered host is verified and trusted. Updating saved address to: ${discovered.host}:${discovered.port}")
                                 settings.saveConnectionSettings(

@@ -552,7 +552,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                 
                                 if (elapsed < 1.8f) {
                                         val t = elapsed / 1.8f
-                                        zoomScaleVal = 0.04f + t * t * 0.96f
+                                        zoomScaleVal = 0.08f + t * t * 2.12f
                                         shudderX = 0f
                                         shudderY = 0f
                                         flashOverlayVal = 0f
@@ -566,7 +566,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         shudderX = if (shakeIntensity > 0f) (rng.nextFloat() - 0.5f) * shakeIntensity.dp.toPx() else 0f
                                         shudderY = if (shakeIntensity > 0f) (rng.nextFloat() - 0.5f) * shakeIntensity.dp.toPx() else 0f
                                         
-                                        zoomScaleVal = 1.0f + kotlin.math.sin((elapsed - 1.8f) * 3f) * 0.02f
+                                        zoomScaleVal = 2.2f + kotlin.math.sin((elapsed - 1.8f) * 3f) * 0.04f
                                 }
 
                                 // Draw Zoomed Brand Logo in center (Applying global scale & shudder displacement)
@@ -686,8 +686,8 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                         val textBlockCx = width * 0.50f
 
                         // Line 1: [R Logo] + "EM" + "(ote)"
-                        val emXOffset = 54f // px offset to clear R logo loop
-                        val rBarOffset = 14f // px offset of R logo vertical bar
+                        val emXOffset = 88f // px offset to clear R logo loop
+                        val rBarOffset = 22f // px offset of R logo vertical bar
                         
                         val line1W = emXOffset + emMeasured.size.width.toFloat() + oteMeasured.size.width.toFloat()
                         val remXPos = textBlockCx - line1W / 2f
@@ -1556,7 +1556,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         drawStylizedRLogo(
                                                 w = width,
                                                 h = height,
-                                                scale = 0.5f,
+                                                scale = 0.8f,
                                                 accentColor = primary,
                                                 opacity = 1.0f,
                                                 lightningFade = 1.0f,
@@ -1635,7 +1635,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         drawStylizedRLogo(
                                                 w = width,
                                                 h = height,
-                                                scale = 0.5f,
+                                                scale = 0.8f,
                                                 accentColor = primary,
                                                 opacity = 1.0f,
                                                 lightningFade = 1.0f,

@@ -52,7 +52,8 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.ExperimentalMaterial3AdaptiveNavigationSuiteApi
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -226,7 +227,7 @@ private fun AppNavigationContent(
         // ─── State ───────────────────────────────────────────────────────────────
         var showExitDialog by rememberSaveable { mutableStateOf(false) }
         var showMoreSheet by remember { mutableStateOf(false) }
-        val moreSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val moreSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, skipPartiallyExpanded = true)
 
         // Close more sheet on route change
         LaunchedEffect(currentRoute) { showMoreSheet = false }

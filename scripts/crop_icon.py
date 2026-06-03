@@ -1,177 +1,163 @@
 import os
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
-def generate_vector_icon(out_png, out_ico, out_ico_desktop):
-    size = 256
-    # Create main RGBA image
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+def extract_premium_3d_logo(src_path, out_png, out_ico, out_ico_desktop, proj_root):
+    if not os.path.exists(src_path):
+        print(f"Error: Master asset not found at {src_path}")
+        return False
+        
+    print(f"Loading master 3D brand asset from: {src_path}")
+    img = Image.open(src_path).convert("RGBA")
+    width, height = img.size
     
-    # Scale and translation parameters for initial high-res vector rendering
-    scale = 2.2
-    # Design bounds: width = 72.5, height = 90
-    w_design = 72.5 * scale
-    h_design = 90.0 * scale
-    tx = (size - w_design) / 2.0 - 28.0 * scale
-    ty = (size - h_design) / 2.0 - 9.0 * scale
-    
-    def transform(x, y):
-        return (x * scale + tx, y * scale + ty)
-
-    # 1. Draw R Logo Glow Backing
-    glow_layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow_layer)
-    
-    # R Logo coordinates
-    r_bar_start = transform(28, 90)
-    r_bar_end = transform(28, 18)
-    r_top_line = transform(64, 18)
-    r_mid_line = transform(28, 54)
-    r_diag_start = transform(46, 54)
-    r_diag_end = transform(72, 90)
-    
-    # Accent color for glow: vibrant neon blue (e.g. #0091FF)
-    accent_rgb = (0, 145, 255)
-    
-    # Draw R outline on glow layer
-    gd.line([r_bar_start, r_bar_end], fill=accent_rgb + (150,), width=16)
-    gd.line([r_bar_end, r_top_line], fill=accent_rgb + (150,), width=16)
-    arc_tl = transform(46, 18)
-    arc_br = transform(82, 54)
-    gd.arc([arc_tl, arc_br], start=270, end=90, fill=accent_rgb + (150,), width=16)
-    gd.line([transform(64, 54), r_mid_line], fill=accent_rgb + (150,), width=16)
-    gd.line([r_diag_start, r_diag_end], fill=accent_rgb + (150,), width=16)
-    
-    # Apply Gaussian Blur for realistic glow
-    glow_blurred = glow_layer.filter(ImageFilter.GaussianBlur(8))
-    img.alpha_composite(glow_blurred)
-    
-    # 2. Draw R Logo Sharp Elements
-    sharp_layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(sharp_layer)
-    
-    # Draw sharp accent outline
-    sd.line([r_bar_start, r_bar_end], fill=accent_rgb + (255,), width=8)
-    sd.line([r_bar_end, r_top_line], fill=accent_rgb + (255,), width=8)
-    sd.arc([arc_tl, arc_br], start=270, end=90, fill=accent_rgb + (255,), width=8)
-    sd.line([transform(64, 54), r_mid_line], fill=accent_rgb + (255,), width=8)
-    sd.line([r_diag_start, r_diag_end], fill=accent_rgb + (255,), width=8)
-    
-    # Draw sharp white core
-    sd.line([r_bar_start, r_bar_end], fill=(255, 255, 255, 255), width=3)
-    sd.line([r_bar_end, r_top_line], fill=(255, 255, 255, 255), width=3)
-    sd.arc([arc_tl, arc_br], start=270, end=90, fill=(255, 255, 255, 255), width=3)
-    sd.line([transform(64, 54), r_mid_line], fill=(255, 255, 255, 255), width=3)
-    sd.line([r_diag_start, r_diag_end], fill=(255, 255, 255, 255), width=3)
-    
-    img.alpha_composite(sharp_layer)
-    
-    # 3. Draw Gradient Lightning Bolt
-    # Create lightning mask
-    lightning_mask = Image.new("L", (size, size), 0)
-    lmd = ImageDraw.Draw(lightning_mask)
-    
-    # Lightning bolt vertices
-    vertices = [
-        transform(31.5 + 24, 9),
-        transform(31.5 + 24, 58.5),
-        transform(45.0 + 24, 58.5),
-        transform(45.0 + 24, 99),
-        transform(76.5 + 24, 45),
-        transform(58.5 + 24, 45),
-        transform(76.5 + 24, 9)
-    ]
-    lmd.polygon(vertices, fill=255)
-    
-    # Create linear gradient image
-    gradient_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    gd_draw = ImageDraw.Draw(gradient_img)
-    
-    # Draw gradient lines (top-left gold to bottom-right orange-red)
-    for i in range(size * 2):
-        t = i / (size * 2)
-        if t < 0.5:
-            factor = t / 0.5
-            r = int(255)
-            g = int(215 * (1 - factor) + 140 * factor)
-            b = 0
-        else:
-            factor = (t - 0.5) / 0.5
-            r = int(255)
-            g = int(140 * (1 - factor) + 69 * factor)
-            b = 0
+    # 1. Adaptively sample the background color from the top-left corner
+    bg_samples = []
+    for cy in range(15):
+        for cx in range(15):
+            bg_samples.append(img.getpixel((cx, cy))[:3])
             
-        gd_draw.line([(i, 0), (0, i)], fill=(r, g, b, 255), width=2)
+    avg_bg_r = sum(c[0] for c in bg_samples) / len(bg_samples)
+    avg_bg_g = sum(c[1] for c in bg_samples) / len(bg_samples)
+    avg_bg_b = sum(c[2] for c in bg_samples) / len(bg_samples)
+    print(f"Sampled background color: ({avg_bg_r:.2f}, {avg_bg_g:.2f}, {avg_bg_b:.2f})")
+    
+    # Create target canvas of the same size with full transparency
+    logo_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    
+    # We scan y < 68% height to fully exclude the "RemEx" text at the bottom
+    scan_height = int(height * 0.68)
+    
+    src_pixels = img.load()
+    logo_pixels = logo_img.load()
+    
+    left, top, right, bottom = width, height, 0, 0
+    
+    # 2. Extract alpha channel based on pixel deviation from background
+    for y in range(scan_height):
+        for x in range(width):
+            r, g, b, a = src_pixels[x, y]
+            
+            # Compute difference from background
+            dr = max(0, r - avg_bg_r)
+            dg = max(0, g - avg_bg_g)
+            db = max(0, b - avg_bg_b)
+            
+            diff_max = max(dr, dg, db)
+            diff_min = min(dr, dg, db)
+            sat = diff_max - diff_min
+            val = 0.299 * dr + 0.587 * dg + 0.114 * db
+            
+            # Metric combining luminance change and color saturation
+            metric = val + sat * 1.5
+            
+            # Threshold to filter out background carbon fiber noise
+            if metric > 15:
+                # Soft-edge alpha mapping: fully transparent under 15, fully opaque above 50
+                alpha = int(min(255, max(0, (metric - 15) / (50 - 15) * 255)))
+                
+                # Boost color brightness slightly to maintain contrast on transparent background
+                factor = 1.05
+                nr = min(255, int(r * factor))
+                ng = min(255, int(g * factor))
+                nb = min(255, int(b * factor))
+                
+                logo_pixels[x, y] = (nr, ng, nb, alpha)
+                
+                # Build active bounding box (ignoring very soft glow edges for tighter fit)
+                if alpha > 35:
+                    if x < left: left = x
+                    if x > right: right = x
+                    if y < top: top = y
+                    if y > bottom: bottom = y
+            else:
+                logo_pixels[x, y] = (0, 0, 0, 0)
+                
+    # 3. Crop and Center inside a 256x256 icon canvas
+    if left < right and top < bottom:
+        print(f"Logo bounding box detected: ({left}, {top}, {right}, {bottom})")
+        cropped = logo_img.crop((left, top, right + 1, bottom + 1))
+        w_crop = right - left + 1
+        h_crop = bottom - top + 1
         
-    # Mask gradient image with lightning bolt polygon
-    lightning_layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    lightning_layer.paste(gradient_img, (0, 0), mask=lightning_mask)
-    
-    # 4. Draw Lightning Glow & Border
-    lightning_glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    lgd = ImageDraw.Draw(lightning_glow)
-    lgd.polygon(vertices, outline=(255, 140, 0, 160), width=10)
-    lightning_glow_blurred = lightning_glow.filter(ImageFilter.GaussianBlur(6))
-    img.alpha_composite(lightning_glow_blurred)
-    
-    # Draw Lightning sharp white outline
-    lightning_outline = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    lod = ImageDraw.Draw(lightning_outline)
-    lod.polygon(vertices, outline=(255, 255, 255, 220), width=3)
-    
-    # Paste lightning bolt and its outline
-    img.alpha_composite(lightning_layer)
-    img.alpha_composite(lightning_outline)
-    
-    # 5. AUTO-CROP & RECENTER WITH TIGHT PADDING (6px)
-    bbox = img.getbbox()
-    if bbox:
-        print(f"Original rendering bounding box: {bbox}")
-        # Crop out the extra transparent margin
-        cropped = img.crop(bbox)
-        
-        # Calculate target size with 6px safety padding on all sides
+        # Fit inside 256x256 with 6px safety padding
         padding = 6
-        target_size = size - 2 * padding # 244
+        target_size = 256 - 2 * padding # 244
         
-        w_cropped, h_cropped = cropped.size
-        # Calculate scale ratio to fit the canvas while maintaining aspect ratio
-        ratio = min(target_size / w_cropped, target_size / h_cropped)
-        new_w = int(w_cropped * ratio)
-        new_h = int(h_cropped * ratio)
+        ratio = min(target_size / w_crop, target_size / h_crop)
+        new_w = int(w_crop * ratio)
+        new_h = int(h_crop * ratio)
         
-        # Resize using high-quality Lanzcos filter
+        # Resize using LANCZOS downsampling for sharp metallic details
         resized = cropped.resize((new_w, new_h), Image.Resampling.LANCZOS)
         
-        # Create a new, perfectly transparent 256x256 canvas
-        centered_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        final_img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+        ox = (256 - new_w) // 2
+        oy = (256 - new_h) // 2
+        final_img.paste(resized, (ox, oy))
         
-        # Offset to center the resized logo
-        ox = (size - new_w) // 2
-        oy = (size - new_h) // 2
+        # Save PNG target
+        print(f"Saving transparent 3D PNG to: {out_png}")
+        os.makedirs(os.path.dirname(out_png), exist_ok=True)
+        final_img.save(out_png, "PNG")
         
-        # Paste the cropped and scaled logo
-        centered_img.paste(resized, (ox, oy))
-        img = centered_img
-        print(f"Recentered bounding box with 6px padding: {img.getbbox()}")
+        # Save ICO targets
+        sizes = [16, 32, 48, 64, 128, 256]
+        for ico_path in [out_ico, out_ico_desktop]:
+            print(f"Saving transparent 3D ICO to: {ico_path}")
+            os.makedirs(os.path.dirname(ico_path), exist_ok=True)
+            final_img.save(ico_path, format="ICO", sizes=[(s, s) for s in sizes])
+            
+        # 4. Generate Android Adaptive Icon Foreground Layers
+        print("\nGenerating Android multi-density adaptive icon foregrounds...")
+        android_res_path = os.path.join(proj_root, "RemEx.Android", "app", "src", "main", "res")
+        
+        # Build conflict safety: rename old XML foreground to prevent name duplicate conflicts
+        old_vector_fg = os.path.join(android_res_path, "drawable", "ic_launcher_foreground.xml")
+        if os.path.exists(old_vector_fg):
+            backup_vector_fg = os.path.join(android_res_path, "drawable", "ic_launcher_foreground_vector.xml")
+            print(f"Renaming old vector foreground to avoid conflicts: {backup_vector_fg}")
+            if os.path.exists(backup_vector_fg):
+                os.remove(backup_vector_fg)
+            os.rename(old_vector_fg, backup_vector_fg)
+            
+        densities = {
+            "mdpi": 108,
+            "hdpi": 162,
+            "xhdpi": 216,
+            "xxhdpi": 324,
+            "xxxhdpi": 432
+        }
+        
+        for density, s in densities.items():
+            # Target size of logo is 60% of viewport size S to fit within the 66dp safe zone
+            target_s = int(s * 0.60)
+            
+            ratio_a = min(target_s / w_crop, target_s / h_crop)
+            new_wa = int(w_crop * ratio_a)
+            new_ha = int(h_crop * ratio_a)
+            
+            resized_logo_a = cropped.resize((new_wa, new_ha), Image.Resampling.LANCZOS)
+            
+            android_fg = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+            ox_a = (s - new_wa) // 2
+            oy_a = (s - new_ha) // 2
+            android_fg.paste(resized_logo_a, (ox_a, oy_a))
+            
+            out_path = os.path.join(android_res_path, f"drawable-{density}", "ic_launcher_foreground.png")
+            print(f"Saving Android foreground ({density}, {s}x{s}) to: {out_path}")
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            android_fg.save(out_path, "PNG")
+            
+        print("\nPremium 3D icon assets generated successfully for both Desktop and Android!")
+        return True
     else:
-        print("Warning: Bounding box detection failed! No active pixels found.")
-
-    # Save PNG target
-    print(f"Saving vector PNG to: {out_png}")
-    os.makedirs(os.path.dirname(out_png), exist_ok=True)
-    img.save(out_png, "PNG")
-    
-    # Save ICO targets
-    sizes = [16, 32, 48, 64, 128, 256]
-    
-    for ico_path in [out_ico, out_ico_desktop]:
-        print(f"Saving vector ICO to: {ico_path}")
-        os.makedirs(os.path.dirname(ico_path), exist_ok=True)
-        img.save(ico_path, format="ICO", sizes=[(s, s) for s in sizes])
-        
-    print("Vector icon generation and optimization completed successfully!")
+        print("Error: Could not isolate 3D logo from the master brand asset.")
+        return False
 
 if __name__ == "__main__":
+    # Path to the high-fidelity master brand asset generated by the user's session
+    master_path = r"C:\Users\Connor\.gemini\antigravity-cli\brain\264a3c7f-b818-4ea7-8c6f-4ae2e4b15d7b\remex_premium_logo_1780392763742.png"
+    
     # Determine project root based on the script location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     proj_root = os.path.dirname(script_dir)
@@ -179,4 +165,5 @@ if __name__ == "__main__":
     out_png = os.path.join(proj_root, "Remex.Client", "Assets", "icon.png")
     out_ico = os.path.join(proj_root, "Remex.Client", "Assets", "icon.ico")
     out_ico_desktop = os.path.join(proj_root, "Remex.Client.Desktop", "icon.ico")
-    generate_vector_icon(out_png, out_ico, out_ico_desktop)
+    
+    extract_premium_3d_logo(master_path, out_png, out_ico, out_ico_desktop, proj_root)
