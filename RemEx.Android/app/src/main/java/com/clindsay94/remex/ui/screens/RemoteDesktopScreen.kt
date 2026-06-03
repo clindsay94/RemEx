@@ -358,7 +358,7 @@ fun RemoteDesktopScreenContent(
         var showSettings by remember { mutableStateOf(false) }
         // Skip the half-expanded state: in landscape the partial sheet is too short to reveal the
         // input sliders, and the content is scrollable anyway. Always open fully expanded.
-        val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, skipPartiallyExpanded = true)
+        val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
 
         var zoomFactor by remember { mutableFloatStateOf(1f) }
         var panOffsetX by remember { mutableFloatStateOf(0f) }

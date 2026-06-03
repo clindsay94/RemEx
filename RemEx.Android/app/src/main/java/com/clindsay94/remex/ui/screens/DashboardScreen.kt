@@ -541,7 +541,7 @@ fun DashboardScreenContent(
                                                 sheetState =
                                                         rememberBottomSheetState(
                                                                 initialValue = SheetValue.Hidden,
-                                                                skipPartiallyExpanded = true
+                                                                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
                                                         )
                                         ) {
                                                 Column(

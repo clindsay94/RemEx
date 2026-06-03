@@ -211,7 +211,7 @@ fun FileTransferScreenContent(
         val entry = contextMenuEntry!!
         ModalBottomSheet(
                 onDismissRequest = { contextMenuEntry = null },
-                sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, skipPartiallyExpanded = true),
+                sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
         ) {
             Column(modifier = Modifier.padding(bottom = 24.dp)) {
                 Text(

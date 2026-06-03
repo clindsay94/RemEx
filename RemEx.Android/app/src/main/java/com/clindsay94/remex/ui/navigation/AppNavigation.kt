@@ -227,7 +227,7 @@ private fun AppNavigationContent(
         // ─── State ───────────────────────────────────────────────────────────────
         var showExitDialog by rememberSaveable { mutableStateOf(false) }
         var showMoreSheet by remember { mutableStateOf(false) }
-        val moreSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, skipPartiallyExpanded = true)
+        val moreSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
 
         // Close more sheet on route change
         LaunchedEffect(currentRoute) { showMoreSheet = false }
