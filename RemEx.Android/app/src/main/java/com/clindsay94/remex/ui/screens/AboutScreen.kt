@@ -6,10 +6,10 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,9 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
@@ -114,33 +114,21 @@ fun AboutScreenContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Expressive shaped logo badge — Flower shape echoes the dashboard connect orb,
-            // tying the app's new launcher logo into the M3 Expressive shape language.
+            // Squircle logo badge — matches the M3 Expressive launcher icon shape.
             Box(
                     modifier =
                             Modifier.padding(top = 8.dp)
-                                    .size(120.dp)
-                                    .clip(RoundedCornerShape(percent = 30))
+                                    .size(144.dp)
+                                    .clip(RoundedCornerShape(percent = 28))
                                     .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
             ) {
                 Image(
                         painter = painterResource(R.drawable.ic_launcher_foreground),
                         contentDescription = null,
-                        modifier = Modifier.size(132.dp)
+                        modifier = Modifier.size(144.dp)
                 )
             }
-
-            // Wordmark
-            Image(
-                    painter = painterResource(
-                            if (isSystemInDarkTheme()) R.drawable.remex_wordmark_dark
-                            else R.drawable.remex_wordmark_light
-                    ),
-                    contentDescription = stringResource(R.string.app_name),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxWidth(0.72f).padding(vertical = 8.dp)
-            )
 
             Text(
                     text = stringResource(R.string.splash_tagline),
@@ -197,6 +185,53 @@ fun AboutScreenContent(
                                 )
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
+            }
+
+            // What's New Section
+            Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    )
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(
+                                imageVector = Icons.Default.NewReleases,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                                text = stringResource(R.string.about_whats_new_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                        )
+                    }
+                    WhatsNewEntry(
+                            version = stringResource(R.string.about_whats_new_1_label),
+                            body = stringResource(R.string.about_whats_new_1_body)
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    WhatsNewEntry(
+                            version = stringResource(R.string.about_whats_new_2_label),
+                            body = stringResource(R.string.about_whats_new_2_body)
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    WhatsNewEntry(
+                            version = stringResource(R.string.about_whats_new_3_label),
+                            body = stringResource(R.string.about_whats_new_3_body)
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    WhatsNewEntry(
+                            version = stringResource(R.string.about_whats_new_4_label),
+                            body = stringResource(R.string.about_whats_new_4_body)
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    WhatsNewEntry(
+                            version = stringResource(R.string.about_whats_new_5_label),
+                            body = stringResource(R.string.about_whats_new_5_body)
                     )
                 }
             }
@@ -261,6 +296,23 @@ fun AboutScreenContent(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun WhatsNewEntry(version: String, body: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+                text = version,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+                text = body,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

@@ -81,10 +81,14 @@ run_*.txt
 hwinfo_reg.txt
 publish/
 RemEx.Android/app/src/main/jniLibs/
+RemEx.Android/conductor/
 *.agent/*
+
+# AI tool directories
+.gemini/
 .gemini_security/
 .superpowers/
-conductor/
+.antigravitycli/
 
 # Misc
 .gitconfig
@@ -106,23 +110,25 @@ Thumbs.db
 build/tmp-host-verify/
 *.dm
 *.lscache
-*.lscache
-Remex.Client.Desktop/Remex.Client.Desktop.csproj.lscache
+*.xml~
+
+# Planning and review documents
 docs/android-ui-refactor-prd-notes.md
-.gitignore
-.gitignore
 docs/android-ui-refactor-tech.md
 docs/ui-evaluation-report.md
+docs/prd-*.md
+docs/superpowers/
+review-report.md
+
+# Installer output
+/installer/Output/
+/installer/output/
+/build_output/
+
+# Claude agent files
+/.claude/Agents/
+/.claude/skills/
 .claude/settings.local.json
 
-#Installer output
-/installer/output/
-/.claude/Agents
-/.claude/skills
+# Firebase
 RemEx.Android/app/google-services.json
-installer/Output/remex-client-v2.0.0-linux-x64.tar.gz
-installer/Output/remex-host-v2.0.0-linux-x64.tar.gz
-/.claude/skills/gitnexus
-/.claude/skills/gitnexus/gitnexus-cli
-/build_output
-/installer/Output

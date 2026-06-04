@@ -7,9 +7,7 @@ RemEx is a remote access and command execution tool. We take security seriously 
 | Version | Supported          |
 | ------- | ------------------ |
 | 2.0.x   | :white_check_mark: |
-| 1.13.x  | :white_check_mark: (until 2026-10-01) |
-| 1.10.x  | :x:                |
-| < 1.10  | :x:                |
+| < 2.0   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -29,11 +27,11 @@ If you discover a security vulnerability in RemEx, please **do not** open a publ
 
 ### 2.0+ Security Model: TLS + ECDH Pairing
 
-RemEx 2.0 uses **TLS 1.3 with certificate pinning** and **ECDH X25519 key exchange** for secure device pairing:
+RemEx 2.0+ uses **TLS 1.3 with certificate pinning** and **ECDH NIST P-256 key exchange** for secure device pairing:
 
 - **Transport Encryption:** All WebSocket connections use `wss://` (TLS 1.3) with self-signed RSA 2048 certificates generated on first host start
 - **Certificate Pinning:** Clients pin the SHA-256 hash of the host's certificate SPKI (SubjectPublicKeyInfo), preventing man-in-the-middle attacks
-- **Pairing Protocol:** First-time connection requires ECDH X25519 key exchange with a 6-digit PIN displayed on the host (120-second TTL)
+- **Pairing Protocol:** First-time connection requires ECDH NIST P-256 key exchange with a 6-digit PIN displayed on the host (120-second TTL)
 - **Session Key Derivation:** HKDF-SHA256 derives a 32-byte session key from the shared secret, using the certificate SPKI hash as salt
 - **Paired Client Storage:**
   - **.NET Desktop:** `LocalApplicationData/Remex/pinned_hosts.json` (JSON dictionary of hostId → SPKI hash)
@@ -43,7 +41,7 @@ RemEx 2.0 uses **TLS 1.3 with certificate pinning** and **ECDH X25519 key exchan
 
 The TCP command port is now TLS 1.3 encrypted. Access is restricted to clients that have completed a pairing handshake from the same IP address within the last 24 hours. While slightly less granular than the WebSocket pairing, this provides a strong barrier against unauthorized commands.
 
-### 1.x Security Model (Legacy, EOL after 2026-10-01)
+### 1.x Security Model (Legacy, End-of-Life)
 
 **⚠️ 1.x clients will be rejected by 2.0+ hosts.** The old access-key system has been removed:
 - ~~Access keys~~ (removed in 2.0)

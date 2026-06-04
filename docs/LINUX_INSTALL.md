@@ -24,7 +24,7 @@ RemEx talks to the desktop via `xdg-desktop-portal` (RemoteDesktop + ScreenCast)
 | `pipewire` + `wireplumber` | Screen capture stream | Required | `sudo pacman -S pipewire wireplumber` | `sudo apt install pipewire wireplumber` | `sudo dnf install pipewire wireplumber` |
 | `libei` | Wayland-native input injection | Recommended (Wayland) | `sudo pacman -S libei` | `sudo apt install libei1` | `sudo dnf install libei` |
 | `libevdev` | uinput virtual device support | Recommended | `sudo pacman -S libevdev` | `sudo apt install libevdev2` | `sudo dnf install libevdev` |
-| `ffmpeg` | MJPEG fallback encoder | Required for fallback | `sudo pacman -S ffmpeg` | `sudo apt install ffmpeg` | `sudo dnf install ffmpeg` |
+| `ffmpeg` | H.264 hardware encoder (VAAPI/libx264) + MJPEG fallback | Recommended | `sudo pacman -S ffmpeg` | `sudo apt install ffmpeg` | `sudo dnf install ffmpeg` |
 
 Optional but useful (RemEx probes for these at startup and uses whichever is present):
 

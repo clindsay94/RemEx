@@ -49,11 +49,19 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Features"],
             LocalizationService.Instance["About_WhatsNew_Features_Body"]));
-            
+
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Fixes"],
             LocalizationService.Instance["About_WhatsNew_Fixes_Body"]));
-            
+
+        WhatsNewItems.Add(new WhatsNewItem(
+            LocalizationService.Instance["About_WhatsNew_FileTransfer"],
+            LocalizationService.Instance["About_WhatsNew_FileTransfer_Body"]));
+
+        WhatsNewItems.Add(new WhatsNewItem(
+            LocalizationService.Instance["About_WhatsNew_Android"],
+            LocalizationService.Instance["About_WhatsNew_Android_Body"]));
+
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Issues"],
             LocalizationService.Instance["About_WhatsNew_Issues_Body"]));

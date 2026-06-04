@@ -7,24 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.1.0] — 2026-06-02
+## [2.0.0] — 2026-06-02
 
 ### Added
 - Zero-latency hardware-accelerated H.264 video streaming pipeline for remote desktop, utilizing host hardware encoders on Windows/Linux (NVENC, QSV, AMF, VAAPI, libx264) and client hardware decoders (`MediaCodec`) on Android.
 - Universal compatibility fallback that gracefully degrades to the high-performance MJPEG streaming pipeline if FFmpeg or hardware encoders are absent or fail on the host.
 - Zero-latency Annex B packet slicer on the host utilizing Access Unit Delimiter (AUD `0x00 0x00 0x00 0x01 0x09`) markers for sub-millisecond frame slicing.
 - Direct zero-copy surface composition on Android using Compose `AndroidView` interop with `TextureView` and hardware native `Surface` decoding.
-- Native cross-platform clipboard support in the desktop client to copy the canvas dashboard snapshot bitmap directly onto the system clipboard, resolving an outstanding 2.x known limitation.
+- Native cross-platform clipboard support in the desktop client to copy the canvas dashboard snapshot bitmap directly onto the system clipboard.
 - Modernized Android application launcher icon (`ic_launcher` and themed monochrome variant), replacing the generic Android green bot template with a premium cyber-dark grid background and electric-gold lightning bolt foreground vector drawables.
 - Injected a gorgeous high-tech colorful ANSI ASCII startup banner inside the `Remex.Host` initialization sequence to display active ports, host platform details, and startup state beautifully.
 - Implemented a welcome splash screen animation library in the personalization settings, enabling users to choose their preferred boot intro.
 - Designed the cinematic "Cosmic Zoom" splash screen, showcasing a radiating hyperdrive starfield, a slow-zooming stenciled neon letter "R" outline, an instant high-voltage white/cyan screen flash coupled with a physical screen vibration/shudder effect, followed by the gold-orange gradient lightning bolt and full title fade-in materialization.
-
----
-
-## [2.0.0] — 2026-05-15
-
-### Added
 - End-to-end encrypted transport (TLS 1.3 / WSS) for all client-host communication
 - Cryptographic device pairing replacing plaintext access keys (ECDH P-256 + 6-digit PIN)
 - SHA-256 SPKI certificate pinning on client
@@ -151,10 +145,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Status | Release Date | End of Support |
 |---------|--------|--------------|----------------|
-| 2.0.0 | Current | May 15, 2026 | May 15, 2027 |
-| 1.11.0 | Supported | Apr 15, 2026 | Apr 15, 2027 |
-| 1.10.0 | Maintained | Mar 2026 | Mar 2027 |
-| < 1.9.0 | Unsupported | - | - |
+| 2.0.0 | **Current** | Jun 2, 2026 | Jun 2, 2027 |
+| 1.11.0 | Maintained | Apr 15, 2026 | Apr 15, 2027 |
+| < 1.11.0 | Unsupported | - | - |
 
 ---
 

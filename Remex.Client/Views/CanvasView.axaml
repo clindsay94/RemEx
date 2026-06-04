@@ -3,6 +3,7 @@
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:conv="using:Remex.Client.Converters"
     xmlns:local="clr-namespace:Remex.Client.Converters"
+    xmlns:svc="using:Remex.Client.Services"
     xmlns:ctrl="using:Remex.Client.Controls" x:Class="Remex.Client.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
 
     <UserControl.Styles>
@@ -183,7 +184,14 @@
                 <Button Grid.Column="7" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Data="{StaticResource IconImport}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding StagedCards.Count, StringFormat={local:Localize Canvas_Sensors}}" FontSize="12"/>
+                        <TextBlock FontSize="12">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                    <Binding Path="[Canvas_Sensors]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                    <Binding Path="StagedCards.Count"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="8" Classes="back-btn" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">

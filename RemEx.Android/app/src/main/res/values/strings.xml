@@ -323,6 +323,17 @@
     <string name="about_github_star">Follow RemEx on GitHub</string>
     <string name="about_github_cat">Browse releases, report issues, and star the project if RemEx helps you.</string>
     <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
+    <string name="about_whats_new_title">What\'s New in 2.0</string>
+    <string name="about_whats_new_1_label">H.264 Hardware Video</string>
+    <string name="about_whats_new_1_body">Hardware-accelerated remote desktop via NVENC, QSV, AMF, or VAAPI on the host. Decoded with MediaCodec for zero-copy GPU delivery. Falls back to MJPEG automatically when hardware encoders are unavailable.</string>
+    <string name="about_whats_new_2_label">Security &amp; Device Pairing</string>
+    <string name="about_whats_new_2_body">All traffic encrypted with TLS 1.3. First-time pairing uses ECDH P-256 key exchange with a 6-digit PIN — no plaintext keys ever on the wire. Client pins the host\'s SHA-256 certificate fingerprint for future connections.</string>
+    <string name="about_whats_new_3_label">Remote File Transfer</string>
+    <string name="about_whats_new_3_body">Browse the host\'s shared folders and transfer files in either direction with SHA-256 integrity verification. Share your Android folders back to the host. Live progress with cancel support.</string>
+    <string name="about_whats_new_4_label">Android Overhaul</string>
+    <string name="about_whats_new_4_body">Material 3 Expressive with spring physics throughout. 8 Quick Settings tiles for one-tap power commands. Resizable home screen widgets. Two-stage haptic feedback. Target SDK 37 (Android 17).</string>
+    <string name="about_whats_new_5_label">Linux &amp; New Identity</string>
+    <string name="about_whats_new_5_body">First-class Linux support with native PipeWire capture and full Wayland input. New premium launcher icon, Cosmic Zoom boot animation, colorful ANSI startup banner, and canvas clipboard bitmap copy.</string>
     <string name="faq_header">Frequently Asked Questions</string>
     <string name="cd_collapse">Collapse</string>
     <string name="cd_expand">Expand</string>

@@ -1793,22 +1793,34 @@ Linux: ip addr  or  hostname -I</value>
     <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>H.264 Hardware Video</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>TLS 1.3 transport, secure PIN pairing, certificate pinning, remote file transfer, Android shared folders, and Quick Settings tiles</value>
+    <value>Hardware-accelerated remote desktop via NVENC, QSV, AMF, or VAAPI on the host. Android decodes with MediaCodec for zero-copy GPU delivery. Falls back to MJPEG automatically when hardware encoders are unavailable.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Security &amp; Device Pairing</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Linux settings freeze, cross-thread UI updates, pairing persistence, Wayland remote desktop input, S-Pen hover crashes, and sensor alert leaks</value>
+    <value>All traffic is now encrypted with TLS 1.3. First-time pairing uses ECDH P-256 key exchange with a 6-digit PIN — no plaintext keys ever on the wire. The client pins the host's SHA-256 certificate fingerprint for all future connections.</value>
+  </data>
+  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
+    <value>Remote File Transfer</value>
+  </data>
+  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
+    <value>Browse the host's shared folders and transfer files in either direction with SHA-256 integrity verification. Android can share its own folders back to the host. Transfers show live progress with cancel support.</value>
+  </data>
+  <data name="About_WhatsNew_Android" xml:space="preserve">
+    <value>Android Overhaul</value>
+  </data>
+  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
+    <value>Material 3 Expressive with spring physics throughout — list reorder, pull-to-refresh, app tiles, animated gauges. 8 Quick Settings tiles for one-tap power commands. Resizable home screen widgets. Two-stage haptic feedback. Target SDK 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux &amp; New Identity</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Canvas snapshot still copies the saved file path instead of placing the bitmap directly on the clipboard.</value>
+    <value>First-class Linux support with native PipeWire capture, full Wayland input injection, and systemd user service. New premium launcher icon, Cosmic Zoom boot animation, colorful ANSI startup banner, and canvas clipboard bitmap copy.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

@@ -363,4 +363,4 @@ The build system is configured to automatically upload unstripped native symbols
 
 ---
 
-If you encounter issues not covered here, please [open an issue](https://github.com/YourOrg/RemEx/issues) or ask in our community channels.
+If you encounter issues not covered here, please [open an issue](https://github.com/clindsay94/RemEx/issues) or ask in our community channels.
