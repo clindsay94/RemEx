@@ -27,24 +27,24 @@
 
     <Grid RowDefinitions="Auto,*" Margin="40" MaxWidth="1100" HorizontalAlignment="Stretch">
         <!-- Header -->
-        <TextBlock Grid.Row="0" Text="LOGS &amp; DIAGNOSTICS" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,24"/>
+        <TextBlock Grid.Row="0" Text="{local:Localize Logs_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,24"/>
 
         <!-- Main Card -->
         <Border Grid.Row="1" Classes="glass-card" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <TabControl Theme="{StaticResource TabControlTheme}">
                 <!-- Tab 1: Live App Logs -->
-                <TabItem Header="Live Application Logs">
+                <TabItem Header="{local:Localize Logs_LiveTab}">
                     <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
                         <!-- Toolbar -->
                         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,16">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <TextBlock Text="Verbosity Filter:" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Logs_VerbosityFilter}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                 <ComboBox ItemsSource="{Binding VerbosityLevels}" SelectedItem="{Binding SelectedVerbosity}" Width="150" CornerRadius="8" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10">
-                                <Button Classes="log-btn" Content="Refresh" Command="{Binding RefreshLogsCommand}"/>
-                                <Button Classes="log-btn" Content="Clear Logs" Command="{Binding ClearLogsCommand}" Foreground="{DynamicResource SystemErrorBrush}"/>
+                                <Button Classes="log-btn" Content="{local:Localize Logs_Refresh}" Command="{Binding RefreshLogsCommand}"/>
+                                <Button Classes="log-btn" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}" Foreground="{DynamicResource SystemErrorBrush}"/>
                             </StackPanel>
                         </Grid>
 
@@ -67,12 +67,12 @@
                 </TabItem>
 
                 <!-- Tab 2: Service Logs -->
-                <TabItem Header="Background Service Logs">
+                <TabItem Header="{local:Localize Logs_ServiceTab}">
                     <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
                         <!-- Toolbar -->
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
-                            <TextBlock Grid.Column="0" Text="Latest event logs query from Windows Event Viewer or Linux systemd journal." FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Classes="log-btn" Content="Query Service Logs" Command="{Binding FetchServiceLogsCommand}"/>
+                            <TextBlock Grid.Column="0" Text="{local:Localize Logs_ServiceDesc}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="log-btn" Content="{local:Localize Logs_QueryService}" Command="{Binding FetchServiceLogsCommand}"/>
                         </Grid>
 
                         <!-- Terminal Output -->

@@ -133,7 +133,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
 
     val apps = allApps.filter { it.path in selectedPaths }.sortedBy { it.order }
 
-    val outerPadding = 8.dp
+    val outerPadding = 6.dp
     val availableWidth = (size.width - (outerPadding * 2)).coerceAtLeast(0.dp)
     val availableHeight = (size.height - (outerPadding * 2)).coerceAtLeast(0.dp)
 
@@ -143,11 +143,17 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
         else -> 42.dp
     }
 
-    val itemPadding = 4.dp
+    // Tighter gutters so icons breathe without wasting space.
+    val itemPadding = 2.dp
     val cellSize = iconSize + (itemPadding * 2)
+    // Each Row also adds 1.dp of vertical padding top+bottom (see below).
+    val rowStride = cellSize + 2.dp
 
-    val columns = (availableWidth / cellSize).toInt().coerceAtLeast(1)
-    val maxRows = (availableHeight / cellSize).toInt().coerceAtLeast(1)
+    // Fit a near-complete extra column/row instead of dropping it: any overflow up
+    // to a cell's own padding (itemPadding on each edge) is absorbed by the outer
+    // cells' padding, so icons never clip even when we round up to the edge.
+    val columns = ((availableWidth + itemPadding * 2) / cellSize).toInt().coerceAtLeast(1)
+    val maxRows = ((availableHeight + itemPadding * 2) / rowStride).toInt().coerceAtLeast(1)
     val maxItems = columns * maxRows
     val visibleApps = apps.take(maxItems)
 

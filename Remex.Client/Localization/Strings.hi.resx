@@ -1871,4 +1871,103 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
   </data>
+  <data name="Canvas_Undo" xml:space="preserve">
+    <value>पूर्ववत करें</value>
+  </data>
+  <data name="Canvas_Redo" xml:space="preserve">
+    <value>पुनः करें</value>
+  </data>
+  <data name="Canvas_ResetView" xml:space="preserve">
+    <value>दृश्य रीसेट करें</value>
+  </data>
+  <data name="Canvas_Map" xml:space="preserve">
+    <value>नक्शा</value>
+  </data>
+  <data name="Canvas_Export" xml:space="preserve">
+    <value>निर्यात करें</value>
+  </data>
+  <data name="Canvas_Copy" xml:space="preserve">
+    <value>कॉपी करें</value>
+  </data>
+  <data name="CommandPalette_NoCommands" xml:space="preserve">
+    <value>आपकी खोज से कोई कमांड मेल नहीं खाती।</value>
+  </data>
+  <data name="Custom_Square" xml:space="preserve">
+    <value>वर्गाकार</value>
+  </data>
+  <data name="Custom_Round" xml:space="preserve">
+    <value>गोलाकार</value>
+  </data>
+  <data name="Custom_Clear" xml:space="preserve">
+    <value>पारदर्शी</value>
+  </data>
+  <data name="Custom_Frosted" xml:space="preserve">
+    <value>धुंधला</value>
+  </data>
+  <data name="Custom_GlowNone" xml:space="preserve">
+    <value>कोई नहीं</value>
+  </data>
+  <data name="Custom_GlowIntense" xml:space="preserve">
+    <value>तीव्र</value>
+  </data>
+  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
+    <value>कस्टम रंग जोड़ें</value>
+  </data>
+  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
+    <value>कस्टम एक्सेंट रंग</value>
+  </data>
+  <data name="Custom_SchemeVariant" xml:space="preserve">
+    <value>स्कीम संस्करण</value>
+  </data>
+  <data name="Custom_SplashScreen" xml:space="preserve">
+    <value>स्प्लैश स्क्रीन</value>
+  </data>
+  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
+    <value>हार्डवेयर सिंक</value>
+  </data>
+  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
+    <value>भौतिक RGB के साथ एक्सेंट रंग सिंक करें</value>
+  </data>
+  <data name="Common_On" xml:space="preserve">
+    <value>चालू</value>
+  </data>
+  <data name="Common_Off" xml:space="preserve">
+    <value>बंद</value>
+  </data>
+  <data name="Logs_Header" xml:space="preserve">
+    <value>लॉग और डायग्नोस्टिक्स</value>
+  </data>
+  <data name="Logs_LiveTab" xml:space="preserve">
+    <value>लाइव एप्लिकेशन लॉग</value>
+  </data>
+  <data name="Logs_VerbosityFilter" xml:space="preserve">
+    <value>वर्बोसिटी फ़िल्टर:</value>
+  </data>
+  <data name="Logs_Refresh" xml:space="preserve">
+    <value>ताज़ा करें</value>
+  </data>
+  <data name="Logs_Clear" xml:space="preserve">
+    <value>लॉग साफ़ करें</value>
+  </data>
+  <data name="Logs_ServiceTab" xml:space="preserve">
+    <value>पृष्ठभूमि सेवा लॉग</value>
+  </data>
+  <data name="Logs_ServiceDesc" xml:space="preserve">
+    <value>विंडोज इवेंट व्यूअर या लिनक्स सिस्टमडी जर्नल से नवीनतम इवेंट लॉग क्वेरी।</value>
+  </data>
+  <data name="Logs_QueryService" xml:space="preserve">
+    <value>सेवा लॉग क्वेरी करें</value>
+  </data>
+  <data name="RemoteDesktop_Display" xml:space="preserve">
+    <value>डिस्प्ले</value>
+  </data>
+  <data name="RemoteDesktop_Switch" xml:space="preserve">
+    <value>बदलें</value>
+  </data>
+  <data name="RemoteDesktop_Low" xml:space="preserve">
+    <value>कम</value>
+  </data>
+  <data name="RemoteDesktop_High" xml:space="preserve">
+    <value>उच्च</value>
+  </data>
 </root>

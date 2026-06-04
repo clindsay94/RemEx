@@ -1871,4 +1871,103 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
   </data>
+  <data name="Canvas_Undo" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
+  <data name="Canvas_Redo" xml:space="preserve">
+    <value>Повторити</value>
+  </data>
+  <data name="Canvas_ResetView" xml:space="preserve">
+    <value>Скинути вигляд</value>
+  </data>
+  <data name="Canvas_Map" xml:space="preserve">
+    <value>Карта</value>
+  </data>
+  <data name="Canvas_Export" xml:space="preserve">
+    <value>Експорт</value>
+  </data>
+  <data name="Canvas_Copy" xml:space="preserve">
+    <value>Копіювати</value>
+  </data>
+  <data name="CommandPalette_NoCommands" xml:space="preserve">
+    <value>Не знайдено команд, що відповідають вашому запиту.</value>
+  </data>
+  <data name="Custom_Square" xml:space="preserve">
+    <value>Квадратний</value>
+  </data>
+  <data name="Custom_Round" xml:space="preserve">
+    <value>Круглий</value>
+  </data>
+  <data name="Custom_Clear" xml:space="preserve">
+    <value>Прозорий</value>
+  </data>
+  <data name="Custom_Frosted" xml:space="preserve">
+    <value>Матовий</value>
+  </data>
+  <data name="Custom_GlowNone" xml:space="preserve">
+    <value>Немає</value>
+  </data>
+  <data name="Custom_GlowIntense" xml:space="preserve">
+    <value>Інтенсивний</value>
+  </data>
+  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
+    <value>Додати власний колір</value>
+  </data>
+  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
+    <value>Власний колір акценту</value>
+  </data>
+  <data name="Custom_SchemeVariant" xml:space="preserve">
+    <value>Варіант схеми</value>
+  </data>
+  <data name="Custom_SplashScreen" xml:space="preserve">
+    <value>Заставка</value>
+  </data>
+  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
+    <value>Синхронізація апаратного забезпечення</value>
+  </data>
+  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
+    <value>Синхронізувати колір акценту з фізичним RGB</value>
+  </data>
+  <data name="Common_On" xml:space="preserve">
+    <value>Увімк.</value>
+  </data>
+  <data name="Common_Off" xml:space="preserve">
+    <value>Вимк.</value>
+  </data>
+  <data name="Logs_Header" xml:space="preserve">
+    <value>ЛОГИ ТА ДІАГНОСТИКА</value>
+  </data>
+  <data name="Logs_LiveTab" xml:space="preserve">
+    <value>Логи програми в реальному часі</value>
+  </data>
+  <data name="Logs_VerbosityFilter" xml:space="preserve">
+    <value>Фільтр деталізації:</value>
+  </data>
+  <data name="Logs_Refresh" xml:space="preserve">
+    <value>Оновити</value>
+  </data>
+  <data name="Logs_Clear" xml:space="preserve">
+    <value>Очистити логи</value>
+  </data>
+  <data name="Logs_ServiceTab" xml:space="preserve">
+    <value>Логи фонової служби</value>
+  </data>
+  <data name="Logs_ServiceDesc" xml:space="preserve">
+    <value>Останній запит логів подій з Windows Event Viewer або журналу systemd в Linux.</value>
+  </data>
+  <data name="Logs_QueryService" xml:space="preserve">
+    <value>Запитати логи служби</value>
+  </data>
+  <data name="RemoteDesktop_Display" xml:space="preserve">
+    <value>Екран</value>
+  </data>
+  <data name="RemoteDesktop_Switch" xml:space="preserve">
+    <value>Перемкнути</value>
+  </data>
+  <data name="RemoteDesktop_Low" xml:space="preserve">
+    <value>Низька</value>
+  </data>
+  <data name="RemoteDesktop_High" xml:space="preserve">
+    <value>Висока</value>
+  </data>
 </root>

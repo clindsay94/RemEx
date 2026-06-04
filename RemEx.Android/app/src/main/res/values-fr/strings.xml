@@ -63,7 +63,7 @@
     <string name="tutorial_page1_body">RemEx est votre centre de commande pour la gestion de PC à distance. Contrôlez votre ordinateur, lancez des applications, surveillez les performances et visualisez même votre bureau — le tout depuis votre téléphone.\n\nConnectons-nous en quelques étapes rapides.</string>
 
     <string name="tutorial_page2_title">Installez d\'abord l\'Hôte</string>
-    <string name="tutorial_page2_body">Avant de pouvoir vous connecter, vous avez besoin du logiciel hôte RemEx s\'exécutant sur votre PC.\n\nOption 1 — Client de Bureau RemEx\nTéléchargez et exécutez Remex.Client.Desktop sur votre PC. Il intègre l\'hôte automatiquement — lancez-le simplement et l\'hôte démarrera en arrière-plan.\n\nOption 2 — RemEx Host (autonome)\nInstallez et exécutez Remex.Host en tant que service autonome. C\'est idéal pour les serveurs sans écran ou si vous n\'avez besoin que de l\'hôte.\n\nLes deux sont autonomes — aucune bibliothèque supplémentaire n\'est requise. Téléchargez le dernier dossier de publication depuis la page des versions GitHub, extrayez et exécutez.</string>
+    <string name="tutorial_page2_body">Avant de vous connecter, votre PC a besoin de l\'hôte RemEx s\'exécutant.\n\n• Option 1 : Client de bureau (Recommandé) — Intègre l\'hôte et s\'exécute dans la barre système.\n• Option 2 : Hôte autonome — Service uniquement en arrière-plan, idéal pour les serveurs.\n\nTéléchargez la dernière version sur GitHub et lancez-la avant le jumelage.</string>
     <string name="tutorial_page2_link_label">Télécharger depuis GitHub Releases</string>
 
     <string name="tutorial_page3_title">Découverte Automatique</string>

@@ -63,7 +63,7 @@
     <string name="tutorial_page1_body">RemEx to Twoje centrum dowodzenia zdalnym zarządzaniem PC. Steruj komputerem, uruchamiaj aplikacje, monitoruj wydajność, a nawet wyświetlaj pulpit — wszystko z telefonu.\n\nPołączmy się w kilku prostych krokach.</string>
 
     <string name="tutorial_page2_title">Najpierw zainstaluj Host</string>
-    <string name="tutorial_page2_body">Zanim się połączysz, potrzebujesz oprogramowania hosta RemEx uruchomionego na komputerze.\n\nOpcja 1 — Klient desktopowy RemEx\nPobierz i uruchom Remex.Client.Desktop na PC. Zawiera on hosta automatycznie — po prostu go uruchom, a host wystartuje w tle.\n\nOpcja 2 — RemEx Host (samodzielny)\nZainstaluj i uruchom Remex.Host jako samodzielną usługę. To idealne rozwiązanie dla serwerów bezmonitorowych lub jeśli potrzebujesz tylko hosta.\n\nOba programy są samowystarczalne — nie wymagają dodatkowych bibliotek. Pobierz najnowszy folder z publikacją ze strony wydań GitHub, rozpakuj i uruchom.</string>
+    <string name="tutorial_page2_body">Zanim się połączysz, Twój komputer potrzebuje uruchomionego hosta RemEx.\n\n• Opcja 1: Klient desktopowy (Zalecany) — Zawiera hosta i działa w zasobniku systemowym.\n• Opcja 2: Samodzielny host — Usługa działająca wyłącznie w tle, idealna dla serwerów.\n\nPobierz najnowsze wydanie z GitHuba i uruchom je przed parowaniem.</string>
     <string name="tutorial_page2_link_label">Pobierz z wydań GitHub</string>
 
     <string name="tutorial_page3_title">Automatyczne wykrywanie</string>

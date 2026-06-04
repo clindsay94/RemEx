@@ -62,9 +62,9 @@
     <string name="tutorial_page1_title">Welcome to RemEx</string>
     <string name="tutorial_page1_body">RemEx is your remote PC management command center. Control your computer, launch apps, monitor performance, and even view your desktop — all from your phone.\n\nLet\'s get you connected in a few quick steps.</string>
 
-    <string name="tutorial_page2_title">Install the Host First</string>
-    <string name="tutorial_page2_body">Before you can connect, you need the RemEx host software running on your PC.\n\nOption 1 — RemEx Desktop Client\nDownload and run Remex.Client.Desktop on your PC. It bundles the host automatically — just launch it and the host starts in the background.\n\nOption 2 — RemEx Host (standalone)\nInstall and run Remex.Host as a standalone service. This is ideal for headless servers or if you only need the host.\n\nBoth are self-contained — no extra runtimes needed. Download the latest publish folder from the GitHub releases page, extract, and run.</string>
-    <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
+    <string name="tutorial_page2_title">Önce Host Yazılımını Kurun</string>
+    <string name="tutorial_page2_body">Bağlanmadan önce, bilgisayarınızda RemEx host yazılımının çalışıyor olması gerekir.\n\n• Seçenek 1: Masaüstü İstemcisi (Önerilen) — Host yazılımını paket halinde sunar ve sistem tepsisinde çalışır.\n• Seçenek 2: Bağımsız Host — Sadece arka planda çalışan servis, sunucular için idealdir.\n\nGitHub\'dan en son sürümü indirin ve eşleştirmeden önce çalıştırın.</string>
+    <string name="tutorial_page2_link_label">GitHub Sürümlerinden İndir</string>
 
     <string name="tutorial_page3_title">Auto-Discovery</string>
     <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure Remex.Client.Desktop or Remex.Host is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. Tap \'Discover Automatically\' on the Connection screen\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>

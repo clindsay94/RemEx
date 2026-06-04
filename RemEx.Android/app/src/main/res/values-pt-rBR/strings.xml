@@ -63,7 +63,7 @@
     <string name="tutorial_page1_body">O RemEx é o seu centro de comando para gerenciamento remoto de PC. Controle seu computador, inicie aplicativos, monitore o desempenho e até visualize sua área de trabalho — tudo pelo celular.\n\nVamos conectá-lo em alguns passos rápidos.</string>
 
     <string name="tutorial_page2_title">Instale o Host Primeiro</string>
-    <string name="tutorial_page2_body">Antes de se conectar, você precisa do software host do RemEx rodando no seu PC.\n\nOpção 1 — Cliente Desktop RemEx\nBaixe e execute o Remex.Client.Desktop no seu PC. Ele inclui o host automaticamente — basta iniciá-lo e o host começará a rodar em segundo plano.\n\nOpção 2 — RemEx Host (autônomo)\nInstale e execute o Remex.Host como um serviço autônomo. Isso é ideal para servidores sem monitor ou se você precisar apenas do host.\n\nAmbos são independentes — sem necessidade de runtimes extras. Baixe a pasta de publicação mais recente na página de lançamentos do GitHub, extraia e execute.</string>
+    <string name="tutorial_page2_body">Antes de se conectar, seu PC precisa do host do RemEx rodando.\n\n• Opção 1: Cliente Desktop (Recomendado) — Inclui o host e roda na bandeja do sistema.\n• Opção 2: Host Autônomo — Serviço apenas em segundo plano, ideal para servidores.\n\nBaixe a versão mais recente do GitHub e execute-a antes de parear.</string>
     <string name="tutorial_page2_link_label">Baixar dos Lançamentos do GitHub</string>
 
     <string name="tutorial_page3_title">Descoberta Automática</string>

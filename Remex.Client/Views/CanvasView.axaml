@@ -159,13 +159,13 @@
                 <Button Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="Undo (Ctrl+Z)" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="Undo" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                        <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="4" Classes="back-btn" Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="Redo" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                        <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="5" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
@@ -183,31 +183,31 @@
                 <Button Grid.Column="7" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Data="{StaticResource IconImport}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding StagedCards.Count, StringFormat=Sensors ({0})}" FontSize="12"/>
+                        <TextBlock Text="{Binding StagedCards.Count, StringFormat={local:Localize Canvas_Sensors}}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="8" Classes="back-btn" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
-                        <TextBlock Text="Reset View" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_ResetView}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="9" Classes="back-btn" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="Toggle Minimap">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="&#9741;" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Text="Map" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Map}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <!-- P8-I: Snapshot export -->
                 <Button Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="Save canvas as PNG to Pictures folder" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
-                        <TextBlock Text="Export" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Export}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
                     <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="Copy snapshot image directly to clipboard" Padding="8,4">
-                        <TextBlock Text="Copy" FontSize="12"/>
+                        <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
                     </Button>
                     <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="#4ADE80" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
                 </StackPanel>

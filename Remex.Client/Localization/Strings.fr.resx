@@ -1871,4 +1871,103 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
   </data>
+  <data name="Canvas_Undo" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Canvas_Redo" xml:space="preserve">
+    <value>Rétablir</value>
+  </data>
+  <data name="Canvas_ResetView" xml:space="preserve">
+    <value>Réinitialiser la vue</value>
+  </data>
+  <data name="Canvas_Map" xml:space="preserve">
+    <value>Carte</value>
+  </data>
+  <data name="Canvas_Export" xml:space="preserve">
+    <value>Exporter</value>
+  </data>
+  <data name="Canvas_Copy" xml:space="preserve">
+    <value>Copier</value>
+  </data>
+  <data name="CommandPalette_NoCommands" xml:space="preserve">
+    <value>Aucune commande ne correspond à votre recherche.</value>
+  </data>
+  <data name="Custom_Square" xml:space="preserve">
+    <value>Carré</value>
+  </data>
+  <data name="Custom_Round" xml:space="preserve">
+    <value>Arrondi</value>
+  </data>
+  <data name="Custom_Clear" xml:space="preserve">
+    <value>Transparent</value>
+  </data>
+  <data name="Custom_Frosted" xml:space="preserve">
+    <value>Dépoli</value>
+  </data>
+  <data name="Custom_GlowNone" xml:space="preserve">
+    <value>Aucun</value>
+  </data>
+  <data name="Custom_GlowIntense" xml:space="preserve">
+    <value>Intense</value>
+  </data>
+  <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
+    <value>Ajouter une couleur personnalisée</value>
+  </data>
+  <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
+    <value>Couleur d'accentuation personnalisée</value>
+  </data>
+  <data name="Custom_SchemeVariant" xml:space="preserve">
+    <value>Variante de schéma</value>
+  </data>
+  <data name="Custom_SplashScreen" xml:space="preserve">
+    <value>Écran de démarrage</value>
+  </data>
+  <data name="Custom_HardwareSyncTitle" xml:space="preserve">
+    <value>Synchro matérielle</value>
+  </data>
+  <data name="Custom_HardwareSyncDesc" xml:space="preserve">
+    <value>Synchroniser la couleur d'accentuation avec le RGB physique</value>
+  </data>
+  <data name="Common_On" xml:space="preserve">
+    <value>Activé</value>
+  </data>
+  <data name="Common_Off" xml:space="preserve">
+    <value>Désactivé</value>
+  </data>
+  <data name="Logs_Header" xml:space="preserve">
+    <value>JOURNAUX ET DIAGNÓSTICS</value>
+  </data>
+  <data name="Logs_LiveTab" xml:space="preserve">
+    <value>Journaux d'application en direct</value>
+  </data>
+  <data name="Logs_VerbosityFilter" xml:space="preserve">
+    <value>Filtro de verbosité :</value>
+  </data>
+  <data name="Logs_Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="Logs_Clear" xml:space="preserve">
+    <value>Effacer les journaux</value>
+  </data>
+  <data name="Logs_ServiceTab" xml:space="preserve">
+    <value>Journaux des services en arrière-plan</value>
+  </data>
+  <data name="Logs_ServiceDesc" xml:space="preserve">
+    <value>Dernière requête de journaux d'événements depuis l'Observateur d'événements Windows ou le journal systemd Linux.</value>
+  </data>
+  <data name="Logs_QueryService" xml:space="preserve">
+    <value>Interroger les journaux de service</value>
+  </data>
+  <data name="RemoteDesktop_Display" xml:space="preserve">
+    <value>Affichage</value>
+  </data>
+  <data name="RemoteDesktop_Switch" xml:space="preserve">
+    <value>Basculer</value>
+  </data>
+  <data name="RemoteDesktop_Low" xml:space="preserve">
+    <value>Basse</value>
+  </data>
+  <data name="RemoteDesktop_High" xml:space="preserve">
+    <value>Haute</value>
+  </data>
 </root>

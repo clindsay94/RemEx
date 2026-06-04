@@ -63,7 +63,7 @@
     <string name="tutorial_page1_body">RemEx is your remote PC management command center. Control your computer, launch apps, monitor performance, and even view your desktop — all from your phone.\n\nLet\'s get you connected in a few quick steps.</string>
 
     <string name="tutorial_page2_title">Install the Host First</string>
-    <string name="tutorial_page2_body">Before you can connect, your PC needs the RemEx host running.\n\nOption 1 — RemEx Desktop Client\nInstall the desktop client on your PC. It bundles the host automatically, so launching the client also brings the host online in the background.\n\nOption 2 — RemEx Host\nInstall the standalone host if you want a background-only setup for a server or shared PC.\n\nGrab the latest release from GitHub, install it on your PC, and keep it running before you pair from Android.</string>
+    <string name="tutorial_page2_body">Before connecting, your PC needs the RemEx host running.\n\n• Option 1: Desktop Client (Recommended) — Bundles the host and runs in the system tray.\n• Option 2: Standalone Host — Background-only service, ideal for servers.\n\nGrab the latest release from GitHub and run it before pairing.</string>
     <string name="tutorial_page2_link_label">Download from GitHub Releases</string>
 
     <string name="tutorial_page3_title">Auto-Discovery</string>
@@ -344,7 +344,7 @@
     <string name="faq_a5">When you connect to a PC for the first time, you must enter the 6-digit PIN displayed on the PC. This creates a secure, encrypted bond between the devices. You won\'t need to enter the PIN again unless you reset the connection or reinstall the app.</string>
 
     <string name="faq_q6">Can I connect over the internet (not just LAN)?</string>
-    <string name="faq_a6">RemEx is designed for local network (LAN) use. To connect over the internet you would need to set up port forwarding on your router for port 5005 (or whichever port you use) and use your public IP address.\n\nImportant: Exposing the port to the internet is a security risk. A VPN is the recommended approach for remote access.</string>
+    <string name="faq_a6">Yes — securely, using Tailscale (recommended). Tailscale builds a private, end-to-end encrypted network between your devices (using WireGuard®), so this app can reach your PC from anywhere — cellular data, work Wi-Fi, a coffee shop — with no router setup and nothing exposed to the public internet.\n\nSee the next question, \'How do I set up secure remote access with Tailscale?\', for step-by-step instructions.\n\nNot recommended: you could instead forward a port on your router to your public IP, but that exposes your PC to the internet and is a real security risk. Use Tailscale (or another VPN such as WireGuard) instead.</string>
 
     <string name="faq_q7">Remote Desktop is laggy or not working. What can I do?</string>
     <string name="faq_a7">• Lower the Quality slider in Connection → Remote Desktop Defaults.\n• Reduce the Target FPS (15–20 FPS is sufficient for most use cases).\n• Lower the Scale to reduce the resolution being streamed.\n• Make sure your PC supports the screen capture backend: DXGI on Windows, X11/Wayland on Linux.\n• Check that you\'re on a fast, local Wi-Fi network (5 GHz preferred).</string>
@@ -357,6 +357,9 @@
 
     <string name="faq_q10">Can I re-watch the tutorial?</string>
     <string name="faq_a10">Yes! Go to Settings from the overflow menu (⋮ → Settings). There you\'ll find an option to replay the tutorial at any time.</string>
+
+    <string name="faq_q11">How do I set up secure remote access with Tailscale?</string>
+    <string name="faq_a11">Tailscale lets you reach your PC from anywhere — securely, with no port-forwarding and nothing exposed to the public internet. It\'s free for personal use.\n\n1. On your PC (the host):\n• Windows: install Tailscale from tailscale.com/download/windows, then sign in.\n• Linux: the RemEx host installer can set it up for you, or run:\n   curl -fsSL https://tailscale.com/install.sh | sh\n   sudo tailscale up\n\n2. On this phone:\n• Install Tailscale from the Google Play Store.\n• Sign in with the SAME account you used on your PC.\n• Turn the Tailscale VPN switch ON.\n\n3. Find your PC\'s Tailscale IP:\n• In the Tailscale app (or the admin console at login.tailscale.com), find your PC and copy its IP. It starts with 100. — for example 100.101.102.103.\n\n4. Connect in RemEx:\n• Open the Connection screen and connect manually to that 100.x.y.z address using the RemEx port (default 5005).\n• Pair with the PIN the first time, exactly like on your home network.\n\nThat\'s it — RemEx now works from anywhere, fully encrypted.\n\nTip: auto-discovery only works on your local network, so over Tailscale always connect by entering the 100.x.y.z IP manually.</string>
 
     <!-- ═══ Personalization Screen ═══ -->
     <string name="screen_personalization_title">Personalization</string>

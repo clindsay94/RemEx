@@ -85,7 +85,7 @@
 
                     <!-- Right: Settings -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <TextBlock Text="Display" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize RemoteDesktop_Display}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                         <ComboBox ItemsSource="{Binding AvailableDisplayTargets}"
                                   SelectedItem="{Binding SelectedDisplayTarget}"
                                   MinWidth="220"
@@ -98,13 +98,13 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <Button Content="Refresh"
+                        <Button Content="{local:Localize Logs_Refresh}"
                                 Command="{Binding RefreshDisplayTargetsCommand}"
                                 Classes="rd-btn"
                                 FontSize="11"
                                 Padding="10 6"
                                 IsEnabled="{Binding !IsStreaming}"/>
-                        <Button Content="Switch"
+                        <Button Content="{local:Localize RemoteDesktop_Switch}"
                                 Command="{Binding SwitchDisplayCommand}"
                                 Classes="rd-btn"
                                 FontSize="11"
@@ -117,8 +117,8 @@
                         <StackPanel Spacing="1" VerticalAlignment="Center">
                             <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
                             <Grid ColumnDefinitions="*,*" Width="80">
-                                <TextBlock Text="Low" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
-                                <TextBlock Grid.Column="1" Text="High" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                <TextBlock Text="{local:Localize RemoteDesktop_Low}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Column="1" Text="{local:Localize RemoteDesktop_High}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
                             </Grid>
                         </StackPanel>
                         <TextBlock Text="{Binding Quality, StringFormat={}{0}%}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Width="32" VerticalAlignment="Center"/>

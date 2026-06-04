@@ -359,41 +359,41 @@ private fun TutorialPageContent(
                         modifier = Modifier.size(168.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
             // Animated line illustration on a soft expressive tonal backdrop.
             page.illustration != TutorialIllustration.NONE -> {
                 Box(
                     modifier = Modifier
-                        .size(200.dp)
+                        .size(180.dp)
                         .clip(RoundedCornerShape(percent = 35))
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.size(150.dp)) {
+                    Canvas(modifier = Modifier.size(135.dp)) {
                         drawIllustration(
                             page.illustration, primary, secondary, onBg, pulse, rotation
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
             // Emoji pages (e.g. battery) get the same friendly tonal badge.
             else -> {
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
+                        .size(140.dp)
                         .clip(RoundedCornerShape(percent = 35))
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = page.emoji, fontSize = 72.sp)
+                    Text(text = page.emoji, fontSize = 64.sp)
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
 
@@ -405,7 +405,7 @@ private fun TutorialPageContent(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = stringResource(page.bodyRes),
@@ -417,7 +417,7 @@ private fun TutorialPageContent(
 
         if (page.batteryAction && page.actionLabelRes != null) {
             val context = LocalContext.current
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                 intent.data = Uri.parse("package:" + context.packageName)
@@ -428,7 +428,7 @@ private fun TutorialPageContent(
         }
 
         if (page.linkLabelRes != null && page.linkUrl != null) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             val linkColor = MaterialTheme.colorScheme.primary
             val linkLabel = stringResource(page.linkLabelRes)

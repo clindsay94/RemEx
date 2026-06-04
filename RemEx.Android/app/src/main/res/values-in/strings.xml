@@ -63,7 +63,7 @@
     <string name="tutorial_page1_body">RemEx adalah pusat komando manajemen PC jarak jauh Anda. Kendalikan komputer, luncurkan aplikasi, pantau performa, dan bahkan lihat desktop Anda — semuanya dari ponsel Anda.\n\nMari hubungkan Anda dalam beberapa langkah cepat.</string>
 
     <string name="tutorial_page2_title">Instal Host Terlebih Dahulu</string>
-    <string name="tutorial_page2_body">Sebelum dapat terhubung, Anda memerlukan perangkat lunak host RemEx yang berjalan di PC Anda.\n\nOpsi 1 — Klien Desktop RemEx\nUnduh dan jalankan Remex.Client.Desktop di PC Anda. Ini membundel host secara otomatis — cukup luncurkan dan host akan berjalan di latar belakang.\n\nOpsi 2 — RemEx Host (mandiri)\nInstal dan jalankan Remex.Host sebagai layanan mandiri. Ini ideal untuk server headless atau jika Anda hanya membutuhkan host.\n\nKeduanya bersifat mandiri — tidak perlu runtime tambahan. Unduh folder publikasi terbaru dari halaman rilis GitHub, ekstrak, dan jalankan.</string>
+    <string name="tutorial_page2_body">Sebelum terhubung, PC Anda memerlukan host RemEx yang berjalan.\n\n• Opsi 1: Klien Desktop (Direkomendasikan) — Membundel host dan berjalan di baki sistem.\n• Opsi 2: Host Mandiri — Layanan latar belakang saja, ideal untuk server.\n\nUnduh rilis terbaru dari GitHub dan jalankan sebelum menyandingkan.</string>
     <string name="tutorial_page2_link_label">Unduh dari Rilis GitHub</string>
 
     <string name="tutorial_page3_title">Penemuan Otomatis</string>

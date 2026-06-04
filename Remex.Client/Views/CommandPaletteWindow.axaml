@@ -3,7 +3,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:Remex.Client.ViewModels"
-    xmlns:models="using:Remex.Client.Models" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Client.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="Command Palette" Width="540" MaxHeight="480" SizeToContent="Height" SystemDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
+    xmlns:models="using:Remex.Client.Models"
+    xmlns:local="clr-namespace:Remex.Client.Converters" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Client.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="Command Palette" Width="540" MaxHeight="480" SizeToContent="Height" SystemDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Escape" Command="{Binding DismissCommand}" />
@@ -53,7 +54,7 @@
             </ListBox>
 
             <!-- Empty state -->
-            <TextBlock x:Name="EmptyStateText" IsVisible="{Binding IsEmpty}" Text="No commands match your search." HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" Margin="0,12,0,4" />
+            <TextBlock x:Name="EmptyStateText" IsVisible="{Binding IsEmpty}" Text="{local:Localize CommandPalette_NoCommands}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" Margin="0,12,0,4" />
 
         </StackPanel>
     </Border>

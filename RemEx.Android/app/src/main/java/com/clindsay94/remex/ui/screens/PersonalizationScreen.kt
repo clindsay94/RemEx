@@ -1,8 +1,11 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Activity
+import android.app.LocaleManager
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.Build
+import android.os.LocaleList
 import android.view.HapticFeedbackConstants
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.*
@@ -277,16 +280,26 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
 
-                    val currentLocales = AppCompatDelegate.getApplicationLocales()
-                    val currentLangTag =
-                            if (currentLocales.isEmpty) {
-                                "system"
-                            } else {
-                                when (currentLocales[0]?.toLanguageTag()) {
-                                    "in", "id" -> "id"
-                                    else -> currentLocales[0]?.toLanguageTag() ?: "system"
-                                }
+                    val currentLangTag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val localeManager = view.context.getSystemService(LocaleManager::class.java)
+                        val appLocales = localeManager?.applicationLocales
+                        if (appLocales == null || appLocales.isEmpty) {
+                            "system"
+                        } else {
+                            val tag = appLocales.get(0).toLanguageTag()
+                            if (tag == "in" || tag == "id") "id" else tag
+                        }
+                    } else {
+                        val currentLocales = AppCompatDelegate.getApplicationLocales()
+                        if (currentLocales.isEmpty) {
+                            "system"
+                        } else {
+                            when (currentLocales[0]?.toLanguageTag()) {
+                                "in", "id" -> "id"
+                                else -> currentLocales[0]?.toLanguageTag() ?: "system"
                             }
+                        }
+                    }
 
                     val supportedLanguages =
                             listOf(
@@ -374,17 +387,20 @@ fun PersonalizationScreenContent(
                                                     HapticFeedbackConstants.KEYBOARD_TAP
                                             )
                                             expanded = false
-                                            val locales = if (tag == "system") {
-                                                LocaleListCompat.getEmptyLocaleList()
+                                            val tags = if (tag == "system") "" else tag
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                val lm = view.context.getSystemService(LocaleManager::class.java)
+                                                if (lm != null) {
+                                                    lm.applicationLocales =
+                                                        if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
+                                                        else LocaleList.forLanguageTags(tags)
+                                                }
                                             } else {
-                                                LocaleListCompat.forLanguageTags(tag)
+                                                val locales = if (tags.isEmpty()) LocaleListCompat.getEmptyLocaleList()
+                                                              else LocaleListCompat.forLanguageTags(tags)
+                                                AppCompatDelegate.setApplicationLocales(locales)
+                                                view.context.findActivity()?.recreate()
                                             }
-                                            AppCompatDelegate.setApplicationLocales(locales)
-                                            // MainActivity is a ComponentActivity, so force a
-                                            // recreate after changing locales to guarantee the
-                                            // new Resources configuration is applied immediately
-                                            // across all supported Android versions.
-                                            view.context.findActivity()?.recreate()
                                         }
                                 )
                             }
