@@ -97,6 +97,7 @@ versionName=2.0.0
 ```
 
 Use `.\gradlew remexPublishRelease` from the `RemEx.Android/` directory to auto-increment these values and prepare a release build.
+Use `.\gradlew remexFreshAssembleRelease` from the `RemEx.Android/` directory to build a release build without incrementing version.
 
 ---
 
