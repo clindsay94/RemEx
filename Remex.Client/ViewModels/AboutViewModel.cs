@@ -99,6 +99,9 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         FaqItems.Add(new FaqItem(
             LocalizationService.Instance["Faq_Q10_Question"],
             LocalizationService.Instance["Faq_Q10_Answer"]));
+        FaqItems.Add(new FaqItem(
+            LocalizationService.Instance["Faq_Q11_Question"],
+            LocalizationService.Instance["Faq_Q11_Answer"]));
     }
 
     [RelayCommand]

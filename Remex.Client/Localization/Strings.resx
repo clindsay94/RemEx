@@ -1857,7 +1857,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Can I connect over the internet?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx is designed for local network (LAN) use. For secure remote access from anywhere, we recommend Tailscale — a zero-configuration WireGuard® VPN that connects your devices without port forwarding or exposing your PC to the internet. Port forwarding is not recommended for security reasons.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
     <value>Remote Desktop is laggy. What can I do?</value>
@@ -1882,6 +1882,12 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes. Use the Remote Control screen or command palette on desktop, or add the Lock PC Quick Settings tile on Android for one-tap access.</value>
+  </data>
+  <data name="Faq_Q11_Question" xml:space="preserve">
+    <value>How do I set up Tailscale for remote access?</value>
+  </data>
+  <data name="Faq_Q11_Answer" xml:space="preserve">
+    <value>1. Install Tailscale on your PC: tailscale.com/download (Windows) or run: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Sign in and connect: follow the browser prompt (Windows) or run: sudo tailscale up (Linux).\n3. Install Tailscale on Android from the Play Store and sign in with the same account.\n4. Find your PC's Tailscale IP (starts with 100.x.y.z) in the Tailscale app or at login.tailscale.com.\n5. Enter that IP in RemEx's Connection screen — you can now connect securely from anywhere.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Undo</value>
