@@ -40,7 +40,7 @@
             <!-- Header -->
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="REMEX LIVE" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
+                    <TextBlock Text="{local:Localize Tray_LiveHeader}" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
                     <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" FontWeight="SemiBold"/>
                 </StackPanel>
                 <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0">

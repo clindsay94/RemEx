@@ -36,6 +36,7 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
@@ -43,20 +44,20 @@ import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 
-data class WidgetRemoteCommand(val id: String, val title: String, val action: String)
+data class WidgetRemoteCommand(val id: String, val titleRes: Int, val action: String)
 
 val WIDGET_REMOTE_COMMANDS = listOf(
-    WidgetRemoteCommand("wake", "Wake PC", "WakeOnLan"),
-    WidgetRemoteCommand("lock", "Lock PC", "Lock"),
-    WidgetRemoteCommand("shutdown", "Shutdown", "Shutdown"),
-    WidgetRemoteCommand("restart", "Restart", "Restart"),
-    WidgetRemoteCommand("uefi", "UEFI Reboot", "RestartToUefi"),
-    WidgetRemoteCommand("force_shutdown", "Force Off", "ForceShutdown"),
-    WidgetRemoteCommand("force_restart", "Force Restart", "ForceRestart"),
-    WidgetRemoteCommand("sleep", "Sleep", "Sleep"),
-    WidgetRemoteCommand("hibernate", "Hibernate", "Hibernate"),
-    WidgetRemoteCommand("monitor_off", "Monitor Off", "MonitorOff"),
-    WidgetRemoteCommand("logoff", "Log Off", "SignOut"),
+    WidgetRemoteCommand("wake", R.string.rc_wake_pc, "WakeOnLan"),
+    WidgetRemoteCommand("lock", R.string.rc_lock_pc, "Lock"),
+    WidgetRemoteCommand("shutdown", R.string.rc_shutdown, "Shutdown"),
+    WidgetRemoteCommand("restart", R.string.rc_restart, "Restart"),
+    WidgetRemoteCommand("uefi", R.string.rc_reboot_uefi, "RestartToUefi"),
+    WidgetRemoteCommand("force_shutdown", R.string.rc_force_shutdown, "ForceShutdown"),
+    WidgetRemoteCommand("force_restart", R.string.rc_force_restart, "ForceRestart"),
+    WidgetRemoteCommand("sleep", R.string.rc_sleep, "Sleep"),
+    WidgetRemoteCommand("hibernate", R.string.rc_hibernate, "Hibernate"),
+    WidgetRemoteCommand("monitor_off", R.string.rc_monitor_off, "MonitorOff"),
+    WidgetRemoteCommand("logoff", R.string.rc_logoff, "SignOut"),
 )
 
 val SELECTED_COMMANDS_KEY = stringPreferencesKey("selected_commands")
@@ -77,6 +78,7 @@ class RemoteControlWidget : GlanceAppWidget() {
 
 @Composable
 private fun RemoteControlContent() {
+    val context = androidx.glance.LocalContext.current
     val prefs = currentState<Preferences>()
     val selectedStr = prefs[SELECTED_COMMANDS_KEY] ?: ""
     val selectedIds = selectedStr.split(",").filter { it.isNotBlank() }.toSet()
@@ -93,7 +95,7 @@ private fun RemoteControlContent() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Tap to open RemEx",
+                context.getString(R.string.widget_tap_to_open),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
@@ -131,7 +133,7 @@ private fun RemoteControlContent() {
     ) {
         if (showTitle) {
             Text(
-                "Remote Control",
+                context.getString(R.string.screen_remote_control_title),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontWeight = FontWeight.Bold,
@@ -163,7 +165,7 @@ private fun RemoteControlContent() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            cmd.title,
+                            context.getString(cmd.titleRes),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimaryContainer,
                                 fontSize = if (itemWidth >= 100.dp) 12.sp else 10.sp,
@@ -188,10 +190,10 @@ class RemoteCommandCallback : ActionCallback {
         parameters: ActionParameters
     ) {
         val action = parameters[COMMAND_ACTION_PARAM] ?: return
-        val title = WIDGET_REMOTE_COMMANDS.firstOrNull { it.action == action }?.title ?: "Command"
+        val title = WIDGET_REMOTE_COMMANDS.firstOrNull { it.action == action }?.titleRes?.let { context.getString(it) } ?: "Command"
 
         if (!RemexCoreClient.isLibraryLoaded) {
-            widgetToast(context, "RemEx isn't ready yet — open the app")
+            widgetToast(context, context.getString(R.string.widget_toast_remex_not_ready))
             return
         }
 
@@ -202,14 +204,14 @@ class RemoteCommandCallback : ActionCallback {
             val mac = settings.macAddressFlow.first()
             val broadcast = settings.broadcastIpFlow.first()
             if (mac.isBlank()) {
-                widgetToast(context, "Set your PC's MAC address in RemEx first")
+                widgetToast(context, context.getString(R.string.widget_toast_set_mac))
                 return
             }
             RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
-            widgetToast(context, "Wake-on-LAN sent")
+            widgetToast(context, context.getString(R.string.widget_toast_wol_sent))
         } else {
             if (!RemexClientManager.isConnected.value) {
-                widgetToast(context, "Not connected — open RemEx to connect")
+                widgetToast(context, context.getString(R.string.widget_toast_not_connected))
                 return
             }
             val request = JSONObject().apply {
@@ -217,7 +219,7 @@ class RemoteCommandCallback : ActionCallback {
                 put("parameters", JSONObject())
             }
             RemexCoreClient.SendCommand(request.toString()).getOrNull()
-            widgetToast(context, "$title sent")
+            widgetToast(context, context.getString(R.string.widget_toast_command_sent, title))
         }
     }
 }

@@ -157,13 +157,13 @@
                 <Button Classes="back-btn" Content="{local:Localize Canvas_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" IsHitTestVisible="False" Background="Transparent"/>
                 <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <Button Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="Undo (Ctrl+Z)" Margin="0,0,4,0">
+                <Button Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="4" Classes="back-btn" Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)" Margin="0,0,4,0">
+                <Button Grid.Column="4" Classes="back-btn" Command="{Binding RedoCommand}" ToolTip.Tip="{local:Localize Canvas_RedoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
@@ -200,21 +200,21 @@
                         <TextBlock Text="{local:Localize Canvas_ResetView}" FontSize="12"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="9" Classes="back-btn" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="Toggle Minimap">
+                <Button Grid.Column="9" Classes="back-btn" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="&#9741;" FontSize="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Map}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <!-- P8-I: Snapshot export -->
-                <Button Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="Save canvas as PNG to Pictures folder" Margin="0,0,4,0">
+                <Button Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Export}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
-                    <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="Copy snapshot image directly to clipboard" Padding="8,4">
+                    <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
                         <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
                     </Button>
                     <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="#4ADE80" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
@@ -249,11 +249,11 @@
                                     <ctrl:DraggableCard.ContextMenu>
                                         <ContextMenu IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
                                             <MenuItem Header="{local:Localize Canvas_GraphType}">
-                                                <MenuItem Header="Auto (smart)" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto"/>
-                                                <MenuItem Header="Bar ▮▮▮" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar"/>
-                                                <MenuItem Header="Line ╱╲╱" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
-                                                <MenuItem Header="Area ▓▓▓" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
-                                                <MenuItem Header="Gauge ━━━" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphSmart}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphBar}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphLine}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphArea}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphGauge}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
                                             </MenuItem>
                                             <Separator/>
                                             <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding TogglePinToHomeCommand}">
@@ -262,7 +262,7 @@
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                             <Separator/>
-                                            <MenuItem Header="Set Alert..." Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).SetAlertCommand}" CommandParameter="{Binding}"/>
+                                            <MenuItem Header="{local:Localize Canvas_SetAlert}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).SetAlertCommand}" CommandParameter="{Binding}"/>
 
                                         </ContextMenu>
                                     </ctrl:DraggableCard.ContextMenu>

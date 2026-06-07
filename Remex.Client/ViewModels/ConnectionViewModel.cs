@@ -314,7 +314,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to start embedded pairing session.");
-                StatusText = "Failed to generate pairing PIN";
+                StatusText = LocalizationService.Instance["Status_FailedGeneratePin"];
             }
         }
         // 2. If standalone host query service is active, request it over IPC
@@ -332,18 +332,18 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 }
                 else
                 {
-                    StatusText = "Failed to generate pairing PIN from host service";
+                    StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to start standalone pairing session.");
-                StatusText = "Failed to generate pairing PIN from host service";
+                StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
             }
         }
         else
         {
-            StatusText = "Pairing service is unavailable";
+            StatusText = LocalizationService.Instance["Status_PairingServiceUnavailable"];
         }
     }
 
@@ -670,7 +670,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 .Cast<ValidationResult>()
                 .Select(e => e.ErrorMessage)
                 .FirstOrDefault();
-            StatusText = errors ?? "Invalid connection settings";
+            StatusText = errors ?? LocalizationService.Instance["Status_InvalidSettings"];
             return;
         }
 
@@ -700,14 +700,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
             if (!_isPairedWithCurrentHost)
             {
-                StatusText = LocalizationService.Instance["Status_Pairing"] ?? "Pairing with Host...";
+                StatusText = LocalizationService.Instance["Status_Pairing"];
                 var certStore = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
                 var pairingClient = new Remex.Core.Native.PairingClient(_webSocket, null);
 
                 var response = await pairingClient.StartPairingAsync(Environment.MachineName, "2.0.0", linkedCts.Token);
                 if (response == null)
                 {
-                    StatusText = "Pairing Failed";
+                    StatusText = LocalizationService.Instance["Status_PairingFailed"];
                     Cleanup();
                     return;
                 }
@@ -715,7 +715,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 var pin = await PromptForPinAsync();
                 if (string.IsNullOrEmpty(pin))
                 {
-                    StatusText = "Pairing Cancelled";
+                    StatusText = LocalizationService.Instance["Status_PairingCancelled"];
                     Cleanup();
                     return;
                 }
@@ -723,7 +723,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 var success = await pairingClient.CompletePairingAsync(pin, response, linkedCts.Token);
                 if (!success)
                 {
-                    StatusText = "Pairing Failed";
+                    StatusText = LocalizationService.Instance["Status_PairingFailed"];
                     Cleanup();
                     return;
                 }
@@ -987,7 +987,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             _logger.LogError(ex, "Failed to deserialize message from host");
             Dispatcher.UIThread.Post(() =>
             {
-                StatusText = "Error: Invalid message format from host";
+                StatusText = string.Format(LocalizationService.Instance["Status_ErrorFormat"], LocalizationService.Instance["Status_InvalidMessageFormat"]);
             });
         }
         catch (IOException ex)
@@ -1245,7 +1245,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Failed to serialize QR code payload");
-            StatusText = "Error: Invalid QR code data";
+            StatusText = string.Format(LocalizationService.Instance["Status_ErrorFormat"], LocalizationService.Instance["Status_InvalidQrData"]);
             ShowQrCode = false;
         }
         catch (ArgumentException ex)

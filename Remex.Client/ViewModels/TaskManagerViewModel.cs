@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Remex.Client.Services;
 
 namespace Remex.Client.ViewModels;
 
@@ -126,7 +127,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         if (!resp.Success)
         {
             KillError = string.IsNullOrWhiteSpace(resp.Message)
-                ? $"Failed to kill process {process.Id}."
+                ? string.Format(LocalizationService.Instance["TaskManager_KillFailed"], process.Id)
                 : resp.Message;
             System.Diagnostics.Debug.WriteLine($"Kill process failed: {KillError}");
         }

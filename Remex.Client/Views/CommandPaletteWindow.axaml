@@ -4,7 +4,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:Remex.Client.ViewModels"
     xmlns:models="using:Remex.Client.Models"
-    xmlns:local="clr-namespace:Remex.Client.Converters" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Client.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="Command Palette" Width="540" MaxHeight="480" SizeToContent="Height" SystemDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
+    xmlns:local="clr-namespace:Remex.Client.Converters" mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="400" x:Class="Remex.Client.Views.CommandPaletteWindow" x:DataType="vm:CommandPaletteViewModel" Title="{local:Localize CommandPalette_Title}" Width="540" MaxHeight="480" SizeToContent="Height" SystemDecorations="None" Background="{DynamicResource GlassBaseDarkBrush}" WindowStartupLocation="CenterOwner" CanResize="False" Topmost="True" ShowInTaskbar="False" TransparencyLevelHint="AcrylicBlur">
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Escape" Command="{Binding DismissCommand}" />
@@ -17,7 +17,7 @@
             <!-- Search Box -->
             <Grid ColumnDefinitions="Auto, *" Margin="16,16,16,8">
                 <TextBlock Grid.Column="0" Text="🔍" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding SearchText}" Watermark="Search commands…" FontSize="15" Background="Transparent" BorderThickness="0" Padding="0" CaretBrush="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding SearchText}" Watermark="{local:Localize CommandPalette_SearchWatermark}" FontSize="15" Background="Transparent" BorderThickness="0" Padding="0" CaretBrush="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <!-- Divider -->

@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Client.Models;
+using Remex.Client.Services;
 
 namespace Remex.Client.ViewModels;
 
@@ -63,32 +64,32 @@ public partial class CommandPaletteViewModel : ObservableObject
 
     private static CommandPaletteEntry[] BuildEntries(ShellViewModel shell) =>
     [
-        new("Home",                    "Navigate", shell.NavigateToHomeCommand),
-        new("Sensor Canvas",           "Navigate", shell.NavigateToCanvasCommand),
-        new("Remote Control",          "Navigate", shell.NavigateToRemoteCommand),
-        new("App Launcher",            "Navigate", shell.NavigateToAppLauncherCommand),
-        new("Task Manager",            "Navigate", shell.NavigateToTaskManagerCommand),
-        new("Remote Desktop",          "Navigate", shell.NavigateToRemoteDesktopCommand),
-        new("File Transfer",           "Navigate", shell.NavigateToFileTransferCommand),
-        new("Settings",                "Navigate", shell.ToggleSettingsPanelCommand),
-        new("Toggle Settings Panel",   "Interface", shell.ToggleSettingsPanelCommand),
-        new("Close Settings Panel",    "Interface", shell.CloseSettingsPanelCommand),
-        new("Toggle Navigation Drawer","Interface", shell.ToggleDrawerCommand),
-        new("Undo Canvas Edit",        "Canvas",   shell.CanvasUndoCommand),
-        new("Redo Canvas Edit",        "Canvas",   shell.CanvasRedoCommand),
-        new("Dismiss Connection Banner","Status",   shell.DismissConnectionBannerCommand),
-        new("About & What's New",      "Help",     shell.NavigateToAboutCommand),
-        new("Tutorial & Glossary",     "Help",     shell.ReplayTutorialCommand),
-        new("Lock PC",                 "Power",    shell.Connection.LockCommand),
-        new("Sleep PC",                "Power",    shell.Connection.SleepCommand),
-        new("Hibernate PC",            "Power",    shell.Connection.HibernateCommand),
-        new("Sign Out PC",             "Power",    shell.Connection.SignOutCommand),
-        new("Shutdown PC",             "Power",    shell.Connection.ShutdownCommand),
-        new("Force Shutdown PC",       "Power",    shell.Connection.ForceShutdownCommand),
-        new("Restart PC",              "Power",    shell.Connection.RestartCommand),
-        new("Restart PC to UEFI",      "Power",    shell.Connection.RestartToUefiCommand),
-        new("Wake on LAN",             "Power",    shell.Connection.WakeOnLanCommand),
-        new("Disconnect",              "Connection", shell.Connection.DisconnectCommand),
-        new("Connect",                 "Connection", shell.Connection.ConnectCommand),
+        new(LocalizationService.Instance["Palette_Home"],                    LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToHomeCommand),
+        new(LocalizationService.Instance["Palette_SensorCanvas"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToCanvasCommand),
+        new(LocalizationService.Instance["Palette_RemoteControl"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteCommand),
+        new(LocalizationService.Instance["Palette_AppLauncher"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToAppLauncherCommand),
+        new(LocalizationService.Instance["Palette_TaskManager"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToTaskManagerCommand),
+        new(LocalizationService.Instance["Palette_RemoteDesktop"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteDesktopCommand),
+        new(LocalizationService.Instance["Palette_FileTransfer"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToFileTransferCommand),
+        new(LocalizationService.Instance["Palette_Settings"],                LocalizationService.Instance["PaletteCategory_Navigate"], shell.ToggleSettingsPanelCommand),
+        new(LocalizationService.Instance["Palette_ToggleSettingsPanel"],   LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleSettingsPanelCommand),
+        new(LocalizationService.Instance["Palette_CloseSettingsPanel"],    LocalizationService.Instance["PaletteCategory_Interface"], shell.CloseSettingsPanelCommand),
+        new(LocalizationService.Instance["Palette_ToggleNavigationDrawer"],LocalizationService.Instance["PaletteCategory_Interface"], shell.ToggleDrawerCommand),
+        new(LocalizationService.Instance["Palette_UndoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasUndoCommand),
+        new(LocalizationService.Instance["Palette_RedoCanvasEdit"],        LocalizationService.Instance["PaletteCategory_Canvas"],   shell.CanvasRedoCommand),
+        new(LocalizationService.Instance["Palette_DismissConnectionBanner"],LocalizationService.Instance["PaletteCategory_Status"],   shell.DismissConnectionBannerCommand),
+        new(LocalizationService.Instance["Palette_AboutWhatsNew"],      LocalizationService.Instance["PaletteCategory_Help"],     shell.NavigateToAboutCommand),
+        new(LocalizationService.Instance["Palette_TutorialGlossary"],     LocalizationService.Instance["PaletteCategory_Help"],     shell.ReplayTutorialCommand),
+        new(LocalizationService.Instance["Palette_LockPc"],                 LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.LockCommand),
+        new(LocalizationService.Instance["Palette_SleepPc"],                LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.SleepCommand),
+        new(LocalizationService.Instance["Palette_HibernatePc"],            LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.HibernateCommand),
+        new(LocalizationService.Instance["Palette_SignOutPc"],             LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.SignOutCommand),
+        new(LocalizationService.Instance["Palette_ShutdownPc"],             LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.ShutdownCommand),
+        new(LocalizationService.Instance["Palette_ForceShutdownPc"],       LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.ForceShutdownCommand),
+        new(LocalizationService.Instance["Palette_RestartPc"],              LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.RestartCommand),
+        new(LocalizationService.Instance["Palette_RestartPcToUefi"],      LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.RestartToUefiCommand),
+        new(LocalizationService.Instance["Palette_WakeOnLan"],             LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.WakeOnLanCommand),
+        new(LocalizationService.Instance["Palette_Disconnect"],              LocalizationService.Instance["PaletteCategory_Connection"], shell.Connection.DisconnectCommand),
+        new(LocalizationService.Instance["Palette_Connect"],                 LocalizationService.Instance["PaletteCategory_Connection"], shell.Connection.ConnectCommand),
     ];
 }

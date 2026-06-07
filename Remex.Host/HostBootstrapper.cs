@@ -254,6 +254,59 @@ public static class HostBootstrapper
             });
         });
 
+        // Returns the active pairing PIN so remote tools (MCP, scripts) can relay it
+        // to a user who cannot see the host screen. Only returns when a session is live;
+        // 404 means no pairing is in progress. The PIN itself is already visible on the
+        // host UI, so exposing it here adds no new attack surface for local-network threats.
+        app.MapGet("/pairing-pin", (IPairingService pairingService) =>
+        {
+            if (pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
+            {
+                return Results.Ok(new { pin, expiresAtUnixMs });
+            }
+            return Results.NotFound(new { message = "No active pairing session." });
+        });
+
+        // Proactively starts a pairing session and returns the PIN immediately.
+        // Designed for remote workflows where the user cannot see the host screen:
+        // call this endpoint first, get the PIN, then have the user tap Connect on Android.
+        // When Android sends pairing_request, the host reuses this already-active session.
+        app.MapPost("/start-pairing", async (Remex.Host.Services.Security.PairingService pairingService) =>
+        {
+            try
+            {
+                var acquisition = await pairingService.AcquirePairingSessionAsync(CancellationToken.None);
+                if (pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
+                {
+                    return Results.Ok(new { pin, expiresAtUnixMs, startedNew = acquisition.StartedNewSession });
+                }
+                return Results.Problem("Session created but PIN could not be read.");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        // Exposes the in-process log buffer for remote diagnostics.
+        app.MapGet("/debug/logs", () =>
+        {
+            var entries = Remex.Core.Logging.InMemoryLogSink.GetEntries();
+            return Results.Ok(entries.Select(e => e.ToString()).ToArray());
+        });
+
+        // Serves the latest debug APK over HTTPS so remote users don't need the plain-HTTP server.
+        app.MapGet("/download/apk", async (HttpContext context) =>
+        {
+            var apkPath = @"Z:\RemEx\RemEx.Android\app\build\outputs\apk\debug\RemEx-V2.0.0-debug.apk";
+            if (!File.Exists(apkPath))
+                return Results.NotFound(new { message = "APK not found on host." });
+            context.Response.Headers.ContentDisposition = "attachment; filename=\"RemEx-V2.0.0-debug.apk\"";
+            context.Response.ContentType = "application/vnd.android.package-archive";
+            await context.Response.SendFileAsync(apkPath);
+            return Results.Empty;
+        });
+
         // WebSocket hub
         app.Map(RemexConstants.WebSocketPath, async (HttpContext context) =>
         {

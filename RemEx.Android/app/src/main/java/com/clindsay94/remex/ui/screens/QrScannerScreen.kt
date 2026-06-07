@@ -192,56 +192,55 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                         scannedOnce.value = true
                                                                         scope.launch {
                                                                             try {
-                                                                                if (spkiHash.isBlank()
-                                                                                ) {
-                                                                                    throw IllegalStateException(
-                                                                                            "QR code is missing the host certificate hash"
-                                                                                    )
-                                                                                }
+                                                                                 if (spkiHash.isBlank()
+                                                                                 ) {
+                                                                                     errorMessage = context.getString(R.string.qr_error_missing_hash)
+                                                                                     scannedOnce.value = false
+                                                                                     return@launch
+                                                                                 }
 
-                                                                                if (!hostId.isNullOrBlank()
-                                                                                ) {
-                                                                                    RemexCoreClient
-                                                                                            .SetPinnedHostHash(
-                                                                                                    hostId,
-                                                                                                    spkiHash
-                                                                                            )
-                                                                                    PinnedHostStore
-                                                                                            .setPin(
-                                                                                                    context,
-                                                                                                    hostId,
-                                                                                                    spkiHash
-                                                                                            )
-                                                                                }
+                                                                                 if (!hostId.isNullOrBlank()
+                                                                                 ) {
+                                                                                     RemexCoreClient
+                                                                                             .SetPinnedHostHash(
+                                                                                                     hostId,
+                                                                                                     spkiHash
+                                                                                             )
+                                                                                     PinnedHostStore
+                                                                                             .setPin(
+                                                                                                     context,
+                                                                                                     hostId,
+                                                                                                     spkiHash
+                                                                                             )
+                                                                                 }
 
-                                                                                RemexCoreClient
-                                                                                        .SetPinnedHostHash(
-                                                                                                host,
-                                                                                                spkiHash
-                                                                                        )
-                                                                                PinnedHostStore
-                                                                                        .setPin(
-                                                                                                context,
-                                                                                                host,
-                                                                                                spkiHash
-                                                                                        )
-                                                                                errorMessage =
-                                                                                        null
-                                                                                onScanned(
-                                                                                        host,
-                                                                                        port,
-                                                                                        pin
-                                                                                )
-                                                                            } catch (
-                                                                                    e:
-                                                                                            Exception) {
-                                                                                errorMessage =
-                                                                                        e.message
-                                                                                                ?: "QR setup failed"
-                                                                                scannedOnce
-                                                                                        .value =
-                                                                                        false
-                                                                            }
+                                                                                 RemexCoreClient
+                                                                                         .SetPinnedHostHash(
+                                                                                                 host,
+                                                                                                 spkiHash
+                                                                                         )
+                                                                                 PinnedHostStore
+                                                                                         .setPin(
+                                                                                                 context,
+                                                                                                 host,
+                                                                                                 spkiHash
+                                                                                         )
+                                                                                 errorMessage =
+                                                                                         null
+                                                                                 onScanned(
+                                                                                         host,
+                                                                                         port,
+                                                                                         pin
+                                                                                 )
+                                                                             } catch (
+                                                                                     e:
+                                                                                             Exception) {
+                                                                                 errorMessage =
+                                                                                         e.message ?: context.getString(R.string.qr_error_setup_failed)
+                                                                                 scannedOnce
+                                                                                         .value =
+                                                                                         false
+                                                                             }
                                                                         }
                                                                     }
                                                                 }

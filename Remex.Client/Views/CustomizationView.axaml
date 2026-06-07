@@ -81,11 +81,11 @@
                 <StackPanel Spacing="20">
                     <TextBlock Text="{local:Localize Custom_AdvancedTuning}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Customize default border corner roundedness for general dashboard cards and panels">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusGeneralTooltip}">
                         <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Border corner radius in pixels"/>
+                                <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="200" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}"/>
                                 <Grid ColumnDefinitions="*,*" Width="200">
                                     <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -95,19 +95,19 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Customize border corner roundedness specifically for remote control action keys">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusRemoteTooltip}">
                         <TextBlock Text="{local:Localize Custom_RemoteCardShape}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                            <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Remote button corner radius in pixels"/>
+                            <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="200" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusRemotePixelsTooltip}"/>
                             <TextBlock Text="{Binding RemoteCardCornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Adjust visual opacity blend level of premium glassmorphism background effect">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_GlassOpacityTooltip}">
                         <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Glass frosting opacity percentage"/>
+                                <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="200" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_GlassFrostingOpacityPercentTooltip}"/>
                                 <Grid ColumnDefinitions="*,*" Width="200">
                                     <TextBlock Text="{local:Localize Custom_Clear}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="{local:Localize Custom_Frosted}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -117,11 +117,11 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Adjust background accent neon aura glow intensity around panel edges">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_NeonGlowTooltip}">
                         <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center" ToolTip.Tip="Neon glow thickness/spread in pixels"/>
+                                <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="200" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_NeonGlowThicknessPixelsTooltip}"/>
                                 <Grid ColumnDefinitions="*,*" Width="200">
                                     <TextBlock Text="{local:Localize Custom_GlowNone}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                     <TextBlock Grid.Column="1" Text="{local:Localize Custom_GlowIntense}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -133,15 +133,15 @@
 
                     <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Select color palette theme highlights">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_SelectColorPaletteTooltip}">
                         <TextBlock Text="{local:Localize Custom_AccentColor}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="Select Neon Violet accent color theme"/>
-                            <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="Select Cyber Cyan accent color theme"/>
-                            <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="Select Hot Pink/Magenta accent color theme"/>
-                            <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="Select Solar Gold/Amber accent color theme"/>
-                            <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="Select Emerald Green accent color theme"/>
-                            <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="Select Crimson Rose accent color theme"/>
+                            <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="{local:Localize Custom_SelectNeonVioletTooltip}"/>
+                            <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="{local:Localize Custom_SelectCyberCyanTooltip}"/>
+                            <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="{local:Localize Custom_SelectHotPinkTooltip}"/>
+                            <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="{local:Localize Custom_SelectSolarGoldTooltip}"/>
+                            <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="{local:Localize Custom_SelectEmeraldGreenTooltip}"/>
+                            <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="{local:Localize Custom_SelectCrimsonRoseTooltip}"/>
 
                             <!-- Saved custom swatches -->
                             <ItemsControl ItemsSource="{Binding CustomAccentColors}">
@@ -197,7 +197,7 @@
                         <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="200"/>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Select the style of startup welcome splash screen sequence animation">
+                    <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_WelcomeSplashTooltip}">
                         <TextBlock Text="{local:Localize Custom_SplashScreen}" VerticalAlignment="Center"/>
                         <ComboBox Grid.Column="1" SelectedItem="{Binding SplashStyle}" ItemsSource="{Binding AvailableSplashStyles}" HorizontalAlignment="Left" Width="200"/>
                     </Grid>

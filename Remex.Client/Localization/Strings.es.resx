@@ -1989,4 +1989,544 @@ Chrome)</value>
   <data name="RemoteDesktop_High" xml:space="preserve">
     <value>Alto</value>
   </data>
+  <data name="Status_InvalidMessageFormat" xml:space="preserve">
+    <value>Formato de mensaje no válido del host</value>
+  </data>
+  <data name="Status_InvalidQrData" xml:space="preserve">
+    <value>Datos de código QR no válidos</value>
+  </data>
+  <data name="Settings_SelectHostTitle" xml:space="preserve">
+    <value>Seleccionar Remex.Host.exe</value>
+  </data>
+  <data name="Settings_ExecutableFileFilter" xml:space="preserve">
+    <value>Ejecutable</value>
+  </data>
+  <data name="Palette_Home" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="PaletteCategory_Navigate" xml:space="preserve">
+    <value>Navegar</value>
+  </data>
+  <data name="Palette_SensorCanvas" xml:space="preserve">
+    <value>Lienzo de Sensores</value>
+  </data>
+  <data name="Palette_RemoteControl" xml:space="preserve">
+    <value>Control Remoto</value>
+  </data>
+  <data name="Palette_AppLauncher" xml:space="preserve">
+    <value>Lanzador de Aplicaciones</value>
+  </data>
+  <data name="Palette_TaskManager" xml:space="preserve">
+    <value>Administrador de Tareas</value>
+  </data>
+  <data name="Palette_RemoteDesktop" xml:space="preserve">
+    <value>Escritorio Remoto</value>
+  </data>
+  <data name="Palette_FileTransfer" xml:space="preserve">
+    <value>Transferencia de Archivos</value>
+  </data>
+  <data name="Palette_Settings" xml:space="preserve">
+    <value>Configuración</value>
+  </data>
+  <data name="Palette_ToggleSettingsPanel" xml:space="preserve">
+    <value>Alternar Panel de Configuración</value>
+  </data>
+  <data name="PaletteCategory_Interface" xml:space="preserve">
+    <value>Interfaz</value>
+  </data>
+  <data name="Palette_CloseSettingsPanel" xml:space="preserve">
+    <value>Cerrar Panel de Configuración</value>
+  </data>
+  <data name="Palette_ToggleNavigationDrawer" xml:space="preserve">
+    <value>Alternar Cajón de Navegación</value>
+  </data>
+  <data name="Palette_UndoCanvasEdit" xml:space="preserve">
+    <value>Deshacer Edición de Lienzo</value>
+  </data>
+  <data name="PaletteCategory_Canvas" xml:space="preserve">
+    <value>Lienzo</value>
+  </data>
+  <data name="Palette_RedoCanvasEdit" xml:space="preserve">
+    <value>Rehacer Edición de Lienzo</value>
+  </data>
+  <data name="Palette_DismissConnectionBanner" xml:space="preserve">
+    <value>Descartar Banner de Conexión</value>
+  </data>
+  <data name="PaletteCategory_Status" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+  <data name="Palette_AboutWhatsNew" xml:space="preserve">
+    <value>Acerca de y Novedades</value>
+  </data>
+  <data name="PaletteCategory_Help" xml:space="preserve">
+    <value>Ayuda</value>
+  </data>
+  <data name="Palette_TutorialGlossary" xml:space="preserve">
+    <value>Tutorial y Glosario</value>
+  </data>
+  <data name="Palette_LockPc" xml:space="preserve">
+    <value>Bloquear PC</value>
+  </data>
+  <data name="PaletteCategory_Power" xml:space="preserve">
+    <value>Energía</value>
+  </data>
+  <data name="Palette_SleepPc" xml:space="preserve">
+    <value>Suspender PC</value>
+  </data>
+  <data name="Palette_HibernatePc" xml:space="preserve">
+    <value>Hibernar PC</value>
+  </data>
+  <data name="Palette_SignOutPc" xml:space="preserve">
+    <value>Cerrar Sesión de PC</value>
+  </data>
+  <data name="Palette_ShutdownPc" xml:space="preserve">
+    <value>Apagar PC</value>
+  </data>
+  <data name="Palette_ForceShutdownPc" xml:space="preserve">
+    <value>Forzar Apagado de PC</value>
+  </data>
+  <data name="Palette_RestartPc" xml:space="preserve">
+    <value>Reiniciar PC</value>
+  </data>
+  <data name="Palette_RestartPcToUefi" xml:space="preserve">
+    <value>Reiniciar PC a UEFI</value>
+  </data>
+  <data name="Palette_WakeOnLan" xml:space="preserve">
+    <value>Despertar por LAN</value>
+  </data>
+  <data name="Palette_Disconnect" xml:space="preserve">
+    <value>Desconectar</value>
+  </data>
+  <data name="PaletteCategory_Connection" xml:space="preserve">
+    <value>Conexión</value>
+  </data>
+  <data name="Palette_Connect" xml:space="preserve">
+    <value>Conectar</value>
+  </data>
+  <data name="Tray_TooltipDefault" xml:space="preserve">
+    <value>Remex Escritorio - Ejecución Remota</value>
+  </data>
+  <data name="CommandPalette_Title" xml:space="preserve">
+    <value>Paleta de Comandos</value>
+  </data>
+  <data name="CommandPalette_SearchWatermark" xml:space="preserve">
+    <value>Buscar comandos…</value>
+  </data>
+  <data name="SetAlert_Title" xml:space="preserve">
+    <value>Configurar Alerta de Sensor</value>
+  </data>
+  <data name="SetAlert_Header" xml:space="preserve">
+    <value>Alerta de Sensor</value>
+  </data>
+  <data name="SetAlert_ThresholdValue" xml:space="preserve">
+    <value>Valor de Umbral</value>
+  </data>
+  <data name="SetAlert_TriggerDirection" xml:space="preserve">
+    <value>Activar cuando el valor es</value>
+  </data>
+  <data name="SetAlert_Severity" xml:space="preserve">
+    <value>Gravedad</value>
+  </data>
+  <data name="SetAlert_SetAlertBtn" xml:space="preserve">
+    <value>Configurar Alerta</value>
+  </data>
+  <data name="Btn_Clear" xml:space="preserve">
+    <value>Borrar</value>
+  </data>
+  <data name="AppLauncher_SearchWatermark" xml:space="preserve">
+    <value>Buscar aplicaciones...</value>
+  </data>
+  <data name="RemoteDesktop_WindowsButton" xml:space="preserve">
+    <value>Ventanas</value>
+  </data>
+  <data name="RemoteDesktop_SearchWatermark" xml:space="preserve">
+    <value>Buscar ventanas</value>
+  </data>
+  <data name="RemoteDesktop_Refresh" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="RemoteDesktop_Activate" xml:space="preserve">
+    <value>Activar</value>
+  </data>
+  <data name="RemoteDesktop_Raise" xml:space="preserve">
+    <value>Elevar</value>
+  </data>
+  <data name="RemoteDesktop_Minimize" xml:space="preserve">
+    <value>Minimizar</value>
+  </data>
+  <data name="RemoteDesktop_Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="RemoteDesktop_WidthWatermark" xml:space="preserve">
+    <value>Ancho</value>
+  </data>
+  <data name="RemoteDesktop_HeightWatermark" xml:space="preserve">
+    <value>Alto</value>
+  </data>
+  <data name="RemoteDesktop_Resize" xml:space="preserve">
+    <value>Redimensionar</value>
+  </data>
+  <data name="RemoteDesktop_DesktopNumberWatermark" xml:space="preserve">
+    <value>Escritorio #</value>
+  </data>
+  <data name="RemoteDesktop_Move" xml:space="preserve">
+    <value>Mover</value>
+  </data>
+  <data name="Home_ActiveSensors" xml:space="preserve">
+    <value>// SENSORES_ACTIVOS</value>
+  </data>
+  <data name="Home_OpenWorkspace" xml:space="preserve">
+    <value>ABRIR_ESPACIO</value>
+  </data>
+  <data name="Home_NoDataFeed" xml:space="preserve">
+    <value>[ SIN_DATOS ]</value>
+  </data>
+  <data name="Home_InitializeSensors" xml:space="preserve">
+    <value>INICIALIZAR SENSORES</value>
+  </data>
+  <data name="Home_Directives" xml:space="preserve">
+    <value>// DIRECTIVAS</value>
+  </data>
+  <data name="Home_RemoteControl" xml:space="preserve">
+    <value>CONTROL_REMOTO</value>
+  </data>
+  <data name="Home_RemoteControlDesc" xml:space="preserve">
+    <value>Energía y acceso al sistema</value>
+  </data>
+  <data name="Home_AppLauncher" xml:space="preserve">
+    <value>LANZADOR_APPS</value>
+  </data>
+  <data name="Home_AppLauncherDesc" xml:space="preserve">
+    <value>Ejecutar procesos remotos</value>
+  </data>
+  <data name="Home_TaskMonitor" xml:space="preserve">
+    <value>MONITOR_TAREAS</value>
+  </data>
+  <data name="Home_TaskMonitorDesc" xml:space="preserve">
+    <value>Administrar hilos activos</value>
+  </data>
+  <data name="Home_FileSystem" xml:space="preserve">
+    <value>SISTEMA_ARCHIVOS</value>
+  </data>
+  <data name="Home_FileSystemDesc" xml:space="preserve">
+    <value>Transferencia remota de datos</value>
+  </data>
+  <data name="Home_LinkStatus" xml:space="preserve">
+    <value>ESTADO_ENLACE</value>
+  </data>
+  <data name="Home_InitializeLink" xml:space="preserve">
+    <value>INICIALIZAR ENLACE</value>
+  </data>
+  <data name="Home_TerminateLink" xml:space="preserve">
+    <value>TERMINAR ENLACE</value>
+  </data>
+  <data name="Home_LogoTooltip" xml:space="preserve">
+    <value>REMEX - Ejecución Remota / Telemetría en Vivo</value>
+  </data>
+  <data name="Shell_LogsDiagnostics" xml:space="preserve">
+    <value>Registros y Diagnósticos</value>
+  </data>
+  <data name="AlertDirection_Above" xml:space="preserve">
+    <value>Por encima de</value>
+  </data>
+  <data name="AlertDirection_Below" xml:space="preserve">
+    <value>Por debajo de</value>
+  </data>
+  <data name="AlertSeverity_Warning" xml:space="preserve">
+    <value>Advertencia</value>
+  </data>
+  <data name="AlertSeverity_Critical" xml:space="preserve">
+    <value>Crítica</value>
+  </data>
+  <data name="Canvas_UndoTooltip" xml:space="preserve">
+    <value>Deshacer (Ctrl+Z)</value>
+  </data>
+  <data name="Canvas_RedoTooltip" xml:space="preserve">
+    <value>Rehacer (Ctrl+Y)</value>
+  </data>
+  <data name="Canvas_ToggleMinimapTooltip" xml:space="preserve">
+    <value>Alternar Minimapa</value>
+  </data>
+  <data name="Canvas_ExportPngTooltip" xml:space="preserve">
+    <value>Guardar lienzo como PNG en la carpeta Imágenes</value>
+  </data>
+  <data name="Canvas_CopySnapshotTooltip" xml:space="preserve">
+    <value>Copiar imagen de captura directamente al portapapeles</value>
+  </data>
+  <data name="Custom_CornerRadiusGeneralTooltip" xml:space="preserve">
+    <value>Personalizar la redondez de los bordes para tarjetas y paneles generales</value>
+  </data>
+  <data name="Custom_BorderCornerRadiusPixelsTooltip" xml:space="preserve">
+    <value>Radio del borde en píxeles</value>
+  </data>
+  <data name="Custom_CornerRadiusRemoteTooltip" xml:space="preserve">
+    <value>Personalizar la redondez de los bordes para botones de control remoto</value>
+  </data>
+  <data name="Custom_BorderCornerRadiusRemotePixelsTooltip" xml:space="preserve">
+    <value>Radio del botón remoto en píxeles</value>
+  </data>
+  <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
+    <value>Ajustar el nivel de opacidad del efecto de vidrio esmerilado</value>
+  </data>
+  <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
+    <value>Porcentaje de opacidad del vidrio esmerilado</value>
+  </data>
+  <data name="Custom_NeonGlowTooltip" xml:space="preserve">
+    <value>Ajustar la intensidad del brillo de neón alrededor de los paneles</value>
+  </data>
+  <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
+    <value>Grosor del brillo de neón en píxeles</value>
+  </data>
+  <data name="Custom_SelectColorPaletteTooltip" xml:space="preserve">
+    <value>Seleccionar reflejos del tema de paleta de colores</value>
+  </data>
+  <data name="Custom_SelectNeonVioletTooltip" xml:space="preserve">
+    <value>Seleccionar tema Violeta Neón</value>
+  </data>
+  <data name="Custom_SelectCyberCyanTooltip" xml:space="preserve">
+    <value>Seleccionar tema Cian Cyber</value>
+  </data>
+  <data name="Custom_SelectHotPinkTooltip" xml:space="preserve">
+    <value>Seleccionar tema Rosa Fucsia/Magenta</value>
+  </data>
+  <data name="Custom_SelectSolarGoldTooltip" xml:space="preserve">
+    <value>Seleccionar tema Oro Solar/Ámbar</value>
+  </data>
+  <data name="Custom_SelectEmeraldGreenTooltip" xml:space="preserve">
+    <value>Seleccionar tema Verde Esmeralda</value>
+  </data>
+  <data name="Custom_SelectCrimsonRoseTooltip" xml:space="preserve">
+    <value>Seleccionar tema Rosa Carmesí</value>
+  </data>
+  <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
+    <value>Seleccionar el estilo de animación de la pantalla de bienvenida</value>
+  </data>
+  <data name="Settings_RefreshServiceTooltip" xml:space="preserve">
+    <value>Actualizar el estado del servicio del sistema</value>
+  </data>
+  <data name="Settings_ConfigureLoginTooltip" xml:space="preserve">
+    <value>Configurar credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
+  </data>
+  <data name="Settings_InstallServiceTooltip" xml:space="preserve">
+    <value>Instalar el servicio de sistema RemEx como servidor automático en segundo plano</value>
+  </data>
+  <data name="Settings_StartServiceTooltip" xml:space="preserve">
+    <value>Iniciar el proceso del servicio del servidor RemEx</value>
+  </data>
+  <data name="Settings_StopServiceTooltip" xml:space="preserve">
+    <value>Detener el proceso del servicio del servidor RemEx</value>
+  </data>
+  <data name="Settings_UninstallServiceTooltip" xml:space="preserve">
+    <value>Desinstalar completamente el servicio RemEx del sistema</value>
+  </data>
+  <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
+    <value>Configurar la dirección del host RemEx (protocolo websocket wss://)</value>
+  </data>
+  <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
+    <value>Ingrese la URL de conexión, ej. wss://192.168.1.100:8443/ws</value>
+  </data>
+  <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
+    <value>Descubrir automáticamente hosts activos en la red local usando mDNS/NSD</value>
+  </data>
+  <data name="Settings_DisconnectTooltip" xml:space="preserve">
+    <value>Terminar la conexión de sesión activa con el PC host</value>
+  </data>
+  <data name="Settings_ChangeLanguageTooltip" xml:space="preserve">
+    <value>Cambiar el idioma de visualización de la aplicación</value>
+  </data>
+  <data name="Settings_SelectPreferredLanguageTooltip" xml:space="preserve">
+    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
+  </data>
+  <data name="Settings_CompressQualityTooltip" xml:space="preserve">
+    <value>Configurar la calidad de compresión del espejo de escritorio (menor calidad mejora el rendimiento de red)</value>
+  </data>
+  <data name="Settings_TargetFrameRateTooltip" xml:space="preserve">
+    <value>Fotogramas por segundo objetivo para la compresión (valores mayores son más fluidos pero consumen más ancho de banda)</value>
+  </data>
+  <data name="Settings_ChooseTargetFpsTooltip" xml:space="preserve">
+    <value>Elegir FPS objetivo para la transmisión</value>
+  </data>
+  <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
+    <value>Activar guías de alineación para que los sensores se ajusten a la cuadrícula</value>
+  </data>
+  <data name="Settings_GridPlacementIncrementTooltip" xml:space="preserve">
+    <value>Límites de incremento de la cuadrícula en píxeles absolutos</value>
+  </data>
+  <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
+    <value>Abrir Paleta de Comandos (Ctrl+Shift+P)</value>
+  </data>
+  <data name="About_WhatsNew_Android" xml:space="preserve">
+    <value>Renovación de Android</value>
+  </data>
+  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
+    <value>Material 3 Expressive con física de resorte en todo: reordenamiento de listas, deslizar para actualizar, mosaicos de aplicaciones, indicadores animados. 8 mosaicos de configuración rápida para comandos de energía con un toque. Widgets de pantalla de inicio redimensionables. Retroalimentación háptica de dos etapas. SDK de destino 37 (Android 17).</value>
+  </data>
+  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
+    <value>Transferencia de archivos remota</value>
+  </data>
+  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
+    <value>Examine las carpetas compartidas del host y transfiera archivos en cualquier dirección con verificación de integridad SHA-256. Android puede compartir sus propias carpetas con el host. Las transferencias muestran el progreso en vivo con opción de cancelación.</value>
+  </data>
+  <data name="Boot_CommandCenter" xml:space="preserve">
+    <value>⚡ CENTRO DE CONTROL</value>
+  </data>
+  <data name="Boot_CommandYourPc" xml:space="preserve">
+    <value>CONTROLE SU PC</value>
+  </data>
+  <data name="Boot_Ecution" xml:space="preserve">
+    <value>cución</value>
+  </data>
+  <data name="Boot_Execution" xml:space="preserve">
+    <value>EJECUCIÓN</value>
+  </data>
+  <data name="Boot_Ote" xml:space="preserve">
+    <value>moto</value>
+  </data>
+  <data name="Boot_Remote" xml:space="preserve">
+    <value>REMOTO</value>
+  </data>
+  <data name="Canvas_CopyTooltip" xml:space="preserve">
+    <value>Copiar imagen instantánea directamente al portapapeles</value>
+  </data>
+  <data name="Canvas_ExportTooltip" xml:space="preserve">
+    <value>Guardar lienzo como PNG en la carpeta Imágenes</value>
+  </data>
+  <data name="Canvas_GraphArea" xml:space="preserve">
+    <value>Área ▓▓▓</value>
+  </data>
+  <data name="Canvas_GraphBar" xml:space="preserve">
+    <value>Barra ▮▮▮</value>
+  </data>
+  <data name="Canvas_GraphGauge" xml:space="preserve">
+    <value>Indicador ━━━</value>
+  </data>
+  <data name="Canvas_GraphLine" xml:space="preserve">
+    <value>Línea ╱╲╱</value>
+  </data>
+  <data name="Canvas_GraphSmart" xml:space="preserve">
+    <value>Auto (inteligente)</value>
+  </data>
+  <data name="Canvas_SetAlert" xml:space="preserve">
+    <value>Configurar alerta...</value>
+  </data>
+  <data name="Faq_Q11_Answer" xml:space="preserve">
+    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).\n3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.\n4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.\n5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
+  </data>
+  <data name="Faq_Q11_Question" xml:space="preserve">
+    <value>¿Cómo configuro Tailscale para acceso remoto?</value>
+  </data>
+  <data name="Settings_HelpPrompt" xml:space="preserve">
+    <value>¿Necesita ver el tutorial de nuevo?</value>
+  </data>
+  <data name="Tooltip_AccentAmber" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Oro solar/Ámbar</value>
+  </data>
+  <data name="Tooltip_AccentColor" xml:space="preserve">
+    <value>Seleccionar colores destacados de la paleta de temas</value>
+  </data>
+  <data name="Tooltip_AccentCyan" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Ciber cian</value>
+  </data>
+  <data name="Tooltip_AccentGreen" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Verde esmeralda</value>
+  </data>
+  <data name="Tooltip_AccentPink" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Rosa fuerte/Magenta</value>
+  </data>
+  <data name="Tooltip_AccentRose" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Rosa carmesí</value>
+  </data>
+  <data name="Tooltip_AccentViolet" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Violeta neón</value>
+  </data>
+  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
+    <value>Configurar las credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
+  </data>
+  <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
+    <value>Personalizar la redondez de las esquinas del borde predeterminado para paneles y tarjetas del tablero</value>
+  </data>
+  <data name="Tooltip_CornerRadiusSlider" xml:space="preserve">
+    <value>Radio de la esquina del borde en píxeles</value>
+  </data>
+  <data name="Tooltip_Disconnect" xml:space="preserve">
+    <value>Terminar la conexión de sesión activa con la PC host</value>
+  </data>
+  <data name="Tooltip_GlassOpacity" xml:space="preserve">
+    <value>Ajustar el nivel de opacidad de mezcla visual del efecto de cristal esmerilado premium</value>
+  </data>
+  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
+    <value>Porcentaje de opacidad del cristal esmerilado</value>
+  </data>
+  <data name="Tooltip_GlowStrength" xml:space="preserve">
+    <value>Ajustar la intensidad del brillo del aura de neón de fondo alrededor de los bordes de los paneles</value>
+  </data>
+  <data name="Tooltip_GlowStrengthSlider" xml:space="preserve">
+    <value>Grosor/propagación del brillo de neón en píxeles</value>
+  </data>
+  <data name="Tooltip_GridSize" xml:space="preserve">
+    <value>Incremento de ajuste de ubicación de cuadrícula en píxeles absolutos</value>
+  </data>
+  <data name="Tooltip_InstallService" xml:space="preserve">
+    <value>Instalar el servicio del sistema RemEx como un servidor de fondo automático</value>
+  </data>
+  <data name="Tooltip_LanguageSection" xml:space="preserve">
+    <value>Cambiar el idioma de visualización de la aplicación</value>
+  </data>
+  <data name="Tooltip_LanguageSelect" xml:space="preserve">
+    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
+  </data>
+  <data name="Tooltip_RefreshService" xml:space="preserve">
+    <value>Actualizar el estado del servicio del sistema</value>
+  </data>
+  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
+    <value>Personalizar la redondez de las esquinas de los bordes específicamente para las teclas de control remoto</value>
+  </data>
+  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
+    <value>Radio de esquina de los botones remotos en píxeles</value>
+  </data>
+  <data name="Tooltip_SaveReconnect" xml:space="preserve">
+    <value>Guardar la dirección de configuración del host e intentar conectarse</value>
+  </data>
+  <data name="Tooltip_SnapToGrid" xml:space="preserve">
+    <value>Habilitar guías de alineación para que los mosaicos de sensores se ajusten a incrementos estándar en el lienzo</value>
+  </data>
+  <data name="Tooltip_SplashScreen" xml:space="preserve">
+    <value>Seleccionar el estilo de animación de la pantalla de bienvenida de inicio</value>
+  </data>
+  <data name="Tooltip_StartService" xml:space="preserve">
+    <value>Iniciar el proceso del servicio del servidor RemEx en segundo plano</value>
+  </data>
+  <data name="Tooltip_StopService" xml:space="preserve">
+    <value>Detener el proceso del servicio del servidor RemEx en segundo plano</value>
+  </data>
+  <data name="Tooltip_StreamFps" xml:space="preserve">
+    <value>Velocidad de fotogramas objetivo para el motor de compresión de escritorio (valores más altos se ven más fluidos pero consumen más ancho de banda)</value>
+  </data>
+  <data name="Tooltip_StreamFpsSelect" xml:space="preserve">
+    <value>Elegir FPS objetivo para la transmisión</value>
+  </data>
+  <data name="Tooltip_StreamQuality" xml:space="preserve">
+    <value>Configurar el nivel de calidad de compresión del flujo de imagen espejo del escritorio (una menor calidad aumenta el rendimiento de la red)</value>
+  </data>
+  <data name="Tooltip_UninstallService" xml:space="preserve">
+    <value>Desinstalar completamente el servicio del sistema RemEx del sistema</value>
+  </data>
+  <data name="Tray_Exit" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="Tray_LiveGlance" xml:space="preserve">
+    <value>Vistazo rápido en vivo</value>
+  </data>
+  <data name="Tray_LiveHeader" xml:space="preserve">
+    <value>REMEX EN VIVO</value>
+  </data>
+  <data name="Tray_ShowMainWindow" xml:space="preserve">
+    <value>Mostrar ventana principal</value>
+  </data>
+  <data name="Tray_SwitchDarkMode" xml:space="preserve">
+    <value>Cambiar a modo oscuro</value>
+  </data>
+  <data name="Tray_SwitchLightMode" xml:space="preserve">
+    <value>Cambiar a modo claro</value>
+  </data>
 </root>

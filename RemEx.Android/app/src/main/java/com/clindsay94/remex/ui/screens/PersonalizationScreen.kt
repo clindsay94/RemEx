@@ -703,28 +703,28 @@ fun PersonalizationScreenContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     SectionHeader(
-                            "Typography Studio",
+                            stringResource(R.string.personalization_typography_studio),
                             Icons.Default.TextFormat
                     )
 
                     Text(
-                            "Font Family",
+                            stringResource(R.string.personalization_font_family),
                             style = MaterialTheme.typography.labelMedium
                     )
 
                     var fontExpanded by remember { mutableStateOf(false) }
                     val fontOptions = listOf(
-                            "default" to "System Default",
-                            "roboto" to "Roboto",
-                            "lato" to "Lato",
-                            "montserrat" to "Montserrat",
-                            "poppins" to "Poppins",
-                            "inter" to "Inter (Premium)",
-                            "outfit" to "Outfit (Modern Rounded)",
-                            "space_grotesk" to "Space Grotesk (Cyber)",
-                            "syne" to "Syne (Expressive)",
-                            "lexend" to "Lexend (Fluent)",
-                            "jetbrains_mono" to "JetBrains Mono (Tech)"
+                            "default" to stringResource(R.string.personalization_system_default),
+                            "roboto" to stringResource(R.string.font_roboto),
+                            "lato" to stringResource(R.string.font_lato),
+                            "montserrat" to stringResource(R.string.font_montserrat),
+                            "poppins" to stringResource(R.string.font_poppins),
+                            "inter" to stringResource(R.string.font_inter_premium),
+                            "outfit" to stringResource(R.string.font_outfit_modern),
+                            "space_grotesk" to stringResource(R.string.font_space_grotesk_cyber),
+                            "syne" to stringResource(R.string.font_syne_expressive),
+                            "lexend" to stringResource(R.string.font_lexend_fluent),
+                            "jetbrains_mono" to stringResource(R.string.font_jetbrains_mono_tech)
                     )
 
                     ExposedDropdownMenuBox(
@@ -735,7 +735,7 @@ fun PersonalizationScreenContent(
                             }
                     ) {
                         OutlinedTextField(
-                                value = fontOptions.find { it.first == fontFamily }?.second ?: "System Default",
+                                value = fontOptions.find { it.first == fontFamily }?.second ?: stringResource(R.string.personalization_system_default),
                                 onValueChange = {},
                                 readOnly = true,
                                 trailingIcon = {
@@ -765,7 +765,7 @@ fun PersonalizationScreenContent(
                     }
 
                     Text(
-                            "Font Scale: ${(fontScale * 100).roundToInt()}%",
+                            stringResource(R.string.personalization_font_scale_format, (fontScale * 100).roundToInt()),
                             style = MaterialTheme.typography.labelMedium
                     )
                     Slider(

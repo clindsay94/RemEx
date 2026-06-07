@@ -35,7 +35,7 @@
             </Border>
 
             <!-- ═══ Search ═══ -->
-            <TextBox Watermark="Search apps..." Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13"/>
+            <TextBox Watermark="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13"/>
 
             <!-- ═══ Apps Grid ═══ -->
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">

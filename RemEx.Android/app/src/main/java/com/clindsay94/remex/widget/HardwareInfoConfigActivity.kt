@@ -46,14 +46,6 @@ import org.json.JSONObject
 
 data class ConfigSensor(val id: String, val name: String, val category: String)
 
-private val DEFAULT_SENSORS = listOf(
-    ConfigSensor("sensor:cpu", "CPU Usage", "CPU"),
-    ConfigSensor("sensor:gpu", "GPU Usage", "GPU"),
-    ConfigSensor("sensor:ram", "RAM Usage", "Memory"),
-    ConfigSensor("sensor:cpu_temp", "CPU Temperature", "CPU"),
-    ConfigSensor("sensor:gpu_temp", "GPU Temperature", "GPU"),
-)
-
 class HardwareInfoConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -93,26 +85,33 @@ class HardwareInfoConfigActivity : ComponentActivity() {
 
     private fun loadAvailableSensors(): List<ConfigSensor> {
         val json = WidgetDataCache.getTelemetryJson(this)
-        if (json.isNullOrBlank()) return DEFAULT_SENSORS
+        val defaultSensors = listOf(
+            ConfigSensor("sensor:cpu", getString(R.string.sensor_cpu_usage), "CPU"),
+            ConfigSensor("sensor:gpu", getString(R.string.sensor_gpu_usage), "GPU"),
+            ConfigSensor("sensor:ram", getString(R.string.sensor_ram_usage), getString(R.string.sensor_memory)),
+            ConfigSensor("sensor:cpu_temp", getString(R.string.sensor_cpu_temp), "CPU"),
+            ConfigSensor("sensor:gpu_temp", getString(R.string.sensor_gpu_temp), "GPU"),
+        )
+        if (json.isNullOrBlank()) return defaultSensors
 
         return try {
             val root = JSONObject(json)
-            val sensors = root.optJSONArray("sensors") ?: return DEFAULT_SENSORS
+            val sensors = root.optJSONArray("sensors") ?: return defaultSensors
             val parsed = mutableListOf<ConfigSensor>()
             for (i in 0 until sensors.length()) {
                 val obj = sensors.getJSONObject(i)
                 parsed.add(
                     ConfigSensor(
                         id = obj.optString("id", "sensor_$i"),
-                        name = obj.optString("name", "Sensor $i"),
+                        name = obj.optString("name", getString(R.string.sensor_fallback_label, i)),
                         category = obj.optString("category", "")
                     )
                 )
             }
-            parsed.ifEmpty { DEFAULT_SENSORS }
+            parsed.ifEmpty { defaultSensors }
         } catch (e: Exception) {
             Log.w("HWConfigActivity", "Failed to parse cached telemetry", e)
-            DEFAULT_SENSORS
+            defaultSensors
         }
     }
 
@@ -215,7 +214,11 @@ fun HardwareInfoConfigScreen(
 private fun HardwareInfoConfigScreenPreview() {
     RemExTheme {
         HardwareInfoConfigScreen(
-            availableSensors = DEFAULT_SENSORS,
+            availableSensors = listOf(
+                ConfigSensor("sensor:cpu", "CPU Usage", "CPU"),
+                ConfigSensor("sensor:gpu", "GPU Usage", "GPU"),
+                ConfigSensor("sensor:ram", "RAM Usage", "Memory")
+            ),
             onDone = {}
         )
     }

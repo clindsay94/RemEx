@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,7 +30,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class PairingUiState(val isLoading: Boolean = false, val pairingError: String? = null)
+data class PairingUiState(
+    val isLoading: Boolean = false,
+    val pairingError: String? = null,
+    val autoFilledPin: String? = null,
+)
 
 class PairingViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PairingUiState())
@@ -42,6 +47,7 @@ class PairingViewModel : ViewModel() {
     @Volatile private var startPairingSucceeded: Boolean = false
 
     suspend fun submitPin(
+            context: Context,
             host: String,
             port: Int,
             pin: String,
@@ -66,7 +72,7 @@ class PairingViewModel : ViewModel() {
                     PairingUiState(
                             isLoading = false,
                             pairingError =
-                                    "Pairing succeeded but the native response was malformed."
+                                    context.getString(R.string.pairing_error_malformed_response)
                     )
             return false
         }
@@ -77,7 +83,7 @@ class PairingViewModel : ViewModel() {
         val message =
                 when {
                     result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
-                    result.isBlank() -> "Pairing failed (empty native response)"
+                    result.isBlank() -> context.getString(R.string.pairing_error_empty_response)
                     else -> result
                 }
         _uiState.value = PairingUiState(isLoading = false, pairingError = message)
@@ -88,7 +94,14 @@ class PairingViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(pairingError = msg, isLoading = false)
     }
 
-    fun startPairing(hostUrl: String, clientName: String, clientVersion: String, clientId: String) {
+    fun startPairing(
+            context: Context,
+            hostUrl: String,
+            clientName: String,
+            clientVersion: String,
+            clientId: String,
+            allowAutoPin: Boolean
+    ) {
         // Reentrancy guard: don't kick off a second StartPairing while one is in flight,
         // and don't redo a successful one (the WebSocket is already alive on the native side).
         if (startPairingInFlight || startPairingSucceeded) return
@@ -105,21 +118,71 @@ class PairingViewModel : ViewModel() {
             startPairingInFlight = false
             if (result == "OK") {
                 startPairingSucceeded = true
-                _uiState.value = PairingUiState(isLoading = false)
+                // After the handshake, auto-fetch the PIN from the host's HTTP endpoint ONLY when
+                // the caller has determined the transport is trusted (loopback or an active
+                // Tailscale/WireGuard tunnel). On those paths the channel is already authenticated
+                // and MITM-resistant, so relaying the PIN over it leaks nothing an attacker could
+                // use. On plain LAN/internet we deliberately leave it null so the PIN keeps its
+                // out-of-band, anti-MITM purpose and the user must type it manually.
+                val fetchedPin =
+                        if (allowAutoPin) withContext(Dispatchers.IO) { tryFetchPinFromHost(hostUrl) }
+                        else null
+                _uiState.value = PairingUiState(isLoading = false, autoFilledPin = fetchedPin)
             } else {
                 val message =
                         when {
                             result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
-                            result.isBlank() -> "Could not reach host (empty native response)"
+                            result.isBlank() -> context.getString(R.string.pairing_error_reach_failed)
                             else -> result
                         }
                 _uiState.value =
                         PairingUiState(
                                 isLoading = false,
-                                pairingError = "Could not start pairing: $message"
+                                pairingError = context.getString(R.string.pairing_error_start_failed, message)
                         )
             }
         }
+    }
+
+    private fun tryFetchPinFromHost(hostUrl: String): String? {
+        val uri = try { java.net.URI(hostUrl) } catch (e: Exception) { return null }
+        val base = "https://${uri.host}:${uri.port}"
+        // The /pairing-pin endpoint can transiently 404 in the window between the WebSocket
+        // handshake returning and the host publishing the active session (TryGetActivePinInfo
+        // uses a non-blocking lock acquire), so retry a few times. On the first miss we also
+        // POST /start-pairing, which proactively materialises a session and returns the PIN —
+        // it safely reuses the already-active session bound to this client's ECDH key.
+        repeat(5) { attempt ->
+            httpFetchPin("$base/pairing-pin", "GET")?.let { return it }
+            if (attempt == 0) httpFetchPin("$base/start-pairing", "POST")?.let { return it }
+            try { Thread.sleep(400) } catch (_: InterruptedException) {}
+        }
+        return null
+    }
+
+    // Trust-all TLS is acceptable here ONLY because this path is gated behind
+    // TransportTrust.canAutoFetchPin (loopback or an active Tailscale tunnel): the
+    // WireGuard transport already authenticates the peer, so cert verification adds nothing.
+    private fun httpFetchPin(urlStr: String, method: String): String? {
+        return try {
+            val trustAll = arrayOf<javax.net.ssl.TrustManager>(object : javax.net.ssl.X509TrustManager {
+                override fun checkClientTrusted(c: Array<java.security.cert.X509Certificate>, a: String) {}
+                override fun checkServerTrusted(c: Array<java.security.cert.X509Certificate>, a: String) {}
+                override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+            })
+            val sslCtx = javax.net.ssl.SSLContext.getInstance("TLS")
+            sslCtx.init(null, trustAll, java.security.SecureRandom())
+            val conn = java.net.URL(urlStr).openConnection() as javax.net.ssl.HttpsURLConnection
+            conn.sslSocketFactory = sslCtx.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+            conn.requestMethod = method
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            if (method == "POST") { conn.doOutput = true; conn.outputStream.use {} }
+            if (conn.responseCode != 200) return null
+            val json = conn.inputStream.bufferedReader().readText()
+            org.json.JSONObject(json).optString("pin").takeIf { it.length == 6 }
+        } catch (e: Exception) { null }
     }
 
     fun resetPairingState() {
@@ -142,20 +205,36 @@ fun PairingScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val settingsManager = remember(context) { SettingsManager(context.applicationContext) }
     val coroutineScope = rememberCoroutineScope()
+    var pin by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val hostUrl = "wss://$host:$port/ws"
         val clientId = withContext(Dispatchers.IO) { settingsManager.getOrCreateClientId() }
-        viewModel.startPairing(hostUrl, "Android Client", "2.0.0", clientId)
+        // Only allow the PIN to be fetched over the wire when the transport is trusted
+        // (loopback or an active Tailscale/WireGuard tunnel). Otherwise the user enters it
+        // manually and the PIN retains its out-of-band, anti-MITM value.
+        val allowAutoPin =
+                com.clindsay94.remex.security.TransportTrust.canAutoFetchPin(context, host)
+        viewModel.startPairing(context, hostUrl, "Android Client", "2.0.0", clientId, allowAutoPin)
+    }
+
+    // Auto-fill PIN when the host returns it via HTTP after the WebSocket handshake
+    LaunchedEffect(state.autoFilledPin) {
+        val fetched = state.autoFilledPin
+        if (!fetched.isNullOrBlank() && pin.isEmpty()) {
+            pin = fetched
+        }
     }
 
     PairingScreenContent(
         state = state,
+        pin = pin,
+        onPinChange = { if (it.length <= 6) pin = it },
         onCancel = onCancel,
-        onSubmitPin = { pin ->
+        onSubmitPin = {
             coroutineScope.launch {
                 val paired =
-                        viewModel.submitPin(host, port, pin) { hostId, spkiHash ->
+                        viewModel.submitPin(context, host, port, pin) { hostId, spkiHash ->
                             try {
                                 RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
                                 RemexCoreClient.SetPinnedHostHash(host, spkiHash)
@@ -163,8 +242,7 @@ fun PairingScreen(
                                 PinnedHostStore.setPin(context, host, spkiHash)
                             } catch (e: Exception) {
                                 viewModel.setError(
-                                        e.message
-                                                ?: "Failed to save pinned host securely."
+                                        context.getString(R.string.pairing_error_save_failed)
                                 )
                                 throw e
                             }
@@ -181,11 +259,11 @@ fun PairingScreen(
 @Composable
 fun PairingScreenContent(
     state: PairingUiState,
+    pin: String,
+    onPinChange: (String) -> Unit,
     onCancel: () -> Unit,
-    onSubmitPin: (String) -> Unit
+    onSubmitPin: () -> Unit
 ) {
-    var pin by remember { mutableStateOf("") }
-
     Scaffold(topBar = {
         RemexFlexibleTopBar(title = stringResource(R.string.pairing_title))
     }) {
@@ -203,9 +281,9 @@ fun PairingScreenContent(
 
             OutlinedTextField(
                     value = pin,
-                    onValueChange = { if (it.length <= 6) pin = it },
+                    onValueChange = onPinChange,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    label = { Text("PIN") },
+                    label = { Text(stringResource(R.string.connection_label_pairing_pin)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
             )
@@ -242,7 +320,7 @@ fun PairingScreenContent(
                 ) { Text(stringResource(R.string.pairing_cancel)) }
 
                 Button(
-                        onClick = { onSubmitPin(pin) },
+                        onClick = onSubmitPin,
                         modifier = Modifier.weight(1f),
                         enabled = pin.length == 6 && !state.isLoading
                 ) {
@@ -266,6 +344,8 @@ private fun PairingScreenPreview() {
     RemExTheme {
         PairingScreenContent(
             state = PairingUiState(isLoading = false, pairingError = "Invalid PIN entered."),
+            pin = "123456",
+            onPinChange = {},
             onCancel = {},
             onSubmitPin = {}
         )

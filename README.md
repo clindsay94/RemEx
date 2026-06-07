@@ -177,10 +177,24 @@ dotnet test Remex.sln
 # Output → installer/Output/
 ```
 
-### Windows Installer
+### Unified Build Tool
+To clean, build, package, and stage artifacts for all platforms (Windows, Linux, and Android) in a single run:
+
 ```powershell
-pwsh ./installer/build-installer.ps1
+pwsh ./build-remex.ps1
 ```
+
+Running `build-remex.ps1` executes the following steps in order:
+1. **Interactive Configuration**: Prompts for configuration (`release`/`debug`) and target platform (`android`/`linux`/`windows`/`all`) if run without arguments.
+2. **Version Resolution**: Resolves the build version name from `version.properties`.
+3. **Hard Clean**: Deletes the `build_output` directory, purges all `.NET bin/obj` caches, and runs Gradle clean.
+4. **Version Sync**: Updates the version tag in `Directory.Build.props`.
+5. **Restore**: Runs `dotnet restore` on the solution.
+6. **Platform Compilation & Staging**:
+   - **Windows**: Publishes `Remex.Client.Desktop` (win-x64, self-contained) and compiles the installer using Inno Setup Compiler (`ISCC.exe`).
+   - **Android**: Verifies and auto-installs Android SDK/NDK dependencies, builds APKs/AABs via Gradle, and verifies `libRemexCore.so`.
+   - **Linux**: Triggers `installer/build-linux.sh` (via WSL if on Windows) to compile the native Linux bridge and package client/host tarballs.
+7. **Visual Summary**: Prints a detailed report of all staged packages and their sizes in the `build_output` folder.
 
 ### Android (Hardened Fresh Build)
 ```powershell

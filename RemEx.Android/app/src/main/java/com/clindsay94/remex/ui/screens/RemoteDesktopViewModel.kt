@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -222,7 +223,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                     supportsRemoteDesktop = false,
                                     supportsCursorQuery = false,
                                     supportsAdvancedWindowControl = false,
-                                    unavailableReason = "Host metadata unavailable"
+                                    unavailableReason = getApplication<Application>().getString(R.string.status_metadata_unavailable)
                             )
                 }
             }
@@ -275,7 +276,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     if (!success) {
                         _windowActionError.value =
                                 json.optString("errorText").takeIf { it.isNotBlank() }
-                                        ?: "Desktop window action failed"
+                                        ?: getApplication<Application>().getString(R.string.remote_desktop_action_failed)
                         return@collect
                     }
 
@@ -290,7 +291,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                                 id = item.optString("id"),
                                                 title =
                                                         item.optString("title").ifBlank {
-                                                            "(untitled)"
+                                                            getApplication<Application>().getString(R.string.remote_desktop_untitled_window)
                                                         },
                                                 className =
                                                         item.optString("className").takeIf {
@@ -309,7 +310,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop window result", e)
-                    _windowActionError.value = "Desktop window metadata unavailable"
+                    _windowActionError.value = getApplication<Application>().getString(R.string.remote_desktop_metadata_unavailable)
                 }
             }
         }
@@ -405,7 +406,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         if (!_capabilityState.value.supportsRemoteDesktop) return
         if (reconnectJob?.isActive == true) return
         if (reconnectAttempts >= maxReconnectAttempts) {
-            _desktopError.value = "Connection lost. Tap Start to reconnect."
+            _desktopError.value = getApplication<Application>().getString(R.string.remote_desktop_connection_lost)
             return
         }
 
@@ -469,14 +470,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     fun startStreaming() {
         if (!RemexCoreClient.isLibraryLoaded) {
-            _desktopError.value = "Native library not loaded"
+            _desktopError.value = getApplication<Application>().getString(R.string.status_native_lib_not_loaded)
             return
         }
 
         if (!_capabilityState.value.supportsRemoteDesktop) {
             _desktopError.value =
                     _capabilityState.value.unavailableReason
-                            ?: "Remote desktop is unavailable on this host"
+                            ?: getApplication<Application>().getString(R.string.remote_desktop_unavailable_fallback)
             return
         }
 
@@ -630,7 +631,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     fun queryWindows(searchText: String = "", includeAllDesktops: Boolean = true, limit: Int = 25) {
         if (!_capabilityState.value.supportsAdvancedWindowControl) {
-            _windowActionError.value = "Advanced window control is unavailable on this host"
+            _windowActionError.value = getApplication<Application>().getString(R.string.remote_desktop_advanced_window_control_unavailable)
             return
         }
 
@@ -729,7 +730,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             configure: JSONObject.() -> Unit = {}
     ) {
         if (!_capabilityState.value.supportsAdvancedWindowControl) {
-            _windowActionError.value = "Advanced window control is unavailable on this host"
+            _windowActionError.value = getApplication<Application>().getString(R.string.remote_desktop_advanced_window_control_unavailable)
             return
         }
 

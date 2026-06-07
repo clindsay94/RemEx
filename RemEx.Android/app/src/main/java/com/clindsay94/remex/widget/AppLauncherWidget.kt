@@ -41,6 +41,7 @@ import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
@@ -111,6 +112,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
     val selectedPaths = selectedStr.split("\n").filter { it.isNotBlank() }.toSet()
     val size = LocalSize.current
 
+    val context = androidx.glance.LocalContext.current
     if (selectedPaths.isEmpty()) {
         Box(
             modifier = GlanceModifier.fillMaxSize()
@@ -121,7 +123,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Tap to open RemEx",
+                context.getString(R.string.widget_tap_to_open),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
@@ -165,7 +167,7 @@ private fun AppLauncherContent(allApps: List<WidgetAppEntry>) {
     ) {
         if (visibleApps.isEmpty()) {
             Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Waiting for data\u2026", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
+                Text(context.getString(R.string.widget_waiting_data), style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
         } else {
             val rows = visibleApps.chunked(columns)
@@ -231,11 +233,11 @@ class LaunchAppCallback : ActionCallback {
         val path = parameters[APP_PATH_PARAM] ?: return
         val name = parameters[APP_NAME_PARAM] ?: "app"
         if (!RemexCoreClient.isLibraryLoaded) {
-            widgetToast(context, "RemEx isn't ready yet — open the app")
+            widgetToast(context, context.getString(R.string.widget_toast_remex_not_ready))
             return
         }
         if (!RemexClientManager.isConnected.value) {
-            widgetToast(context, "Not connected — open RemEx to connect")
+            widgetToast(context, context.getString(R.string.widget_toast_not_connected))
             return
         }
         val request = JSONObject().apply {
@@ -245,7 +247,7 @@ class LaunchAppCallback : ActionCallback {
             })
         }
         RemexCoreClient.SendCommand(request.toString()).getOrNull()
-        widgetToast(context, "Launching $name…")
+        widgetToast(context, context.getString(R.string.widget_toast_launching, name))
     }
 }
 

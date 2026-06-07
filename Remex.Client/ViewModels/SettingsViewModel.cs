@@ -47,6 +47,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         new("English", "en"),
         new("Español", "es"),
+        new("Français", "fr"),
         new("हिन्दी", "hi"),
         new("Bahasa Indonesia", "id"),
         new("Polski", "pl"),
@@ -634,11 +635,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
                 var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
                 {
-                    Title = "Select Remex.Host.exe",
+                    Title = LocalizationService.Instance["Settings_SelectHostTitle"],
                     AllowMultiple = false,
                     FileTypeFilter = new List<FilePickerFileType>
                     {
-                        new("Executable") { Patterns = new[] { "Remex.Host.exe" } },
+                        new(LocalizationService.Instance["Settings_ExecutableFileFilter"]) { Patterns = new[] { "Remex.Host.exe" } },
                         FilePickerFileTypes.All
                     }
                 });

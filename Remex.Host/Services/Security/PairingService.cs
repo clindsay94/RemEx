@@ -39,7 +39,7 @@ public sealed class PairingService : IPairingService
     private string? _clientPublicKeyBase64;
 
     private const int PinLength = 6;
-    private const int PairingTimeoutSeconds = 120;
+    private const int PairingTimeoutSeconds = 600; // 10 minutes — gives remote users time to receive and enter PIN
 
     public event Action<string, long>? PinDisplayed;
     public event Action? PinCleared;

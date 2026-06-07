@@ -193,6 +193,8 @@ public partial class App : Application
 
             // P8-H: seed the theme toggle label from the persisted theme
             UpdateThemeToggleLabel(profile?.Customization?.ThemeId);
+            UpdateTrayMenuHeaders();
+            LocalizationService.Instance.PropertyChanged += (s, e) => UpdateTrayMenuHeaders();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -320,14 +322,42 @@ public partial class App : Application
         if (_themeToggleMenuItem is null) return;
 
         bool isLight = string.Equals(themeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-        _themeToggleMenuItem.Header = isLight ? "Switch to Dark Mode" : "Switch to Light Mode";
+        _themeToggleMenuItem.Header = isLight
+            ? LocalizationService.Instance["Tray_SwitchDarkMode"]
+            : LocalizationService.Instance["Tray_SwitchLightMode"];
     }
 
     private NativeMenuItem? FindThemeToggleMenuItem()
     {
         var icons = TrayIcon.GetIcons(this);
-        return icons?.FirstOrDefault()?.Menu?.Items
-            .OfType<NativeMenuItem>()
-            .FirstOrDefault(m => m.Header?.ToString()?.Contains("Mode") == true);
+        var menu = icons?.FirstOrDefault()?.Menu;
+        if (menu == null || menu.Items.Count < 3) return null;
+        return menu.Items[2] as NativeMenuItem;
+    }
+
+    private void UpdateTrayMenuHeaders()
+    {
+        var icons = TrayIcon.GetIcons(this);
+        var menu = icons?.FirstOrDefault()?.Menu;
+        if (menu == null || menu.Items.Count < 5) return;
+
+        if (menu.Items[0] is NativeMenuItem showItem)
+            showItem.Header = LocalizationService.Instance["Tray_ShowMainWindow"];
+
+        if (menu.Items[1] is NativeMenuItem glanceItem)
+            glanceItem.Header = LocalizationService.Instance["Tray_LiveGlance"];
+
+        if (menu.Items[2] is NativeMenuItem themeItem)
+        {
+            var layoutService = Services.GetRequiredService<DashboardLayoutService>();
+            var currentThemeId = layoutService.CurrentProfile?.Customization.ThemeId ?? "BaseDarkGlass";
+            bool isCurrentlyLight = string.Equals(currentThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+            themeItem.Header = isCurrentlyLight
+                ? LocalizationService.Instance["Tray_SwitchDarkMode"]
+                : LocalizationService.Instance["Tray_SwitchLightMode"];
+        }
+
+        if (menu.Items[4] is NativeMenuItem exitItem)
+            exitItem.Header = LocalizationService.Instance["Tray_Exit"];
     }
 }

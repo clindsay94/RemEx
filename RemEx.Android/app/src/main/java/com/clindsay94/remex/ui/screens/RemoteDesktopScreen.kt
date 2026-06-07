@@ -1896,7 +1896,7 @@ fun RemoteDesktopScreenContent(
                                                 onClick = {},
                                                 label = {
                                                         Text(
-                                                                text = "${fps.toInt()} FPS",
+                                                                text = stringResource(R.string.remote_desktop_fps_overlay, fps.toInt()),
                                                                 style =
                                                                         MaterialTheme.typography
                                                                                 .labelSmall
@@ -2138,7 +2138,7 @@ fun RemoteDesktopScreenContent(
                                                                                         contentDescription =
                                                                                                 stringResource(
                                                                                                         R.string
-                                                                                                                .cd_zoom_out
+                                                                                                        .cd_zoom_out
                                                                                                 )
                                                                                 )
                                                                         }
@@ -2160,7 +2160,7 @@ fun RemoteDesktopScreenContent(
                                                                                         contentDescription =
                                                                                                 stringResource(
                                                                                                         R.string
-                                                                                                                .cd_zoom_in
+                                                                                                        .cd_zoom_in
                                                                                                 )
                                                                                 )
                                                                         }
@@ -2194,7 +2194,7 @@ fun RemoteDesktopScreenContent(
                                                                                                 )
                                                                                                         "${fps.toInt()}"
                                                                                                 else
-                                                                                                        "FPS",
+                                                                                                        stringResource(R.string.remote_desktop_fps_overlay_btn),
                                                                                         style =
                                                                                                 MaterialTheme
                                                                                                         .typography
@@ -2256,7 +2256,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                         ) {
                                                                                 Text(
-                                                                                        "L",
+                                                                                        stringResource(R.string.remote_desktop_left_initial),
                                                                                         fontWeight =
                                                                                                 FontWeight
                                                                                                         .Bold
@@ -2267,7 +2267,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 )
                                                                                 Text(
-                                                                                        "Left",
+                                                                                        stringResource(R.string.remote_desktop_left_btn),
                                                                                         style =
                                                                                                 MaterialTheme
                                                                                                         .typography
@@ -2293,7 +2293,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                         ) {
                                                                                 Text(
-                                                                                        "M",
+                                                                                        stringResource(R.string.remote_desktop_middle_initial),
                                                                                         fontWeight =
                                                                                                 FontWeight
                                                                                                         .Bold
@@ -2304,7 +2304,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 )
                                                                                 Text(
-                                                                                        "Middle",
+                                                                                        stringResource(R.string.remote_desktop_middle_btn),
                                                                                         style =
                                                                                                 MaterialTheme
                                                                                                         .typography
@@ -2330,7 +2330,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                         ) {
                                                                                 Text(
-                                                                                        "R",
+                                                                                        stringResource(R.string.remote_desktop_right_initial),
                                                                                         fontWeight =
                                                                                                 FontWeight
                                                                                                         .Bold
@@ -2341,7 +2341,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 )
                                                                                 Text(
-                                                                                        "Right",
+                                                                                        stringResource(R.string.remote_desktop_right_btn),
                                                                                         style =
                                                                                                 MaterialTheme
                                                                                                         .typography
@@ -2635,7 +2635,7 @@ fun RemoteDesktopScreenContent(
                                                 ) {
                                                         HorizontalDivider()
                                                         Text(
-                                                                text = "Window controls",
+                                                                text = stringResource(R.string.remote_desktop_window_controls_header),
                                                                 style =
                                                                         MaterialTheme.typography
                                                                                 .titleMedium,
@@ -2643,7 +2643,7 @@ fun RemoteDesktopScreenContent(
                                                         )
                                                         Text(
                                                                 text =
-                                                                        "Backend: ${uiState.capabilityState.windowBackend ?: "host"}",
+                                                                        stringResource(R.string.remote_desktop_backend, uiState.capabilityState.windowBackend ?: "host"),
                                                                 style =
                                                                         MaterialTheme.typography
                                                                                 .bodySmall,
@@ -2657,7 +2657,7 @@ fun RemoteDesktopScreenContent(
                                                                 onValueChange = {
                                                                         windowSearch = it
                                                                 },
-                                                                label = { Text("Search windows") },
+                                                                label = { Text(stringResource(R.string.remote_desktop_search_windows_label)) },
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 singleLine = true
                                                         )
@@ -2666,7 +2666,7 @@ fun RemoteDesktopScreenContent(
                                                                 onClick = {
                                                                         onQueryWindows(windowSearch)
                                                                 }
-                                                        ) { Text("Refresh windows") }
+                                                        ) { Text(stringResource(R.string.remote_desktop_refresh_windows)) }
 
                                                         if (windowActionError != null) {
                                                                 Text(
@@ -2685,7 +2685,7 @@ fun RemoteDesktopScreenContent(
                                                         if (windowResults.isEmpty()) {
                                                                 Text(
                                                                         text =
-                                                                                "No window results yet. Refresh to load the current desktop windows.",
+                                                                                stringResource(R.string.remote_desktop_no_results),
                                                                         style =
                                                                                 MaterialTheme
                                                                                         .typography
@@ -2739,21 +2739,23 @@ fun RemoteDesktopScreenContent(
                                                                                                                         buildString {
                                                                                                                                 append(
                                                                                                                                         window.className
-                                                                                                                                                ?: "Unknown class"
+                                                                                                                                                ?: stringResource(R.string.remote_desktop_unknown_class)
                                                                                                                                 )
                                                                                                                                 window.desktopNumber
                                                                                                                                         ?.let {
                                                                                                                                                 append(
-                                                                                                                                                        " • desktop "
-                                                                                                                                                )
-                                                                                                                                                append(
-                                                                                                                                                        it
+                                                                                                                                                        stringResource(
+                                                                                                                                                                R.string.remote_desktop_desktop_number,
+                                                                                                                                                                it
+                                                                                                                                                        )
                                                                                                                                                 )
                                                                                                                                         }
                                                                                                                                 if (window.isActive
                                                                                                                                 ) {
                                                                                                                                         append(
-                                                                                                                                                " • active"
+                                                                                                                                                stringResource(
+                                                                                                                                                        R.string.remote_desktop_active_status
+                                                                                                                                                )
                                                                                                                                         )
                                                                                                                                 }
                                                                                                                         },
@@ -2783,7 +2785,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                         }
                                                                                                                 ) {
                                                                                                                         Text(
-                                                                                                                                "Activate"
+                                                                                                                                stringResource(R.string.remote_desktop_action_activate)
                                                                                                                         )
                                                                                                                 }
                                                                                                                 TextButton(
@@ -2796,7 +2798,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                         }
                                                                                                                 ) {
                                                                                                                         Text(
-                                                                                                                                "Raise"
+                                                                                                                                stringResource(R.string.remote_desktop_action_raise)
                                                                                                                         )
                                                                                                                 }
                                                                                                                 TextButton(
@@ -2809,7 +2811,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                         }
                                                                                                                 ) {
                                                                                                                         Text(
-                                                                                                                                "Minimize"
+                                                                                                                                stringResource(R.string.remote_desktop_action_minimize)
                                                                                                                         )
                                                                                                                 }
                                                                                                                 TextButton(
@@ -2822,7 +2824,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                         }
                                                                                                                 ) {
                                                                                                                         Text(
-                                                                                                                                "Close"
+                                                                                                                                stringResource(R.string.remote_desktop_action_close)
                                                                                                                         )
                                                                                                                 }
                                                                                                         }
@@ -2835,7 +2837,7 @@ fun RemoteDesktopScreenContent(
                                                         if (selectedWindow != null) {
                                                                 Text(
                                                                         text =
-                                                                                "Selected: ${selectedWindow.title}",
+                                                                                stringResource(R.string.remote_desktop_selected, selectedWindow.title),
                                                                         style =
                                                                                 MaterialTheme
                                                                                         .typography
@@ -2859,7 +2861,7 @@ fun RemoteDesktopScreenContent(
                                                                                 },
                                                                                 label = {
                                                                                         Text(
-                                                                                                "Width"
+                                                                                                stringResource(R.string.remote_desktop_width)
                                                                                         )
                                                                                 },
                                                                                 modifier =
@@ -2877,7 +2879,7 @@ fun RemoteDesktopScreenContent(
                                                                                 },
                                                                                 label = {
                                                                                         Text(
-                                                                                                "Height"
+                                                                                                stringResource(R.string.remote_desktop_height)
                                                                                         )
                                                                                 },
                                                                                 modifier =
@@ -2907,7 +2909,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 }
                                                                         }
-                                                                ) { Text("Resize selected") }
+                                                                ) { Text(stringResource(R.string.remote_desktop_resize_selected)) }
 
                                                                 OutlinedTextField(
                                                                         value = targetDesktopText,
@@ -2916,7 +2918,7 @@ fun RemoteDesktopScreenContent(
                                                                                         it
                                                                         },
                                                                         label = {
-                                                                                Text("Desktop #")
+                                                                                Text(stringResource(R.string.remote_desktop_desktop_label))
                                                                         },
                                                                         modifier =
                                                                                 Modifier.fillMaxWidth(),
@@ -2936,7 +2938,7 @@ fun RemoteDesktopScreenContent(
                                                                                         )
                                                                                 }
                                                                         }
-                                                                ) { Text("Move selected window") }
+                                                                ) { Text(stringResource(R.string.remote_desktop_move_selected)) }
                                                         }
                                                 }
                                         }

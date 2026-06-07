@@ -146,7 +146,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private DesktopWindowInfo? _selectedWindow;
 
     [ObservableProperty]
-    private string _windowControlStatusText = "Advanced window control is unavailable on this host.";
+    private string _windowControlStatusText = LocalizationService.Instance["RemoteDesktop_WindowControlUnavailable"];
 
     [ObservableProperty]
     private int _windowResizeWidth = 1280;
@@ -351,7 +351,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 await RefreshDisplayTargetsAsync();
                 if (SelectedDisplayTarget is null)
                 {
-                    StatusText = "Select a display target before starting the stream.";
+                    StatusText = LocalizationService.Instance["RemoteDesktop_SelectDisplayTarget"];
                     HasStreamError = true;
                     return;
                 }
@@ -468,7 +468,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         try
         {
             IsLoadingDisplays = true;
-            StatusText = "Loading displays...";
+            StatusText = LocalizationService.Instance["RemoteDesktop_LoadingDisplays"];
 
             var catalog = await _desktopService.QueryDisplaysAsync(Connection.HostAddress);
             await Dispatcher.UIThread.InvokeAsync(() => ApplyDisplayCatalog(catalog, previousSelection));
@@ -484,7 +484,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 ClearDisplayTargets();
-                StatusText = $"Failed to load displays: {ex.Message}";
+                StatusText = string.Format(LocalizationService.Instance["Status_LoadDisplaysFailedFormat"], ex.Message);
                 HasStreamError = true;
             });
         }
@@ -509,7 +509,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         try
         {
             IsSwitchingDisplay = true;
-            StatusText = "Switching display...";
+            StatusText = LocalizationService.Instance["RemoteDesktop_SwitchingDisplay"];
             HasStreamError = false;
             ClearCurrentFrame();
             ResetRemoteCursorOverlay();
@@ -629,7 +629,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            WindowControlStatusText = $"Window query failed: {ex.Message}";
+            WindowControlStatusText = string.Format(LocalizationService.Instance["RemoteDesktop_WindowQueryFailed"], ex.Message);
         }
     }
 
@@ -712,15 +712,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            WindowControlStatusText = $"Window action failed: {ex.Message}";
+            WindowControlStatusText = string.Format(LocalizationService.Instance["RemoteDesktop_WindowActionFailed"], ex.Message);
         }
     }
 
     private void ApplyWindowResult(DesktopWindowResult result)
     {
         WindowControlStatusText = result.Success
-            ? $"{result.Backend ?? "host"} ready"
-            : result.ErrorText ?? "Window control failed.";
+            ? string.Format(LocalizationService.Instance["RemoteDesktop_BackendReady"], result.Backend ?? "host")
+            : result.ErrorText ?? LocalizationService.Instance["RemoteDesktop_WindowControlFailed"];
 
         if (result.Windows is null)
         {

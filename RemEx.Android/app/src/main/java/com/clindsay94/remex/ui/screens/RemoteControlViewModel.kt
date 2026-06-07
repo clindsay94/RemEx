@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -84,7 +85,7 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
     fun wakePc() {
         viewModelScope.launch {
             if (!RemexCoreClient.isLibraryLoaded) {
-                _commandStatus.value = "Native library not loaded"
+                _commandStatus.value = getApplication<Application>().getString(R.string.status_native_lib_not_loaded)
                 return@launch
             }
 
@@ -95,13 +96,17 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                     val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull() ?: ""
                     val response = JSONObject(responseJson)
                     val success = response.optBoolean("success", false)
-                    val message = response.optString("message", "Wake packet sent")
-                    _commandStatus.value = if (success) "Success: $message" else "Failed: $message"
+                    val message = response.optString("message", getApplication<Application>().getString(R.string.widget_toast_wol_sent))
+                    _commandStatus.value = if (success) {
+                        getApplication<Application>().getString(R.string.rc_success_format, message)
+                    } else {
+                        getApplication<Application>().getString(R.string.rc_failed_format, message)
+                    }
                 } else {
-                    _commandStatus.value = "Failed: MAC address not configured in settings"
+                    _commandStatus.value = getApplication<Application>().getString(R.string.rc_failed_mac_not_configured)
                 }
             } catch (e: Exception) {
-                _commandStatus.value = "Error: ${e.message ?: "Unknown error"}"
+                _commandStatus.value = getApplication<Application>().getString(R.string.rc_error_format, e.message ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error))
             }
         }
     }
@@ -198,7 +203,7 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
     fun sendSystemCommand(action: String, delaySeconds: Int = 0) {
         viewModelScope.launch {
             if (!RemexCoreClient.isLibraryLoaded) {
-                _commandStatus.value = "Native library not loaded"
+                _commandStatus.value = getApplication<Application>().getString(R.string.status_native_lib_not_loaded)
                 return@launch
             }
 
@@ -216,16 +221,16 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
 
                 val responseJson = RemexCoreClient.SendCommand(request.toString()).getOrNull() ?: "{}"
                 val response = JSONObject(responseJson)
-                val message = response.optString("message", "Command sent")
+                val message = response.optString("message", getApplication<Application>().getString(R.string.rc_command_sent))
                 val success = response.optBoolean("success", false)
                 _commandStatus.value =
                         if (success) {
-                            "Success: $message"
+                            getApplication<Application>().getString(R.string.rc_success_format, message)
                         } else {
-                            "Failed: $message"
+                            getApplication<Application>().getString(R.string.rc_failed_format, message)
                         }
             } catch (e: Exception) {
-                _commandStatus.value = "Failed: ${e.message ?: "Unknown error"}"
+                _commandStatus.value = getApplication<Application>().getString(R.string.rc_failed_format, e.message ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error))
             }
         }
     }

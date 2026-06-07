@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Threading;
+using Remex.Client.Services;
 
 namespace Remex.Client.Controls;
 
@@ -325,9 +326,9 @@ public class BootSequenceControl : Control
                 var textColor = Color.FromArgb((byte)(titleFade * 255), 255, 255, 255);
                 var accentTextColor = Color.FromArgb((byte)(titleFade * 255), primary.R, primary.G, primary.B);
                 
-                DrawText(ctx, "REMOTE", new Point(w / 2 - 120, h / 2 + 50), 38, textColor, true);
-                DrawText(ctx, "EXECUTION", new Point(w / 2 - 120, h / 2 + 92), 38, accentTextColor, true);
-                DrawText(ctx, "⚡ COMMAND CENTER", new Point(w / 2 - 68, h / 2 + 146), 11, Color.FromArgb((byte)(titleFade * 150), 220, 240, 255), false);
+                DrawText(ctx, LocalizationService.Instance["Boot_Remote"] ?? "REMOTE", new Point(w / 2 - 120, h / 2 + 50), 38, textColor, true);
+                DrawText(ctx, LocalizationService.Instance["Boot_Execution"] ?? "EXECUTION", new Point(w / 2 - 120, h / 2 + 92), 38, accentTextColor, true);
+                DrawText(ctx, LocalizationService.Instance["Boot_CommandCenter"] ?? "⚡ COMMAND CENTER", new Point(w / 2 - 68, h / 2 + 146), 11, Color.FromArgb((byte)(titleFade * 150), 220, 240, 255), false);
             }
         }
         else
@@ -432,7 +433,7 @@ public class BootSequenceControl : Control
                 DrawStylizedRLogo(ctx, w, h, 0.8, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
                 DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 88, h * 0.48 - 60), 54, Colors.White, true);
                 DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 22, h * 0.48 - 10), 54, Colors.White, true);
-                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+                DrawText(ctx, LocalizationService.Instance["Boot_CommandYourPc"] ?? "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
             }
 
             // Solid (clipped by wave)
@@ -457,9 +458,9 @@ public class BootSequenceControl : Control
                 DrawStylizedRLogo(ctx, w, h, 0.8, primary, 1.0, 1.0, 0, 0, 0, new Point(w * 0.50 - 90, h * 0.48 - 65));
                 DrawText(ctx, "EM", new Point(w * 0.50 - 90 + 88, h * 0.48 - 60), 54, Colors.White, true);
                 DrawText(ctx, "EX", new Point(w * 0.50 - 90 + 22, h * 0.48 - 10), 54, Colors.White, true);
-                DrawText(ctx, "ote", new Point(w * 0.50 - 90 + 88 + 74, h * 0.48 - 35), 24, primary, false);
-                DrawText(ctx, "ecution", new Point(w * 0.50 - 90 + 22 + 58, h * 0.48 + 15), 24, primary, false);
-                DrawText(ctx, "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
+                DrawText(ctx, LocalizationService.Instance["Boot_Ote"] ?? "ote", new Point(w * 0.50 - 90 + 88 + 74, h * 0.48 - 35), 24, primary, false);
+                DrawText(ctx, LocalizationService.Instance["Boot_Ecution"] ?? "ecution", new Point(w * 0.50 - 90 + 22 + 58, h * 0.48 + 15), 24, primary, false);
+                DrawText(ctx, LocalizationService.Instance["Boot_CommandYourPc"] ?? "COMMAND YOUR PC", new Point(w * 0.50 - 76, h * 0.48 + 60), 14, new Color(180, 255, 255, 255), false);
 
                 // Connection Stream
                 Point connStart = new Point(monitorCx + monitorW * 0.3, monitorCy + monitorH * 0.3);

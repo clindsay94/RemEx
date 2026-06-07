@@ -11,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.R
 import com.clindsay94.remex.service.FileTransferNotificationManager
 import java.io.OutputStream
 import java.security.MessageDigest
@@ -170,7 +171,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun browseRemote(path: String = _remotePath.value) {
         val rootId = _selectedRootId.value
         if (rootId.isNullOrBlank()) {
-            _statusText.value = "Select a remote shared folder first."
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_select_folder_first)
             return
         }
 
@@ -218,7 +219,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val rootId = _selectedRootId.value ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = "Deleting ${entry.name}…"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_deleting_single, entry.name)
             val requestId = UUID.randomUUID().toString().replace("-", "")
             val deferred = CompletableDeferred<JSONObject>()
             pendingManageOps[requestId] = deferred
@@ -248,13 +249,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                                 .optJSONObject("fileManageResponse")
                                 ?.optMeaningfulString("errorMessage")
                 if (error != null) {
-                    _statusText.value = "Delete failed: $error"
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_delete_failed, error)
                 } else {
-                    _statusText.value = "Deleted."
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_deleted_success)
                     browseRemote()
                 }
             } catch (_: TimeoutCancellationException) {
-                _statusText.value = "Delete timed out."
+                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_delete_timeout)
             } finally {
                 pendingManageOps.remove(requestId)
                 _isLoading.value = false
@@ -271,7 +272,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         clearSelection()
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = "Deleting ${toDelete.size} items…"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_deleting_multiple, toDelete.size)
             var errorCount = 0
 
             for (entry in toDelete) {
@@ -312,8 +313,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             }
 
             _statusText.value =
-                    if (errorCount == 0) "Deleted ${toDelete.size} items."
-                    else "Deleted ${toDelete.size - errorCount} of ${toDelete.size} items ($errorCount failed)."
+                    if (errorCount == 0) getApplication<Application>().getString(R.string.file_transfer_deleted_multiple_success, toDelete.size)
+                    else getApplication<Application>().getString(R.string.file_transfer_deleted_multiple_failed, toDelete.size - errorCount, toDelete.size, errorCount)
             _isLoading.value = false
             browseRemote()
         }
@@ -326,7 +327,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = "Renaming ${entry.name}…"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_renaming_single, entry.name)
             val requestId = UUID.randomUUID().toString().replace("-", "")
             val deferred = CompletableDeferred<JSONObject>()
             pendingManageOps[requestId] = deferred
@@ -357,13 +358,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                                 .optJSONObject("fileManageResponse")
                                 ?.optMeaningfulString("errorMessage")
                 if (error != null) {
-                    _statusText.value = "Rename failed: $error"
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_rename_failed, error)
                 } else {
-                    _statusText.value = "Renamed."
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_renamed_success)
                     browseRemote()
                 }
             } catch (_: TimeoutCancellationException) {
-                _statusText.value = "Rename timed out."
+                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_rename_timeout)
             } finally {
                 pendingManageOps.remove(requestId)
                 _isLoading.value = false
@@ -378,7 +379,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = "Adding shortcut…"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_adding_shortcut)
             val requestId = UUID.randomUUID().toString().replace("-", "")
             val deferred = CompletableDeferred<JSONObject>()
             pendingRootManageOps[requestId] = deferred
@@ -403,13 +404,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 val respObj = response.optJSONObject("fileRootManageResponse")
                 val error = respObj?.optMeaningfulString("errorMessage")
                 if (error != null) {
-                    _statusText.value = "Pin failed: $error"
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_failed, error)
                 } else {
-                    _statusText.value = "Shortcut added."
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_shortcut_added)
                     updateRootsFromResponse(respObj)
                 }
             } catch (_: TimeoutCancellationException) {
-                _statusText.value = "Operation timed out."
+                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
             } finally {
                 pendingRootManageOps.remove(requestId)
                 _isLoading.value = false
@@ -420,7 +421,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun removeRoot(rootId: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = "Removing shortcut…"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_removing_shortcut)
             val requestId = UUID.randomUUID().toString().replace("-", "")
             val deferred = CompletableDeferred<JSONObject>()
             pendingRootManageOps[requestId] = deferred
@@ -444,13 +445,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 val respObj = response.optJSONObject("fileRootManageResponse")
                 val error = respObj?.optMeaningfulString("errorMessage")
                 if (error != null) {
-                    _statusText.value = "Remove failed: $error"
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_remove_failed, error)
                 } else {
-                    _statusText.value = "Shortcut removed."
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_shortcut_removed)
                     updateRootsFromResponse(respObj)
                 }
             } catch (_: TimeoutCancellationException) {
-                _statusText.value = "Operation timed out."
+                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
             } finally {
                 pendingRootManageOps.remove(requestId)
                 _isLoading.value = false
@@ -463,7 +464,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun uploadFromUri(uri: Uri) {
         val rootId = _selectedRootId.value
         if (rootId.isNullOrBlank()) {
-            _statusText.value = "Select a remote shared folder first."
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_select_folder_first)
             return
         }
         if (_isTransferring.value) return
@@ -477,7 +478,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         activeTransferFileName = targetName
         _isTransferring.value = true
         _transferProgress.value = 0f
-        _statusText.value = "Uploading $targetName..."
+        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_uploading_single, targetName)
         FileTransferNotificationManager.showTransferStarted(
                 getApplication(),
                 targetName,
@@ -571,11 +572,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                         Log.i(TAG, "Upload cancelled for $transferId")
                     } catch (e: Exception) {
                         Log.e(TAG, "Upload failed", e)
-                        val message = e.message ?: "Unknown error."
-                        _statusText.value = "Upload failed: $message"
+                        val message = e.message ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error)
+                        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_upload_failed, message)
                         FileTransferNotificationManager.showTransferFailed(
                                 getApplication(),
-                                "Upload failed: $message",
+                                getApplication<Application>().getString(R.string.file_transfer_upload_failed, message),
                         )
                         resetTransferState()
                     }
@@ -585,7 +586,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun downloadToUri(entry: RemoteFileEntry, destinationUri: Uri) {
         val rootId = _selectedRootId.value
         if (rootId.isNullOrBlank()) {
-            _statusText.value = "Select a remote shared folder first."
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_select_folder_first)
             return
         }
         if (entry.isDirectory || _isTransferring.value) return
@@ -594,7 +595,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val resolver = getApplication<Application>().contentResolver
         val output = resolver.openOutputStream(destinationUri, "w")
         if (output == null) {
-            _statusText.value = "Unable to open the selected save location."
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_unable_open_location)
             return
         }
 
@@ -622,7 +623,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 )
         _isTransferring.value = true
         _transferProgress.value = 0f
-        _statusText.value = "Downloading ${entry.name}..."
+        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_downloading_single, entry.name)
         FileTransferNotificationManager.showTransferStarted(
                 getApplication(),
                 entry.name,
@@ -660,7 +661,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         )
         activeUploadJob?.cancel()
         cleanupDownload(deletePartial = true)
-        _statusText.value = "Cancelled."
+        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_cancelled)
         FileTransferNotificationManager.cancel(getApplication())
         resetTransferState()
     }
@@ -689,7 +690,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val response = obj.optJSONObject("fileRootsResponse") ?: return
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {
-            _statusText.value = "Shared folders unavailable: $errorMessage"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_shared_folders_unavailable, errorMessage)
             return
         }
 
@@ -700,7 +701,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             roots.firstOrNull()?.let { selectRoot(it.rootId) }
         }
         if (roots.isEmpty()) {
-            _statusText.value = "This host is not exposing any shared folders yet."
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_no_shared_folders)
         }
     }
 
@@ -711,7 +712,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isLoading.value = false
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {
-            _statusText.value = "Browse error: $errorMessage"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_browse_error, errorMessage)
             return
         }
 
@@ -755,14 +756,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
         val total = progress.optLong("totalBytes", 0)
         val transferred = progress.optLong("bytesTransferred", 0)
-        val action = if (activeDownload != null) "Downloading" else "Uploading"
+        val action = if (activeDownload != null) getApplication<Application>().getString(R.string.file_transfer_action_downloading) else getApplication<Application>().getString(R.string.file_transfer_action_uploading)
 
         if (total > 0) {
             _transferProgress.value = (transferred.toFloat() / total).coerceIn(0f, 1f)
-            _statusText.value = "$action... ${(transferred * 100 / total)}%"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_progress_status, action, "${(transferred * 100 / total)}%")
         } else if (transferred > 0) {
             _transferProgress.value = 0f
-            _statusText.value = "$action... ${formatBytes(transferred)}"
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_progress_status, action, formatBytes(transferred))
         } else {
             return
         }
@@ -805,30 +806,30 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (success) {
             val download = activeDownload
             if (download != null) {
-                val fileName = activeTransferFileName ?: "File"
+                val fileName = activeTransferFileName ?: getApplication<Application>().getString(R.string.file_transfer_file_fallback)
                 val actualSha256 = Base64.encodeToString(download.digest.digest(), Base64.NO_WRAP)
                 val hashMismatch = expectedSha256 != null && expectedSha256 != actualSha256
                 if (hashMismatch) {
                     Log.w(TAG, "Download SHA-256 mismatch: expected=$expectedSha256 actual=$actualSha256")
                     cleanupDownload(deletePartial = true)
-                    _statusText.value = "Download failed: integrity check failed."
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_download_failed_integrity)
                     FileTransferNotificationManager.showTransferFailed(
                             getApplication(),
-                            "Download failed: SHA-256 mismatch",
+                            getApplication<Application>().getString(R.string.file_transfer_download_failed_sha256),
                     )
                     resetTransferState()
                     return
                 }
                 cleanupDownload(deletePartial = false)
-                _statusText.value = "Download complete."
+                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_download_complete)
                 FileTransferNotificationManager.showTransferComplete(
                         getApplication(),
                         fileName,
                         isDownload = true,
                 )
             } else {
-                val fileName = activeTransferFileName ?: "File"
-                _statusText.value = "Upload complete."
+                val fileName = activeTransferFileName ?: getApplication<Application>().getString(R.string.file_transfer_file_fallback)
+                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_upload_complete)
                 FileTransferNotificationManager.showTransferComplete(
                         getApplication(),
                         fileName,
@@ -838,11 +839,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             }
         } else {
             cleanupDownload(deletePartial = true)
-            val message = errorMessage ?: "Unknown error."
-            _statusText.value = "Transfer failed: $message"
+            val message = errorMessage ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error)
+            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_transfer_failed, message)
             FileTransferNotificationManager.showTransferFailed(
                     getApplication(),
-                    "Transfer failed: $message",
+                    getApplication<Application>().getString(R.string.file_transfer_transfer_failed, message),
             )
         }
 

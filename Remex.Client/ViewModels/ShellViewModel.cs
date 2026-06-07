@@ -126,7 +126,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Recomputes <see cref="TrayStatusSummary"/> from the latest telemetry snapshot.</summary>
     public void UpdateTrayStatus(Remex.Core.Messages.TelemetryPayload? telemetry)
     {
-        var connectionLabel = Connection.IsConnected ? "Connected" : "Disconnected";
+        var connectionLabel = Connection.IsConnected ? LocalizationService.Instance["Status_Connected"] : LocalizationService.Instance["Status_Disconnected"];
 
         if (telemetry?.Sensors is not { Count: > 0 })
         {

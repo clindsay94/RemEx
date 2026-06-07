@@ -178,7 +178,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     private val _pairingRequired =
             MutableSharedFlow<Pair<String, Int>>(
-                    extraBufferCapacity = 1,
+                    replay = 1,
                     onBufferOverflow = BufferOverflow.DROP_OLDEST
             )
     val pairingRequired = _pairingRequired.asSharedFlow()

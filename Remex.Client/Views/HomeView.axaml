@@ -56,7 +56,7 @@
 
                 <Grid Margin="0,24,0,0">
                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                        <Image Source="avares://Remex.Client/Assets/New-REMEX.png" Height="300" HorizontalAlignment="Center" Stretch="Uniform" Margin="0,4,0,0" ToolTip.Tip="REMEX - Remote Execution / Live Telemetry"/>
+                        <Image Source="avares://Remex.Client/Assets/New-REMEX.png" Height="300" HorizontalAlignment="Center" Stretch="Uniform" Margin="0,4,0,0" ToolTip.Tip="{local:Localize Home_LogoTooltip}"/>
                     </StackPanel>
 
 
@@ -68,11 +68,11 @@
                 <!-- ═══ LEFT COLUMN: LIVE TELEMETRY MATRIX ═══ -->
                 <StackPanel MinWidth="400" MaxWidth="1200" Spacing="24" Margin="0,0,32,32">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="// ACTIVE_SENSORS" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Home_ActiveSensors}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
                         <Button Grid.Column="1" Classes="action-pill" Command="{Binding NavigateToCanvasCommand}" Padding="16,8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="[ ]" FontSize="14" FontFamily="{StaticResource JetBrainsMono}" VerticalAlignment="Center"/>
-                                <TextBlock Text="OPEN_WORKSPACE" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{local:Localize Home_OpenWorkspace}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -119,16 +119,16 @@
                     <!-- No Sensors HUD state -->
                     <Border Classes="glass-card" Padding="48" IsVisible="{Binding !PinnedSensors.Count}" CornerRadius="4,32,4,32" BorderThickness="1,0,0,0">
                         <StackPanel Spacing="16" HorizontalAlignment="Center">
-                            <TextBlock Text="[ NO_DATA_FEED ]" FontSize="20" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Home_NoDataFeed}" FontSize="20" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="2"/>
                             <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}" FontSize="13" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap"/>
-                            <Button Classes="action-pill action-pill-accent" Content="INITIALIZE SENSORS" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
+                            <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeSensors}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding NavigateToCanvasCommand}" HorizontalAlignment="Center" Padding="24,12" Margin="0,16,0,0"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
 
                 <!-- ═══ RIGHT COLUMN: COMMAND DIRECTIVES ═══ -->
                 <StackPanel Width="340" Spacing="24">
-                    <TextBlock Text="// DIRECTIVES" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4"/>
+                    <TextBlock Text="{local:Localize Home_Directives}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4"/>
 
                     <StackPanel Spacing="16">
                         <!-- High Priority Action -->
@@ -138,8 +138,8 @@
                                     <Path Data="{StaticResource IconRemote}" Fill="#FF6B6B" Width="20" Height="20" Stretch="Uniform"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="REMOTE_CONTROL" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="System power &amp; access" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_RemoteControl}" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_RemoteControlDesc}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                             </Grid>
                         </Button>
@@ -151,8 +151,8 @@
                                     <Path Data="{StaticResource IconLauncher}" Fill="#00F3FF" Width="20" Height="20" Stretch="Uniform"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="APP_LAUNCHER" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="Execute remote processes" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_AppLauncher}" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_AppLauncherDesc}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                             </Grid>
                         </Button>
@@ -163,8 +163,8 @@
                                     <Path Data="{StaticResource IconTasks}" Fill="#FFB800" Width="20" Height="20" Stretch="Uniform"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="TASK_MONITOR" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="Manage active threads" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_TaskMonitor}" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_TaskMonitorDesc}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                             </Grid>
                         </Button>
@@ -175,8 +175,8 @@
                                     <Path Data="{StaticResource IconFiles}" Fill="#34D399" Width="20" Height="20" Stretch="Uniform"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="FILE_SYSTEM" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="Remote data transfer" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_FileSystem}" FontSize="13" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{local:Localize Home_FileSystemDesc}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
                             </Grid>
                         </Button>
@@ -203,13 +203,13 @@
                 </Ellipse>
             </Grid>
             <StackPanel HorizontalAlignment="Center" MinWidth="140">
-                <TextBlock Text="LINK_STATUS" FontSize="9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                <TextBlock Text="{local:Localize Home_LinkStatus}" FontSize="9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
                 <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
             </StackPanel>
             <StackPanel Spacing="8">
-                <Button Classes="action-pill action-pill-accent" Content="INITIALIZE LINK" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
-                <Button Classes="action-pill action-pill-danger" Content="TERMINATE LINK" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
+                <Button Classes="action-pill action-pill-accent" Content="{local:Localize Home_InitializeLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnected}" Padding="20,10"/>
+                <Button Classes="action-pill action-pill-danger" Content="{local:Localize Home_TerminateLink}" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Padding="20,10"/>
             </StackPanel>
         </StackPanel>
     </Border>

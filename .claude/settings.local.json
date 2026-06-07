@@ -66,8 +66,25 @@
       "Read(//usr/share/dbus-1/services/**)",
       "Read(//usr/lib/systemd/user/**)",
       "Bash(dbus-send --session --dest=org.freedesktop.impl.portal.desktop.kde --type=method_call --print-reply / org.freedesktop.DBus.Peer.Ping)",
-      "Bash(journalctl --user -u xdg-desktop-portal.service -b 0 --no-pager)"
+      "Bash(journalctl --user -u xdg-desktop-portal.service -b 0 --no-pager)",
+      "mcp__plugin_context-mode_context-mode__ctx_index",
+      "mcp__plugin_context-mode_context-mode__ctx_insight",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute"
     ]
+  },
+  "skillOverrides": {
+    "aspnet-core": "off",
+    "code-reviewer": "off",
+    "figma-designer": "off",
+    "frontend-design": "off",
+    "mcp-builder": "off",
+    "performance-engineer": "off",
+    "planning-with-files": "off",
+    "security-best-practices": "off",
+    "testing-strategies": "off",
+    "verification-before-completion": "off",
+    "winui-app": "off",
+    "workflow-orchestrator": "off"
   },
   "outputStyle": "default"
 }

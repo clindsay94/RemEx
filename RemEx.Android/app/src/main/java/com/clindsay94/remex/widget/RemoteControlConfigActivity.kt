@@ -124,7 +124,7 @@ fun RemoteControlConfigScreen(
                 items(WIDGET_REMOTE_COMMANDS) { cmd ->
                     val checked = cmd.id in selected
                     CommandCheckRow(
-                        title = cmd.title,
+                        title = stringResource(cmd.titleRes),
                         checked = checked,
                         onToggle = {
                             if (checked) selected.remove(cmd.id)

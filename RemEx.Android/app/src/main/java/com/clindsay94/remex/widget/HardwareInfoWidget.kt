@@ -19,6 +19,7 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -90,6 +91,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
     val selectedIds = selectedStr.split(",").filter { it.isNotBlank() }.toSet()
     val size = LocalSize.current
 
+    val context = androidx.glance.LocalContext.current
     if (selectedIds.isEmpty()) {
         Box(
             modifier = GlanceModifier.fillMaxSize()
@@ -100,7 +102,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Tap to open RemEx",
+                context.getString(R.string.widget_tap_to_open),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 12.sp
@@ -139,7 +141,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
     ) {
         if (showTitle) {
             Text(
-                "Hardware Info",
+                context.getString(R.string.widget_hardware_title),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontWeight = FontWeight.Bold,
@@ -151,7 +153,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
 
         if (visibleSensors.isEmpty()) {
             Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Waiting for data\u2026", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
+                Text(context.getString(R.string.widget_waiting_data), style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
             }
         } else if (useCards) {
             val cardWidth = ((availableWidth / columns) - 4.dp).coerceAtLeast(0.dp)

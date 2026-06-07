@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.R
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -288,10 +289,7 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                                 "(timeout $consecutiveTimeouts/$MAX_CONSECUTIVE_TIMEOUTS)"
                 )
                 if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
-                    _loadError.value =
-                            "Host is not responding to process list requests. " +
-                                    "Check that pairing completed and the host has " +
-                                    "permission to read process info."
+                    _loadError.value = getApplication<Application>().getString(R.string.task_manager_host_unresponsive)
                     autoRefreshJob?.cancel()
                     autoRefreshJob = null
                 }
@@ -325,7 +323,7 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     Pair(responseJson?.isNotBlank() == true, null)
                 }
                 if (!success) {
-                    _killError.value = message ?: "Failed to kill process $pid"
+                    _killError.value = message ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, pid)
                 }
                 // Request a fresh process list immediately; the host will respond
                 // via the processList SharedFlow when it's ready.

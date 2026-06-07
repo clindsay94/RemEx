@@ -1,3 +1,87 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+RemEx is a cross-platform remote PC management tool. It consists of a .NET 10 / Avalonia desktop client, a headless ASP.NET host service, and a native Android app (Kotlin + Jetpack Compose). The `Remex.Core` library is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+
+## Build & Run
+
+```powershell
+# Run host service
+dotnet run --project Remex.Host
+
+# Run desktop client
+dotnet run --project Remex.Client.Desktop
+
+# Run all tests
+dotnet test Remex.sln
+
+# Unified build (all platforms, release)
+pwsh ./build-remex.ps1 -c release -t all
+
+# Android only — hardened fresh build
+.\scripts\android-fresh.ps1 -Configuration Release
+
+# Linux packages (run from repo root; uses WSL on Windows)
+./installer/build-linux.sh
+```
+
+## Architecture
+
+```
+Remex.Core/              Shared models, messages, validation, Guards, serialization
+                         ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
+Remex.Host/              Headless ASP.NET service: Minimal APIs, WebSocket, mDNS
+Remex.Client/            Shared Avalonia UI: views, viewmodels, controls, services, themes
+Remex.Client.Desktop/    Desktop entry point (Windows / Linux) — thin wrapper over Remex.Client
+RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+```
+
+### Communication Protocols
+
+| Protocol | Endpoint | Port | Purpose |
+|---|---|---|---|
+| WSS | `/ws` | 5005 | Telemetry, power commands, pairing, file transfer |
+| WSS | `/ws/desktop` | 5005 | H.264 / MJPEG remote desktop stream |
+| TCP (TLS) | — | 8338 | External script command ingress |
+| Named Pipe | `RemExLocalIPC` | — | Local IPC between client and Windows Service |
+
+All messages over `/ws` use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN; clients then pin the host certificate SPKI hash.
+
+### Key Directories in Remex.Client
+
+`Views/` and `ViewModels/` follow standard MVVM. `Services/` holds connection, layout, telemetry, and theme services. `Themes/` has the four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass). `Localization/` drives live 8-language switching without restart.
+
+## Versioning
+
+- **.NET projects**: centrally managed in `Directory.Build.props` (`<Version>`)
+- **Android**: managed in `RemEx.Android/app/version.properties` (`versionName` / `versionCode`)
+- `build-remex.ps1` syncs `Directory.Build.props` from `version.properties` automatically
+
+## Coding Conventions
+
+### Async
+**Do NOT use `ConfigureAwait(false)` anywhere.** Neither Avalonia nor ASP.NET Core uses `SynchronizationContext`. CA2007 is suppressed in `.editorconfig`. See `docs/ASYNC_GUIDELINES.md`.
+
+### Null Safety
+Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (from `Remex.Core/Guards/Guard.cs`) in constructors for required dependencies. Use `GetRequiredService<T>()` (not `GetService<T>()`) for DI resolution. See `docs/NULL_SAFETY_GUIDELINES.md`.
+
+### Validation
+All network-facing input must be validated through the shared validation helpers in `Remex.Core/Validation/`. See `docs/VALIDATION_GUIDELINES.md`.
+
+## Android Prerequisites
+
+- Android SDK API Level 36 platform required
+- NDK version **30.0.14904198** required for NativeAOT JNI compilation
+- `build-remex.ps1` auto-installs both via `sdkmanager` if absent
+- Set `ANDROID_HOME` or configure `RemEx.Android/local.properties` (`sdk.dir=...`)
+
+## Host Diagnostics
+
+On Linux, run `dotnet run --project Remex.Host -- --doctor` to check PipeWire/X11/VAAPI prerequisites.
+
 <!-- agent-team:start -->
 ## Agent Team & Communication
 
@@ -13,7 +97,7 @@ Read the relevant sub-project `AGENTS.md` before touching files in that director
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (10376 symbols, 19943 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (10285 symbols, 19874 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -55,7 +139,7 @@ This project is indexed by GitNexus as **RemEx** (10376 symbols, 19943 relations
 <!-- gitnexus:end -->
 
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:970c3bf2 -->
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
@@ -99,6 +183,7 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 
    # Team-maintainer opt-in only, unless current instructions forbid it:
    git pull --rebase
+   bd dolt push
    git push
    git status
    ```

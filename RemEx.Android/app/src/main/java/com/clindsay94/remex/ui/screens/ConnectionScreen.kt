@@ -126,20 +126,28 @@ fun ConnectionScreenContent(
 
         // Pending flags for deferred actions after permission grants
         var pendingConnect by remember { mutableStateOf(false) }
+        var pendingConnectNeedsLan by remember { mutableStateOf(false) }
         var pendingDiscover by remember { mutableStateOf(false) }
 
         // Snackbar state declared early so permission launchers below can reference it.
         val snackbarHostState = remember { SnackbarHostState() }
 
-        // Permissions needed only for connect (POST_NOTIFICATIONS + NEARBY_WIFI_DEVICES + ACCESS_LOCAL_NETWORK)
-        val connectPermissions = remember {
-                buildList {
+        // Runtime permissions required to connect, scoped to the target host. A loopback or
+        // VPN/Tailscale host is not on the local network, so the LAN-scoped permissions
+        // (NEARBY_WIFI_DEVICES / ACCESS_LOCAL_NETWORK) are irrelevant there and must NOT be
+        // requested or treated as blocking — only POST_NOTIFICATIONS (for the keepalive
+        // foreground service) applies. This is what lets a Tailscale connection proceed even
+        // when the user has declined local-network access.
+        fun connectPermissionsFor(host: String): Array<String> {
+                val needsLan =
+                        com.clindsay94.remex.security.TransportTrust.requiresLocalNetworkAccess(host)
+                return buildList {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                         add(Manifest.permission.POST_NOTIFICATIONS)
-                                        add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                                        if (needsLan) add(Manifest.permission.NEARBY_WIFI_DEVICES)
                                 }
-                                // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN discovery
-                                if (Build.VERSION.SDK_INT >= 36) {
+                                // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN access.
+                                if (needsLan && Build.VERSION.SDK_INT >= 36) {
                                         add("android.permission.ACCESS_LOCAL_NETWORK")
                                 }
                         }
@@ -158,13 +166,6 @@ fun ConnectionScreenContent(
                 } else true
 
                 return hasNearby && hasLocalNet
-        }
-
-        fun hasAllConnectPermissions(): Boolean {
-                return connectPermissions.all {
-                        ContextCompat.checkSelfPermission(context, it) ==
-                                PackageManager.PERMISSION_GRANTED
-                }
         }
 
         fun doConnect() {
@@ -194,8 +195,11 @@ fun ConnectionScreenContent(
                 ) { results ->
                         if (pendingConnect) {
                                 pendingConnect = false
-                                // Check if ACCESS_LOCAL_NETWORK was denied on Android 17+
-                                val localNetworkDenied = Build.VERSION.SDK_INT >= 37 &&
+                                // Only treat a LAN-permission denial as fatal when this connection
+                                // actually needs the local network. A Tailscale/VPN target does not,
+                                // so a denial there must still fall through to doConnect().
+                                val localNetworkDenied = pendingConnectNeedsLan &&
+                                        Build.VERSION.SDK_INT >= 37 &&
                                         results["android.permission.ACCESS_LOCAL_NETWORK"] == false
                                 if (localNetworkDenied) {
                                         scope.launch {
@@ -1098,13 +1102,25 @@ fun ConnectionScreenContent(
                                                 view.performHapticFeedback(
                                                         HapticFeedbackConstants.KEYBOARD_TAP
                                                 )
-                                                if (connectPermissions.isNotEmpty() &&
-                                                                !hasAllConnectPermissions()
-                                                ) {
+                                                // Scope the required permissions to the target host: a
+                                                // loopback or Tailscale/VPN target needs no LAN permission,
+                                                // so a denied/undecided local-network grant must NOT block it
+                                                // (the root cause of "won't even try to connect" over Tailscale).
+                                                val targetHost = hostInput.trim()
+                                                val perms = connectPermissionsFor(targetHost)
+                                                pendingConnectNeedsLan =
+                                                        com.clindsay94.remex.security.TransportTrust
+                                                                .requiresLocalNetworkAccess(targetHost)
+                                                val allGranted =
+                                                        perms.all {
+                                                                ContextCompat.checkSelfPermission(
+                                                                        context,
+                                                                        it
+                                                                ) == PackageManager.PERMISSION_GRANTED
+                                                        }
+                                                if (perms.isNotEmpty() && !allGranted) {
                                                         pendingConnect = true
-                                                        connectPermissionLauncher.launch(
-                                                                connectPermissions
-                                                        )
+                                                        connectPermissionLauncher.launch(perms)
                                                 } else {
                                                         doConnect()
                                                 }
