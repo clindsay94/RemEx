@@ -621,4 +621,11 @@
     <string name="remote_desktop_connection_lost">Connection lost. Tap Start to reconnect.</string>
     <string name="remote_desktop_unavailable_fallback">Remote desktop is unavailable on this host</string>
     <string name="remote_desktop_advanced_window_control_unavailable">Advanced window control is unavailable on this host</string>
+
+    <!-- Display selection -->
+    <string name="remote_desktop_display_label">Display</string>
+    <string name="remote_desktop_display_primary">Primary display</string>
+    <string name="remote_desktop_display_numbered">Display %1$d</string>
+    <string name="remote_desktop_display_both">Both screens</string>
+    <string name="cd_display_picker_icon">Choose which display to view</string>
 </resources>

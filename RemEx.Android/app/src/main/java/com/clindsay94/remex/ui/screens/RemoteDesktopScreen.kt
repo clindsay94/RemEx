@@ -14,6 +14,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -117,6 +118,8 @@ data class RemoteDesktopUiState(
         val hostCursorX: Float = -1f,
         val hostCursorY: Float = -1f,
         val isFullscreen: Boolean = false,
+        val displayTargets: List<DisplayTargetOption> = emptyList(),
+        val selectedDisplayToken: String = "",
         // True from the moment the user taps Start until they stop or the connection fails. Drives an
         // immediate rotation to landscape on tap, before the stream is actually up.
         val streamRequested: Boolean = false
@@ -226,6 +229,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val activeCodec by viewModel.activeCodecState.collectAsState()
         val streamPixelWidth by viewModel.streamPixelWidth.collectAsState()
         val streamPixelHeight by viewModel.streamPixelHeight.collectAsState()
+        val displayTargets by viewModel.displayTargets.collectAsState()
+        val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsState()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -249,6 +254,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         hostCursorX = hostCursorX,
                         hostCursorY = hostCursorY,
                         isFullscreen = isFullscreen,
+                        displayTargets = displayTargets,
+                        selectedDisplayToken = selectedDisplayToken,
                         streamRequested = streamRequested
                 )
 
@@ -281,6 +288,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
                 onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
                 onUpdateCursorScale = { viewModel.updateCursorScale(it) },
+                onSelectDisplayTarget = { viewModel.selectDisplayTarget(it) },
                 windowResults = windowResults,
                 windowActionError = windowActionError,
                 onQueryWindows = { viewModel.queryWindows(it) },
@@ -330,6 +338,7 @@ fun RemoteDesktopScreenContent(
         onUpdatePointerSpeed: (Float) -> Unit,
         onUpdateScrollSensitivity: (Float, Float) -> Unit,
         onUpdateCursorScale: (Float) -> Unit = {},
+        onSelectDisplayTarget: (String) -> Unit = {},
         windowResults: List<DesktopWindowModel>,
         windowActionError: String?,
         onQueryWindows: (String) -> Unit,
@@ -2414,6 +2423,45 @@ fun RemoteDesktopScreenContent(
                                                                                                 .cd_close_settings
                                                                                 )
                                                                 )
+                                                        }
+                                                }
+
+                                                // ── Display section ── (only when there is an
+                                                // actual choice: 2+ monitors, or a combined option)
+                                                if (uiState.displayTargets.size >= 2) {
+                                                        SettingsSectionHeader(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .remote_desktop_display_label
+                                                                )
+                                                        )
+                                                        Row(
+                                                                modifier =
+                                                                        Modifier.fillMaxWidth()
+                                                                                .horizontalScroll(
+                                                                                        rememberScrollState()
+                                                                                ),
+                                                                horizontalArrangement =
+                                                                        Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                                uiState.displayTargets.forEach {
+                                                                        target ->
+                                                                        FilterChip(
+                                                                                selected =
+                                                                                        target.token ==
+                                                                                                uiState.selectedDisplayToken,
+                                                                                onClick = {
+                                                                                        onSelectDisplayTarget(
+                                                                                                target.token
+                                                                                        )
+                                                                                },
+                                                                                label = {
+                                                                                        Text(
+                                                                                                target.label
+                                                                                        )
+                                                                                }
+                                                                        )
+                                                                }
                                                         }
                                                 }
 

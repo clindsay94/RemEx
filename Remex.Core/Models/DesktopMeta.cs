@@ -45,6 +45,16 @@ public record DesktopMeta
     [JsonPropertyName("cursorY")]
     public int CursorY { get; init; }
 
+    /// <summary>
+    /// True when the cursor lies within the currently captured surface (so the client should
+    /// draw its cursor overlay). False when the pointer is on a monitor outside the active
+    /// capture target (e.g. single-monitor capture while the cursor is on another display),
+    /// so the overlay can be hidden instead of clamped to the frame edge.
+    /// Defaults true for backward compatibility with legacy hosts that omit it.
+    /// </summary>
+    [JsonPropertyName("cursorVisible")]
+    public bool CursorVisible { get; init; } = true;
+
     // ── Stage 3 additions ─────────────────────────────────────────────────
 
     /// <summary>

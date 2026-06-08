@@ -43,6 +43,18 @@ data class RemoteDesktopConfigState(
         val codec: String = "H264"
 )
 
+/**
+ * A selectable remote-display target. [token] is the persisted identity:
+ * "virtual" for the combined (both-screens) view, or "monitor:<displayId>" for a single display.
+ */
+data class DisplayTargetOption(
+        val token: String,
+        val label: String,
+        val captureMode: String, // "VirtualDesktop" | "Monitor"
+        val displayId: String?,
+        val isPrimary: Boolean
+)
+
 data class DesktopWindowModel(
         val id: String,
         val title: String,
@@ -118,6 +130,24 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _activeCodecState = MutableStateFlow("Mjpeg")
     val activeCodecState: StateFlow<String> = _activeCodecState.asStateFlow()
 
+    // Available remote-display targets (populated from the host display catalog) and the
+    // currently selected target token. Empty until the first catalog arrives.
+    private val _displayTargets = MutableStateFlow<List<DisplayTargetOption>>(emptyList())
+    val displayTargets: StateFlow<List<DisplayTargetOption>> = _displayTargets.asStateFlow()
+
+    private val _selectedDisplayToken = MutableStateFlow("")
+    val selectedDisplayToken: StateFlow<String> = _selectedDisplayToken.asStateFlow()
+
+    /** True once a display catalog has been received this connection. */
+    private var displaysLoaded = false
+    /** Guards against firing duplicate catalog queries while one is in flight. */
+    private var catalogRequested = false
+    /** Desired target token loaded from persisted prefs; resolved against the catalog on arrival. */
+    private var desiredDisplayToken: String = ""
+    /** Set when startStreaming() is waiting for the catalog before it can begin. */
+    private var pendingStreamStart = false
+    private var catalogTimeoutJob: Job? = null
+
     private val _streamPixelWidth = MutableStateFlow(1920)
     val streamPixelWidth: StateFlow<Int> = _streamPixelWidth.asStateFlow()
 
@@ -177,6 +207,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                 targetFps = prefs.targetFps.coerceIn(1, 120),
                                 scale = prefs.scale.coerceIn(0.25f, 1.0f)
                         )
+                desiredDisplayToken = prefs.displayTarget
             }
         }
 
@@ -230,6 +261,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         viewModelScope.launch {
+            RemexClientManager.desktopDisplayCatalog.collect { catalogJson ->
+                handleDisplayCatalog(catalogJson)
+            }
+        }
+
+        viewModelScope.launch {
             RemexClientManager.desktopErrors.collect { errorText ->
                 Log.e(TAG, "Desktop stream error: $errorText")
                 _desktopError.value = errorText
@@ -246,10 +283,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     hostScreenHeight = json.optInt("screenHeight", 1080)
                     hostDesktopLeft = json.optInt("desktopLeft", 0)
                     hostDesktopTop = json.optInt("desktopTop", 0)
-                    // Parse cursor position from host (for trackpad mode)
+                    // Parse cursor position from host (for trackpad mode). When the host marks the
+                    // cursor as outside the captured surface (e.g. on another monitor in single-
+                    // display capture), hide the overlay via the -1 sentinel instead of clamping it
+                    // to the frame edge. Legacy hosts omit cursorVisible -> treated as visible.
                     if (json.has("cursorX") && json.has("cursorY")) {
-                        _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
-                        _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
+                        if (json.optBoolean("cursorVisible", true)) {
+                            _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
+                            _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
+                        } else {
+                            _hostCursorX.value = -1f
+                            _hostCursorY.value = -1f
+                        }
                     }
                     // Only update the codec when codecInfo is actually present. Live cursor-position
                     // updates arrive as lightweight DesktopMeta messages with no codecInfo, and must
@@ -320,12 +365,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 if (!connected) {
                     _isStreaming.value = false
                     recycleCurrentFrame()
+                    // Force a fresh catalog query on the next connection.
+                    catalogRequested = false
+                    displaysLoaded = false
                     attemptReconnect()
                 } else {
                     // Connection restored — reset reconnect counter
                     reconnectAttempts = 0
                     reconnectJob?.cancel()
                     reconnectJob = null
+                    // Pre-load the display catalog so the picker is available in settings
+                    // before the user starts a stream.
+                    ensureDisplayCatalogLoaded()
                 }
             }
         }
@@ -481,18 +532,195 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        val config = buildConfigJson()
+        // Display selection requires the host's display catalog before we can name a target.
+        // Query it first; once it arrives (handleDisplayCatalog) the stream starts with the
+        // chosen target. If the catalog never arrives, fall back to a legacy (host-default) start.
+        if (!displaysLoaded) {
+            _desktopError.value = null
+            pendingStreamStart = true
+            requestDisplayCatalog()
+            scheduleCatalogTimeoutFallback()
+            return
+        }
 
+        actuallyStartStreaming()
+    }
+
+    private fun actuallyStartStreaming() {
+        catalogTimeoutJob?.cancel()
+        catalogTimeoutJob = null
+        pendingStreamStart = false
+
+        val config = buildConfigJson()
         _desktopError.value = null
         reconnectAttempts = 0
         RemexCoreClient.StartDesktopStream(config.toString()).getOrNull()
         _isStreaming.value = true
     }
 
+    /**
+     * Eagerly loads the display catalog (e.g. as soon as the device connects) so the display
+     * picker is available in settings before the first stream. No-op if already loaded, a
+     * request is in flight, or a stream start is already driving its own query.
+     */
+    fun ensureDisplayCatalogLoaded() {
+        if (displaysLoaded || catalogRequested || pendingStreamStart) return
+        if (!RemexCoreClient.isLibraryLoaded) return
+        if (!_capabilityState.value.supportsRemoteDesktop) return
+        requestDisplayCatalog()
+    }
+
+    /** Asks the host for its catalog of displays / capture modes over the desktop channel. */
+    private fun requestDisplayCatalog() {
+        if (!RemexCoreClient.isLibraryLoaded) return
+        catalogRequested = true
+        Log.i(TAG, "Requesting display catalog from host")
+        viewModelScope.launch(Dispatchers.IO) {
+            val message = JSONObject().apply { put("type", "desktop_display_query") }
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        }
+    }
+
+    /** If the catalog doesn't arrive promptly, start anyway in legacy (host-default) mode. */
+    private fun scheduleCatalogTimeoutFallback() {
+        catalogTimeoutJob?.cancel()
+        catalogTimeoutJob =
+                viewModelScope.launch {
+                    delay(4000)
+                    if (pendingStreamStart && !displaysLoaded) {
+                        Log.w(TAG, "Display catalog timed out — starting in legacy mode")
+                        actuallyStartStreaming()
+                    }
+                }
+    }
+
+    private fun handleDisplayCatalog(catalogJson: String) {
+        try {
+            val json = JSONObject(catalogJson)
+            val modes = json.optJSONArray("supportedCaptureModes")
+            val supportsVirtual =
+                    modes != null &&
+                            (0 until modes.length()).any {
+                                modes.optString(it) == "VirtualDesktop"
+                            }
+            val displaysArray = json.optJSONArray("displays")
+            val options = mutableListOf<DisplayTargetOption>()
+
+            val displayCount = displaysArray?.length() ?: 0
+            for (i in 0 until displayCount) {
+                val d = displaysArray!!.optJSONObject(i) ?: continue
+                val displayId = d.optString("displayId")
+                if (displayId.isBlank()) continue
+                val isPrimary = d.optBoolean("isPrimary", false)
+                val label =
+                        if (isPrimary)
+                                getApplication<Application>()
+                                        .getString(R.string.remote_desktop_display_primary)
+                        else
+                                getApplication<Application>()
+                                        .getString(R.string.remote_desktop_display_numbered, i + 1)
+                options.add(
+                        DisplayTargetOption(
+                                token = "monitor:$displayId",
+                                label = label,
+                                captureMode = "Monitor",
+                                displayId = displayId,
+                                isPrimary = isPrimary
+                        )
+                )
+            }
+
+            // Offer the combined "both screens" view when the host supports it and there is
+            // more than one physical display to combine.
+            if (supportsVirtual && displayCount > 1) {
+                options.add(
+                        DisplayTargetOption(
+                                token = "virtual",
+                                label =
+                                        getApplication<Application>()
+                                                .getString(R.string.remote_desktop_display_both),
+                                captureMode = "VirtualDesktop",
+                                displayId = null,
+                                isPrimary = false
+                        )
+                )
+            }
+
+            if (options.isEmpty()) {
+                Log.w(TAG, "Display catalog had no usable targets")
+                if (pendingStreamStart) actuallyStartStreaming()
+                return
+            }
+
+            Log.i(
+                    TAG,
+                    "Display catalog received: $displayCount display(s), ${options.size} option(s), supportsVirtual=$supportsVirtual"
+            )
+            _displayTargets.value = options
+
+            // Resolve the selection: remembered choice → primary monitor → first option.
+            val resolved =
+                    options.firstOrNull { it.token == desiredDisplayToken }
+                            ?: options.firstOrNull {
+                                it.captureMode == "Monitor" && it.isPrimary
+                            }
+                            ?: options.first()
+            _selectedDisplayToken.value = resolved.token
+            displaysLoaded = true
+
+            if (pendingStreamStart) {
+                actuallyStartStreaming()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse display catalog", e)
+            if (pendingStreamStart) actuallyStartStreaming()
+        }
+    }
+
+    private fun selectedDisplayOption(): DisplayTargetOption? =
+            _displayTargets.value.firstOrNull { it.token == _selectedDisplayToken.value }
+
+    /**
+     * Selects a remote display/capture target. Persists the choice and, if a stream is active,
+     * restarts it on the new target (the host re-captures the chosen surface).
+     */
+    fun selectDisplayTarget(token: String) {
+        val option = _displayTargets.value.firstOrNull { it.token == token } ?: return
+        if (option.token == _selectedDisplayToken.value) return
+
+        _selectedDisplayToken.value = option.token
+        desiredDisplayToken = option.token
+        viewModelScope.launch { settingsManager.saveRemoteDesktopDisplayTarget(option.token) }
+
+        if (_isStreaming.value) {
+            restartStreamWithCurrentTarget()
+        }
+    }
+
+    private fun restartStreamWithCurrentTarget() {
+        viewModelScope.launch(Dispatchers.IO) {
+            reconnectJob?.cancel()
+            reconnectAttempts = 0
+            if (RemexCoreClient.isLibraryLoaded) {
+                RemexCoreClient.StopDesktopStream().getOrNull()
+            }
+            // Give the host a moment to tear down the previous capture session.
+            delay(200)
+            actuallyStartStreaming()
+        }
+    }
+
     fun stopStreaming() {
         reconnectJob?.cancel()
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
+
+        catalogTimeoutJob?.cancel()
+        catalogTimeoutJob = null
+        pendingStreamStart = false
+        // Re-query the catalog on the next start so the target list / primary reflects the
+        // host's current monitor configuration. The last-known list stays visible in the UI.
+        displaysLoaded = false
 
         // Set streaming to false FIRST so the UI stops referencing the frame,
         // then clear the frame reference.
@@ -706,6 +934,30 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             // The client renders the cursor itself as an overlay, so the host should not composite
             // it into the frame (avoids a doubled/offset cursor and saves host work).
             put("drawCursor", false)
+
+            // Advertise display selection and name an explicit capture target only once we have a
+            // resolved option from the catalog. Without a resolved option we stay on the legacy
+            // path (no capabilities) so the host falls back to its default (primary monitor).
+            // Frame envelope / live target-switch are intentionally NOT advertised: display
+            // changes are applied by restarting the stream, keeping the raw frame format intact.
+            val option = selectedDisplayOption()
+            if (option != null) {
+                put("desktopProtocolVersion", 1)
+                put(
+                        "clientCapabilities",
+                        JSONObject().apply {
+                            put("supportsDisplaySelection", true)
+                            put("supportsFrameEnvelope", false)
+                            put("supportsTargetSwitch", false)
+                            put("supportsCursorState", false)
+                            put("supportsCursorShape", false)
+                        }
+                )
+                put("captureMode", option.captureMode)
+                if (option.displayId != null) {
+                    put("displayId", option.displayId)
+                }
+            }
         }
     }
 

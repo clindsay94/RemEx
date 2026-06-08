@@ -32,6 +32,9 @@ class SettingsManager(val context: Context) {
                 val DESKTOP_DIRECT_TOUCH_KEY = booleanPreferencesKey("desktop_direct_touch")
                 val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
                 val DESKTOP_CURSOR_SCALE_KEY = floatPreferencesKey("desktop_cursor_scale")
+                // Persisted display-target selection token: "" (primary/default), "virtual"
+                // (both screens combined), or "monitor:<displayId>" for a specific monitor.
+                val DESKTOP_DISPLAY_TARGET_KEY = stringPreferencesKey("desktop_display_target")
                 val VERTICAL_SCROLL_SENSITIVITY_KEY =
                         floatPreferencesKey("vertical_scroll_sensitivity")
                 val HORIZONTAL_SCROLL_SENSITIVITY_KEY =
@@ -101,7 +104,8 @@ class SettingsManager(val context: Context) {
                 val pointerSpeed: Float = 1.0f,
                 val verticalScrollSensitivity: Float = 1.0f,
                 val horizontalScrollSensitivity: Float = 1.0f,
-                val cursorScale: Float = 1.0f
+                val cursorScale: Float = 1.0f,
+                val displayTarget: String = ""
         )
 
         data class PersonalizationPreferences(
@@ -277,7 +281,8 @@ class SettingsManager(val context: Context) {
                                         preferences[VERTICAL_SCROLL_SENSITIVITY_KEY] ?: 1.0f,
                                 horizontalScrollSensitivity =
                                         preferences[HORIZONTAL_SCROLL_SENSITIVITY_KEY] ?: 1.0f,
-                                cursorScale = preferences[DESKTOP_CURSOR_SCALE_KEY] ?: 1.0f
+                                cursorScale = preferences[DESKTOP_CURSOR_SCALE_KEY] ?: 1.0f,
+                                displayTarget = preferences[DESKTOP_DISPLAY_TARGET_KEY] ?: ""
                         )
                 }
 
@@ -329,6 +334,12 @@ class SettingsManager(val context: Context) {
                         preferences[DESKTOP_QUALITY_KEY] = quality.coerceIn(1, 100)
                         preferences[DESKTOP_TARGET_FPS_KEY] = targetFps.coerceIn(1, 360)
                         preferences[DESKTOP_SCALE_KEY] = scale.coerceIn(0.25f, 1.0f)
+                }
+        }
+
+        suspend fun saveRemoteDesktopDisplayTarget(token: String) {
+                context.dataStore.edit { preferences ->
+                        preferences[DESKTOP_DISPLAY_TARGET_KEY] = token
                 }
         }
 

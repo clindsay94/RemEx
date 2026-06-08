@@ -29,6 +29,8 @@ public sealed class RemexDesktopClient : IDisposable
     public event Action<DesktopWindowResult>? WindowResultReceived;
     /// <summary>Raised when the host sends a stream surface descriptor (Stage 3).</summary>
     public event Action<DesktopStreamDescriptor>? StreamDescriptorReceived;
+    /// <summary>Raised when the host sends the available-display catalog in response to a display query.</summary>
+    public event Action<DesktopDisplayCatalog>? DisplayCatalogReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -134,6 +136,35 @@ public sealed class RemexDesktopClient : IDisposable
         {
             Type = MessageTypes.DesktopConfig,
             DesktopConfig = config,
+        }, ct);
+    }
+
+    /// <summary>
+    /// Asks the host for the catalog of available displays/capture modes. The reply arrives
+    /// asynchronously via <see cref="DisplayCatalogReceived"/>. Connects first if needed.
+    /// </summary>
+    public async Task RequestDisplayCatalogAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
+
+        await SendMessageAsync(new RemexMessage
+        {
+            Type = MessageTypes.DesktopDisplayQuery,
+        }, ct);
+    }
+
+    /// <summary>
+    /// Requests a live capture-target switch (display / capture mode) on an active stream.
+    /// Only honored by the host when the client advertised frame-envelope + target-switch support.
+    /// </summary>
+    public async Task SwitchTargetAsync(string host, int port, DesktopTargetSwitchRequest request, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
+
+        await SendMessageAsync(new RemexMessage
+        {
+            Type = MessageTypes.DesktopTargetSwitch,
+            DesktopTargetSwitch = request,
         }, ct);
     }
 
@@ -313,6 +344,10 @@ public sealed class RemexDesktopClient : IDisposable
                     else if (msg?.Type == MessageTypes.DesktopStreamDescriptor && msg.DesktopStreamDescriptor != null)
                     {
                         StreamDescriptorReceived?.Invoke(msg.DesktopStreamDescriptor);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopDisplayList && msg.DesktopDisplayCatalog != null)
+                    {
+                        DisplayCatalogReceived?.Invoke(msg.DesktopDisplayCatalog);
                     }
                 }
             }

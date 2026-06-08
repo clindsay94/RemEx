@@ -69,7 +69,12 @@
       "Bash(journalctl --user -u xdg-desktop-portal.service -b 0 --no-pager)",
       "mcp__plugin_context-mode_context-mode__ctx_index",
       "mcp__plugin_context-mode_context-mode__ctx_insight",
-      "mcp__plugin_context-mode_context-mode__ctx_batch_execute"
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "Bash(bd create *)",
+      "Bash(bd dep *)",
+      "Bash(bd ready *)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "Bash(bd update *)"
     ]
   },
   "skillOverrides": {

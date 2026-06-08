@@ -323,7 +323,9 @@ public sealed class RemoteDesktopHandler : IDisposable
                     if (_activeCodec == DesktopCodecKind.H264 && h264Encoder is not null)
                     {
                         bool forceKeyframe = frameFlags.HasFlag(DesktopFrameFlags.KeyFrame) || (totalFramesCaptured % 60 == 0);
-                        var rawPixels = await _screenCapture.CaptureRawScreenAsync(_scale, _drawCursor, ct);
+                        // Capture at the encoder's (possibly hardware-capped) scale so the raw buffer
+                        // size matches the encoder's fixed -s WxH input exactly.
+                        var rawPixels = await _screenCapture.CaptureRawScreenAsync(_h264CaptureScale, _drawCursor, ct);
                         if (captureSerial != sessionState.StreamSerial)
                             continue;
 
@@ -911,6 +913,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 HostInstanceId = HostBootstrapper.InstanceId,
                 CursorX = cursorX,
                 CursorY = cursorY,
+                CursorVisible = IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
                 CaptureBackend = _screenCapture.BackendName,
                 InputBackend = _inputSimulation.BackendName,
                 StreamMappingId = sessionState.StreamMappingId,
@@ -982,10 +985,20 @@ public sealed class RemoteDesktopHandler : IDisposable
                 HostInstanceId = HostBootstrapper.InstanceId,
                 CursorX = cursorX,
                 CursorY = cursorY,
+                CursorVisible = IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
                 StreamSerial = sessionState.StreamSerial,
             }
         }, sendLock, ct);
     }
+
+    /// <summary>
+    /// True when the absolute cursor position lies within the active capture surface bounds.
+    /// Used so the client can hide its cursor overlay when the pointer is on a monitor that
+    /// isn't part of the current capture target (single-monitor capture).
+    /// </summary>
+    private static bool IsCursorInRegion(int cursorX, int cursorY, int screenWidth, int screenHeight, int desktopLeft, int desktopTop)
+        => cursorX >= desktopLeft && cursorX < desktopLeft + screenWidth &&
+           cursorY >= desktopTop && cursorY < desktopTop + screenHeight;
 
     private async Task SendCursorStateAsync(
         WebSocket webSocket,
@@ -1089,13 +1102,41 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
+    // Hardware H.264 encoders cap at 4096x4096 — NVENC enforces this on EVERY NVIDIA GPU (it's an
+    // H.264-codec limit, not a generational one; HEVC/AV1 go higher but H.264 never does), and most
+    // QSV/AMF parts are similar. A combined multi-monitor capture surface easily exceeds 4096 wide,
+    // which makes the encoder fail to open. We downscale the encoded surface to fit and reuse the
+    // exact same scale for capture so the raw BGRA buffer still matches the encoder's -s WxH input.
+    private const int MaxH264EncodeDimension = 4096;
+    private double _h264CaptureScale = 1.0;
+
+    private static double ClampScaleForH264(int screenWidth, int screenHeight, double requestedScale)
+    {
+        if (screenWidth <= 0 || screenHeight <= 0) return requestedScale;
+        var cap = Math.Min(
+            (double)MaxH264EncodeDimension / screenWidth,
+            (double)MaxH264EncodeDimension / screenHeight);
+        return cap < requestedScale ? cap : requestedScale;
+    }
+
     private IH264Encoder? TryCreateH264Encoder()
     {
         var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
-        // Must use the same dimension function as the capture path (CaptureScaling.ScaledEven), or the
-        // raw BGRA buffer size won't match the encoder's fixed -s WxH input and nvenc emits 0 frames.
-        int targetWidth = Services.ScreenCapture.CaptureScaling.ScaledEven(screenWidth, _scale);
-        int targetHeight = Services.ScreenCapture.CaptureScaling.ScaledEven(screenHeight, _scale);
+
+        // Fit the encoded surface within the hardware H.264 limit, then capture at that same scale so
+        // the raw buffer size matches the encoder's fixed -s WxH input (CaptureScaling.ScaledEven on
+        // the identical scale guarantees this; a 1-pixel mismatch makes nvenc emit 0 frames).
+        var scale = ClampScaleForH264(screenWidth, screenHeight, _scale);
+        _h264CaptureScale = scale;
+        if (scale < _scale)
+        {
+            _logger.LogInformation(
+                "Capture surface {W}x{H} exceeds the {Max}px H.264 encoder limit; downscaling to scale {Scale:F4} (from {Requested:F4}) for hardware encoding.",
+                screenWidth, screenHeight, MaxH264EncodeDimension, scale, _scale);
+        }
+
+        int targetWidth = Services.ScreenCapture.CaptureScaling.ScaledEven(screenWidth, scale);
+        int targetHeight = Services.ScreenCapture.CaptureScaling.ScaledEven(screenHeight, scale);
 
         var encoder = new FFmpegH264Encoder(_logger);
         if (encoder.Initialize(targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))

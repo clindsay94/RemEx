@@ -186,11 +186,24 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             var process = Process.Start(psi);
             if (process == null) return false;
 
-            // Wait brief moment to see if it immediately exits (indicating codec unsupported)
-            if (process.WaitForExit(150))
+            // Decide success/failure by watching for early process exit.
+            //
+            // Two distinct failure modes must both be caught here, otherwise the codec-fallback
+            // loop is skipped and we silently end up with a dead encoder (→ MJPEG fallback):
+            //   1. Codec not built into ffmpeg / no device → ffmpeg exits almost immediately
+            //      ("Unknown encoder", "Cannot load nvcuda").
+            //   2. Hardware encoder present but rejects the parameters (resolution above the
+            //      NVENC max, unsupported framerate, etc.) → ffmpeg starts, then fails a few
+            //      hundred ms later "while opening encoder" and exits non-zero. A 150 ms window
+            //      missed this, so it was reported as success.
+            // A healthy rawvideo-pipe encoder never exits on its own (it blocks waiting for stdin
+            // frames), so an exit within this window unambiguously means failure. The cost is a
+            // one-time startup wait for the codec that actually succeeds.
+            if (process.WaitForExit(900))
             {
                 var error = process.StandardError.ReadToEnd();
-                _logger.LogDebug("FFmpeg codec {Codec} unsupported: {Error}", codec, error);
+                _logger.LogWarning("FFmpeg codec {Codec} failed to start (exit {Code}): {Error}",
+                    codec, process.ExitCode, error.Trim());
                 process.Dispose();
                 return false;
             }

@@ -33,6 +33,7 @@ public static class AndroidNativeExports
     private static IntPtr _onFileTransferMessageMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
+    private static IntPtr _onDesktopDisplayCatalogMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -59,6 +60,7 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.MetaReceived += OnNativeMetaReceived;
         RemexDesktopClient.Current.WindowResultReceived += OnNativeDesktopWindowResult;
         RemexDesktopClient.Current.StreamDescriptorReceived += OnNativeDesktopStreamDescriptor;
+        RemexDesktopClient.Current.DisplayCatalogReceived += OnNativeDisplayCatalogReceived;
 
         EnsureOutboundSendLoopStarted();
     }
@@ -101,6 +103,7 @@ public static class AndroidNativeExports
         _onFileTransferMessageMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
+        _onDesktopDisplayCatalogMethodId = IntPtr.Zero;
     }
 
     private static IntPtr GetRequiredCallbackMethodId(IntPtr env, IntPtr clazz, string name, string signature)
@@ -190,6 +193,7 @@ public static class AndroidNativeExports
                 var onFileTransferMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
+                var onDesktopDisplayCatalogMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopDisplayCatalog", "(Ljava/lang/String;)V");
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
                     || onConnectionStateChangedMethodId == IntPtr.Zero
@@ -202,7 +206,8 @@ public static class AndroidNativeExports
                     || onDesktopWindowResultMethodId == IntPtr.Zero
                     || onFileTransferMessageMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
-                    || onDesktopStreamDescriptorMethodId == IntPtr.Zero)
+                    || onDesktopStreamDescriptorMethodId == IntPtr.Zero
+                    || onDesktopDisplayCatalogMethodId == IntPtr.Zero)
                 {
                     return;
                 }
@@ -221,6 +226,7 @@ public static class AndroidNativeExports
                 _onFileTransferMessageMethodId = onFileTransferMessageMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
+                _onDesktopDisplayCatalogMethodId = onDesktopDisplayCatalogMethodId;
                 registrationSucceeded = true;
 
                 if (oldCallbackGlobalRef != IntPtr.Zero)
@@ -725,6 +731,30 @@ public static class AndroidNativeExports
                 });
                 return true;
 
+            case MessageTypes.DesktopDisplayQuery:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.RequestDisplayCatalogAsync(host, port, clientId, spkiHash);
+                    }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopDisplayQuery failed: {ex.Message}"); }
+                });
+                return true;
+
+            case MessageTypes.DesktopTargetSwitch when message.DesktopTargetSwitch != null:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.SwitchTargetAsync(host, port, message.DesktopTargetSwitch, clientId, spkiHash);
+                    }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopTargetSwitch failed: {ex.Message}"); }
+                });
+                return true;
+
             case MessageTypes.DesktopWindowQuery when message.DesktopWindowQuery != null:
                 _ = Task.Run(async () =>
                 {
@@ -844,6 +874,11 @@ public static class AndroidNativeExports
     private static void OnNativeDesktopStreamDescriptor(DesktopStreamDescriptor descriptor)
     {
         NotifyJavaData(_onDesktopStreamDescriptorMethodId, RemexJson.Serialize(descriptor, RemexJsonSerializerContext.Default.DesktopStreamDescriptor));
+    }
+
+    private static void OnNativeDisplayCatalogReceived(DesktopDisplayCatalog catalog)
+    {
+        NotifyJavaData(_onDesktopDisplayCatalogMethodId, RemexJson.Serialize(catalog, RemexJsonSerializerContext.Default.DesktopDisplayCatalog));
     }
 
     private static void NotifyJavaFrame(byte[] frame)
