@@ -104,6 +104,13 @@ public record DashboardProfile
     /// <summary>Whether infinite/decorative animations should be suppressed for accessibility.</summary>
     public bool IsReducedMotion { get; init; }
 
+    /// <summary>
+    /// When true, closing the main window (the X button) hides it to the system tray
+    /// and keeps the app running. When false, the X button exits the app entirely.
+    /// Defaults to true to preserve the classic tray-resident behavior.
+    /// </summary>
+    public bool CloseToTray { get; init; } = true;
+
     /// <summary>Host screen capture JPEG quality (10–100). Applies to the stream sent to mobile clients.</summary>
     public int StreamQuality { get; init; } = 75;
 

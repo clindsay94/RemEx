@@ -36,11 +36,25 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Don't close, just hide to keep the app alive in the tray.
-        // The user can exit via the tray menu.
+        // Honor the user's chosen close behavior (Settings → General).
+        var closeToTray = true;
+        if (App.Services?.GetService<DashboardLayoutService>() is { CurrentProfile: { } profile })
+            closeToTray = profile.CloseToTray;
+
+        if (closeToTray)
+        {
+            // Keep the app alive in the tray; the window just hides.
+            // The user can exit via the tray menu or the in-app Exit button.
+            e.Cancel = true;
+            Hide();
+            base.OnClosing(e);
+            return;
+        }
+
+        // User wants the X button to fully exit: end the process.
         e.Cancel = true;
-        Hide();
         base.OnClosing(e);
+        App.RequestApplicationShutdown();
     }
 
     protected override void OnClosed(EventArgs e)

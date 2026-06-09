@@ -264,19 +264,62 @@ public partial class App : Application
         }
     }
 
-    private void OnExitApp(object? sender, EventArgs e)
+    private void OnExitApp(object? sender, EventArgs e) => ShutdownApplication();
+
+    private bool _shutdownInitiated;
+
+    /// <summary>
+    /// Tears the entire application down — the single source of truth for "Exit",
+    /// used by the tray menu, the in-app Exit button, and the close-to-exit window
+    /// behavior. Stops the embedded host gracefully (time-boxed), releases the
+    /// service mutex, then force-terminates the process via <see cref="Environment.Exit"/>
+    /// so that no lingering foreground thread (Kestrel, the mDNS responder, the
+    /// network listener, or hardware-monitor interop) can keep the process alive.
+    /// </summary>
+    public void ShutdownApplication()
     {
+        if (_shutdownInitiated) return;
+        _shutdownInitiated = true;
+        IsShuttingDown = true;
+
+        // Hide the UI immediately so exit feels instant while the host stops.
+        try { _flyout?.Close(); } catch { /* best-effort */ }
+        _flyout = null;
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            IsShuttingDown = true;
-            _flyout?.Close();
-            _flyout = null;
-
-            if (Services.GetService<ShellViewModel>() is IDisposable disposableVm)
-                disposableVm.Dispose();
-
-            desktop.Shutdown();
+            try { desktop.MainWindow?.Hide(); } catch { /* best-effort */ }
         }
+
+        if (Services?.GetService<ShellViewModel>() is IDisposable disposableVm)
+        {
+            try { disposableVm.Dispose(); } catch { /* best-effort */ }
+        }
+
+        // Graceful, time-boxed host shutdown on a background thread, then a hard exit.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (StopEmbeddedHostAsync is { } stopHost)
+                    await stopHost().WaitAsync(TimeSpan.FromSeconds(3));
+            }
+            catch { /* best-effort — we force-exit regardless */ }
+
+            try { CommandModeContext.Cleanup(); } catch { /* best-effort */ }
+
+            Environment.Exit(0);
+        });
+    }
+
+    /// <summary>
+    /// Convenience entry point for callers that only hold a reference to
+    /// <see cref="Application.Current"/> (e.g. windows and view-models).
+    /// </summary>
+    public static void RequestApplicationShutdown()
+    {
+        if (Current is App app)
+            app.ShutdownApplication();
     }
 
     public static Action? RequestPlatformWidgetUpdate { get; set; }

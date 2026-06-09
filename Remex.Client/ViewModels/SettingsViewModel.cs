@@ -43,6 +43,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _language = "en";
 
+    /// <summary>
+    /// When true, the main window's X button hides the app to the system tray instead
+    /// of exiting. When false, closing the window exits the app entirely.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isCloseToTrayEnabled = true;
+
+    partial void OnIsCloseToTrayEnabledChanged(bool value) => Save();
+
+    /// <summary>Fully exits the application (stops the process), same as the tray "Exit".</summary>
+    [RelayCommand]
+    private void ExitApplication() => App.RequestApplicationShutdown();
+
     public ObservableCollection<LanguageItem> AvailableLanguages { get; } = new()
     {
         new("English", "en"),
@@ -156,6 +169,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             HostAddress = _profile.HostAddress;
             HostPath = _profile.HostPath;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
+            IsCloseToTrayEnabled = _profile.CloseToTray;
             Services.LocalizationService.Instance.SetCulture(Language);
             StreamQuality = _profile.StreamQuality;
             StreamFps = _profile.StreamFps;
@@ -1421,6 +1435,7 @@ WantedBy=multi-user.target";
             HostAddress = HostAddress,
             HostPath = HostPath,
             Language = Language,
+            CloseToTray = IsCloseToTrayEnabled,
             StreamQuality = StreamQuality,
             StreamFps = StreamFps
         };

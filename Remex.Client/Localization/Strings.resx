@@ -1195,6 +1195,24 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>GENERAL</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Minimize to tray on close</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>When enabled, the X button hides RemEx to the system tray and keeps it running. When disabled, the X button exits the app.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Choose whether closing the window minimizes RemEx to the tray or quits it entirely.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Exit RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Fully close the application and stop its background process.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Exit</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>HELP</value>
   </data>
