@@ -47,6 +47,10 @@ class RemexConnectionService : Service() {
         super.onCreate()
         createNotificationChannel()
         AndroidFileTransferHost.start(this)
+        // Drive widget telemetry caching from the service too, so home-screen widgets keep
+        // refreshing even when the app UI is closed (or the process was relaunched by the
+        // sticky service without MainActivity ever starting).
+        com.clindsay94.remex.widget.WidgetDataCache.startCaching(applicationContext)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

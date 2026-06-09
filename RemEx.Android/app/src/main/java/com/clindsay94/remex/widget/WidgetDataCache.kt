@@ -4,10 +4,12 @@ import android.content.Context
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -33,17 +35,23 @@ object WidgetDataCache {
         val appContext = context.applicationContext
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         cachingJob = scope.launch {
+            // The native client pushes telemetry at ~1 Hz. We always keep the cache warm (cheap
+            // SharedPreferences write) but THROTTLE the actual widget re-render to the user's
+            // configured poll interval — otherwise the widget thrashes once per second, ignoring
+            // the setting and burning battery. The first emission renders immediately.
             launch {
+                val settings = SettingsManager(appContext)
+                var lastRenderMs = 0L
                 RemexClientManager.telemetry.collect { data ->
-                    prefs(appContext).edit().putString(KEY_TELEMETRY, data).apply()
-                    try {
-                        val manager = GlanceAppWidgetManager(appContext)
-                        val widget = HardwareInfoWidget()
-                        manager.getGlanceIds(HardwareInfoWidget::class.java).forEach { glanceId ->
-                            widget.update(appContext, glanceId)
-                        }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Failed to update hardware widgets", e)
+                    putTelemetryJson(appContext, data)
+                    val intervalMs =
+                            runCatching { settings.widgetTelemetryPollSecondsFlow.first() }
+                                    .getOrDefault(SettingsManager.WIDGET_TELEMETRY_POLL_DEFAULT)
+                                    .coerceAtLeast(SettingsManager.WIDGET_TELEMETRY_POLL_MIN) * 1000L
+                    val now = System.currentTimeMillis()
+                    if (now - lastRenderMs >= intervalMs) {
+                        lastRenderMs = now
+                        refreshHardwareWidgets(appContext)
                     }
                 }
             }
@@ -66,6 +74,25 @@ object WidgetDataCache {
 
     fun getTelemetryJson(context: Context): String? =
         prefs(context).getString(KEY_TELEMETRY, null)
+
+    /** Persist a telemetry JSON snapshot to the widget cache. */
+    fun putTelemetryJson(context: Context, json: String) {
+        prefs(context.applicationContext).edit().putString(KEY_TELEMETRY, json).apply()
+    }
+
+    /** Re-render all hardware-info widgets from the current cache. */
+    suspend fun refreshHardwareWidgets(context: Context) {
+        try {
+            val appContext = context.applicationContext
+            val manager = GlanceAppWidgetManager(appContext)
+            val widget = HardwareInfoWidget()
+            manager.getGlanceIds(HardwareInfoWidget::class.java).forEach { glanceId ->
+                widget.update(appContext, glanceId)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update hardware widgets", e)
+        }
+    }
 
     fun getLauncherJson(context: Context): String? =
         prefs(context).getString(KEY_LAUNCHER, null)

@@ -269,6 +269,10 @@ private fun AppNavigationContent(
 
         LaunchedEffect(Unit) {
                 RemexClientManager.pairingRequired.collect { (host, port) ->
+                        // Ignore a replayed/stale pairing request when we're already connected —
+                        // this otherwise navigates to the PIN screen on a widget tap that simply
+                        // re-creates MainActivity. Pairing is only meaningful when not connected.
+                        if (RemexClientManager.isConnected.value) return@collect
                         navController.navigate("${Screen.Pairing.route}/$host/$port") {
                                 launchSingleTop = true
                         }

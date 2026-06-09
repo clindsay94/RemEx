@@ -10,17 +10,26 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.ColorFilter
+import androidx.glance.action.ActionParameters
 import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
+import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.RemexCoreClient
+import com.clindsay94.remex.service.RemexConnectionService
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -140,15 +149,21 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             .padding(outerPadding)
     ) {
         if (showTitle) {
-            Text(
-                context.getString(R.string.widget_hardware_title),
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                ),
-                modifier = GlanceModifier.padding(bottom = 6.dp, start = 4.dp)
-            )
+            Row(
+                modifier = GlanceModifier.fillMaxWidth().padding(bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    context.getString(R.string.widget_hardware_title),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    ),
+                    modifier = GlanceModifier.defaultWeight().padding(start = 4.dp)
+                )
+                RefreshButton(context)
+            }
         }
 
         if (visibleSensors.isEmpty()) {
@@ -229,6 +244,59 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RefreshButton(context: Context) {
+    Box(
+        modifier = GlanceModifier
+            .cornerRadius(12.dp)
+            .clickable(actionRunCallback<RefreshTelemetryCallback>())
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            provider = ImageProvider(R.drawable.ic_refresh),
+            contentDescription = context.getString(R.string.widget_refresh),
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+            modifier = GlanceModifier.width(20.dp).height(20.dp)
+        )
+    }
+}
+
+/**
+ * Manual refresh from the widget. When connected, pulls a fresh on-demand telemetry snapshot and
+ * re-renders. When not connected, kicks off an auto-connect and lets the live caching flow update
+ * the widget once telemetry starts arriving.
+ */
+class RefreshTelemetryCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        if (!RemexCoreClient.isLibraryLoaded) {
+            widgetToast(context, context.getString(R.string.widget_toast_remex_not_ready))
+            return
+        }
+
+        if (RemexClientManager.isConnected.value) {
+            widgetToast(context, context.getString(R.string.widget_toast_refreshing))
+            val snapshot = RemexCoreClient.GetTelemetry().getOrNull()
+            if (!snapshot.isNullOrBlank()) {
+                WidgetDataCache.putTelemetryJson(context, snapshot)
+            }
+            WidgetDataCache.refreshHardwareWidgets(context)
+            widgetToast(context, context.getString(R.string.widget_toast_refreshed))
+        } else {
+            widgetToast(context, context.getString(R.string.widget_toast_connecting))
+            val appContext = context.applicationContext
+            RemexClientManager.initialize(appContext)
+            WidgetDataCache.startCaching(appContext)
+            runCatching { RemexConnectionService.start(appContext) }
+            RemexClientManager.toggleConnection()
         }
     }
 }

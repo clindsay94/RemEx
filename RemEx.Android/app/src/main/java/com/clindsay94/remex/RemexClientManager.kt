@@ -340,9 +340,17 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         telemetryData?.let { _telemetry.tryEmit(it) }
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     override fun onConnectionStateChanged(isConnected: Boolean) {
         _isConnected.value = isConnected
         _isConnecting.value = false
+        // _pairingRequired is a replay=1 SharedFlow, so a stale "pairing needed" event would
+        // otherwise linger in the replay cache and re-fire every time a fresh collector
+        // subscribes (e.g. MainActivity recreated by a widget tap), wrongly throwing the user
+        // onto the PIN screen even while paired/connected. Clear it once we're connected.
+        if (isConnected) {
+            _pairingRequired.resetReplayCache()
+        }
     }
 
     fun setConnecting(isConnecting: Boolean) {

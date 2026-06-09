@@ -25,18 +25,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
+import com.clindsay94.remex.data.SettingsManager
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
@@ -157,6 +164,10 @@ fun HardwareInfoConfigScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            PollIntervalSection()
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+
             if (availableSensors.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -220,6 +231,41 @@ private fun HardwareInfoConfigScreenPreview() {
                 ConfigSensor("sensor:ram", "RAM Usage", "Memory")
             ),
             onDone = {}
+        )
+    }
+}
+
+@Composable
+private fun PollIntervalSection() {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
+    val scope = rememberCoroutineScope()
+    val pollSeconds by settingsManager.widgetTelemetryPollSecondsFlow
+        .collectAsState(initial = SettingsManager.WIDGET_TELEMETRY_POLL_DEFAULT)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = String.format(
+                stringResource(R.string.widget_config_poll_interval_label),
+                pollSeconds
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = stringResource(R.string.widget_config_poll_interval_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Slider(
+            value = pollSeconds.toFloat(),
+            onValueChange = { scope.launch { settingsManager.saveWidgetTelemetryPollSeconds(it.toInt()) } },
+            valueRange = SettingsManager.WIDGET_TELEMETRY_POLL_MIN.toFloat()..
+                SettingsManager.WIDGET_TELEMETRY_POLL_MAX.toFloat()
         )
     }
 }

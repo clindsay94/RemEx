@@ -544,6 +544,12 @@
     <string name="widget_toast_not_connected">Not connected — open RemEx to connect</string>
     <string name="widget_toast_command_sent">%1$s sent</string>
     <string name="widget_toast_launching">Launching %1$s…</string>
+    <string name="widget_refresh">Refresh</string>
+    <string name="widget_toast_refreshing">Refreshing…</string>
+    <string name="widget_toast_refreshed">Telemetry refreshed</string>
+    <string name="widget_toast_connecting">Connecting to PC…</string>
+    <string name="widget_config_poll_interval_label">Refresh every %1$d s</string>
+    <string name="widget_config_poll_interval_hint">How often the widget polls the PC for fresh telemetry while connected.</string>
     <string name="widget_hardware_title">Hardware Info</string>
     <string name="sensor_cpu_usage">CPU Usage</string>
     <string name="sensor_gpu_usage">GPU Usage</string>

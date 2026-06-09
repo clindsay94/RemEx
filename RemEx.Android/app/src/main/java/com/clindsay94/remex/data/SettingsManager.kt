@@ -44,6 +44,14 @@ class SettingsManager(val context: Context) {
                 val SPLASH_STYLE_KEY = stringPreferencesKey("splash_style")
                 val CLIENT_ID_KEY = stringPreferencesKey("client_id")
 
+                // How often (seconds) the home-screen widgets actively poll the PC for fresh
+                // telemetry while connected. Drives the in-process poll loop in WidgetDataCache.
+                val WIDGET_TELEMETRY_POLL_SECONDS_KEY =
+                        intPreferencesKey("widget_telemetry_poll_seconds")
+                const val WIDGET_TELEMETRY_POLL_DEFAULT = 30
+                const val WIDGET_TELEMETRY_POLL_MIN = 10
+                const val WIDGET_TELEMETRY_POLL_MAX = 600
+
                 val HOME_LAYOUT_JSON_KEY = stringPreferencesKey("home_layout_json")
                 val HOME_ENABLED_CARDS_JSON_KEY = stringPreferencesKey("home_enabled_cards_json")
 
@@ -206,6 +214,13 @@ class SettingsManager(val context: Context) {
 
         // Removed individual unused flows (subnetMaskFlow, desktopQualityFlow, etc.)
         // as they are covered by connectionPreferencesFlow and remoteDesktopPreferencesFlow.
+
+        val widgetTelemetryPollSecondsFlow: Flow<Int> =
+                context.dataStore.data.map { preferences ->
+                        (preferences[WIDGET_TELEMETRY_POLL_SECONDS_KEY]
+                                        ?: WIDGET_TELEMETRY_POLL_DEFAULT)
+                                .coerceIn(WIDGET_TELEMETRY_POLL_MIN, WIDGET_TELEMETRY_POLL_MAX)
+                }
 
         val homeLayoutJsonFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
@@ -394,6 +409,16 @@ class SettingsManager(val context: Context) {
                         preferences[VERTICAL_SCROLL_SENSITIVITY_KEY] = vertical.coerceIn(0.1f, 5.0f)
                         preferences[HORIZONTAL_SCROLL_SENSITIVITY_KEY] =
                                 horizontal.coerceIn(0.1f, 5.0f)
+                }
+        }
+
+        suspend fun saveWidgetTelemetryPollSeconds(seconds: Int) {
+                context.dataStore.edit { preferences ->
+                        preferences[WIDGET_TELEMETRY_POLL_SECONDS_KEY] =
+                                seconds.coerceIn(
+                                        WIDGET_TELEMETRY_POLL_MIN,
+                                        WIDGET_TELEMETRY_POLL_MAX
+                                )
                 }
         }
 
