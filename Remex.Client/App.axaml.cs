@@ -157,7 +157,7 @@ public partial class App : Application
 
             if (OperatingSystem.IsWindows() && !CommandModeContext.IsServerMode)
             {
-                var pairingPinQueryService = Services.GetService<IPairingPinQueryService>();
+                var pairingPinQueryService = Services.GetService<IPairingPinQueryService>(); // optional service
                 if (pairingPinQueryService != null)
                 {
                     viewModel.Connection.AttachStandalonePairingPinQueryService(pairingPinQueryService);
@@ -204,7 +204,12 @@ public partial class App : Application
                     {
                         desktop.MainWindow = new MainWindow { DataContext = viewModel };
                     }
-                    desktop.MainWindow.Show();
+                    
+                    bool startMinimized = desktop.Args != null && Array.Exists(desktop.Args, arg => arg.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+                    if (!startMinimized)
+                    {
+                        desktop.MainWindow.Show();
+                    }
                 }
                 else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
                 {
@@ -291,7 +296,7 @@ public partial class App : Application
             try { desktop.MainWindow?.Hide(); } catch { /* best-effort */ }
         }
 
-        if (Services?.GetService<ShellViewModel>() is IDisposable disposableVm)
+        if (Services?.GetService<ShellViewModel>() is IDisposable disposableVm) // optional service
         {
             try { disposableVm.Dispose(); } catch { /* best-effort */ }
         }
@@ -353,7 +358,7 @@ public partial class App : Application
         layoutService.RequestSave(profile with { Customization = newCustomization });
 
         // Sync the shell's Customization property so the UI reflects the change
-        if (Services.GetService<ShellViewModel>() is { } shellVm)
+        if (Services.GetService<ShellViewModel>() is { } shellVm) // optional service
             shellVm.Customization = newCustomization;
 
         UpdateThemeToggleLabel(newThemeId);

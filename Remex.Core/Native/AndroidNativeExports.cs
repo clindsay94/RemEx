@@ -20,6 +20,102 @@ public static class AndroidNativeExports
 {
     private static readonly object SyncRoot = new();
     private static IntPtr _javaVm;
+
+    // All Java callbacks run on one dedicated, process-lifetime thread that attaches to the
+    // JVM exactly once (as a daemon, so it never blocks VM shutdown) and never detaches.
+    // .NET thread-pool threads must NOT attach to the JVM: the pool retires idle workers
+    // after ~20 s, and a natively attached thread exiting trips ART's detach check — while
+    // detaching from a pthread TLS destructor re-enters managed code after NativeAOT has
+    // torn down the thread, which fail-fasts (observed on-device as SIGABRT ~40 s after
+    // launch). A single long-lived dispatcher avoids both failure modes and also keeps the
+    // 30–60 fps frame path free of per-callback attach/detach overhead.
+    // Bounded so a stalled Java consumer can never grow the queue without limit (OOM).
+    // The high-rate frame path enqueues as droppable: under backpressure the newest
+    // frames are shed rather than blocking the capture/network thread or accumulating
+    // unbounded latency. Low-rate control/data callbacks enqueue non-droppable and must
+    // not be lost, so they block briefly if the queue is momentarily full.
+    // (Finer latency tuning — drop-oldest / frame coalescing — belongs to RemEx-a1t.)
+    private const int JniWorkCapacity = 16;
+    private static readonly System.Collections.Concurrent.BlockingCollection<Action<IntPtr>> _jniWork = new(JniWorkCapacity);
+    // volatile: published via the double-checked lock below; ARM's weak memory model
+    // would otherwise permit an early/torn read of the reference.
+    private static volatile Thread? _jniDispatcher;
+
+    private static void PostToJavaThread(Action<IntPtr> work, bool droppable = false)
+    {
+        if (_jniDispatcher is null)
+        {
+            lock (SyncRoot)
+            {
+                if (_jniDispatcher is null)
+                {
+                    var thread = new Thread(JniDispatcherLoop)
+                    {
+                        IsBackground = true,
+                        Name = "RemexJniDispatch"
+                    };
+                    thread.Start();
+                    _jniDispatcher = thread;
+                }
+            }
+        }
+
+        try
+        {
+            // Droppable (frames): shed silently when the consumer is backed up so the
+            // producer never blocks and memory stays bounded — the next frame supersedes
+            // the dropped one. Non-droppable (control/data): block until space frees so
+            // state-change callbacks are never lost.
+            if (droppable)
+            {
+                _jniWork.TryAdd(work);
+            }
+            else
+            {
+                _jniWork.Add(work);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Defensive only: thrown if the queue is ever marked complete (CompleteAdding).
+            // The dispatcher is a process-lifetime daemon that is intentionally never shut
+            // down — ClearCallbackState() just zeroes the callback so queued work no-ops —
+            // so nothing calls CompleteAdding today and this path is currently unreachable.
+            // Kept for forward-compatibility if an explicit teardown is ever added.
+        }
+    }
+
+    private static void JniDispatcherLoop()
+    {
+        IntPtr vm;
+        lock (SyncRoot)
+        {
+            vm = _javaVm;
+        }
+
+        IntPtr env = IntPtr.Zero;
+        bool attached = vm != IntPtr.Zero
+            && JniHelper.AttachCurrentThreadAsDaemon(vm, out env, IntPtr.Zero) == 0
+            && env != IntPtr.Zero;
+        if (!attached)
+        {
+            JniHelper.AndroidLogE("RemexNative", "JNI dispatcher failed to attach to the JVM; Java callbacks are disabled.");
+        }
+
+        foreach (var work in _jniWork.GetConsumingEnumerable())
+        {
+            if (!attached) continue; // degraded mode: drain and drop so producers never block
+            try
+            {
+                work(env);
+            }
+            catch (Exception ex)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"JNI callback dispatch failed: {ex.Message}");
+            }
+        }
+    }
+
     private static IntPtr _callbackGlobalRef;
     private static IntPtr _onTelemetryUpdateMethodId;
     private static IntPtr _onConnectionStateChangedMethodId;
@@ -323,15 +419,6 @@ public static class AndroidNativeExports
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendDesktopPointerBatch failed: {ex.Message}"); }
         });
-    }
-
-    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_FreeMemory")]
-    public static void FreeMemory(IntPtr env, IntPtr thiz, IntPtr pointer)
-    {
-        if (pointer != IntPtr.Zero)
-        {
-            Marshal.FreeCoTaskMem(pointer);
-        }
     }
 
     private static void ClearActivePairingState()
@@ -883,23 +970,27 @@ public static class AndroidNativeExports
 
     private static void NotifyJavaFrame(byte[] frame)
     {
-        IntPtr env = IntPtr.Zero;
-        IntPtr vm = IntPtr.Zero;
-        IntPtr callback = IntPtr.Zero;
-        IntPtr methodId = IntPtr.Zero;
-
         lock (SyncRoot)
         {
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onFrameReceivedMethodId == IntPtr.Zero) return;
-            vm = _javaVm;
-            callback = _callbackGlobalRef;
-            methodId = _onFrameReceivedMethodId;
         }
 
-        if (JniHelper.AttachCurrentThread(vm, out env, IntPtr.Zero) != 0) return;
-
-        try
+        // The captured `frame` is a fresh per-frame array (RemexDesktopClient raises
+        // FrameReceived with ms.ToArray()), so holding the reference across the async
+        // hand-off is safe. INVARIANT: if that producer is ever changed to pool/reuse
+        // buffers, this MUST copy before enqueuing or the Java side will read torn frames.
+        PostToJavaThread(env =>
         {
+            // Re-read under lock at execution time: the global ref may have been replaced
+            // (and the old one deleted) between enqueue and dispatch.
+            IntPtr callback, methodId;
+            lock (SyncRoot)
+            {
+                callback = _callbackGlobalRef;
+                methodId = _onFrameReceivedMethodId;
+            }
+            if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
+
             IntPtr jArray = JniHelper.NewByteArray(env, frame.Length);
             if (jArray == IntPtr.Zero) return;
 
@@ -907,16 +998,17 @@ public static class AndroidNativeExports
             {
                 JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
                 JniHelper.CallVoidMethod(env, callback, methodId, jArray);
+                if (JniHelper.ExceptionCheck(env))
+                {
+                    JniHelper.ExceptionClear(env);
+                    JniHelper.AndroidLogE("RemexNative", "Java callback threw an exception; cleared to protect the JNI bridge.");
+                }
             }
             finally
             {
                 JniHelper.DeleteLocalRef(env, jArray);
             }
-        }
-        finally
-        {
-            JniHelper.DetachCurrentThread(vm);
-        }
+        }, droppable: true);
     }
 
     private static void OnNativeMessageReceived(RemexMessage msg)
@@ -952,63 +1044,62 @@ public static class AndroidNativeExports
 
     private static void NotifyJavaData(IntPtr methodId, string json)
     {
-        IntPtr env = IntPtr.Zero;
-        IntPtr vm = IntPtr.Zero;
-        IntPtr callback = IntPtr.Zero;
-
         lock (SyncRoot)
         {
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || methodId == IntPtr.Zero) return;
-            vm = _javaVm;
-            callback = _callbackGlobalRef;
         }
 
-        if (JniHelper.AttachCurrentThread(vm, out env, IntPtr.Zero) != 0) return;
-
-        try
+        PostToJavaThread(env =>
         {
+            IntPtr callback;
+            lock (SyncRoot)
+            {
+                callback = _callbackGlobalRef;
+            }
+            if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
+
             IntPtr jString = JniHelper.CreateJString(env, json);
             if (jString == IntPtr.Zero) return;
             try
             {
                 JniHelper.CallVoidMethod(env, callback, methodId, jString);
+                if (JniHelper.ExceptionCheck(env))
+                {
+                    JniHelper.ExceptionClear(env);
+                    JniHelper.AndroidLogE("RemexNative", "Java callback threw an exception; cleared to protect the JNI bridge.");
+                }
             }
             finally
             {
                 JniHelper.DeleteLocalRef(env, jString);
             }
-        }
-        finally
-        {
-            JniHelper.DetachCurrentThread(vm);
-        }
+        });
     }
 
     private static void NotifyJavaConnectionState(bool isConnected)
     {
-        IntPtr env = IntPtr.Zero;
-        IntPtr vm = IntPtr.Zero;
-        IntPtr callback = IntPtr.Zero;
-        IntPtr methodId = IntPtr.Zero;
-
         lock (SyncRoot)
         {
             if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onConnectionStateChangedMethodId == IntPtr.Zero) return;
-            vm = _javaVm;
-            callback = _callbackGlobalRef;
-            methodId = _onConnectionStateChangedMethodId;
         }
 
-        if (JniHelper.AttachCurrentThread(vm, out env, IntPtr.Zero) != 0) return;
-
-        try
+        PostToJavaThread(env =>
         {
+            IntPtr callback, methodId;
+            lock (SyncRoot)
+            {
+                callback = _callbackGlobalRef;
+                methodId = _onConnectionStateChangedMethodId;
+            }
+            if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
+
             JniHelper.CallVoidMethod(env, callback, methodId, isConnected);
-        }
-        finally
-        {
-            JniHelper.DetachCurrentThread(vm);
-        }
+            if (JniHelper.ExceptionCheck(env))
+            {
+                JniHelper.ExceptionClear(env);
+                JniHelper.AndroidLogE("RemexNative", "Java callback threw an exception; cleared to protect the JNI bridge.");
+            }
+        });
     }
 
     private static IntPtr Export(IntPtr env, Func<string> action)
@@ -1019,7 +1110,8 @@ public static class AndroidNativeExports
         }
         catch (Exception ex)
         {
-            return JniHelper.CreateJString(env, "{\"success\":false,\"message\":\"Unhandled native export failure.\",\"error\":\"" + ex.Message + "\"}");
+            return JniHelper.CreateJString(env,
+                SerializeOperationFailure("Unhandled native export failure.", ex.Message));
         }
     }
 
@@ -1033,7 +1125,7 @@ public static class AndroidNativeExports
         => RemexJson.Serialize(telemetry, RemexJsonSerializerContext.Default.TelemetryPayload);
 
     private static string SerializeTelemetryFailure(string message, string? error = null)
-        => "{\"success\":false,\"message\":\"" + message + "\"}";
+        => SerializeOperationFailure(message, error);
 
     private static string SerializeCommandResponse(CommandResponse response)
         => RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);

@@ -81,7 +81,7 @@
         </Style>
         <Style Selector="Button.gear-fab:pointerover">
             <Setter Property="RenderTransform" Value="rotate(180deg) scale(1.1)"/>
-            <Setter Property="Background" Value="{DynamicResource AccentPrimaryHoverBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
         </Style>
         <Style Selector="Button.gear-fab:pressed">
             <Setter Property="RenderTransform" Value="rotate(180deg) scale(0.95)"/>

@@ -41,20 +41,6 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                     20
             )
 
-    val fabPositionX =
-            settingsManager.floatingMouseIslandXFlow.stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
-                    Float.NaN
-            )
-
-    val fabPositionY =
-            settingsManager.floatingMouseIslandYFlow.stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
-                    Float.NaN
-            )
-
     val mouseFabX =
             settingsManager.mouseFabXFlow.stateIn(
                     viewModelScope,
@@ -181,10 +167,6 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
 
     fun clearCommandStatus() {
         _commandStatus.value = null
-    }
-
-    fun saveFloatingMouseIslandPosition(x: Float, y: Float) {
-        viewModelScope.launch { settingsManager.saveFloatingMouseIslandPosition(x, y) }
     }
 
     fun saveMouseFabPosition(x: Float, y: Float) {

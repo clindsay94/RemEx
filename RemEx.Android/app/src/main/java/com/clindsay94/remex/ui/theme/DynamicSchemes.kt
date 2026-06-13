@@ -1,11 +1,18 @@
 package com.clindsay94.remex.ui.theme
 
+import android.annotation.SuppressLint
 import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Variant
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import com.google.android.material.color.utilities.MathUtils
 
+// WARNING: This file imports com.google.android.material.color.utilities.* (DynamicScheme, Variant, Hct, etc.)
+// which are @RestrictTo(LIBRARY_GROUP) internals of the Material library. They are extremely
+// sensitive to material version bumps. Keep material version pinned to 1.14.0 in libs.versions.toml
+// to avoid runtime link errors or compilation breakage.
+
+@SuppressLint("RestrictedApi")
 /** A playful theme - the source color's hue does not appear in the theme. */
 class SchemeFruitSalad(
     sourceColorHct: Hct,
@@ -23,6 +30,7 @@ class SchemeFruitSalad(
     TonalPalette.fromHueAndChroma(sourceColorHct.hue, 24.0)
 )
 
+@SuppressLint("RestrictedApi")
 /** A playful theme - the source color's hue does not appear in the theme. */
 class SchemeRainbow(
     sourceColorHct: Hct,

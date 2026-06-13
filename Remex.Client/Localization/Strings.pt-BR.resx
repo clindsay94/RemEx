@@ -1195,6 +1195,33 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>GERAL</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Minimizar para a bandeja ao fechar</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Quando ativado, o botão X oculta o RemEx na bandeja do sistema e o mantém em execução. Quando desativado, o botão X encerra o aplicativo.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Escolha se fechar a janela minimiza o RemEx para a bandeja ou o encerra completamente.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Sair do RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Fechar completamente o aplicativo e interromper seu processo em segundo plano.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Sair</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Iniciar ao fazer login</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Inicia o RemEx minimizado na bandeja ao fazer login para que seu PC esteja sempre acessível.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Escolha se o RemEx deve iniciar automaticamente ao fazer login.</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>AJUDA</value>
   </data>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Alternar para Modo Claro</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Confirmar</value>
   </data>
 </root>

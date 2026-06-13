@@ -49,7 +49,7 @@ internal static class HostDoctor
         Console.WriteLine("RemEx Host — Linux remote-desktop prerequisite report");
         Console.WriteLine("=====================================================");
 
-        var report = await prereqs.EvaluateAsync(ct).ConfigureAwait(false);
+        var report = await prereqs.EvaluateAsync(ct);
         PrintReport(report);
 
         var plan = prereqs.BuildRepairPlan(report);
@@ -108,12 +108,11 @@ internal static class HostDoctor
             // Non-interactive (installer post-step or piped) — apply safe repairs silently.
             Console.WriteLine("\nNon-interactive mode: applying safe repairs.");
         }
-
         var results = await repair.RepairAsync(
             plan,
             allowPackageInstall: false,
             allowElevated: false,
-            ct).ConfigureAwait(false);
+            ct);
 
         Console.WriteLine();
         Console.WriteLine("Repair results:");
@@ -128,7 +127,7 @@ internal static class HostDoctor
         // Re-evaluate to see if the safe actions actually fixed anything.
         Console.WriteLine();
         Console.WriteLine("Re-evaluating after repairs...");
-        var post = await prereqs.EvaluateAsync(ct).ConfigureAwait(false);
+        var post = await prereqs.EvaluateAsync(ct);
         Console.WriteLine($"  Tier: {post.SelectedTier}");
         Console.WriteLine($"  RemoteDesktop interface: {(post.PortalRemoteDesktopAvailable ? "available" : "missing")}");
         return post.CanStream && post.PortalCaptureOperational ? 0 : 1;

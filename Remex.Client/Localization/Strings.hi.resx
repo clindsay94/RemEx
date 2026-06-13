@@ -1195,6 +1195,33 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>सामान्य</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>बंद करने पर ट्रे में छोटा करें</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>सक्षम होने पर, X बटन RemEx को सिस्टम ट्रे में छिपा देता है और इसे चालू रखता है। अक्षम होने पर, X बटन ऐप को बंद कर देता है।</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>चुनें कि विंडो बंद करने पर RemEx ट्रे में छोटा हो या पूरी तरह बंद हो जाए।</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>RemEx से बाहर निकलें</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>एप्लिकेशन को पूरी तरह बंद करें और इसकी पृष्ठभूमि प्रक्रिया रोकें।</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>बाहर निकलें</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>लॉगिन पर शुरू करें</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>लॉगिन करने पर RemEx को सिस्टम ट्रे में छोटा करके शुरू करता है ताकि आपका पीसी हमेशा पहुंच योग्य रहे।</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>चुनें कि लॉगिन करने पर RemEx स्वचालित रूप से शुरू हो या नहीं।</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>सहायता</value>
   </data>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>लाइट मोड पर स्विच करें</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>पुष्टि करें</value>
   </data>
 </root>

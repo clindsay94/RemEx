@@ -39,7 +39,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -87,12 +87,12 @@ fun AppLauncherScreen(
         )
     }
 ) {
-    val apps by viewModel.apps.collectAsState()
-    val recentApps by viewModel.recentApps.collectAsState()
-    val shapePreset by viewModel.appLauncherCardShapePreset.collectAsState()
-    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
-    val isConnected by RemexClientManager.isConnected.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val apps by viewModel.apps.collectAsStateWithLifecycle()
+    val recentApps by viewModel.recentApps.collectAsStateWithLifecycle()
+    val shapePreset by viewModel.appLauncherCardShapePreset.collectAsStateWithLifecycle()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
+    val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     val uiState = AppLauncherUiState(
         apps = apps,

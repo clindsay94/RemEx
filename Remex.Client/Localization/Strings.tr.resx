@@ -1195,6 +1195,33 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>GENEL</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Kapatırken tepsiye küçült</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Etkinleştirildiğinde, X düğmesi RemEx'i sistem tepsisine gizler ve çalışmaya devam etmesini sağlar. Devre dışı bırakıldığında, X düğmesi uygulamayı kapatır.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Pencereyi kapatmanın RemEx'i tepsiye küçültmesini mi yoksa tamamen kapatmasını mı istediğinizi seçin.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>RemEx'ten Çık</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Uygulamayı tamamen kapatır ve arka plan işlemini durdurur.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Çık</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Giriş yapıldığında başlat</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Giriş yapıldığında RemEx'i sistem tepsisinde küçültülmüş olarak başlatır, böylece bilgisayarınız her zaman erişilebilir kalır.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Giriş yapıldığında RemEx'in otomatik olarak başlatılıp başlatılmayacağını seçin.</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>YARDIM</value>
   </data>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Aydınlık Moda Geç</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Onayla</value>
   </data>
 </root>

@@ -52,7 +52,7 @@
             <!-- ═══ MASSIVE HUD HERO ═══ -->
             <Grid>
                 <!-- Decorative background elements -->
-                <TextBlock Text="CLindsay94" FontSize="280" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" Opacity="0.03" Margin="-40,-80,0,0" IsHitTestVisible="False"/>
+                <TextBlock Text="REMEX" FontSize="280" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" Opacity="0.03" Margin="-40,-80,0,0" IsHitTestVisible="False"/>
 
                 <Grid Margin="0,24,0,0">
                     <StackPanel Spacing="4" HorizontalAlignment="Center">

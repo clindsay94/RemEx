@@ -56,7 +56,7 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -123,10 +123,10 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
         val connectionViewModel: ConnectionViewModel = viewModel()
 
         val hasCompletedOnboarding by
-                settingsManager.hasCompletedOnboardingFlow.collectAsState(initial = null)
+                settingsManager.hasCompletedOnboardingFlow.collectAsStateWithLifecycle(initialValue = null)
         val personalization by
-                settingsManager.personalizationPreferencesFlow.collectAsState(initial = SettingsManager.PersonalizationPreferences())
-        val isConnected by RemexClientManager.isConnected.collectAsState()
+                settingsManager.personalizationPreferencesFlow.collectAsStateWithLifecycle(initialValue = SettingsManager.PersonalizationPreferences())
+        val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
 
         AppNavigationContent(
                 hasCompletedOnboarding = hasCompletedOnboarding,

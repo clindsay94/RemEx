@@ -30,7 +30,7 @@ param(
 
     [Parameter(Mandatory=$false)]
     [Alias("t")]
-    [ValidateSet("android", "linux", "windows", "all")]
+    [ValidateSet("android", "linux", "windows", "all", "windows-client", "installer", "apk")]
     [string]$Target = "",
 
     [Parameter(Mandatory=$false)]
@@ -79,6 +79,22 @@ if ($interactive) {
 $Config = $Config.ToLower().Trim()
 $Target = $Target.ToLower().Trim()
 
+$isInstallerTarget = $false
+$skipPublish = $false
+$skipInstaller = $false
+
+if ($Target -eq "apk") {
+    $Target = "android"
+}
+elseif ($Target -eq "windows-client") {
+    $Target = "windows"
+    $skipInstaller = $true
+}
+elseif ($Target -eq "installer") {
+    $Target = "windows"
+    $isInstallerTarget = $true
+}
+
 # Final validation checks
 if ($Config -notin @("debug", "release")) {
     Write-Error "Invalid configuration: '$Config'. Must be 'debug' or 'release'."
@@ -100,6 +116,13 @@ if ([string]::IsNullOrEmpty($RepoRoot)) {
     $RepoRoot = Get-Location
 }
 $BuildOutputDir = Join-Path $RepoRoot "build_output"
+
+if ($isInstallerTarget) {
+    $publishDir = Join-Path $RepoRoot "Remex.Client.Desktop" "bin" $Config "net10.0" "win-x64" "publish"
+    if (Test-Path $publishDir) {
+        $skipPublish = $true
+    }
+}
 
 # 2. Dynamic Version Retrieval from version.properties
 $VersionFile = Join-Path $RepoRoot "RemEx.Android" "app" "version.properties"
@@ -251,41 +274,46 @@ if ($Target -eq "windows" -or $Target -eq "all") {
     Write-Host "=== Compiling Windows Platform ===" -ForegroundColor Yellow
     
     $clientProj = Join-Path $RepoRoot "Remex.Client.Desktop" "Remex.Client.Desktop.csproj"
-    Write-Host "Publishing Remex.Client.Desktop ($Config, win-x64)..." -ForegroundColor DarkCyan
-    
-    dotnet publish $clientProj -c $Config -r win-x64 --self-contained
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "dotnet publish for Windows failed with exit code $LASTEXITCODE"
-        exit 1
-    }
-
-    # Locate and run Inno Setup Compiler
-    $iscc = Find-IsccCompiler
-    if ($null -ne $iscc) {
-        Write-Host "Building Windows Installer (Inno Setup)..." -ForegroundColor DarkCyan
-        $issFile = Join-Path $RepoRoot "installer" "RemEx.iss"
-        $sourceDirArg = "..\Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish"
-        
-        & $iscc "/DAppVersion=$Version" "/DSourceDir=$sourceDirArg" $issFile
+    if (-not $skipPublish) {
+        Write-Host "Publishing Remex.Client.Desktop ($Config, win-x64)..." -ForegroundColor DarkCyan
+        dotnet publish $clientProj -c $Config -r win-x64 --self-contained
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "Inno Setup compilation failed with exit code $LASTEXITCODE"
-            exit 1
-        }
-
-        # Locate and copy built executable
-        $installerExe = Join-Path $RepoRoot "installer" "Output" "RemEx-v$Version-Setup.exe"
-        if (Test-Path $installerExe) {
-            $winDest = Join-Path $BuildOutputDir "windows"
-            New-Item -ItemType Directory -Force -Path $winDest | Out-Null
-            Copy-Item -Path $installerExe -Destination $winDest -Force
-            Write-Host "Windows target packaged successfully." -ForegroundColor Green
-        } else {
-            Write-Error "Installer built but Output file was not found at $installerExe"
+            Write-Error "dotnet publish for Windows failed with exit code $LASTEXITCODE"
             exit 1
         }
     } else {
-        Write-Warning "ISCC.exe (Inno Setup 6) was not found in standard paths. Skipping installer packaging."
-        Write-Warning "Raw published files are available under Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish\"
+        Write-Host "Skipping dotnet publish as publish directory already exists." -ForegroundColor Green
+    }
+
+    # Locate and run Inno Setup Compiler
+    if (-not $skipInstaller) {
+        $iscc = Find-IsccCompiler
+        if ($null -ne $iscc) {
+            Write-Host "Building Windows Installer (Inno Setup)..." -ForegroundColor DarkCyan
+            $issFile = Join-Path $RepoRoot "installer" "RemEx.iss"
+            $sourceDirArg = "..\Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish"
+            
+            & $iscc "/DAppVersion=$Version" "/DSourceDir=$sourceDirArg" $issFile
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Inno Setup compilation failed with exit code $LASTEXITCODE"
+                exit 1
+            }
+
+            # Locate and copy built executable
+            $installerExe = Join-Path $RepoRoot "installer" "Output" "RemEx-v$Version-Setup.exe"
+            if (Test-Path $installerExe) {
+                $winDest = Join-Path $BuildOutputDir "windows"
+                New-Item -ItemType Directory -Force -Path $winDest | Out-Null
+                Copy-Item -Path $installerExe -Destination $winDest -Force
+                Write-Host "Windows target packaged successfully." -ForegroundColor Green
+            } else {
+                Write-Error "Installer built but Output file was not found at $installerExe"
+                exit 1
+            }
+        } else {
+            Write-Warning "ISCC.exe (Inno Setup 6) was not found in standard paths. Skipping installer packaging."
+            Write-Warning "Raw published files are available under Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish\"
+        }
     }
     Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 }
@@ -327,19 +355,19 @@ if ($Target -eq "android" -or $Target -eq "all") {
     }
 
     if (-not [string]::IsNullOrEmpty($sdkDir)) {
-        # Check 1: API Level 36 Platform (Required by .NET 10 Sdk targets)
-        $apiJar = Join-Path $sdkDir "platforms\android-36\android.jar"
+        # Check 1: API Level 37 Platform (Required by .NET 10 Sdk targets)
+        $apiJar = Join-Path $sdkDir "platforms\android-37\android.jar"
         if (-not (Test-Path $apiJar)) {
-            Write-Host "Android API Level 36 platform is missing. Attempting auto-installation..." -ForegroundColor Yellow
+            Write-Host "Android API Level 37 platform is missing. Attempting auto-installation..." -ForegroundColor Yellow
             $coreProj = Join-Path $RepoRoot "Remex.Core" "Remex.Core.csproj"
             dotnet build $coreProj -t:InstallAndroidDependencies -f net10.0-android "-p:AndroidSdkDirectory=$sdkDir" "-p:AcceptAndroidSDKLicenses=true"
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "Android API Level 36 dependency resolved successfully." -ForegroundColor Green
+                Write-Host "Android API Level 37 dependency resolved successfully." -ForegroundColor Green
             } else {
                 Write-Warning "Auto-installation of Android API dependencies returned exit code $LASTEXITCODE. Build may fail."
             }
         } else {
-            Write-Host "Android API Level 36 platform dependency verified." -ForegroundColor Green
+            Write-Host "Android API Level 37 platform dependency verified." -ForegroundColor Green
         }
 
         # Check 2: NDK version 30.0.14904198 (Required for .NET NativeAOT JNI core compiler)

@@ -403,7 +403,7 @@ public static class HostBootstrapper
                 if (OperatingSystem.IsLinux())
                 {
                     lifetime = context.RequestServices
-                        .GetService<Remex.Host.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>();
+                        .GetService<Remex.Host.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>(); // optional service
                     if (lifetime is not null)
                     {
                         try

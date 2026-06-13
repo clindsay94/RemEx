@@ -46,7 +46,7 @@ import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -314,8 +314,8 @@ private fun InputTab() {
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
     val preferences by
-            settingsManager.remoteDesktopPreferencesFlow.collectAsState(
-                    initial = SettingsManager.RemoteDesktopPreferences()
+            settingsManager.remoteDesktopPreferencesFlow.collectAsStateWithLifecycle(
+                    initialValue = SettingsManager.RemoteDesktopPreferences()
             )
 
     Scaffold(
@@ -443,7 +443,7 @@ private fun FileTransferSettingsTab() {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
-    val sharedFolderUris by settingsManager.sharedFolderUrisFlow.collectAsState(initial = emptySet())
+    val sharedFolderUris by settingsManager.sharedFolderUrisFlow.collectAsStateWithLifecycle(initialValue = emptySet())
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.OpenDocumentTree()

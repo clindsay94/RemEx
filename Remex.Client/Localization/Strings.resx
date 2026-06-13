@@ -1204,6 +1204,15 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
     <value>Choose whether closing the window minimizes RemEx to the tray or quits it entirely.</value>
   </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Launch RemEx when you sign in</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Starts minimized to the tray so your PC is immediately reachable from your phone.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Choose whether RemEx starts automatically when you sign in to your PC.</value>
+  </data>
   <data name="Settings_ExitApp" xml:space="preserve">
     <value>Exit RemEx</value>
   </data>
@@ -2527,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Boot_Ecution" xml:space="preserve">
     <value>ecution</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Confirm</value>
   </data>
 </root>

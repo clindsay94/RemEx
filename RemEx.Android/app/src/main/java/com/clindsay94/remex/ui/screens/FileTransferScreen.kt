@@ -54,7 +54,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,17 +80,17 @@ fun FileTransferScreen(
         onNavigateToConnection: () -> Unit = {},
         vm: FileTransferViewModel = viewModel(),
 ) {
-    val isConnected by RemexClientManager.isConnected.collectAsState()
-    val remotePath by vm.remotePath.collectAsState()
-    val remoteEntries by vm.remoteEntries.collectAsState()
-    val remoteRoots by vm.remoteRoots.collectAsState()
-    val selectedRootId by vm.selectedRootId.collectAsState()
-    val isLoading by vm.isLoading.collectAsState()
-    val isTransferring by vm.isTransferring.collectAsState()
-    val transferProgress by vm.transferProgress.collectAsState()
-    val statusText by vm.statusText.collectAsState()
-    val isSelectionMode by vm.isSelectionMode.collectAsState()
-    val selectedEntryNames by vm.selectedEntryNames.collectAsState()
+    val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val remotePath by vm.remotePath.collectAsStateWithLifecycle()
+    val remoteEntries by vm.remoteEntries.collectAsStateWithLifecycle()
+    val remoteRoots by vm.remoteRoots.collectAsStateWithLifecycle()
+    val selectedRootId by vm.selectedRootId.collectAsStateWithLifecycle()
+    val isLoading by vm.isLoading.collectAsStateWithLifecycle()
+    val isTransferring by vm.isTransferring.collectAsStateWithLifecycle()
+    val transferProgress by vm.transferProgress.collectAsStateWithLifecycle()
+    val statusText by vm.statusText.collectAsStateWithLifecycle()
+    val isSelectionMode by vm.isSelectionMode.collectAsStateWithLifecycle()
+    val selectedEntryNames by vm.selectedEntryNames.collectAsStateWithLifecycle()
 
     FileTransferScreenContent(
         isConnected = isConnected,
@@ -178,8 +178,8 @@ fun FileTransferScreenContent(
     // ── Rename dialog ─────────────────────────────────────────────────────────
     var renameTarget by remember { mutableStateOf<RemoteFileEntry?>(null) }
     var renameText by remember { mutableStateOf("") }
-
-    if (renameTarget != null) {
+    val currentRenameTarget = renameTarget
+    if (currentRenameTarget != null) {
         AlertDialog(
                 onDismissRequest = { renameTarget = null },
                 title = { Text(stringResource(R.string.file_transfer_rename_title)) },
@@ -191,14 +191,14 @@ fun FileTransferScreenContent(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = {
-                                onRenameEntry(renameTarget!!, renameText)
+                                onRenameEntry(currentRenameTarget, renameText)
                                 renameTarget = null
                             }),
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        onRenameEntry(renameTarget!!, renameText)
+                        onRenameEntry(currentRenameTarget, renameText)
                         renameTarget = null
                     }) { Text(stringResource(R.string.file_transfer_rename_confirm)) }
                 },
@@ -212,8 +212,9 @@ fun FileTransferScreenContent(
 
     // ── Context menu bottom sheet ─────────────────────────────────────────────
     var contextMenuEntry by remember { mutableStateOf<RemoteFileEntry?>(null) }
-    if (contextMenuEntry != null) {
-        val entry = contextMenuEntry!!
+    val currentContextMenuEntry = contextMenuEntry
+    if (currentContextMenuEntry != null) {
+        val entry = currentContextMenuEntry
         ModalBottomSheet(
                 onDismissRequest = { contextMenuEntry = null },
                 sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),

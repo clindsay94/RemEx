@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -144,7 +145,7 @@ class PairingViewModel : ViewModel() {
         }
     }
 
-    private fun tryFetchPinFromHost(hostUrl: String): String? {
+    private suspend fun tryFetchPinFromHost(hostUrl: String): String? {
         val uri = try { java.net.URI(hostUrl) } catch (e: Exception) { return null }
         val base = "https://${uri.host}:${uri.port}"
         // The /pairing-pin endpoint can transiently 404 in the window between the WebSocket
@@ -155,7 +156,7 @@ class PairingViewModel : ViewModel() {
         repeat(5) { attempt ->
             httpFetchPin("$base/pairing-pin", "GET")?.let { return it }
             if (attempt == 0) httpFetchPin("$base/start-pairing", "POST")?.let { return it }
-            try { Thread.sleep(400) } catch (_: InterruptedException) {}
+            kotlinx.coroutines.delay(400)
         }
         return null
     }
@@ -201,7 +202,7 @@ fun PairingScreen(
         onCancel: () -> Unit,
         viewModel: PairingViewModel = viewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val settingsManager = remember(context) { SettingsManager(context.applicationContext) }
     val coroutineScope = rememberCoroutineScope()

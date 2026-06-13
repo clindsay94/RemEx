@@ -18,6 +18,15 @@ public unsafe struct JavaVM
     public void** Functions;
 }
 
+[StructLayout(LayoutKind.Explicit)]
+public struct JValue
+{
+    [FieldOffset(0)] public byte Z;      // jboolean
+    [FieldOffset(0)] public int I;       // jint
+    [FieldOffset(0)] public long J;      // jlong
+    [FieldOffset(0)] public IntPtr L;    // jobject
+}
+
 public static unsafe class JniHelper
 {
     public static string? ReadJString(IntPtr envPtr, IntPtr jstring)
@@ -25,21 +34,27 @@ public static unsafe class JniHelper
         if (envPtr == IntPtr.Zero || jstring == IntPtr.Zero) return null;
 
         var env = (JNIEnv*)envPtr;
-        // GetStringUTFChars is at index 169
-        var getStringUtfChars = (delegate* unmanaged<IntPtr, IntPtr, byte*, byte*>)env->Functions[169];
-        // ReleaseStringUTFChars is at index 170
-        var releaseStringUtfChars = (delegate* unmanaged<IntPtr, IntPtr, byte*, void>)env->Functions[170];
+        // GetStringLength is at index 164
+        var getStringLength = (delegate* unmanaged<IntPtr, IntPtr, int>)env->Functions[164];
+        // GetStringChars is at index 165
+        var getStringChars = (delegate* unmanaged<IntPtr, IntPtr, byte*, char*>)env->Functions[165];
+        // ReleaseStringChars is at index 166
+        var releaseStringChars = (delegate* unmanaged<IntPtr, IntPtr, char*, void>)env->Functions[166];
 
-        byte* utf8Ptr = getStringUtfChars(envPtr, jstring, null);
-        if (utf8Ptr == null) return null;
+        int length = getStringLength(envPtr, jstring);
+        if (length < 0) return null;
+        if (length == 0) return string.Empty;
+
+        char* chars = getStringChars(envPtr, jstring, null);
+        if (chars == null) return null;
 
         try
         {
-            return Marshal.PtrToStringUTF8((IntPtr)utf8Ptr);
+            return new string(chars, 0, length);
         }
         finally
         {
-            releaseStringUtfChars(envPtr, jstring, utf8Ptr);
+            releaseStringChars(envPtr, jstring, chars);
         }
     }
 
@@ -48,12 +63,12 @@ public static unsafe class JniHelper
         if (envPtr == IntPtr.Zero || value == null) return IntPtr.Zero;
 
         var env = (JNIEnv*)envPtr;
-        // NewStringUTF is at index 167
-        var newStringUtf = (delegate* unmanaged<IntPtr, byte*, IntPtr>)env->Functions[167];
+        // NewString (UTF-16) is at index 163
+        var newString = (delegate* unmanaged<IntPtr, char*, int, IntPtr>)env->Functions[163];
 
-        fixed (byte* pValue = System.Text.Encoding.UTF8.GetBytes(value + "\0"))
+        fixed (char* pValue = value)
         {
-            return newStringUtf(envPtr, pValue);
+            return newString(envPtr, pValue, value.Length);
         }
     }
 
@@ -132,17 +147,20 @@ public static unsafe class JniHelper
     public static void CallVoidMethod(IntPtr envPtr, IntPtr obj, IntPtr methodId, IntPtr arg)
     {
         var env = (JNIEnv*)envPtr;
-        // CallVoidMethod is at index 61
-        var callVoidMethod = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>)env->Functions[61];
-        callVoidMethod(envPtr, obj, methodId, arg);
+        // CallVoidMethodA is at index 63 (fixed-signature jvalue[] variant of CallVoidMethod)
+        var callVoidMethodA = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, JValue*, void>)env->Functions[63];
+        var args = stackalloc JValue[1];
+        args[0].L = arg;
+        callVoidMethodA(envPtr, obj, methodId, args);
     }
 
     public static void CallVoidMethod(IntPtr envPtr, IntPtr obj, IntPtr methodId, bool arg)
     {
         var env = (JNIEnv*)envPtr;
-        // CallVoidMethod is at index 61
-        var callVoidMethod = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, byte, void>)env->Functions[61];
-        callVoidMethod(envPtr, obj, methodId, arg ? (byte)1 : (byte)0);
+        var callVoidMethodA = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, JValue*, void>)env->Functions[63];
+        var args = stackalloc JValue[1];
+        args[0].Z = arg ? (byte)1 : (byte)0;
+        callVoidMethodA(envPtr, obj, methodId, args);
     }
 
     public static IntPtr NewByteArray(IntPtr envPtr, int len)
@@ -172,6 +190,17 @@ public static unsafe class JniHelper
         fixed (IntPtr* pEnv = &envPtr)
         {
             return attachCurrentThread(vmPtr, pEnv, args);
+        }
+    }
+
+    public static int AttachCurrentThreadAsDaemon(IntPtr vmPtr, out IntPtr envPtr, IntPtr args)
+    {
+        var vm = (JavaVM*)vmPtr;
+        // AttachCurrentThreadAsDaemon is at index 7
+        var attach = (delegate* unmanaged<IntPtr, IntPtr*, IntPtr, int>)vm->Functions[7];
+        fixed (IntPtr* pEnv = &envPtr)
+        {
+            return attach(vmPtr, pEnv, args);
         }
     }
 

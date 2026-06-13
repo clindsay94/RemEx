@@ -62,13 +62,13 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         if (Interlocked.CompareExchange(ref _startInProgress, 1, 0) != 0)
         {
             for (var i = 0; i < 1200 && !_active; i++)
-                await Task.Delay(100, ct).ConfigureAwait(false);
+                await Task.Delay(100, ct);
             return _active;
         }
 
         try
         {
-            return await StartSessionAsync(ct).ConfigureAwait(false);
+            return await StartSessionAsync(ct);
         }
         catch (Exception ex)
         {
@@ -83,7 +83,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
 
     private async Task<bool> StartSessionAsync(CancellationToken ct)
     {
-        if (!await EnsureConnectionAsync(ct).ConfigureAwait(false))
+        if (!await EnsureConnectionAsync(ct))
             return false;
 
         _logger.LogInformation(
@@ -94,7 +94,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         // NOT in the immediate method reply (which only returns the Request object path).
         // When the portal frontend doesn't expose RemoteDesktop, attempt a one-shot
         // recovery (shared with the capture-session service via PortalRecoveryHelper).
-        var createResults = await CreateSessionWithRecoveryAsync(ct).ConfigureAwait(false);
+        var createResults = await CreateSessionWithRecoveryAsync(ct);
 
         if (createResults is null)
         {
@@ -135,12 +135,12 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
                 w.WriteDictionaryEnd(dictStart);
             },
             logger: _logger,
-            ct: ct).ConfigureAwait(false);
+            ct: ct);
 
         if (selectResults is null)
         {
             _logger.LogWarning("Portal SelectDevices failed or returned non-zero response.");
-            await CloseSessionInternalAsync().ConfigureAwait(false);
+            await CloseSessionInternalAsync();
             return false;
         }
 
@@ -166,12 +166,12 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
                 w.WriteDictionaryEnd(dictStart);
             },
             logger: _logger,
-            ct: ct).ConfigureAwait(false);
+            ct: ct);
 
         if (startResults is null)
         {
             _logger.LogWarning("User declined portal RemoteDesktop permission or dialog timed out.");
-            await CloseSessionInternalAsync().ConfigureAwait(false);
+            await CloseSessionInternalAsync();
             return false;
         }
 
@@ -357,7 +357,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _active = false;
-        await CloseSessionInternalAsync().ConfigureAwait(false);
+        await CloseSessionInternalAsync();
         _conn?.Dispose();
         _conn = null;
     }
@@ -432,7 +432,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
                         w.WriteDictionaryEnd(dictStart);
                     },
                     logger: _logger,
-                    ct: ct).ConfigureAwait(false);
+                    ct: ct);
             }
             catch (DBusException ex) when (
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
@@ -445,7 +445,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
                         "Input injector: RemoteDesktop portal interface missing. " +
                         "Attempting one-shot recovery (restart xdg-desktop-portal)...");
                     var recovered = await PortalRecoveryHelper
-                        .TryRecoverAsync(_logger, ct).ConfigureAwait(false);
+                        .TryRecoverAsync(_logger, ct);
                     if (recovered)
                     {
                         // D-Bus routes by well-known name, so the existing
@@ -477,7 +477,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable
         try
         {
             var conn = new Connection(address);
-            await conn.ConnectAsync().ConfigureAwait(false);
+            await conn.ConnectAsync();
             _conn = conn;
 
             var unique = _conn.UniqueName;

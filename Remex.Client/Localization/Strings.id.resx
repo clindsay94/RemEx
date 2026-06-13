@@ -1195,6 +1195,33 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>UMUM</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Minimalkan ke tray saat ditutup</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Jika diaktifkan, tombol X menyembunyikan RemEx ke system tray dan tetap menjalankannya. Jika dinonaktifkan, tombol X menutup aplikasi.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Pilih apakah menutup jendela meminimalkan RemEx ke tray atau menutupnya sepenuhnya.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Keluar dari RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Tutup aplikasi sepenuhnya dan hentikan proses latar belakangnya.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Keluar</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Jalankan saat masuk</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Menjalankan RemEx dalam keadaan diminimalkan ke tray saat Anda masuk agar PC Anda selalu dapat diakses.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Pilih apakah RemEx dijalankan secara otomatis saat Anda masuk.</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>BANTUAN</value>
   </data>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Beralih ke Mode Terang</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Konfirmasi</value>
   </data>
 </root>

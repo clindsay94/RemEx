@@ -88,7 +88,7 @@ internal static class PortalDbusHelper
                     }
                     tcs.TrySetResult(data.Results);
                 },
-                ObserverFlags.None).ConfigureAwait(false);
+                ObserverFlags.None);
 
             MessageBuffer buf;
             {
@@ -103,14 +103,14 @@ internal static class PortalDbusHelper
                 buf = writer.CreateMessage();
             }
 
-            await conn.CallMethodAsync(buf).ConfigureAwait(false);
+            await conn.CallMethodAsync(buf);
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(requestTimeout);
 
             using (timeoutCts.Token.Register(() => tcs.TrySetResult(null)))
             {
-                return await tcs.Task.ConfigureAwait(false);
+                return await tcs.Task;
             }
         }
         finally

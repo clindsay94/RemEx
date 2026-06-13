@@ -701,7 +701,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             if (!_isPairedWithCurrentHost)
             {
                 StatusText = LocalizationService.Instance["Status_Pairing"];
-                var certStore = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
+                var certStore = App.Services.GetRequiredService<Remex.Client.Services.Security.PinnedCertStore>();
                 var pairingClient = new Remex.Core.Native.PairingClient(_webSocket, null);
 
                 var response = await pairingClient.StartPairingAsync(Environment.MachineName, "2.0.0", linkedCts.Token);
@@ -729,7 +729,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 }
 
                 // Pairing successful, save the SPKI hash!
-                await certStore!.SetPinAsync(response.HostId, response.CertificateSpkiHashBase64);
+                await certStore.SetPinAsync(response.HostId, response.CertificateSpkiHashBase64);
                 _isPairedWithCurrentHost = true;
             }
 
@@ -1181,8 +1181,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     host = lanIp;
             }
 
-            var certService = App.Services.GetService<ICertificateService>() 
-                           ?? App.EmbeddedHostServices?.GetService<ICertificateService>();
+            var certService = App.Services.GetService<ICertificateService>() // optional service
+                           ?? App.EmbeddedHostServices?.GetService<ICertificateService>(); // optional service
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
 
             // Generate a fresh pairing PIN to embed in the QR code so the mobile client
@@ -1376,7 +1376,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// </summary>
     private async Task LoadPinSnapshotAsync()
     {
-        var store = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>();
+        var store = App.Services.GetService<Remex.Client.Services.Security.PinnedCertStore>(); // optional service
         if (store is null)
         {
             // No pin store configured (e.g. a misconfigured DI container). Empty snapshot will
@@ -1416,7 +1416,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 DataContext = new Remex.Client.ViewModels.PairingDialogViewModel()
             };
 
-            var shell = App.Services.GetService<Remex.Client.ViewModels.ShellViewModel>();
+            var shell = App.Services.GetService<Remex.Client.ViewModels.ShellViewModel>(); // optional service
             if (shell != null && App.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
             {
                 if (desktop.MainWindow != null)

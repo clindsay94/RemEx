@@ -13,6 +13,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,16 +43,16 @@ fun TaskManagerScreen(
         isVisible: Boolean = true,
         viewModel: TaskManagerViewModel = viewModel(),
 ) {
-    val processes by viewModel.processes.collectAsState()
-    val isConnected by RemexClientManager.isConnected.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val sortField by viewModel.sortField.collectAsState()
-    val sortDescending by viewModel.sortDescending.collectAsState()
-    val shapePreset by viewModel.taskManagerCardShapePreset.collectAsState()
-    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
-    val killError by viewModel.killError.collectAsState()
-    val loadError by viewModel.loadError.collectAsState()
+    val processes by viewModel.processes.collectAsStateWithLifecycle()
+    val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val sortField by viewModel.sortField.collectAsStateWithLifecycle()
+    val sortDescending by viewModel.sortDescending.collectAsStateWithLifecycle()
+    val shapePreset by viewModel.taskManagerCardShapePreset.collectAsStateWithLifecycle()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
+    val killError by viewModel.killError.collectAsStateWithLifecycle()
+    val loadError by viewModel.loadError.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel, isVisible, isConnected) {
         viewModel.setAutoRefreshEnabled(isVisible && isConnected)

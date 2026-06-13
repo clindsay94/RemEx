@@ -127,14 +127,32 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
 
     public void KeyDown(int keyCode)
     {
-        if (_eis.IsAvailable) { _eis.SendKey((uint)keyCode, pressed: true); return; }
-        RunXdotool($"keydown {keyCode}");
+        int linuxKeyCode = LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode);
+        if (_eis.IsAvailable)
+        {
+            if (linuxKeyCode >= 0)
+            {
+                _eis.SendKey((uint)linuxKeyCode, pressed: true);
+            }
+            return;
+        }
+        var xkbName = LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString();
+        RunXdotool($"keydown {xkbName}");
     }
 
     public void KeyUp(int keyCode)
     {
-        if (_eis.IsAvailable) { _eis.SendKey((uint)keyCode, pressed: false); return; }
-        RunXdotool($"keyup {keyCode}");
+        int linuxKeyCode = LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode);
+        if (_eis.IsAvailable)
+        {
+            if (linuxKeyCode >= 0)
+            {
+                _eis.SendKey((uint)linuxKeyCode, pressed: false);
+            }
+            return;
+        }
+        var xkbName = LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString();
+        RunXdotool($"keyup {xkbName}");
     }
 
     public void TypeText(string text)

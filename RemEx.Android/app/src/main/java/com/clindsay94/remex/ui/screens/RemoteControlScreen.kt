@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -149,10 +150,10 @@ fun RemoteControlScreen(
         onNavigateToConnection: () -> Unit = {},
         viewModel: RemoteControlViewModel = viewModel()
 ) {
-    val commandStatus by viewModel.commandStatus.collectAsState()
-    val shapePreset by viewModel.remoteControlCardShapePreset.collectAsState()
-    val cornerRadius by viewModel.cardCornerRadius.collectAsState()
-    val isConnected by RemexClientManager.isConnected.collectAsState()
+    val commandStatus by viewModel.commandStatus.collectAsStateWithLifecycle()
+    val shapePreset by viewModel.remoteControlCardShapePreset.collectAsStateWithLifecycle()
+    val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
+    val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
 
     val uiState =
             RemoteControlUiState(

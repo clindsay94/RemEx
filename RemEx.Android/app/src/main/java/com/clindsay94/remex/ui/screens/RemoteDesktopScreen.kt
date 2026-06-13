@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -54,6 +55,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -210,27 +212,27 @@ private fun SettingsPair(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
-        val currentFrame by viewModel.currentFrame.collectAsState()
+        val currentFrame by viewModel.currentFrame.collectAsStateWithLifecycle()
         val currentBitmap = currentFrame?.bitmap
-        val isStreaming by viewModel.isStreaming.collectAsState()
-        val capabilityState by viewModel.capabilityState.collectAsState()
-        val desktopError by viewModel.desktopError.collectAsState()
-        val config by viewModel.configState.collectAsState()
-        val directTouch by viewModel.directTouch.collectAsState()
-        val pointerSpeed by viewModel.pointerSpeed.collectAsState()
-        val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsState()
-        val hScrollSensitivity by viewModel.horizontalScrollSensitivity.collectAsState()
-        val cursorScale by viewModel.cursorScale.collectAsState()
-        val hostCursorX by viewModel.hostCursorX.collectAsState()
-        val hostCursorY by viewModel.hostCursorY.collectAsState()
-        val fps by viewModel.fps.collectAsState()
-        val windowResults by viewModel.windowResults.collectAsState()
-        val windowActionError by viewModel.windowActionError.collectAsState()
-        val activeCodec by viewModel.activeCodecState.collectAsState()
-        val streamPixelWidth by viewModel.streamPixelWidth.collectAsState()
-        val streamPixelHeight by viewModel.streamPixelHeight.collectAsState()
-        val displayTargets by viewModel.displayTargets.collectAsState()
-        val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsState()
+        val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
+        val capabilityState by viewModel.capabilityState.collectAsStateWithLifecycle()
+        val desktopError by viewModel.desktopError.collectAsStateWithLifecycle()
+        val config by viewModel.configState.collectAsStateWithLifecycle()
+        val directTouch by viewModel.directTouch.collectAsStateWithLifecycle()
+        val pointerSpeed by viewModel.pointerSpeed.collectAsStateWithLifecycle()
+        val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsStateWithLifecycle()
+        val hScrollSensitivity by viewModel.horizontalScrollSensitivity.collectAsStateWithLifecycle()
+        val cursorScale by viewModel.cursorScale.collectAsStateWithLifecycle()
+        val hostCursorX by viewModel.hostCursorX.collectAsStateWithLifecycle()
+        val hostCursorY by viewModel.hostCursorY.collectAsStateWithLifecycle()
+        val fps by viewModel.fps.collectAsStateWithLifecycle()
+        val windowResults by viewModel.windowResults.collectAsStateWithLifecycle()
+        val windowActionError by viewModel.windowActionError.collectAsStateWithLifecycle()
+        val activeCodec by viewModel.activeCodecState.collectAsStateWithLifecycle()
+        val streamPixelWidth by viewModel.streamPixelWidth.collectAsStateWithLifecycle()
+        val streamPixelHeight by viewModel.streamPixelHeight.collectAsStateWithLifecycle()
+        val displayTargets by viewModel.displayTargets.collectAsStateWithLifecycle()
+        val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsStateWithLifecycle()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -676,8 +678,21 @@ fun RemoteDesktopScreenContent(
                                                         onSendKeyPress = onSendKeyPress
                                                 )
                                 },
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                                keyboardActions = KeyboardActions(onSend = { onSendKeyPress(13) }),
+                                keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Text,
+                                        autoCorrectEnabled = false,
+                                        // Default (not Send): on a multiline field Gboard renders a real ↵ Enter key,
+                                        // whose '\n' insertion is converted to keycode 13 by applyRemoteKeyboardEdit.
+                                        imeAction = ImeAction.Default
+                                ),
+                                keyboardActions = KeyboardActions(
+                                        // Fallbacks: any IME that still renders an action key routes here.
+                                        onDone = { onSendKeyPress(13) },
+                                        onGo = { onSendKeyPress(13) },
+                                        onNext = { onSendKeyPress(13) },
+                                        onSearch = { onSendKeyPress(13) },
+                                        onSend = { onSendKeyPress(13) }
+                                ),
                                 modifier =
                                         Modifier.size(1.dp)
                                                 .graphicsLayer { alpha = 0f }

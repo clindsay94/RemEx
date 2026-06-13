@@ -1193,7 +1193,34 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-découverte des hôtes RemEx sur votre réseau local via mDNS</value>
   </data>
   <data name="Settings_General" xml:space="preserve">
-    <value>GÉNÉRAL</value>
+    <value>GENERAL</value>
+  </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Réduire dans la zone de notification à la fermeture</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Si activé, le bouton X masque RemEx dans la zone de notification et le laisse en cours d'exécution. Si désactivé, le bouton X quitte l'application.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Choisissez si la fermeture de la fenêtre réduit RemEx dans la zone de notification ou le quitte complètement.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Quitter RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Fermer complètement l'application et arrêter son processus en arrière-plan.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Quitter</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Lancer au démarrage</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Lance RemEx réduit dans la zone de notification au démarrage de la session pour que votre PC soit toujours accessible.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Choisissez si RemEx se lance automatiquement au démarrage de la session.</value>
   </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>AIDE</value>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Passer au mode clair</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Confirmer</value>
   </data>
 </root>

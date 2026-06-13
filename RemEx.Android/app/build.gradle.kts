@@ -70,7 +70,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
+            abiFilters += listOf("arm64-v8a")
         }
     }
     signingConfigs {
@@ -87,7 +87,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
+            // Use the real release keystore when configured in local.properties;
+            // fall back to debug signing for local test builds without secrets.
+            signingConfig = if (androidLocalProperties.getProperty("remex.signing.storeFile") != null)
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
             ndk { debugSymbolLevel = "FULL" }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -707,8 +712,8 @@ dependencies {
     implementation(libs.tink.android)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -733,7 +738,6 @@ dependencies {
     testImplementation("org.json:json:20251224")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     // ui-tooling must be implementation (not debugImplementation) for Preview classloading in this environment
     implementation(libs.androidx.compose.ui.tooling)

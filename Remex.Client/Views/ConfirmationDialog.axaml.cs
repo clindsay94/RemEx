@@ -13,6 +13,8 @@ public partial class ConfirmationDialog : Window
     {
         InitializeComponent();
 
+        // OS window title; the Localize markup extension does not apply to Window.Title, so set it here.
+        Title = LocalizationService.Instance["Dialog_ConfirmTitle"];
         TitleText.Text = title;
         MessageText.Text = message;
         ConfirmBtn.Content = confirmText;

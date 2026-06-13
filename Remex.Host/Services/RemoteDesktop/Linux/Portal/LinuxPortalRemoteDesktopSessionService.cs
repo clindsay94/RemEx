@@ -82,7 +82,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
 
         try
         {
-            if (!await EnsureConnectionAsync(ct).ConfigureAwait(false))
+            if (!await EnsureConnectionAsync(ct))
                 throw new InvalidOperationException(
                     "Failed to connect to D-Bus session bus (DBUS_SESSION_BUS_ADDRESS unset?).");
 
@@ -93,7 +93,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
             // Step 1 — CreateSession on RemoteDesktop. If the portal frontend doesn't
             // expose the interface, try one round of stale-frontend recovery before
             // falling back to ScreenCast-only.
-            createResults = await TryCreateRemoteDesktopSessionAsync(ct).ConfigureAwait(false);
+            createResults = await TryCreateRemoteDesktopSessionAsync(ct);
             if (createResults is null)
             {
                 isFallbackScreenCastOnly = true;
@@ -125,7 +125,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                         w.WriteDictionaryEnd(dictStart);
                     },
                     logger: _logger,
-                    ct: ct).ConfigureAwait(false);
+                    ct: ct);
             }
 
             if (createResults is null)
@@ -174,12 +174,12 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                         w.WriteDictionaryEnd(dictStart);
                     },
                     logger: _logger,
-                    ct: ct).ConfigureAwait(false);
+                    ct: ct);
 
                 if (selectDevResults is null)
                 {
                     _state = PortalSessionState.Failed;
-                    await CloseSessionCoreAsync().ConfigureAwait(false);
+                    await CloseSessionCoreAsync();
                     throw new InvalidOperationException("Portal SelectDevices failed.");
                 }
             }
@@ -216,12 +216,12 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     w.WriteDictionaryEnd(dictStart);
                 },
                 logger: _logger,
-                ct: ct).ConfigureAwait(false);
+                ct: ct);
 
             if (selectSrcResults is null)
             {
                 _state = PortalSessionState.Failed;
-                await CloseSessionCoreAsync().ConfigureAwait(false);
+                await CloseSessionCoreAsync();
                 throw new InvalidOperationException("Portal SelectSources failed.");
             }
 
@@ -254,12 +254,12 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     w.WriteDictionaryEnd(dictStart);
                 },
                 logger: _logger,
-                ct: ct).ConfigureAwait(false);
+                ct: ct);
 
             if (startResults is null)
             {
                 _state = PortalSessionState.Failed;
-                await CloseSessionCoreAsync().ConfigureAwait(false);
+                await CloseSessionCoreAsync();
                 throw new InvalidOperationException(
                     "Portal Start failed: user declined permission or dialog timed out.");
             }
@@ -304,14 +304,14 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
         _state = PortalSessionState.Restarting;
         SessionLost?.Invoke();
 
-        await CloseSessionCoreAsync().ConfigureAwait(false);
-        return await StartSessionAsync(ct).ConfigureAwait(false);
+        await CloseSessionCoreAsync();
+        return await StartSessionAsync(ct);
     }
 
     public async ValueTask DisposeAsync()
     {
         _state = PortalSessionState.Closed;
-        await CloseSessionCoreAsync().ConfigureAwait(false);
+        await CloseSessionCoreAsync();
 
         if (_conn is not null)
         {
@@ -359,7 +359,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                         w.WriteDictionaryEnd(dictStart);
                     },
                     logger: _logger,
-                    ct: ct).ConfigureAwait(false);
+                    ct: ct);
             }
             catch (DBusException ex) when (
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
@@ -372,7 +372,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                         "RemoteDesktop portal interface missing. Attempting one-shot " +
                         "recovery (restart xdg-desktop-portal with re-imported env)...");
                     var recovered = await PortalRecoveryHelper.TryRecoverAsync(_logger, ct)
-                        .ConfigureAwait(false);
+                        ;
                     if (recovered)
                     {
                         // Loop and retry CreateSession on the freshly-restarted frontend.
@@ -403,7 +403,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
         try
         {
             var conn = new Connection(address);
-            await conn.ConnectAsync().ConfigureAwait(false);
+            await conn.ConnectAsync();
             _conn = conn;
 
             var unique = _conn.UniqueName;

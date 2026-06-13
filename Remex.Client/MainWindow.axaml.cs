@@ -16,12 +16,12 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        _themeService = App.Services.GetService<ThemeService>();
+        _themeService = App.Services.GetService<ThemeService>(); // optional service
         if (_themeService is not null)
         {
             _themeService.CustomizationApplied += OnCustomizationApplied;
 
-            if (App.Services.GetService<DashboardLayoutService>() is { CurrentProfile.Customization: { } settings })
+            if (App.Services.GetService<DashboardLayoutService>() is { CurrentProfile.Customization: { } settings }) // optional service
             {
                 OnCustomizationApplied(settings);
             }
@@ -38,7 +38,7 @@ public partial class MainWindow : Window
 
         // Honor the user's chosen close behavior (Settings → General).
         var closeToTray = true;
-        if (App.Services?.GetService<DashboardLayoutService>() is { CurrentProfile: { } profile })
+        if (App.Services?.GetService<DashboardLayoutService>() is { CurrentProfile: { } profile }) // optional service
             closeToTray = profile.CloseToTray;
 
         if (closeToTray)

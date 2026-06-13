@@ -79,8 +79,6 @@ class SettingsManager(val context: Context) {
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
 
-                val FLOATING_MOUSE_ISLAND_X_KEY = floatPreferencesKey("floating_mouse_island_x")
-                val FLOATING_MOUSE_ISLAND_Y_KEY = floatPreferencesKey("floating_mouse_island_y")
                 val MOUSE_FAB_X_KEY = floatPreferencesKey("mouse_fab_x")
                 val MOUSE_FAB_Y_KEY = floatPreferencesKey("mouse_fab_y")
 
@@ -162,18 +160,6 @@ class SettingsManager(val context: Context) {
                         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 18.0f
                 }
 
-        val floatingMouseIslandXFlow: Flow<Float> =
-                context.dataStore.data.map { preferences ->
-                        preferences[FLOATING_MOUSE_ISLAND_X_KEY]
-                                ?: Float.NaN // NaN = not set, use default position
-                }
-
-        val floatingMouseIslandYFlow: Flow<Float> =
-                context.dataStore.data.map { preferences ->
-                        preferences[FLOATING_MOUSE_ISLAND_Y_KEY]
-                                ?: Float.NaN // NaN = not set, use default position
-                }
-
         val mouseFabXFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
                         preferences[MOUSE_FAB_X_KEY] ?: Float.NaN
@@ -184,7 +170,7 @@ class SettingsManager(val context: Context) {
                         preferences[MOUSE_FAB_Y_KEY] ?: Float.NaN
                 }
 
-        // Typed as Flow<Boolean?> so that collectAsState(initial = null) can distinguish
+        // Typed as Flow<Boolean?> so that collectAsStateWithLifecycle(initialValue = null) can distinguish
         // "DataStore hasn't loaded yet" (null initial) from the actual persisted value.
         // The flow itself always emits non-null Boolean.
         val hasCompletedOnboardingFlow: Flow<Boolean?> =
@@ -431,13 +417,6 @@ class SettingsManager(val context: Context) {
         suspend fun saveHomeEnabledCards(enabledCardsJson: String) {
                 context.dataStore.edit { preferences ->
                         preferences[HOME_ENABLED_CARDS_JSON_KEY] = enabledCardsJson
-                }
-        }
-
-        suspend fun saveFloatingMouseIslandPosition(x: Float, y: Float) {
-                context.dataStore.edit { preferences ->
-                        preferences[FLOATING_MOUSE_ISLAND_X_KEY] = x
-                        preferences[FLOATING_MOUSE_ISLAND_Y_KEY] = y
                 }
         }
 

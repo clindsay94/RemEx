@@ -6,11 +6,6 @@
 -keep class com.clindsay94.remex.RemexCoreClient$RemexCallback { *; }
 -keep class com.clindsay94.remex.RemexClientManager { *; }
 
-# Preserve standard JNI functions and classes used by .NET
--keep class java.lang.** { *; }
--keep class java.net.** { *; }
--keep class javax.net.** { *; }
-
 # ML Kit keep rules
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.android.gms.internal.mlkit_vision_barcode.** { *; }
@@ -28,21 +23,15 @@
     <init>();
 }
 
-# Keep NSec.Cryptography (cryptography library can be reflectively invoked)
--keep class com.nsec.** { *; }
-
 # Keep pairing native bridge methods
 -keepclassmembers class com.clindsay94.remex.RemexCoreClient {
     public static native <methods>;
     private static native <methods>;
 }
 -keepclassmembers class com.clindsay94.remex.security.PinnedHostStore { *; }
--keepclassmembers class com.clindsay94.remex.security.PairingViewModel { *; }
 
-# Keep file-transfer native bridge callbacks
+
+# All RemexCallback methods are resolved from native code via JNI GetMethodID.
 -keepclassmembers class com.clindsay94.remex.RemexCoreClient$RemexCallback {
-    void onDesktopStreamDescriptor(java.lang.String);
-    void onFileTransferProgress(java.lang.String);
-    void onFileTransferComplete(java.lang.String);
+    <methods>;
 }
-

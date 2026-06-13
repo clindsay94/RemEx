@@ -34,6 +34,9 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         _connection = connection;
         _shell = shell;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
+        // Live language switching: the What's New / FAQ lists are built from localized strings
+        // once, so rebuild them when the culture changes.
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
 
         // Get client version from assembly
         var version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -42,6 +45,18 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         UpdateHostVersion();
         LoadWhatsNew();
         LoadFaq();
+    }
+
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // SetCulture raises "Item", "Item[]" and "" in sequence; rebuild once per switch.
+        if (!string.IsNullOrEmpty(e.PropertyName)) return;
+
+        WhatsNewItems.Clear();
+        FaqItems.Clear();
+        LoadWhatsNew();
+        LoadFaq();
+        UpdateHostVersion();
     }
     
     private void LoadWhatsNew()
@@ -177,6 +192,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
     }
 }
 

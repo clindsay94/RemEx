@@ -10,7 +10,7 @@ if (args.Length > 0 &&
 {
     if (System.OperatingSystem.IsLinux())
     {
-        return await HostDoctor.RunAsync().ConfigureAwait(false);
+        return await HostDoctor.RunAsync();
     }
     System.Console.Error.WriteLine("remex-host --doctor is only supported on Linux.");
     return 2;

@@ -60,7 +60,7 @@ internal static class PortalRecoveryHelper
         try
         {
             var prereqs = new LinuxRemoteDesktopPrerequisites();
-            var report = await prereqs.EvaluateAsync(ct).ConfigureAwait(false);
+            var report = await prereqs.EvaluateAsync(ct);
 
             // Only attempt recovery when this is genuinely the stale-frontend case.
             // For "backend not installed" we have nothing to fix here.
@@ -102,7 +102,7 @@ internal static class PortalRecoveryHelper
                 },
                 allowPackageInstall: false,
                 allowElevated: false,
-                ct).ConfigureAwait(false);
+                ct);
 
             var firstResult = results.FirstOrDefault();
             if (firstResult is null || !firstResult.Success)
@@ -115,9 +115,9 @@ internal static class PortalRecoveryHelper
 
             // The portal frontend takes a moment to come back up and accept
             // introspection; give it ~2 seconds before re-probing.
-            await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromSeconds(2), ct);
 
-            var postReport = await prereqs.EvaluateAsync(ct).ConfigureAwait(false);
+            var postReport = await prereqs.EvaluateAsync(ct);
             if (postReport.PortalRemoteDesktopAvailable)
             {
                 logger.LogInformation(

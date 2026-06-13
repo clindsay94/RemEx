@@ -56,4 +56,14 @@
     <Thickness x:Key="CardBorderThickness">1</Thickness>
     <BoxShadows x:Key="CardShadow">0 4 16 0 #1A000000</BoxShadows>
     <BoxShadows x:Key="CardHoverShadow">0 8 32 0 #30000000, 0 0 12 2 #40FFB800</BoxShadows>
+
+    <!-- Compatibility aliases for WinUI-style resource names -->
+    <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>
+
+    <!-- UI Geometry (Material 3 Expressive Tokens) -->
+    <CornerRadius x:Key="CornerRadiusSmall">8</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusMedium">16</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusLarge">28</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusExtraLarge">36</CornerRadius>
+    <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
 </ResourceDictionary>

@@ -25,16 +25,16 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
 
     private class MockCommandService : Remex.Core.Services.Command.ISystemCommandService
     {
-        public void Lock() { }
-        public void Shutdown(int delaySeconds = 0) { }
-        public void ForceShutdown(int delaySeconds = 0) { }
-        public void Restart(int delaySeconds = 0) { }
-        public void ForceRestart(int delaySeconds = 0) { }
-        public void RestartToUefi(int delaySeconds = 0) { }
-        public void Sleep() { }
-        public void Hibernate() { }
-        public void SignOut() { }
-        public void MonitorOff() { }
+        public Task Lock() => Task.CompletedTask;
+        public Task Shutdown(int delaySeconds = 0) => Task.CompletedTask;
+        public Task ForceShutdown(int delaySeconds = 0) => Task.CompletedTask;
+        public Task Restart(int delaySeconds = 0) => Task.CompletedTask;
+        public Task ForceRestart(int delaySeconds = 0) => Task.CompletedTask;
+        public Task RestartToUefi(int delaySeconds = 0) => Task.CompletedTask;
+        public Task Sleep() => Task.CompletedTask;
+        public Task Hibernate() => Task.CompletedTask;
+        public Task SignOut() => Task.CompletedTask;
+        public Task MonitorOff() => Task.CompletedTask;
     }
 
     private class MockLauncherStorageService : Remex.Core.Services.ILauncherStorageService

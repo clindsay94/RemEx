@@ -339,31 +339,31 @@ public sealed class PingPongHandler(
             switch (message.CommandAction!.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    commandService.Shutdown(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.Shutdown(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Shutdown executed.");
                 case "FORCESHUTDOWN":
-                    commandService.ForceShutdown(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.ForceShutdown(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force shutdown executed.");
                 case "RESTART":
-                    commandService.Restart(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.Restart(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart executed.");
                 case "FORCERESTART":
-                    commandService.ForceRestart(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.ForceRestart(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force restart executed.");
                 case "RESTARTTOUEFI":
-                    commandService.RestartToUefi(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.RestartToUefi(ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
                 case "SLEEP":
-                    commandService.Sleep();
+                    await commandService.Sleep();
                     return MakeCommandResponse(true, "Sleep executed.");
                 case "HIBERNATE":
-                    commandService.Hibernate();
+                    await commandService.Hibernate();
                     return MakeCommandResponse(true, "Hibernate executed.");
                 case "MONITOROFF":
-                    commandService.MonitorOff();
+                    await commandService.MonitorOff();
                     return MakeCommandResponse(true, "Monitor off executed.");
                 case "SIGNOUT":
-                    commandService.SignOut();
+                    await commandService.SignOut();
                     return MakeCommandResponse(true, "Sign out executed.");
                 case "KILLPROCESS":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
@@ -390,7 +390,7 @@ public sealed class PingPongHandler(
                     }
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
                 case "LOCK":
-                    commandService.Lock();
+                    await commandService.Lock();
                     return MakeCommandResponse(true, "Lock executed.");
                 case "LAUNCHAPP":
                     if (message.CommandParameters?.TryGetValue("TargetPath", out var targetPath) == true

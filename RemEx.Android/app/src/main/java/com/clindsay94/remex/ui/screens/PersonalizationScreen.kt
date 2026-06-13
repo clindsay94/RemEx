@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,15 +68,16 @@ fun PersonalizationScreen(
         viewModel: PersonalizationViewModel = viewModel(),
         showHeader: Boolean = true
 ) {
-    val settingsState by viewModel.personalization.collectAsState()
+    val settingsState by viewModel.personalization.collectAsStateWithLifecycle()
 
-    if (settingsState == null) {
+    val currentSettingsState = settingsState
+    if (currentSettingsState == null) {
         PersonalizationLoading(showHeader = showHeader)
         return
     }
 
     PersonalizationScreenContent(
-        settings = settingsState!!,
+        settings = currentSettingsState,
         showHeader = showHeader,
         onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
             viewModel.save(

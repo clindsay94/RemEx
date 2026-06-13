@@ -186,34 +186,34 @@ public class LocalIpcServerService : BackgroundService
             switch (request.Action.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    _commandService.Shutdown(ParseDelaySeconds(request.Parameters));
+                    await _commandService.Shutdown(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Shutdown command executed successfully.", null);
                 case "FORCESHUTDOWN":
-                    _commandService.ForceShutdown(ParseDelaySeconds(request.Parameters));
+                    await _commandService.ForceShutdown(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
                 case "RESTART":
-                    _commandService.Restart(ParseDelaySeconds(request.Parameters));
+                    await _commandService.Restart(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart command executed successfully.", null);
                 case "FORCERESTART":
-                    _commandService.ForceRestart(ParseDelaySeconds(request.Parameters));
+                    await _commandService.ForceRestart(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Restart command executed successfully.", null);
                 case "RESTARTTOUEFI":
-                    _commandService.RestartToUefi(ParseDelaySeconds(request.Parameters));
+                    await _commandService.RestartToUefi(ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
                 case "SLEEP":
-                    _commandService.Sleep();
+                    await _commandService.Sleep();
                     return new CommandResponse(true, "Sleep command executed successfully.", null);
                 case "HIBERNATE":
-                    _commandService.Hibernate();
+                    await _commandService.Hibernate();
                     return new CommandResponse(true, "Hibernate command executed successfully.", null);
                 case "MONITOROFF":
-                    _commandService.MonitorOff();
+                    await _commandService.MonitorOff();
                     return new CommandResponse(true, "Monitor off command executed successfully.", null);
                 case "SIGNOUT":
-                    _commandService.SignOut();
+                    await _commandService.SignOut();
                     return new CommandResponse(true, "SignOut command executed successfully.", null);
                 case "LOCK":
-                    _commandService.Lock();
+                    await _commandService.Lock();
                     return new CommandResponse(true, "Lock command executed successfully.", null);
                 case "WAKEONLAN":
                     if (request.Parameters != null && request.Parameters.TryGetValue("MacAddress", out var mac))

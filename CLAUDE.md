@@ -73,7 +73,7 @@ All network-facing input must be validated through the shared validation helpers
 
 ## Android Prerequisites
 
-- Android SDK API Level 36 platform required
+- Android SDK API Level 37 platform required
 - NDK version **30.0.14904198** required for NativeAOT JNI compilation
 - `build-remex.ps1` auto-installs both via `sdkmanager` if absent
 - Set `ANDROID_HOME` or configure `RemEx.Android/local.properties` (`sdk.dir=...`)
@@ -97,7 +97,7 @@ Read the relevant sub-project `AGENTS.md` before touching files in that director
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (10285 symbols, 19874 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (10520 symbols, 20401 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

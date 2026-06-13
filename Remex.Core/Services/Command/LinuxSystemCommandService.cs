@@ -1,79 +1,99 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Remex.Core.Services.Command;
 
 public class LinuxSystemCommandService : ISystemCommandService
 {
-    public void Shutdown(int delaySeconds = 0)
+    public Task Shutdown(int delaySeconds = 0)
     {
         ExecuteProcess("shutdown", BuildShutdownArgs("-h", delaySeconds));
+        return Task.CompletedTask;
     }
 
-    public void ForceShutdown(int delaySeconds = 0)
+    public Task ForceShutdown(int delaySeconds = 0)
     {
         if (delaySeconds <= 0)
         {
             ExecuteProcess("systemctl", "poweroff -i");
-            return;
+            return Task.CompletedTask;
         }
 
         ExecuteProcess("shutdown", BuildShutdownArgs("-h", delaySeconds));
+        return Task.CompletedTask;
     }
 
-    public void Restart(int delaySeconds = 0)
+    public Task Restart(int delaySeconds = 0)
     {
         ExecuteProcess("shutdown", BuildShutdownArgs("-r", delaySeconds));
+        return Task.CompletedTask;
     }
 
-    public void ForceRestart(int delaySeconds = 0)
+    public Task ForceRestart(int delaySeconds = 0)
     {
         if (delaySeconds <= 0)
         {
             ExecuteProcess("systemctl", "reboot -i");
-            return;
+            return Task.CompletedTask;
         }
 
         ExecuteProcess("shutdown", BuildShutdownArgs("-r", delaySeconds));
+        return Task.CompletedTask;
     }
 
-    public void RestartToUefi(int delaySeconds = 0)
+    public Task RestartToUefi(int delaySeconds = 0)
     {
         if (delaySeconds > 0)
         {
-            System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(delaySeconds)).ContinueWith(_ =>
+            _ = Task.Delay(TimeSpan.FromSeconds(delaySeconds)).ContinueWith(_ =>
             {
-                try { ExecuteProcess("systemctl", "reboot --firmware-setup"); } catch { }
+                // Fire-and-forget: no caller is awaiting, so surface failures to stderr
+                // (captured by the host/journal) instead of swallowing them silently.
+                try
+                {
+                    ExecuteProcess("systemctl", "reboot --firmware-setup");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Deferred RestartToUefi failed: {ex.Message}");
+                }
             });
-            return;
+            return Task.CompletedTask;
         }
 
         ExecuteProcess("systemctl", "reboot --firmware-setup");
+        return Task.CompletedTask;
     }
 
-    public void Sleep()
+    public Task Sleep()
     {
         ExecuteProcess("systemctl", "suspend");
+        return Task.CompletedTask;
     }
 
-    public void Hibernate()
+    public Task Hibernate()
     {
         ExecuteProcess("systemctl", "hibernate");
+        return Task.CompletedTask;
     }
 
-    public void SignOut()
+    public Task SignOut()
     {
         ExecuteProcess("loginctl", "terminate-session self");
+        return Task.CompletedTask;
     }
 
-    public void Lock()
+    public Task Lock()
     {
         ExecuteProcess("loginctl", "lock-session");
+        return Task.CompletedTask;
     }
 
-    public void MonitorOff()
+    public Task MonitorOff()
     {
         ExecuteProcess("sh", "-c \"xset dpms force off\"");
+        return Task.CompletedTask;
     }
 
     private static string BuildShutdownArgs(string modeArg, int delaySeconds)

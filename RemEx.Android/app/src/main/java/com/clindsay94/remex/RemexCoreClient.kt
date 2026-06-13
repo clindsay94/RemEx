@@ -312,13 +312,6 @@ object RemexCoreClient {
     }
 
     /**
-     * Frees unmanaged memory previously allocated on the native heap and returned as a pointer.
-     * Reserved for future use if [Export] is changed to use Marshal.AllocHGlobal instead of
-     * JNI-managed jstring references.
-     */
-    @JvmStatic internal external fun FreeMemory(pointer: Long)
-
-    /**
      * Sends a serialized `DesktopPointerBatch` JSON string to the connected host. Used for stylus
      * and high-fidelity pointer data (pressure, tilt, hover, barrel buttons).
      *

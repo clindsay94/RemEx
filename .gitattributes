@@ -1,1 +1,23 @@
+# Normalize all text files to LF in the repository.
+# This repo is cross-platform (.NET on Windows + Android/Kotlin + shell on Linux/WSL);
+# storing LF everywhere stops the "LF will be replaced by CRLF" churn caused by
+# core.autocrlf=true and keeps diffs free of line-ending noise.
+* text=auto eol=lf
+
+# Windows batch files genuinely require CRLF to run correctly.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts must stay LF (explicit for clarity).
 *.sh text eol=lf
+
+# Binary assets — never normalize, never diff as text.
+*.so   binary
+*.dll  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
+*.webp binary
+*.keystore binary
+*.jks  binary

@@ -8,7 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
@@ -23,12 +24,12 @@ class MainActivity : ComponentActivity() {
         WidgetDataCache.startCaching(this)
         setContent {
             val personalizationViewModel: PersonalizationViewModel = viewModel()
-            val personalization by personalizationViewModel.personalization.collectAsState()
+            val personalization by personalizationViewModel.personalization.collectAsStateWithLifecycle()
             
-            var splashShown by remember { mutableStateOf(false) }
+            var splashShown by rememberSaveable { mutableStateOf(false) }
             
-            if (personalization != null) {
-                val prefs = personalization!!
+            val prefs = personalization
+            if (prefs != null) {
                 RemExTheme(
                     themeMode = prefs.themeMode,
                     themePalette = prefs.themePalette,

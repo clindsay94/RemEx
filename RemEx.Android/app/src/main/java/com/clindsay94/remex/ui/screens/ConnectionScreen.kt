@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -53,15 +54,15 @@ fun ConnectionScreen(
         viewModel: ConnectionViewModel = viewModel(),
         onNavigateToQrScanner: () -> Unit = {}
 ) {
-        val connectionPrefs by viewModel.connectionPreferences.collectAsState()
-        val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsState()
-        val isConnecting by viewModel.isConnecting.collectAsState()
-        val isConnected by RemexClientManager.isConnected.collectAsState()
-        val status by viewModel.connectionStatus.collectAsState()
-        val connectionError by viewModel.connectionError.collectAsState()
-        val capabilitySummary by viewModel.capabilitySummary.collectAsState()
-        val isDiscovering by viewModel.isDiscovering.collectAsState()
-        val discoveredHost by viewModel.discoveredHost.collectAsState()
+        val connectionPrefs by viewModel.connectionPreferences.collectAsStateWithLifecycle()
+        val desktopPrefs by viewModel.remoteDesktopPreferences.collectAsStateWithLifecycle()
+        val isConnecting by viewModel.isConnecting.collectAsStateWithLifecycle()
+        val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+        val status by viewModel.connectionStatus.collectAsStateWithLifecycle()
+        val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
+        val capabilitySummary by viewModel.capabilitySummary.collectAsStateWithLifecycle()
+        val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
+        val discoveredHost by viewModel.discoveredHost.collectAsStateWithLifecycle()
 
         ConnectionScreenContent(
                 connectionPrefs = connectionPrefs,

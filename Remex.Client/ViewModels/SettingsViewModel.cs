@@ -52,6 +52,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnIsCloseToTrayEnabledChanged(bool value) => Save();
 
+    [ObservableProperty]
+    private bool _isLaunchAtLoginEnabled;
+
+    partial void OnIsLaunchAtLoginEnabledChanged(bool value)
+    {
+        var startupService = App.Services?.GetService(typeof(IStartupRegistrationService)) as IStartupRegistrationService;
+        if (startupService != null && startupService.IsSupported)
+        {
+            startupService.SetEnabled(value);
+        }
+    }
+
+    [ObservableProperty]
+    private bool _isLaunchAtLoginSupported;
+
     /// <summary>Fully exits the application (stops the process), same as the tray "Exit".</summary>
     [RelayCommand]
     private void ExitApplication() => App.RequestApplicationShutdown();
@@ -170,6 +185,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             HostPath = _profile.HostPath;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
             IsCloseToTrayEnabled = _profile.CloseToTray;
+
+            var startupService = App.Services?.GetService(typeof(IStartupRegistrationService)) as IStartupRegistrationService;
+            if (startupService != null)
+            {
+                IsLaunchAtLoginSupported = startupService.IsSupported;
+                if (IsLaunchAtLoginSupported)
+                {
+                    IsLaunchAtLoginEnabled = startupService.IsEnabled();
+                }
+            }
+
             Services.LocalizationService.Instance.SetCulture(Language);
             StreamQuality = _profile.StreamQuality;
             StreamFps = _profile.StreamFps;

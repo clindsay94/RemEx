@@ -15,16 +15,16 @@ public class IpcClientCommandService : ISystemCommandService
 {
     private const string PipeName = "RemExLocalIPC";
 
-    public void Shutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Shutdown", CreateDelayParameters(delaySeconds))).Wait();
-    public void ForceShutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceShutdown", CreateDelayParameters(delaySeconds))).Wait();
-    public void Restart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Restart", CreateDelayParameters(delaySeconds))).Wait();
-    public void ForceRestart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceRestart", CreateDelayParameters(delaySeconds))).Wait();
-    public void RestartToUefi(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("RestartToUefi", CreateDelayParameters(delaySeconds))).Wait();
-    public void Sleep() => SendCommandAsync(new CommandRequest("Sleep", null)).Wait();
-    public void Hibernate() => SendCommandAsync(new CommandRequest("Hibernate", null)).Wait();
-    public void SignOut() => SendCommandAsync(new CommandRequest("SignOut", null)).Wait();
-    public void Lock() => SendCommandAsync(new CommandRequest("Lock", null)).Wait();
-    public void MonitorOff() => SendCommandAsync(new CommandRequest("MonitorOff", null)).Wait();
+    public Task Shutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Shutdown", CreateDelayParameters(delaySeconds)));
+    public Task ForceShutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceShutdown", CreateDelayParameters(delaySeconds)));
+    public Task Restart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Restart", CreateDelayParameters(delaySeconds)));
+    public Task ForceRestart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceRestart", CreateDelayParameters(delaySeconds)));
+    public Task RestartToUefi(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("RestartToUefi", CreateDelayParameters(delaySeconds)));
+    public Task Sleep() => SendCommandAsync(new CommandRequest("Sleep", null));
+    public Task Hibernate() => SendCommandAsync(new CommandRequest("Hibernate", null));
+    public Task SignOut() => SendCommandAsync(new CommandRequest("SignOut", null));
+    public Task Lock() => SendCommandAsync(new CommandRequest("Lock", null));
+    public Task MonitorOff() => SendCommandAsync(new CommandRequest("MonitorOff", null));
 
     private static Dictionary<string, string>? CreateDelayParameters(int delaySeconds)
     {

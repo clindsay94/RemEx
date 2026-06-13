@@ -5,6 +5,10 @@
     xmlns:models="using:Remex.Core.Models"
     xmlns:local="clr-namespace:Remex.Client.Converters" x:Class="Remex.Client.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel" Focusable="True">
 
+    <UserControl.Resources>
+        <local:BoolToDoubleConverter x:Key="BoolToDoubleConverter"/>
+    </UserControl.Resources>
+
     <UserControl.Styles>
         <Style Selector="Button.rd-btn">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>

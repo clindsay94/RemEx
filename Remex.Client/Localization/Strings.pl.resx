@@ -1195,6 +1195,33 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>OGÓLNE</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Minimalizuj do zasobnika przy zamykaniu</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Gdy włączone, przycisk X ukrywa RemEx w zasobniku systemowym i pozostawia go uruchomionego. Gdy wyłączone, przycisk X zamyka aplikację.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Wybierz, czy zamknięcie okna minimalizuje RemEx do zasobnika, czy całkowicie go zamyka.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Zamknij RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Całkowicie zamknij aplikację i zatrzymaj jej proces w tle.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Zamknij</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Uruchom przy logowaniu</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Uruchamia RemEx zminimalizowany do zasobnika przy logowaniu, aby Twój komputer był zawsze dostępny.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Wybierz, czy RemEx ma uruchamiać się automatycznie przy logowaniu.</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>POMOC</value>
   </data>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Przełącz na tryb jasny</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Potwierdź</value>
   </data>
 </root>

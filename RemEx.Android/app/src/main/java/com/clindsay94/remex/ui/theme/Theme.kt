@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.theme
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +15,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
@@ -333,6 +335,11 @@ fun colorSchemeFromSeed(
     }
 }
 
+// WARNING: This file imports com.google.android.material.color.utilities.* (Hct, Hct.from, etc.)
+// which are @RestrictTo(LIBRARY_GROUP) internals of the Material library. They are extremely
+// sensitive to material version bumps. Keep material version pinned to 1.14.0 in libs.versions.toml
+// to avoid runtime link errors or compilation breakage.
+@SuppressLint("RestrictedApi")
 @Composable
 fun RemExTheme(
     themeMode: String = "system",
@@ -352,29 +359,40 @@ fun RemExTheme(
         else -> isSystemInDarkTheme()
     }
 
-    val seedColor = try {
-        val baseColor = android.graphics.Color.parseColor(themeSeedColor)
-        if (themePalette.equals("custom", ignoreCase = true)) {
-            val baseHct = Hct.fromInt(baseColor)
-            Color(Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone).toInt())
-        } else {
-            Color(baseColor)
+    val typography = remember(fontFamilyKey, fontScale) {
+        typographyForFontFamily(fontFamilyKey, fontScale)
+    }
+
+    val seedColor = remember(themeSeedColor, themePalette, themeSeedChroma) {
+        try {
+            val baseColor = android.graphics.Color.parseColor(themeSeedColor)
+            if (themePalette.equals("custom", ignoreCase = true)) {
+                val baseHct = Hct.fromInt(baseColor)
+                Color(Hct.from(baseHct.hue, themeSeedChroma.toDouble(), baseHct.tone).toInt())
+            } else {
+                Color(baseColor)
+            }
+        } catch (_: Exception) {
+            Color(0xFF6750A4)
         }
-    } catch (_: Exception) {
-        Color(0xFF6750A4)
     }
 
     val colorScheme = when {
-        themePalette.equals("custom", ignoreCase = true) -> colorSchemeFromSeed(
-            seedColor,
-            darkTheme,
-            themeStyle,
-            themeContrast.toDouble()
-        )
+        themePalette.equals("custom", ignoreCase = true) ->
+            remember(seedColor, darkTheme, themeStyle, themeContrast) {
+                colorSchemeFromSeed(
+                    seedColor,
+                    darkTheme,
+                    themeStyle,
+                    themeContrast.toDouble()
+                )
+            }
 
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            remember(darkTheme, context) {
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            }
         }
 
         darkTheme -> DarkColorScheme
@@ -383,7 +401,7 @@ fun RemExTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = typographyForFontFamily(fontFamilyKey, fontScale),
+        typography = typography,
         shapes = remexShapes,
         motionScheme = MotionScheme.expressive(),
         content = content

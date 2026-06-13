@@ -49,19 +49,20 @@ class H264StreamDecoder(
      * Feeds an H.264 Annex B NAL unit or frame packet into the hardware decoder.
      */
     fun decodeFrame(bytes: ByteArray) {
-        if (!isConfigured || decoder == null) return
+        val decoder = this.decoder ?: return
+        if (!isConfigured) return
 
         try {
-            val inputBufferIndex = decoder!!.dequeueInputBuffer(10000) // 10ms timeout
+            val inputBufferIndex = decoder.dequeueInputBuffer(10000) // 10ms timeout
             if (inputBufferIndex >= 0) {
-                val inputBuffer = decoder!!.getInputBuffer(inputBufferIndex)
+                val inputBuffer = decoder.getInputBuffer(inputBufferIndex)
                 if (inputBuffer != null) {
                     inputBuffer.clear()
                     inputBuffer.put(bytes)
                     
                     // Queue input buffer with current presentation time
                     val presentationTimeUs = System.nanoTime() / 1000
-                    decoder!!.queueInputBuffer(
+                    decoder.queueInputBuffer(
                         inputBufferIndex,
                         0,
                         bytes.size,

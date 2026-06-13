@@ -603,31 +603,33 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                             (0 until modes.length()).any {
                                 modes.optString(it) == "VirtualDesktop"
                             }
-            val displaysArray = json.optJSONArray("displays")
+            val arr = json.optJSONArray("displays")
             val options = mutableListOf<DisplayTargetOption>()
+            val displayCount = arr?.length() ?: 0
 
-            val displayCount = displaysArray?.length() ?: 0
-            for (i in 0 until displayCount) {
-                val d = displaysArray!!.optJSONObject(i) ?: continue
-                val displayId = d.optString("displayId")
-                if (displayId.isBlank()) continue
-                val isPrimary = d.optBoolean("isPrimary", false)
-                val label =
-                        if (isPrimary)
-                                getApplication<Application>()
-                                        .getString(R.string.remote_desktop_display_primary)
-                        else
-                                getApplication<Application>()
-                                        .getString(R.string.remote_desktop_display_numbered, i + 1)
-                options.add(
-                        DisplayTargetOption(
-                                token = "monitor:$displayId",
-                                label = label,
-                                captureMode = "Monitor",
-                                displayId = displayId,
-                                isPrimary = isPrimary
-                        )
-                )
+            if (arr != null) {
+                for (i in 0 until displayCount) {
+                    val d = arr.optJSONObject(i) ?: continue
+                    val displayId = d.optString("displayId")
+                    if (displayId.isBlank()) continue
+                    val isPrimary = d.optBoolean("isPrimary", false)
+                    val label =
+                            if (isPrimary)
+                                    getApplication<Application>()
+                                            .getString(R.string.remote_desktop_display_primary)
+                            else
+                                    getApplication<Application>()
+                                            .getString(R.string.remote_desktop_display_numbered, i + 1)
+                    options.add(
+                            DisplayTargetOption(
+                                    token = "monitor:$displayId",
+                                    label = label,
+                                    captureMode = "Monitor",
+                                    displayId = displayId,
+                                    isPrimary = isPrimary
+                            )
+                    )
+                }
             }
 
             // Offer the combined "both screens" view when the host supports it and there is

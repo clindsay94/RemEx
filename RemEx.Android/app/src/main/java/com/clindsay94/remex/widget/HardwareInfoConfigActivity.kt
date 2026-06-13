@@ -31,7 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
@@ -241,7 +241,7 @@ private fun PollIntervalSection() {
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
     val pollSeconds by settingsManager.widgetTelemetryPollSecondsFlow
-        .collectAsState(initial = SettingsManager.WIDGET_TELEMETRY_POLL_DEFAULT)
+        .collectAsStateWithLifecycle(initialValue = SettingsManager.WIDGET_TELEMETRY_POLL_DEFAULT)
 
     Column(
         modifier = Modifier

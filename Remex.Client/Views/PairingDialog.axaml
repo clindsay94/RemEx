@@ -36,7 +36,7 @@
                          IsEnabled="{Binding !IsBusy}"/>
                 
                 <TextBlock Text="{Binding ErrorText}" 
-                           Foreground="{DynamicResource ErrorTextBrush}"
+                           Foreground="{DynamicResource SystemErrorBrush}"
                            IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                            TextWrapping="Wrap"/>
                 

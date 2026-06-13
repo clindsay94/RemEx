@@ -31,7 +31,7 @@
 
         <!-- Main Card -->
         <Border Grid.Row="1" Classes="glass-card" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TabControl Theme="{StaticResource TabControlTheme}">
+            <TabControl>
                 <!-- Tab 1: Live App Logs -->
                 <TabItem Header="{local:Localize Logs_LiveTab}">
                     <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">

@@ -35,13 +35,6 @@ fun Modifier.hapticClickable(
 }
 
 /**
- * Extension for simple haptic feedback trigger.
- */
-fun triggerHaptic(view: android.view.View, type: Int = HapticFeedbackConstants.KEYBOARD_TAP) {
-    view.performHapticFeedback(type)
-}
-
-/**
  * Fired when a command is dispatched to the host (light "sent" tick).
  */
 fun android.view.View.hapticCommandSent() =

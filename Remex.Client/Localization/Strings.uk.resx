@@ -1195,6 +1195,33 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_General" xml:space="preserve">
     <value>ЗАГАЛЬНІ</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Згортати в трей під час закриття</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Якщо ввімкнено, кнопка X приховує RemEx у системний трей і залишає його запущеним. Якщо вимкнено, кнопка X закриває застосунок.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Виберіть, чи закриття вікна згортає RemEx у трей, чи повністю закриває його.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Вийти з RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Повністю закрити застосунок і зупинити його фоновий процес.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Вийти</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Запускати при вході</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Запускає RemEx згорнутим у трей при вході в систему, щоб ваш ПК завжди був доступний.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Виберіть, чи запускати RemEx автоматично при вході в систему.</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>ДОПОМОГА</value>
   </data>
@@ -2509,5 +2536,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Переключити на світлий режим</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Підтвердити</value>
   </data>
 </root>

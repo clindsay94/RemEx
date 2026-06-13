@@ -275,6 +275,12 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void KeyDown(int keyCode)
     {
+        if (_router is not null)
+        {
+            _router.KeyDown(keyCode);
+            return;
+        }
+
         int linuxKeyCode = LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode);
         if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive && linuxKeyCode >= 0)
         {
@@ -293,6 +299,12 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void KeyUp(int keyCode)
     {
+        if (_router is not null)
+        {
+            _router.KeyUp(keyCode);
+            return;
+        }
+
         int linuxKeyCode = LinuxInputEventTranslator.ProtocolKeyCodeToLinuxKeycode(keyCode);
         if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive && linuxKeyCode >= 0)
         {

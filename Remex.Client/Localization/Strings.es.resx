@@ -1208,6 +1208,33 @@ Dejar vacío si no está configurada.</value>
   <data name="Settings_General" xml:space="preserve">
     <value>GENERAL</value>
   </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Minimizar a la bandeja al cerrar</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Si está activado, el botón X oculta RemEx en la bandeja del sistema y lo mantiene en ejecución. Si está desactivado, el botón X cierra la aplicación.</value>
+  </data>
+  <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
+    <value>Elige si al cerrar la ventana RemEx se minimiza a la bandeja o se cierra por completo.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Salir de RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Cerrar completamente la aplicación y detener su proceso en segundo plano.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="Settings_LaunchAtLogin" xml:space="preserve">
+    <value>Iniciar al iniciar sesión</value>
+  </data>
+  <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
+    <value>Inicia RemEx minimizado en la bandeja al iniciar sesión para que su PC esté siempre accesible.</value>
+  </data>
+  <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
+    <value>Elige si RemEx se ejecuta automáticamente al iniciar sesión.</value>
+  </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>AYUDA</value>
   </data>
@@ -2528,5 +2555,8 @@ Chrome)</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Cambiar a modo claro</value>
+  </data>
+  <data name="Dialog_ConfirmTitle" xml:space="preserve">
+    <value>Confirmar</value>
   </data>
 </root>

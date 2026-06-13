@@ -46,26 +46,23 @@ class Program
         App.RegisterPlatformServices = services =>
         {
             services.AddSingleton<Remex.Core.Services.IIconExtractionService, Remex.Client.Desktop.Services.DesktopIconExtractionService>();
+            services.AddSingleton<Remex.Client.Services.IStartupRegistrationService, Remex.Client.Desktop.Services.StartupRegistrationService>();
         };
 
-        if (IsWindowsServiceRunning("RemexHost"))
-        {
-            App.OverrideHostPort = RemexConstants.DefaultPort;
-        }
-        else
-        {
-            // Start the Remex Host WebSocket server in-process.
-            // If the default port is taken, fall back to an alternative port so the
-            // desktop still has an interactive-session host when the service is absent.
-            EmbeddedHostPort = TryStartHost(args, RemexConstants.DefaultPort)
-                            ?? TryStartHost(args, RemexConstants.DefaultPort + 1);
+        // Two-plane model: the RemexHost service (session 0) owns the command plane from boot;
+        // the embedded host owns the interactive plane (desktop streaming) for this login session.
+        // They coexist on different ports; the phone disambiguates via DesktopMeta.HostInstanceId.
+        int preferredPort = IsWindowsServiceRunning("RemexHost")
+            ? RemexConstants.DefaultPort + 1   // service owns 5005; take 5006
+            : RemexConstants.DefaultPort;
+        EmbeddedHostPort = TryStartHost(args, preferredPort)
+                        ?? TryStartHost(args, preferredPort + 1);
 
-            if (EmbeddedHostPort.HasValue)
-            {
-                App.OverrideHostPort = EmbeddedHostPort.Value;
-                App.EmbeddedHostInstanceId = HostBootstrapper.InstanceId;
-                App.EmbeddedHostServices = _hostApp?.Services;
-            }
+        if (EmbeddedHostPort.HasValue)
+        {
+            App.OverrideHostPort = EmbeddedHostPort.Value;
+            App.EmbeddedHostInstanceId = HostBootstrapper.InstanceId;
+            App.EmbeddedHostServices = _hostApp?.Services;
         }
 
         App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;

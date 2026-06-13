@@ -77,7 +77,7 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -136,18 +136,18 @@ fun DashboardScreen(
         viewModel: DashboardViewModel = viewModel(),
         onNavigateToConnection: () -> Unit = {}
 ) {
-        val isConnected by viewModel.isConnected.collectAsState()
-        val isConnecting by viewModel.isConnecting.collectAsState()
-        val telemetrySensors by viewModel.telemetrySensors.collectAsState()
-        val telemetryHistory by viewModel.telemetryHistory.collectAsState()
-        val cards by viewModel.homeCards.collectAsState()
-        val enabledCards by viewModel.enabledCardIds.collectAsState()
-        val cornerRadius by viewModel.cardCornerRadius.collectAsState()
-        val cardOpacity by viewModel.cardOpacity.collectAsState()
-        val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsState()
-        val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsState()
-        val canUndo by viewModel.canUndo.collectAsState()
-        val canRedo by viewModel.canRedo.collectAsState()
+        val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
+        val isConnecting by viewModel.isConnecting.collectAsStateWithLifecycle()
+        val telemetrySensors by viewModel.telemetrySensors.collectAsStateWithLifecycle()
+        val telemetryHistory by viewModel.telemetryHistory.collectAsStateWithLifecycle()
+        val cards by viewModel.homeCards.collectAsStateWithLifecycle()
+        val enabledCards by viewModel.enabledCardIds.collectAsStateWithLifecycle()
+        val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
+        val cardOpacity by viewModel.cardOpacity.collectAsStateWithLifecycle()
+        val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsStateWithLifecycle()
+        val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsStateWithLifecycle()
+        val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
+        val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
 
         DashboardScreenContent(
                 isConnected = isConnected,

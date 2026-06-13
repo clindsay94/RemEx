@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
+// TODO(refactor): split into SplashScreen + OnboardingFlow + drawing helpers
+
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -25,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -47,6 +50,7 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
@@ -149,63 +153,90 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                 )
 
         // Text Measurement
-        val textMeasurer = rememberTextMeasurer()
-        val remStyle =
+        val density = LocalDensity.current
+        val textMeasurer = rememberTextMeasurer(cacheSize = 16)
+
+        // 54.dp.toSp()
+        val remFontSize = with(density) { 54.dp.toSp() }
+        val remTracking = with(density) { 4.dp.toSp() }
+        val remStyle = remember(remFontSize, remTracking) {
                 TextStyle(
                         color = Color.White,
-                        fontSize = 54.sp,
+                        fontSize = remFontSize,
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace,
-                        letterSpacing = 4.sp
+                        letterSpacing = remTracking
                 )
-        val exStyle = remStyle.copy(color = primary)
-        val completionStyle =
+        }
+        val exStyle = remember(remStyle, primary) { remStyle.copy(color = primary) }
+
+        // 24.dp.toSp()
+        val completionFontSize = with(density) { 24.dp.toSp() }
+        val completionTracking = with(density) { 1.dp.toSp() }
+        val completionStyle = remember(completionFontSize, completionTracking, primary) {
                 TextStyle(
                         color = primary.copy(alpha = 0.8f),
-                        fontSize = 24.sp,
+                        fontSize = completionFontSize,
                         fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
+                        letterSpacing = completionTracking
                 )
-        val tagStyle =
+        }
+
+        // 14.dp.toSp()
+        val tagFontSize = with(density) { 14.dp.toSp() }
+        val tagTracking = with(density) { 3.dp.toSp() }
+        val tagStyle = remember(tagFontSize, tagTracking, onBackground) {
                 TextStyle(
                         color = onBackground.copy(alpha = 0.7f),
-                        fontSize = 14.sp,
+                        fontSize = tagFontSize,
                         fontWeight = FontWeight.Light,
                         fontFamily = FontFamily.SansSerif,
-                        letterSpacing = 3.sp
+                        letterSpacing = tagTracking
                 )
+        }
 
-        val remMeasured = textMeasurer.measure("REM", remStyle)
-        val emMeasured = textMeasurer.measure("EM", remStyle)
-        val remoteMeasured = textMeasurer.measure("REMOTE", remStyle)
-        val executionMeasured = textMeasurer.measure("EXECUTION", exStyle)
-        val commandCenterMeasured = textMeasurer.measure("⚡ COMMAND CENTER", completionStyle)
-        val oteMeasured = textMeasurer.measure("ote", completionStyle)
-        val exMeasured = textMeasurer.measure("EX", exStyle)
-        val ecuMeasured = textMeasurer.measure("ecution", completionStyle)
-        val commandMeasured = textMeasurer.measure("COMMAND ", tagStyle)
-        val yourPcMeasured = textMeasurer.measure("YOUR PC", tagStyle)
+        val remMeasured = remember(remStyle) { textMeasurer.measure("REM", remStyle) }
+        val emMeasured = remember(remStyle) { textMeasurer.measure("EM", remStyle) }
+        val remoteMeasured = remember(remStyle) { textMeasurer.measure("REMOTE", remStyle) }
+        val executionMeasured = remember(exStyle) { textMeasurer.measure("EXECUTION", exStyle) }
+        val commandCenterMeasured = remember(completionStyle) { textMeasurer.measure("⚡ COMMAND CENTER", completionStyle) }
+        val oteMeasured = remember(completionStyle) { textMeasurer.measure("ote", completionStyle) }
+        val exMeasured = remember(exStyle) { textMeasurer.measure("EX", exStyle) }
+        val ecuMeasured = remember(completionStyle) { textMeasurer.measure("ecution", completionStyle) }
+        val commandMeasured = remember(tagStyle) { textMeasurer.measure("COMMAND ", tagStyle) }
+        val yourPcMeasured = remember(tagStyle) { textMeasurer.measure("YOUR PC", tagStyle) }
 
-        val cosmicTitleStyle = TextStyle(
-                color = Color.White,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Black,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 4.sp
-        )
-        val cosmicAccentStyle = cosmicTitleStyle.copy(color = primary)
-        val cosmicSubStyle = TextStyle(
-                color = Color(0xFFDCF0FF),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.sp
-        )
+        // 38.dp.toSp()
+        val cosmicTitleFontSize = with(density) { 38.dp.toSp() }
+        val cosmicTitleTracking = with(density) { 4.dp.toSp() }
+        val cosmicTitleStyle = remember(cosmicTitleFontSize, cosmicTitleTracking) {
+                TextStyle(
+                        color = Color.White,
+                        fontSize = cosmicTitleFontSize,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = cosmicTitleTracking
+                )
+        }
+        val cosmicAccentStyle = remember(cosmicTitleStyle, primary) { cosmicTitleStyle.copy(color = primary) }
 
-        val remoteCosmicMeasured = textMeasurer.measure("REMOTE", cosmicTitleStyle)
-        val executionCosmicMeasured = textMeasurer.measure("EXECUTION", cosmicAccentStyle)
-        val commandCenterCosmicMeasured = textMeasurer.measure("⚡ COMMAND CENTER", cosmicSubStyle)
+        // 11.dp.toSp()
+        val cosmicSubFontSize = with(density) { 11.dp.toSp() }
+        val cosmicSubTracking = with(density) { 1.dp.toSp() }
+        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking) {
+                TextStyle(
+                        color = Color(0xFFDCF0FF),
+                        fontSize = cosmicSubFontSize,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = cosmicSubTracking
+                )
+        }
+
+        val remoteCosmicMeasured = remember(cosmicTitleStyle) { textMeasurer.measure("REMOTE", cosmicTitleStyle) }
+        val executionCosmicMeasured = remember(cosmicAccentStyle) { textMeasurer.measure("EXECUTION", cosmicAccentStyle) }
+        val commandCenterCosmicMeasured = remember(cosmicSubStyle) { textMeasurer.measure("⚡ COMMAND CENTER", cosmicSubStyle) }
 
         // Random background elements
         val particles = remember {
@@ -223,7 +254,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                 }
         }
 
-        val floatingShapes = remember {
+        val floatingShapes = remember(primary, secondary, tertiary) {
                 val rng = java.util.Random(77L)
                 val shapes = materialShapesList
                 val colors = listOf(primary, secondary, tertiary)
@@ -268,13 +299,19 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         var isSkipping by remember { mutableStateOf(false) }
         val skipAlpha = remember { Animatable(1f) }
 
+        fun finishOnce() {
+                if (completed) return
+                completed = true
+                onFinished()
+        }
+
         fun skipSplash() {
-                if (isSkipping) return
+                if (isSkipping || completed) return
                 isSkipping = true
                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                 scope.launch {
                         skipAlpha.animateTo(0f, tween(200, easing = FastOutSlowInEasing))
-                        onFinished()
+                        finishOnce()
                 }
         }
 
@@ -287,103 +324,101 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         }
 
         LaunchedEffect(Unit) {
-                // Particle + stream-particle update loop (~60 fps)
-                scope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                // Frame-clock-driven update: real dt, main thread (no races), native display rate.
+                launch {
                         val rng = java.util.Random(99L)
-                        while (!isSkipping) {
-                                val dt = 0.016f
-                                if (splashStyle == "CosmicZoom") {
-                                        // Update particles for Cosmic Starfield!
-                                        for (p in particles) {
-                                                val dx = p.x - 0.5f
-                                                val dy = p.y - 0.5f
-                                                var dist = kotlin.math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
-                                                if (dist < 0.01f) dist = 0.01f
+                        var lastNanos = 0L
+                        while (!isSkipping && !completed) {
+                                withFrameNanos { now ->
+                                        val dt = if (lastNanos == 0L) 0.016f
+                                                 else ((now - lastNanos) / 1_000_000_000f).coerceAtMost(0.05f)
+                                        lastNanos = now
 
-                                                val speed = (0.02f + dist * 0.8f) * dt * 60f
-                                                p.x += (dx / dist) * speed
-                                                p.y += (dy / dist) * speed
+                                        if (splashStyle == "CosmicZoom") {
+                                                // Update particles for Cosmic Starfield!
+                                                for (p in particles) {
+                                                        val dx = p.x - 0.5f
+                                                        val dy = p.y - 0.5f
+                                                        var dist = kotlin.math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                                                        if (dist < 0.01f) dist = 0.01f
 
-                                                p.alpha = (dist * 3.0f).coerceIn(0f, 0.9f) * ((0.5f - dist) * 4.0f).coerceIn(0f, 1.0f)
+                                                        val speed = (0.02f + dist * 0.8f) * dt * 60f
+                                                        p.x += (dx / dist) * speed
+                                                        p.y += (dy / dist) * speed
 
-                                                if (p.x < 0f || p.x > 1f || p.y < 0f || p.y > 1f || dist > 0.5f) {
-                                                        val angle = rng.nextFloat() * Math.PI * 2
-                                                        val startDist = 0.01f + rng.nextFloat() * 0.06f
-                                                        p.x = (0.5f + kotlin.math.cos(angle) * startDist).toFloat()
-                                                        p.y = (0.5f + kotlin.math.sin(angle) * startDist).toFloat()
-                                                        p.vx = kotlin.math.cos(angle).toFloat() * 0.1f
-                                                        p.vy = kotlin.math.sin(angle).toFloat() * 0.1f
-                                                        p.lifetime = 0f
-                                                        p.alpha = 0f
-                                                }
-                                        }
-                                } else {
-                                        // Embers
-                                        for (p in particles) {
-                                                p.lifetime += dt
-                                                p.x += p.vx
-                                                p.y += p.vy * dt
-                                                val t = p.lifetime / p.maxLifetime
-                                                p.alpha =
-                                                        when {
-                                                                t < 0.2f -> (t / 0.2f) * 0.7f
-                                                                t < 0.8f -> 0.7f
-                                                                else -> (1f - (t - 0.8f) / 0.2f) * 0.7f
+                                                        p.alpha = (dist * 3.0f).coerceIn(0f, 0.9f) * ((0.5f - dist) * 4.0f).coerceIn(0f, 1.0f)
+
+                                                        if (p.x < 0f || p.x > 1f || p.y < 0f || p.y > 1f || dist > 0.5f) {
+                                                                val angle = rng.nextFloat() * Math.PI * 2
+                                                                val startDist = 0.01f + rng.nextFloat() * 0.06f
+                                                                p.x = (0.5f + kotlin.math.cos(angle) * startDist).toFloat()
+                                                                p.y = (0.5f + kotlin.math.sin(angle) * startDist).toFloat()
+                                                                p.vx = kotlin.math.cos(angle).toFloat() * 0.1f
+                                                                p.vy = kotlin.math.sin(angle).toFloat() * 0.1f
+                                                                p.lifetime = 0f
+                                                                p.alpha = 0f
                                                         }
-                                                if (p.lifetime >= p.maxLifetime) {
-                                                        p.x = rng.nextFloat()
-                                                        p.y = 0.4f + rng.nextFloat() * 0.6f
-                                                        p.vx = (rng.nextFloat() - 0.5f) * 0.016f
-                                                        p.vy = -(0.02f + rng.nextFloat() * 0.02f)
-                                                        p.lifetime = 0f
-                                                        p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+                                                }
+                                        } else {
+                                                // Embers
+                                                for (p in particles) {
+                                                        p.lifetime += dt
+                                                        p.x += p.vx * (dt * 60f)
+                                                        p.y += p.vy * dt
+                                                        val t = p.lifetime / p.maxLifetime
+                                                        p.alpha =
+                                                                when {
+                                                                        t < 0.2f -> (t / 0.2f) * 0.7f
+                                                                        t < 0.8f -> 0.7f
+                                                                        else -> (1f - (t - 0.8f) / 0.2f) * 0.7f
+                                                                }
+                                                        if (p.lifetime >= p.maxLifetime) {
+                                                                p.x = rng.nextFloat()
+                                                                p.y = 0.4f + rng.nextFloat() * 0.6f
+                                                                p.vx = (rng.nextFloat() - 0.5f) * 0.016f
+                                                                p.vy = -(0.02f + rng.nextFloat() * 0.02f)
+                                                                p.lifetime = 0f
+                                                                p.maxLifetime = 1.5f + rng.nextFloat() * 1.5f
+                                                        }
                                                 }
                                         }
-                                }
-                                // Floating shapes morphing (skip for CosmicZoom performance/aesthetic)
-                                if (splashStyle != "CosmicZoom") {
-                                        for (s in floatingShapes) {
-                                                s.x += s.vx
-                                                s.y += s.vy
-                                                s.rotation += s.rotationSpeed
-                                                s.morphProgress += s.morphSpeed
-                                                if (s.morphProgress > 1f) {
-                                                        s.morphProgress = 0f
-                                                        val shapes = materialShapesList
-                                                        val startShape = s.currentEndShape
-                                                        val nextIdx = rng.nextInt(shapes.size)
-                                                        val endShape = shapes[nextIdx]
-                                                        s.morph = Morph(startShape, endShape)
-                                                        s.currentEndShape = endShape
+                                        // Floating shapes morphing (skip for CosmicZoom performance/aesthetic)
+                                        if (splashStyle != "CosmicZoom") {
+                                                for (s in floatingShapes) {
+                                                        s.x += s.vx * (dt * 60f)
+                                                        s.y += s.vy * (dt * 60f)
+                                                        s.rotation += s.rotationSpeed * (dt * 60f)
+                                                        s.morphProgress += s.morphSpeed * (dt * 60f)
+                                                        if (s.morphProgress > 1f) {
+                                                                s.morphProgress = 0f
+                                                                val shapes = materialShapesList
+                                                                val startShape = s.currentEndShape
+                                                                val nextIdx = rng.nextInt(shapes.size)
+                                                                val endShape = shapes[nextIdx]
+                                                                s.morph = Morph(startShape, endShape)
+                                                                s.currentEndShape = endShape
+                                                        }
+                                                        if (s.x < -0.1f) s.x = 1.1f
+                                                        if (s.x > 1.1f) s.x = -0.1f
+                                                        if (s.y < -0.1f) s.y = 1.1f
+                                                        if (s.y > 1.1f) s.y = -0.1f
                                                 }
-                                                if (s.x < -0.1f) s.x = 1.1f
-                                                if (s.x > 1.1f) s.x = -0.1f
-                                                if (s.y < -0.1f) s.y = 1.1f
-                                                if (s.y > 1.1f) s.y = -0.1f
                                         }
-                                }
-                                // Stream particles along Bezier
-                                for (sp in streamParticles) {
-                                        sp.t += sp.speed
-                                        if (sp.t > 1f) sp.t -= 1f
-                                }
-                                // We increment the frame trigger on the main thread to trigger
-                                // recomposition
-                                kotlinx.coroutines.withContext(
-                                        kotlinx.coroutines.Dispatchers.Main
-                                ) {
+                                        // Stream particles along Bezier
+                                        for (sp in streamParticles) {
+                                                sp.t += sp.speed * (dt * 60f)
+                                                if (sp.t > 1f) sp.t -= 1f
+                                        }
                                         particleFrame++
                                         elapsed += dt
                                 }
-                                delay(16L)
                         }
                 }
 
                 if (splashStyle == "CosmicZoom") {
                         delay(3000L)
                         if (!isSkipping) {
-                                completed = true
-                                onFinished()
+                                finishOnce()
                         }
                 } else {
                         // Phase 1: Scan radar from phone (bottom-right)
@@ -440,8 +475,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                                                 1f,
                                                                 tween(400, easing = LinearEasing)
                                                         )
-                                                        completed = true
-                                                        onFinished()
+                                                        finishOnce()
                                                 }
                                         }
                                 }
@@ -460,7 +494,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                 .pointerInput(Unit) {
                                         detectTapGestures { scope.launch { skipSplash() } }
                                 }
-                                .alpha(skipAlpha.value),
+                                .graphicsLayer { alpha = skipAlpha.value },
                 contentAlignment = Alignment.Center
         ) {
                 Canvas(
@@ -908,7 +942,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                                 pos.x - monitorWaveCenter.x,
                                                 pos.y - monitorWaveCenter.y
                                         )
-                                val thickness = 90.dp.toPx()
+                                val thickness = kotlin.math.min(width, height) * 0.24f
 
                                 // Scan impact: peak as scan line passes, then settle into
                                 // persistent glow
@@ -932,7 +966,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                         }
 
                         // 1. Windows Logo (Top-Right)
-                        val winSize = 64.dp.toPx()
+                        val winSize = kotlin.math.min(width, height) * 0.17f
                         val winTop = Offset(width - winSize - 40.dp.toPx(), 40.dp.toPx())
                         val winCenter = Offset(winTop.x + winSize / 2f, winTop.y + winSize / 2f)
                         val winEffect = getLogoEffect(winCenter)
@@ -1018,7 +1052,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                         }
 
                         // 2. Linux Penguin Silhouette (Top-Right, next to Windows)
-                        val tuxSize = 56.dp.toPx()
+                        val tuxSize = kotlin.math.min(width, height) * 0.15f
                         val tuxTop = Offset(winTop.x - tuxSize - 35.dp.toPx(), 50.dp.toPx())
                         val tuxCenter = Offset(tuxTop.x + tuxSize / 2f, tuxTop.y + tuxSize / 2f)
                         val tuxEffect = getLogoEffect(tuxCenter)
@@ -1092,7 +1126,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                         }
 
                         // 3. Android Logo (Bottom-Left)
-                        val andSize = 72.dp.toPx()
+                        val andSize = kotlin.math.min(width, height) * 0.19f
                         val andTop = Offset(40.dp.toPx(), height - andSize - 120.dp.toPx())
                         val andCenter = Offset(andTop.x + andSize / 2f, andTop.y + andSize / 2f)
                         val andEffect = getLogoEffect(andCenter)

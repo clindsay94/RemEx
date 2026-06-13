@@ -28,7 +28,7 @@ public class MdnsAdvertisingService : BackgroundService
             // The port is usually passed into HostBootstrapper. If it's not in configuration, 
             // we default to RemexConstants.DefaultPort.
             int port = _configuration.GetValue<int>("Host:Port", RemexConstants.DefaultPort);
-            string instanceName = Environment.MachineName;
+            string instanceName = port == RemexConstants.DefaultPort ? Environment.MachineName : $"{Environment.MachineName} ({port})";
             
             _logger.LogInformation("Starting mDNS advertising for {InstanceName} (_remex._tcp) on port {Port}", instanceName, port);
 

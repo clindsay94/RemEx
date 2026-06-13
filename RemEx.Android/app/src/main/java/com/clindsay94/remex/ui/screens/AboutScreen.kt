@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,8 +50,8 @@ import org.json.JSONObject
 
 @Composable
 fun AboutScreen() {
-    val isConnected by RemexClientManager.isConnected.collectAsState()
-    val hostCapabilities by RemexClientManager.hostCapabilities.collectAsState(initial = "")
+    val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val hostCapabilities by RemexClientManager.hostCapabilities.collectAsStateWithLifecycle(initialValue = "")
 
     AboutScreenContent(
         isConnected = isConnected,
