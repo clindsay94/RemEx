@@ -21,6 +21,13 @@ class H264StreamDecoder(
     private var isConfigured = false
     private val bufferInfo = MediaCodec.BufferInfo()
 
+    // MediaCodec is NOT thread-safe. Frames are fed from a background coroutine
+    // (Dispatchers.Default) while release() is driven from the main thread on surface
+    // teardown. Serialize every codec touch through this lock so the codec can never be
+    // stopped/released underneath an in-flight queueInputBuffer/dequeueOutputBuffer, which
+    // aborts natively (SIGABRT).
+    private val codecLock = Any()
+
     init {
         initializeDecoder()
     }
@@ -50,9 +57,9 @@ class H264StreamDecoder(
     /**
      * Feeds an H.264 Annex B NAL unit or frame packet into the hardware decoder.
      */
-    fun decodeFrame(bytes: ByteArray) {
-        val decoder = this.decoder ?: return
-        if (!isConfigured) return
+    fun decodeFrame(bytes: ByteArray) = synchronized(codecLock) {
+        val decoder = this.decoder ?: return@synchronized
+        if (!isConfigured) return@synchronized
 
         try {
             val inputBufferIndex = decoder.dequeueInputBuffer(10000) // 10ms timeout
@@ -61,7 +68,7 @@ class H264StreamDecoder(
                 if (inputBuffer != null) {
                     inputBuffer.clear()
                     inputBuffer.put(bytes)
-                    
+
                     // Queue input buffer with current presentation time
                     val presentationTimeUs = System.nanoTime() / 1000
                     decoder.queueInputBuffer(
@@ -98,7 +105,7 @@ class H264StreamDecoder(
     /**
      * Releases native resources.
      */
-    fun release() {
+    fun release() = synchronized(codecLock) {
         isConfigured = false
         try {
             decoder?.stop()

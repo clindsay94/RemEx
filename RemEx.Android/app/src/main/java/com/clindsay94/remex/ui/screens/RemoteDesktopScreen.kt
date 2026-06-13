@@ -314,7 +314,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 activeCodec = activeCodec,
                 streamPixelWidth = streamPixelWidth,
                 streamPixelHeight = streamPixelHeight,
-                onActiveH264DecoderChange = { decoder -> viewModel.activeH264Decoder = decoder }
+                onActiveH264DecoderChange = { decoder -> viewModel.activeH264Decoder = decoder },
+                onH264DecoderReleased = { decoder -> viewModel.onH264DecoderReleased(decoder) }
         )
 }
 
@@ -362,7 +363,8 @@ fun RemoteDesktopScreenContent(
         activeCodec: String = "Mjpeg",
         streamPixelWidth: Int = 1920,
         streamPixelHeight: Int = 1080,
-        onActiveH264DecoderChange: (H264StreamDecoder?) -> Unit = {}
+        onActiveH264DecoderChange: (H264StreamDecoder?) -> Unit = {},
+        onH264DecoderReleased: (H264StreamDecoder) -> Unit = {}
 ) {
         val activity = LocalActivity.current
         val scope = rememberCoroutineScope()
@@ -1797,9 +1799,18 @@ fun RemoteDesktopScreenContent(
                                                                                 }
                                                                                 override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
                                                                                 override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
-                                                                                        localDecoder?.release()
+                                                                                        // Capture and clear the local reference first. When key(streamPixelWidth,
+                                                                                        // streamPixelHeight) rebuilds this AndroidView on a resolution change, the
+                                                                                        // NEW view's onSurfaceTextureAvailable may fire BEFORE this (old) view's
+                                                                                        // destroy callback. Releasing via the guarded callback ensures we only
+                                                                                        // clear the ViewModel's active decoder if it still points at THIS decoder,
+                                                                                        // never the freshly-created one — otherwise frames would be starved.
+                                                                                        val released = localDecoder
                                                                                         localDecoder = null
-                                                                                        onActiveH264DecoderChange(null)
+                                                                                        if (released != null) {
+                                                                                                released.release()
+                                                                                                onH264DecoderReleased(released)
+                                                                                        }
                                                                                         Log.i(TAG, "H.264 stream surface destroyed.")
                                                                                         return true
                                                                                 }

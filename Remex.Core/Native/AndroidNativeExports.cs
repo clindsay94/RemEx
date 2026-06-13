@@ -221,6 +221,7 @@ public static class AndroidNativeExports
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
     public static void RegisterCallbackNative(IntPtr env, IntPtr thiz, IntPtr callbackObj)
+        => ExportVoid("RegisterCallback", () =>
     {
         lock (SyncRoot)
         {
@@ -340,7 +341,7 @@ public static class AndroidNativeExports
                 }
             }
         }
-    }
+    });
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_InitRemexNative")]
     public static IntPtr InitRemex(IntPtr env, IntPtr thiz, IntPtr initJsonUtf8)
@@ -364,22 +365,23 @@ public static class AndroidNativeExports
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartDesktopStreamNative")]
     public static void StartDesktopStream(IntPtr env, IntPtr thiz, IntPtr configJsonUtf8)
-    {
-        var configJson = JniHelper.ReadJString(env, configJsonUtf8);
-        var config = string.IsNullOrWhiteSpace(configJson)
-            ? new DesktopConfig()
-            : RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
-
-        _ = Task.Run(async () =>
+        => ExportVoid("StartDesktopStream", () =>
         {
-            try
+            var configJson = JniHelper.ReadJString(env, configJsonUtf8);
+            var config = string.IsNullOrWhiteSpace(configJson)
+                ? new DesktopConfig()
+                : RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
+
+            _ = Task.Run(async () =>
             {
-                var (host, port, clientId, accessKey) = GetDesktopEndpoint();
-                await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, accessKey);
-            }
-            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StartDesktopStream failed: {ex.Message}"); }
+                try
+                {
+                    var (host, port, clientId, accessKey) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, accessKey);
+                }
+                catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StartDesktopStream failed: {ex.Message}"); }
+            });
         });
-    }
 
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStreamNative")]
     public static void StopDesktopStream(IntPtr env, IntPtr thiz)
@@ -401,25 +403,26 @@ public static class AndroidNativeExports
     /// </summary>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendDesktopPointerBatchNative")]
     public static void SendDesktopPointerBatch(IntPtr env, IntPtr thiz, IntPtr batchJsonUtf8)
-    {
-        var batchJson = JniHelper.ReadJString(env, batchJsonUtf8);
-        if (string.IsNullOrWhiteSpace(batchJson))
-            return;
-
-        var batch = RemexJson.Deserialize(batchJson, RemexJsonSerializerContext.Default.DesktopPointerBatch);
-        if (batch is null)
-            return;
-
-        _ = Task.Run(async () =>
+        => ExportVoid("SendDesktopPointerBatch", () =>
         {
-            try
+            var batchJson = JniHelper.ReadJString(env, batchJsonUtf8);
+            if (string.IsNullOrWhiteSpace(batchJson))
+                return;
+
+            var batch = RemexJson.Deserialize(batchJson, RemexJsonSerializerContext.Default.DesktopPointerBatch);
+            if (batch is null)
+                return;
+
+            _ = Task.Run(async () =>
             {
-                var (host, port, clientId, accessKey) = GetDesktopEndpoint();
-                await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, accessKey);
-            }
-            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendDesktopPointerBatch failed: {ex.Message}"); }
+                try
+                {
+                    var (host, port, clientId, accessKey) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, accessKey);
+                }
+                catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendDesktopPointerBatch failed: {ex.Message}"); }
+            });
         });
-    }
 
     private static void ClearActivePairingState()
     {
@@ -1112,6 +1115,24 @@ public static class AndroidNativeExports
         {
             return JniHelper.CreateJString(env,
                 SerializeOperationFailure("Unhandled native export failure.", ex.Message));
+        }
+    }
+
+    // Guard for void-returning JNI entry points. A managed exception that escapes an
+    // [UnmanagedCallersOnly] boundary back toward the JVM cannot be propagated by the
+    // NativeAOT runtime — it calls abort() and the whole process dies with SIGABRT. The
+    // IntPtr exports are protected by Export() above; the void exports must run their
+    // synchronous prologue (JNI string reads, JSON deserialization) inside this guard so a
+    // bad/edge-case payload degrades to a logged no-op instead of crashing the app.
+    private static void ExportVoid(string operation, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            JniHelper.AndroidLogE("RemexNative", $"{operation} native export failed: {ex.Message}");
         }
     }
 

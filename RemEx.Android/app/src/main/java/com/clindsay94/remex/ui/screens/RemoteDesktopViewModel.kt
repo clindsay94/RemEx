@@ -198,6 +198,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     var activeH264Decoder: H264StreamDecoder? = null
 
+    /**
+     * Clears the active H.264 decoder reference ONLY if it still points at [decoder].
+     * Called when a TextureView surface is destroyed. During a key()-driven AndroidView
+     * rebuild (stream resolution change), the old surface's destroy callback can fire after
+     * the new surface has already published its decoder; an unconditional null-out would
+     * clobber the live decoder and starve the stream. The identity guard prevents that.
+     */
+    fun onH264DecoderReleased(decoder: H264StreamDecoder) {
+        if (activeH264Decoder === decoder) {
+            activeH264Decoder = null
+        }
+    }
+
     init {
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
