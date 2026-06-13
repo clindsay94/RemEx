@@ -29,10 +29,12 @@ class H264StreamDecoder(
         try {
             decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
             val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
-                // Low-latency configuration hints
                 setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
-                // Set native output surface
                 setInteger(MediaFormat.KEY_COLOR_FORMAT, 0x7F000789) // COLOR_FormatSurface
+                // Real-time priority and operating rate let the hardware decoder pre-allocate
+                // resources and schedule at lower latency (hints, not guarantees).
+                setInteger(MediaFormat.KEY_PRIORITY, 0) // 0 = real-time
+                setFloat(MediaFormat.KEY_OPERATING_RATE, 60f)
             }
 
             decoder?.configure(format, surface, null, 0)

@@ -178,6 +178,16 @@
     <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Área de Trabalho Remota</string>
     <string name="cd_show_keyboard">Mostrar Teclado</string>
+    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_tab">Tab</string>
+    <string name="cd_key_backspace">Backspace</string>
+    <string name="cd_key_enter">Enter</string>
+    <string name="cd_key_arrow_left">Seta esquerda</string>
+    <string name="cd_key_arrow_up">Seta para cima</string>
+    <string name="cd_key_arrow_down">Seta para baixo</string>
+    <string name="cd_key_arrow_right">Seta direita</string>
+    <string name="cd_key_delete">Delete</string>
+    <string name="cd_key_windows">Tecla Windows</string>
     <string name="cd_reset_input">Resetar Entrada</string>
     <string name="cd_settings">Configurações</string>
     <string name="cd_toggle_fullscreen">Alternar tela cheia</string>

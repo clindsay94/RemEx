@@ -7,16 +7,14 @@
     The action to perform: Install, Uninstall, or Status.
 
 .PARAMETER Username
-    (Install only) The Windows user account the service should run as.
+    (Install only) Optional. The Windows user account the service should run as.
     Format: DOMAIN\User or .\User for local accounts.
-    When omitted the service runs as the current user (.\<current-username>).
-    Running as a real user account helps the service access that user's
-    profile and certificates, but interactive desktop features still require
-    the Remex Desktop app to be running in the signed-in session.
+    When omitted the service runs as LocalSystem (recommended — no credential
+    required, service starts before any user logs in).
 
 .PARAMETER Password
-    (Install only) The password for the user account. If omitted, you will
-    be prompted interactively via Get-Credential.
+    (Install only) The password for -Username. If -Username is supplied but
+    -Password is omitted you will be prompted interactively via Get-Credential.
 
 .EXAMPLE
     .\install-service.ps1 -Action Install
@@ -205,32 +203,36 @@ switch ($Action) {
             }
         }
 
-        # Determine the user account for the service.
-        if (-not $Username) {
-            $Username = ".\$env:USERNAME"
-        }
-
-        Write-Host "Registering Windows Service '$ServiceName' as '$Username'..." -ForegroundColor Cyan
-
-        if ($Password) {
-            $securePass = ConvertTo-SecureString $Password -AsPlainText -Force
-            $cred = New-Object System.Management.Automation.PSCredential($Username, $securePass)
-        } else {
-            Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
-            $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
-        }
-
-        # Grant SeServiceLogonRight BEFORE creating service so it starts reliably
-        Grant-LogOnAsService $Username
         Ensure-EventSourceRegistered
 
-        New-Service `
-            -Name $ServiceName `
-            -BinaryPathName "`"$exePath`"" `
-            -DisplayName $DisplayName `
-            -Description $Description `
-            -StartupType Automatic `
-            -Credential $cred
+        if ($Username) {
+            # Named account: collect credential and grant logon-as-service right.
+            Write-Host "Registering Windows Service '$ServiceName' as '$Username'..." -ForegroundColor Cyan
+            if ($Password) {
+                $securePass = ConvertTo-SecureString $Password -AsPlainText -Force
+                $cred = New-Object System.Management.Automation.PSCredential($Username, $securePass)
+            } else {
+                Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
+                $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
+            }
+            Grant-LogOnAsService $Username
+            New-Service `
+                -Name $ServiceName `
+                -BinaryPathName "`"$exePath`"" `
+                -DisplayName $DisplayName `
+                -Description $Description `
+                -StartupType Automatic `
+                -Credential $cred
+        } else {
+            # Default: LocalSystem — no credential needed.
+            Write-Host "Registering Windows Service '$ServiceName' as LocalSystem..." -ForegroundColor Cyan
+            New-Service `
+                -Name $ServiceName `
+                -BinaryPathName "`"$exePath`"" `
+                -DisplayName $DisplayName `
+                -Description $Description `
+                -StartupType Automatic
+        }
 
         # Configure Windows Defender Firewall rules to allow inbound TCP/UDP connections for both the host and client
         Write-Host "Configuring Windows Defender Firewall rules..." -ForegroundColor Cyan
@@ -285,7 +287,8 @@ switch ($Action) {
         Start-Service -Name $ServiceName
 
         Write-Host ""
-        Write-Host "Service '$DisplayName' installed and started as '$Username'." -ForegroundColor Green
+        $runAs = if ($Username) { $Username } else { "LocalSystem" }
+        Write-Host "Service '$DisplayName' installed and started as '$runAs'." -ForegroundColor Green
         Write-Host "It will auto-start on boot. View in services.msc or use: .\install-service.ps1 -Action Status"
         Write-Warning "Interactive desktop features still require the Remex Desktop app to be running in the signed-in Windows session."
         Write-DiagnosticsGuidance

@@ -178,6 +178,16 @@
     <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Escritorio Remoto</string>
     <string name="cd_show_keyboard">Mostrar Teclado</string>
+    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_tab">Tabulador</string>
+    <string name="cd_key_backspace">Retroceso</string>
+    <string name="cd_key_enter">Intro</string>
+    <string name="cd_key_arrow_left">Flecha izquierda</string>
+    <string name="cd_key_arrow_up">Flecha arriba</string>
+    <string name="cd_key_arrow_down">Flecha abajo</string>
+    <string name="cd_key_arrow_right">Flecha derecha</string>
+    <string name="cd_key_delete">Suprimir</string>
+    <string name="cd_key_windows">Tecla Windows</string>
     <string name="cd_reset_input">Restablecer Entrada</string>
     <string name="cd_settings">Ajustes</string>
     <string name="cd_toggle_fullscreen">Pantalla Completa</string>

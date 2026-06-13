@@ -178,6 +178,16 @@
     <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Desktop Jarak Jauh</string>
     <string name="cd_show_keyboard">Tampilkan Keyboard</string>
+    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_tab">Tab</string>
+    <string name="cd_key_backspace">Hapus belakang</string>
+    <string name="cd_key_enter">Enter</string>
+    <string name="cd_key_arrow_left">Panah kiri</string>
+    <string name="cd_key_arrow_up">Panah atas</string>
+    <string name="cd_key_arrow_down">Panah bawah</string>
+    <string name="cd_key_arrow_right">Panah kanan</string>
+    <string name="cd_key_delete">Hapus</string>
+    <string name="cd_key_windows">Tombol Windows</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Pengaturan</string>
     <string name="cd_toggle_fullscreen">Toggle layar penuh</string>

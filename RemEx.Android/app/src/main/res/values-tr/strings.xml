@@ -177,7 +177,17 @@
 
     <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Remote Desktop</string>
-    <string name="cd_show_keyboard">Show Keyboard</string>
+    <string name="cd_show_keyboard">Klavyeyi Göster</string>
+    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_tab">Sekme</string>
+    <string name="cd_key_backspace">Geri al</string>
+    <string name="cd_key_enter">Enter</string>
+    <string name="cd_key_arrow_left">Sol ok</string>
+    <string name="cd_key_arrow_up">Yukarı ok</string>
+    <string name="cd_key_arrow_down">Aşağı ok</string>
+    <string name="cd_key_arrow_right">Sağ ok</string>
+    <string name="cd_key_delete">Sil</string>
+    <string name="cd_key_windows">Windows tuşu</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_toggle_fullscreen">Toggle fullscreen</string>

@@ -185,6 +185,15 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Total number of tutorial pages.</summary>
     public int TutorialPageCount => _tutorialPages.Count;
 
+    /// <summary>Per-dot opacity (1.0 = active, 0.3 = inactive) for the tutorial page-indicator row.</summary>
+    public IReadOnlyList<double> TutorialPageDots =>
+        Enumerable.Range(0, TutorialPageCount)
+                  .Select(i => i == TutorialPageIndex ? 1.0 : 0.3)
+                  .ToList();
+
+    partial void OnTutorialPageIndexChanged(int value) =>
+        OnPropertyChanged(nameof(TutorialPageDots));
+
     /// <summary>User preference to not show tutorial again.</summary>
     [ObservableProperty]
     private bool _dontShowTutorialAgain;

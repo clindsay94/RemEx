@@ -100,13 +100,10 @@ var
   // Custom wizard pages
   InstallTypePage:  TInputOptionWizardPage;   // Client-only vs Client+Service
   ServiceModePage:  TInputOptionWizardPage;   // Auto (service) vs Manual
-  CredentialsPage:  TInputQueryWizardPage;    // Username / Password
 
   // Values captured from the wizard
   InstallService:   Boolean;
   ServiceAutoStart: Boolean;
-  ServiceUsername:  String;
-  ServicePassword:  String;
 
 
 // ------------------------------------------------------------------
@@ -131,7 +128,8 @@ begin
   ServiceModePage := CreateInputOptionPage(
     InstallTypePage.ID,
     'Host Service Startup',
-    'Choose when the RemEx Host service should start.',
+    'Choose when the RemEx Host service should start.' + #13#10 +
+    'The service runs as LocalSystem — no credentials required.',
     'How should the host service start?',
     True,   // exclusive (radio buttons)
     False
@@ -143,20 +141,6 @@ begin
     'Manually / on-demand (you start it from services.msc or the desktop app)'
   );
   ServiceModePage.SelectedValueIndex := 0;
-
-  // --- Page 3: Service account credentials ---
-  CredentialsPage := CreateInputQueryPage(
-    ServiceModePage.ID,
-    'Service Account Credentials',
-    'The Windows Service keeps RemEx online in the background, but Session 0 cannot provide interactive desktop features by itself.',
-    'Enter the account that the RemEx Host service should run as. ' +
-    'Use the format .\Username for a local account (e.g. .\Connor). Keep the desktop app running in the signed-in session for remote desktop, Task Manager, and app launching.'
-  );
-  CredentialsPage.Add('Username (e.g. .\Connor):', False);
-  CredentialsPage.Add('Password:', True);  // True = masked password field
-
-  // Pre-populate username with current user
-  CredentialsPage.Values[0] := '.\' + GetUserNameString;
 end;
 
 
@@ -170,41 +154,6 @@ begin
   // Hide service mode page if "Client only" was selected
   if PageID = ServiceModePage.ID then
     Result := (InstallTypePage.SelectedValueIndex = 0);
-
-  // Hide credentials page if "Client only" OR "Manual" was selected
-  if PageID = CredentialsPage.ID then
-    Result := (InstallTypePage.SelectedValueIndex = 0) or
-              (ServiceModePage.SelectedValueIndex = 1);
-end;
-
-
-// ------------------------------------------------------------------
-// Validate inputs before advancing
-// ------------------------------------------------------------------
-function NextButtonClick(CurPageID: Integer): Boolean;
-var
-  User, Pass: String;
-begin
-  Result := True;
-
-  if CurPageID = CredentialsPage.ID then
-  begin
-    User := Trim(CredentialsPage.Values[0]);
-    Pass := CredentialsPage.Values[1];
-
-    if User = '' then
-    begin
-      MsgBox('Please enter a username for the service account.', mbError, MB_OK);
-      Result := False;
-      Exit;
-    end;
-    if Pass = '' then
-    begin
-      MsgBox('Please enter the password for the service account.', mbError, MB_OK);
-      Result := False;
-      Exit;
-    end;
-  end;
 end;
 
 
@@ -226,22 +175,12 @@ begin
   if not InstallService then Exit;
   if not ServiceAutoStart then Exit;
 
-  // Collect credentials
-  ServiceUsername := Trim(CredentialsPage.Values[0]);
-  ServicePassword := CredentialsPage.Values[1];
-
-  // Escape any single quotes for PowerShell by doubling them
-  StringChange(ServiceUsername, '''', '''''');
-  StringChange(ServicePassword, '''', '''''');
-
-  // Build PowerShell arguments — wrap strings in single quotes
+  // Install as LocalSystem — no credentials needed
   PSArgs :=
     '-ExecutionPolicy Bypass -NonInteractive' +
     ' -File "' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + '"' +
     ' -Action Install' +
-    ' -HostPath "' + ExpandConstant('{app}') + '\{#AppHostExe}"' +
-    ' -Username ''' + ServiceUsername + '''' +
-    ' -Password ''' + ServicePassword + '''';
+    ' -HostPath "' + ExpandConstant('{app}') + '\{#AppHostExe}"';
 
   if not Exec('powershell.exe', PSArgs, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin

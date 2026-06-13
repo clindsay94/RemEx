@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 
-  <!-- Navigation -->
+  
   <data name="App_Name" xml:space="preserve">
     <value>RemEx</value>
   </data>
@@ -42,7 +42,7 @@
     <value>Fichiers</value>
   </data>
 
-  <!-- Common Buttons -->
+  
   <data name="Btn_Connect" xml:space="preserve">
     <value>Connecter</value>
   </data>
@@ -80,7 +80,7 @@
     <value>Ping</value>
   </data>
 
-  <!-- Remote View -->
+  
   <data name="Remote_Header" xml:space="preserve">
     <value>⏻  PC À DISTANCE</value>
   </data>
@@ -130,7 +130,7 @@
     <value>🔌  Envoyer le paquet Wake-on-LAN</value>
   </data>
 
-  <!-- Settings -->
+  
   <data name="Settings_Header" xml:space="preserve">
     <value>PARAMÈTRES</value>
   </data>
@@ -210,7 +210,7 @@
     <value>Langue</value>
   </data>
 
-  <!-- Home -->
+  
   <data name="Home_Subtitle" xml:space="preserve">
     <value>CENTRE DE COMMANDE D'EXÉCUTION À DISTANCE</value>
   </data>
@@ -242,7 +242,7 @@
     <value>Ouvrez l'espace capteurs, faites un clic droit sur une carte et épinglez-la à l'accueil.</value>
   </data>
 
-  <!-- Task Manager -->
+  
   <data name="TaskMgr_Header" xml:space="preserve">
     <value>▤  GESTIONNAIRE DE TÂCHES</value>
   </data>
@@ -265,7 +265,7 @@
     <value>RAM</value>
   </data>
 
-  <!-- App Launcher -->
+  
   <data name="AppLauncher_Header" xml:space="preserve">
     <value>◈  LANCEUR D'APPS</value>
   </data>
@@ -288,7 +288,7 @@
     <value>Supprimer</value>
   </data>
 
-  <!-- Add Program -->
+  
   <data name="AddProgram_Title" xml:space="preserve">
     <value>Ajouter un programme</value>
   </data>
@@ -317,7 +317,7 @@
     <value>#RRGGBB</value>
   </data>
 
-  <!-- Tray Flyout -->
+  
   <data name="TrayFlyout_Header" xml:space="preserve">
     <value>APERÇU RAPIDE</value>
   </data>
@@ -331,7 +331,7 @@
     <value>Aperçu en direct</value>
   </data>
 
-  <!-- Canvas / Dashboard -->
+  
   <data name="Canvas_Header" xml:space="preserve">
     <value>ESPACE CAPTEURS</value>
   </data>
@@ -390,7 +390,7 @@
     <value>ÉCHANTILLONS</value>
   </data>
   <data name="Dashboard_Uptime" xml:space="preserve">
-    <value>UPTIME</value>
+    <value>DISPONIBILITÉ</value>
   </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Connecter</value>
@@ -414,7 +414,7 @@
     <value>📊 Graphe</value>
   </data>
 
-  <!-- Remote Desktop -->
+  
   <data name="RemoteDesktop_Header" xml:space="preserve">
     <value>BUREAU À DISTANCE</value>
   </data>
@@ -461,7 +461,7 @@
     <value>Q : {0}</value>
   </data>
 
-  <!-- Customization -->
+  
   <data name="Custom_Header" xml:space="preserve">
     <value>🎨  PERSONNALISATION</value>
   </data>
@@ -481,7 +481,7 @@
     <value>Opacité du verre</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Opacité de la fenêtre</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensité de la lueur</value>
@@ -517,10 +517,10 @@
     <value>Monolith</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Dynamique</value>
   </data>
 
-  <!-- Status Messages -->
+  
   <data name="Main_Title" xml:space="preserve">
     <value>Remex — Ping / Pong</value>
   </data>
@@ -534,7 +534,7 @@
     <value>Latence :</value>
   </data>
 
-  <!-- Status Messages -->
+  
   <data name="Status_Disconnected" xml:space="preserve">
     <value>Déconnecté</value>
   </data>
@@ -593,22 +593,22 @@
     <value>Pad de curseur complet activé</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a host to check remote desktop availability.</value>
+    <value>Connectez-vous à un hôte pour vérifier la disponibilité du bureau distant.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Connexion...</value>
   </data>
   <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Failed: {0}</value>
+    <value>Échec : {0}</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Arrêté</value>
   </data>
   <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Frame decode error ({0} bytes): {1}: {2}</value>
+    <value>Erreur de décodage ({0} octets) : {1} : {2}</value>
   </data>
 
-  <!-- Service Status -->
+  
   <data name="Service_NotInstalled" xml:space="preserve">
     <value>Non installé</value>
   </data>
@@ -670,16 +670,16 @@
     <value>Installé — le démarrage a peut-être échoué, voir le journal.</value>
   </data>
   <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
+    <value>Installation du service systemd…</value>
   </data>
   <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
+    <value>L'installation du service a échoué.</value>
   </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
+    <value>Suppression du service systemd…</value>
   </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
-    <value>Zoom: {0}×</value>
+    <value>Zoom : {0}×</value>
   </data>
   <data name="Service_DeletingService" xml:space="preserve">
     <value>Suppression du service...</value>
@@ -730,76 +730,76 @@
     <value>Délai de connexion dépassé</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found host: {0}</value>
+    <value>Hôte trouvé : {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>{0} hôtes trouvés. (Découverte sélectionnable non encore implémentée)</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Connected to host</value>
+    <value>Connecté à l'hôte</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host not connected</value>
+    <value>Hôte non connecté</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Interactive host</value>
+    <value>Hôte interactif</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service host</value>
+    <value>Hôte service</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Headless host</value>
+    <value>Hôte sans interface</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
-    <value>Host</value>
+    <value>Hôte</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
-    <value>Remote desktop available</value>
+    <value>Bureau distant disponible</value>
   </data>
   <data name="Status_RemoteDesktopUnavailable" xml:space="preserve">
-    <value>Remote desktop unavailable</value>
+    <value>Bureau distant non disponible</value>
   </data>
   <data name="Status_NotConnected" xml:space="preserve">
-    <value>Not connected.</value>
+    <value>Non connecté.</value>
   </data>
   <data name="Status_NoMessage" xml:space="preserve">
-    <value>No message</value>
+    <value>Aucun message</value>
   </data>
   <data name="Status_CommandTimedOut" xml:space="preserve">
-    <value>Command timed out.</value>
+    <value>Commande expirée.</value>
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
-    <value>Error: {0}</value>
+    <value>Erreur : {0}</value>
   </data>
   <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>User disconnected</value>
+    <value>Utilisateur déconnecté</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
-    <value>Send error: {0}</value>
+    <value>Erreur d'envoi : {0}</value>
   </data>
   <data name="Status_PongFormat" xml:space="preserve">
-    <value>Pong! {0:F1} ms</value>
+    <value>Pong ! {0:F1} ms</value>
   </data>
   <data name="Status_ReceiveErrorFormat" xml:space="preserve">
-    <value>Receive error: {0}</value>
+    <value>Erreur de réception : {0}</value>
   </data>
   <data name="Status_ReconnectingFormat" xml:space="preserve">
-    <value>Reconnecting in {0}s…</value>
+    <value>Reconnexion dans {0}s…</value>
   </data>
   <data name="Status_QrCodeFailed" xml:space="preserve">
-    <value>Failed to generate QR code: {0}</value>
+    <value>Échec de la génération du QR code : {0}</value>
   </data>
   <data name="Status_FeatureRequiresConnection" xml:space="preserve">
-    <value>{0} requires a connected RemEx host. Open Settings to configure your connection.</value>
+    <value>{0} nécessite un hôte RemEx connecté. Ouvrez Paramètres pour configurer votre connexion.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Pairing with host...</value>
+    <value>Association avec l'hôte...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
-    <value>PIN must be exactly 6 digits.</value>
+    <value>Le PIN doit comporter exactement 6 chiffres.</value>
   </data>
 
-  <!-- WoL Status -->
+  
   <data name="Wol_EnterMac" xml:space="preserve">
     <value>⚠ Entrez d'abord une adresse MAC.</value>
   </data>
@@ -845,7 +845,7 @@
   <data name="Wol_SignOutSent" xml:space="preserve">
     <value>Déconnexion envoyée</value>
   </data>
-  <!-- Tutorial -->
+  
   <data name="Tutorial_Header" xml:space="preserve">
     <value>MISE EN ROUTE</value>
   </data>
@@ -862,16 +862,16 @@
     <value>Commencer ✓</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
-    <value>Don't show this tutorial again</value>
+    <value>Ne plus afficher ce tutoriel</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
     <value>Bienvenue sur RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx 2.0 transforme votre PC en centre de commande distant sécurisé. Surveillez les capteurs matériels, lancez des applications, gérez les fichiers et les processus, et diffusez votre bureau depuis votre téléphone ou un second client de bureau.
 
-Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-based pairing.</value>
+Votre PC exécute RemEx Host, et chaque connexion est protégée par TLS et un appairage par PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -891,10 +891,10 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>Pour que RemEx fonctionne 24h/24 sans session ouverte, installez-le en tant que service Windows :</value>
   </data>
   <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
+    <value>1. Ouvrez Paramètres (⚙) → faites défiler jusqu'à « Service Windows »
+2. Définissez votre nom d'utilisateur et mot de passe Windows
+3. Cliquez sur « Installer en tant que service »
+4. Le service démarre automatiquement au démarrage</value>
   </data>
   <data name="Tutorial_P2_Note" xml:space="preserve">
     <value>Le service s'exécute sous votre compte utilisateur afin de pouvoir accéder à votre session de bureau pour la capture d'écran et le lancement d'applications.</value>
@@ -907,10 +907,10 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>Sur Linux, l'hôte RemEx peut s'exécuter en tant que service systemd pour un démarrage automatique.</value>
   </data>
   <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux host archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-host folder.
-4. Use systemctl --user status remex-host to verify it is running.</value>
+    <value>1. Téléchargez la dernière archive Linux depuis GitHub Releases.
+2. Extrayez-la.
+3. Exécutez ./install.sh install dans le dossier remex-host.
+4. Utilisez systemctl --user status remex-host pour vérifier qu'il fonctionne.</value>
   </data>
   <data name="Tutorial_P3_Link" xml:space="preserve">
     <value>Pour des instructions détaillées, consultez docs/linux-service-setup.md sur GitHub</value>
@@ -923,10 +923,10 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>Pour un monitoring matériel détaillé (plus de 300 capteurs), installez HWiNFO64 — c'est gratuit pour un usage personnel.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Téléchargez depuis hwinfo.com
+2. Lancez HWInfo → Paramètres (⚙) → Paramètres principaux
+3. Cochez « Shared Memory Support » → OK
+4. HWInfo doit être en cours d'exécution pour que RemEx lise ses capteurs</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ La mémoire partagée d'HWInfo se désactive après 12h (version gratuite). Réactivez-la périodiquement, ou passez à la licence Pro.</value>
@@ -955,10 +955,10 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>Le lanceur d'apps vous permet de démarrer des programmes sur votre PC depuis votre téléphone. Les apps doivent être configurées ici d'abord.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Naviguez vers la page Lanceur (barre latérale)
+2. Cliquez sur « + Ajouter un programme »
+3. Parcourez jusqu'à l'exécutable ou au raccourci
+4. Lancez depuis votre application Android !</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>Ceci fonctionne même avec le service autonome Remex.Host — configurez les apps dans le client de bureau au moins une fois.</value>
@@ -974,28 +974,28 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>Si l'auto-découverte échoue, trouvez l'IP de votre PC manuellement :</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows : CMD → ipconfig → « Adresse IPv4 »
+Linux : ip addr  ou  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Entrez ws://&lt;IP&gt;:5005/ws dans les paramètres de connexion de l'app Android.</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
+    <value>Appairage par QR Code</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The host generates a pairing code that contains everything your mobile app needs.</value>
+    <value>La façon la plus rapide de connecter votre téléphone est de scanner un QR code. L'hôte génère un code d'appairage qui contient tout ce dont votre application mobile a besoin.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the host
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Ouvrez Paramètres → Connexion sur l'hôte
+2. Cliquez sur « Afficher le QR Code »
+3. Ouvrez l'application mobile RemEx
+4. Appuyez sur l'icône du scanner QR sur l'écran de connexion
+5. Pointez votre caméra vers le code — vous vous connecterez automatiquement !</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
-    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
+    <value>Pas de saisie, pas d'adresses IP — scannez et c'est parti. Les détails de connexion sont sauvegardés afin que vous n'ayez à scanner qu'une seule fois.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
     <value>Transfert de fichiers et dossiers partagés</value>
@@ -1004,9 +1004,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Le transfert de fichiers n'affiche que les dossiers que votre PC hôte a partagés. Configurez-les depuis Paramètres sur l'hôte de bureau pour que votre téléphone voie les bons emplacements.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the PC host.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Ouvrez Paramètres → Dossiers partagés sur l'hôte PC.
+2. Laissez RemEx Transfers accessible en écriture pour les transferts rapides téléphone → PC.
+3. Laissez les autres dossiers en lecture seule sauf si vous voulez que les appareils mobiles puissent les modifier.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>Sur votre téléphone, parcourez un dossier partagé, appuyez sur un fichier pour le télécharger, ou envoyez un fichier depuis Android vers n'importe quel dossier accessible en écriture.</value>
@@ -1024,9 +1024,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Vous pouvez rejouer ce tutoriel à tout moment depuis Paramètres.</value>
   </data>
 
-  <!-- Phase 4: Live Localization - New Keys -->
+  
 
-  <!-- Shell (Phase 4) -->
+  
   <data name="Shell_AccessKeyWatermark" xml:space="preserve">
     <value>Laisser vide pour désactiver</value>
   </data>
@@ -1034,7 +1034,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>ATMOSPHÈRE</value>
   </data>
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>À propos</value>
   </data>
   <data name="Shell_AutoSaveNote" xml:space="preserve">
     <value>Sauvegardé automatiquement lors du changement. Persiste au redémarrage.</value>
@@ -1097,7 +1097,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>BIENVENUE</value>
   </data>
 
-  <!-- Nav (Phase 4) -->
+  
   <data name="Nav_DesktopTooltip" xml:space="preserve">
     <value>Bureau à distance — Diffusez votre écran de PC en temps réel</value>
   </data>
@@ -1126,7 +1126,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Gestionnaire de tâches — Voir et terminer les processus en cours</value>
   </data>
 
-  <!-- Home (Phase 4) -->
+  
   <data name="Home_CancelTooltip" xml:space="preserve">
     <value>Annuler la tentative de connexion</value>
   </data>
@@ -1152,19 +1152,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>Générer un code QR pour connecter l'app RemEx Android</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Afficher le PIN d'appairage</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Afficher le code à 6 chiffres dont votre téléphone a besoin pour s'appairer avec ce PC</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>PIN D'APPAIRAGE</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Entrez ce code sur votre téléphone pour terminer l'appairage</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>Expire dans {0}s</value>
   </data>
   <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
     <value>Ouvrir l'espace capteurs par glisser-déposer pour surveiller la télémétrie du PC</value>
@@ -1173,10 +1173,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Voir les processus en cours et terminer des tâches sur votre PC</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Fermer</value>
   </data>
 
-  <!-- Settings (Phase 4) -->
+  
   <data name="Settings_AccessKeyTooltip" xml:space="preserve">
     <value>Clé d'authentification optionnelle — doit correspondre à la clé définie sur l'hôte. Laisser vide si non configuré.</value>
   </data>
@@ -1193,7 +1193,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-découverte des hôtes RemEx sur votre réseau local via mDNS</value>
   </data>
   <data name="Settings_General" xml:space="preserve">
-    <value>GENERAL</value>
+    <value>GÉNÉRAL</value>
   </data>
   <data name="Settings_CloseToTray" xml:space="preserve">
     <value>Réduire dans la zone de notification à la fermeture</value>
@@ -1280,9 +1280,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Votre téléphone ne voit que les dossiers listés ici. Orientez les envois habituels vers un dossier accessible en écriture comme RemEx Transfers, et laissez le reste en lecture seule sauf si vous voulez que les appareils mobiles puissent le modifier.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Ajoutez les dossiers PC que vous souhaitez exposer via RemEx.
+2. Activez les téléversements uniquement pour les dossiers devant accepter les fichiers téléphone → PC.
+3. Ouvrez Transfert de fichiers sur votre téléphone et parcourez les dossiers partagés depuis là.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Ajouter un dossier</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dossiers partagés mis à jour.</value>
   </data>
 
-  <!-- File Transfer View -->
+  
   <data name="FileTransfer_Header" xml:space="preserve">
     <value>TRANSFERT DE FICHIERS</value>
   </data>
@@ -1373,7 +1373,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_Loading" xml:space="preserve">
     <value>Chargement…</value>
   </data>
-  <!-- File Transfer Status / VM strings -->
+  
   <data name="FileTransfer_NoSharedFolders" xml:space="preserve">
     <value>L'hôte n'a encore exposé aucun dossier partagé.</value>
   </data>
@@ -1440,104 +1440,104 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve">
     <value>{0} est en lecture seule. Choisissez un dossier accessible en écriture pour envoyer des fichiers.</value>
   </data>
-  <!-- File management -->
+  
   <data name="FileTransfer_DeleteBtn" xml:space="preserve">
-    <value>Delete</value>
+    <value>Supprimer</value>
   </data>
   <data name="FileTransfer_DeleteTooltip" xml:space="preserve">
-    <value>Delete the selected file or folder on the host</value>
+    <value>Supprimer le fichier ou dossier sélectionné sur l'hôte</value>
   </data>
   <data name="FileTransfer_DeletingFormat" xml:space="preserve">
-    <value>Deleting {0}…</value>
+    <value>Suppression de {0}…</value>
   </data>
   <data name="FileTransfer_DeleteComplete" xml:space="preserve">
-    <value>Deleted.</value>
+    <value>Supprimé.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
+    <value>Échec de la suppression : {0}</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
-    <value>Deleting {0} items…</value>
+    <value>Suppression de {0} éléments…</value>
   </data>
   <data name="FileTransfer_DeleteMultipleCompleteFormat" xml:space="preserve">
-    <value>Deleted {0} items.</value>
+    <value>{0} éléments supprimés.</value>
   </data>
   <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
-    <value>Select All</value>
+    <value>Tout sélectionner</value>
   </data>
   <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
-    <value>Select all files and folders in the current directory</value>
+    <value>Sélectionner tous les fichiers et dossiers du répertoire actuel</value>
   </data>
   <data name="FileTransfer_RenameBtn" xml:space="preserve">
-    <value>Rename</value>
+    <value>Renommer</value>
   </data>
   <data name="FileTransfer_RenameTooltip" xml:space="preserve">
-    <value>Rename the selected file or folder on the host</value>
+    <value>Renommer le fichier ou dossier sélectionné sur l'hôte</value>
   </data>
   <data name="FileTransfer_RenamingFormat" xml:space="preserve">
-    <value>Renaming {0} to {1}…</value>
+    <value>Renommage de {0} en {1}…</value>
   </data>
   <data name="FileTransfer_RenameComplete" xml:space="preserve">
-    <value>Renamed.</value>
+    <value>Renommé.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Rename failed: {0}</value>
+    <value>Échec du renommage : {0}</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
-    <value>Confirm</value>
+    <value>Confirmer</value>
   </data>
   <data name="FileTransfer_RenameCancelBtn" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Annuler</value>
   </data>
   <data name="FileTransfer_RenameInputPlaceholder" xml:space="preserve">
-    <value>New name…</value>
+    <value>Nouveau nom…</value>
   </data>
-  <!-- SHA-256 verification -->
+  
   <data name="FileTransfer_VerifyHashBtn" xml:space="preserve">
-    <value>Verify SHA-256</value>
+    <value>Vérifier SHA-256</value>
   </data>
   <data name="FileTransfer_VerifyHashTooltip" xml:space="preserve">
-    <value>Compute and display the SHA-256 hash of the selected file on the host</value>
+    <value>Calculer et afficher le hachage SHA-256 du fichier sélectionné sur l'hôte</value>
   </data>
   <data name="FileTransfer_HashComputingFormat" xml:space="preserve">
-    <value>Computing SHA-256 of {0}…</value>
+    <value>Calcul du SHA-256 de {0}…</value>
   </data>
   <data name="FileTransfer_HashComplete" xml:space="preserve">
-    <value>SHA-256 computed.</value>
+    <value>SHA-256 calculé.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Hash failed: {0}</value>
+    <value>Échec du hachage : {0}</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
   </data>
-  <!-- Root management -->
+  
   <data name="FileTransfer_PinFolderTooltip" xml:space="preserve">
-    <value>Pin the current folder as a new shared root in the dropdown</value>
+    <value>Épingler le dossier actuel comme nouvelle racine partagée dans la liste</value>
   </data>
   <data name="FileTransfer_PinningFolder" xml:space="preserve">
-    <value>Pinning folder as shared root…</value>
+    <value>Épinglage du dossier comme racine partagée…</value>
   </data>
   <data name="FileTransfer_PinComplete" xml:space="preserve">
-    <value>Folder added to shared roots.</value>
+    <value>Dossier ajouté aux racines partagées.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Could not pin folder: {0}</value>
+    <value>Impossible d'épingler le dossier : {0}</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
-    <value>Remove this shared folder from the dropdown</value>
+    <value>Supprimer ce dossier partagé de la liste</value>
   </data>
   <data name="FileTransfer_RemovingRootFormat" xml:space="preserve">
-    <value>Removing {0} from shared folders…</value>
+    <value>Suppression de {0} des dossiers partagés…</value>
   </data>
   <data name="FileTransfer_RemoveRootComplete" xml:space="preserve">
-    <value>Shared folder removed.</value>
+    <value>Dossier partagé supprimé.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Could not remove folder: {0}</value>
+    <value>Impossible de supprimer le dossier : {0}</value>
   </data>
 
-  <!-- Service (Phase 4) -->
+  
   <data name="Service_BtnInstall" xml:space="preserve">
     <value>📦 Installer</value>
   </data>
@@ -1548,7 +1548,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>🗑 Supprimer</value>
   </data>
 
-  <!-- Remote (Phase 4) -->
+  
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
     <value>IP de diffusion (255.255.255.255)</value>
   </data>
@@ -1559,7 +1559,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Port</value>
   </data>
 
-  <!-- RemoteDesktop (Phase 4) -->
+  
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
     <value>Quitter le plein écran</value>
   </data>
@@ -1570,13 +1570,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>ws://hôte:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Pavé</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Mode Stylet : tap = clic instantané, glisser = cliquer-glisser</value>
   </data>
   <data name="RemoteDesktop_ResetZoom" xml:space="preserve">
-    <value>🔍 Reset Zoom</value>
+    <value>🔍 Réinitialiser le zoom</value>
   </data>
   <data name="RemoteDesktop_StylusHint" xml:space="preserve">
     <value>S-Pen / Stylet : pression = clic, bouton barillet = clic droit</value>
@@ -1606,7 +1606,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Touch : tap = clic, glisser = mouv., appui long = clic droit, pincement = zoom</value>
   </data>
 
-  <!-- Canvas (Phase 4) -->
+  
   <data name="Canvas_GraphType" xml:space="preserve">
     <value>📊 Type de graphique</value>
   </data>
@@ -1620,7 +1620,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>📌 Épingler/Désépingler de l'Accueil</value>
   </data>
 
-  <!-- AppLauncher (Phase 4) -->
+  
   <data name="AppLauncher_AddNewApp" xml:space="preserve">
     <value>AJOUTER UNE NOUVELLE APPLICATION</value>
   </data>
@@ -1631,7 +1631,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Chemin cible (ex. C:\Program Files\...)</value>
   </data>
 
-  <!-- TaskMgr (Phase 4) -->
+  
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
     <value>CPU</value>
   </data>
@@ -1639,7 +1639,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>MÉM</value>
   </data>
 
-  <!-- Tutorial (Phase 4) -->
+  
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
     <value>📱 App Android  →  se connecte à  →  🖥️ Hôte PC (cette machine)</value>
   </data>
@@ -1650,72 +1650,72 @@ Linux: ip addr  or  hostname -I</value>
     <value>Passer le tutoriel — vous pouvez le revoir dans les Paramètres</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
+    <value>Glossaire : Palette de commandes</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>Appuyez sur Ctrl+Maj+P pour naviguer entre les écrans, déclencher des actions rapides et rechercher dans le centre de commandes.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
+    <value>Glossaire : Lanceur d'applications</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the host. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Lancez des applications et des scripts sur l'hôte. Configurez les entrées une fois sur le PC, puis démarrez-les à distance depuis RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
+    <value>Glossaire : Gestionnaire des tâches</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running host processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>Inspectez les processus en cours sur l'hôte, triez par utilisation et terminez les tâches bloquées sans quitter votre siège.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
+    <value>Glossaire : Canevas de capteurs</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+    <value>Construisez un mur de télémétrie en direct en épinglant des capteurs, en redimensionnant les cartes et en les arrangeant sur le canevas libre.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
+    <value>Glossaire : Transfert de fichiers</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the host has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Parcourez uniquement les dossiers que l'hôte a partagés, téléversez dans les emplacements accessibles en écriture et téléchargez des fichiers avec vérification SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
+    <value>Glossaire : Bureau distant</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your host screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>Diffusez l'écran de l'hôte avec une qualité, une échelle et des FPS ajustables pour équilibrer clarté et bande passante.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
-    <value>Glossary: Quick Settings</value>
+    <value>Glossaire : Paramètres rapides</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
-    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+    <value>Sur Android, ajoutez des tuiles RemEx aux Paramètres rapides pour des actions instantanées comme Verrouiller, Mettre en veille, Redémarrer ou Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossary: Customization</value>
+    <value>Glossaire : Personnalisation</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
+    <value>Ajustez les thèmes, la stratégie de palette, les polices, les formes de cartes et l'opacité pour personnaliser votre expérience.</value>
   </data>
 
-  <!-- App Launcher -->
+  
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Application sans nom</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Sélectionner une application</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
     <value>Applications</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Tous les fichiers</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Inconnu</value>
   </data>
 
-  <!-- About Screen -->
+  
   <data name="About_Header" xml:space="preserve">
     <value>About</value>
   </data>
@@ -1723,10 +1723,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
-    <value>Desktop Client</value>
+    <value>Client de bureau</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>PC Host</value>
+    <value>Hôte PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Pensez à donner une étoile sur GitHub !</value>
@@ -1741,83 +1741,83 @@ Linux: ip addr  or  hostname -I</value>
     <value>Fait avec ❤️ à Denver, Colorado</value>
   </data>
 
-  <!-- Confirmation dialogs -->
+  
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Shut Down — Are you sure?</value>
+    <value>Arrêter — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>The remote PC will shut down. All unsaved work will be lost.</value>
+    <value>Le PC distant va s'arrêter. Tout travail non enregistré sera perdu.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
-    <value>Shut Down</value>
+    <value>Arrêter</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — Are you sure?</value>
+    <value>Redémarrer — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>The remote PC will restart. All unsaved work will be lost.</value>
+    <value>Le PC distant va redémarrer. Tout travail non enregistré sera perdu.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
-    <value>Restart</value>
+    <value>Redémarrer</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Force Shutdown — Are you sure?</value>
+    <value>Arrêt forcé — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>This will immediately shut down the remote PC. All unsaved work will be lost.</value>
+    <value>Cela arrêtera immédiatement le PC distant. Tout travail non enregistré sera perdu.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
-    <value>Force Shutdown</value>
+    <value>Arrêt forcé</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Force Restart — Are you sure?</value>
+    <value>Redémarrage forcé — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>This will immediately restart the remote PC. All unsaved work will be lost.</value>
+    <value>Cela redémarrera immédiatement le PC distant. Tout travail non enregistré sera perdu.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
-    <value>Force Restart</value>
+    <value>Redémarrage forcé</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Reboot to UEFI — Are you sure?</value>
+    <value>Redémarrer vers UEFI — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost.</value>
+    <value>Le PC distant redémarrera directement dans les paramètres du firmware UEFI. Tout travail non enregistré sera perdu.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
-    <value>Reboot to UEFI</value>
+    <value>Redémarrer vers UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with Host</value>
+    <value>Appairer avec l'hôte</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the host machine:</value>
+    <value>Entrez le code PIN à 6 chiffres affiché sur l'hôte :</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>Appairer</value>
   </data>
 
-  <!-- About and FAQ -->
+  
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Raccourcis clavier</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Palette de commandes</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Annuler la modification de la mise en page</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Rétablir la modification de la mise en page</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Fermer les superpositions/panneaux</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>Quoi de neuf ?</value>
   </data>
   <data name="About_Faq" xml:space="preserve">
-    <value>Frequently Asked Questions</value>
+    <value>Foire aux questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
     <value>Features</value>
@@ -1839,61 +1839,61 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
-    <value>What do I need to run on my PC?</value>
+    <value>Que dois-je faire tourner sur mon PC ?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
     <value>You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>Comment appairer mon téléphone ou un deuxième PC ?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
     <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
-    <value>How do I find my PC's IP address?</value>
+    <value>Comment trouver l'adresse IP de mon PC ?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+    <value>Windows : « ipconfig » dans l'invite de commandes. macOS : Préférences Système → Réseau. Linux : « ip addr » dans le terminal. Vous pouvez également voir l'IP directement dans la fenêtre de Remex.Client.Desktop.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+    <value>La découverte automatique ne trouve pas mon PC. Que dois-je vérifier ?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
-    <value>What is the default port?</value>
+    <value>Quel est le port par défaut ?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window.</value>
+    <value>Le port par défaut est 5005. Si le port 5005 est déjà utilisé, il basculera sur 5006. Vous pouvez voir le port actif dans la fenêtre du client de bureau.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
-    <value>Can I connect over the internet?</value>
+    <value>Puis-je me connecter via Internet ?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
     <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
-    <value>Remote Desktop is laggy. What can I do?</value>
+    <value>Le bureau distant est lent. Que puis-je faire ?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
-    <value>What is Wake-on-LAN (WOL)?</value>
+    <value>Qu'est-ce que Wake-on-LAN (WOL) ?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+    <value>Wake-on-LAN vous permet d'allumer votre PC à distance. Activez-le dans votre BIOS/UEFI et dans les propriétés de la carte réseau. Entrez ensuite l'adresse MAC de votre PC dans l'écran de connexion.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
-    <value>How do I transfer files?</value>
+    <value>Comment transférer des fichiers ?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
     <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
-    <value>Can I lock my PC remotely?</value>
+    <value>Puis-je verrouiller mon PC à distance ?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
@@ -1998,7 +1998,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Haute</value>
   </data>
   <data name="Status_InvalidMessageFormat" xml:space="preserve">
-    <value>Format de message invalide de l&apos;hôte</value>
+    <value>Format de message invalide de l'hôte</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Données de code QR invalides</value>
@@ -2022,7 +2022,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Contrôle à Distance</value>
   </data>
   <data name="Palette_AppLauncher" xml:space="preserve">
-    <value>Lanceur d&apos;Applications</value>
+    <value>Lanceur d'Applications</value>
   </data>
   <data name="Palette_TaskManager" xml:space="preserve">
     <value>Gestionnaire de Tâches</value>
@@ -2091,7 +2091,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Éteindre le PC</value>
   </data>
   <data name="Palette_ForceShutdownPc" xml:space="preserve">
-    <value>Forcer l&apos;arrêt du PC</value>
+    <value>Forcer l'arrêt du PC</value>
   </data>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Redémarrer le PC</value>
@@ -2121,7 +2121,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Rechercher des commandes…</value>
   </data>
   <data name="SetAlert_Title" xml:space="preserve">
-    <value>Définir l&apos;alerte de capteur</value>
+    <value>Définir l'alerte de capteur</value>
   </data>
   <data name="SetAlert_Header" xml:space="preserve">
     <value>Alerte de Capteur</value>
@@ -2136,7 +2136,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Gravité</value>
   </data>
   <data name="SetAlert_SetAlertBtn" xml:space="preserve">
-    <value>Définir l&apos;alerte</value>
+    <value>Définir l'alerte</value>
   </data>
   <data name="Btn_Clear" xml:space="preserve">
     <value>Effacer</value>
@@ -2259,28 +2259,28 @@ Linux: ip addr  or  hostname -I</value>
     <value>Enregistrer le canevas en PNG dans le dossier Images</value>
   </data>
   <data name="Canvas_CopySnapshotTooltip" xml:space="preserve">
-    <value>Copier l&apos;image de capture directement dans le presse-papiers</value>
+    <value>Copier l'image de capture directement dans le presse-papiers</value>
   </data>
   <data name="Custom_CornerRadiusGeneralTooltip" xml:space="preserve">
-    <value>Personnaliser l&apos;arrondi par défaut des bordures pour les cartes et panneaux généraux</value>
+    <value>Personnaliser l'arrondi par défaut des bordures pour les cartes et panneaux généraux</value>
   </data>
   <data name="Custom_BorderCornerRadiusPixelsTooltip" xml:space="preserve">
     <value>Rayon de bordure en pixels</value>
   </data>
   <data name="Custom_CornerRadiusRemoteTooltip" xml:space="preserve">
-    <value>Personnaliser l&apos;arrondi des bordures pour les boutons de contrôle à distance</value>
+    <value>Personnaliser l'arrondi des bordures pour les boutons de contrôle à distance</value>
   </data>
   <data name="Custom_BorderCornerRadiusRemotePixelsTooltip" xml:space="preserve">
     <value>Rayon du bouton distant en pixels</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Ajuster l&apos;opacité de l&apos;effet de verre dépoli en arrière-plan</value>
+    <value>Ajuster l'opacité de l'effet de verre dépoli en arrière-plan</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
-    <value>Pourcentage d&apos;opacité du verre dépoli</value>
+    <value>Pourcentage d'opacité du verre dépoli</value>
   </data>
   <data name="Custom_NeonGlowTooltip" xml:space="preserve">
-    <value>Ajuster l&apos;intensité du halo de néon autour des panneaux</value>
+    <value>Ajuster l'intensité du halo de néon autour des panneaux</value>
   </data>
   <data name="Custom_NeonGlowThicknessPixelsTooltip" xml:space="preserve">
     <value>Épaisseur du halo de néon en pixels</value>
@@ -2307,16 +2307,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>Sélectionner le thème Rose Cramoisi</value>
   </data>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
-    <value>Sélectionner le style d&apos;animation de l&apos;écran d&apos;accueil</value>
+    <value>Sélectionner le style d'animation de l'écran d'accueil</value>
   </data>
   <data name="Settings_RefreshServiceTooltip" xml:space="preserve">
-    <value>Actualiser l&apos;état du service système</value>
+    <value>Actualiser l'état du service système</value>
   </data>
   <data name="Settings_ConfigureLoginTooltip" xml:space="preserve">
     <value>Configurer les informations de connexion du service (utilisateur/mot de passe)</value>
   </data>
   <data name="Settings_InstallServiceTooltip" xml:space="preserve">
-    <value>Installer le service système RemEx en tant que serveur d&apos;arrière-plan automatique</value>
+    <value>Installer le service système RemEx en tant que serveur d'arrière-plan automatique</value>
   </data>
   <data name="Settings_StartServiceTooltip" xml:space="preserve">
     <value>Démarrer le processus du service serveur RemEx</value>
@@ -2325,13 +2325,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Arrêter le processus du service serveur RemEx</value>
   </data>
   <data name="Settings_UninstallServiceTooltip" xml:space="preserve">
-    <value>Désinstaller complètement le service RemEx d&apos;arrière-plan du système</value>
+    <value>Désinstaller complètement le service RemEx d'arrière-plan du système</value>
   </data>
   <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
-    <value>Configurer l&apos;adresse de l&apos;hôte RemEx (protocole websocket wss://)</value>
+    <value>Configurer l'adresse de l'hôte RemEx (protocole websocket wss://)</value>
   </data>
   <data name="Settings_InputConnectionUrlTooltip" xml:space="preserve">
-    <value>Entrez l&apos;URL de connexion, ex. wss://192.168.1.100:8443/ws</value>
+    <value>Entrez l'URL de connexion, ex. wss://192.168.1.100:8443/ws</value>
   </data>
   <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
     <value>Découvrir automatiquement les hôtes actifs sur le réseau local via mDNS/NSD</value>
@@ -2340,10 +2340,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Mettre fin à la connexion de la session active avec le PC hôte</value>
   </data>
   <data name="Settings_ChangeLanguageTooltip" xml:space="preserve">
-    <value>Modifier la langue d&apos;affichage de l&apos;application</value>
+    <value>Modifier la langue d'affichage de l'application</value>
   </data>
   <data name="Settings_SelectPreferredLanguageTooltip" xml:space="preserve">
-    <value>Sélectionnez votre langue préférée (les modifications s&apos;appliquent immédiatement)</value>
+    <value>Sélectionnez votre langue préférée (les modifications s'appliquent immédiatement)</value>
   </data>
   <data name="Settings_CompressQualityTooltip" xml:space="preserve">
     <value>Configurer la qualité de compression du flux du bureau (une qualité inférieure améliore les performances réseau)</value>
@@ -2355,10 +2355,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Choisir les FPS cibles pour la diffusion</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
-    <value>Activer les guides d&apos;alignement pour aligner les capteurs sur le canevas</value>
+    <value>Activer les guides d'alignement pour aligner les capteurs sur le canevas</value>
   </data>
   <data name="Settings_GridPlacementIncrementTooltip" xml:space="preserve">
-    <value>Limites d&apos;incrément de la grille en pixels absolus</value>
+    <value>Limites d'incrément de la grille en pixels absolus</value>
   </data>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
     <value>Ouvrir la palette de commandes (Ctrl+Shift+P)</value>

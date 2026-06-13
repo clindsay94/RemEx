@@ -262,6 +262,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var frameAvailable = new SemaphoreSlim(0);
         var captureStopwatch = new Stopwatch();
+        // Absolute-timeline frame pacer. Tracks the expected wall-clock time of the next
+        // frame start so that per-frame overruns shorten the following sleep rather than
+        // accumulating as drift. Reset after the failure-backoff so we don't burst on recovery.
+        var loopTimer = Stopwatch.StartNew();
+        double nextFrameTargetMs = 0;
 
         // Track consecutive failures to report capture failure to client
         int consecutiveFailures = 0;
@@ -432,12 +437,14 @@ public sealed class RemoteDesktopHandler : IDisposable
                 if (consecutiveFailures >= 5)
                 {
                     sleep = 500;
+                    // Reset the absolute timeline so the loop doesn't burst through a backlog
+                    // of "missed" ticks when capture recovers.
+                    nextFrameTargetMs = loopTimer.Elapsed.TotalMilliseconds;
                 }
                 else
                 {
-                    var elapsed = captureStopwatch.Elapsed.TotalMilliseconds;
-                    var targetDelay = 1000.0 / _targetFps;
-                    sleep = (int)(targetDelay - elapsed);
+                    nextFrameTargetMs += 1000.0 / _targetFps;
+                    sleep = (int)(nextFrameTargetMs - loopTimer.Elapsed.TotalMilliseconds);
                 }
                 if (sleep > 1)
                 {
@@ -913,7 +920,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 HostInstanceId = HostBootstrapper.InstanceId,
                 CursorX = cursorX,
                 CursorY = cursorY,
-                CursorVisible = IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
+                CursorVisible = !_drawCursor && IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
                 CaptureBackend = _screenCapture.BackendName,
                 InputBackend = _inputSimulation.BackendName,
                 StreamMappingId = sessionState.StreamMappingId,
@@ -985,7 +992,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 HostInstanceId = HostBootstrapper.InstanceId,
                 CursorX = cursorX,
                 CursorY = cursorY,
-                CursorVisible = IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
+                CursorVisible = !_drawCursor && IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
                 StreamSerial = sessionState.StreamSerial,
             }
         }, sendLock, ct);

@@ -40,6 +40,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -408,6 +411,7 @@ fun RemoteDesktopScreenContent(
         // Keyboard support
         val focusRequester = remember { FocusRequester() }
         var textValue by remember { mutableStateOf(TextFieldValue("")) }
+        var isRemoteKeyboardOpen by remember { mutableStateOf(false) }
 
         // Inertia job reference (cancelled on new touch)
         var inertiaJob by remember { mutableStateOf<Job?>(null) }
@@ -697,6 +701,9 @@ fun RemoteDesktopScreenContent(
                                         Modifier.size(1.dp)
                                                 .graphicsLayer { alpha = 0f }
                                                 .focusRequester(focusRequester)
+                                                .onFocusChanged {
+                                                        isRemoteKeyboardOpen = it.isFocused
+                                                }
                         )
 
                         Box(
@@ -1131,6 +1138,28 @@ fun RemoteDesktopScreenContent(
                                                                                                                                                         actualDelta) +
                                                                                                                                                 panOffsetY *
                                                                                                                                                         actualDelta
+                                                                                                                                val maxPanX =
+                                                                                                                                        imageSize.width *
+                                                                                                                                                (zoomFactor -
+                                                                                                                                                        1f) /
+                                                                                                                                                2f
+                                                                                                                                val maxPanY =
+                                                                                                                                        imageSize.height *
+                                                                                                                                                (zoomFactor -
+                                                                                                                                                        1f) /
+                                                                                                                                                2f
+                                                                                                                                panOffsetX =
+                                                                                                                                        panOffsetX
+                                                                                                                                                .coerceIn(
+                                                                                                                                                        -maxPanX,
+                                                                                                                                                        maxPanX
+                                                                                                                                                )
+                                                                                                                                panOffsetY =
+                                                                                                                                        panOffsetY
+                                                                                                                                                .coerceIn(
+                                                                                                                                                        -maxPanY,
+                                                                                                                                                        maxPanY
+                                                                                                                                                )
                                                                                                                         }
                                                                                                                 }
                                                                                                                 "scroll" -> {
@@ -1144,6 +1173,28 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 panOffsetY +=
                                                                                                                                         moveDelta
                                                                                                                                                 .y
+                                                                                                                                val maxPanX =
+                                                                                                                                        imageSize.width *
+                                                                                                                                                (zoomFactor -
+                                                                                                                                                        1f) /
+                                                                                                                                                2f
+                                                                                                                                val maxPanY =
+                                                                                                                                        imageSize.height *
+                                                                                                                                                (zoomFactor -
+                                                                                                                                                        1f) /
+                                                                                                                                                2f
+                                                                                                                                panOffsetX =
+                                                                                                                                        panOffsetX
+                                                                                                                                                .coerceIn(
+                                                                                                                                                        -maxPanX,
+                                                                                                                                                        maxPanX
+                                                                                                                                                )
+                                                                                                                                panOffsetY =
+                                                                                                                                        panOffsetY
+                                                                                                                                                .coerceIn(
+                                                                                                                                                        -maxPanY,
+                                                                                                                                                        maxPanY
+                                                                                                                                                )
                                                                                                                         } else {
                                                                                                                                 // Mouse wheel scroll
                                                                                                                                 // with accumulator
@@ -1523,6 +1574,16 @@ fun RemoteDesktopScreenContent(
                                                                                                                         )
                                                                                                                 }
 
+                                                                                                                // Auto-pan viewport to keep cursor visible when zoomed
+                                                                                                                if (zoomFactor > 1.05f) {
+                                                                                                                        panOffsetX += diff.x
+                                                                                                                        panOffsetY += diff.y
+                                                                                                                        val mpX = imageSize.width * (zoomFactor - 1f) / 2f
+                                                                                                                        val mpY = imageSize.height * (zoomFactor - 1f) / 2f
+                                                                                                                        panOffsetX = panOffsetX.coerceIn(-mpX, mpX)
+                                                                                                                        panOffsetY = panOffsetY.coerceIn(-mpY, mpY)
+                                                                                                                }
+
                                                                                                                 // Track velocity for inertia
                                                                                                                 if (!isDragging
                                                                                                                 ) {
@@ -1720,19 +1781,24 @@ fun RemoteDesktopScreenContent(
 
                                 if (activeCodec == "H264" || (safeFrame != null && !safeFrame.isRecycled)) {
                                         if (activeCodec == "H264") {
+                                                key(streamPixelWidth, streamPixelHeight) {
                                                 AndroidView(
                                                         factory = { context ->
+                                                                var localDecoder: H264StreamDecoder? = null
                                                                 android.view.TextureView(context).apply {
                                                                         surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
                                                                                 override fun onSurfaceTextureAvailable(surfaceTexture: android.graphics.SurfaceTexture, width: Int, height: Int) {
                                                                                         val surface = android.view.Surface(surfaceTexture)
                                                                                         // Use the encoded stream dimensions from DesktopMeta, not the surface view size
                                                                                         val decoder = H264StreamDecoder(streamPixelWidth, streamPixelHeight, surface)
+                                                                                        localDecoder = decoder
                                                                                         onActiveH264DecoderChange(decoder)
                                                                                         Log.i(TAG, "H.264 stream surface created: encoded=${streamPixelWidth}x${streamPixelHeight}, surface=${width}x${height}")
                                                                                 }
                                                                                 override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
                                                                                 override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
+                                                                                        localDecoder?.release()
+                                                                                        localDecoder = null
                                                                                         onActiveH264DecoderChange(null)
                                                                                         Log.i(TAG, "H.264 stream surface destroyed.")
                                                                                         return true
@@ -1749,6 +1815,7 @@ fun RemoteDesktopScreenContent(
                                                                         translationY = panOffsetY
                                                                 }
                                                 )
+                                                }
                                         } else {
                                                 if (safeFrame != null && !safeFrame.isRecycled) {
                                                         // Force Image to redraw when frame changes by using
@@ -2153,6 +2220,28 @@ fun RemoteDesktopScreenContent(
                                                                                                                 1f,
                                                                                                                 4f
                                                                                                         )
+                                                                                        val mpX =
+                                                                                                imageSize.width *
+                                                                                                        (zoomFactor -
+                                                                                                                1f) /
+                                                                                                        2f
+                                                                                        val mpY =
+                                                                                                imageSize.height *
+                                                                                                        (zoomFactor -
+                                                                                                                1f) /
+                                                                                                        2f
+                                                                                        panOffsetX =
+                                                                                                panOffsetX
+                                                                                                        .coerceIn(
+                                                                                                                -mpX,
+                                                                                                                mpX
+                                                                                                        )
+                                                                                        panOffsetY =
+                                                                                                panOffsetY
+                                                                                                        .coerceIn(
+                                                                                                                -mpY,
+                                                                                                                mpY
+                                                                                                        )
                                                                                         showControlsWithTimer()
                                                                                 }
                                                                         ) {
@@ -2174,6 +2263,28 @@ fun RemoteDesktopScreenContent(
                                                                                                         .coerceIn(
                                                                                                                 1f,
                                                                                                                 4f
+                                                                                                        )
+                                                                                        val mpX =
+                                                                                                imageSize.width *
+                                                                                                        (zoomFactor -
+                                                                                                                1f) /
+                                                                                                        2f
+                                                                                        val mpY =
+                                                                                                imageSize.height *
+                                                                                                        (zoomFactor -
+                                                                                                                1f) /
+                                                                                                        2f
+                                                                                        panOffsetX =
+                                                                                                panOffsetX
+                                                                                                        .coerceIn(
+                                                                                                                -mpX,
+                                                                                                                mpX
+                                                                                                        )
+                                                                                        panOffsetY =
+                                                                                                panOffsetY
+                                                                                                        .coerceIn(
+                                                                                                                -mpY,
+                                                                                                                mpY
                                                                                                         )
                                                                                         showControlsWithTimer()
                                                                                 }
@@ -3004,6 +3115,121 @@ fun RemoteDesktopScreenContent(
                                                                 ) { Text(stringResource(R.string.remote_desktop_move_selected)) }
                                                         }
                                                 }
+                                        }
+                                }
+                        }
+
+                        // Utility key row — shown while the remote keyboard is open
+                        AnimatedVisibility(
+                                visible = isRemoteKeyboardOpen,
+                                enter =
+                                        slideInVertically(initialOffsetY = { it }) +
+                                                fadeIn(),
+                                exit =
+                                        slideOutVertically(targetOffsetY = { it }) +
+                                                fadeOut()
+                        ) {
+                                val utilKeys =
+                                        listOf(
+                                                Triple(
+                                                        "Esc",
+                                                        stringResource(R.string.cd_key_escape),
+                                                        27
+                                                ),
+                                                Triple(
+                                                        "Tab",
+                                                        stringResource(R.string.cd_key_tab),
+                                                        9
+                                                ),
+                                                Triple(
+                                                        "⌫",
+                                                        stringResource(R.string.cd_key_backspace),
+                                                        8
+                                                ),
+                                                Triple(
+                                                        "↵",
+                                                        stringResource(R.string.cd_key_enter),
+                                                        13
+                                                ),
+                                                Triple(
+                                                        "←",
+                                                        stringResource(
+                                                                R.string.cd_key_arrow_left
+                                                        ),
+                                                        37
+                                                ),
+                                                Triple(
+                                                        "↑",
+                                                        stringResource(R.string.cd_key_arrow_up),
+                                                        38
+                                                ),
+                                                Triple(
+                                                        "↓",
+                                                        stringResource(
+                                                                R.string.cd_key_arrow_down
+                                                        ),
+                                                        40
+                                                ),
+                                                Triple(
+                                                        "→",
+                                                        stringResource(
+                                                                R.string.cd_key_arrow_right
+                                                        ),
+                                                        39
+                                                ),
+                                                Triple(
+                                                        "Del",
+                                                        stringResource(R.string.cd_key_delete),
+                                                        46
+                                                ),
+                                                Triple(
+                                                        "⊞",
+                                                        stringResource(R.string.cd_key_windows),
+                                                        91
+                                                ),
+                                        )
+                                Row(
+                                        modifier =
+                                                Modifier.fillMaxWidth()
+                                                        .background(
+                                                                MaterialTheme.colorScheme
+                                                                        .surfaceVariant
+                                                                        .copy(alpha = 0.95f)
+                                                        )
+                                                        .horizontalScroll(rememberScrollState())
+                                                        .padding(
+                                                                vertical = 6.dp,
+                                                                horizontal = 12.dp
+                                                        ),
+                                        horizontalArrangement =
+                                                Arrangement.spacedBy(8.dp)
+                                ) {
+                                        utilKeys.forEach { (label, cd, vk) ->
+                                                AssistChip(
+                                                        onClick = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .VIRTUAL_KEY
+                                                                )
+                                                                onSendKeyPress(vk)
+                                                        },
+                                                        label = { Text(label) },
+                                                        modifier =
+                                                                Modifier.semantics {
+                                                                        contentDescription = cd
+                                                                },
+                                                        colors =
+                                                                AssistChipDefaults.assistChipColors(
+                                                                        containerColor =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .secondaryContainer,
+                                                                        labelColor =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSecondaryContainer
+                                                                )
+                                                )
                                         }
                                 }
                         }

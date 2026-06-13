@@ -49,7 +49,7 @@
                         </Grid>
 
                         <!-- Terminal Output -->
-                        <Border Grid.Row="1" Background="#121214" CornerRadius="12" Padding="16" BorderBrush="#26262B" BorderThickness="1" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <TextBox Text="{Binding LogText}"
                                          IsReadOnly="True"
@@ -58,7 +58,7 @@
                                          FontFamily="Consolas"
                                          FontSize="12"
                                          Background="Transparent"
-                                         Foreground="#E4E4E7"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
                                          BorderThickness="0"
                                          Margin="0"/>
                             </ScrollViewer>
@@ -76,7 +76,7 @@
                         </Grid>
 
                         <!-- Terminal Output -->
-                        <Border Grid.Row="1" Background="#121214" CornerRadius="12" Padding="16" BorderBrush="#26262B" BorderThickness="1" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <TextBox Text="{Binding ServiceLogsText}"
                                          IsReadOnly="True"
@@ -85,7 +85,7 @@
                                          FontFamily="Consolas"
                                          FontSize="12"
                                          Background="Transparent"
-                                         Foreground="#4ADE80"
+                                         Foreground="{DynamicResource SystemSuccessBrush}"
                                          BorderThickness="0"
                                          Margin="0"/>
                             </ScrollViewer>
