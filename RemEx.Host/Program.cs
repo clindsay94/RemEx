@@ -56,6 +56,17 @@ public partial class Program
             return 2;
         }
 
+        // --agent: run as the headless command agent (no GUI, no desktop streaming). The background
+        // service launches the binary this way so remote power commands + telemetry/status work
+        // without a logged-in desktop session. Blocks until the host stops (SIGTERM / Ctrl+C /
+        // service stop).
+        if (Array.Exists(args, a => a.Equals("--agent", StringComparison.OrdinalIgnoreCase)))
+        {
+            var agentApp = HostBootstrapper.CreateApplication(args, RemexConstants.DefaultPort, HostMode.CommandAgent);
+            agentApp.Run();
+            return 0;
+        }
+
         // Build the embedded host FIRST, before touching any Avalonia/App statics. Under the
         // integration tests, WebApplicationFactory<Program>'s HostFactoryResolver runs this Main and
         // intercepts the host build (throwing an internal StopTheHostException); keeping the build as

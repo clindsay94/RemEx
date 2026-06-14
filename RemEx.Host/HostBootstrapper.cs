@@ -59,6 +59,7 @@ public static class HostBootstrapper
     public static WebApplication CreateApplication(
         string[] args,
         int port = RemexConstants.DefaultPort,
+        HostMode mode = HostMode.Full,
         Action<IWebHostBuilder>? configureWebHost = null,
         Action<IServiceCollection>? configureServices = null)
     {
@@ -399,6 +400,14 @@ public static class HostBootstrapper
         // Remote Desktop WebSocket endpoint (dedicated binary stream)
         app.Map("/ws/desktop", async (HttpContext context, PairedClientRegistry pairedClientRegistry) =>
         {
+            // The headless command agent (--agent) does not stream the desktop: respond 404 before
+            // any auth/capture/portal work so no screen-capture or PipeWire session is ever started.
+            if (mode != HostMode.Full)
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                return;
+            }
+
             var authLogger = context.RequestServices.GetRequiredService<ILoggerFactory>()
                 .CreateLogger("Remex.Host.DesktopAuth");
 

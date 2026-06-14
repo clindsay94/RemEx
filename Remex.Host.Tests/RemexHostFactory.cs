@@ -20,6 +20,7 @@ namespace Remex.Host.Tests;
 public sealed class RemexHostFactory : WebApplicationFactory<Program>
 {
     private Action<IServiceCollection>? _configureServices;
+    private HostMode _mode = HostMode.Full;
 
     // Single public (implicit, parameterless) constructor so the factory can be used directly as an
     // xUnit IClassFixture. Tests that need service overrides chain WithServices(...) before first use.
@@ -34,6 +35,13 @@ public sealed class RemexHostFactory : WebApplicationFactory<Program>
         return this;
     }
 
+    /// <summary>Builds the host in the given <see cref="HostMode"/> (default <see cref="HostMode.Full"/>).</summary>
+    public RemexHostFactory WithMode(HostMode mode)
+    {
+        _mode = mode;
+        return this;
+    }
+
     // Returning a non-null builder makes the base class skip entry-point (Program.Main) resolution;
     // CreateHost ignores this dummy and builds the real host via HostBootstrapper.
     protected override IHostBuilder CreateHostBuilder() => new HostBuilder();
@@ -42,6 +50,7 @@ public sealed class RemexHostFactory : WebApplicationFactory<Program>
     {
         var app = HostBootstrapper.CreateApplication(
             Array.Empty<string>(),
+            mode: _mode,
             configureWebHost: webHost => webHost.UseTestServer(),
             configureServices: _configureServices);
         app.Start();
