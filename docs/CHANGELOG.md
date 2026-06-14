@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remote desktop pointer batches now use flattened JSON structure for efficiency
 
 ### Fixed
+- Parameter-binding errors and path separator compatibility issues in `build-remex.ps1` build script when running on Windows (PowerShell Core) and Linux.
 - Settings view freeze on Linux (UI-thread marshalling)
 - SavedStatus continuation off UI thread
 - DiscoverHostsAsync HostAddress assignment off UI thread

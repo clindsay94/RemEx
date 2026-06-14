@@ -44,19 +44,19 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/sbin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /usr/sbin/cmake -E rm -f
+RM = /usr/bin/cmake -E rm -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/z/RemEx/Remex.Host.Native.Linux
+CMAKE_SOURCE_DIR = /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/z/RemEx/Remex.Host.Native.Linux/build
+CMAKE_BINARY_DIR = /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/remex_linux_bridge.dir/depend.make
@@ -73,46 +73,46 @@ CMakeFiles/remex_linux_bridge.dir/codegen:
 .PHONY : CMakeFiles/remex_linux_bridge.dir/codegen
 
 CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o: CMakeFiles/remex_linux_bridge.dir/flags.make
-CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o: /mnt/z/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c
+CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o: /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c
 CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o: CMakeFiles/remex_linux_bridge.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o -MF CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o.d -o CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o -c /mnt/z/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o -MF CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o.d -o CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o -c /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c
 
 CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.i"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /mnt/z/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c > CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c > CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.i
 
 CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.s"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/z/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c -o CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c -o CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.s
 
 CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o: CMakeFiles/remex_linux_bridge.dir/flags.make
-CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o: /mnt/z/RemEx/Remex.Host.Native.Linux/src/libei_sender.c
+CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o: /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/libei_sender.c
 CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o: CMakeFiles/remex_linux_bridge.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o -MF CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o.d -o CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o -c /mnt/z/RemEx/Remex.Host.Native.Linux/src/libei_sender.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o -MF CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o.d -o CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.o -c /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/libei_sender.c
 
 CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.i"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /mnt/z/RemEx/Remex.Host.Native.Linux/src/libei_sender.c > CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/libei_sender.c > CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.i
 
 CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.s"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/z/RemEx/Remex.Host.Native.Linux/src/libei_sender.c -o CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/libei_sender.c -o CMakeFiles/remex_linux_bridge.dir/src/libei_sender.c.s
 
 CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o: CMakeFiles/remex_linux_bridge.dir/flags.make
-CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o: /mnt/z/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c
+CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o: /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c
 CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o: CMakeFiles/remex_linux_bridge.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o -MF CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o.d -o CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o -c /mnt/z/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o -MF CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o.d -o CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.o -c /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c
 
 CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.i"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /mnt/z/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c > CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c > CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.i
 
 CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.s"
-	/usr/sbin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /mnt/z/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c -o CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/uinput_tablet.c -o CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.s
 
 # Object files for target remex_linux_bridge
 remex_linux_bridge_OBJECTS = \
@@ -129,7 +129,7 @@ libremex_linux_bridge.so: CMakeFiles/remex_linux_bridge.dir/src/uinput_tablet.c.
 libremex_linux_bridge.so: CMakeFiles/remex_linux_bridge.dir/build.make
 libremex_linux_bridge.so: CMakeFiles/remex_linux_bridge.dir/compiler_depend.ts
 libremex_linux_bridge.so: CMakeFiles/remex_linux_bridge.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C shared library libremex_linux_bridge.so"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C shared library libremex_linux_bridge.so"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/remex_linux_bridge.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -141,6 +141,6 @@ CMakeFiles/remex_linux_bridge.dir/clean:
 .PHONY : CMakeFiles/remex_linux_bridge.dir/clean
 
 CMakeFiles/remex_linux_bridge.dir/depend:
-	cd /mnt/z/RemEx/Remex.Host.Native.Linux/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/z/RemEx/Remex.Host.Native.Linux /mnt/z/RemEx/Remex.Host.Native.Linux /mnt/z/RemEx/Remex.Host.Native.Linux/build /mnt/z/RemEx/Remex.Host.Native.Linux/build /mnt/z/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/remex_linux_bridge.dir/DependInfo.cmake "--color=$(COLOR)" remex_linux_bridge
+	cd /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/remex_linux_bridge.dir/DependInfo.cmake "--color=$(COLOR)" remex_linux_bridge
 .PHONY : CMakeFiles/remex_linux_bridge.dir/depend
 

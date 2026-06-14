@@ -74,7 +74,8 @@
       "Bash(bd dep *)",
       "Bash(bd ready *)",
       "mcp__plugin_context-mode_context-mode__ctx_execute",
-      "Bash(bd update *)"
+      "Bash(bd update *)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute_file"
     ]
   },
   "skillOverrides": {

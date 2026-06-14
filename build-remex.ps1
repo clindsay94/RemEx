@@ -40,8 +40,33 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Establish cross-platform compatibility helper variables
+$IsWin = $IsWindows -or ($env:OS -eq "Windows_NT")
+$IsLin = -not $IsWin
+
+# Helper function to join paths compatibly across PowerShell 5.1 and pwsh on Windows/Linux
+function Join-Paths {
+    param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$Path,
+        [Parameter(Mandatory=$true, ValueFromRemainingArguments=$true)]
+        [string[]]$ChildPaths
+    )
+    $result = $Path
+    foreach ($child in $ChildPaths) {
+        $cleanChild = $child
+        if (-not $IsWin) {
+            $cleanChild = $cleanChild -replace '\\', '/'
+        } else {
+            $cleanChild = $cleanChild -replace '/', '\'
+        }
+        $result = [System.IO.Path]::Combine($result, $cleanChild)
+    }
+    return $result
+}
+
 # Force output to support emojis/colored text on Windows PowerShell
-if ($IsWindows) {
+if ($IsWin) {
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 }
 
@@ -113,19 +138,19 @@ Write-Host "$Target" -ForegroundColor Green
 # Locate repository root folder
 $RepoRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($RepoRoot)) {
-    $RepoRoot = Get-Location
+    $RepoRoot = (Get-Location).Path
 }
-$BuildOutputDir = Join-Path $RepoRoot "build_output"
+$BuildOutputDir = Join-Paths $RepoRoot "build_output"
 
 if ($isInstallerTarget) {
-    $publishDir = Join-Path $RepoRoot "Remex.Client.Desktop" "bin" $Config "net10.0" "win-x64" "publish"
+    $publishDir = Join-Paths $RepoRoot "Remex.Client.Desktop" "bin" $Config "net10.0" "win-x64" "publish"
     if (Test-Path $publishDir) {
         $skipPublish = $true
     }
 }
 
 # 2. Dynamic Version Retrieval from version.properties
-$VersionFile = Join-Path $RepoRoot "RemEx.Android" "app" "version.properties"
+$VersionFile = Join-Paths $RepoRoot "RemEx.Android" "app" "version.properties"
 if (-not (Test-Path $VersionFile)) {
     Write-Error "version.properties not found at $VersionFile. Verify your clone directory."
     exit 1
@@ -145,7 +170,7 @@ function Get-BashSafeScriptPath {
 
     $content = Get-Content $ScriptPath -Raw
     if ($content.Contains("`r")) {
-        $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) ("remex-" + [System.IO.Path]::GetFileNameWithoutExtension($ScriptPath) + "-lf.sh")
+        $tempPath = Join-Paths ([System.IO.Path]::GetTempPath()) ("remex-" + [System.IO.Path]::GetFileNameWithoutExtension($ScriptPath) + "-lf.sh")
         $normalized = $content -replace "`r`n", "`n" -replace "`r", "`n"
         [System.IO.File]::WriteAllText($tempPath, $normalized, [System.Text.UTF8Encoding]::new($false))
         return $tempPath
@@ -198,14 +223,14 @@ foreach ($dir in $dotNetDirs) {
 
 # Clean Android gradle
 if ($Target -eq "android" -or $Target -eq "all") {
-    $gradlew = if ($IsWindows) { "gradlew.bat" } else { "gradlew" }
-    $gradlePath = Join-Path $RepoRoot "RemEx.Android"
-    $gradleCmd = Join-Path $gradlePath $gradlew
+    $gradlew = if ($IsWin) { "gradlew.bat" } else { "gradlew" }
+    $gradlePath = Join-Paths $RepoRoot "RemEx.Android"
+    $gradleCmd = Join-Paths $gradlePath $gradlew
     if (Test-Path $gradleCmd) {
         Write-Host "Running Gradle clean..." -ForegroundColor DarkGray
         Push-Location $gradlePath
         try {
-            if ($IsWindows) {
+            if ($IsWin) {
                 & $gradleCmd clean
             } else {
                 & bash $gradleCmd clean
@@ -223,7 +248,7 @@ Write-Host "Clean phase completed successfully." -ForegroundColor Green
 Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 
 # 4. Synchronize version with Directory.Build.props
-$BuildProps = Join-Path $RepoRoot "Directory.Build.props"
+$BuildProps = Join-Paths $RepoRoot "Directory.Build.props"
 if (Test-Path $BuildProps) {
     $content = Get-Content $BuildProps -Raw
     $patched = $content -replace '<Version>[^<]*</Version>', "<Version>$Version</Version>"
@@ -238,7 +263,7 @@ if (Test-Path $BuildProps) {
 # 5. Restore .NET Solutions
 if ($Target -eq "windows" -or $Target -eq "linux" -or $Target -eq "all") {
     Write-Host "=== Restoring .NET Packages ===" -ForegroundColor Yellow
-    $solutionFile = Join-Path $RepoRoot "RemEx.sln"
+    $solutionFile = Join-Paths $RepoRoot "RemEx.sln"
     dotnet restore $solutionFile
     if ($LASTEXITCODE -ne 0) {
         Write-Error "dotnet restore failed (exit $LASTEXITCODE)"
@@ -254,7 +279,7 @@ function Find-IsccCompiler {
     if ($command -and $command.Source) {
         return $command.Source
     }
-    if ($IsWindows) {
+    if ($IsWin) {
         $candidates = @(
             "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
             "C:\Program Files\Inno Setup 6\ISCC.exe"
@@ -273,7 +298,7 @@ function Find-IsccCompiler {
 if ($Target -eq "windows" -or $Target -eq "all") {
     Write-Host "=== Compiling Windows Platform ===" -ForegroundColor Yellow
     
-    $clientProj = Join-Path $RepoRoot "Remex.Client.Desktop" "Remex.Client.Desktop.csproj"
+    $clientProj = Join-Paths $RepoRoot "Remex.Client.Desktop" "Remex.Client.Desktop.csproj"
     if (-not $skipPublish) {
         Write-Host "Publishing Remex.Client.Desktop ($Config, win-x64)..." -ForegroundColor DarkCyan
         dotnet publish $clientProj -c $Config -r win-x64 --self-contained
@@ -290,7 +315,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
         $iscc = Find-IsccCompiler
         if ($null -ne $iscc) {
             Write-Host "Building Windows Installer (Inno Setup)..." -ForegroundColor DarkCyan
-            $issFile = Join-Path $RepoRoot "installer" "RemEx.iss"
+            $issFile = Join-Paths $RepoRoot "installer" "RemEx.iss"
             $sourceDirArg = "..\Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish"
             
             & $iscc "/DAppVersion=$Version" "/DSourceDir=$sourceDirArg" $issFile
@@ -300,9 +325,9 @@ if ($Target -eq "windows" -or $Target -eq "all") {
             }
 
             # Locate and copy built executable
-            $installerExe = Join-Path $RepoRoot "installer" "Output" "RemEx-v$Version-Setup.exe"
+            $installerExe = Join-Paths $RepoRoot "installer" "Output" "RemEx-v$Version-Setup.exe"
             if (Test-Path $installerExe) {
-                $winDest = Join-Path $BuildOutputDir "windows"
+                $winDest = Join-Paths $BuildOutputDir "windows"
                 New-Item -ItemType Directory -Force -Path $winDest | Out-Null
                 Copy-Item -Path $installerExe -Destination $winDest -Force
                 Write-Host "Windows target packaged successfully." -ForegroundColor Green
@@ -322,9 +347,9 @@ if ($Target -eq "windows" -or $Target -eq "all") {
 if ($Target -eq "android" -or $Target -eq "all") {
     Write-Host "=== Compiling Android Platform ===" -ForegroundColor Yellow
     
-    $gradlew = if ($IsWindows) { "gradlew.bat" } else { "gradlew" }
-    $gradlePath = Join-Path $RepoRoot "RemEx.Android"
-    $gradleCmd = Join-Path $gradlePath $gradlew
+    $gradlew = if ($IsWin) { "gradlew.bat" } else { "gradlew" }
+    $gradlePath = Join-Paths $RepoRoot "RemEx.Android"
+    $gradleCmd = Join-Paths $gradlePath $gradlew
     $tasks = if ($Config -eq "release") { 
         @("assembleRelease", "bundleRelease", "verifyRemexCoreInReleaseApk")
     } else { 
@@ -339,12 +364,16 @@ if ($Target -eq "android" -or $Target -eq "all") {
     # Proactive Android SDK and NDK dependency resolution
     Write-Host "Verifying Android SDK & NDK build dependencies..." -ForegroundColor DarkGray
     $sdkDir = $null
-    $localPropsPath = Join-Path $gradlePath "local.properties"
+    $localPropsPath = Join-Paths $gradlePath "local.properties"
     if (Test-Path $localPropsPath) {
         $localProps = Get-Content $localPropsPath -Raw | ConvertFrom-StringData
         $sdkDir = $localProps["sdk.dir"]
         if ($sdkDir) {
-            $sdkDir = $sdkDir.Replace("\\", "\").Replace("/", "\")
+            if ($IsWin) {
+                $sdkDir = $sdkDir -replace '\\+', '\' -replace '/', '\'
+            } else {
+                $sdkDir = $sdkDir -replace '\\+', '/' -replace '/+', '/'
+            }
         }
     }
     if ([string]::IsNullOrEmpty($sdkDir)) {
@@ -356,10 +385,10 @@ if ($Target -eq "android" -or $Target -eq "all") {
 
     if (-not [string]::IsNullOrEmpty($sdkDir)) {
         # Check 1: API Level 37 Platform (Required by .NET 10 Sdk targets)
-        $apiJar = Join-Path $sdkDir "platforms\android-37\android.jar"
+        $apiJar = Join-Paths $sdkDir "platforms" "android-37" "android.jar"
         if (-not (Test-Path $apiJar)) {
             Write-Host "Android API Level 37 platform is missing. Attempting auto-installation..." -ForegroundColor Yellow
-            $coreProj = Join-Path $RepoRoot "Remex.Core" "Remex.Core.csproj"
+            $coreProj = Join-Paths $RepoRoot "Remex.Core" "Remex.Core.csproj"
             dotnet build $coreProj -t:InstallAndroidDependencies -f net10.0-android "-p:AndroidSdkDirectory=$sdkDir" "-p:AcceptAndroidSDKLicenses=true"
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "Android API Level 37 dependency resolved successfully." -ForegroundColor Green
@@ -372,15 +401,16 @@ if ($Target -eq "android" -or $Target -eq "all") {
 
         # Check 2: NDK version 30.0.14904198 (Required for .NET NativeAOT JNI core compiler)
         $requiredNdkVersion = "30.0.14904198"
-        $ndkDir = Join-Path $sdkDir "ndk\$requiredNdkVersion"
+        $ndkDir = Join-Paths $sdkDir "ndk" $requiredNdkVersion
         if (-not (Test-Path $ndkDir)) {
             Write-Host "Android NDK version $requiredNdkVersion is missing at: $ndkDir" -ForegroundColor Yellow
-            $sdkManager = Join-Path $sdkDir "cmdline-tools\latest\bin\sdkmanager.bat"
+            $sdkManagerName = if ($IsWin) { "sdkmanager.bat" } else { "sdkmanager" }
+            $sdkManager = Join-Paths $sdkDir "cmdline-tools" "latest" "bin" $sdkManagerName
             if (-not (Test-Path $sdkManager)) {
-                $sdkManager = Join-Path $sdkDir "cmdline-tools\bin\sdkmanager.bat"
+                $sdkManager = Join-Paths $sdkDir "cmdline-tools" "bin" $sdkManagerName
             }
             if (-not (Test-Path $sdkManager)) {
-                $sdkManager = Get-ChildItem -Path $sdkDir -Filter "sdkmanager.bat" -Recurse -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName -First 1
+                $sdkManager = Get-ChildItem -Path $sdkDir -Filter $sdkManagerName -Recurse -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName -First 1
             }
 
             if ($sdkManager -and (Test-Path $sdkManager)) {
@@ -394,7 +424,7 @@ if ($Target -eq "android" -or $Target -eq "all") {
                     Write-Warning "Android NDK installation finished with exit code $LASTEXITCODE. Native compiler may fail if path is unresolved."
                 }
             } else {
-                Write-Warning "Could not find sdkmanager.bat under $sdkDir. Please install NDK version $requiredNdkVersion manually."
+                Write-Warning "Could not find $sdkManagerName under $sdkDir. Please install NDK version $requiredNdkVersion manually."
             }
         } else {
             Write-Host "Android NDK version $requiredNdkVersion dependency verified." -ForegroundColor Green
@@ -406,7 +436,7 @@ if ($Target -eq "android" -or $Target -eq "all") {
     Write-Host "Running Gradle tasks '$($tasks -join ' ')'..." -ForegroundColor DarkCyan
     Push-Location $gradlePath
     try {
-        if ($IsWindows) {
+        if ($IsWin) {
             & $gradleCmd @tasks --stacktrace
         } else {
             & bash $gradleCmd @tasks --stacktrace
@@ -415,13 +445,17 @@ if ($Target -eq "android" -or $Target -eq "all") {
             Write-Host "Android build failed. Checking if there are missing Android SDK dependencies..." -ForegroundColor Yellow
             
             # Read SDK Directory from local.properties
-            $localPropsPath = Join-Path $gradlePath "local.properties"
+            $localPropsPath = Join-Paths $gradlePath "local.properties"
             $sdkDir = $null
             if (Test-Path $localPropsPath) {
                 $localProps = Get-Content $localPropsPath -Raw | ConvertFrom-StringData
                 $sdkDir = $localProps["sdk.dir"]
                 if ($sdkDir) {
-                    $sdkDir = $sdkDir.Replace("\\", "\").Replace("/", "\")
+                    if ($IsWin) {
+                        $sdkDir = $sdkDir -replace '\\+', '\' -replace '/', '\'
+                    } else {
+                        $sdkDir = $sdkDir -replace '\\+', '/' -replace '/+', '/'
+                    }
                 }
             }
 
@@ -435,21 +469,21 @@ if ($Target -eq "android" -or $Target -eq "all") {
 
             if (-not [string]::IsNullOrEmpty($sdkDir)) {
                 Write-Host "Attempting to auto-install missing Android SDK dependencies in: $sdkDir" -ForegroundColor Cyan
-                $coreProj = Join-Path $RepoRoot "Remex.Core" "Remex.Core.csproj"
+                $coreProj = Join-Paths $RepoRoot "Remex.Core" "Remex.Core.csproj"
                 
                 # Run the dependency installer target
                 dotnet build $coreProj -t:InstallAndroidDependencies -f net10.0-android "-p:AndroidSdkDirectory=$sdkDir" "-p:AcceptAndroidSDKLicenses=true"
                 
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "Successfully installed Android SDK dependencies! Stopping Gradle daemon to release file locks..." -ForegroundColor Green
-                    if ($IsWindows) {
+                    if ($IsWin) {
                         & $gradleCmd --stop
                     } else {
                         & bash $gradleCmd --stop
                     }
                     
                     Write-Host "Retrying Gradle build..." -ForegroundColor Green
-                    if ($IsWindows) {
+                    if ($IsWin) {
                         & $gradleCmd @tasks --stacktrace
                     } else {
                         & bash $gradleCmd @tasks --stacktrace
@@ -472,11 +506,11 @@ if ($Target -eq "android" -or $Target -eq "all") {
     }
 
     # Staging built Android APK/AAB files
-    $androidDest = Join-Path $BuildOutputDir "android"
+    $androidDest = Join-Paths $BuildOutputDir "android"
     New-Item -ItemType Directory -Force -Path $androidDest | Out-Null
     
     $apkFound = $false
-    $apkSearchPath = Join-Path $gradlePath "app" "build" "outputs" "apk"
+    $apkSearchPath = Join-Paths $gradlePath "app" "build" "outputs" "apk"
     if (Test-Path $apkSearchPath) {
         $apks = Get-ChildItem -Path $apkSearchPath -Filter "*.apk" -Recurse
         foreach ($apk in $apks) {
@@ -487,7 +521,7 @@ if ($Target -eq "android" -or $Target -eq "all") {
     }
 
     $aabFound = $false
-    $aabSearchPath = Join-Path $gradlePath "app" "build" "outputs" "bundle"
+    $aabSearchPath = Join-Paths $gradlePath "app" "build" "outputs" "bundle"
     if (Test-Path $aabSearchPath) {
         $aabs = Get-ChildItem -Path $aabSearchPath -Filter "*.aab" -Recurse
         foreach ($aab in $aabs) {
@@ -513,9 +547,9 @@ if ($Target -eq "linux" -or $Target -eq "all") {
         Write-Warning "Linux build-linux.sh target only natively supports 'Release' configuration. Proceeding with Release build."
     }
 
-    $buildScript = Join-Path $RepoRoot "installer" "build-linux.sh"
+    $buildScript = Join-Paths $RepoRoot "installer" "build-linux.sh"
     $bashScript = Get-BashSafeScriptPath -ScriptPath $buildScript
-    if ($IsLinux) {
+    if ($IsLin) {
         Write-Host "Executing build-linux.sh natively..." -ForegroundColor DarkCyan
         & bash $bashScript
         $linuxBuildExitCode = $LASTEXITCODE
@@ -539,11 +573,11 @@ if ($Target -eq "linux" -or $Target -eq "all") {
     }
 
     # Staging Linux tarball packages
-    $linuxStage = Join-Path $RepoRoot "installer" "Output"
+    $linuxStage = Join-Paths $RepoRoot "installer" "Output"
     if (Test-Path $linuxStage) {
         $tarballs = @(Get-ChildItem -Path $linuxStage -Filter "*.tar.gz")
         if ($tarballs.Count -gt 0) {
-            $linuxDest = Join-Path $BuildOutputDir "linux"
+            $linuxDest = Join-Paths $BuildOutputDir "linux"
             New-Item -ItemType Directory -Force -Path $linuxDest | Out-Null
             foreach ($tar in $tarballs) {
                 Copy-Item -Path $tar.FullName -Destination $linuxDest -Force

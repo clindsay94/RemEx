@@ -1,7 +1,7 @@
 CMakeFiles/remex_linux_bridge.dir/src/pipewire_capture.c.o: \
- /mnt/z/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c \
+ /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/pipewire_capture.c \
  /usr/include/stdc-predef.h \
- /mnt/z/RemEx/Remex.Host.Native.Linux/src/../include/remex_linux_bridge.h \
+ /run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/src/../include/remex_linux_bridge.h \
  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h \
  /usr/include/stdint.h /usr/include/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
