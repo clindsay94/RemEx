@@ -1,21 +1,43 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>RemEx.Host</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Remex.Client\Assets\icon.ico</ApplicationIcon>
     <UserSecretsId>dotnet-Remex.Host-250abb58-e6f9-4331-93e2-4801f7e26382</UserSecretsId>
   </PropertyGroup>
 
+  <!-- The consolidated RemEx.Host is both the Avalonia GUI host and the in-process ASP.NET host. -->
   <ItemGroup>
-    <InternalsVisibleTo Include="Remex.Host.Tests" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Replicate the implicit global usings the host code relied on under Microsoft.NET.Sdk.Web,
+       now that it lives in a Microsoft.NET.Sdk (desktop) project. Avoids touching ~70 source files. -->
+  <ItemGroup>
+    <Using Include="System.Net.Http.Json" />
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Hosting" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <Using Include="Microsoft.AspNetCore.Routing" />
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Hosting" />
+    <Using Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Remex.Core\Remex.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- Avalonia GUI -->
+    <PackageReference Include="Avalonia.Desktop" />
+    <!--Condition removes Avalonia.Diagnostics from Release build output.-->
+    <PackageReference Include="Avalonia.Diagnostics">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <!-- Host server deps (absorbed from the former Remex.Host project) -->
     <PackageReference Include="Makaretu.Dns.Multicast" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" />
@@ -27,13 +49,25 @@
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Remex.Client\Remex.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="appsettings.Development.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\scripts\**" Link="scripts\%(RecursiveDir)%(FileName)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <!--
-    Copy libremex_linux_bridge.so into the runtimes/linux-x64/native/ folder so
+    Copy libremex_linux_bridge.so into runtimes/linux-x64/native/ so
     [DllImport("remex_linux_bridge")] in LinuxPipeWireFrameSource resolves at runtime.
-    .NET 10 no longer probes the assembly directory, so the runtimes-folder
-    convention (same one SkiaSharp.NativeAssets.Linux uses) is required.
-    The .so itself is produced by Remex.Host.Native.Linux/CMakeLists.txt — see
-    the warning message for the rebuild command.
+    The .so is produced by Remex.Host.Native.Linux/CMakeLists.txt.
   -->
   <Target Name="CopyNativeLinuxBridge"
           AfterTargets="Build"

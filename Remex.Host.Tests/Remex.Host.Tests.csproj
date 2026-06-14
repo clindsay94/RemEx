@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Remex.Host\Remex.Host.csproj" />
+    <ProjectReference Include="..\RemEx.Host\RemEx.Host.csproj" />
     <ProjectReference Include="..\Remex.Core\Remex.Core.csproj" />
   </ItemGroup>
 
