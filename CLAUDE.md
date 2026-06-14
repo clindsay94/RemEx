@@ -2,9 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🛑 STRICT MCP SERVER ROUTING FOR TOKEN CONSERVATION
+
+To strictly conserve context window tokens and prevent context compaction loops, you MUST utilize the following three MCP servers for all codebase analysis, command execution, and architectural exploration. NEVER read full files, raw logs, or execute un-sandboxed shell commands when these tools are available.
+
+### 1. `token-savior` (Structural Codebase Indexing)
+**Do not read raw files to understand codebase logic.** `token-savior` indexes the codebase structurally, cutting token usage by ~97%.
+* **Symbol-Level Navigation:** Use `find_symbol`, `get_edit_context`, and `get_function_source` instead of `read_file` or global `grep`. Request isolated logic rather than dumping massive files into the context window.
+* **Smart Dependencies:** Use `get_dependencies` and `get_change_impact` to trace relationships. Do not attempt to reverse-engineer imports through sequential, manual file reads.
+
+### 2. `gitnexus` (Graph RAG & Architectural Awareness)
+**Do not manually traverse call chains.** `gitnexus` precomputes the repository's knowledge graph, avoiding the multi-step graph exploration that burns excessive tokens.
+* **One-Shot Blast Radius:** Use the `impact` tool to instantly analyze upstream and downstream dependencies before modifying code.
+* **Process-Grouped Search:** Use `query` to retrieve complete execution flows and functional clusters rather than running brute-force keyword searches across the repository.
+* **360° Context:** Use the `context` tool to retrieve a complete map of a single symbol's incoming calls, outgoing dependencies, and process participation in one single turn.
+
+### 3. `context-mode` (Tool Sandboxing & Virtualization)
+**Do not run standard shell commands that yield massive outputs.** `context-mode` sandboxes executions and indexes the data externally, yielding up to 98% context savings.
+* **Virtualized Execution:** Route potentially noisy scripts or terminal commands through `ctx_execute` or `ctx_execute_file`. Only the stdout summary hits your context, keeping raw logs out. 
+* **Write Code, Don't Process Data:** Treat yourself as a code generator, not a data parser. If you need to count, filter, or analyze large numbers of files, write a short script via `ctx_execute` to do it locally instead of loading all the files into context.
+* **Indexed Storage for Heavy Data:** For massive test failures, access logs, or browser snapshots, use `ctx_index` or `fetch_and_index`. Store the data in the local SQLite FTS5 database and use `ctx_search` (BM25) to retrieve only the relevant lines you need.
+
+### 4. Bulk Code Generation Workflow (`antigravity` & `agy-splitter`)
+When generating large scaffolds, boilerplates, or multi-file modules, DO NOT write the files directly using local LLM output tokens. Instead, delegate the heavy lifting to the Antigravity CLI (`agy`) powered by Gemini.
+
+- **Command Shorthand:** `/bulk-write [generation requirements]` (Maps to `~/.claude/commands/bulk-write.md`)
+- **Execution Sequence:** When `/bulk-write` is invoked, you must execute the following via `ctx_execute`:
+  1. Trigger generation and pipe to a temporary file: `agy [parameters] > .bulk_raw.txt`
+  2. Split the output into valid files: `agy-splitter .bulk_raw.txt`
+  3. Automatically delete `.bulk_raw.txt` once file extraction is verified.
+
+### Rules for Bulk Code Generation
+- **Strict Delimiters:** You must explicitly instruct Gemini/Antigravity to prefix every new file block with the EXACT string format: `// FILE: path/to/file.ext`. Do not allow markdown headers, backticks, or alternative comment syntax for file paths, or the `agy-splitter` regex will fail.
+- **Verify via Diffs:** Do NOT read the generated files back into the primary context window. Use `git diff` to evaluate the generated code.
+- **Edit by Exception:** Act purely as a reviewer. Only intervene or edit the resulting files directly if the diff reveals structural hallucinations or logic flaws.
+
+
 ## Project Overview
 
-RemEx is a cross-platform remote PC management tool. It consists of a .NET 10 / Avalonia desktop client, a headless ASP.NET host service, and a native Android app (Kotlin + Jetpack Compose). The `Remex.Core` library is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+Remote Execution (RemEx) is a cross-platform remote PC management tool. It consists of a .NET 10 / Avalonia desktop client, a headless ASP.NET host service, and a native Android app (Kotlin + Jetpack Compose). The `Remex.Core` library is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
 
 ## Build & Run
 
@@ -97,7 +133,7 @@ Read the relevant sub-project `AGENTS.md` before touching files in that director
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (10520 symbols, 20401 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (10548 symbols, 20479 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
