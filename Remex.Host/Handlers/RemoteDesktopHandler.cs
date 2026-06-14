@@ -993,6 +993,13 @@ public sealed class RemoteDesktopHandler : IDisposable
                 CursorX = cursorX,
                 CursorY = cursorY,
                 CursorVisible = !_drawCursor && IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop),
+                // Carry the real resolution on lightweight cursor-position updates too. These ints are
+                // non-nullable and otherwise serialize as 0; a client that keys its decoder on
+                // PixelWidth/PixelHeight (e.g. the Android H.264 view) would rebuild with a 0x0 surface.
+                LogicalWidth = screenWidth,
+                LogicalHeight = screenHeight,
+                PixelWidth = screenWidth,
+                PixelHeight = screenHeight,
                 StreamSerial = sessionState.StreamSerial,
             }
         }, sendLock, ct);

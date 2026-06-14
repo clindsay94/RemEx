@@ -316,9 +316,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     if (codecInfo != null) {
                         _activeCodecState.value = codecInfo.optString("codec", "Mjpeg")
                     }
-                    // Parse encoded stream pixel dimensions for H.264 decoder initialization
-                    if (json.has("pixelWidth")) _streamPixelWidth.value = json.optInt("pixelWidth", 1920)
-                    if (json.has("pixelHeight")) _streamPixelHeight.value = json.optInt("pixelHeight", 1080)
+                    // Parse encoded stream pixel dimensions for H.264 decoder initialization.
+                    // Like codecInfo above, lightweight cursor-position DesktopMeta updates carry no
+                    // resolution — the host serializes PixelWidth/PixelHeight as 0 on those — and must
+                    // NOT clobber the active stream resolution. streamPixelWidth/Height key the H264
+                    // decoder's AndroidView; a 0x0 value rebuilds it with an invalid surface, which
+                    // fails to decode and triggers a teardown/reconnect loop (the landscape<->portrait
+                    // flip). Only adopt a positive, real resolution.
+                    val pixelWidth = json.optInt("pixelWidth", 0)
+                    val pixelHeight = json.optInt("pixelHeight", 0)
+                    if (pixelWidth > 0 && pixelHeight > 0) {
+                        _streamPixelWidth.value = pixelWidth
+                        _streamPixelHeight.value = pixelHeight
+                    }
                     Log.i(TAG, "Desktop stream metadata parsed: activeCodec=${_activeCodecState.value}, streamRes=${_streamPixelWidth.value}x${_streamPixelHeight.value}")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop meta", e)
