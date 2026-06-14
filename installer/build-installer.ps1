@@ -242,7 +242,7 @@ function Invoke-WindowsBuild {
     }
 
     if (-not $SkipPublish) {
-        Write-Host "Publishing Remex.Client.Desktop (self-contained, win-x64)..." -ForegroundColor Cyan
+        Write-Host "Publishing RemEx.Host (self-contained, win-x64)..." -ForegroundColor Cyan
         dotnet publish $ClientProj -c Release -r win-x64 --self-contained
         if ($LASTEXITCODE -ne 0) {
             Write-Error "dotnet publish failed (exit $LASTEXITCODE)"
@@ -297,7 +297,7 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $VersionFile = Join-Path $RepoRoot "RemEx.Android" "app" "version.properties"
 $BuildProps = Join-Path $RepoRoot "Directory.Build.props"
 $IssFile = Join-Path $PSScriptRoot "RemEx.iss"
-$ClientProj = Join-Path $RepoRoot "Remex.Client.Desktop"
+$ClientProj = Join-Path $RepoRoot "RemEx.Host"
 $BuildLinuxScript = Join-Path $PSScriptRoot "build-linux.sh"
 $isWsl = Test-IsWsl
 $resolvedTarget = Resolve-TargetPlatform -RequestedTarget $Target

@@ -67,7 +67,7 @@ install)
     echo "Installing RemEx Host to $INSTALL_DIR ..."
 
     # Upgrades can overwrite the currently-running self-contained executable.
-    # Stop the user service first so `cp` does not hit ETXTBSY on Remex.Host.
+    # Stop the user service first so `cp` does not hit ETXTBSY on RemEx.Host.
     systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
     for _ in {1..50}; do
         if ! systemctl --user --quiet is-active "$SERVICE_NAME" 2>/dev/null; then
@@ -88,7 +88,7 @@ install)
 
     rm -f "$INSTALL_DIR/libremex_linux_bridge.so"
 
-    chmod +x "$INSTALL_DIR/Remex.Host"
+    chmod +x "$INSTALL_DIR/RemEx.Host"
 
     # systemd user service with real install path substituted
     sed "s|REMEX_INSTALL_DIR|$INSTALL_DIR|g" \
@@ -117,10 +117,10 @@ install)
     # but does not abort the install (the user may want to fix things later).
     echo ""
     echo "Running post-install doctor..."
-    if "$INSTALL_DIR/Remex.Host" --doctor; then
+    if "$INSTALL_DIR/RemEx.Host" --doctor; then
         echo "Doctor reports the system is ready."
     else
-        echo "WARNING: doctor reported issues above. Run \"$INSTALL_DIR/Remex.Host --doctor\""
+        echo "WARNING: doctor reported issues above. Run \"$INSTALL_DIR/RemEx.Host --doctor\""
         echo "         again after addressing them."
     fi
 
@@ -176,7 +176,7 @@ install)
     echo "RemEx Host installed and started."
     echo "  Status:     systemctl --user status $SERVICE_NAME"
     echo "  Logs:       journalctl --user -u $SERVICE_NAME -f"
-    echo "  Doctor:     $INSTALL_DIR/Remex.Host --doctor"
+    echo "  Doctor:     $INSTALL_DIR/RemEx.Host --doctor"
     echo "  Uninstall:  $INSTALL_DIR/install.sh uninstall"
     echo ""
     if loginctl show-user "$USER" --property=Linger 2>/dev/null | grep -q "Linger=yes"; then
@@ -211,7 +211,7 @@ stop)
     ;;
 
 doctor)
-    "$INSTALL_DIR/Remex.Host" --doctor
+    "$INSTALL_DIR/RemEx.Host" --doctor
     ;;
 
 *)

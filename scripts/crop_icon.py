@@ -164,6 +164,6 @@ if __name__ == "__main__":
     
     out_png = os.path.join(proj_root, "Remex.Client", "Assets", "icon.png")
     out_ico = os.path.join(proj_root, "Remex.Client", "Assets", "icon.ico")
-    out_ico_desktop = os.path.join(proj_root, "Remex.Client.Desktop", "icon.ico")
+    out_ico_desktop = os.path.join(proj_root, "RemEx.Host", "icon.ico")
     
     extract_premium_3d_logo(master_path, out_png, out_ico, out_ico_desktop, proj_root)

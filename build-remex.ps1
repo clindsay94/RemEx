@@ -143,7 +143,7 @@ if ([string]::IsNullOrEmpty($RepoRoot)) {
 $BuildOutputDir = Join-Paths $RepoRoot "build_output"
 
 if ($isInstallerTarget) {
-    $publishDir = Join-Paths $RepoRoot "Remex.Client.Desktop" "bin" $Config "net10.0" "win-x64" "publish"
+    $publishDir = Join-Paths $RepoRoot "RemEx.Host" "bin" $Config "net10.0" "win-x64" "publish"
     if (Test-Path $publishDir) {
         $skipPublish = $true
     }
@@ -298,9 +298,9 @@ function Find-IsccCompiler {
 if ($Target -eq "windows" -or $Target -eq "all") {
     Write-Host "=== Compiling Windows Platform ===" -ForegroundColor Yellow
     
-    $clientProj = Join-Paths $RepoRoot "Remex.Client.Desktop" "Remex.Client.Desktop.csproj"
+    $clientProj = Join-Paths $RepoRoot "RemEx.Host" "RemEx.Host.csproj"
     if (-not $skipPublish) {
-        Write-Host "Publishing Remex.Client.Desktop ($Config, win-x64)..." -ForegroundColor DarkCyan
+        Write-Host "Publishing RemEx.Host ($Config, win-x64)..." -ForegroundColor DarkCyan
         dotnet publish $clientProj -c $Config -r win-x64 --self-contained
         if ($LASTEXITCODE -ne 0) {
             Write-Error "dotnet publish for Windows failed with exit code $LASTEXITCODE"
@@ -316,7 +316,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
         if ($null -ne $iscc) {
             Write-Host "Building Windows Installer (Inno Setup)..." -ForegroundColor DarkCyan
             $issFile = Join-Paths $RepoRoot "installer" "RemEx.iss"
-            $sourceDirArg = "..\Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish"
+            $sourceDirArg = "..\RemEx.Host\bin\$Config\net10.0\win-x64\publish"
             
             & $iscc "/DAppVersion=$Version" "/DSourceDir=$sourceDirArg" $issFile
             if ($LASTEXITCODE -ne 0) {
@@ -337,7 +337,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
             }
         } else {
             Write-Warning "ISCC.exe (Inno Setup 6) was not found in standard paths. Skipping installer packaging."
-            Write-Warning "Raw published files are available under Remex.Client.Desktop\bin\$Config\net10.0\win-x64\publish\"
+            Write-Warning "Raw published files are available under RemEx.Host\bin\$Config\net10.0\win-x64\publish\"
         }
     }
     Write-Host "----------------------------------------------------------" -ForegroundColor Gray

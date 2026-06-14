@@ -19,7 +19,11 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=REMEX_INSTALL_DIR/Remex.Host
+# RemEx.Host is now the consolidated binary (GUI + host). Run it headless in command-agent mode
+# for the background service. NOTE: `--agent` (headless command-only mode) and converting this to a
+# logged-out SYSTEM service are tracked as later consolidation phases; today the agent flag is a
+# placeholder and full agent behaviour is not yet implemented.
+ExecStart=REMEX_INSTALL_DIR/RemEx.Host --agent
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=10

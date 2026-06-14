@@ -72,7 +72,7 @@ install)
 
     rm -f "$INSTALL_DIR/libremex_linux_bridge.so"
 
-    chmod +x "$INSTALL_DIR/Remex.Client.Desktop"
+    chmod +x "$INSTALL_DIR/RemEx.Host"
 
     if [[ ! -f "$BRIDGE_PATH" ]]; then
         echo "WARNING: libremex_linux_bridge.so is missing from the .NET runtime probing path."
@@ -85,7 +85,7 @@ install)
     fi
 
     # Launcher symlink
-    ln -sf "$INSTALL_DIR/Remex.Client.Desktop" "$BIN_DIR/remex-client"
+    ln -sf "$INSTALL_DIR/RemEx.Host" "$BIN_DIR/remex-client"
 
     # Icon
     if [[ -f "$SCRIPT_DIR/remex.png" ]]; then

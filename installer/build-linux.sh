@@ -114,13 +114,13 @@ echo "Native bridge → $NATIVE_BRIDGE_SO"
 
 # ── Client ───────────────────────────────────────────────────────────────────
 if [[ "$SKIP_CLIENT" == false ]]; then
-    CLIENT_PROJ="$REPO_ROOT/Remex.Client.Desktop"
+    CLIENT_PROJ="$REPO_ROOT/RemEx.Host"
     CLIENT_PUBLISH="$CLIENT_PROJ/bin/Release/net10.0/linux-x64/publish"
     CLIENT_BRIDGE="$CLIENT_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     CLIENT_STAGE="$OUTPUT_DIR/remex-client-v${VERSION}-linux-x64"
 
     echo ""
-    echo "── Publishing Remex.Client.Desktop (linux-x64) ──────────────────────────"
+    echo "── Publishing RemEx.Host (linux-x64) ──────────────────────────"
     rm -rf "$CLIENT_PUBLISH"
     dotnet publish "$CLIENT_PROJ" -c Release -r linux-x64 --self-contained
 
@@ -141,7 +141,7 @@ if [[ "$SKIP_CLIENT" == false ]]; then
     rm -rf "$CLIENT_STAGE"
     mkdir -p "$CLIENT_STAGE"
     cp -r "$CLIENT_PUBLISH/." "$CLIENT_STAGE/"
-    chmod +x "$CLIENT_STAGE/Remex.Client.Desktop"
+    chmod +x "$CLIENT_STAGE/RemEx.Host"
 
     # Desktop entry and install script
     cp "$LINUX_DIR/remex-client.desktop" "$CLIENT_STAGE/"
@@ -162,15 +162,23 @@ fi
 
 # ── Host ─────────────────────────────────────────────────────────────────────
 if [[ "$SKIP_HOST" == false ]]; then
-    HOST_PROJ="$REPO_ROOT/Remex.Host"
+    HOST_PROJ="$REPO_ROOT/RemEx.Host"
     HOST_PUBLISH="$HOST_PROJ/bin/Release/net10.0/linux-x64/publish"
     HOST_BRIDGE="$HOST_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     HOST_STAGE="$OUTPUT_DIR/remex-host-v${VERSION}-linux-x64"
 
-    echo ""
-    echo "── Publishing Remex.Host (linux-x64) ───────────────────────────────────"
-    rm -rf "$HOST_PUBLISH"
-    dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
+    # The host and the desktop client are now the same consolidated RemEx.Host binary, published to
+    # the same path. Reuse the client's publish output when it is already present (built just above);
+    # only publish here when the client stage was skipped.
+    if [[ ! -f "$HOST_PUBLISH/RemEx.Host" ]]; then
+        echo ""
+        echo "── Publishing RemEx.Host (linux-x64) ───────────────────────────────────"
+        rm -rf "$HOST_PUBLISH"
+        dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
+    else
+        echo ""
+        echo "── Reusing RemEx.Host publish from the client stage (same consolidated binary) ──"
+    fi
 
     echo ""
     echo "── Verifying host native bridge publish layout ───────────────────────────"
@@ -189,7 +197,7 @@ if [[ "$SKIP_HOST" == false ]]; then
     rm -rf "$HOST_STAGE"
     mkdir -p "$HOST_STAGE"
     cp -r "$HOST_PUBLISH/." "$HOST_STAGE/"
-    chmod +x "$HOST_STAGE/Remex.Host"
+    chmod +x "$HOST_STAGE/RemEx.Host"
 
     cp "$LINUX_DIR/remex-host.service" "$HOST_STAGE/"
     cp "$LINUX_DIR/host-install.sh"    "$HOST_STAGE/install.sh"
