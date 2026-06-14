@@ -10,11 +10,11 @@ using Remex.Host.Services.Security;
 
 namespace Remex.Host.Tests;
 
-public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly RemexHostFactory _factory;
 
-    public PairingHandlerTests(WebApplicationFactory<Program> factory)
+    public PairingHandlerTests(RemexHostFactory factory)
     {
         _factory = factory;
 
@@ -370,12 +370,9 @@ public sealed class PairingHandlerTests : IClassFixture<WebApplicationFactory<Pr
     public async Task PairingComplete_EnablesSecondSocket_OnlyWithSameClientId()
     {
         // 1. Create a non-loopback server factory by injecting NonLoopbackStartupFilter
-        var nonLoopbackFactory = _factory.WithWebHostBuilder(builder =>
+        var nonLoopbackFactory = new RemexHostFactory().WithServices(services =>
         {
-            builder.ConfigureServices(services =>
-            {
-                services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>();
-            });
+            services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>();
         });
 
         var pairingService = nonLoopbackFactory.Services.GetRequiredService<PairingService>();

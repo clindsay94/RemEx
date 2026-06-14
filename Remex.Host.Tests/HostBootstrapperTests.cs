@@ -4,11 +4,11 @@ using Remex.Host;
 
 namespace Remex.Host.Tests;
 
-public sealed class HostBootstrapperTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HostBootstrapperTests : IClassFixture<RemexHostFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly RemexHostFactory _factory;
 
-    public HostBootstrapperTests(WebApplicationFactory<Program> factory)
+    public HostBootstrapperTests(RemexHostFactory factory)
     {
         _factory = factory;
     }

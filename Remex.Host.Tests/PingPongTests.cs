@@ -6,7 +6,7 @@ using Remex.Core.Messages;
 
 namespace Remex.Host.Tests;
 
-public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
+public class PingPongTests : IClassFixture<RemexHostFactory>
 {
     private class MockCommandService : Remex.Core.Services.Command.ISystemCommandService
     {
@@ -95,23 +95,20 @@ public class PingPongTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal("Access denied. Run the host as Administrator or retry with KillProcessElevated.", response.CommandMessage);
     }
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly RemexHostFactory _factory;
 
-    private WebApplicationFactory<Program> GetFactory(Remex.Core.Models.ProcessKillResult? killResult = null)
+    private RemexHostFactory GetFactory(Remex.Core.Models.ProcessKillResult? killResult = null)
     {
-        return _factory.WithWebHostBuilder(builder =>
+        return new RemexHostFactory().WithServices(services =>
         {
-            builder.ConfigureServices(services =>
-            {
-                services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
-                services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
-                services.AddSingleton<Remex.Core.Services.IProcessMonitorService>(
-                    new MockProcessMonitorService(killResult ?? new Remex.Core.Models.ProcessKillResult(true, "Process killed.")));
-            });
+            services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
+            services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
+            services.AddSingleton<Remex.Core.Services.IProcessMonitorService>(
+                new MockProcessMonitorService(killResult ?? new Remex.Core.Models.ProcessKillResult(true, "Process killed.")));
         });
     }
 
-    public PingPongTests(WebApplicationFactory<Program> factory)
+    public PingPongTests(RemexHostFactory factory)
     {
         _factory = factory;
     }

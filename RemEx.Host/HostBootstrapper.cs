@@ -47,7 +47,20 @@ public static class HostBootstrapper
     /// <param name="port">
     /// Override the listening port. Defaults to <see cref="RemexConstants.DefaultPort"/>.
     /// </param>
-    public static WebApplication CreateApplication(string[] args, int port = RemexConstants.DefaultPort)
+    /// <param name="configureWebHost">
+    /// Test hook. When supplied, the canonical-port probing/reclaim and Kestrel HTTPS binding are
+    /// skipped and this callback configures the web host instead (the integration tests use it to
+    /// call <c>UseTestServer()</c>). Null in production — Kestrel binds the real port.
+    /// </param>
+    /// <param name="configureServices">
+    /// Test hook applied to the service collection immediately before <c>Build()</c>, so tests can
+    /// override registrations (e.g. mock <c>ISystemCommandService</c>). Null in production.
+    /// </param>
+    public static WebApplication CreateApplication(
+        string[] args,
+        int port = RemexConstants.DefaultPort,
+        Action<IWebHostBuilder>? configureWebHost = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -161,23 +174,28 @@ public static class HostBootstrapper
         }
 
         int actualPort = port;
-        for (int attempt = 0; attempt < 5; attempt++)
+        // Skip real-port probing/reclaim under TestServer (no socket is bound, and we must not
+        // terminate other Remex.Host processes from a test run).
+        if (configureWebHost is null)
         {
-            int testPort = port + attempt;
-            if (ProbePortFree(testPort))
+            for (int attempt = 0; attempt < 5; attempt++)
             {
-                actualPort = testPort;
-                break;
-            }
+                int testPort = port + attempt;
+                if (ProbePortFree(testPort))
+                {
+                    actualPort = testPort;
+                    break;
+                }
 
-            // On the canonical port only, try to reclaim it from a stale Remex.Host before
-            // drifting to a fallback port the clients would never dial.
-            if (testPort == port
-                && Services.Network.StalePortReclaimer.TryReclaim(testPort)
-                && ProbePortFree(testPort))
-            {
-                actualPort = testPort;
-                break;
+                // On the canonical port only, try to reclaim it from a stale Remex.Host before
+                // drifting to a fallback port the clients would never dial.
+                if (testPort == port
+                    && Services.Network.StalePortReclaimer.TryReclaim(testPort)
+                    && ProbePortFree(testPort))
+                {
+                    actualPort = testPort;
+                    break;
+                }
             }
         }
 
@@ -197,20 +215,30 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<ICertificateService>(certService);
 
-        builder.WebHost.ConfigureKestrel(kestrel =>
+        if (configureWebHost is null)
         {
-            kestrel.ListenAnyIP(actualPort, listenOptions =>
+            builder.WebHost.ConfigureKestrel(kestrel =>
             {
-                listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
-                listenOptions.UseHttps(httpsOptions =>
+                kestrel.ListenAnyIP(actualPort, listenOptions =>
                 {
-                    httpsOptions.ServerCertificate = tlsCert;
-                    httpsOptions.SslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12;
+                    listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+                    listenOptions.UseHttps(httpsOptions =>
+                    {
+                        httpsOptions.ServerCertificate = tlsCert;
+                        httpsOptions.SslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12;
+                    });
                 });
             });
-        });
+        }
+        else
+        {
+            // Test mode: the caller supplies the server (e.g. TestServer); no real Kestrel binding.
+            configureWebHost(builder.WebHost);
+        }
 
         builder.Configuration["Host:Port"] = actualPort.ToString();
+
+        configureServices?.Invoke(builder.Services);
 
         var app = builder.Build();
         var hostCapabilitiesProvider = app.Services.GetRequiredService<IHostCapabilitiesProvider>();

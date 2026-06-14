@@ -5,11 +5,11 @@ using Remex.Core.Messages;
 
 namespace Remex.Host.Tests;
 
-public class HealthCheckTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthCheckTests : IClassFixture<RemexHostFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly RemexHostFactory _factory;
 
-    public HealthCheckTests(WebApplicationFactory<Program> factory)
+    public HealthCheckTests(RemexHostFactory factory)
     {
         _factory = factory;
     }

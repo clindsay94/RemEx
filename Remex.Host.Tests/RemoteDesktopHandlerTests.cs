@@ -14,11 +14,11 @@ using System.Linq;
 
 namespace Remex.Host.Tests;
 
-public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Program>>
+public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly RemexHostFactory _factory;
 
-    public RemoteDesktopHandlerTests(WebApplicationFactory<Program> factory)
+    public RemoteDesktopHandlerTests(RemexHostFactory factory)
     {
         _factory = factory;
     }
@@ -183,24 +183,21 @@ public class RemoteDesktopHandlerTests : IClassFixture<WebApplicationFactory<Pro
         };
     }
 
-    private WebApplicationFactory<Program> GetFactory(MockHostCapabilitiesProvider? hostCapabilitiesProvider = null)
+    private RemexHostFactory GetFactory(MockHostCapabilitiesProvider? hostCapabilitiesProvider = null)
     {
         hostCapabilitiesProvider ??= new MockHostCapabilitiesProvider();
-        return _factory.WithWebHostBuilder(builder =>
+        return new RemexHostFactory().WithServices(services =>
         {
-            builder.ConfigureServices(services =>
+            services.AddSingleton<IScreenCaptureService, MockScreenCaptureService>();
+            services.AddSingleton<MockInputSimulationService>();
+            services.AddSingleton<IInputSimulationService>(sp => sp.GetRequiredService<MockInputSimulationService>());
+            services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
+            services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
+            services.AddSingleton<IHostCapabilitiesProvider>(hostCapabilitiesProvider);
+            services.AddSingleton<IDesktopWindowControlService, MockDesktopWindowControlService>();
+            services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
             {
-                services.AddSingleton<IScreenCaptureService, MockScreenCaptureService>();
-                services.AddSingleton<MockInputSimulationService>();
-                services.AddSingleton<IInputSimulationService>(sp => sp.GetRequiredService<MockInputSimulationService>());
-                services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
-                services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
-                services.AddSingleton<IHostCapabilitiesProvider>(hostCapabilitiesProvider);
-                services.AddSingleton<IDesktopWindowControlService, MockDesktopWindowControlService>();
-                services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
-                {
-                    opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;
-                });
+                opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;
             });
         });
     }
