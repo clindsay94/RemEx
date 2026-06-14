@@ -120,12 +120,14 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Host.Services.RemoteDesktop.DesktopSessionRegistry>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
-        // Try the requested port first; if it's unavailable, probe fallback ports.
+        // Clients (Android + desktop) dial the canonical port. If a stale/duplicate Remex.Host
+        // is still holding it, we first reclaim it (terminate the stale instance) so we keep the
+        // canonical port the clients expect — drifting onto a fallback port would silently desync
+        // every client. Only an alternate (non-canonical) port is used as a last resort, and only
+        // if the occupant isn't a Remex.Host we can reclaim.
         // Probe on both IPv4 and IPv6 interfaces to completely avoid dual-stack wildcard collisions.
-        int actualPort = port;
-        for (int attempt = 0; attempt < 5; attempt++)
+        static bool ProbePortFree(int candidatePort)
         {
-            int testPort = port + attempt;
             try
             {
                 using (var testSocketV4 = new System.Net.Sockets.Socket(
@@ -133,29 +135,49 @@ public static class HostBootstrapper
                     System.Net.Sockets.SocketType.Stream,
                     System.Net.Sockets.ProtocolType.Tcp))
                 {
-                    testSocketV4.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, testPort));
+                    testSocketV4.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, candidatePort));
                     testSocketV4.Close();
                 }
 
                 if (System.Net.Sockets.Socket.OSSupportsIPv6)
                 {
-                    using (var testSocketV6 = new System.Net.Sockets.Socket(
+                    using var testSocketV6 = new System.Net.Sockets.Socket(
                         System.Net.Sockets.AddressFamily.InterNetworkV6,
                         System.Net.Sockets.SocketType.Stream,
-                        System.Net.Sockets.ProtocolType.Tcp))
+                        System.Net.Sockets.ProtocolType.Tcp)
                     {
-                        testSocketV6.DualMode = true;
-                        testSocketV6.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, testPort));
-                        testSocketV6.Close();
-                    }
+                        DualMode = true
+                    };
+                    testSocketV6.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, candidatePort));
+                    testSocketV6.Close();
                 }
 
-                actualPort = testPort;
-                break;
+                return true;
             }
             catch (System.Net.Sockets.SocketException)
             {
-                // Port in use, try next
+                return false;
+            }
+        }
+
+        int actualPort = port;
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            int testPort = port + attempt;
+            if (ProbePortFree(testPort))
+            {
+                actualPort = testPort;
+                break;
+            }
+
+            // On the canonical port only, try to reclaim it from a stale Remex.Host before
+            // drifting to a fallback port the clients would never dial.
+            if (testPort == port
+                && Services.Network.StalePortReclaimer.TryReclaim(testPort)
+                && ProbePortFree(testPort))
+            {
+                actualPort = testPort;
+                break;
             }
         }
 
