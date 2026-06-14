@@ -140,7 +140,18 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     public void StopListening()
     {
         _logger.LogInformation("Stopping external network listener");
-        _cts?.Cancel();
+        // StopListening is invoked multiple times on shutdown: BackgroundService.StopAsync,
+        // BackgroundService.Dispose, and this singleton's own Dispose (which also disposes _cts).
+        // Once _cts is disposed there is nothing left to cancel — tolerate it so host shutdown
+        // completes and releases the listening port / named pipe (a throw here otherwise aborts the
+        // remaining hosted-service teardown).
+        try
+        {
+            _cts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
         _tcpListener?.Stop();
         if (_listenTask != null && !_listenTask.IsCompleted)
         {

@@ -56,18 +56,13 @@ public partial class Program
             return 2;
         }
 
-        // Register desktop-specific services consumed by the shared Remex.Client UI.
-        App.RegisterPlatformServices = services =>
-        {
-            services.AddSingleton<Remex.Core.Services.IIconExtractionService, Remex.Client.Desktop.Services.DesktopIconExtractionService>();
-            services.AddSingleton<Remex.Client.Services.IStartupRegistrationService, Remex.Client.Desktop.Services.StartupRegistrationService>();
-        };
-
-        // Build the embedded host. HostBootstrapper owns port selection (canonical port, with
-        // stale-port reclaim + fallback probing). The build is deliberately NOT wrapped in a
-        // catch-all: WebApplicationFactory<Program>'s HostFactoryResolver intercepts the build by
-        // throwing an internal StopTheHostException, which a swallowing catch would break. We still
-        // degrade gracefully to client-only mode if the host genuinely fails to start.
+        // Build the embedded host FIRST, before touching any Avalonia/App statics. Under the
+        // integration tests, WebApplicationFactory<Program>'s HostFactoryResolver runs this Main and
+        // intercepts the host build (throwing an internal StopTheHostException); keeping the build as
+        // the first action means the resolver/test path never loads Avalonia. The build is
+        // deliberately NOT wrapped in a catch-all (a swallowing catch would break the resolver); we
+        // still degrade to client-only mode on a genuine startup failure. HostBootstrapper owns port
+        // selection (canonical port, with stale-port reclaim + fallback probing).
         int preferredPort = IsWindowsServiceRunning("RemexHost")
             ? RemexConstants.DefaultPort + 1
             : RemexConstants.DefaultPort;
@@ -85,6 +80,13 @@ public partial class Program
             _hostApp = null;
             EmbeddedHostPort = null;
         }
+
+        // Register desktop-specific services consumed by the shared Remex.Client UI (GUI path only).
+        App.RegisterPlatformServices = services =>
+        {
+            services.AddSingleton<Remex.Core.Services.IIconExtractionService, Remex.Client.Desktop.Services.DesktopIconExtractionService>();
+            services.AddSingleton<Remex.Client.Services.IStartupRegistrationService, Remex.Client.Desktop.Services.StartupRegistrationService>();
+        };
 
         if (EmbeddedHostPort.HasValue)
         {
