@@ -96,6 +96,7 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.WindowsInputSimulationService>();
+            builder.Services.AddSingleton<IDesktopWindowControlService, Remex.Host.Services.Input.WindowsDesktopWindowControlService>();
         }
         else if (OperatingSystem.IsLinux())
         {
