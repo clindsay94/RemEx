@@ -26,8 +26,27 @@ public sealed class PairedClientRegistry
     internal PairedClientRegistry(ILogger<PairedClientRegistry> logger, string? storePath)
     {
         _logger = logger;
+
+        // storePath is only supplied by tests; production resolves the default machine-wide path.
+        // Only attempt legacy migration for the production path so tests stay hermetic.
+        var useDefaultPath = storePath is null;
         _storePath = storePath ?? GetDefaultStorePath();
+
+        if (useDefaultPath)
+        {
+            MigrateLegacyStoreIfNeeded();
+        }
+
         LoadFromDisk();
+
+        // Always log the resolved path + entry count. Previously, when the file did not exist
+        // (the exact failure mode behind "commands rejected as unpaired after switching the host
+        // to the LocalSystem service"), LoadFromDisk logged nothing, so the wrong store location
+        // was invisible. This line makes the active registry path obvious at startup.
+        _logger.LogInformation(
+            "Paired client registry ready at {Path} ({Count} paired client(s)).",
+            _storePath,
+            _pairedClientIds.Count);
     }
 
     public void RegisterClient(string clientId)
@@ -108,10 +127,107 @@ public sealed class PairedClientRegistry
 
     private static string GetDefaultStorePath()
     {
-        var baseFolder = OperatingSystem.IsAndroid()
-            ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (OperatingSystem.IsAndroid())
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Personal),
+                "Remex", "paired_clients.json");
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            // Machine-wide store (C:\ProgramData\RemEx) so pairing state survives the host
+            // running under a different account than the one that originally paired — most
+            // importantly the LocalSystem Windows Service vs. an interactive session. The TLS
+            // certificate already lives here (see CertificateService.GetCertificatePath), which
+            // is why TLS/telemetry kept working after the switch to LocalSystem while the
+            // per-user pairing registry was orphaned. Keeping the registry alongside the cert
+            // means an account switch no longer makes previously-paired clients look unpaired.
+            // ("RemEx" matches the cert's folder; on case-insensitive Windows it's the same dir.)
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "RemEx", "paired_clients.json");
+        }
+
+        // Other desktop platforms (Linux/macOS) retain the per-user location.
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Remex", "paired_clients.json");
+    }
+
+    /// <summary>
+    /// Returns the legacy per-user store path used by earlier builds, or <c>null</c> when there is
+    /// no distinct legacy location for the current platform/account.
+    /// </summary>
+    private static string? GetLegacyStorePath()
+    {
+        // Android never moved; nothing to migrate.
+        if (OperatingSystem.IsAndroid())
+        {
+            return null;
+        }
+
+        var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrEmpty(baseFolder))
+        {
+            return null;
+        }
 
         return Path.Combine(baseFolder, "Remex", "paired_clients.json");
+    }
+
+    /// <summary>
+    /// One-time, best-effort migration: if the current (machine-wide) store does not yet exist but
+    /// a legacy per-user store does and is readable by the current account, copy it forward so the
+    /// operator does not have to re-pair. In the common LocalSystem case the legacy file lives in a
+    /// user profile the service cannot see, so this is a no-op and a single re-pair is required.
+    /// </summary>
+    private void MigrateLegacyStoreIfNeeded()
+        => TryMigrateLegacyStore(_storePath, GetLegacyStorePath(), _logger);
+
+    /// <summary>
+    /// Core migration logic, factored out for hermetic testing. Returns <c>true</c> when a legacy
+    /// store was copied to <paramref name="targetPath"/>. No-op (returns <c>false</c>) when the
+    /// target already exists, there is no distinct legacy path, or the legacy file is absent.
+    /// </summary>
+    internal static bool TryMigrateLegacyStore(string targetPath, string? legacyPath, ILogger logger)
+    {
+        try
+        {
+            if (File.Exists(targetPath))
+            {
+                return false;
+            }
+
+            if (legacyPath is null
+                || string.Equals(legacyPath, targetPath, StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(legacyPath))
+            {
+                return false;
+            }
+
+            var directory = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.Copy(legacyPath, targetPath, overwrite: false);
+            logger.LogInformation(
+                "Migrated paired client registry from legacy path {Legacy} to {New}.",
+                legacyPath,
+                targetPath);
+            return true;
+        }
+        catch (IOException ex)
+        {
+            logger.LogWarning(ex, "Failed to migrate legacy paired client registry; continuing with current store.");
+            return false;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogWarning(ex, "No access to migrate legacy paired client registry; continuing with current store.");
+            return false;
+        }
     }
 }

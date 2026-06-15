@@ -81,4 +81,90 @@ public sealed class PairedClientRegistryTests
             tempDirectory.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public void TryMigrateLegacyStore_CopiesLegacyFile_WhenTargetMissing()
+    {
+        // Regression: switching the host to the LocalSystem Windows Service changed the registry
+        // path from per-user LocalAppData to machine-wide ProgramData, orphaning prior pairings.
+        // When the legacy file is still readable by the current account, it should migrate forward
+        // so the operator does not have to re-pair.
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var legacyPath = Path.Combine(tempDirectory.FullName, "legacy", "paired_clients.json");
+            var targetPath = Path.Combine(tempDirectory.FullName, "machinewide", "paired_clients.json");
+
+            // Seed a legacy registry, then construct against it so it writes a real file.
+            new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, legacyPath)
+                .RegisterClient("android-device-1");
+            Assert.True(File.Exists(legacyPath));
+
+            var migrated = PairedClientRegistry.TryMigrateLegacyStore(
+                targetPath, legacyPath, NullLogger<PairedClientRegistry>.Instance);
+
+            Assert.True(migrated);
+            Assert.True(File.Exists(targetPath));
+
+            var registry = new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, targetPath);
+            Assert.True(registry.IsClientPaired("android-device-1"));
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TryMigrateLegacyStore_IsNoOp_WhenTargetAlreadyExists()
+    {
+        // Never clobber an existing machine-wide registry with a stale per-user one.
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var legacyPath = Path.Combine(tempDirectory.FullName, "legacy", "paired_clients.json");
+            var targetPath = Path.Combine(tempDirectory.FullName, "machinewide", "paired_clients.json");
+
+            new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, legacyPath)
+                .RegisterClient("legacy-client");
+            new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, targetPath)
+                .RegisterClient("current-client");
+
+            var migrated = PairedClientRegistry.TryMigrateLegacyStore(
+                targetPath, legacyPath, NullLogger<PairedClientRegistry>.Instance);
+
+            Assert.False(migrated);
+
+            var registry = new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, targetPath);
+            Assert.True(registry.IsClientPaired("current-client"));
+            Assert.False(registry.IsClientPaired("legacy-client"));
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TryMigrateLegacyStore_IsNoOp_WhenLegacyPathEqualsTarget()
+    {
+        // On platforms where the path did not change, the legacy path equals the target and
+        // migration must not attempt to copy a file onto itself.
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var path = Path.Combine(tempDirectory.FullName, "paired_clients.json");
+            new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, path)
+                .RegisterClient("client-a");
+
+            var migrated = PairedClientRegistry.TryMigrateLegacyStore(
+                path, path, NullLogger<PairedClientRegistry>.Instance);
+
+            Assert.False(migrated);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
 }
