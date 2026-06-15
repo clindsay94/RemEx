@@ -42,7 +42,7 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot   = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $HostProj   = Join-Path $RepoRoot "RemEx.Host"
-$PublishDir = Join-Path $HostProj "bin\Release\net10.0\win-x64\publish"
+$PublishDir = Join-Path $RepoRoot "artifacts\publish\RemEx.Host\release_win-x64"
 $ServiceName = "RemexHost"
 
 if (-not (Test-Path $InstallDir)) {

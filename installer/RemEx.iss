@@ -14,7 +14,7 @@
 #define AppHostExe     "RemEx.Host.exe"
 #define ServiceScript  "scripts\install-service.ps1"
 #ifndef SourceDir
-  #define SourceDir      "..\RemEx.Host\bin\Release\net10.0\win-x64\publish"
+  #define SourceDir      "..\artifacts\publish\RemEx.Host\release_win-x64"
 #endif
 
 [Setup]

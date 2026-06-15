@@ -115,7 +115,7 @@ echo "Native bridge → $NATIVE_BRIDGE_SO"
 # ── Client ───────────────────────────────────────────────────────────────────
 if [[ "$SKIP_CLIENT" == false ]]; then
     CLIENT_PROJ="$REPO_ROOT/RemEx.Host"
-    CLIENT_PUBLISH="$CLIENT_PROJ/bin/Release/net10.0/linux-x64/publish"
+    CLIENT_PUBLISH="$REPO_ROOT/artifacts/publish/RemEx.Host/release_linux-x64"
     CLIENT_BRIDGE="$CLIENT_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     CLIENT_STAGE="$OUTPUT_DIR/remex-client-v${VERSION}-linux-x64"
 
@@ -163,7 +163,7 @@ fi
 # ── Host ─────────────────────────────────────────────────────────────────────
 if [[ "$SKIP_HOST" == false ]]; then
     HOST_PROJ="$REPO_ROOT/RemEx.Host"
-    HOST_PUBLISH="$HOST_PROJ/bin/Release/net10.0/linux-x64/publish"
+    HOST_PUBLISH="$REPO_ROOT/artifacts/publish/RemEx.Host/release_linux-x64"
     HOST_BRIDGE="$HOST_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     HOST_STAGE="$OUTPUT_DIR/remex-host-v${VERSION}-linux-x64"
 

@@ -143,7 +143,7 @@ if ([string]::IsNullOrEmpty($RepoRoot)) {
 $BuildOutputDir = Join-Paths $RepoRoot "build_output"
 
 if ($isInstallerTarget) {
-    $publishDir = Join-Paths $RepoRoot "RemEx.Host" "bin" $Config "net10.0" "win-x64" "publish"
+    $publishDir = Join-Paths $RepoRoot "artifacts" "publish" "RemEx.Host" "${Config}_win-x64"
     if (Test-Path $publishDir) {
         $skipPublish = $true
     }
@@ -207,8 +207,16 @@ if (Test-Path $BuildOutputDir) {
 }
 New-Item -ItemType Directory -Force -Path $BuildOutputDir | Out-Null
 
-# Clean .NET bin/obj folders to avoid stale caches
-Write-Host "Recursively purging .NET bin/obj artifact cache..." -ForegroundColor DarkGray
+# Clean .NET build output to avoid stale caches. With UseArtifactsOutput (Directory.Build.props)
+# all output is consolidated under artifacts/, so that's the primary target; the recursive bin/obj
+# sweep stays as a safety net for any stray legacy folders (e.g. checkouts from before the switch).
+$artifactsDir = Join-Paths $RepoRoot "artifacts"
+if (Test-Path $artifactsDir) {
+    Write-Host "Removing consolidated artifacts/ folder..." -ForegroundColor DarkGray
+    Remove-Item -Path $artifactsDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host "Recursively purging any stray .NET bin/obj folders..." -ForegroundColor DarkGray
 $dotNetDirs = Get-ChildItem -Path $RepoRoot -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "bin" -or $_.Name -eq "obj" }
 foreach ($dir in $dotNetDirs) {
     if ($null -ne $dir -and (Test-Path $dir.FullName)) {
@@ -316,7 +324,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
         if ($null -ne $iscc) {
             Write-Host "Building Windows Installer (Inno Setup)..." -ForegroundColor DarkCyan
             $issFile = Join-Paths $RepoRoot "installer" "RemEx.iss"
-            $sourceDirArg = "..\RemEx.Host\bin\$Config\net10.0\win-x64\publish"
+            $sourceDirArg = "..\artifacts\publish\RemEx.Host\${Config}_win-x64"
             
             & $iscc "/DAppVersion=$Version" "/DSourceDir=$sourceDirArg" $issFile
             if ($LASTEXITCODE -ne 0) {
@@ -337,7 +345,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
             }
         } else {
             Write-Warning "ISCC.exe (Inno Setup 6) was not found in standard paths. Skipping installer packaging."
-            Write-Warning "Raw published files are available under RemEx.Host\bin\$Config\net10.0\win-x64\publish\"
+            Write-Warning "Raw published files are available under artifacts\publish\RemEx.Host\${Config}_win-x64\"
         }
     }
     Write-Host "----------------------------------------------------------" -ForegroundColor Gray

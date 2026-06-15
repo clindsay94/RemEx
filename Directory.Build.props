@@ -4,5 +4,11 @@
     <Authors>Connor Lindsay</Authors>
     <Company>CLindsay94</Company>
     <NoWarn>$(NoWarn);CA1416;CS0067</NoWarn>
+
+    <!-- Consolidate ALL build output under a single repo-root artifacts/ folder instead of a
+         bin/ + obj/ pair inside every project. Layout: artifacts/{bin,obj,publish}/<Project>/<pivot>
+         where <pivot> is e.g. "release_win-x64". Keeps the source tree clean (no per-project bin/obj
+         to mistake for source) — see scripts/installer paths which target artifacts/publish/... -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
 </Project>
