@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +45,35 @@ public partial class Program
         }
     }
 
+    // RemEx.Host is a WinExe (GUI subsystem) so launching it interactively does not pop a console
+    // window. The trade-off: when launched FROM a terminal, Windows does not attach the process to
+    // the parent console, so Console.WriteLine output is silently discarded. For the console-mode
+    // commands (--doctor, --agent) we explicitly attach to the parent console first so their output
+    // shows up in the terminal the user ran us from. No-op / harmless on non-Windows.
+    private const int ATTACH_PARENT_PROCESS = -1;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool AttachConsole(int dwProcessId);
+
+    private static void AttachToParentConsole()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        // If we attach to the parent console, the inherited stdout/stderr handles need to be
+        // re-pointed at it; otherwise Console keeps writing to the (discarded) original streams.
+        if (AttachConsole(ATTACH_PARENT_PROCESS))
+        {
+            var stdout = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
+            var stderr = new StreamWriter(Console.OpenStandardError()) { AutoFlush = true };
+            Console.SetOut(stdout);
+            Console.SetError(stderr);
+        }
+    }
+
     [STAThread]
     public static int Main(string[] args)
     {
@@ -52,6 +82,8 @@ public partial class Program
             (args[0].Equals("--doctor", StringComparison.OrdinalIgnoreCase) ||
              args[0].Equals("doctor", StringComparison.OrdinalIgnoreCase)))
         {
+            AttachToParentConsole();
+
             // `--doctor --fix` additionally installs missing dependencies (Linux: via the system
             // package manager + sudo steps; Windows: FFmpeg via winget), after confirmation.
             var fix = Array.Exists(args, a => a.Equals("--fix", StringComparison.OrdinalIgnoreCase));
@@ -76,6 +108,7 @@ public partial class Program
         // service stop).
         if (Array.Exists(args, a => a.Equals("--agent", StringComparison.OrdinalIgnoreCase)))
         {
+            AttachToParentConsole();
             return RunAgent(args);
         }
 
