@@ -17,13 +17,16 @@ public interface IDashboardProfileStorageService
 /// </summary>
 public class DashboardProfileStorageService : IDashboardProfileStorageService
 {
-    private static readonly string DefaultAppDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
     private readonly string _filePath;
 
     public DashboardProfileStorageService()
     {
-        Directory.CreateDirectory(DefaultAppDataFolder);
-        _filePath = Path.Combine(DefaultAppDataFolder, "host_dashboard_layout.json");
+        // Host-only store. Relocated to machine-wide ProgramData on Windows (unchanged elsewhere)
+        // so the layout survives the host running as the LocalSystem service vs. interactively.
+        var legacyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
+        var folder = RemexDataPaths.ResolveDirectory(legacyFolder);
+        RemexDataPaths.TryMigrateWindowsFile("host_dashboard_layout.json");
+        _filePath = Path.Combine(folder, "host_dashboard_layout.json");
     }
 
     public async Task<DashboardProfile> LoadProfileAsync()

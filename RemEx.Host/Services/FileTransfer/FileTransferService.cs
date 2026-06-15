@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
+using Remex.Core.Services;
 using Remex.Core.Services.FileTransfer;
 
 namespace Remex.Host.Services.FileTransfer;
@@ -35,8 +36,11 @@ public sealed class FileTransferService : IFileTransferService
     public FileTransferService(ILogger<FileTransferService> logger)
     {
         _logger = logger;
-        var baseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
-        Directory.CreateDirectory(baseFolder);
+        // Host-only store. Relocated to machine-wide ProgramData on Windows (unchanged elsewhere)
+        // so configured shared roots survive the host running as the LocalSystem service.
+        var legacyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
+        var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
+        RemexDataPaths.TryMigrateWindowsFile("file_transfer_roots.json");
         _configPath = Path.Combine(baseFolder, "file_transfer_roots.json");
     }
 

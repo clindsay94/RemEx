@@ -18,23 +18,33 @@ public interface ILauncherStorageService
 /// </summary>
 public class LauncherStorageService : ILauncherStorageService
 {
-    private static readonly string DefaultAppDataFolder = Path.Combine(
-        OperatingSystem.IsAndroid()
-            ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Remex");
-
     private readonly string _configFilePath;
 
     public LauncherStorageService() : this(null) { }
 
     public LauncherStorageService(string? storageFolderPath)
     {
-        var folder = storageFolderPath ?? DefaultAppDataFolder;
-        _configFilePath = Path.Combine(folder, "launchers.json");
+        string folder;
+        if (storageFolderPath is not null)
+        {
+            folder = storageFolderPath;
+            Directory.CreateDirectory(folder);
+        }
+        else
+        {
+            // Per-user folder used historically; ResolveDirectory relocates only Windows to the
+            // machine-wide ProgramData location so the LocalSystem host service and the interactive
+            // session agree. Android keeps its app-private Personal folder unchanged.
+            var legacyFolder = Path.Combine(
+                OperatingSystem.IsAndroid()
+                    ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
+                    : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Remex");
+            folder = RemexDataPaths.ResolveDirectory(legacyFolder);
+            RemexDataPaths.TryMigrateWindowsFile("launchers.json");
+        }
 
-        // Ensure the directory exists
-        Directory.CreateDirectory(folder);
+        _configFilePath = Path.Combine(folder, "launchers.json");
     }
 
     /// <summary>
