@@ -15,7 +15,7 @@ namespace Remex.Host;
 [SupportedOSPlatform("windows")]
 internal static class WindowsHostDoctor
 {
-    public static Task<int> RunAsync(CancellationToken ct = default)
+    public static async Task<int> RunAsync(bool fix = false, CancellationToken ct = default)
     {
         Console.WriteLine("RemEx Host — Windows remote-desktop prerequisite report");
         Console.WriteLine("=======================================================");
@@ -32,16 +32,54 @@ internal static class WindowsHostDoctor
         Console.WriteLine();
         if (!ffmpeg)
         {
-            Console.WriteLine("FFmpeg was not found on PATH. The desktop stream will use MJPEG. For hardware H.264,");
-            Console.WriteLine("install FFmpeg and add it to PATH, e.g.:  winget install Gyan.FFmpeg");
-            Console.WriteLine();
+            if (fix)
+            {
+                Console.WriteLine("Installing FFmpeg via winget (Gyan.FFmpeg)...");
+                var installed = await InstallFfmpegAsync(ct);
+                Console.WriteLine(installed
+                    ? "FFmpeg installed. Open a new terminal so the updated PATH takes effect."
+                    : "winget install failed. Install FFmpeg manually and add it to PATH: winget install Gyan.FFmpeg");
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine("FFmpeg was not found on PATH. The desktop stream will use MJPEG. For hardware H.264,");
+                Console.WriteLine("re-run with `--doctor --fix` (installs via winget), or run:  winget install Gyan.FFmpeg");
+                Console.WriteLine();
+            }
         }
 
         Console.WriteLine("No portal/PipeWire setup is required on Windows. Remote desktop is supported.");
 
         // Capture requires an interactive desktop; a service in Session 0 cannot stream, but that is by
         // design (the agent runs in Session 0 for commands only; streaming is the logged-in GUI host).
-        return Task.FromResult(0);
+        return 0;
+    }
+
+    private static async Task<bool> InstallFfmpegAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "winget",
+                Arguments = "install --id Gyan.FFmpeg --silent --accept-package-agreements --accept-source-agreements",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
+
+            if (process is null)
+            {
+                return false;
+            }
+
+            await process.WaitForExitAsync(ct);
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static bool ProbeFfmpeg()

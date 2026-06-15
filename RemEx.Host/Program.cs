@@ -52,14 +52,18 @@ public partial class Program
             (args[0].Equals("--doctor", StringComparison.OrdinalIgnoreCase) ||
              args[0].Equals("doctor", StringComparison.OrdinalIgnoreCase)))
         {
+            // `--doctor --fix` additionally installs missing dependencies (Linux: via the system
+            // package manager + sudo steps; Windows: FFmpeg via winget), after confirmation.
+            var fix = Array.Exists(args, a => a.Equals("--fix", StringComparison.OrdinalIgnoreCase));
+
             if (OperatingSystem.IsLinux())
             {
-                return HostDoctor.RunAsync().GetAwaiter().GetResult();
+                return HostDoctor.RunAsync(fix).GetAwaiter().GetResult();
             }
 
             if (OperatingSystem.IsWindows())
             {
-                return WindowsHostDoctor.RunAsync().GetAwaiter().GetResult();
+                return WindowsHostDoctor.RunAsync(fix).GetAwaiter().GetResult();
             }
 
             Console.Error.WriteLine("RemEx.Host --doctor is not supported on this platform.");

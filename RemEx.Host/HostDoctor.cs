@@ -26,7 +26,7 @@ internal static class HostDoctor
     /// Runs the doctor flow. Returns an exit code: 0 when the system can stream
     /// remote desktop (tier at least <c>PortalNoPen</c>), 1 otherwise.
     /// </summary>
-    public static async Task<int> RunAsync(CancellationToken ct = default)
+    public static async Task<int> RunAsync(bool fix = false, CancellationToken ct = default)
     {
         if (!OperatingSystem.IsLinux())
         {
@@ -75,27 +75,36 @@ internal static class HostDoctor
             idx++;
         }
 
-        var anySafe = false;
-        foreach (var action in plan.Actions)
+        // Without --fix the doctor only runs SAFE actions (non-install, non-elevated). With --fix it
+        // runs the full plan — including package installs and sudo steps — after confirmation.
+        if (!fix)
         {
-            if (action.Kind == LinuxRepairActionKind.InstallPackage) continue;
-            if (action.RequiresElevation) continue;
-            if (action.Kind == LinuxRepairActionKind.Manual) continue;
-            anySafe = true;
-            break;
+            var anySafe = false;
+            foreach (var action in plan.Actions)
+            {
+                if (action.Kind == LinuxRepairActionKind.InstallPackage) continue;
+                if (action.RequiresElevation) continue;
+                if (action.Kind == LinuxRepairActionKind.Manual) continue;
+                anySafe = true;
+                break;
+            }
+
+            if (!anySafe)
+            {
+                Console.WriteLine();
+                Console.WriteLine("No safe (non-elevated, non-install) actions to run automatically.");
+                Console.WriteLine("Re-run with `--doctor --fix` to install packages / apply sudo steps, or run the commands above by hand.");
+                return report.CanStream && report.PortalCaptureOperational ? 0 : 1;
+            }
         }
 
-        if (!anySafe)
-        {
-            Console.WriteLine();
-            Console.WriteLine("No safe (non-elevated, non-install) actions to run automatically.");
-            Console.WriteLine("Run the install/sudo commands shown above by hand.");
-            return report.CanStream && report.PortalCaptureOperational ? 0 : 1;
-        }
+        var prompt = fix
+            ? "\nApply ALL repairs, including package installs and sudo steps? [y/N] "
+            : "\nApply safe repairs? [y/N] ";
 
         if (!Console.IsInputRedirected && Environment.UserInteractive)
         {
-            Console.Write("\nApply safe repairs? [y/N] ");
+            Console.Write(prompt);
             var answer = Console.ReadLine()?.Trim().ToLowerInvariant();
             if (answer is not ("y" or "yes"))
             {
@@ -105,13 +114,16 @@ internal static class HostDoctor
         }
         else
         {
-            // Non-interactive (installer post-step or piped) — apply safe repairs silently.
-            Console.WriteLine("\nNon-interactive mode: applying safe repairs.");
+            // Non-interactive (installer post-step or piped).
+            Console.WriteLine(fix
+                ? "\nNon-interactive mode: applying all repairs (including installs)."
+                : "\nNon-interactive mode: applying safe repairs.");
         }
+
         var results = await repair.RepairAsync(
             plan,
-            allowPackageInstall: false,
-            allowElevated: false,
+            allowPackageInstall: fix,
+            allowElevated: fix,
             ct);
 
         Console.WriteLine();
