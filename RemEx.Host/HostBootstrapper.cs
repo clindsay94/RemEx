@@ -69,8 +69,15 @@ public static class HostBootstrapper
             ContentRootPath = AppContext.BaseDirectory
         });
 
-        // Enable Windows Service lifetime (no-op when not running under SCM).
-        builder.Host.UseWindowsService();
+        // Do NOT register the Windows Service (SCM) lifetime here. When this web host runs nested
+        // inside the headless agent's generic host (HostMode.CommandAgent), that outer host already
+        // owns the SCM lifetime via UseWindowsService() in Program.RunAgent. A process can only
+        // connect to the service control dispatcher once: a second WindowsServiceLifetime calls
+        // ServiceBase.Run() after the dispatcher is already consumed, returns without OnStart firing,
+        // and throws InvalidOperationException("Stopped without starting") from _app.StartAsync().
+        // The GUI/desktop path (HostMode.Full) runs interactively, never under the SCM, so it needs
+        // no Windows Service lifetime either. This host's lifetime is driven explicitly via
+        // StartAsync()/StopAsync() in AgentCoordinator and Program.Main.
 
         // Register custom in-memory logger provider to capture live host and Kestrel logs
         builder.Logging.AddProvider(new Remex.Core.Logging.InMemoryLoggerProvider());

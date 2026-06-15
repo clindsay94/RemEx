@@ -86,13 +86,14 @@ $PublishDir = if ($HostPath -and (Test-Path $HostPath)) {
 } elseif (Test-Path (Join-Path $PSScriptRoot "..\RemEx.Host\RemEx.Host.exe")) {
     Join-Path $PSScriptRoot "..\RemEx.Host"
 } else {
-    # Original dev-time fallback
-    Join-Path $PSScriptRoot "..\publish\RemEx.Host"
+    # Dev-time fallback: matches the artifacts publish layout used by the installer and
+    # update-local-install.ps1 (self-contained win-x64 → artifacts/publish/<Project>/<pivot>).
+    Join-Path $PSScriptRoot "..\artifacts\publish\RemEx.Host\release_win-x64"
 }
 
 function Publish-Host {
     Write-Host "Publishing RemEx.Host..." -ForegroundColor Cyan
-    dotnet publish $ProjectDir -c Release -o $PublishDir --self-contained false
+    dotnet publish $ProjectDir -c Release -r win-x64 -o $PublishDir --self-contained
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Publish failed."
         exit 1
