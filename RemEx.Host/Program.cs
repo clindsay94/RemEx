@@ -67,7 +67,7 @@ public partial class Program
         // service stop).
         if (Array.Exists(args, a => a.Equals("--agent", StringComparison.OrdinalIgnoreCase)))
         {
-            return RunAgentAsync(args).GetAwaiter().GetResult();
+            return RunAgent(args);
         }
 
         // Build the embedded host FIRST, before touching any Avalonia/App statics. Under the
@@ -142,61 +142,29 @@ public partial class Program
     }
 
     /// <summary>
-    /// Runs the process as the headless command agent: serves the command plane on the canonical port
-    /// and coordinates the single-port handoff with an interactive GUI host. Blocks until SIGTERM /
-    /// SIGINT (systemd stop / Ctrl+C).
+    /// Runs the process as the headless command agent inside a generic host, so process lifetime is
+    /// handled the same way on every platform: a clean Windows Service (SCM) stop via UseWindowsService,
+    /// and SIGTERM (systemd stop) / SIGINT (Ctrl+C) via the default console lifetime elsewhere. The
+    /// agent serves the command plane on the canonical port and runs the single-port handoff with an
+    /// interactive GUI host (see <see cref="AgentCoordinator"/>). Blocks until the host is stopped.
     /// </summary>
-    private static async Task<int> RunAgentAsync(string[] args)
+    private static int RunAgent(string[] args)
     {
-        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
-        var logger = loggerFactory.CreateLogger("RemEx.Host.Agent");
-
-        Microsoft.AspNetCore.Builder.WebApplication? app = null;
-        var gate = new SemaphoreSlim(1, 1);
-
-        async Task StartHostAsync()
-        {
-            await gate.WaitAsync();
-            try
+        var host = Host.CreateDefaultBuilder(args)
+            .UseWindowsService(options => options.ServiceName = "RemexHost")
+            .ConfigureLogging(logging =>
             {
-                if (app is null)
-                {
-                    app = HostBootstrapper.CreateApplication(args, RemexConstants.DefaultPort, HostMode.CommandAgent);
-                    await app.StartAsync();
-                    logger.LogInformation("Command agent listening on the canonical port.");
-                }
-            }
-            finally { gate.Release(); }
-        }
-
-        async Task StopHostAsync()
-        {
-            await gate.WaitAsync();
-            try
+                logging.ClearProviders();
+                logging.AddConsole();
+            })
+            .ConfigureServices(services =>
             {
-                if (app is not null)
-                {
-                    await app.StopAsync();
-                    await app.DisposeAsync();
-                    app = null;
-                    logger.LogInformation("Command agent yielded the canonical port.");
-                }
-            }
-            finally { gate.Release(); }
-        }
+                services.AddHostedService(sp =>
+                    new AgentCoordinator(args, sp.GetRequiredService<ILoggerFactory>().CreateLogger("RemEx.Host.Agent")));
+            })
+            .Build();
 
-        await StartHostAsync();
-
-        await using var control = new HostControlServer(logger, onYield: StopHostAsync, onReclaim: StartHostAsync);
-        control.Start();
-
-        // Block until the process is asked to stop (systemd -> SIGTERM, Ctrl+C -> SIGINT).
-        var shutdown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var sigTerm = PosixSignalRegistration.Create(PosixSignal.SIGTERM, ctx => { ctx.Cancel = true; shutdown.TrySetResult(); });
-        using var sigInt = PosixSignalRegistration.Create(PosixSignal.SIGINT, ctx => { ctx.Cancel = true; shutdown.TrySetResult(); });
-        await shutdown.Task;
-
-        await StopHostAsync();
+        host.Run();
         return 0;
     }
 
