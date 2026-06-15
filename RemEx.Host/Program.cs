@@ -57,7 +57,12 @@ public partial class Program
                 return HostDoctor.RunAsync().GetAwaiter().GetResult();
             }
 
-            Console.Error.WriteLine("RemEx.Host --doctor is only supported on Linux.");
+            if (OperatingSystem.IsWindows())
+            {
+                return WindowsHostDoctor.RunAsync().GetAwaiter().GetResult();
+            }
+
+            Console.Error.WriteLine("RemEx.Host --doctor is not supported on this platform.");
             return 2;
         }
 
