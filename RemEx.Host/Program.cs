@@ -1,12 +1,16 @@
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Remex.Core;
 using Remex.Client;
 using Remex.Client.Services;
 using Remex.Host;
+using Remex.Host.Services.IPC;
 
 // Program is intentionally in the GLOBAL namespace so the host integration tests resolve it via
 // WebApplicationFactory<Program> (HostFactoryResolver intercepts the embedded host build below).
@@ -17,6 +21,7 @@ using Remex.Host;
 public partial class Program
 {
     private static Microsoft.AspNetCore.Builder.WebApplication? _hostApp;
+    private static HostControlClient? _hostControlClient;
 
     /// <summary>
     /// The port the embedded host actually started on. Passed to the Avalonia app so the client
@@ -62,9 +67,7 @@ public partial class Program
         // service stop).
         if (Array.Exists(args, a => a.Equals("--agent", StringComparison.OrdinalIgnoreCase)))
         {
-            var agentApp = HostBootstrapper.CreateApplication(args, RemexConstants.DefaultPort, HostMode.CommandAgent);
-            agentApp.Run();
-            return 0;
+            return RunAgentAsync(args).GetAwaiter().GetResult();
         }
 
         // Build the embedded host FIRST, before touching any Avalonia/App statics. Under the
@@ -74,9 +77,16 @@ public partial class Program
         // deliberately NOT wrapped in a catch-all (a swallowing catch would break the resolver); we
         // still degrade to client-only mode on a genuine startup failure. HostBootstrapper owns port
         // selection (canonical port, with stale-port reclaim + fallback probing).
-        int preferredPort = IsWindowsServiceRunning("RemexHost")
-            ? RemexConstants.DefaultPort + 1
-            : RemexConstants.DefaultPort;
+        // Single-port handoff: if the headless agent is holding the canonical port, ask it to yield
+        // (it stops its web host, releasing the port + the RemExLocalIPC mutex/pipe) so this GUI host
+        // can own the full host on the canonical port. The control connection is held open for the
+        // life of the process; on exit the agent observes the drop and reclaims the port. If no agent
+        // is running this returns immediately and we just bind the port ourselves.
+        _hostControlClient = new HostControlClient();
+        try { _hostControlClient.RequestTakeoverAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult(); }
+        catch { /* best-effort; StalePortReclaimer is the fallback inside CreateApplication */ }
+
+        int preferredPort = RemexConstants.DefaultPort;
 
         try
         {
@@ -123,8 +133,70 @@ public partial class Program
                 _hostApp.StopAsync().GetAwaiter().GetResult();
                 (_hostApp as IDisposable)?.Dispose();
             }
+
+            // Drop the control connection so a waiting agent reclaims the canonical port.
+            _hostControlClient?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
+        return 0;
+    }
+
+    /// <summary>
+    /// Runs the process as the headless command agent: serves the command plane on the canonical port
+    /// and coordinates the single-port handoff with an interactive GUI host. Blocks until SIGTERM /
+    /// SIGINT (systemd stop / Ctrl+C).
+    /// </summary>
+    private static async Task<int> RunAgentAsync(string[] args)
+    {
+        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+        var logger = loggerFactory.CreateLogger("RemEx.Host.Agent");
+
+        Microsoft.AspNetCore.Builder.WebApplication? app = null;
+        var gate = new SemaphoreSlim(1, 1);
+
+        async Task StartHostAsync()
+        {
+            await gate.WaitAsync();
+            try
+            {
+                if (app is null)
+                {
+                    app = HostBootstrapper.CreateApplication(args, RemexConstants.DefaultPort, HostMode.CommandAgent);
+                    await app.StartAsync();
+                    logger.LogInformation("Command agent listening on the canonical port.");
+                }
+            }
+            finally { gate.Release(); }
+        }
+
+        async Task StopHostAsync()
+        {
+            await gate.WaitAsync();
+            try
+            {
+                if (app is not null)
+                {
+                    await app.StopAsync();
+                    await app.DisposeAsync();
+                    app = null;
+                    logger.LogInformation("Command agent yielded the canonical port.");
+                }
+            }
+            finally { gate.Release(); }
+        }
+
+        await StartHostAsync();
+
+        await using var control = new HostControlServer(logger, onYield: StopHostAsync, onReclaim: StartHostAsync);
+        control.Start();
+
+        // Block until the process is asked to stop (systemd -> SIGTERM, Ctrl+C -> SIGINT).
+        var shutdown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sigTerm = PosixSignalRegistration.Create(PosixSignal.SIGTERM, ctx => { ctx.Cancel = true; shutdown.TrySetResult(); });
+        using var sigInt = PosixSignalRegistration.Create(PosixSignal.SIGINT, ctx => { ctx.Cancel = true; shutdown.TrySetResult(); });
+        await shutdown.Task;
+
+        await StopHostAsync();
         return 0;
     }
 
