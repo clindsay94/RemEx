@@ -1,3 +1,40 @@
+## RemEx Architecture & Project Rules
+
+These rules apply to ALL agents working in this repository. They are not overridable by individual session context.
+
+### Host = PC, Client = Android. End of Story.
+
+- `Remex.Host` is the **entire PC side** — Windows Service/daemon plus all PC functionality. Android connects TO this.
+- `RemEx.Android` is the **only** network client. Nothing else is a client.
+- `Remex.Client/` and `Remex.Client.Desktop/` are legacy folders being phased out. Do NOT add new code there.
+- Connection is always Android → PC, always non-loopback.
+- If you find old references to a "desktop client" connecting to a "desktop host", update them to reflect the current architecture.
+
+### MCP Tool Discipline
+
+Before reaching for `grep`, `Read`, or raw `Bash`, consult the decision matrix in `CLAUDE.md`:
+- **Find / read symbols** → `token-savior: find_symbol`, `get_function_source`, `get_dependencies`
+- **Before ANY edit** → `gitnexus: impact` (upstream blast radius)
+- **Explore flows / concepts** → `gitnexus: query` or `gitnexus: context`
+- **Large command output / data processing** → `context-mode: ctx_execute`
+- **Generating >3 new/changed files** → `agy -p "prompt"` (Gemini/antigravity headless)
+
+### Cross-Platform Parity
+
+Every PC-side change must work on **both Windows and CachyOS/Linux**. The repo lives on a shared drive. New scripts need a `pwsh`-compatible path or a `.sh` equivalent. `build-remex.ps1` is the canonical entry point for both OSes.
+
+### Code Quality
+
+No lazy code. Use the most correct, robust, maintainable approach. No stub methods, `TODO:` bodies, or "good enough for now" placeholders. Check existing infrastructure (`Remex.Core/Guards`, `Remex.Core/Validation`) before writing new utilities.
+
+### Docs & CHANGELOG on Every Change
+
+Every code change must also update `CHANGELOG.md` (Keep a Changelog format). Update affected XML doc comments, `docs/` files, and version numbers when warranted. A task is not complete until docs are updated.
+
+### Beads for Task Tracking
+
+Use `bd` for ALL task tracking. Create an issue before writing code. Claim it. Close it when done. Never use TodoWrite, TaskCreate, or markdown TODO lists. Run `bd prime` for the full workflow context.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 

@@ -99,7 +99,14 @@ public static class HostBootstrapper
         if (OperatingSystem.IsWindows())
         {
             builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
-            builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.WindowsSystemCommandService>();
+            // The real command service is wrapped by SessionBridgingCommandService so that desktop-bound
+            // commands (lock / monitor-off / sign-out) reach the interactive session when the host runs
+            // headless in Session 0 (the LocalSystem service). Power commands pass straight through.
+            builder.Services.AddSingleton<Remex.Core.Services.Command.WindowsSystemCommandService>();
+            builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService>(sp =>
+                new Remex.Host.Services.Command.SessionBridgingCommandService(
+                    sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Host.Services.Command.SessionBridgingCommandService>>(),
+                    sp.GetRequiredService<Remex.Core.Services.Command.WindowsSystemCommandService>()));
             builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService>();
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.WindowsInputSimulationService>();

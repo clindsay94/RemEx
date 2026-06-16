@@ -37,19 +37,46 @@ When generating large scaffolds, boilerplates, or multi-file modules, DO NOT wri
 - **Verify via Diffs:** Do NOT read the generated files back into the primary context window. Use `git diff` to evaluate the generated code.
 - **Edit by Exception:** Act purely as a reviewer. Only intervene or edit the resulting files directly if the diff reveals structural hallucinations or logic flaws.
 
+### MCP Tool Decision Matrix
+
+Use this table before reaching for `grep`, `Read`, or raw `Bash`:
+
+| Task | Required Tool | Never Instead |
+|------|--------------|---------------|
+| Find a symbol / class / method | `token-savior: find_symbol` | `grep` or Read full files |
+| Read a function's body only | `token-savior: get_function_source` | Read the whole file |
+| What calls this function? | `token-savior: get_dependents` | Manual import tracing |
+| What does this function call? | `token-savior: get_dependencies` | Sequential file reads |
+| Before editing ANY symbol | `gitnexus: impact` (upstream) | Edit without checking |
+| Explore a concept / execution flow | `gitnexus: query` | Keyword grep across repo |
+| Full 360° context on one symbol | `gitnexus: context` | Multiple sequential Reads |
+| Run command with potentially large output | `context-mode: ctx_execute` | Raw Bash into context |
+| Count / filter / aggregate data | `context-mode: ctx_execute` | Load all data into context |
+| Generate / rewrite >3 files at once | `agy -p "..."` (see §4 above) | Write each file directly |
+
+**`agy` quick usage for large multi-file changes:**
+```bash
+agy -p "Generate X. Prefix every file block with // FILE: path/to/file.ext" > .bulk_raw.txt
+agy-splitter .bulk_raw.txt   # split into real files on disk
+rm .bulk_raw.txt             # clean up
+git diff                     # grade — do NOT Read generated files back into context
+```
+Only intervene via `Edit`/`Write` if the diff reveals hallucinations or logic flaws.
+
 
 ## Project Overview
 
-Remote Execution (RemEx) is a cross-platform remote PC management tool. It consists of a .NET 10 / Avalonia desktop client, a headless ASP.NET host service, and a native Android app (Kotlin + Jetpack Compose). The `Remex.Core` library is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `Remex.Host` is the **entire PC side** — Windows Service/daemon plus all PC-side functionality, combining what were formerly separate host and desktop projects. `RemEx.Android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+
+> **There is no desktop client.** `Remex.Client/` and `Remex.Client.Desktop/` are legacy folders being phased out — do not add new code there. If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `Remex.Host` only. The Android app is the only client.
 
 ## Build & Run
 
 ```powershell
-# Run host service
+# Run PC host service (Android connects to this — this IS the entire PC side)
 dotnet run --project Remex.Host
 
-# Run desktop client
-dotnet run --project Remex.Client.Desktop
+# NOTE: Remex.Client.Desktop is a legacy entry point merged into Remex.Host. Do not use for new work.
 
 # Run all tests
 dotnet test Remex.sln
@@ -67,12 +94,14 @@ pwsh ./build-remex.ps1 -c release -t all
 ## Architecture
 
 ```
-Remex.Core/              Shared models, messages, validation, Guards, serialization
-                         ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
-Remex.Host/              Headless ASP.NET service: Minimal APIs, WebSocket, mDNS
-Remex.Client/            Shared Avalonia UI: views, viewmodels, controls, services, themes
-Remex.Client.Desktop/    Desktop entry point (Windows / Linux) — thin wrapper over Remex.Client
-RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+Remex.Core/         Shared models, messages, validation, Guards, serialization
+                    ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
+Remex.Host/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
+                    ↳ Combines the former host service + desktop UI into a single project.
+                    ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
+RemEx.Android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+                    ↳ Android phone app. Connects to Remex.Host on the PC. Nothing else is a client.
+Remex.Client/       LEGACY — remnant folder being phased out. Do not add new code here.
 ```
 
 ### Communication Protocols
@@ -86,7 +115,16 @@ RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI �
 
 All messages over `/ws` use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN; clients then pin the host certificate SPKI hash.
 
-### Key Directories in Remex.Client
+### High-Risk Code Areas
+
+The following areas are **security-critical or tightly coupled between `Remex.Host` and `RemEx.Android`**. Changes here require explicit user sign-off and must be coordinated across both sides of the connection:
+
+- **Pairing flow** (`PairingHandler`, `PairedClientRegistry`) — ECDH P-256 key exchange and PIN verification. `PairedClientRegistry` is the ONLY authentication path in production (non-loopback). Breakage silently bricks all device pairing with no clear error on either end.
+- **Certificate pinning** — Android pins the host's SPKI hash at pairing time. If the host cert changes without a re-pair, the connection is permanently refused until the user re-pairs. Never regenerate or rotate certs silently.
+- **`RemexMessage` envelope / `protocolVersion`** — Wire format changes must be backward-compatible or require a `protocolVersion` bump AND a coordinated Android + host release. Mismatched versions cause silent deserialization failures.
+- **Named Pipe security** (`RemExLocalIPC`) — Incorrect security descriptors on the pipe block the dashboard UI from communicating with the Windows Service (Session 0 isolation). Test pipe connectivity after any change to the pipe setup code.
+
+### Key Directories in Remex.Host
 
 `Views/` and `ViewModels/` follow standard MVVM. `Services/` holds connection, layout, telemetry, and theme services. `Themes/` has the four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass). `Localization/` drives live 8-language switching without restart.
 
@@ -107,6 +145,40 @@ Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (
 ### Validation
 All network-facing input must be validated through the shared validation helpers in `Remex.Core/Validation/`. See `docs/VALIDATION_GUIDELINES.md`.
 
+### NativeAOT Constraints (`Remex.Core`)
+
+`Remex.Core` is compiled as a NativeAOT JNI library (`libRemexCore.so`) for Android. Code in `Remex.Core` **must be NativeAOT-safe** or the Android build will break at link time — often with no obvious connection to the change you made. Hard rules:
+
+- **No reflection** — `typeof(T).GetMethod(...)`, `Activator.CreateInstance`, `JsonSerializer` with non-source-generated options, etc. are all forbidden.
+- **No dynamic code generation** — no `System.Linq.Expressions` compilation, no `Emit`, no runtime type building.
+- **Trimming-safe** — use `[DynamicallyAccessedMembers]` and `[RequiresUnreferencedCode]` where necessary. The build has trimming enabled; unannotated reflection silently disappears.
+- **Source-generated JSON** — use `[JsonSerializable]` + `JsonSerializerContext` for any new serializable types. Do not use `JsonSerializer.Serialize<T>(obj)` without a source-gen context.
+- If you're unsure whether something is NativeAOT-safe, check `Remex.Core` for existing patterns before writing new code.
+
+### Windows Service / Session 0 (`Remex.Host` on Windows)
+
+`Remex.Host` runs as **LocalSystem in Session 0** (the isolated service session, separate from the interactive user desktop). This has concrete implications:
+
+- **Never use `HKCU` or `%APPDATA%`** — LocalSystem's registry hive and profile are not the user's. Use `HKLM` for machine-wide config and `ProgramData` for file-based persistence.
+- **Machine-wide storage** — state that needs to survive across service restarts or be shared with the tray UI must be stored in machine-wide locations (registry under `HKLM`, files under `ProgramData`).
+- **Named Pipe ACLs** — the pipe (`RemExLocalIPC`) must grant access to both LocalSystem (service side) and the interactive user (tray UI side). Session 0 isolation blocks cross-session handles without explicit ACLs.
+- **No UI from the service** — the service cannot display windows or dialogs. All user interaction goes through the tray/dashboard UI, which communicates back via Named Pipe.
+
+### Localization
+
+All user-facing strings in `Remex.Host` (UI labels, tooltips, error messages, notifications) **must** go through the localization system in `Localization/`. The app supports 8 languages with live switching — hardcoded English strings are a regression. Rules:
+
+- Add new strings to the appropriate `.resx` / localization file, not inline in code or XAML.
+- Never use `string.Format` or interpolation directly in UI-bound properties; use localized format strings.
+- If a string is purely internal (logs, exception messages, developer-facing), it may stay in English without localization.
+
+### Protocol Versioning
+
+`RemexMessage` carries `protocolVersion: 2`. If you make a breaking change to the wire format:
+1. Bump `protocolVersion` in both `Remex.Host` and `RemEx.Android`.
+2. Coordinate the release — a version mismatch between host and Android causes silent deserialization failures, not clean errors.
+3. Non-breaking additions (new optional fields) do not require a bump, but document them in CHANGELOG.md.
+
 ## Android Prerequisites
 
 - Android SDK API Level 37 platform required
@@ -118,14 +190,73 @@ All network-facing input must be validated through the shared validation helpers
 
 On Linux, run `dotnet run --project Remex.Host -- --doctor` to check PipeWire/X11/VAAPI prerequisites.
 
+## Cross-Platform Parity (Windows ↔ CachyOS/Linux)
+
+This repo lives on a shared drive and must work equally on **Windows** and **CachyOS/Linux**. Any change that touches the PC side (Remex.Host, scripts, installers, build tooling) **must maintain parity**:
+
+- Every `.ps1` script must work under `pwsh` on Linux **or** have a `.sh` equivalent that does the same thing.
+- Never hardcode Windows-only paths. Use path helpers or environment variables.
+- `build-remex.ps1` is the canonical cross-platform build entry point. New build steps must be added for both platforms.
+- Before closing a task: verify the change works on both platforms, or explicitly note which OS was tested and file a follow-up beads issue for the other.
+
+## Code Quality Standards
+
+**No lazy code.** Every implementation must be the most correct, robust, and maintainable approach for the task. Rules:
+
+- Use `gitnexus: query` and `token-savior` to understand existing patterns **before** writing new code. Match the codebase's conventions.
+- No placeholder implementations, stub methods, `TODO:` bodies, or "good enough for now" code. If a full implementation is out of scope, file a beads issue and implement what IS in scope correctly.
+- Prefer correctness over speed-to-write. If there's a real tradeoff, explain it.
+- Use existing infrastructure before rolling new ones: `Remex.Core/Guards`, `Remex.Core/Validation`, `GetRequiredService<T>()`, etc.
+
+## Documentation & CHANGELOG Maintenance
+
+**Update docs on every change.** No task is complete until:
+
+1. **CHANGELOG.md** has an entry under the correct version heading (Keep a Changelog format: `Added`, `Changed`, `Fixed`, `Removed`, `Security`).
+2. Affected XML doc comments, README sections, or `docs/` guideline files are updated.
+3. `AGENTS.md` / `CLAUDE.md` are updated if project structure, tooling, or conventions changed.
+4. `Directory.Build.props` and `RemEx.Android/app/version.properties` are bumped if the change warrants a version increment.
+
+## User Experience Standards
+
+The target user **may not be technical**. Every user-facing element must be:
+
+- **Plain English** — no jargon, no abbreviations, no assumed knowledge in scripts, installers, UI tooltips, or error messages.
+- **Hand-holdy** — scripts print friendly status messages and tell the user exactly what to do when something fails. Always provide a "what to do next" step.
+- **Consistent** — `build-remex.ps1` is the canonical entry point for all major build/install operations. All major operations should be accessible from it, not buried in sub-scripts.
+- **Theme-safe** — any UI change must be verified across all four themes: CyberNOC, Monolith, SolarFlare, BaseDarkGlass. Each has distinct contrast ratios and background treatments; a change that looks fine on one can break another.
+
+## Beads Issue Tracking (`bd`)
+
+Beads is the task tracker for this repo. It replaces TODO lists, markdown task files, and ad-hoc notes entirely.
+
+**Mandatory workflow:**
+1. `bd create` — file an issue **before** writing any code
+2. `bd update <id> --claim` — claim it when you start
+3. `bd close <id>` — close it when done (before reporting complete)
+
+**Key commands:**
+```bash
+bd ready                           # find unblocked work
+bd show <id>                       # see full issue + dependencies
+bd create --title="..." --description="..." --type=task|bug|feature --priority=0-4
+bd remember "insight"              # persist cross-session knowledge
+bd dolt push                       # sync issues to remote (part of session close)
+```
+
+**Rules:**
+- NEVER use TodoWrite, TaskCreate, or markdown TODO lists.
+- NEVER say "done" without running `bd close` on completed issues.
+- Priority scale: 0=critical, 1=high, 2=medium, 3=low, 4=backlog.
+
 <!-- agent-team:start -->
 ## Agent Team & Communication
 
 See global instructions: `~/.claude/CLAUDE.md`
 
 **Project-level coordination for RemEx 2.0:**
-- Root mission control: `/home/connorl/RemEx/AGENTS.md` — phase gates, chokepoint files, master plan
-- Sub-project playbooks: `Remex.Core/AGENTS.md`, `Remex.Client.Desktop/AGENTS.md`, etc.
+- Root mission control: `AGENTS.md` in this repo — project rules, architecture, phase gates
+- Sub-project playbooks: `Remex.Core/AGENTS.md`, `Remex.Host/AGENTS.md`, etc.
 
 Read the relevant sub-project `AGENTS.md` before touching files in that directory.
 <!-- agent-team:end -->

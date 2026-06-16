@@ -77,6 +77,15 @@ public partial class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // --session-task <verb>: perform a single desktop-bound action in the CURRENT session, then exit.
+        // The Session-0 service launches this into the signed-in user's session (via CreateProcessAsUser,
+        // see WindowsActiveSession) so actions like lock / monitor-off actually take effect on the user's
+        // desktop. No host, no UI — this branch must stay cheap and return before any other startup work.
+        if (args.Length >= 2 && args[0].Equals("--session-task", StringComparison.OrdinalIgnoreCase))
+        {
+            return RunSessionTask(args[1]);
+        }
+
         // --doctor / doctor: Linux remote-desktop prerequisite report; exits without launching the UI.
         if (args.Length > 0 &&
             (args[0].Equals("--doctor", StringComparison.OrdinalIgnoreCase) ||
@@ -208,6 +217,44 @@ public partial class Program
 
         host.Run();
         return 0;
+    }
+
+    /// <summary>
+    /// Executes one desktop-bound action in the current session, then exits. Invoked as
+    /// <c>--session-task &lt;verb&gt;</c> when the Session-0 service relaunches this binary into the
+    /// signed-in user's session (see <c>WindowsActiveSession</c>), so the action runs where it has a
+    /// desktop. Returns 0 on success, 1 on failure, 2 for an unknown verb or unsupported platform.
+    /// </summary>
+    private static int RunSessionTask(string verb)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return 2;
+        }
+
+        try
+        {
+            // This process already runs in the user's interactive session, so the platform command
+            // service performs the action directly (no session bridging — that is the caller's job).
+            var commandService = new Remex.Core.Services.Command.WindowsSystemCommandService();
+            switch (verb.ToLowerInvariant())
+            {
+                case "lock":
+                    commandService.Lock().GetAwaiter().GetResult();
+                    return 0;
+                case "monitoroff":
+                    commandService.MonitorOff().GetAwaiter().GetResult();
+                    return 0;
+                default:
+                    Console.Error.WriteLine($"[Remex] Unknown --session-task verb: {verb}");
+                    return 2;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Remex] --session-task {verb} failed: {ex.Message}");
+            return 1;
+        }
     }
 
     /// <summary>
