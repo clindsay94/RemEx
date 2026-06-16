@@ -24,6 +24,9 @@ public partial class Program
     private static Microsoft.AspNetCore.Builder.WebApplication? _hostApp;
     private static HostControlClient? _hostControlClient;
 
+    // Held for the process lifetime to enforce one interactive GUI host per session (see Main).
+    private static Mutex? _guiInstanceLock;
+
     /// <summary>
     /// The port the embedded host actually started on. Passed to the Avalonia app so the client
     /// connects to the right endpoint.
@@ -119,6 +122,21 @@ public partial class Program
         {
             AttachToParentConsole();
             return RunAgent(args);
+        }
+
+        // Single-instance guard for the interactive GUI host: at most one per session. A duplicate
+        // launch (the HKCU Run entry firing while one is already up, a dev run, or a stale instance)
+        // would collide on the canonical port — and StalePortReclaimer would then terminate the
+        // running host (including the LocalSystem agent/service) to grab it. If another GUI host in
+        // this session already holds the guard, exit quietly. The agent (--agent, Session 0) returns
+        // above and never reaches here, so it never contends for this lock. Local\ scopes it per
+        // session so fast-user-switching sessions each get their own GUI host.
+        _guiInstanceLock = new Mutex(initiallyOwned: true, @"Local\RemExGuiHost", out bool createdNewGuiInstance);
+        if (!createdNewGuiInstance)
+        {
+            AttachToParentConsole();
+            Console.Error.WriteLine("[Remex] Another RemEx host is already running in this session; exiting.");
+            return 0;
         }
 
         // Build the embedded host FIRST, before touching any Avalonia/App statics. Under the
