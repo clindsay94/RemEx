@@ -75,7 +75,11 @@
       "Bash(bd ready *)",
       "mcp__plugin_context-mode_context-mode__ctx_execute",
       "Bash(bd update *)",
-      "mcp__plugin_context-mode_context-mode__ctx_execute_file"
+      "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+      "mcp__plugin_context-mode_context-mode__ctx_search",
+      "mcp__token-savior__find_symbol",
+      "mcp__token-savior__set_project_root",
+      "mcp__token-savior__get_function_source"
     ]
   },
   "skillOverrides": {
@@ -92,5 +96,6 @@
     "winui-app": "off",
     "workflow-orchestrator": "off"
   },
+  "enabledPlugins": {},
   "outputStyle": "default"
 }

@@ -155,40 +155,6 @@ public static class HostBootstrapper
         // every client. Only an alternate (non-canonical) port is used as a last resort, and only
         // if the occupant isn't a Remex.Host we can reclaim.
         // Probe on both IPv4 and IPv6 interfaces to completely avoid dual-stack wildcard collisions.
-        static bool ProbePortFree(int candidatePort)
-        {
-            try
-            {
-                using (var testSocketV4 = new System.Net.Sockets.Socket(
-                    System.Net.Sockets.AddressFamily.InterNetwork,
-                    System.Net.Sockets.SocketType.Stream,
-                    System.Net.Sockets.ProtocolType.Tcp))
-                {
-                    testSocketV4.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, candidatePort));
-                    testSocketV4.Close();
-                }
-
-                if (System.Net.Sockets.Socket.OSSupportsIPv6)
-                {
-                    using var testSocketV6 = new System.Net.Sockets.Socket(
-                        System.Net.Sockets.AddressFamily.InterNetworkV6,
-                        System.Net.Sockets.SocketType.Stream,
-                        System.Net.Sockets.ProtocolType.Tcp)
-                    {
-                        DualMode = true
-                    };
-                    testSocketV6.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, candidatePort));
-                    testSocketV6.Close();
-                }
-
-                return true;
-            }
-            catch (System.Net.Sockets.SocketException)
-            {
-                return false;
-            }
-        }
-
         int actualPort = port;
         // Skip real-port probing/reclaim under TestServer (no socket is bound, and we must not
         // terminate other Remex.Host processes from a test run).
@@ -197,7 +163,7 @@ public static class HostBootstrapper
             for (int attempt = 0; attempt < 5; attempt++)
             {
                 int testPort = port + attempt;
-                if (ProbePortFree(testPort))
+                if (IsPortFree(testPort))
                 {
                     actualPort = testPort;
                     break;
@@ -207,7 +173,7 @@ public static class HostBootstrapper
                 // drifting to a fallback port the clients would never dial.
                 if (testPort == port
                     && Services.Network.StalePortReclaimer.TryReclaim(testPort)
-                    && ProbePortFree(testPort))
+                    && IsPortFree(testPort))
                 {
                     actualPort = testPort;
                     break;
@@ -517,6 +483,43 @@ public static class HostBootstrapper
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Returns true when <paramref name="port"/> can be bound on the IPv4 (and, when available,
+    /// IPv6 dual-stack) wildcard interface — i.e. no other process holds that port.
+    /// Used by <see cref="AgentCoordinator"/> to poll for port availability before reclaiming.
+    /// </summary>
+    internal static bool IsPortFree(int port)
+    {
+        try
+        {
+            using (var v4 = new System.Net.Sockets.Socket(
+                System.Net.Sockets.AddressFamily.InterNetwork,
+                System.Net.Sockets.SocketType.Stream,
+                System.Net.Sockets.ProtocolType.Tcp))
+            {
+                v4.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Any, port));
+            }
+
+            if (System.Net.Sockets.Socket.OSSupportsIPv6)
+            {
+                using var v6 = new System.Net.Sockets.Socket(
+                    System.Net.Sockets.AddressFamily.InterNetworkV6,
+                    System.Net.Sockets.SocketType.Stream,
+                    System.Net.Sockets.ProtocolType.Tcp)
+                {
+                    DualMode = true
+                };
+                v6.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.IPv6Any, port));
+            }
+
+            return true;
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
