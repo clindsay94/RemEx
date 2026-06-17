@@ -42,8 +42,6 @@ public sealed class RemoteDesktopHandler : IDisposable
     private int _targetFps = 120;
     private bool _drawCursor = true;
 
-    private int _desktopLeft = 0;
-    private int _desktopTop = 0;
     private DesktopCodecKind _negotiatedCodec = DesktopCodecKind.Mjpeg;
     private DesktopCodecKind _activeCodec = DesktopCodecKind.Mjpeg;
     private DesktopClientCapabilities _clientCapabilities = new();
@@ -746,15 +744,21 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             switch (input.EventType)
             {
+                // Absolute moves/clicks: the Android client already maps touch/stylus points into
+                // absolute virtual-desktop coordinates (mapLocalToHost adds the host-reported
+                // desktopLeft/Top before sending). Do NOT re-add the desktop offset here — that
+                // double-applies it and, on a secondary monitor with a non-zero origin,
+                // drives the cursor off-screen so SendInput clamps it to the desktop edge. On the
+                // primary monitor the origin is (0,0), which is why the bug was invisible there.
                 case InputEventTypes.MouseMove when input.X.HasValue && input.Y.HasValue:
-                    _inputSimulation.MoveMouse(input.X.Value + _desktopLeft, input.Y.Value + _desktopTop);
+                    _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
                     break;
                 case InputEventTypes.MouseMove when input.DeltaX.HasValue || input.DeltaY.HasValue:
                     _inputSimulation.MouseMoveRelative(input.DeltaX ?? 0, input.DeltaY ?? 0);
                     break;
                 case InputEventTypes.MouseDown when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value + _desktopLeft, input.Y.Value + _desktopTop);
+                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
                     _inputSimulation.MouseDown(input.Button.Value);
                     break;
                 case InputEventTypes.MouseUp when input.Button.HasValue:
@@ -762,7 +766,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                     break;
                 case InputEventTypes.MouseClick when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value + _desktopLeft, input.Y.Value + _desktopTop);
+                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
                     _inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
@@ -923,8 +927,6 @@ public sealed class RemoteDesktopHandler : IDisposable
         CancellationToken ct)
     {
         var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
-        _desktopLeft = desktopLeft;
-        _desktopTop = desktopTop;
         var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
 
         await SendMessageAsync(webSocket, new RemexMessage
@@ -996,8 +998,6 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
 
         var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
-        _desktopLeft = desktopLeft;
-        _desktopTop = desktopTop;
 
         await SendMessageAsync(webSocket, new RemexMessage
         {
@@ -1043,8 +1043,6 @@ public sealed class RemoteDesktopHandler : IDisposable
         CancellationToken ct)
     {
         var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
-        _desktopLeft = desktopLeft;
-        _desktopTop = desktopTop;
 
         await SendMessageAsync(webSocket, new RemexMessage
         {
