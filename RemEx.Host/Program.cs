@@ -230,6 +230,14 @@ public partial class Program
             {
                 services.AddHostedService(sp =>
                     new AgentCoordinator(args, sp.GetRequiredService<ILoggerFactory>().CreateLogger("RemEx.Host.Agent")));
+
+                // On Windows, the Session-0 service owns the interactive GUI host's lifetime and
+                // launches it at HIGH integrity (linked admin token) so remote input can reach
+                // elevated windows (UIPI). This supersedes the per-user HKCU Run-key autostart.
+                if (OperatingSystem.IsWindows())
+                {
+                    services.AddHostedService<Remex.Host.Services.InteractiveDesktopHostLauncher>();
+                }
             })
             .Build();
 

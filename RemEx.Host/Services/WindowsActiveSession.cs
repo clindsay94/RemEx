@@ -75,9 +75,11 @@ internal static class WindowsActiveSession
         string? workingDirectory,
         uint creationFlags,
         ushort showWindow,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        bool elevate = false)
     {
         IntPtr userToken = IntPtr.Zero;
+        IntPtr elevatedToken = IntPtr.Zero;
         IntPtr envBlock = IntPtr.Zero;
         try
         {
@@ -96,12 +98,38 @@ internal static class WindowsActiveSession
                 return false;
             }
 
+            // For desktop input injection to reach ELEVATED (admin) windows, the launched process
+            // must itself run at HIGH integrity — Windows UIPI silently drops SendInput from a
+            // lower-integrity process against a higher-integrity foreground window. WTSQueryUserToken
+            // returns the user's *filtered* token (MEDIUM integrity on a UAC admin), so when elevation
+            // is requested, obtain the user's linked full-admin token. Falls back to the filtered
+            // token for standard users or when no linked token is available.
+            IntPtr launchToken = userToken;
+            if (elevate)
+            {
+                elevatedToken = TryGetLinkedElevatedToken(userToken, logger);
+                if (elevatedToken != IntPtr.Zero)
+                {
+                    launchToken = elevatedToken;
+                    logger?.LogInformation(
+                        "Using the signed-in user's elevated (linked) token for a HIGH-integrity launch in session {SessionId}.",
+                        sessionId);
+                }
+                else
+                {
+                    logger?.LogInformation(
+                        "No elevated linked token available in session {SessionId}; launching at the user's default integrity. " +
+                        "Input to elevated (admin) windows will be blocked by Windows UIPI.",
+                        sessionId);
+                }
+            }
+
             // Build the signed-in user's environment block. Without this the child inherits the
             // SYSTEM service's environment (TEMP/USERPROFILE point into the system profile, which the
             // user token can't use), and a self-contained .NET process aborts during runtime startup
             // before reaching Main — CreateProcessAsUser still returns a PID, so the failure is silent.
             uint flags = creationFlags;
-            if (CreateEnvironmentBlock(out envBlock, userToken, bInherit: false))
+            if (CreateEnvironmentBlock(out envBlock, launchToken, bInherit: false))
             {
                 flags |= CREATE_UNICODE_ENVIRONMENT;
             }
@@ -125,7 +153,7 @@ internal static class WindowsActiveSession
             var mutableCommandLine = new StringBuilder(commandLine, Math.Max(commandLine.Length + 2, 260));
 
             bool ok = CreateProcessAsUser(
-                userToken,
+                launchToken,
                 applicationName,
                 mutableCommandLine,
                 IntPtr.Zero,
@@ -163,10 +191,100 @@ internal static class WindowsActiveSession
             {
                 DestroyEnvironmentBlock(envBlock);
             }
+            if (elevatedToken != IntPtr.Zero)
+            {
+                CloseHandle(elevatedToken);
+            }
             if (userToken != IntPtr.Zero)
             {
                 CloseHandle(userToken);
             }
+        }
+    }
+
+    /// <summary>
+    /// When the signed-in user is a split-token (UAC) administrator, returns a primary token carrying
+    /// their FULL/linked elevated token (HIGH integrity), suitable for <c>CreateProcessAsUser</c>.
+    /// Returns <see cref="IntPtr.Zero"/> when no elevated token is available (standard user, UAC
+    /// disabled, or the token is already full) — the caller should fall back to the filtered token.
+    /// The returned handle is owned by the caller and must be closed.
+    /// </summary>
+    private static IntPtr TryGetLinkedElevatedToken(IntPtr filteredToken, ILogger? logger)
+    {
+        // Only a split-token admin (TokenElevationTypeLimited) has a usable linked elevated token.
+        // For a full-token admin the process is already elevated; for a standard user there is no
+        // admin token to link to. In both cases, keep the original token.
+        if (!TryGetTokenElevationType(filteredToken, out int elevationType)
+            || elevationType != TokenElevationTypeLimited)
+        {
+            return IntPtr.Zero;
+        }
+
+        IntPtr infoBuffer = Marshal.AllocHGlobal(IntPtr.Size);
+        try
+        {
+            if (!GetTokenInformation(filteredToken, TokenLinkedToken, infoBuffer, (uint)IntPtr.Size, out _))
+            {
+                logger?.LogWarning(
+                    "GetTokenInformation(TokenLinkedToken) failed (Win32 error {Error}); cannot elevate the launch.",
+                    Marshal.GetLastWin32Error());
+                return IntPtr.Zero;
+            }
+
+            // The linked token is an impersonation token; CreateProcessAsUser needs a PRIMARY token.
+            IntPtr linkedToken = Marshal.ReadIntPtr(infoBuffer);
+            try
+            {
+                if (!DuplicateTokenEx(
+                        linkedToken,
+                        MAXIMUM_ALLOWED,
+                        IntPtr.Zero,
+                        SecurityImpersonation,
+                        TokenPrimary,
+                        out IntPtr primaryToken))
+                {
+                    logger?.LogWarning(
+                        "DuplicateTokenEx on the linked elevated token failed (Win32 error {Error}).",
+                        Marshal.GetLastWin32Error());
+                    return IntPtr.Zero;
+                }
+
+                return primaryToken;
+            }
+            finally
+            {
+                if (linkedToken != IntPtr.Zero)
+                {
+                    CloseHandle(linkedToken);
+                }
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(infoBuffer);
+        }
+    }
+
+    /// <summary>
+    /// Reads the token's UAC elevation type (Default / Full / Limited). Returns false on failure.
+    /// </summary>
+    private static bool TryGetTokenElevationType(IntPtr token, out int elevationType)
+    {
+        elevationType = 0;
+        IntPtr buffer = Marshal.AllocHGlobal(sizeof(int));
+        try
+        {
+            if (!GetTokenInformation(token, TokenElevationType, buffer, sizeof(int), out _))
+            {
+                return false;
+            }
+
+            elevationType = Marshal.ReadInt32(buffer);
+            return true;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
         }
     }
 
@@ -204,6 +322,33 @@ internal static class WindowsActiveSession
     private const ushort SW_HIDE = 0;
     public const ushort SW_SHOW = 5;
     public const uint CREATE_NEW_CONSOLE = 0x00000010;
+
+    // TOKEN_INFORMATION_CLASS values used for UAC linked-token elevation.
+    private const int TokenElevationType = 18;
+    private const int TokenLinkedToken = 19;
+    // TOKEN_ELEVATION_TYPE: 1 = Default (no UAC split), 2 = Full (already elevated), 3 = Limited (has a linked admin token).
+    private const int TokenElevationTypeLimited = 3;
+    // SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation and TOKEN_TYPE.TokenPrimary.
+    private const int SecurityImpersonation = 2;
+    private const int TokenPrimary = 1;
+    private const uint MAXIMUM_ALLOWED = 0x02000000;
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool GetTokenInformation(
+        IntPtr TokenHandle,
+        int TokenInformationClass,
+        IntPtr TokenInformation,
+        uint TokenInformationLength,
+        out uint ReturnLength);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool DuplicateTokenEx(
+        IntPtr hExistingToken,
+        uint dwDesiredAccess,
+        IntPtr lpTokenAttributes,
+        int ImpersonationLevel,
+        int TokenType,
+        out IntPtr phNewToken);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern uint WTSGetActiveConsoleSessionId();
