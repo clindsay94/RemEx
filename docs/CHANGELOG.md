@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- Android build: the Gradle native-library sync and verify tasks (`syncRemexCore{Debug,Release}So`, `verifyRemexCoreIn{Debug,Release}Apk`) now locate `libRemexCore.so` under the repo-wide `artifacts/` output layout in addition to the legacy per-project `bin/` layout. Since `Directory.Build.props` enables `UseArtifactsOutput`, the NativeAOT output moved to `artifacts/bin/Remex.Core/<config>_net10.0-android_android-arm64/native/`, which the hardcoded `bin/` paths could no longer find — causing `Published Release libRemexCore.so not found` and a failed Android build even though the `.so` built successfully.
+- Android build: `verifyRemexCoreIn{Debug,Release}Apk` no longer fails task-property validation on a fresh/clean build. The `apkDirectory` property was annotated `@InputDirectory`, which forced Gradle to require `build/outputs/apk/<variant>` to exist before the producing `assemble<Variant>` dependency had run, erroring with `directory ... doesn't exist`. It is now `@Internal` (the directory is produced by a dependency and the task has no outputs, so it is validated at execution time instead).
+
+---
+
 ## [2.0.0] — 2026-06-02
 
 ### Added
@@ -42,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remote desktop pointer batches now use flattened JSON structure for efficiency
 
 ### Fixed
+- Agent fails to reliably reclaim the canonical port (5005) after the GUI host exits: `AgentCoordinator.StartWebHostAsync` now polls for port availability (up to 30 s) before calling `HostBootstrapper.CreateApplication`, preventing the port-fallback loop from silently drifting onto 5006+ during the GUI host's socket TIME_WAIT window. A belt-and-suspenders warning is logged if the bound port is not canonical. The partial-failure path (exception during `StartAsync`) now disposes and nulls `_app` so the idempotency guard resets and subsequent reclaim attempts can create a fresh instance.
 - Parameter-binding errors and path separator compatibility issues in `build-remex.ps1` build script when running on Windows (PowerShell Core) and Linux.
 - Settings view freeze on Linux (UI-thread marshalling)
 - SavedStatus continuation off UI thread

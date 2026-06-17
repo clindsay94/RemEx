@@ -236,20 +236,30 @@ fun latestApkIn(directory: File): File {
         ?: throw GradleException("No APK was found in ${directory.absolutePath}")
 }
 
-fun getArm64PublishedSoPath(remexCoreProjectDir: File, configuration: String): File {
-    val publishPath = File(
-        remexCoreProjectDir,
-        "bin/$configuration/net10.0-android/android-arm64/publish/libRemexCore.so"
+// Candidate locations for the NativeAOT-built libRemexCore.so, covering BOTH the legacy
+// per-project bin/ layout and the repo-wide artifacts/ layout (Directory.Build.props sets
+// UseArtifactsOutput=true, which relocates output to
+// artifacts/bin/Remex.Core/<config-lower>_net10.0-android_android-arm64/native/).
+// remexCoreProjectDir is <repoRoot>/Remex.Core, so its parent is the repo root.
+fun arm64PublishedSoCandidates(remexCoreProjectDir: File, configuration: String): List<File> {
+    val repoRoot = remexCoreProjectDir.parentFile
+    val artifactsPivot = "${configuration.lowercase()}_net10.0-android_android-arm64"
+    return listOf(
+        // Artifacts layout (current default) — native lib and publish output.
+        File(repoRoot, "artifacts/bin/Remex.Core/$artifactsPivot/native/libRemexCore.so"),
+        File(repoRoot, "artifacts/publish/Remex.Core/$artifactsPivot/libRemexCore.so"),
+        // Legacy per-project layout (UseArtifactsOutput disabled).
+        File(remexCoreProjectDir, "bin/$configuration/net10.0-android/android-arm64/native/libRemexCore.so"),
+        File(remexCoreProjectDir, "bin/$configuration/net10.0-android/android-arm64/publish/libRemexCore.so")
     )
-    val nativePath = File(
-        remexCoreProjectDir,
-        "bin/$configuration/net10.0-android/android-arm64/native/libRemexCore.so"
-    )
+}
 
-    return listOf(nativePath, publishPath)
+fun getArm64PublishedSoPath(remexCoreProjectDir: File, configuration: String): File {
+    val candidates = arm64PublishedSoCandidates(remexCoreProjectDir, configuration)
+    return candidates
         .filter { it.exists() }
         .maxByOrNull { it.lastModified() }
-        ?: nativePath
+        ?: candidates.first()
 }
 
 val javaSdkDirTopLevel: String? = project.findProperty("org.gradle.java.home")?.toString() ?: System.getProperty("java.home")
@@ -309,19 +319,21 @@ abstract class SyncRemexCoreSoTask : DefaultTask() {
         val generated = generatedSo.get().asFile
         val rcDirFile = File(rcDir.get())
 
-        val publishPath = File(
-            rcDirFile,
-            "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so"
-        )
-        val nativePath = File(
-            rcDirFile,
-            "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"
+        // Search both the legacy per-project bin/ layout and the repo-wide artifacts/ layout
+        // (Directory.Build.props sets UseArtifactsOutput=true). rcDirFile is <repoRoot>/Remex.Core.
+        val repoRoot = rcDirFile.parentFile
+        val artifactsPivot = "${conf.lowercase()}_net10.0-android_android-arm64"
+        val candidates = listOf(
+            File(repoRoot, "artifacts/bin/Remex.Core/$artifactsPivot/native/libRemexCore.so"),
+            File(repoRoot, "artifacts/publish/Remex.Core/$artifactsPivot/libRemexCore.so"),
+            File(rcDirFile, "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"),
+            File(rcDirFile, "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so")
         )
 
-        val source = listOf(nativePath, publishPath)
+        val source = candidates
             .filter { it.exists() }
             .maxByOrNull { it.lastModified() }
-            ?: nativePath
+            ?: candidates.first()
 
         if (!source.exists()) {
             throw GradleException("Published $conf libRemexCore.so not found: ${source.absolutePath}")
@@ -398,7 +410,12 @@ abstract class VerifyRemexCoreInApkTask : DefaultTask() {
     @get:Internal
     abstract val strippedArm64So: RegularFileProperty
 
-    @get:InputDirectory
+    // Not an @InputDirectory: this directory is produced by the assembleDebug/assembleRelease
+    // dependency and does not exist yet at task-property-validation time on a fresh/clean build.
+    // Declaring it @InputDirectory makes Gradle fail validation ("directory ... doesn't exist")
+    // before the producing task runs. The task has no outputs (so it always reruns) and validates
+    // the actual APK at execution via latestApkIn(), so tracking it as a formal input adds nothing.
+    @get:Internal
     abstract val apkDirectory: DirectoryProperty
 
     @TaskAction
@@ -410,19 +427,21 @@ abstract class VerifyRemexCoreInApkTask : DefaultTask() {
         val stripped = strippedArm64So.asFile.orNull
         val apkDir = apkDirectory.get().asFile
 
-        val publishPath = File(
-            rcDirFile,
-            "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so"
-        )
-        val nativePath = File(
-            rcDirFile,
-            "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"
+        // Search both the legacy per-project bin/ layout and the repo-wide artifacts/ layout
+        // (Directory.Build.props sets UseArtifactsOutput=true). rcDirFile is <repoRoot>/Remex.Core.
+        val repoRoot = rcDirFile.parentFile
+        val artifactsPivot = "${conf.lowercase()}_net10.0-android_android-arm64"
+        val candidates = listOf(
+            File(repoRoot, "artifacts/bin/Remex.Core/$artifactsPivot/native/libRemexCore.so"),
+            File(repoRoot, "artifacts/publish/Remex.Core/$artifactsPivot/libRemexCore.so"),
+            File(rcDirFile, "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"),
+            File(rcDirFile, "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so")
         )
 
-        val published = listOf(nativePath, publishPath)
+        val published = candidates
             .filter { it.exists() }
             .maxByOrNull { it.lastModified() }
-            ?: nativePath
+            ?: candidates.first()
 
         if (!published.exists()) {
             throw GradleException("Published $conf libRemexCore.so not found: ${published.absolutePath}")
