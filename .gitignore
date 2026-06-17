@@ -139,3 +139,4 @@ RemEx.Android/app/google-services.json
 .beads-credential-key
 .beads/proxieddb/
 /Remex.Host.Native.Linux/build
+/.ralph
