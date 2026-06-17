@@ -39,7 +39,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private int _quality = 50;
     private double _scale = 0.6;
-    private int _targetFps = 30;
+    private int _targetFps = 120;
     private bool _drawCursor = true;
 
     private int _desktopLeft = 0;
@@ -433,23 +433,42 @@ public sealed class RemoteDesktopHandler : IDisposable
                 // back off well below the target FPS so we don't spin the CPU or hammer the failing
                 // capture path 30×/sec. Recovers immediately: consecutiveFailures resets to 0 on the
                 // first successful frame, restoring the normal FPS cadence.
-                int sleep;
                 if (consecutiveFailures >= 5)
                 {
-                    sleep = 500;
                     // Reset the absolute timeline so the loop doesn't burst through a backlog
-                    // of "missed" ticks when capture recovers.
+                    // of "missed" ticks when capture recovers. The coarse backoff doesn't need
+                    // precise pacing, so a plain Task.Delay is fine here.
                     nextFrameTargetMs = loopTimer.Elapsed.TotalMilliseconds;
+                    try { await Task.Delay(500, ct); }
+                    catch (OperationCanceledException) { break; }
                 }
                 else
                 {
                     nextFrameTargetMs += 1000.0 / _targetFps;
-                    sleep = (int)(nextFrameTargetMs - loopTimer.Elapsed.TotalMilliseconds);
-                }
-                if (sleep > 1)
-                {
-                    try { await Task.Delay(sleep, ct); }
-                    catch (OperationCanceledException) { break; }
+
+                    // Hybrid precision wait. A bare Task.Delay rounds up to the OS timer
+                    // resolution (~15.6ms on Windows): an 8.33ms wait (120 FPS) oversleeps to
+                    // ~15.6ms, which caps the stream near 60 FPS. Coarse-sleep the bulk of the
+                    // interval via Task.Delay, then busy-spin the final few ms with SpinWait for
+                    // sub-millisecond pacing. This is fully localized — no global timer changes
+                    // (timeBeginPeriod) — so it carries to Linux pacing too.
+                    const double spinMarginMs = 16.0;
+                    double remainingMs = nextFrameTargetMs - loopTimer.Elapsed.TotalMilliseconds;
+                    if (remainingMs > spinMarginMs)
+                    {
+                        try { await Task.Delay((int)(remainingMs - spinMarginMs), ct); }
+                        catch (OperationCanceledException) { break; }
+                    }
+
+                    // SpinWait avoids both the OS sleep floor and a hot 100% loop; the token
+                    // check keeps shutdown deadlock-free. If we're already past target (loop
+                    // overran), the condition is false and we proceed immediately.
+                    while (!ct.IsCancellationRequested
+                           && loopTimer.Elapsed.TotalMilliseconds < nextFrameTargetMs)
+                    {
+                        Thread.SpinWait(64);
+                    }
+                    if (ct.IsCancellationRequested) break;
                 }
             }
         }, ct);

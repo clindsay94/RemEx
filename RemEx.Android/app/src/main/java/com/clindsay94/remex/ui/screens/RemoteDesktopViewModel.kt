@@ -38,7 +38,7 @@ data class RemoteDesktopCapabilityState(
 
 data class RemoteDesktopConfigState(
         val quality: Int = 50,
-        val targetFps: Int = 30,
+        val targetFps: Int = 120,
         val scale: Float = 0.6f,
         val codec: String = "H264"
 )
@@ -956,9 +956,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("scale", _configState.value.scale)
             put("targetFps", _configState.value.targetFps)
             put("codec", _configState.value.codec)
-            // The client renders the cursor itself as an overlay, so the host should not composite
-            // it into the frame (avoids a doubled/offset cursor and saves host work).
-            put("drawCursor", false)
+            // Let the host composite the true native Windows cursor into the frame for every
+            // monitor. The previous client-drawn overlay miscalculated the offset on secondary
+            // monitors (desktopLeft), making the cursor vanish on Monitor 2.
+            put("drawCursor", true)
 
             // Advertise display selection and name an explicit capture target only once we have a
             // resolved option from the catalog. Without a resolved option we stay on the legacy

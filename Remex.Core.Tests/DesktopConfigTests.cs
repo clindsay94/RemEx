@@ -10,7 +10,7 @@ public class DesktopConfigTests
         var config = new DesktopConfig();
         Assert.Equal(50, config.Quality);
         Assert.Equal(0.5, config.Scale);
-        Assert.Equal(10, config.TargetFps);
+        Assert.Equal(120, config.TargetFps);
     }
 
     [Theory]

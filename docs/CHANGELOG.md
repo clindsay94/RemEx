@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Remote desktop now defaults to **120 FPS** streaming on a fresh install across both the Windows/Linux host (`DesktopConfig`, `RemoteDesktopHandler`) and the Android client (`RemoteDesktopConfigState`, `SettingsManager` DataStore defaults, connection-screen slider). High-refresh phones get the full frame rate with no manual settings change.
+
+### Changed
+- Remote desktop host frame pacing rewritten to a **hybrid precision wait**: it coarse-sleeps via `Task.Delay` for the bulk of each frame interval, then busy-spins with `Thread.SpinWait` for the final few milliseconds. A bare `Task.Delay` rounds up to the OS timer resolution (~15.6 ms on Windows), which oversleeps an 8.33 ms (120 FPS) interval to ~15.6 ms and capped the achievable rate near 60 FPS. The new pacing is fully localized — no global timer changes (`timeBeginPeriod`) — so it also benefits Linux pacing.
+
 ### Fixed
+- Remote desktop cursor: the Android client no longer forces `drawCursor=false`, which had suppressed host-side cursor compositing and made the client draw its own overlay pointer. The overlay miscalculated the offset on secondary monitors (`desktopLeft`), so the cursor vanished on Monitor 2 and showed a generic non-native pointer on Monitor 1. The host now composites the true native Windows cursor into the frame for every monitor (the existing `CursorVisible = !drawCursor` gating already prevents a doubled cursor).
 - Android build: the Gradle native-library sync and verify tasks (`syncRemexCore{Debug,Release}So`, `verifyRemexCoreIn{Debug,Release}Apk`) now locate `libRemexCore.so` under the repo-wide `artifacts/` output layout in addition to the legacy per-project `bin/` layout. Since `Directory.Build.props` enables `UseArtifactsOutput`, the NativeAOT output moved to `artifacts/bin/Remex.Core/<config>_net10.0-android_android-arm64/native/`, which the hardcoded `bin/` paths could no longer find — causing `Published Release libRemexCore.so not found` and a failed Android build even though the `.so` built successfully.
 - Android build: `verifyRemexCoreIn{Debug,Release}Apk` no longer fails task-property validation on a fresh/clean build. The `apkDirectory` property was annotated `@InputDirectory`, which forced Gradle to require `build/outputs/apk/<variant>` to exist before the producing `assemble<Variant>` dependency had run, erroring with `directory ... doesn't exist`. It is now `@Internal` (the directory is produced by a dependency and the task has no outputs, so it is validated at execution time instead).
 

@@ -121,7 +121,7 @@ fun ConnectionScreenContent(
         var subnetInput by remember { mutableStateOf("") }
         var pairingPinInput by remember { mutableStateOf("") }
         var qualityInput by remember { mutableFloatStateOf(50f) }
-        var targetFpsInput by remember { mutableFloatStateOf(30f) }
+        var targetFpsInput by remember { mutableFloatStateOf(120f) }
         var scaleInput by remember { mutableFloatStateOf(0.6f) }
         var showHelpSection by remember { mutableStateOf(false) }
 
@@ -248,7 +248,7 @@ fun ConnectionScreenContent(
                         if (subnetInput.isEmpty()) subnetInput = connectionPrefs.subnetMask
                         if (qualityInput == 50f && desktopPrefs.quality != 50)
                                 qualityInput = desktopPrefs.quality.toFloat()
-                        if (targetFpsInput == 30f && desktopPrefs.targetFps != 30)
+                        if (targetFpsInput == 120f && desktopPrefs.targetFps != 120)
                                 targetFpsInput = desktopPrefs.targetFps.toFloat()
                         if (scaleInput == 0.6f && desktopPrefs.scale != 0.6f) scaleInput =
                             desktopPrefs.scale

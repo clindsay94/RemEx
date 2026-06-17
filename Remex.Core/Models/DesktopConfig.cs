@@ -6,7 +6,7 @@ public record DesktopConfig
 {
     private int _quality = 50;
     private double _scale = 0.5;
-    private int _targetFps = 10;
+    private int _targetFps = 120;
     private DesktopCodecKind _codec = DesktopCodecKind.Mjpeg;
 
     [JsonPropertyName("codec")]

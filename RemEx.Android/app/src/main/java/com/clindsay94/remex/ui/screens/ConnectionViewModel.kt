@@ -162,7 +162,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 subnetMask = cp?.subnetMask ?: "255.255.255.0",
                 pairingPin = _pin,
                 desktopQuality = dp?.quality ?: 50,
-                desktopTargetFps = dp?.targetFps ?: 30,
+                desktopTargetFps = dp?.targetFps ?: 120,
                 desktopScale = dp?.scale ?: 0.6f
         )
     }
