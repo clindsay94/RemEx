@@ -810,11 +810,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         _quality = Math.Clamp(config.Quality, 1, 100);
         _scale = Math.Clamp(config.Scale, 0.25, 1.0);
         _targetFps = Math.Clamp(config.TargetFps, 1, MaxTargetFps);
-        // Composite the cursor into the frame host-side. The client-side cursor-overlay path
-        // (desktop_cursor_state/shape) isn't reliably rendering yet, so host-side compositing is the
-        // dependable way to show a pointer. Revisit once the client overlay is verified to avoid a
-        // double cursor (then gate on !SupportsCursorState/Shape again).
-        _drawCursor = config.DrawCursor;
+        // Cursor compositing strategy. When the client advertises SupportsCursorShape it renders the
+        // real native cursor itself from the streamed desktop_cursor_shape (pixel bitmap) + the live
+        // desktop_cursor_state (position), so the host must NOT also paint the cursor into the frame.
+        // Host compositing freezes the cursor on mouse-only frames (the capture only re-encodes when
+        // the desktop pixels change) and would double the cursor on top of the client's own draw.
+        // Host-side compositing remains the fallback for legacy clients that cannot render the shape.
+        _drawCursor = config.DrawCursor && !_clientCapabilities.SupportsCursorShape;
         _negotiatedCodec = config.Codec;
 
         // If a setting that affects the H.264 encoder changed mid-stream, bump the config version so

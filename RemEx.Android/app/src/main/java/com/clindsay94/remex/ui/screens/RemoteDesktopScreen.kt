@@ -47,6 +47,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.*
@@ -122,6 +123,9 @@ data class RemoteDesktopUiState(
         val cursorScale: Float = 1.0f,
         val hostCursorX: Float = -1f,
         val hostCursorY: Float = -1f,
+        val cursorBitmap: ImageBitmap? = null,
+        val cursorHotspotX: Int = 0,
+        val cursorHotspotY: Int = 0,
         val isFullscreen: Boolean = false,
         val displayTargets: List<DisplayTargetOption> = emptyList(),
         val selectedDisplayToken: String = "",
@@ -228,6 +232,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val cursorScale by viewModel.cursorScale.collectAsStateWithLifecycle()
         val hostCursorX by viewModel.hostCursorX.collectAsStateWithLifecycle()
         val hostCursorY by viewModel.hostCursorY.collectAsStateWithLifecycle()
+        val cursorBitmap by viewModel.cursorShapeBitmap.collectAsStateWithLifecycle()
+        val cursorHotspotX by viewModel.cursorHotspotX.collectAsStateWithLifecycle()
+        val cursorHotspotY by viewModel.cursorHotspotY.collectAsStateWithLifecycle()
         val fps by viewModel.fps.collectAsStateWithLifecycle()
         val windowResults by viewModel.windowResults.collectAsStateWithLifecycle()
         val windowActionError by viewModel.windowActionError.collectAsStateWithLifecycle()
@@ -258,6 +265,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         cursorScale = cursorScale,
                         hostCursorX = hostCursorX,
                         hostCursorY = hostCursorY,
+                        cursorBitmap = cursorBitmap,
+                        cursorHotspotX = cursorHotspotX,
+                        cursorHotspotY = cursorHotspotY,
                         isFullscreen = isFullscreen,
                         displayTargets = displayTargets,
                         selectedDisplayToken = selectedDisplayToken,
@@ -1871,29 +1881,70 @@ fun RemoteDesktopScreenContent(
                                                 }
 
                                         if (cursorLocal != null) {
+                                                val cursorBmp = uiState.cursorBitmap
                                                 Canvas(modifier = Modifier.fillMaxSize()) {
-                                                        // 1 arrow unit ≈ 1.4.dp → ~26dp tall pointer at
-                                                        // scale 1.0; cursorScale (0.5–2.5) resizes it.
-                                                        val s = 1.4.dp.toPx() * uiState.cursorScale
-                                                        val ox = cursorLocal.x
-                                                        val oy = cursorLocal.y
-                                                        val arrow =
-                                                                Path().apply {
-                                                                        moveTo(ox, oy)
-                                                                        lineTo(ox, oy + 16f * s)
-                                                                        lineTo(ox + 4f * s, oy + 12.5f * s)
-                                                                        lineTo(ox + 6.5f * s, oy + 18.5f * s)
-                                                                        lineTo(ox + 8.5f * s, oy + 17.5f * s)
-                                                                        lineTo(ox + 6f * s, oy + 11.5f * s)
-                                                                        lineTo(ox + 10.5f * s, oy + 11.5f * s)
-                                                                        close()
-                                                                }
-                                                        drawPath(arrow, Color.White)
-                                                        drawPath(
-                                                                arrow,
-                                                                Color.Black,
-                                                                style = Stroke(width = 1.5.dp.toPx())
-                                                        )
+                                                        if (cursorBmp != null) {
+                                                                // Draw the true native cursor bitmap (BGRA from the host) with
+                                                                // its hotspot at the mapped position. Scale it the same way the
+                                                                // video is scaled — content-rect width vs host width, times the
+                                                                // pan/zoom factor — so it matches desktop content, then by the
+                                                                // user's cursorScale preference.
+                                                                val rect = contentRect()
+                                                                val (hostW, _) = getHostScreenSize()
+                                                                val pxPerHost =
+                                                                        if (hostW > 0 && rect.w > 0f)
+                                                                                (rect.w * zoomFactor) / hostW
+                                                                        else 1f
+                                                                val drawScale = pxPerHost * uiState.cursorScale
+                                                                val w =
+                                                                        (cursorBmp.width * drawScale)
+                                                                                .roundToInt()
+                                                                                .coerceAtLeast(1)
+                                                                val h =
+                                                                        (cursorBmp.height * drawScale)
+                                                                                .roundToInt()
+                                                                                .coerceAtLeast(1)
+                                                                drawImage(
+                                                                        image = cursorBmp,
+                                                                        dstOffset =
+                                                                                IntOffset(
+                                                                                        (cursorLocal.x -
+                                                                                                        uiState.cursorHotspotX *
+                                                                                                                drawScale)
+                                                                                                .roundToInt(),
+                                                                                        (cursorLocal.y -
+                                                                                                        uiState.cursorHotspotY *
+                                                                                                                drawScale)
+                                                                                                .roundToInt()
+                                                                                ),
+                                                                        dstSize = IntSize(w, h)
+                                                                )
+                                                        } else {
+                                                                // Fallback generic arrow until the first cursor shape arrives,
+                                                                // or for legacy hosts that don't stream cursor shapes.
+                                                                // 1 arrow unit ≈ 1.4.dp → ~26dp tall pointer at scale 1.0;
+                                                                // cursorScale (0.5–2.5) resizes it.
+                                                                val s = 1.4.dp.toPx() * uiState.cursorScale
+                                                                val ox = cursorLocal.x
+                                                                val oy = cursorLocal.y
+                                                                val arrow =
+                                                                        Path().apply {
+                                                                                moveTo(ox, oy)
+                                                                                lineTo(ox, oy + 16f * s)
+                                                                                lineTo(ox + 4f * s, oy + 12.5f * s)
+                                                                                lineTo(ox + 6.5f * s, oy + 18.5f * s)
+                                                                                lineTo(ox + 8.5f * s, oy + 17.5f * s)
+                                                                                lineTo(ox + 6f * s, oy + 11.5f * s)
+                                                                                lineTo(ox + 10.5f * s, oy + 11.5f * s)
+                                                                                close()
+                                                                        }
+                                                                drawPath(arrow, Color.White)
+                                                                drawPath(
+                                                                        arrow,
+                                                                        Color.Black,
+                                                                        style = Stroke(width = 1.5.dp.toPx())
+                                                                )
+                                                        }
                                                 }
                                         }
                                 } else {

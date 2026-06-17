@@ -3,7 +3,10 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Base64
 import android.util.Log
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
@@ -95,6 +98,25 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     private val _hostCursorY = MutableStateFlow(-1f)
     val hostCursorY: StateFlow<Float> = _hostCursorY.asStateFlow()
+
+    // Native cursor overlay: the host streams the real cursor SHAPE (BGRA bitmap) keyed by a shape
+    // serial, plus lightweight desktop_cursor_state position/visibility updates that reference the
+    // active serial. The client decodes the shape once and draws it at the live position.
+    private val _cursorShapeBitmap = MutableStateFlow<ImageBitmap?>(null)
+    val cursorShapeBitmap: StateFlow<ImageBitmap?> = _cursorShapeBitmap.asStateFlow()
+
+    private val _cursorHotspotX = MutableStateFlow(0)
+    val cursorHotspotX: StateFlow<Int> = _cursorHotspotX.asStateFlow()
+
+    private val _cursorHotspotY = MutableStateFlow(0)
+    val cursorHotspotY: StateFlow<Int> = _cursorHotspotY.asStateFlow()
+
+    private data class CursorShapeEntry(val bitmap: ImageBitmap, val hotspotX: Int, val hotspotY: Int)
+
+    // Decoded shapes cached by serial; cursor-state messages pick the active one. Touched from two
+    // collector coroutines, so use a concurrent map.
+    private val cursorShapeCache = java.util.concurrent.ConcurrentHashMap<Long, CursorShapeEntry>()
+    @Volatile private var activeCursorShapeSerial = -1L
 
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())
     val capabilityState: StateFlow<RemoteDesktopCapabilityState> = _capabilityState.asStateFlow()
@@ -276,6 +298,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             RemexClientManager.desktopDisplayCatalog.collect { catalogJson ->
                 handleDisplayCatalog(catalogJson)
+            }
+        }
+
+        viewModelScope.launch {
+            RemexClientManager.desktopCursorShape.collect { shapeJson ->
+                handleCursorShape(shapeJson)
+            }
+        }
+
+        viewModelScope.launch {
+            RemexClientManager.desktopCursorState.collect { stateJson ->
+                handleCursorState(stateJson)
             }
         }
 
@@ -940,6 +974,78 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Decodes a desktop_cursor_shape message (raw BGRA8888 pixels, base64 in JSON) into an
+     * ImageBitmap and caches it by shape serial. If the shape is the one the current cursor state is
+     * waiting on, it becomes the active overlay bitmap immediately.
+     */
+    private fun handleCursorShape(shapeJson: String) {
+        try {
+            val json = JSONObject(shapeJson)
+            val serial = json.optLong("shapeSerial", -1L)
+            val width = json.optInt("width", 0)
+            val height = json.optInt("height", 0)
+            if (width <= 0 || height <= 0) return
+            val hotspotX = json.optInt("hotspotX", 0)
+            val hotspotY = json.optInt("hotspotY", 0)
+            val b64 = json.optString("shapeBytes", "")
+            if (b64.isEmpty()) return
+            val bgra = Base64.decode(b64, Base64.DEFAULT)
+            if (bgra.size < width * height * 4) return
+
+            // BGRA8888 -> ARGB int pixels (Android Bitmap.Config.ARGB_8888 expects packed ARGB ints).
+            val pixels = IntArray(width * height)
+            var src = 0
+            for (dst in pixels.indices) {
+                val b = bgra[src].toInt() and 0xFF
+                val g = bgra[src + 1].toInt() and 0xFF
+                val r = bgra[src + 2].toInt() and 0xFF
+                val a = bgra[src + 3].toInt() and 0xFF
+                pixels[dst] = (a shl 24) or (r shl 16) or (g shl 8) or b
+                src += 4
+            }
+            val bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+            val entry = CursorShapeEntry(bitmap.asImageBitmap(), hotspotX, hotspotY)
+            cursorShapeCache[serial] = entry
+            if (serial == activeCursorShapeSerial) {
+                _cursorShapeBitmap.value = entry.bitmap
+                _cursorHotspotX.value = entry.hotspotX
+                _cursorHotspotY.value = entry.hotspotY
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to decode cursor shape", e)
+        }
+    }
+
+    /**
+     * Applies a desktop_cursor_state update: live position + visibility, and selects the active shape
+     * by serial. Reuses _hostCursorX/_hostCursorY (host coordinates, mapped to screen by the overlay)
+     * so the -1f sentinel keeps meaning "hidden".
+     */
+    private fun handleCursorState(stateJson: String) {
+        try {
+            val json = JSONObject(stateJson)
+            if (json.optBoolean("visible", true)) {
+                _hostCursorX.value = json.optInt("x", 0).toFloat()
+                _hostCursorY.value = json.optInt("y", 0).toFloat()
+            } else {
+                _hostCursorX.value = -1f
+                _hostCursorY.value = -1f
+            }
+            val serial = json.optLong("shapeSerial", -1L)
+            activeCursorShapeSerial = serial
+            // Swap in the cached shape for this serial if we already have it; otherwise the shape
+            // collector will swap it in when the matching desktop_cursor_shape arrives.
+            cursorShapeCache[serial]?.let { entry ->
+                _cursorShapeBitmap.value = entry.bitmap
+                _cursorHotspotX.value = entry.hotspotX
+                _cursorHotspotY.value = entry.hotspotY
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse cursor state", e)
+        }
+    }
+
     private fun persistDesktopDefaults() {
         viewModelScope.launch {
             settingsManager.saveRemoteDesktopDefaults(
@@ -956,10 +1062,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("scale", _configState.value.scale)
             put("targetFps", _configState.value.targetFps)
             put("codec", _configState.value.codec)
-            // Let the host composite the true native Windows cursor into the frame for every
-            // monitor. The previous client-drawn overlay miscalculated the offset on secondary
-            // monitors (desktopLeft), making the cursor vanish on Monitor 2.
-            put("drawCursor", true)
+            // The client renders the true native cursor itself from the streamed cursor SHAPE
+            // (desktop_cursor_shape, real BGRA pixels) positioned by the live desktop_cursor_state.
+            // Host-side compositing is left off so the cursor never freezes on mouse-only frames
+            // (the host re-encodes only when the desktop changes). The host gates on the
+            // supportsCursorShape capability below and falls back to compositing for legacy clients.
+            put("drawCursor", false)
 
             // Advertise display selection and name an explicit capture target only once we have a
             // resolved option from the catalog. Without a resolved option we stay on the legacy
@@ -975,8 +1083,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                             put("supportsDisplaySelection", true)
                             put("supportsFrameEnvelope", false)
                             put("supportsTargetSwitch", false)
-                            put("supportsCursorState", false)
-                            put("supportsCursorShape", false)
+                            put("supportsCursorState", true)
+                            put("supportsCursorShape", true)
                         }
                 )
                 put("captureMode", option.captureMode)

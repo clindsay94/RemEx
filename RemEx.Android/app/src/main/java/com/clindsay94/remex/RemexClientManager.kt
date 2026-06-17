@@ -60,6 +60,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _desktopDisplayCatalog = MutableSharedFlow<String>(replay = 1)
     val desktopDisplayCatalog = _desktopDisplayCatalog.asSharedFlow()
 
+    private val _desktopCursorState = MutableSharedFlow<String>(replay = 1)
+    val desktopCursorState = _desktopCursorState.asSharedFlow()
+
+    private val _desktopCursorShape = MutableSharedFlow<String>(replay = 1)
+    val desktopCursorShape = _desktopCursorShape.asSharedFlow()
+
     private val _desktopWindowResults = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 8)
     val desktopWindowResults = _desktopWindowResults.asSharedFlow()
 
@@ -399,6 +405,14 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onDesktopDisplayCatalog(catalogJson: String?) {
         catalogJson?.let { _desktopDisplayCatalog.tryEmit(it) }
+    }
+
+    override fun onDesktopCursorState(stateJson: String?) {
+        stateJson?.let { _desktopCursorState.tryEmit(it) }
+    }
+
+    override fun onDesktopCursorShape(shapeJson: String?) {
+        shapeJson?.let { _desktopCursorShape.tryEmit(it) }
     }
 
     override fun onFileTransferMessage(json: String?) {

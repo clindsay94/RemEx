@@ -130,6 +130,8 @@ public static class AndroidNativeExports
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
     private static IntPtr _onDesktopDisplayCatalogMethodId;
+    private static IntPtr _onDesktopCursorStateMethodId;
+    private static IntPtr _onDesktopCursorShapeMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -157,6 +159,8 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.WindowResultReceived += OnNativeDesktopWindowResult;
         RemexDesktopClient.Current.StreamDescriptorReceived += OnNativeDesktopStreamDescriptor;
         RemexDesktopClient.Current.DisplayCatalogReceived += OnNativeDisplayCatalogReceived;
+        RemexDesktopClient.Current.CursorStateReceived += OnNativeCursorStateReceived;
+        RemexDesktopClient.Current.CursorShapeReceived += OnNativeCursorShapeReceived;
 
         EnsureOutboundSendLoopStarted();
     }
@@ -200,6 +204,8 @@ public static class AndroidNativeExports
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
         _onDesktopDisplayCatalogMethodId = IntPtr.Zero;
+        _onDesktopCursorStateMethodId = IntPtr.Zero;
+        _onDesktopCursorShapeMethodId = IntPtr.Zero;
     }
 
     private static IntPtr GetRequiredCallbackMethodId(IntPtr env, IntPtr clazz, string name, string signature)
@@ -291,6 +297,8 @@ public static class AndroidNativeExports
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
                 var onDesktopDisplayCatalogMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopDisplayCatalog", "(Ljava/lang/String;)V");
+                var onDesktopCursorStateMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorState", "(Ljava/lang/String;)V");
+                var onDesktopCursorShapeMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorShape", "(Ljava/lang/String;)V");
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
                     || onConnectionStateChangedMethodId == IntPtr.Zero
@@ -304,7 +312,9 @@ public static class AndroidNativeExports
                     || onFileTransferMessageMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
-                    || onDesktopDisplayCatalogMethodId == IntPtr.Zero)
+                    || onDesktopDisplayCatalogMethodId == IntPtr.Zero
+                    || onDesktopCursorStateMethodId == IntPtr.Zero
+                    || onDesktopCursorShapeMethodId == IntPtr.Zero)
                 {
                     return;
                 }
@@ -324,6 +334,8 @@ public static class AndroidNativeExports
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
                 _onDesktopDisplayCatalogMethodId = onDesktopDisplayCatalogMethodId;
+                _onDesktopCursorStateMethodId = onDesktopCursorStateMethodId;
+                _onDesktopCursorShapeMethodId = onDesktopCursorShapeMethodId;
                 registrationSucceeded = true;
 
                 if (oldCallbackGlobalRef != IntPtr.Zero)
@@ -969,6 +981,16 @@ public static class AndroidNativeExports
     private static void OnNativeDisplayCatalogReceived(DesktopDisplayCatalog catalog)
     {
         NotifyJavaData(_onDesktopDisplayCatalogMethodId, RemexJson.Serialize(catalog, RemexJsonSerializerContext.Default.DesktopDisplayCatalog));
+    }
+
+    private static void OnNativeCursorStateReceived(DesktopCursorState state)
+    {
+        NotifyJavaData(_onDesktopCursorStateMethodId, RemexJson.Serialize(state, RemexJsonSerializerContext.Default.DesktopCursorState));
+    }
+
+    private static void OnNativeCursorShapeReceived(DesktopCursorShape shape)
+    {
+        NotifyJavaData(_onDesktopCursorShapeMethodId, RemexJson.Serialize(shape, RemexJsonSerializerContext.Default.DesktopCursorShape));
     }
 
     private static void NotifyJavaFrame(byte[] frame)

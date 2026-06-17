@@ -29,6 +29,8 @@ object RemexCoreClient {
         fun onDesktopWindowResult(resultData: String?)
         fun onDesktopStreamDescriptor(descriptor: String?)
         fun onDesktopDisplayCatalog(catalogJson: String?)
+        fun onDesktopCursorState(stateJson: String?)
+        fun onDesktopCursorShape(shapeJson: String?)
         fun onFileTransferMessage(json: String?)
         fun onConnectionError(reason: String?)
     }

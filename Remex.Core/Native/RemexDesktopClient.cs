@@ -31,6 +31,10 @@ public sealed class RemexDesktopClient : IDisposable
     public event Action<DesktopStreamDescriptor>? StreamDescriptorReceived;
     /// <summary>Raised when the host sends the available-display catalog in response to a display query.</summary>
     public event Action<DesktopDisplayCatalog>? DisplayCatalogReceived;
+    /// <summary>Raised when the host sends a cursor position/visibility update (native-cursor overlay).</summary>
+    public event Action<DesktopCursorState>? CursorStateReceived;
+    /// <summary>Raised when the host sends a new cursor shape bitmap (native-cursor overlay).</summary>
+    public event Action<DesktopCursorShape>? CursorShapeReceived;
     public event Action? Disconnected;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
@@ -348,6 +352,14 @@ public sealed class RemexDesktopClient : IDisposable
                     else if (msg?.Type == MessageTypes.DesktopDisplayList && msg.DesktopDisplayCatalog != null)
                     {
                         DisplayCatalogReceived?.Invoke(msg.DesktopDisplayCatalog);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopCursorState && msg.DesktopCursorState != null)
+                    {
+                        CursorStateReceived?.Invoke(msg.DesktopCursorState);
+                    }
+                    else if (msg?.Type == MessageTypes.DesktopCursorShape && msg.DesktopCursorShape != null)
+                    {
+                        CursorShapeReceived?.Invoke(msg.DesktopCursorShape);
                     }
                 }
             }
