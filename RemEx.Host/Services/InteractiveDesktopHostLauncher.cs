@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -71,10 +72,12 @@ internal sealed class InteractiveDesktopHostLauncher : BackgroundService
             return;
         }
 
-        // A GUI host already running in a user session — leave it be. (TryLaunch returns only a bool
-        // and closes the process handle, so we detect the running host by enumeration rather than by
-        // tracking a PID; this also catches a host the user started manually.)
-        if (IsInteractiveHostRunning())
+        // Only treat the host as "already running" when it is in the session that currently owns the
+        // active input desktop (the console session). A GUI host left in a different, now-disconnected
+        // session — e.g. after a Microsoft "Windows App" (RDP) client disconnects — cannot inject
+        // input there, so we relaunch into the active session rather than trusting the stranded one.
+        // (We detect the host by enumeration rather than a tracked PID; this also catches a manual start.)
+        if (IsInteractiveHostRunningInSession(WindowsActiveSession.ActiveConsoleSessionId))
         {
             return;
         }
@@ -109,13 +112,18 @@ internal sealed class InteractiveDesktopHostLauncher : BackgroundService
     }
 
     /// <summary>
-    /// True when another instance of this binary is running in an interactive (non-zero) session —
-    /// i.e. a GUI host is already up. Session-0 processes (this service, short-lived session tasks
-    /// run from Session 0) are ignored. Short-lived <c>--session-task</c> helpers run in a user
-    /// session too, but only for milliseconds, so the worst case is skipping one 5s tick.
+    /// True when another instance of this binary (a GUI host) is running in
+    /// <paramref name="activeSessionId"/> — the session that owns the active input desktop. A host in
+    /// any other (e.g. disconnected) session does not count, because it cannot inject input there.
+    /// Session-0 processes (this service, short-lived <c>--session-task</c> helpers) are ignored.
     /// </summary>
-    private static bool IsInteractiveHostRunning()
+    private static bool IsInteractiveHostRunningInSession(uint activeSessionId)
+        => HasHostInSession(CollectInteractiveHostSessionIds(), activeSessionId);
+
+    /// <summary>Session IDs of all other running instances of this binary that are in a non-zero session.</summary>
+    private static List<uint> CollectInteractiveHostSessionIds()
     {
+        var ids = new List<uint>();
         Process self = Process.GetCurrentProcess();
         string processName = self.ProcessName;
         foreach (Process p in Process.GetProcessesByName(processName))
@@ -124,7 +132,7 @@ internal sealed class InteractiveDesktopHostLauncher : BackgroundService
             {
                 if (p.Id != self.Id && p.SessionId != 0)
                 {
-                    return true;
+                    ids.Add((uint)p.SessionId);
                 }
             }
             catch
@@ -137,6 +145,14 @@ internal sealed class InteractiveDesktopHostLauncher : BackgroundService
             }
         }
 
-        return false;
+        return ids;
     }
+
+    /// <summary>
+    /// Pure membership check (unit-testable): is a GUI host present in the active session? When the
+    /// active session id matches none of the hosts — including the 0xFFFFFFFF "no console session"
+    /// value — this is false, so the caller will (correctly) not skip launching.
+    /// </summary>
+    internal static bool HasHostInSession(IReadOnlyCollection<uint> hostSessionIds, uint activeSessionId)
+        => hostSessionIds.Contains(activeSessionId);
 }

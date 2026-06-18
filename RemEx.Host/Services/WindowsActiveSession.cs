@@ -47,6 +47,14 @@ internal static class WindowsActiveSession
     }
 
     /// <summary>
+    /// The session ID currently attached to the physical console, or <see cref="InvalidSessionId"/>
+    /// (0xFFFFFFFF) when no session is attached (e.g. every session disconnected). RDP sessions are
+    /// never returned here — only the console session. Used to verify the interactive GUI host is
+    /// running in the session that actually owns the active input desktop, not a stranded one.
+    /// </summary>
+    public static uint ActiveConsoleSessionId => WTSGetActiveConsoleSessionId();
+
+    /// <summary>
     /// Launches this host binary into the active console session with <c>--session-task &lt;verb&gt;</c>
     /// so a desktop-bound action (e.g. lock, monitor-off) executes where it can actually take effect.
     /// </summary>
