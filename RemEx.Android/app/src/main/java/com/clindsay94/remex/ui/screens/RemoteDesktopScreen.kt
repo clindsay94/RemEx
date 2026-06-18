@@ -462,17 +462,11 @@ fun RemoteDesktopScreenContent(
                         } else {
                                 controller.show(WindowInsetsCompat.Type.systemBars())
                         }
-                        // The remote desktop is landscape content: switch to landscape whenever a
-                        // stream is active (or fullscreen) so it fills the screen instead of being
-                        // letterboxed into a tiny portrait strip. Idle (pre-stream) UI stays portrait.
-                        // MainActivity declares configChanges for orientation, so this rotation does
-                        // not recreate the activity or interrupt the stream.
-                        activity.requestedOrientation =
-                                if (uiState.isStreaming || uiState.streamRequested || uiState.isFullscreen) {
-                                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                                } else {
-                                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                                }
+                        // Honor the device's orientation like every other screen. Forced landscape
+                        // was a crutch for the pre-pan-follow era (a zoomed portrait view stranded
+                        // the cursor off-screen); pan-follow now keeps the cursor on screen, so RD
+                        // no longer locks orientation.
+                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                         onDispose {
                                 WindowCompat.setDecorFitsSystemWindows(window, true)
                                 controller.show(WindowInsetsCompat.Type.systemBars())
