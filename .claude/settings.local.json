@@ -79,7 +79,9 @@
       "mcp__plugin_context-mode_context-mode__ctx_search",
       "mcp__token-savior__find_symbol",
       "mcp__token-savior__set_project_root",
-      "mcp__token-savior__get_function_source"
+      "mcp__token-savior__get_function_source",
+      "PowerShell(bd list *)",
+      "PowerShell(bd show *)"
     ]
   },
   "skillOverrides": {

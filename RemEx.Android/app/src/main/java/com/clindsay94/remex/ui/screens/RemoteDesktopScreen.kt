@@ -510,11 +510,14 @@ fun RemoteDesktopScreenContent(
                 }
         }
 
-        fun mapLocalToHost(localOffset: Offset): Offset {
-                if (imageSize.width == 0 || imageSize.height == 0) return Offset.Zero
+        // Returns null (not Offset.Zero) on the three not-ready / degenerate error
+        // conditions below, because (0,0) is also a LEGITIMATE host pixel (primary
+        // monitor top-left). Callers must skip their action when this returns null.
+        fun mapLocalToHost(localOffset: Offset): Offset? {
+                if (imageSize.width == 0 || imageSize.height == 0) return null
                 // Guard against Offset.Unspecified (NaN) and any other non-finite values
                 // that would produce NaN in the output and crash JSON serialization.
-                if (!localOffset.x.isFinite() || !localOffset.y.isFinite()) return Offset.Zero
+                if (!localOffset.x.isFinite() || !localOffset.y.isFinite()) return null
                 val (hostW, hostH) = getHostScreenSize()
                 val (hostLeft, hostTop) = getHostDesktopOffset()
 
@@ -524,7 +527,7 @@ fun RemoteDesktopScreenContent(
                 val adjustedY = (localOffset.y - centerY - panOffsetY) / zoomFactor + centerY
 
                 val rect = contentRect()
-                if (rect.w <= 0f || rect.h <= 0f) return Offset.Zero
+                if (rect.w <= 0f || rect.h <= 0f) return null
                 val relativeX = ((adjustedX - rect.x) / rect.w).coerceIn(0f, 1f)
                 val relativeY = ((adjustedY - rect.y) / rect.h).coerceIn(0f, 1f)
 
@@ -771,13 +774,7 @@ fun RemoteDesktopScreenContent(
                                                                                                         vy
                                                                                                 )
                                                                                         )
-                                                                                if (host ==
-                                                                                                Offset.Zero &&
-                                                                                                (vx !=
-                                                                                                        0f ||
-                                                                                                        vy !=
-                                                                                                                0f)
-                                                                                )
+                                                                                if (host == null)
                                                                                         null
                                                                                 else
                                                                                         Pair(
@@ -836,6 +833,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                 stylusChange
                                                                                                                         .position
                                                                                                         )
+                                                                                                                ?: continue
                                                                                                 // Send as typed hover sample (tool kind Pen, phase HoverMove)
                                                                                                 val sample =
                                                                                                         PointerSampleData(
@@ -1470,15 +1468,13 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 mapLocalToHost(
                                                                                                                                         pressPos
                                                                                                                                 )
-                                                                                                                        onSendMouseDown(
-                                                                                                                                0,
-                                                                                                                                hostPress
-                                                                                                                                        .x
-                                                                                                                                        .toInt(),
-                                                                                                                                hostPress
-                                                                                                                                        .y
-                                                                                                                                        .toInt()
-                                                                                                                        )
+                                                                                                                        hostPress?.let {
+                                                                                                                                onSendMouseDown(
+                                                                                                                                        0,
+                                                                                                                                        it.x.toInt(),
+                                                                                                                                        it.y.toInt()
+                                                                                                                                )
+                                                                                                                        }
                                                                                                                 } else {
                                                                                                                         onSendMouseDown(
                                                                                                                                 0,
@@ -1523,15 +1519,13 @@ fun RemoteDesktopScreenContent(
                                                                                                                         mapLocalToHost(
                                                                                                                                 pressPos
                                                                                                                         )
-                                                                                                                onSendMouseDown(
-                                                                                                                        0,
-                                                                                                                        hostPress
-                                                                                                                                .x
-                                                                                                                                .toInt(),
-                                                                                                                        hostPress
-                                                                                                                                .y
-                                                                                                                                .toInt()
-                                                                                                                )
+                                                                                                                hostPress?.let {
+                                                                                                                        onSendMouseDown(
+                                                                                                                                0,
+                                                                                                                                it.x.toInt(),
+                                                                                                                                it.y.toInt()
+                                                                                                                        )
+                                                                                                                }
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
@@ -1548,12 +1542,12 @@ fun RemoteDesktopScreenContent(
                                                                                                                         mapLocalToHost(
                                                                                                                                 change.position
                                                                                                                         )
-                                                                                                                onSendMouseAbsolute(
-                                                                                                                        hostPos.x
-                                                                                                                                .toInt(),
-                                                                                                                        hostPos.y
-                                                                                                                                .toInt()
-                                                                                                                )
+                                                                                                                hostPos?.let {
+                                                                                                                        onSendMouseAbsolute(
+                                                                                                                                it.x.toInt(),
+                                                                                                                                it.y.toInt()
+                                                                                                                        )
+                                                                                                                }
                                                                                                         } else {
                                                                                                                 // Relative (trackpad)
                                                                                                                 // positioning with pointer
@@ -1650,13 +1644,13 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 mapLocalToHost(
                                                                                                                                         pressPos
                                                                                                                                 )
-                                                                                                                        onSendMouseAbsoluteClick(
-                                                                                                                                0,
-                                                                                                                                hostPos.x
-                                                                                                                                        .toInt(),
-                                                                                                                                hostPos.y
-                                                                                                                                        .toInt()
-                                                                                                                        )
+                                                                                                                        hostPos?.let {
+                                                                                                                                onSendMouseAbsoluteClick(
+                                                                                                                                        0,
+                                                                                                                                        it.x.toInt(),
+                                                                                                                                        it.y.toInt()
+                                                                                                                                )
+                                                                                                                        }
                                                                                                                 } else {
                                                                                                                         onSendMouseClick(
                                                                                                                                 0
@@ -1678,13 +1672,13 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 mapLocalToHost(
                                                                                                                                         pressPos
                                                                                                                                 )
-                                                                                                                        onSendMouseAbsoluteClick(
-                                                                                                                                2,
-                                                                                                                                hostPos.x
-                                                                                                                                        .toInt(),
-                                                                                                                                hostPos.y
-                                                                                                                                        .toInt()
-                                                                                                                        )
+                                                                                                                        hostPos?.let {
+                                                                                                                                onSendMouseAbsoluteClick(
+                                                                                                                                        2,
+                                                                                                                                        it.x.toInt(),
+                                                                                                                                        it.y.toInt()
+                                                                                                                                )
+                                                                                                                        }
                                                                                                                 } else {
                                                                                                                         onSendMouseClick(
                                                                                                                                 2

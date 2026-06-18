@@ -186,33 +186,30 @@ public class WindowsInputSimulationService : IInputSimulationService
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        foreach (char c in text)
+        // Each group is one code point's events: two for a BMP character, four for a surrogate
+        // pair (both key-downs then both key-ups). Sending each group in a single SendInput batch
+        // keeps the surrogate key-downs consecutive so Windows composes non-BMP code points (emoji)
+        // correctly instead of garbling them. See UnicodeTextInput for the full rationale.
+        foreach (var group in UnicodeTextInput.BuildKeyEventGroups(text))
         {
-            var downInput = new INPUT
+            var inputs = new INPUT[group.Length];
+            for (int j = 0; j < group.Length; j++)
             {
-                type = INPUT_KEYBOARD,
-                u = new InputUnion
+                inputs[j] = new INPUT
                 {
-                    ki = new KEYBDINPUT
+                    type = INPUT_KEYBOARD,
+                    u = new InputUnion
                     {
-                        wScan = c,
-                        dwFlags = KEYEVENTF_UNICODE,
+                        ki = new KEYBDINPUT
+                        {
+                            wScan = group[j].ScanCode,
+                            dwFlags = KEYEVENTF_UNICODE | (group[j].IsKeyUp ? KEYEVENTF_KEYUP : 0u),
+                        }
                     }
-                }
-            };
-            var upInput = new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                u = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wScan = c,
-                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-                    }
-                }
-            };
-            SendOrThrow("unicode text input", downInput, upInput);
+                };
+            }
+
+            SendOrThrow("unicode text input", inputs);
         }
     }
 
