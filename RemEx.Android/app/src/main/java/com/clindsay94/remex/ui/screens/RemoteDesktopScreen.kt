@@ -479,20 +479,13 @@ fun RemoteDesktopScreenContent(
                 }
         }
 
-        // The rectangle the video content occupies within the view box. H.264 stretches to fill
-        // (TextureView fillMaxSize) so it's the whole box; MJPEG letterboxes via ContentScale.Fit.
-        // Input mapping, cursor overlay, and the video must all agree on this rect or coordinates drift.
+        // The rectangle the video content occupies within the view box. BOTH codecs letterbox to
+        // preserve the source aspect ratio — H.264 via Modifier.aspectRatio on the TextureView,
+        // MJPEG via ContentScale.Fit — so this is the same letterboxed region for both. Input
+        // mapping, cursor overlay, and the video must all agree on this rect or coordinates drift.
         fun contentRect(): ContentRect {
                 if (imageSize.width == 0 || imageSize.height == 0) {
                         return ContentRect(0f, 0f, 0f, 0f)
-                }
-                if (activeCodec == "H264") {
-                        return ContentRect(
-                                imageSize.width.toFloat(),
-                                imageSize.height.toFloat(),
-                                0f,
-                                0f
-                        )
                 }
                 val bmpWidth =
                         (if (streamPixelWidth > 0) streamPixelWidth
@@ -1853,7 +1846,17 @@ fun RemoteDesktopScreenContent(
                                                                         }
                                                                 }
                                                         },
-                                                        modifier = Modifier.fillMaxSize()
+                                                        // Letterbox to the source aspect ratio instead of stretching to fill
+                                                        // (the parent Box centers us). A TextureView always scales its content
+                                                        // to its bounds, so we must size the view itself to the stream aspect —
+                                                        // this is the H.264 equivalent of MJPEG's ContentScale.Fit, and it
+                                                        // matches contentRect() so input/cursor/pan stay aligned. Fixes the
+                                                        // squished image in portrait orientation.
+                                                        modifier = Modifier.aspectRatio(
+                                                                if (streamPixelWidth > 0 && streamPixelHeight > 0)
+                                                                        streamPixelWidth.toFloat() / streamPixelHeight.toFloat()
+                                                                else 16f / 9f
+                                                        )
                                                                 .graphicsLayer {
                                                                         scaleX = zoomFactor
                                                                         scaleY = zoomFactor
