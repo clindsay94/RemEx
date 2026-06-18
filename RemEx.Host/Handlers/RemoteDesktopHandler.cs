@@ -600,14 +600,30 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var (lastX, lastY) = _inputSimulation.GetCursorPosition();
         var lastShapeSerial = sessionState.GetCurrentCursorShape()?.ShapeSerial ?? 0;
+        var tick = 0;
 
         try
         {
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+
+                // Cursor POSITION streams at ~90 Hz for smooth on-screen tracking; the cursor SHAPE
+                // and the ClipCursor confinement change rarely, so re-poll/re-apply those only at
+                // ~10 Hz (every 9th tick) to avoid hammering the OS at the higher position rate.
+                var slowTick = tick % 9 == 0;
+
+                if (slowTick)
+                {
+                    // Keep the cursor confined to the streamed display so it can't roam onto a monitor
+                    // the remote user can't see. Re-applied periodically because Windows releases the
+                    // clip on display/desktop/foreground changes. No-op when streaming the full desktop.
+                    var (clipW, clipH, clipLeft, clipTop) = _screenCapture.GetScreenSize();
+                    _inputSimulation.ConfineCursorToRegion(clipLeft, clipTop, clipW, clipH);
+                }
+
                 var currentShape = sessionState.GetCurrentCursorShape();
-                if (sessionState.UseCursorShape && OperatingSystem.IsWindows())
+                if (slowTick && sessionState.UseCursorShape && OperatingSystem.IsWindows())
                 {
                     currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
                 }
@@ -633,14 +649,20 @@ public sealed class RemoteDesktopHandler : IDisposable
                     }
                 }
 
-                // Update cursor position every 100ms (10Hz)
-                await Task.Delay(100, ct);
+                tick++;
+                // ~90 Hz cursor position for smooth tracking (shape + clip throttled to ~10 Hz above).
+                await Task.Delay(11, ct);
             }
         }
         catch (OperationCanceledException) { /* graceful shutdown */ }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Cursor position streaming error.");
+        }
+        finally
+        {
+            // Always release the cursor clip when streaming stops, cancels, or the client disconnects.
+            _inputSimulation.ReleaseCursorConfinement();
         }
     }
 

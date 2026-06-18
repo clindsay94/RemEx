@@ -323,6 +323,43 @@ public class WindowsInputSimulationService : IInputSimulationService
         return (0, 0);
     }
 
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ClipCursor(in RECT lpRect);
+
+    [DllImport("user32.dll", EntryPoint = "ClipCursor", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ClipCursorRelease(IntPtr lpRect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    /// <summary>
+    /// Confines the cursor to the given virtual-desktop rectangle via Win32 ClipCursor so the pointer
+    /// cannot leave the streamed display. Windows releases the clip on display/desktop/foreground
+    /// changes, so the caller re-applies this periodically while streaming.
+    /// </summary>
+    public void ConfineCursorToRegion(int left, int top, int width, int height)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            ReleaseCursorConfinement();
+            return;
+        }
+
+        var rect = new RECT { Left = left, Top = top, Right = left + width, Bottom = top + height };
+        ClipCursor(in rect);
+    }
+
+    /// <summary>Releases any cursor confinement (ClipCursor(NULL)).</summary>
+    public void ReleaseCursorConfinement() => ClipCursorRelease(IntPtr.Zero);
+
     #endregion
 
     /// <summary>
