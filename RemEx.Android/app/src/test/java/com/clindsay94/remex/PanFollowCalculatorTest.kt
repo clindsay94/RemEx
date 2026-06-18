@@ -51,6 +51,27 @@ class PanFollowCalculatorTest {
     }
 
     @Test
+    fun cursorNearTopEdge_pansDown_increasingPanY() {
+        // cursorLocalY=50 is inside the 150 deadzone -> target localY=150 -> delta +100.
+        val (_, py) = PanFollowCalculator.compute(
+            cursorLocalX = 500f, cursorLocalY = 50f,
+            panX = 0f, panY = 0f, zoom = 2f, imageWidth = w, imageHeight = h,
+        )
+        assertEquals(100f, py, 0.001f)
+    }
+
+    @Test
+    fun cursorInTopLeftCorner_pansBothAxesPositive() {
+        // Left edge (x=50 -> +100 panX) AND top edge (y=50 -> +100 panY) in one call.
+        val (px, py) = PanFollowCalculator.compute(
+            cursorLocalX = 50f, cursorLocalY = 50f,
+            panX = 0f, panY = 0f, zoom = 2f, imageWidth = w, imageHeight = h,
+        )
+        assertEquals(100f, px, 0.001f)
+        assertEquals(100f, py, 0.001f)
+    }
+
+    @Test
     fun cursorNearBottomEdge_pansUp_decreasingPanY() {
         val (_, py) = PanFollowCalculator.compute(
             cursorLocalX = 500f, cursorLocalY = 950f,

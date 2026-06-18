@@ -9,10 +9,12 @@ package com.clindsay94.remex.ui.screens
 object PanFollowCalculator {
 
     /**
-     * @param cursorLocalX/Y the host cursor projected into the view box's local pixel space
-     *   (the same space [panX]/[panY] live in), WITHOUT edge clamping, so a cursor that has
-     *   drifted off the visible region still yields a proportional pan delta.
-     * @param panX/panY the current pan offset.
+     * @param cursorLocalX the host cursor's X projected into the view box's local pixel space
+     *   (the same space [panX] lives in), WITHOUT edge clamping, so a cursor that has drifted
+     *   off the visible region still yields a proportional pan delta.
+     * @param cursorLocalY the host cursor's Y in the same unclamped local pixel space.
+     * @param panX the current horizontal pan offset.
+     * @param panY the current vertical pan offset.
      * @param zoom the current zoom factor (1 = not zoomed).
      * @param imageWidth/imageHeight the view box size (== the laid-out image container).
      * @param marginFraction deadzone size as a fraction of the smaller view dimension.

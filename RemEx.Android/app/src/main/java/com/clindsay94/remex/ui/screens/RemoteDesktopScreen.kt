@@ -10,8 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import android.content.res.Configuration
 import androidx.compose.foundation.Image
@@ -574,6 +574,9 @@ fun RemoteDesktopScreenContent(
                 imageWidth = imageSize.width.toFloat(),
                 imageHeight = imageSize.height.toFloat(),
             )
+            // This epsilon is load-bearing: when the host cursor sits past the max-pan clamp,
+            // compute() returns the same clamped target every tick; this skip prevents the
+            // animation from restarting forever. Do not remove.
             if (abs(targetX - panOffsetX) < 0.5f && abs(targetY - panOffsetY) < 0.5f) {
                 return@LaunchedEffect
             }
