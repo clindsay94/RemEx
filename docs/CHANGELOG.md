@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Remote desktop now **confines the host cursor to the streamed display** while a single monitor is being streamed, so the pointer can't wander onto another monitor the remote user can't see (where it would just disappear). Implemented host-side via Win32 `ClipCursor`, re-applied on each cursor tick (Windows releases the clip on display/desktop/foreground changes) and released when streaming stops, cancels, or the client disconnects. No-op when streaming the full virtual desktop, and on Linux. (`IInputSimulationService`, `WindowsInputSimulationService`, `RemoteDesktopHandler`.)
 - Remote desktop now **pans to follow the cursor while zoomed in**: when you zoom past 1× and the host cursor nears the edge of the view, the picture glides to keep it on screen (edge-deadzone tracking that mirrors the Microsoft Windows App), instead of letting the cursor disappear off the edge. With this in place, the remote-desktop screen **no longer forces landscape** — it rotates with the device like the rest of the app. (`PanFollowCalculator`, `RemoteDesktopScreen`.)
 - Remote desktop now defaults to **120 FPS** streaming on a fresh install across both the Windows/Linux host (`DesktopConfig`, `RemoteDesktopHandler`) and the Android client (`RemoteDesktopConfigState`, `SettingsManager` DataStore defaults, connection-screen slider). High-refresh phones get the full frame rate with no manual settings change.
 
