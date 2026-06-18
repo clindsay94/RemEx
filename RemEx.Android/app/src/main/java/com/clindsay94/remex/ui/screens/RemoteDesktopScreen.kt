@@ -10,6 +10,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -389,6 +392,9 @@ fun RemoteDesktopScreenContent(
         var zoomFactor by remember { mutableFloatStateOf(1f) }
         var panOffsetX by remember { mutableFloatStateOf(0f) }
         var panOffsetY by remember { mutableFloatStateOf(0f) }
+        // While the user is manually panning/pinching, suppress cursor pan-follow so the two do
+        // not fight. Set to now+cooldown on every manual pan write; pan-follow skips until then.
+        var suppressPanFollowUntilMs by remember { mutableLongStateOf(0L) }
         var cursorX by remember { mutableFloatStateOf(0f) }
         var cursorY by remember { mutableFloatStateOf(0f) }
         var imageSize by remember { mutableStateOf(IntSize.Zero) }
@@ -536,7 +542,7 @@ fun RemoteDesktopScreenContent(
 
         // Inverse of mapLocalToHost: maps a host cursor position to a local (screen) position so we
         // can draw the cursor overlay where the actual Windows cursor is.
-        fun mapHostToLocal(hostX: Float, hostY: Float): Offset? {
+        fun mapHostToLocal(hostX: Float, hostY: Float, coerce: Boolean = true): Offset? {
                 if (imageSize.width == 0 || imageSize.height == 0) return null
                 if (hostX < 0f || hostY < 0f) return null
                 val (hostW, hostH) = getHostScreenSize()
@@ -544,8 +550,8 @@ fun RemoteDesktopScreenContent(
                 if (hostW <= 0 || hostH <= 0) return null
                 val rect = contentRect()
                 if (rect.w <= 0f || rect.h <= 0f) return null
-                val relX = ((hostX - hostLeft) / hostW.toFloat()).coerceIn(0f, 1f)
-                val relY = ((hostY - hostTop) / hostH.toFloat()).coerceIn(0f, 1f)
+                val relX = ((hostX - hostLeft) / hostW.toFloat()).let { if (coerce) it.coerceIn(0f, 1f) else it }
+                val relY = ((hostY - hostTop) / hostH.toFloat()).let { if (coerce) it.coerceIn(0f, 1f) else it }
                 val adjX = relX * rect.w + rect.x
                 val adjY = relY * rect.h + rect.y
                 val centerX = imageSize.width / 2f
@@ -554,6 +560,35 @@ fun RemoteDesktopScreenContent(
                         (adjX - centerX) * zoomFactor + panOffsetX + centerX,
                         (adjY - centerY) * zoomFactor + panOffsetY + centerY
                 )
+        }
+
+        // Pan-follow: when zoomed, keep the streamed host cursor on screen by panning the view
+        // toward it (edge-triggered via a deadzone), animated so it glides. Re-runs whenever the
+        // host cursor moves; each run cancels the previous animation and re-targets.
+        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, zoomFactor) {
+            if (zoomFactor <= 1f) return@LaunchedEffect
+            if (System.currentTimeMillis() < suppressPanFollowUntilMs) return@LaunchedEffect
+            if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
+            val local = mapHostToLocal(uiState.hostCursorX, uiState.hostCursorY, coerce = false)
+                ?: return@LaunchedEffect
+            val (targetX, targetY) = PanFollowCalculator.compute(
+                cursorLocalX = local.x,
+                cursorLocalY = local.y,
+                panX = panOffsetX,
+                panY = panOffsetY,
+                zoom = zoomFactor,
+                imageWidth = imageSize.width.toFloat(),
+                imageHeight = imageSize.height.toFloat(),
+            )
+            if (abs(targetX - panOffsetX) < 0.5f && abs(targetY - panOffsetY) < 0.5f) {
+                return@LaunchedEffect
+            }
+            val startX = panOffsetX
+            val startY = panOffsetY
+            animate(0f, 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { t, _ ->
+                panOffsetX = startX + (targetX - startX) * t
+                panOffsetY = startY + (targetY - startY) * t
+            }
         }
 
         Scaffold(
@@ -1170,6 +1205,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                                                         -maxPanY,
                                                                                                                                                         maxPanY
                                                                                                                                                 )
+                                                                                                                                suppressPanFollowUntilMs = System.currentTimeMillis() + 350
                                                                                                                         }
                                                                                                                 }
                                                                                                                 "scroll" -> {
@@ -1205,6 +1241,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                                                         -maxPanY,
                                                                                                                                                         maxPanY
                                                                                                                                                 )
+                                                                                                                                suppressPanFollowUntilMs = System.currentTimeMillis() + 350
                                                                                                                         } else {
                                                                                                                                 // Mouse wheel scroll
                                                                                                                                 // with accumulator
@@ -1578,16 +1615,6 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 scaledX,
                                                                                                                                 scaledY
                                                                                                                         )
-                                                                                                                }
-
-                                                                                                                // Auto-pan viewport to keep cursor visible when zoomed
-                                                                                                                if (zoomFactor > 1.05f) {
-                                                                                                                        panOffsetX += diff.x
-                                                                                                                        panOffsetY += diff.y
-                                                                                                                        val mpX = imageSize.width * (zoomFactor - 1f) / 2f
-                                                                                                                        val mpY = imageSize.height * (zoomFactor - 1f) / 2f
-                                                                                                                        panOffsetX = panOffsetX.coerceIn(-mpX, mpX)
-                                                                                                                        panOffsetY = panOffsetY.coerceIn(-mpY, mpY)
                                                                                                                 }
 
                                                                                                                 // Track velocity for inertia
