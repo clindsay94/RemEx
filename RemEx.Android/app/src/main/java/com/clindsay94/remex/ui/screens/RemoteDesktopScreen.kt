@@ -126,6 +126,7 @@ data class RemoteDesktopUiState(
         val cursorScale: Float = 1.0f,
         val hostCursorX: Float = -1f,
         val hostCursorY: Float = -1f,
+        val hostCursorVisible: Boolean = false,
         val cursorBitmap: ImageBitmap? = null,
         val cursorHotspotX: Int = 0,
         val cursorHotspotY: Int = 0,
@@ -235,6 +236,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val cursorScale by viewModel.cursorScale.collectAsStateWithLifecycle()
         val hostCursorX by viewModel.hostCursorX.collectAsStateWithLifecycle()
         val hostCursorY by viewModel.hostCursorY.collectAsStateWithLifecycle()
+        val hostCursorVisible by viewModel.hostCursorVisible.collectAsStateWithLifecycle()
         val cursorBitmap by viewModel.cursorShapeBitmap.collectAsStateWithLifecycle()
         val cursorHotspotX by viewModel.cursorHotspotX.collectAsStateWithLifecycle()
         val cursorHotspotY by viewModel.cursorHotspotY.collectAsStateWithLifecycle()
@@ -268,6 +270,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         cursorScale = cursorScale,
                         hostCursorX = hostCursorX,
                         hostCursorY = hostCursorY,
+                        hostCursorVisible = hostCursorVisible,
                         cursorBitmap = cursorBitmap,
                         cursorHotspotX = cursorHotspotX,
                         cursorHotspotY = cursorHotspotY,
@@ -538,7 +541,9 @@ fun RemoteDesktopScreenContent(
         // can draw the cursor overlay where the actual Windows cursor is.
         fun mapHostToLocal(hostX: Float, hostY: Float, coerce: Boolean = true): Offset? {
                 if (imageSize.width == 0 || imageSize.height == 0) return null
-                if (hostX < 0f || hostY < 0f) return null
+                // Negative host coordinates are VALID: monitors positioned left of/above the
+                // primary have negative virtual-desktop coordinates. Cursor visibility is gated by
+                // the caller (uiState.hostCursorVisible), never by the sign of the coordinate.
                 val (hostW, hostH) = getHostScreenSize()
                 val (hostLeft, hostTop) = getHostDesktopOffset()
                 if (hostW <= 0 || hostH <= 0) return null
@@ -559,8 +564,10 @@ fun RemoteDesktopScreenContent(
         // Pan-follow: when zoomed, keep the streamed host cursor on screen by panning the view
         // toward it (edge-triggered via a deadzone), animated so it glides. Re-runs whenever the
         // host cursor moves; each run cancels the previous animation and re-targets.
-        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, zoomFactor) {
+        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, uiState.hostCursorVisible, zoomFactor) {
             if (zoomFactor <= 1f) return@LaunchedEffect
+            // Don't chase a cursor that isn't on the streamed display — its coords are last-known/stale.
+            if (!uiState.hostCursorVisible) return@LaunchedEffect
             if (System.currentTimeMillis() < suppressPanFollowUntilMs) return@LaunchedEffect
             if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
             val local = mapHostToLocal(uiState.hostCursorX, uiState.hostCursorY, coerce = false)
@@ -1889,7 +1896,7 @@ fun RemoteDesktopScreenContent(
                                         // mapping, so the arrow, the video, and where clicks land all
                                         // agree. hostCursorX/Y are host-desktop coords; -1 = none yet.
                                         val cursorLocal =
-                                                if (uiState.isStreaming) {
+                                                if (uiState.isStreaming && uiState.hostCursorVisible) {
                                                         mapHostToLocal(
                                                                 uiState.hostCursorX,
                                                                 uiState.hostCursorY

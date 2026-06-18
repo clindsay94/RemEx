@@ -99,6 +99,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _hostCursorY = MutableStateFlow(-1f)
     val hostCursorY: StateFlow<Float> = _hostCursorY.asStateFlow()
 
+    // Cursor visibility is tracked separately from position. We must NOT encode "hidden" as a
+    // negative coordinate: a monitor positioned left of/above the primary has legitimately
+    // negative virtual-desktop coordinates, so a -1 sentinel collides with a real cursor there
+    // (it silently vanished on such secondary displays). The host reports visibility explicitly
+    // (IsCursorInRegion), so we carry that flag through and let the overlay gate on it.
+    private val _hostCursorVisible = MutableStateFlow(false)
+    val hostCursorVisible: StateFlow<Boolean> = _hostCursorVisible.asStateFlow()
+
     // Native cursor overlay: the host streams the real cursor SHAPE (BGRA bitmap) keyed by a shape
     // serial, plus lightweight desktop_cursor_state position/visibility updates that reference the
     // active serial. The client decodes the shape once and draws it at the live position.
@@ -332,15 +340,16 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     hostDesktopTop = json.optInt("desktopTop", 0)
                     // Parse cursor position from host (for trackpad mode). When the host marks the
                     // cursor as outside the captured surface (e.g. on another monitor in single-
-                    // display capture), hide the overlay via the -1 sentinel instead of clamping it
-                    // to the frame edge. Legacy hosts omit cursorVisible -> treated as visible.
+                    // display capture), hide the overlay via the hostCursorVisible flag. We keep the
+                    // last raw coordinates (which may be negative on monitors left of/above primary)
+                    // rather than overwriting them with a sentinel. Legacy hosts omit cursorVisible
+                    // -> treated as visible.
                     if (json.has("cursorX") && json.has("cursorY")) {
-                        if (json.optBoolean("cursorVisible", true)) {
+                        val cursorVisible = json.optBoolean("cursorVisible", true)
+                        _hostCursorVisible.value = cursorVisible
+                        if (cursorVisible) {
                             _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
                             _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
-                        } else {
-                            _hostCursorX.value = -1f
-                            _hostCursorY.value = -1f
                         }
                     }
                     // Only update the codec when codecInfo is actually present. Live cursor-position
@@ -1019,18 +1028,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     /**
      * Applies a desktop_cursor_state update: live position + visibility, and selects the active shape
-     * by serial. Reuses _hostCursorX/_hostCursorY (host coordinates, mapped to screen by the overlay)
-     * so the -1f sentinel keeps meaning "hidden".
+     * by serial. Visibility is carried by [hostCursorVisible]; coordinates stay in raw host
+     * (virtual-desktop) space, which is legitimately negative on monitors left of/above the primary.
      */
     private fun handleCursorState(stateJson: String) {
         try {
             val json = JSONObject(stateJson)
-            if (json.optBoolean("visible", true)) {
+            val visible = json.optBoolean("visible", true)
+            _hostCursorVisible.value = visible
+            if (visible) {
                 _hostCursorX.value = json.optInt("x", 0).toFloat()
                 _hostCursorY.value = json.optInt("y", 0).toFloat()
-            } else {
-                _hostCursorX.value = -1f
-                _hostCursorY.value = -1f
             }
             val serial = json.optLong("shapeSerial", -1L)
             activeCursorShapeSerial = serial
