@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
@@ -552,6 +553,28 @@ fun RemoteDesktopScreenContent(
                         (adjX - centerX) * zoomFactor + panOffsetX + centerX,
                         (adjY - centerY) * zoomFactor + panOffsetY + centerY
                 )
+        }
+
+        // Smooth the remote cursor: the host streams its position at a limited rate, so animate the
+        // overlay toward each new position (critically-damped spring) instead of stepping to it.
+        // Snap on (re)appearance / display switch so the cursor doesn't slide across the whole screen.
+        val animatedCursorX = remember { Animatable(0f) }
+        val animatedCursorY = remember { Animatable(0f) }
+        var cursorWasVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, uiState.hostCursorVisible) {
+            if (!uiState.hostCursorVisible) {
+                cursorWasVisible = false
+                return@LaunchedEffect
+            }
+            if (!cursorWasVisible) {
+                cursorWasVisible = true
+                animatedCursorX.snapTo(uiState.hostCursorX)
+                animatedCursorY.snapTo(uiState.hostCursorY)
+                return@LaunchedEffect
+            }
+            val spec = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
+            launch { animatedCursorX.animateTo(uiState.hostCursorX, spec) }
+            launch { animatedCursorY.animateTo(uiState.hostCursorY, spec) }
         }
 
         // Pan-follow: when zoomed, keep the streamed host cursor on screen by panning the view
@@ -1900,9 +1923,11 @@ fun RemoteDesktopScreenContent(
                                         // agree. hostCursorX/Y are host-desktop coords; -1 = none yet.
                                         val cursorLocal =
                                                 if (uiState.isStreaming && uiState.hostCursorVisible) {
+                                                        // Use the smoothed (animated) host position so
+                                                        // the overlay glides instead of stepping.
                                                         mapHostToLocal(
-                                                                uiState.hostCursorX,
-                                                                uiState.hostCursorY
+                                                                animatedCursorX.value,
+                                                                animatedCursorY.value
                                                         )
                                                 } else {
                                                         null

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remote desktop now defaults to **120 FPS** streaming on a fresh install across both the Windows/Linux host (`DesktopConfig`, `RemoteDesktopHandler`) and the Android client (`RemoteDesktopConfigState`, `SettingsManager` DataStore defaults, connection-screen slider). High-refresh phones get the full frame rate with no manual settings change.
 
 ### Changed
+- Remote desktop cursor now moves **smoothly instead of stepping**: the host streams the cursor position at ~60 Hz (up from 10 Hz; the cursor shape sync and the `ClipCursor` confinement stay throttled to ~10 Hz to avoid hammering the OS), and the Android client animates the cursor overlay toward each received position with a critically-damped spring, snapping on (re)appearance or display switch so it never slides across the screen. (`RemoteDesktopHandler`, `RemoteDesktopScreen`.)
 - Remote desktop host frame pacing rewritten to a **hybrid precision wait**: it coarse-sleeps via `Task.Delay` for the bulk of each frame interval, then busy-spins with `Thread.SpinWait` for the final few milliseconds. A bare `Task.Delay` rounds up to the OS timer resolution (~15.6 ms on Windows), which oversleeps an 8.33 ms (120 FPS) interval to ~15.6 ms and capped the achievable rate near 60 FPS. The new pacing is fully localized — no global timer changes (`timeBeginPeriod`) — so it also benefits Linux pacing.
 
 ### Fixed
