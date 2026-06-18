@@ -54,19 +54,22 @@ public sealed class RemoteDesktopHandler : IDisposable
     private static bool? _ffmpegAvailableCache;
     private static readonly object _ffmpegCacheLock = new();
 
+    private readonly Remex.Host.Services.Session.IInteractiveSessionGuard _sessionGuard;
 
     public RemoteDesktopHandler(
         ILogger<RemoteDesktopHandler> logger,
         IScreenCaptureService screenCapture,
         IInputSimulationService inputSimulation,
         IDesktopWindowControlService windowControl,
-        IHostCapabilitiesProvider hostCapabilitiesProvider)
+        IHostCapabilitiesProvider hostCapabilitiesProvider,
+        Remex.Host.Services.Session.IInteractiveSessionGuard sessionGuard)
     {
         _logger = logger;
         _screenCapture = screenCapture;
         _inputSimulation = inputSimulation;
         _windowControl = windowControl;
         _hostCapabilitiesProvider = hostCapabilitiesProvider;
+        _sessionGuard = sessionGuard;
 
         // Start dedicated input processing thread
         _inputProcessingTask = Task.Factory.StartNew(ProcessInputQueue, TaskCreationOptions.LongRunning);
@@ -94,6 +97,7 @@ public sealed class RemoteDesktopHandler : IDisposable
     public async Task HandleAsync(WebSocket webSocket, CancellationToken ct)
     {
         using var sendLock = new SemaphoreSlim(1, 1);
+        var sessionGuardClientId = Guid.NewGuid().ToString("N");
         var hostCapabilities = _hostCapabilitiesProvider.GetCurrent();
 
         if (!hostCapabilities.SupportsRemoteDesktop)
@@ -202,20 +206,40 @@ public sealed class RemoteDesktopHandler : IDisposable
                         var frameBuffer = new FrameBuffer();
                         await SendCurrentStreamBootstrapAsync(webSocket, sessionState, sendLock, ct);
 
-                        // Run stream + input receive + cursor update concurrently
-                        using (var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                        // Keep the signed-in session usable (unlocked) for the life of this stream when
+                        // the user has opted in (off by default). Engages only while actively streaming;
+                        // the guard ref-counts across clients and re-locks when the last one disconnects.
+                        bool sessionGuardEngaged = false;
+                        if (Remex.Host.Services.Session.SessionGuardSettings.IsKeepUnlockedEnabled())
                         {
-                            var streamTask = StreamFramesAsync(webSocket, frameBuffer, sessionState, sendLock, streamCts.Token);
-                            var receiveTask = ReceiveInputLoopAsync(webSocket, frameBuffer, sessionState, sendLock, streamCts, ct);
-                            var cursorTask = StreamCursorPositionAsync(webSocket, sessionState, sendLock, streamCts.Token);
+                            _sessionGuard.EngageForRemoteControl(sessionGuardClientId);
+                            sessionGuardEngaged = true;
+                        }
 
-                            // When either finishes, cancel the others
-                            await Task.WhenAny(streamTask, receiveTask, cursorTask);
-                            await streamCts.CancelAsync();
+                        try
+                        {
+                            // Run stream + input receive + cursor update concurrently
+                            using (var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                            {
+                                var streamTask = StreamFramesAsync(webSocket, frameBuffer, sessionState, sendLock, streamCts.Token);
+                                var receiveTask = ReceiveInputLoopAsync(webSocket, frameBuffer, sessionState, sendLock, streamCts, ct);
+                                var cursorTask = StreamCursorPositionAsync(webSocket, sessionState, sendLock, streamCts.Token);
 
-                            try { await streamTask; } catch (OperationCanceledException) { }
-                            try { await receiveTask; } catch (OperationCanceledException) { }
-                            try { await cursorTask; } catch (OperationCanceledException) { }
+                                // When either finishes, cancel the others
+                                await Task.WhenAny(streamTask, receiveTask, cursorTask);
+                                await streamCts.CancelAsync();
+
+                                try { await streamTask; } catch (OperationCanceledException) { }
+                                try { await receiveTask; } catch (OperationCanceledException) { }
+                                try { await cursorTask; } catch (OperationCanceledException) { }
+                            }
+                        }
+                        finally
+                        {
+                            if (sessionGuardEngaged)
+                            {
+                                _sessionGuard.Disengage(sessionGuardClientId);
+                            }
                         }
 
                         // Close the WebSocket gracefully

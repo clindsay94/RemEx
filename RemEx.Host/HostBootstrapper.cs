@@ -123,6 +123,14 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<Remex.Host.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>();
         }
 
+        // Interactive session guard: opt-in (off by default) feature that keeps the signed-in session
+        // unlocked while a paired client is connected. Windows-only mechanism; no-op elsewhere.
+        builder.Services.AddSingleton<Remex.Host.Services.Session.IInteractiveSessionGuard>(sp =>
+            OperatingSystem.IsWindows()
+                ? new Remex.Host.Services.Session.WindowsInteractiveSessionGuard(
+                    sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Host.Services.Session.WindowsInteractiveSessionGuard>>())
+                : new Remex.Host.Services.Session.NoOpInteractiveSessionGuard());
+
         builder.Services.AddSingleton<TelemetryBackgroundService>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<TelemetryBackgroundService>());
 
@@ -464,7 +472,8 @@ public static class HostBootstrapper
                     context.RequestServices.GetRequiredService<IScreenCaptureService>(),
                     context.RequestServices.GetRequiredService<IInputSimulationService>(),
                     context.RequestServices.GetRequiredService<IDesktopWindowControlService>(),
-                    context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>());
+                    context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
+                    context.RequestServices.GetRequiredService<Remex.Host.Services.Session.IInteractiveSessionGuard>());
 
                 // Pass sessionCts.Token (not context.RequestAborted) so the registry
                 // can cancel this loop independently of the HTTP connection lifetime.
