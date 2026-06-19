@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">Sunucu işlem listesi isteklerine yanıt vermiyor. Eşleştirmenin tamamlandığını ve sunucunun işlem bilgilerini okuma iznine sahip olduğunu kontrol edin.</string>
     <string name="task_manager_kill_failed_format">%1$d işlemi sonlandırılamadı</string>
     <string name="task_manager_retry">Yeniden Dene</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">Ana bilgisayarda ekran yakalama çalışmıyor.</string>
+    <string name="rd_err_capture_stopped">Ekran yakalama %1$d kareden sonra durdu. Ana bilgisayar kilitlenmiş veya oturum kapatılmış olabilir.</string>
+    <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor.</string>
+    <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez.</string>
+    <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda ana bilgisayarda kullanılamıyor.</string>
 </resources>

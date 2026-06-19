@@ -132,6 +132,10 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun discoverHost() {
+        // Don't run local-network discovery while a connection is already established — it's
+        // unnecessary and, over a VPN such as Tailscale, only re-triggers Android's local-network
+        // permission prompt on top of the active stream. (RemEx-fkz)
+        if (RemexClientManager.isConnected.value) return
         viewModelScope.launch {
             _isDiscovering.value = true
             _discoveredHost.value = null

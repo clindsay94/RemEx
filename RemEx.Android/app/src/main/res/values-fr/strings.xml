@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">L\'hôte ne répond pas aux requêtes de la liste des processus. Vérifiez que l\'appairage est terminé et que l\'hôte a la permission de lire les informations sur les processus.</string>
     <string name="task_manager_kill_failed_format">Échec de l\'arrêt du processus %1$d</string>
     <string name="task_manager_retry">Réessayer</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">La capture d’écran ne fonctionne pas sur le PC hôte.</string>
+    <string name="rd_err_capture_stopped">La capture d’écran s’est arrêtée après %1$d images. Le PC hôte a peut-être été verrouillé ou déconnecté.</string>
+    <string name="rd_err_target_unavailable">L’écran sélectionné n’est plus disponible.</string>
+    <string name="rd_err_target_switch_unsupported">Cette session ne peut pas changer d’écran pendant la diffusion.</string>
+    <string name="rd_err_runtime_unavailable">Le bureau à distance n’est pas disponible sur le PC hôte pour le moment.</string>
 </resources>

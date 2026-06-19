@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">Host nie odpowiada na żądania listy procesów. Upewnij się, że parowanie zostało ukończone oraz że host ma uprawnienia do odczytu informacji o procesach.</string>
     <string name="task_manager_kill_failed_format">Nie udało się zamknąć procesu %1$d</string>
     <string name="task_manager_retry">Ponów</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">Przechwytywanie ekranu nie działa na komputerze hosta.</string>
+    <string name="rd_err_capture_stopped">Przechwytywanie ekranu zatrzymało się po %1$d klatkach. Komputer hosta mógł zostać zablokowany lub wylogowany.</string>
+    <string name="rd_err_target_unavailable">Wybrany ekran nie jest już dostępny.</string>
+    <string name="rd_err_target_switch_unsupported">Ta sesja nie może przełączać ekranów podczas przesyłania.</string>
+    <string name="rd_err_runtime_unavailable">Pulpit zdalny nie jest teraz dostępny na komputerze hosta.</string>
 </resources>

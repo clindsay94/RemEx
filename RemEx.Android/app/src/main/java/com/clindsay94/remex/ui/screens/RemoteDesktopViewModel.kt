@@ -28,6 +28,10 @@ import org.json.JSONObject
 
 private const val TAG = "RemoteDesktopVM"
 
+/** Frame-arrival watchdog poll interval and stall threshold (RemEx-5t4). */
+private const val FRAME_WATCHDOG_POLL_MS = 1000L
+private const val FRAME_STALL_TIMEOUT_MS = 7000L
+
 data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTime())
 
 data class RemoteDesktopCapabilityState(
@@ -154,6 +158,88 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    // --- Frame-arrival watchdog (RemEx-5t4) ---
+    // A display/target switch — or a host slow to tear down the previous DXGI capture — can leave the
+    // stream silently black: StartDesktopStream returns, but no frames arrive AND no desktopError is
+    // emitted, so neither the error path nor reconnect ever fires (the unplugged-monitor case self-
+    // heals because the host emits an error; the host-slow case does not). The watchdog arms on stream
+    // start, is reset by every decoded frame, and triggers a reconnect if no frame arrives within the
+    // stall timeout. It also backstops the H.264 decoder-init silent-death path (RemEx-x0b).
+    @Volatile private var lastFrameArrivalMs = 0L
+    private var frameWatchdogJob: Job? = null
+
+    private fun onFrameArrived() {
+        lastFrameArrivalMs = System.currentTimeMillis()
+    }
+
+    /**
+     * Routes one frame's payload to the decoder matching [codec] ("H264" / "Mjpeg"). An H.264 frame
+     * that arrives before its decoder surface exists (the brief codec-switch window) is dropped rather
+     * than mis-fed to the JPEG path — subsequent frames decode once the surface is created. (RemEx-w5v)
+     */
+    private fun routeFrameByCodec(codec: String, payload: ByteArray) {
+        if (codec == RemoteDesktopFrameEnvelope.CODEC_H264) {
+            val decoder = activeH264Decoder
+            if (decoder != null) {
+                decoder.decodeFrame(payload)
+                recordFrameTimestamp()
+            }
+        } else {
+            decodeFrame(payload)
+        }
+    }
+
+    private fun armFrameWatchdog() {
+        frameWatchdogJob?.cancel()
+        lastFrameArrivalMs = System.currentTimeMillis()
+        frameWatchdogJob =
+                viewModelScope.launch {
+                    // delay() is cancellable, so cancelling the job (stop/clear) exits the loop.
+                    while (true) {
+                        delay(FRAME_WATCHDOG_POLL_MS)
+                        if (!_isStreaming.value) continue
+                        // A reconnect already in flight will re-arm the watchdog on the next start.
+                        if (reconnectJob?.isActive == true) continue
+                        val gap = System.currentTimeMillis() - lastFrameArrivalMs
+                        if (gap >= FRAME_STALL_TIMEOUT_MS) {
+                            Log.w(TAG, "No decoded frame in ${gap}ms; stream appears stalled — reconnecting.")
+                            attemptReconnect()
+                        }
+                    }
+                }
+    }
+
+    private fun cancelFrameWatchdog() {
+        frameWatchdogJob?.cancel()
+        frameWatchdogJob = null
+    }
+
+    /**
+     * Maps a host desktop-error string to a localized message. The host may tag errors as
+     * "code\u001Farg\u001FenglishFallback" (see Remex.Core DesktopErrorCodes); untagged/legacy errors
+     * and unknown codes fall back to the host's plain English text. (RemEx-728)
+     */
+    private fun localizeDesktopError(raw: String?): String? {
+        if (raw.isNullOrEmpty()) return raw
+        val parts = raw.split('\u001F')
+        if (parts.size < 3) return raw // untagged legacy text — show as-is
+        val code = parts[0]
+        val arg = parts[1]
+        val fallback = parts.subList(2, parts.size).joinToString("\u001F")
+        val app = getApplication<Application>()
+        return when (code) {
+            "capture_unavailable" -> app.getString(R.string.rd_err_capture_unavailable)
+            "capture_stopped" ->
+                    arg.toIntOrNull()?.let { app.getString(R.string.rd_err_capture_stopped, it) }
+                            ?: fallback
+            "target_unavailable" -> app.getString(R.string.rd_err_target_unavailable)
+            "target_switch_unsupported" ->
+                    app.getString(R.string.rd_err_target_switch_unsupported)
+            "runtime_unavailable" -> app.getString(R.string.rd_err_runtime_unavailable)
+            else -> fallback.ifEmpty { raw }
+        }
+    }
+
     private val _configState = MutableStateFlow(RemoteDesktopConfigState())
     val configState: StateFlow<RemoteDesktopConfigState> = _configState.asStateFlow()
 
@@ -241,6 +327,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Called when an [H264StreamDecoder] fails to initialize its hardware MediaCodec. The decoder has
+     * already released itself, so the stream would otherwise hang on a black screen with no recovery.
+     * Mark streaming stopped and trigger a backoff reconnect (which, after maxReconnectAttempts,
+     * surfaces a clear localized "connection lost" error). (RemEx-x0b)
+     */
+    fun onH264DecoderInitFailed() {
+        Log.e(TAG, "H.264 decoder failed to initialize; triggering reconnect.")
+        activeH264Decoder = null
+        _isStreaming.value = false
+        attemptReconnect()
+    }
+
     init {
         viewModelScope.launch {
             settingsManager.remoteDesktopPreferencesFlow.collect { prefs ->
@@ -256,13 +355,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         viewModelScope.launch(Dispatchers.Default) {
             RemexClientManager.frames.collect { bytes ->
-                val decoder = activeH264Decoder
-                if (_activeCodecState.value == "H264" && decoder != null) {
-                    decoder.decodeFrame(bytes)
-                    recordFrameTimestamp()
+                // Prefer the per-frame codec tag from the host's frame envelope, so a frame is always
+                // decoded by the codec that actually produced it — even mid codec-switch, before the
+                // metadata flip arrives. Legacy hosts send raw, untagged bytes (tryRead == null);
+                // route those by the negotiated codec as before. (RemEx-w5v)
+                val env = RemoteDesktopFrameEnvelope.tryRead(bytes)
+                if (env != null) {
+                    routeFrameByCodec(env.codec, env.payload)
                 } else {
-                    decodeFrame(bytes)
+                    routeFrameByCodec(_activeCodecState.value, bytes)
                 }
+                // Reset the stall watchdog on every arriving frame, regardless of codec. (RemEx-5t4)
+                onFrameArrived()
             }
         }
 
@@ -324,7 +428,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             RemexClientManager.desktopErrors.collect { errorText ->
                 Log.e(TAG, "Desktop stream error: $errorText")
-                _desktopError.value = errorText
+                _desktopError.value = localizeDesktopError(errorText)
                 _isStreaming.value = false
                 attemptReconnect()
             }
@@ -622,6 +726,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectAttempts = 0
         RemexCoreClient.StartDesktopStream(config.toString()).getOrNull()
         _isStreaming.value = true
+        // Arm the stall watchdog so a silently-black start (no frames, no error) self-recovers. (RemEx-5t4)
+        armFrameWatchdog()
     }
 
     /**
@@ -782,6 +888,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectJob?.cancel()
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
+        cancelFrameWatchdog()
 
         catalogTimeoutJob?.cancel()
         catalogTimeoutJob = null
@@ -1089,7 +1196,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         "clientCapabilities",
                         JSONObject().apply {
                             put("supportsDisplaySelection", true)
-                            put("supportsFrameEnvelope", false)
+                            // The client now parses the host's per-frame codec/serial envelope, so the
+                            // host tags every frame and the client routes by the frame's own codec —
+                            // fixing the mid-codec-switch misroute. Target switch stays off (separate
+                            // capability), so the host never resets the stream serial mid-flight. (RemEx-w5v)
+                            put("supportsFrameEnvelope", true)
                             put("supportsTargetSwitch", false)
                             put("supportsCursorState", true)
                             put("supportsCursorShape", true)

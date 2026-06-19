@@ -2540,4 +2540,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Confirm</value>
   </data>
+  <data name="Settings_KeepSessionUnlocked" xml:space="preserve">
+    <value>Keep session unlocked for remote control</value>
+  </data>
+  <data name="Settings_KeepSessionUnlockedDesc" xml:space="preserve">
+    <value>When a paired phone connects, this PC's session is unlocked automatically so remote control keeps working even after the screen locks. It re-locks when the last device disconnects.</value>
+  </data>
+  <data name="Settings_KeepSessionUnlockedTooltip" xml:space="preserve">
+    <value>Off by default. Lets a paired device control this PC even while it is locked.</value>
+  </data>
+  <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
+    <value>Security warning: while this is on, anyone with a paired device can view and control this PC without unlocking it at the keyboard. Only turn it on for a PC you trust.</value>
+  </data>
 </root>

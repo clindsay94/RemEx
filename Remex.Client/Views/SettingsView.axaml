@@ -249,6 +249,18 @@
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
+                            <!-- Keep session unlocked while a paired client is connected (opt-in unattended access) (RemEx-l6o) -->
+                            <StackPanel Spacing="4" IsVisible="{Binding IsKeepSessionUnlockedSupported}">
+                                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_KeepSessionUnlockedTooltip}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlocked}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                </Grid>
+                                <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
+                            </StackPanel>
+
                             <!-- Fully exit the application (ends the process) -->
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Spacing="2">

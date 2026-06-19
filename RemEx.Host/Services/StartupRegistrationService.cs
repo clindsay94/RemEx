@@ -11,22 +11,47 @@ namespace Remex.Client.Desktop.Services;
 public class StartupRegistrationService : IStartupRegistrationService
 {
     private const string ValueName = "RemEx";
+    private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
-    public bool IsSupported => OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
+    // On Windows the Session-0 service owns elevated autostart: it spawns the interactive GUI host at
+    // HIGH integrity (see InteractiveDesktopHostLauncher). A per-user HKCU Run entry would start a
+    // competing MEDIUM-integrity instance that wins the single-instance guard and reintroduces the
+    // UIPI input block, so launch-at-login is NOT user-managed on Windows. Linux still uses the
+    // per-user XDG autostart .desktop file. (RemEx-hmk)
+    public bool IsSupported => OperatingSystem.IsLinux();
+
+    /// <summary>
+    /// Deletes any legacy per-user HKCU Run "RemEx" launch-at-login entry on Windows. The Session-0
+    /// service now owns elevated autostart; a lingering Run key would start a competing
+    /// medium-integrity GUI host that wins the single-instance guard and reintroduces the UIPI input
+    /// block. Safe to call repeatedly; must run in the interactive user's session (HKCU is the
+    /// signed-in user's hive), not the LocalSystem service. No-op off Windows. (RemEx-hmk)
+    /// </summary>
+    public static void RemoveLegacyWindowsRunKey()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+            key?.DeleteValue(ValueName, throwOnMissingValue: false);
+        }
+        catch
+        {
+            // Best-effort cleanup; a failure here is non-fatal.
+        }
+    }
 
     public bool IsEnabled()
     {
         if (OperatingSystem.IsWindows())
         {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: false);
-                return key?.GetValue(ValueName) != null;
-            }
-            catch
-            {
-                return false;
-            }
+            // Launch-at-login is service-managed on Windows (see IsSupported); the HKCU Run key is
+            // legacy and proactively removed, so it is never the source of truth here.
+            return false;
         }
         else if (OperatingSystem.IsLinux())
         {
@@ -58,26 +83,10 @@ public class StartupRegistrationService : IStartupRegistrationService
     {
         if (OperatingSystem.IsWindows())
         {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
-                if (key == null) return;
-
-                if (enabled)
-                {
-                    var exePath = Environment.ProcessPath;
-                    if (string.IsNullOrEmpty(exePath)) return;
-                    key.SetValue(ValueName, $"\"{exePath}\" --minimized");
-                }
-                else
-                {
-                    key.DeleteValue(ValueName, throwOnMissingValue: false);
-                }
-            }
-            catch
-            {
-                // Ignored
-            }
+            // Never create the HKCU Run key on Windows — the Session-0 service owns elevated
+            // autostart. Always clear any legacy entry so an old "launch at login" value cannot start
+            // a competing medium-integrity host. (RemEx-hmk)
+            RemoveLegacyWindowsRunKey();
         }
         else if (OperatingSystem.IsLinux())
         {

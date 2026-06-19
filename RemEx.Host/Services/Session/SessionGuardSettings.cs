@@ -29,4 +29,27 @@ public static class SessionGuardSettings
             return false;
         }
     }
+
+    /// <summary>
+    /// Persists the opt-in flag from the interactive GUI host's settings UI. Writes "1" to enable or
+    /// "0" to disable, creating <c>ProgramData\RemEx</c> if needed. Returns false on any I/O error
+    /// (e.g. insufficient rights) so the UI can surface the failure rather than silently lying.
+    /// </summary>
+    public static bool SetKeepUnlockedEnabled(bool enabled)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(FlagPath);
+            if (!string.IsNullOrEmpty(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            File.WriteAllText(FlagPath, enabled ? "1" : "0");
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

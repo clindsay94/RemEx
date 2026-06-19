@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">Хост не відповідає на запити списку процесів. Перевірте, чи завершено сполучення та чи має хост дозвіл на читання інформації про процеси.</string>
     <string name="task_manager_kill_failed_format">Не вдалося завершити процес %1$d</string>
     <string name="task_manager_retry">Повторити</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">Захоплення екрана не працює на хост-ПК.</string>
+    <string name="rd_err_capture_stopped">Захоплення екрана зупинилося після %1$d кадрів. Можливо, хост-ПК було заблоковано або виконано вихід.</string>
+    <string name="rd_err_target_unavailable">Вибраний дисплей більше недоступний.</string>
+    <string name="rd_err_target_switch_unsupported">Цей сеанс не може перемикати дисплеї під час трансляції.</string>
+    <string name="rd_err_runtime_unavailable">Віддалений робочий стіл наразі недоступний на хост-ПК.</string>
 </resources>

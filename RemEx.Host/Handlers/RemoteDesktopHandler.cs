@@ -102,8 +102,9 @@ public sealed class RemoteDesktopHandler : IDisposable
 
         if (!hostCapabilities.SupportsRemoteDesktop)
         {
-            await SendDesktopError(
+            await SendDesktopErrorCoded(
                 webSocket,
+                DesktopErrorCodes.RuntimeUnavailable,
                 hostCapabilities.RemoteDesktopUnavailableReason
                     ?? "Remote desktop is unavailable in the current host runtime.",
                 sendLock,
@@ -168,7 +169,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         {
                             if (!TryApplyCaptureTarget(message.DesktopConfig, out var targetError))
                             {
-                                await SendDesktopError(webSocket, targetError ?? "The requested desktop target is unavailable.", sendLock, ct);
+                                await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.TargetUnavailable, targetError ?? "The requested desktop target is unavailable.", sendLock, ct);
                                 break;
                             }
 
@@ -438,17 +439,23 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     errorReported = true;
                     _logger.LogWarning("Screen capture failing consistently ({Count} consecutive). Sent {Total} frames total so far.", consecutiveFailures, totalFramesSent);
-                    var errorText = totalFramesSent == 0
-                        ? "Screen capture is not working on the host."
-                        : $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.";
-
                     var windowsReport = _hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport();
                     if (windowsReport is not null)
                     {
-                        errorText = BuildWindowsCaptureFailureMessage(windowsReport, totalFramesSent);
+                        // Rich, host-specific Windows diagnostic — keep as plain text (untranslated).
+                        await SendDesktopError(webSocket, BuildWindowsCaptureFailureMessage(windowsReport, totalFramesSent), sendLock, ct);
                     }
-
-                    await SendDesktopError(webSocket, errorText, sendLock, ct);
+                    else if (totalFramesSent == 0)
+                    {
+                        await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.CaptureUnavailable,
+                            "Screen capture is not working on the host.", sendLock, ct);
+                    }
+                    else
+                    {
+                        await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.CaptureStopped,
+                            $"Screen capture stopped working after {totalFramesSent} frames. The host desktop may have been locked or the session disconnected.",
+                            sendLock, ct, arg: totalFramesSent.ToString());
+                    }
                 }
 
                 // Throttle. While capture is failing (locked desktop, lost session, DXGI recovering),
@@ -516,6 +523,16 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                 // Early exit: skip sending if it is the exact same frame as last sent
                 if (ReferenceEquals(currentFrame, lastSentFrame))
+                {
+                    continue;
+                }
+
+                // Drop stale frames left over from a previous stream target. The capture loop can
+                // Interlocked.Exchange an old-serial frame into the buffer just after a target switch
+                // clears it; the host is authoritative on StreamSerial, so never ship a frame that no
+                // longer matches the current stream (otherwise a client without frame envelopes — which
+                // cannot fence on the serial itself — briefly renders the old target). (RemEx-gim)
+                if (currentFrame.StreamSerial != sessionState.StreamSerial)
                 {
                     continue;
                 }
@@ -598,6 +615,21 @@ public sealed class RemoteDesktopHandler : IDisposable
             _logger.LogWarning(ex, "Failed to send DesktopError to client.");
         }
     }
+
+    /// <summary>
+    /// Sends a desktop error tagged with a stable <see cref="DesktopErrorCodes"/> code so the client
+    /// can render a localized message, while <paramref name="englishFallback"/> remains the readable
+    /// text for clients that do not parse codes. <paramref name="arg"/> carries an optional parameter
+    /// (e.g. a frame count) for the client's localized template. (RemEx-728)
+    /// </summary>
+    private Task SendDesktopErrorCoded(
+        WebSocket webSocket,
+        string code,
+        string englishFallback,
+        SemaphoreSlim sendLock,
+        CancellationToken ct,
+        string? arg = null)
+        => SendDesktopError(webSocket, DesktopErrorCodes.Format(code, englishFallback, arg), sendLock, ct);
 
     private async Task SendDisplayCatalogAsync(WebSocket webSocket, SemaphoreSlim sendLock, CancellationToken ct)
     {
@@ -953,13 +985,13 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         if (!sessionState.SupportsTargetSwitch)
         {
-            await SendDesktopError(webSocket, "This client session does not support in-session display switching.", sendLock, ct);
+            await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.TargetSwitchUnsupported, "This client session does not support in-session display switching.", sendLock, ct);
             return;
         }
 
         if (!TryApplyCaptureTarget(request.Target, request.DisplayListVersion, out var error))
         {
-            await SendDesktopError(webSocket, error ?? "The requested desktop target is unavailable.", sendLock, ct);
+            await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.TargetUnavailable, error ?? "The requested desktop target is unavailable.", sendLock, ct);
             return;
         }
 
@@ -1252,16 +1284,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             case PointerPhase.HoverMove:
             case PointerPhase.ContactMove:
-                if (sample.LogicalX != 0 || sample.LogicalY != 0)
-                {
-                    input = new InputEvent
-                    {
-                        EventType = InputEventTypes.MouseMove,
-                        X = (int)sample.LogicalX,
-                        Y = (int)sample.LogicalY,
-                    };
-                }
-                else if (sample.Dx != 0 || sample.Dy != 0)
+                // Prefer an explicit relative delta when present (trackpad/relative mode); otherwise
+                // treat the sample as absolute and use the logical host coordinates directly —
+                // INCLUDING a legitimate (0,0) top-left position. The previous
+                // `LogicalX != 0 || LogicalY != 0` guard treated absolute (0,0) as "no data" and fell
+                // through, so a finger drag that mapped to the top-left corner (or any sample whose
+                // host coords rounded to 0,0) silently failed to move the cursor. (RemEx-ubm)
+                if (sample.Dx != 0 || sample.Dy != 0)
                 {
                     input = new InputEvent
                     {
@@ -1270,15 +1299,27 @@ public sealed class RemoteDesktopHandler : IDisposable
                         DeltaY = (int)sample.Dy,
                     };
                 }
+                else
+                {
+                    input = new InputEvent
+                    {
+                        EventType = InputEventTypes.MouseMove,
+                        X = (int)sample.LogicalX,
+                        Y = (int)sample.LogicalY,
+                    };
+                }
                 break;
 
             case PointerPhase.ContactStart:
+                // Contact samples from the client are absolute; anchor the press at the logical
+                // position (including 0,0) instead of dropping the coordinate to "current cursor
+                // position", which mis-placed presses near the top-left edge. (RemEx-ubm)
                 input = new InputEvent
                 {
                     EventType = InputEventTypes.MouseDown,
                     Button = 0,
-                    X = sample.LogicalX != 0 ? (int?)sample.LogicalX : null,
-                    Y = sample.LogicalY != 0 ? (int?)sample.LogicalY : null,
+                    X = (int)sample.LogicalX,
+                    Y = (int)sample.LogicalY,
                 };
                 break;
 

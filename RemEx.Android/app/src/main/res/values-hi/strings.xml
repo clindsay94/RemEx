@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">होस्ट प्रक्रिया सूची अनुरोधों का उत्तर नहीं दे रहा है। जांचें कि पेयरिंग पूर्ण है और होस्ट को प्रक्रिया जानकारी पढ़ने की अनुमति है।</string>
     <string name="task_manager_kill_failed_format">प्रक्रिया %1$d को समाप्त करने में विफल</string>
     <string name="task_manager_retry">पुनः प्रयास करें</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">होस्ट पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा है।</string>
+    <string name="rd_err_capture_stopped">%1$d फ़्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है कि होस्ट पीसी लॉक हो गया हो या साइन आउट हो गया हो।</string>
+    <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
+    <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता।</string>
+    <string name="rd_err_runtime_unavailable">इस समय होस्ट पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
 </resources>

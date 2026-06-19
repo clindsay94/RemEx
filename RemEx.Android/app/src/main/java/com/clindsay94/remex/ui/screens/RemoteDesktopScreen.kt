@@ -332,7 +332,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 streamPixelWidth = streamPixelWidth,
                 streamPixelHeight = streamPixelHeight,
                 onActiveH264DecoderChange = { decoder -> viewModel.activeH264Decoder = decoder },
-                onH264DecoderReleased = { decoder -> viewModel.onH264DecoderReleased(decoder) }
+                onH264DecoderReleased = { decoder -> viewModel.onH264DecoderReleased(decoder) },
+                onH264DecoderInitFailed = { viewModel.onH264DecoderInitFailed() }
         )
 }
 
@@ -381,7 +382,8 @@ fun RemoteDesktopScreenContent(
         streamPixelWidth: Int = 1920,
         streamPixelHeight: Int = 1080,
         onActiveH264DecoderChange: (H264StreamDecoder?) -> Unit = {},
-        onH264DecoderReleased: (H264StreamDecoder) -> Unit = {}
+        onH264DecoderReleased: (H264StreamDecoder) -> Unit = {},
+        onH264DecoderInitFailed: () -> Unit = {}
 ) {
         val activity = LocalActivity.current
         val scope = rememberCoroutineScope()
@@ -1843,7 +1845,12 @@ fun RemoteDesktopScreenContent(
                                                                                 override fun onSurfaceTextureAvailable(surfaceTexture: android.graphics.SurfaceTexture, width: Int, height: Int) {
                                                                                         val surface = android.view.Surface(surfaceTexture)
                                                                                         // Use the encoded stream dimensions from DesktopMeta, not the surface view size
-                                                                                        val decoder = H264StreamDecoder(streamPixelWidth, streamPixelHeight, surface)
+                                                                                        val decoder = H264StreamDecoder(
+                                                                                                streamPixelWidth,
+                                                                                                streamPixelHeight,
+                                                                                                surface,
+                                                                                                onInitFailure = onH264DecoderInitFailed
+                                                                                        )
                                                                                         localDecoder = decoder
                                                                                         onActiveH264DecoderChange(decoder)
                                                                                         Log.i(TAG, "H.264 stream surface created: encoded=${streamPixelWidth}x${streamPixelHeight}, surface=${width}x${height}")

@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">Host tidak merespons permintaan daftar proses. Periksa apakah penyandingan selesai dan host memiliki izin untuk membaca info proses.</string>
     <string name="task_manager_kill_failed_format">Gagal menghentikan proses %1$d</string>
     <string name="task_manager_retry">Coba lagi</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">Pengambilan layar tidak berfungsi di PC host.</string>
+    <string name="rd_err_capture_stopped">Pengambilan layar berhenti setelah %1$d bingkai. PC host mungkin terkunci atau keluar.</string>
+    <string name="rd_err_target_unavailable">Layar yang dipilih tidak lagi tersedia.</string>
+    <string name="rd_err_target_switch_unsupported">Sesi ini tidak dapat mengganti layar saat streaming.</string>
+    <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di PC host saat ini.</string>
 </resources>

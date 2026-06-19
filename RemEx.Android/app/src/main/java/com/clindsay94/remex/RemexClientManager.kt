@@ -128,8 +128,13 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                 maxDelayMs
                         )
 
-                // mDNS Self-Healing: If we fail consecutively, try to discover the host automatically in the background
-                if (consecutiveFailures >= 3) {
+                // mDNS Self-Healing: If we fail consecutively, try to discover the host automatically in
+                // the background — but ONLY when the saved host is on a network where local multicast
+                // can actually reach it. Over a VPN like Tailscale (CGNAT 100.64.0.0/10) or a public
+                // address there is no local multicast, so discovery is pointless and merely re-triggers
+                // Android's "RemEx wants to connect to a device on your local network" system prompt on
+                // a loop. (RemEx-fkz)
+                if (consecutiveFailures >= 3 && isMulticastReachableHost(host)) {
                     Log.i("RemexManager", "Heartbeat consecutive failures >= 3 ($consecutiveFailures). Triggering background mDNS self-healing discovery...")
                     try {
                         val discoveryManager = com.clindsay94.remex.data.NsdDiscoveryManager(settings.context)
@@ -176,6 +181,31 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 consecutiveFailures++
                 delay(backoffMs)
             }
+        }
+    }
+
+    /**
+     * True when [host] is on a network where mDNS/local multicast discovery could plausibly reach the
+     * PC: a private LAN IPv4 range, link-local, or a non-IP hostname (e.g. a `.local` name). Returns
+     * false for Tailscale/CGNAT (100.64.0.0/10) and ordinary public addresses, where running discovery
+     * is pointless and only spams Android's local-network permission prompt. (RemEx-fkz)
+     */
+    private fun isMulticastReachableHost(host: String): Boolean {
+        val octets = host.trim().split(".")
+        if (octets.size != 4) {
+            // Not a dotted-quad IPv4 (hostname / IPv6) — allow discovery rather than over-suppress.
+            return true
+        }
+        val b = octets.map { it.toIntOrNull() ?: return true }
+        if (b.any { it !in 0..255 }) return true
+        val (a, c) = b[0] to b[1]
+        return when {
+            a == 10 -> true                          // 10.0.0.0/8
+            a == 172 && c in 16..31 -> true          // 172.16.0.0/12
+            a == 192 && c == 168 -> true             // 192.168.0.0/16
+            a == 169 && c == 254 -> true             // 169.254.0.0/16 link-local
+            a == 100 && c in 64..127 -> false        // 100.64.0.0/10 CGNAT (Tailscale) — no multicast
+            else -> false                            // public / other — no local multicast
         }
     }
 

@@ -623,4 +623,10 @@
     <string name="task_manager_host_unresponsive">O host não está respondendo às solicitações da lista de processos. Verifique se o emparelhamento foi concluído e se o host tem permissão para ler informações de processos.</string>
     <string name="task_manager_kill_failed_format">Falha ao finalizar o processo %1$d</string>
     <string name="task_manager_retry">Tentar novamente</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">A captura de tela não está funcionando no PC host.</string>
+    <string name="rd_err_capture_stopped">A captura de tela parou após %1$d quadros. O PC host pode ter sido bloqueado ou desconectado.</string>
+    <string name="rd_err_target_unavailable">A tela selecionada não está mais disponível.</string>
+    <string name="rd_err_target_switch_unsupported">Esta sessão não pode trocar de tela durante a transmissão.</string>
+    <string name="rd_err_runtime_unavailable">A área de trabalho remota não está disponível no PC host no momento.</string>
 </resources>

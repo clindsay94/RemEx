@@ -15,7 +15,14 @@ private const val TAG = "H264StreamDecoder"
 class H264StreamDecoder(
     private val width: Int,
     private val height: Int,
-    private val surface: Surface
+    private val surface: Surface,
+    /**
+     * Invoked once if the hardware decoder fails to initialize (createDecoderByType / configure /
+     * start threw). Without this, an init failure would leave a published-but-dead decoder whose
+     * decodeFrame() no-ops forever — a silently black stream with no recovery. The owner should
+     * surface an error and/or trigger a reconnect. (RemEx-x0b)
+     */
+    private val onInitFailure: (() -> Unit)? = null
 ) {
     private var decoder: MediaCodec? = null
     private var isConfigured = false
@@ -51,6 +58,9 @@ class H264StreamDecoder(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize native MediaCodec decoder: ${e.message}", e)
             release()
+            // Signal the owner so the dead stream surfaces an error / reconnects instead of hanging
+            // black forever. (RemEx-x0b)
+            onInitFailure?.invoke()
         }
     }
 

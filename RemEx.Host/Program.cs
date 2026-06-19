@@ -176,6 +176,7 @@ public partial class Program
         {
             services.AddSingleton<Remex.Core.Services.IIconExtractionService, Remex.Client.Desktop.Services.DesktopIconExtractionService>();
             services.AddSingleton<Remex.Client.Services.IStartupRegistrationService, Remex.Client.Desktop.Services.StartupRegistrationService>();
+            services.AddSingleton<Remex.Client.Services.ISessionKeepUnlockedService, Remex.Client.Desktop.Services.SessionKeepUnlockedService>();
         };
 
         if (EmbeddedHostPort.HasValue)
@@ -186,6 +187,13 @@ public partial class Program
         }
 
         App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;
+
+        // One-time migration: remove any legacy HKCU Run "RemEx" launch-at-login entry. On Windows the
+        // Session-0 service now owns elevated autostart; a lingering Run key would start a competing
+        // medium-integrity host that wins the single-instance guard and reintroduces the UIPI input
+        // block. This runs in the interactive user's session (HKCU = the signed-in user's hive), so it
+        // is the correct place to clean it — the LocalSystem service cannot. No-op off Windows. (RemEx-hmk)
+        Remex.Client.Desktop.Services.StartupRegistrationService.RemoveLegacyWindowsRunKey();
 
         try
         {

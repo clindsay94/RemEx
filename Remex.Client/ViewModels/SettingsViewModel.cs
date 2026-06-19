@@ -67,6 +67,40 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isLaunchAtLoginSupported;
 
+    // --- Keep session unlocked (opt-in unattended access) (RemEx-l6o) ---
+    // Guards the load-time assignment so seeding the toggle from the persisted flag does not trigger
+    // a redundant write (and a possible revert) back through the change handler.
+    private bool _suppressKeepUnlockedWrite;
+
+    [ObservableProperty]
+    private bool _isKeepSessionUnlockedEnabled;
+
+    [ObservableProperty]
+    private bool _isKeepSessionUnlockedSupported;
+
+    partial void OnIsKeepSessionUnlockedEnabledChanged(bool value)
+    {
+        if (_suppressKeepUnlockedWrite)
+        {
+            return;
+        }
+
+        var svc = App.Services?.GetService(typeof(ISessionKeepUnlockedService)) as ISessionKeepUnlockedService;
+        if (svc == null || !svc.IsSupported)
+        {
+            return;
+        }
+
+        if (!svc.SetEnabled(value))
+        {
+            // Persisting the flag failed (e.g. insufficient rights). Revert the toggle without
+            // re-entering this handler so the UI reflects the true, unchanged state.
+            _suppressKeepUnlockedWrite = true;
+            IsKeepSessionUnlockedEnabled = !value;
+            _suppressKeepUnlockedWrite = false;
+        }
+    }
+
     /// <summary>Fully exits the application (stops the process), same as the tray "Exit".</summary>
     [RelayCommand]
     private void ExitApplication() => App.RequestApplicationShutdown();
@@ -193,6 +227,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 if (IsLaunchAtLoginSupported)
                 {
                     IsLaunchAtLoginEnabled = startupService.IsEnabled();
+                }
+            }
+
+            var keepUnlockedService = App.Services?.GetService(typeof(ISessionKeepUnlockedService)) as ISessionKeepUnlockedService;
+            if (keepUnlockedService != null)
+            {
+                IsKeepSessionUnlockedSupported = keepUnlockedService.IsSupported;
+                if (IsKeepSessionUnlockedSupported)
+                {
+                    // Seed from the persisted flag without triggering a write-back. (RemEx-l6o)
+                    _suppressKeepUnlockedWrite = true;
+                    IsKeepSessionUnlockedEnabled = keepUnlockedService.IsEnabled();
+                    _suppressKeepUnlockedWrite = false;
                 }
             }
 

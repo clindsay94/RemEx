@@ -1217,15 +1217,6 @@ Dejar vacío si no está configurada.</value>
   <data name="Settings_CloseToTrayTooltip" xml:space="preserve">
     <value>Elige si al cerrar la ventana RemEx se minimiza a la bandeja o se cierra por completo.</value>
   </data>
-  <data name="Settings_ExitApp" xml:space="preserve">
-    <value>Salir de RemEx</value>
-  </data>
-  <data name="Settings_ExitAppDesc" xml:space="preserve">
-    <value>Cerrar completamente la aplicación y detener su proceso en segundo plano.</value>
-  </data>
-  <data name="Settings_ExitAppButton" xml:space="preserve">
-    <value>Salir</value>
-  </data>
   <data name="Settings_LaunchAtLogin" xml:space="preserve">
     <value>Iniciar al iniciar sesión</value>
   </data>
@@ -1234,6 +1225,15 @@ Dejar vacío si no está configurada.</value>
   </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Elige si RemEx se ejecuta automáticamente al iniciar sesión.</value>
+  </data>
+  <data name="Settings_ExitApp" xml:space="preserve">
+    <value>Salir de RemEx</value>
+  </data>
+  <data name="Settings_ExitAppDesc" xml:space="preserve">
+    <value>Cerrar completamente la aplicación y detener su proceso en segundo plano.</value>
+  </data>
+  <data name="Settings_ExitAppButton" xml:space="preserve">
+    <value>Salir</value>
   </data>
   <data name="Settings_Help" xml:space="preserve">
     <value>AYUDA</value>
@@ -1850,6 +1850,18 @@ Chrome)</value>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
     <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
   </data>
+  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
+    <value>Transferencia de archivos remota</value>
+  </data>
+  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
+    <value>Examine las carpetas compartidas del host y transfiera archivos en cualquier dirección con verificación de integridad SHA-256. Android puede compartir sus propias carpetas con el host. Las transferencias muestran el progreso en vivo con opción de cancelación.</value>
+  </data>
+  <data name="About_WhatsNew_Android" xml:space="preserve">
+    <value>Renovación de Android</value>
+  </data>
+  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
+    <value>Material 3 Expressive con física de resorte en todo: reordenamiento de listas, deslizar para actualizar, mosaicos de aplicaciones, indicadores animados. 8 mosaicos de configuración rápida para comandos de energía con un toque. Widgets de pantalla de inicio redimensionables. Retroalimentación háptica de dos etapas. SDK de destino 37 (Android 17).</value>
+  </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
     <value>Issues (Known)</value>
   </data>
@@ -1916,6 +1928,12 @@ Chrome)</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+  </data>
+  <data name="Faq_Q11_Question" xml:space="preserve">
+    <value>¿Cómo configuro Tailscale para acceso remoto?</value>
+  </data>
+  <data name="Faq_Q11_Answer" xml:space="preserve">
+    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).\n3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.\n4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.\n5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Deshacer</value>
@@ -2382,101 +2400,17 @@ Chrome)</value>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
     <value>Abrir Paleta de Comandos (Ctrl+Shift+P)</value>
   </data>
-  <data name="About_WhatsNew_Android" xml:space="preserve">
-    <value>Renovación de Android</value>
-  </data>
-  <data name="About_WhatsNew_Android_Body" xml:space="preserve">
-    <value>Material 3 Expressive con física de resorte en todo: reordenamiento de listas, deslizar para actualizar, mosaicos de aplicaciones, indicadores animados. 8 mosaicos de configuración rápida para comandos de energía con un toque. Widgets de pantalla de inicio redimensionables. Retroalimentación háptica de dos etapas. SDK de destino 37 (Android 17).</value>
-  </data>
-  <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
-    <value>Transferencia de archivos remota</value>
-  </data>
-  <data name="About_WhatsNew_FileTransfer_Body" xml:space="preserve">
-    <value>Examine las carpetas compartidas del host y transfiera archivos en cualquier dirección con verificación de integridad SHA-256. Android puede compartir sus propias carpetas con el host. Las transferencias muestran el progreso en vivo con opción de cancelación.</value>
-  </data>
-  <data name="Boot_CommandCenter" xml:space="preserve">
-    <value>⚡ CENTRO DE CONTROL</value>
-  </data>
-  <data name="Boot_CommandYourPc" xml:space="preserve">
-    <value>CONTROLE SU PC</value>
-  </data>
-  <data name="Boot_Ecution" xml:space="preserve">
-    <value>cución</value>
-  </data>
-  <data name="Boot_Execution" xml:space="preserve">
-    <value>EJECUCIÓN</value>
-  </data>
-  <data name="Boot_Ote" xml:space="preserve">
-    <value>moto</value>
-  </data>
-  <data name="Boot_Remote" xml:space="preserve">
-    <value>REMOTO</value>
-  </data>
-  <data name="Canvas_CopyTooltip" xml:space="preserve">
-    <value>Copiar imagen instantánea directamente al portapapeles</value>
-  </data>
-  <data name="Canvas_ExportTooltip" xml:space="preserve">
-    <value>Guardar lienzo como PNG en la carpeta Imágenes</value>
-  </data>
-  <data name="Canvas_GraphArea" xml:space="preserve">
-    <value>Área ▓▓▓</value>
-  </data>
-  <data name="Canvas_GraphBar" xml:space="preserve">
-    <value>Barra ▮▮▮</value>
-  </data>
-  <data name="Canvas_GraphGauge" xml:space="preserve">
-    <value>Indicador ━━━</value>
-  </data>
-  <data name="Canvas_GraphLine" xml:space="preserve">
-    <value>Línea ╱╲╱</value>
-  </data>
-  <data name="Canvas_GraphSmart" xml:space="preserve">
-    <value>Auto (inteligente)</value>
-  </data>
-  <data name="Canvas_SetAlert" xml:space="preserve">
-    <value>Configurar alerta...</value>
-  </data>
-  <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).\n3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.\n4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.\n5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
-  </data>
-  <data name="Faq_Q11_Question" xml:space="preserve">
-    <value>¿Cómo configuro Tailscale para acceso remoto?</value>
-  </data>
-  <data name="Settings_HelpPrompt" xml:space="preserve">
-    <value>¿Necesita ver el tutorial de nuevo?</value>
-  </data>
-  <data name="Tooltip_AccentAmber" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Oro solar/Ámbar</value>
-  </data>
-  <data name="Tooltip_AccentColor" xml:space="preserve">
-    <value>Seleccionar colores destacados de la paleta de temas</value>
-  </data>
-  <data name="Tooltip_AccentCyan" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Ciber cian</value>
-  </data>
-  <data name="Tooltip_AccentGreen" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Verde esmeralda</value>
-  </data>
-  <data name="Tooltip_AccentPink" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Rosa fuerte/Magenta</value>
-  </data>
-  <data name="Tooltip_AccentRose" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Rosa carmesí</value>
-  </data>
-  <data name="Tooltip_AccentViolet" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Violeta neón</value>
-  </data>
-  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
-    <value>Configurar las credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
-  </data>
   <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
     <value>Personalizar la redondez de las esquinas del borde predeterminado para paneles y tarjetas del tablero</value>
   </data>
   <data name="Tooltip_CornerRadiusSlider" xml:space="preserve">
     <value>Radio de la esquina del borde en píxeles</value>
   </data>
-  <data name="Tooltip_Disconnect" xml:space="preserve">
-    <value>Terminar la conexión de sesión activa con la PC host</value>
+  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
+    <value>Personalizar la redondez de las esquinas de los bordes específicamente para las teclas de control remoto</value>
+  </data>
+  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
+    <value>Radio de esquina de los botones remotos en píxeles</value>
   </data>
   <data name="Tooltip_GlassOpacity" xml:space="preserve">
     <value>Ajustar el nivel de opacidad de mezcla visual del efecto de cristal esmerilado premium</value>
@@ -2490,35 +2424,38 @@ Chrome)</value>
   <data name="Tooltip_GlowStrengthSlider" xml:space="preserve">
     <value>Grosor/propagación del brillo de neón en píxeles</value>
   </data>
-  <data name="Tooltip_GridSize" xml:space="preserve">
-    <value>Incremento de ajuste de ubicación de cuadrícula en píxeles absolutos</value>
+  <data name="Tooltip_AccentColor" xml:space="preserve">
+    <value>Seleccionar colores destacados de la paleta de temas</value>
   </data>
-  <data name="Tooltip_InstallService" xml:space="preserve">
-    <value>Instalar el servicio del sistema RemEx como un servidor de fondo automático</value>
+  <data name="Tooltip_AccentViolet" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Violeta neón</value>
   </data>
-  <data name="Tooltip_LanguageSection" xml:space="preserve">
-    <value>Cambiar el idioma de visualización de la aplicación</value>
+  <data name="Tooltip_AccentCyan" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Ciber cian</value>
   </data>
-  <data name="Tooltip_LanguageSelect" xml:space="preserve">
-    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
+  <data name="Tooltip_AccentPink" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Rosa fuerte/Magenta</value>
+  </data>
+  <data name="Tooltip_AccentAmber" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Oro solar/Ámbar</value>
+  </data>
+  <data name="Tooltip_AccentGreen" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Verde esmeralda</value>
+  </data>
+  <data name="Tooltip_AccentRose" xml:space="preserve">
+    <value>Seleccionar el tema de color de acento Rosa carmesí</value>
+  </data>
+  <data name="Tooltip_SplashScreen" xml:space="preserve">
+    <value>Seleccionar el estilo de animación de la pantalla de bienvenida de inicio</value>
   </data>
   <data name="Tooltip_RefreshService" xml:space="preserve">
     <value>Actualizar el estado del servicio del sistema</value>
   </data>
-  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
-    <value>Personalizar la redondez de las esquinas de los bordes específicamente para las teclas de control remoto</value>
+  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
+    <value>Configurar las credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
   </data>
-  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
-    <value>Radio de esquina de los botones remotos en píxeles</value>
-  </data>
-  <data name="Tooltip_SaveReconnect" xml:space="preserve">
-    <value>Guardar la dirección de configuración del host e intentar conectarse</value>
-  </data>
-  <data name="Tooltip_SnapToGrid" xml:space="preserve">
-    <value>Habilitar guías de alineación para que los mosaicos de sensores se ajusten a incrementos estándar en el lienzo</value>
-  </data>
-  <data name="Tooltip_SplashScreen" xml:space="preserve">
-    <value>Seleccionar el estilo de animación de la pantalla de bienvenida de inicio</value>
+  <data name="Tooltip_InstallService" xml:space="preserve">
+    <value>Instalar el servicio del sistema RemEx como un servidor de fondo automático</value>
   </data>
   <data name="Tooltip_StartService" xml:space="preserve">
     <value>Iniciar el proceso del servicio del servidor RemEx en segundo plano</value>
@@ -2526,23 +2463,38 @@ Chrome)</value>
   <data name="Tooltip_StopService" xml:space="preserve">
     <value>Detener el proceso del servicio del servidor RemEx en segundo plano</value>
   </data>
+  <data name="Tooltip_UninstallService" xml:space="preserve">
+    <value>Desinstalar completamente el servicio del sistema RemEx del sistema</value>
+  </data>
+  <data name="Tooltip_SaveReconnect" xml:space="preserve">
+    <value>Guardar la dirección de configuración del host e intentar conectarse</value>
+  </data>
+  <data name="Tooltip_Disconnect" xml:space="preserve">
+    <value>Terminar la conexión de sesión activa con la PC host</value>
+  </data>
+  <data name="Tooltip_LanguageSection" xml:space="preserve">
+    <value>Cambiar el idioma de visualización de la aplicación</value>
+  </data>
+  <data name="Tooltip_LanguageSelect" xml:space="preserve">
+    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
+  </data>
+  <data name="Tooltip_StreamQuality" xml:space="preserve">
+    <value>Configurar el nivel de calidad de compresión del flujo de imagen espejo del escritorio (una menor calidad aumenta el rendimiento de la red)</value>
+  </data>
   <data name="Tooltip_StreamFps" xml:space="preserve">
     <value>Velocidad de fotogramas objetivo para el motor de compresión de escritorio (valores más altos se ven más fluidos pero consumen más ancho de banda)</value>
   </data>
   <data name="Tooltip_StreamFpsSelect" xml:space="preserve">
     <value>Elegir FPS objetivo para la transmisión</value>
   </data>
-  <data name="Tooltip_StreamQuality" xml:space="preserve">
-    <value>Configurar el nivel de calidad de compresión del flujo de imagen espejo del escritorio (una menor calidad aumenta el rendimiento de la red)</value>
+  <data name="Tooltip_SnapToGrid" xml:space="preserve">
+    <value>Habilitar guías de alineación para que los mosaicos de sensores se ajusten a incrementos estándar en el lienzo</value>
   </data>
-  <data name="Tooltip_UninstallService" xml:space="preserve">
-    <value>Desinstalar completamente el servicio del sistema RemEx del sistema</value>
+  <data name="Tooltip_GridSize" xml:space="preserve">
+    <value>Incremento de ajuste de ubicación de cuadrícula en píxeles absolutos</value>
   </data>
-  <data name="Tray_Exit" xml:space="preserve">
-    <value>Salir</value>
-  </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Vistazo rápido en vivo</value>
+  <data name="Settings_HelpPrompt" xml:space="preserve">
+    <value>¿Necesita ver el tutorial de nuevo?</value>
   </data>
   <data name="Tray_LiveHeader" xml:space="preserve">
     <value>REMEX EN VIVO</value>
@@ -2550,13 +2502,73 @@ Chrome)</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Mostrar ventana principal</value>
   </data>
+  <data name="Tray_LiveGlance" xml:space="preserve">
+    <value>Vistazo rápido en vivo</value>
+  </data>
   <data name="Tray_SwitchDarkMode" xml:space="preserve">
     <value>Cambiar a modo oscuro</value>
   </data>
   <data name="Tray_SwitchLightMode" xml:space="preserve">
     <value>Cambiar a modo claro</value>
   </data>
+  <data name="Tray_Exit" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="Canvas_ExportTooltip" xml:space="preserve">
+    <value>Guardar lienzo como PNG en la carpeta Imágenes</value>
+  </data>
+  <data name="Canvas_CopyTooltip" xml:space="preserve">
+    <value>Copiar imagen instantánea directamente al portapapeles</value>
+  </data>
+  <data name="Canvas_GraphSmart" xml:space="preserve">
+    <value>Auto (inteligente)</value>
+  </data>
+  <data name="Canvas_GraphBar" xml:space="preserve">
+    <value>Barra ▮▮▮</value>
+  </data>
+  <data name="Canvas_GraphLine" xml:space="preserve">
+    <value>Línea ╱╲╱</value>
+  </data>
+  <data name="Canvas_GraphArea" xml:space="preserve">
+    <value>Área ▓▓▓</value>
+  </data>
+  <data name="Canvas_GraphGauge" xml:space="preserve">
+    <value>Indicador ━━━</value>
+  </data>
+  <data name="Canvas_SetAlert" xml:space="preserve">
+    <value>Configurar alerta...</value>
+  </data>
+  <data name="Boot_Remote" xml:space="preserve">
+    <value>REMOTO</value>
+  </data>
+  <data name="Boot_Execution" xml:space="preserve">
+    <value>EJECUCIÓN</value>
+  </data>
+  <data name="Boot_CommandCenter" xml:space="preserve">
+    <value>⚡ CENTRO DE CONTROL</value>
+  </data>
+  <data name="Boot_CommandYourPc" xml:space="preserve">
+    <value>CONTROLE SU PC</value>
+  </data>
+  <data name="Boot_Ote" xml:space="preserve">
+    <value>moto</value>
+  </data>
+  <data name="Boot_Ecution" xml:space="preserve">
+    <value>cución</value>
+  </data>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Confirmar</value>
+  </data>
+  <data name="Settings_KeepSessionUnlocked" xml:space="preserve">
+    <value>Mantener la sesión desbloqueada para control remoto</value>
+  </data>
+  <data name="Settings_KeepSessionUnlockedDesc" xml:space="preserve">
+    <value>Cuando se conecta un teléfono emparejado, la sesión de este PC se desbloquea automáticamente para que el control remoto siga funcionando aunque se bloquee la pantalla. Se vuelve a bloquear cuando se desconecta el último dispositivo.</value>
+  </data>
+  <data name="Settings_KeepSessionUnlockedTooltip" xml:space="preserve">
+    <value>Desactivado de forma predeterminada. Permite que un dispositivo emparejado controle este PC incluso mientras está bloqueado.</value>
+  </data>
+  <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
+    <value>Advertencia de seguridad: mientras esté activado, cualquier persona con un dispositivo emparejado puede ver y controlar este PC sin desbloquearlo con el teclado. Actívalo solo en un PC de confianza.</value>
   </data>
 </root>

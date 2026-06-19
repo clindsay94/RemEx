@@ -644,4 +644,10 @@
     <string name="remote_desktop_display_numbered">Display %1$d</string>
     <string name="remote_desktop_display_both">Both screens</string>
     <string name="cd_display_picker_icon">Choose which display to view</string>
+    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
+    <string name="rd_err_capture_unavailable">Screen capture isn’t working on the host PC.</string>
+    <string name="rd_err_capture_stopped">Screen capture stopped after %1$d frames. The host PC may have been locked or signed out.</string>
+    <string name="rd_err_target_unavailable">The selected display is no longer available.</string>
+    <string name="rd_err_target_switch_unsupported">This session can’t switch displays while streaming.</string>
+    <string name="rd_err_runtime_unavailable">Remote desktop isn’t available on the host PC right now.</string>
 </resources>
