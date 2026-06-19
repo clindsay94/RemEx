@@ -746,14 +746,21 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
-    public bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot)
+    public bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot, bool forceRefresh = false)
     {
         snapshot = Volatile.Read(ref _lastPointerShape);
-        if (snapshot is not null)
+        if (snapshot is not null && !forceRefresh)
         {
             return true;
         }
 
+        // forceRefresh actively re-acquires the pointer shape even when one is already cached. The
+        // cache is otherwise only updated by the main frame loop, which does not run while the screen
+        // is static — so a cursor SHAPE change over an unchanging screen (e.g. arrow → hand over a
+        // link) would never be picked up and the client would keep drawing the stale shape. The 10Hz
+        // cursor sync passes forceRefresh:true to close that gap. _lock.Wait(0) means this is skipped
+        // (returning the cached shape) whenever the main loop is mid-acquire, so the two never race a
+        // double AcquireNextFrame on the same duplication output. (RemEx-aae)
         if (!IsAvailable || !_lock.Wait(0))
         {
             snapshot = Volatile.Read(ref _lastPointerShape);

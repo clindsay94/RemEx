@@ -1157,8 +1157,11 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
 
         DesktopCursorShape? updatedShape = null;
+        // forceRefresh:true so a cursor-shape change is detected even over a static screen (the main
+        // frame loop, which otherwise refreshes the DXGI pointer shape, doesn't run when nothing on
+        // screen changes). This is the ~10Hz cursor-sync tick, so the extra refresh is cheap. (RemEx-aae)
         if (_screenCapture is WindowsScreenCaptureService windowsCapture &&
-            windowsCapture.TryCaptureCurrentCursorShape(out var snapshot) &&
+            windowsCapture.TryCaptureCurrentCursorShape(out var snapshot, forceRefresh: true) &&
             snapshot is not null)
         {
             updatedShape = sessionState.UpdateCursorShape(snapshot);

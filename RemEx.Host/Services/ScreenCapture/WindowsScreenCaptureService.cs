@@ -259,11 +259,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         return (bounds.Width, bounds.Height, bounds.Left, bounds.Top);
     }
 
-    internal bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot)
+    internal bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot, bool forceRefresh = false)
     {
         snapshot = null;
 
-        if (CanUseDxgiForCurrentTarget() && _dxgi.TryCaptureCurrentCursorShape(out snapshot) && snapshot is not null)
+        if (CanUseDxgiForCurrentTarget() && _dxgi.TryCaptureCurrentCursorShape(out snapshot, forceRefresh) && snapshot is not null)
         {
             return true;
         }
