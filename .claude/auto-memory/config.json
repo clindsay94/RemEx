@@ -1,0 +1,6 @@
+{
+  "triggerMode": "default",
+  "memoryFiles": ["AGENTS.md", "CLAUDE.md"],
+  "autoCommit": true,
+  "autoPush": true
+}

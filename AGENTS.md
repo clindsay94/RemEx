@@ -217,6 +217,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 
 - Active development branch: `2.0` (main branch for PRs: `main`).
 - Hottest areas by recent history: `Remex.Host` (PC side), `RemEx.Android`, `Remex.Host.Native.Linux`, with `Remex.Client` being phased out.
+- Gitignored (do not commit): AI tool dirs (`.gemini/`, `.superpowers/`, `.antigravitycli/`), `.claude/auto-memory/dirty-files*`, `.claude/settings.local.json`, `.beads/proxieddb/`, `.beads-credential-key`, `.dolt/`, `*.db`. Only `.beads/issues.jsonl` is tracked (passive Beads export).
 
 <!-- END AUTO-MANAGED -->
 

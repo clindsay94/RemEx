@@ -133,6 +133,9 @@ review-report.md
 # Firebase
 RemEx.Android/app/google-services.json
 
+# Claude Code auto-memory
+.claude/auto-memory/dirty-files*
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
