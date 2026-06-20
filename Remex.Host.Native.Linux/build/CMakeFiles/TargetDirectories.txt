@@ -1,7 +1,0 @@
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/remex_linux_bridge.dir
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/edit_cache.dir
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/rebuild_cache.dir
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/list_install_components.dir
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/install.dir
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/install/local.dir
-/run/media/connorl/Shared/RemEx/Remex.Host.Native.Linux/build/CMakeFiles/install/strip.dir
