@@ -158,3 +158,81 @@ bd prime                # Refresh Beads context
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 <!-- END BEADS CODEX SETUP -->
+
+<!-- AUTO-MANAGED: project-description -->
+## Overview
+
+Remote Execution (RemEx) is a cross-platform PC remote management tool. Architecture is **Android (client) → PC (host)**, always non-loopback. `Remex.Host` is the entire PC side (Windows Service / Linux daemon plus all PC functionality). `RemEx.Android` is the only network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: build-commands -->
+## Build & Development Commands
+
+- `dotnet run --project Remex.Host` — run the PC host service (Android connects to this).
+- `dotnet test Remex.sln` — run all tests.
+- `pwsh ./build-remex.ps1 -c release -t all` — unified cross-platform release build (canonical entry point).
+- `.\scripts\android-fresh.ps1 -Configuration Release` — hardened fresh Android build.
+- `./installer/build-linux.sh` — build Linux packages (uses WSL on Windows).
+- `dotnet run --project Remex.Host -- --doctor` — check Linux PipeWire/X11/VAAPI prerequisites.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: architecture -->
+## Architecture
+
+- `Remex.Core/` — shared models, messages, validation, Guards, serialization; also compiled as `libRemexCore.so` (NativeAOT JNI) for Android. Must stay NativeAOT-safe.
+- `Remex.Host/` — the PC side: Windows Service / Linux daemon, ASP.NET Minimal APIs, WebSocket, mDNS. Runs as LocalSystem in Session 0 on Windows.
+- `RemEx.Android/` — the only client: Kotlin + Jetpack Compose + JNI → `libRemexCore.so`.
+- `Remex.Client/`, `Remex.Client.Desktop/` — legacy, being phased out; do not add new code.
+
+Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS (8338, external script ingress), Named Pipe `RemExLocalIPC` (local service IPC). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: conventions -->
+## Code Conventions
+
+- Do NOT use `ConfigureAwait(false)` anywhere (CA2007 suppressed).
+- Nullable reference types enabled everywhere; use `Guard.NotNull(arg)` and `GetRequiredService<T>()`.
+- Validate all network-facing input via `Remex.Core/Validation/`.
+- `Remex.Core` must be NativeAOT-safe: no reflection, no dynamic codegen, source-generated JSON only.
+- On Windows, `Remex.Host` runs as LocalSystem in Session 0: never use `HKCU`/`%APPDATA%`; use `HKLM` and `ProgramData`; keep correct Named Pipe ACLs.
+- All user-facing strings in `Remex.Host` go through `Localization/` (8 languages, live switching).
+- Versions: .NET in `Directory.Build.props`; Android in `RemEx.Android/app/version.properties`.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: patterns -->
+## Detected Patterns
+
+- MVVM in `Remex.Host` (`Views/`, `ViewModels/`, `Services/`); four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass) — verify UI changes across all four.
+- Cross-platform parity (Windows ↔ CachyOS/Linux) required for every PC-side change; each `.ps1` needs a `pwsh`-compatible path or `.sh` equivalent.
+- Every change updates `CHANGELOG.md` (Keep a Changelog) and affected docs.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: git-insights -->
+## Git Insights
+
+- Active development branch: `2.0` (main branch for PRs: `main`).
+- Hottest areas by recent history: `Remex.Host` (PC side), `RemEx.Android`, `Remex.Host.Native.Linux`, with `Remex.Client` being phased out.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: best-practices -->
+## Best Practices
+
+- Run `gitnexus_impact` before editing any symbol; warn on HIGH/CRITICAL risk; run `gitnexus_detect_changes()` before committing.
+- Prefer `token-savior` / `gitnexus` / `context-mode` MCP tools over raw `grep`/`Read`/`Bash` for analysis (see decision matrix in `CLAUDE.md`).
+- No placeholder/stub code; file a beads issue for out-of-scope work and implement in-scope correctly.
+- Coordinate any change to pairing, certificate pinning, the `RemexMessage` envelope, or Named Pipe security across both Android and host — these are security-critical.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- MANUAL -->
+## Custom Notes
+
+Add project-specific notes here. This section is never auto-modified.
+
+<!-- END MANUAL -->
