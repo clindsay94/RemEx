@@ -225,6 +225,7 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
   - `Services/Network/` — `PairedClientChannelAuthenticator` (8338 TCP channel auth gate via `PairedClientRegistry`).
   - `Services/IPC/` — `LocalIpcServerService` (`RemExLocalIPC` pipe, privileged-action gate), `HostControlServer` (`RemExHostControl` pipe, headless agent ↔ GUI port-handoff coordination).
   - `Services/RemoteDesktop/` — `IH264Encoder` / `FFmpegH264Encoder` (FFmpeg subprocess, bounded channels, on-demand keyframe).
+  - `Services/ScreenCapture/` — `DxgiDesktopCapture` (DXGI Desktop Duplication API, Windows 10/11, MPO/GPU-composited content); `DuplicationReinitThrottle` (exponential-backoff gate for `DuplicateOutput` re-init; prevents driver-wedge on display power transitions).
 - `RemEx.Android/` — the only client: Kotlin + Jetpack Compose + JNI → `libRemexCore.so`.
   - `data/NsdDiscoveryManager` — mDNS discovery (`_remex._tcp.`); API 34+ uses concurrent `registerServiceInfoCallback`, pre-34 serialises via process-wide `resolveMutex`.
   - `ui/screens/H264StreamDecoder` — `MediaCodec` async hardware decoder; bounded backlog (4 frames), `onKeyframeNeeded` / `onInitFailure` callbacks.
@@ -270,6 +271,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - **`RemExLocalIPC` ACL error surfacing**: `UnauthorizedAccessException` on pipe open returns a distinct "Permission denied" `CommandResponse` rather than collapsing into the generic `IPC Error` path, giving users an actionable message (IPC-8).
 - **`ConnectionViewModel` single in-flight discovery**: `discoveryJob: Job?` tracks the active NSD coroutine; `startDiscovery()` cancels any prior job before launching so overlapping manual + self-heal calls do not stack NSD resolves or multicast-lock cycles (RemEx-4bb).
 - **`SyncRemexCoreSoTask` ELF verification**: Content-tracks `sourceCandidates` as Gradle inputs (prevents stale `.so` on `-NoClean` builds) and validates the `.so` is AArch64 ELF (magic `0x7F454C46` + `EI_CLASS=2` + `e_machine=0xB7`) before copying into the APK (RemEx-l79 / RemEx-hht).
+- **`DuplicationReinitThrottle` DXGI re-init throttle**: `DxgiDesktopCapture` gates all `TryReinitializeDuplication` / `DuplicateOutput` calls through `DuplicationReinitThrottle` (backoff: 1s base, 8s max, exponential escalation). On `DXGI_ERROR_ACCESS_LOST`, at most one re-init attempt is made per backoff window; confirmed-healthy frames (real frame or `WAIT_TIMEOUT`) call `RecordHealthyFrame()` to reset. Prevents the "display-off storm" that wedged DWM + NVIDIA driver at stream frame rate (RemEx-crk). Clock-injected for deterministic unit tests.
 
 <!-- END AUTO-MANAGED -->
 
@@ -404,7 +406,7 @@ Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileS
 
 Every P0 and P1 bead closed — COMPLETE. Remaining criteria for final sign-off:
 - Green build on Windows (verified), Linux (CachyOS via `build-remex.ps1` — compile-verified; runtime pending RemEx-lr9), and Android (`scripts/android-fresh.ps1`)
-- Green tests (`dotnet test Remex.sln`) — 420 pass on Windows
+- Green tests (`dotnet test Remex.sln`) — 428 pass on Windows (includes 8 `DuplicationReinitThrottle` unit tests)
 - Cross-platform parity verified for all ACL/file-permission/native code (Windows + Android verified; Linux runtime pending RemEx-lr9)
 - `CHANGELOG.md` updated under `Security`/`Fixed`/`Changed`
 - `protocolVersion` bump coordinated only if a wire-format break is taken
