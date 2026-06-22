@@ -218,6 +218,7 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
 ## Architecture
 
 - `Remex.Core/` — shared models, messages, validation, Guards, serialization; also compiled as `libRemexCore.so` (NativeAOT JNI) for Android. Must stay NativeAOT-safe.
+  - `Validation/CoordinateValidation` — `ClampAbsolute(float, int)` / `ClampDelta(float, int)`: sanitize untrusted float coordinates from remote clients before pixel cast (rejects NaN/±Infinity).
 - `Remex.Host/` — the PC side: Windows Service / Linux daemon, ASP.NET Minimal APIs, WebSocket, mDNS. Runs as LocalSystem in Session 0 on Windows.
   - `Handlers/` — `PairingHandler` (ECDH P-256 handshake), `RemoteDesktopHandler` (codec negotiation, H.264/MJPEG streaming), `PingPongHandler` (keep-alive).
   - `Services/Security/` — `PairingService` (ECDH state machine), `PairedClientRegistry` (proof-of-possession reconnect auth), `PairingThrottle` (per-IP rate limiting), `CertificateService` (SPKI management).
@@ -229,9 +230,10 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
   - `ui/screens/H264StreamDecoder` — `MediaCodec` async hardware decoder; bounded backlog (4 frames), `onKeyframeNeeded` / `onInitFailure` callbacks.
   - `ui/screens/RemoteDesktopViewModel` — stream config, display-target selection, cursor shape overlay, frame-arrival watchdog.
   - `ui/screens/RemoteDesktopScreen` — Jetpack Compose UI, gesture handling (tap/scroll/pinch), immersive full-screen.
+  - `ui/screens/ConnectionViewModel` — NSD discovery lifecycle; `discoveryJob: Job?` ensures one in-flight discovery at a time.
 - `Remex.Client/`, `Remex.Client.Desktop/` — legacy, being phased out; do not add new code.
 
-Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS 8338 (external script ingress — requires paired `clientId` via `PairedClientChannelAuthenticator`), Named Pipe `RemExLocalIPC` (local service IPC), Named Pipe `RemExHostControl` (agent↔GUI port handoff). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning.
+Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS 8338 (external script ingress — requires paired `clientId` via `PairedClientChannelAuthenticator`; `CommandRequest` JSON must include `ClientId` field), Named Pipe `RemExLocalIPC` (local service IPC), Named Pipe `RemExHostControl` (agent↔GUI port handoff). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning. Wire message types include `MessageTypes.DesktopKeyframeRequest` (`"desktop_keyframe_request"`) for client-to-host on-demand IDR keyframe requests.
 
 <!-- END AUTO-MANAGED -->
 
@@ -262,6 +264,12 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - **`PairingThrottle` per-IP rate limiting**: singleton sliding-window throttle applied to `/start-pairing` and `pairing_complete`. Loopback callers bypass (local UI is trusted). Cryptographic jitter on retry hint. `PairingService` additionally caps failed HMAC attempts at 5 per session with a ~120s session timeout.
 - **`NsdDiscoveryManager` API-level strategy**: API 34+ uses concurrent, cancellable `registerServiceInfoCallback`; pre-34 serialises resolves process-wide via a `Mutex` (NsdManager pre-34 allows only one in-flight resolve). Always acquires a `WifiManager.MulticastLock` for mDNS reliability.
 - **Frame-arrival watchdog in `RemoteDesktopViewModel`**: arms on stream start, resets on every decoded frame, triggers reconnect if no frame arrives within stall timeout. Backstops H.264 decoder-init silent-death path.
+- **`CoordinateValidation` float sanitization**: All absolute pointer coordinates use `CoordinateValidation.ClampAbsolute(float, int)` and all relative deltas use `CoordinateValidation.ClampDelta(float, int)` before casting to `int`. Rejects NaN/±Infinity; clamps to valid pixel bounds. Regression tests in `Remex.Core.Tests/CoordinateValidationTests.cs` (RD-8).
+- **`AndroidNativeExports` dual-lock model**: `PairingSyncRoot` (separate from the high-frequency `SyncRoot`) serializes pairing-session state transitions so a concurrent `StartPairing`/`SubmitPin` call from a second Java thread waits rather than disposing-then-using the active `ClientWebSocket` (JNI-4). JNI string marshalling (`ReadJString`) happens inside the `Export` guard so managed throws are caught before escaping `[UnmanagedCallersOnly]` (JNI-5).
+- **`MdnsDiscoveryService` SRV validation**: Before composing the `ws://` URL from untrusted multicast data, validates SRV port >= 1 and resolved host passes `Uri.CheckHostName != Unknown` (NSD-6).
+- **`RemExLocalIPC` ACL error surfacing**: `UnauthorizedAccessException` on pipe open returns a distinct "Permission denied" `CommandResponse` rather than collapsing into the generic `IPC Error` path, giving users an actionable message (IPC-8).
+- **`ConnectionViewModel` single in-flight discovery**: `discoveryJob: Job?` tracks the active NSD coroutine; `startDiscovery()` cancels any prior job before launching so overlapping manual + self-heal calls do not stack NSD resolves or multicast-lock cycles (RemEx-4bb).
+- **`SyncRemexCoreSoTask` ELF verification**: Content-tracks `sourceCandidates` as Gradle inputs (prevents stale `.so` on `-NoClean` builds) and validates the `.so` is AArch64 ELF (magic `0x7F454C46` + `EI_CLASS=2` + `e_machine=0xB7`) before copying into the APK (RemEx-l79 / RemEx-hht).
 
 <!-- END AUTO-MANAGED -->
 
@@ -331,16 +339,30 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 | `RemEx-4uy` PROTO-4 | PROTO-4 | **OPEN** |
 | `RemEx-jny` PROTO-5 | PROTO-5 | **OPEN** |
 
+### P2/P3 Beads (closed via 2026-06-22 hardening)
+
+| Bead | Issue | Status |
+|------|-------|--------|
+| `RemEx-q6u` RD-8 | Hostile float coordinates (NaN/∞ → arbitrary pixel) | **IMPLEMENTED** — `CoordinateValidation.ClampAbsolute` / `ClampDelta` |
+| `RemEx-8ay` JNI-4 | Concurrent pairing race (dual `ClientWebSocket` dispose) | **IMPLEMENTED** — `PairingSyncRoot` in `AndroidNativeExports` |
+| `RemEx-85i` JNI-5 | JNI string marshalling outside `Export` guard | **IMPLEMENTED** — `ReadJString` moved inside `Export` |
+| `RemEx-4bb` NSD-overlap | Overlapping NSD resolves / multicast-lock cycles | **IMPLEMENTED** — `discoveryJob` cancel-before-relaunch in `ConnectionViewModel` |
+| `RemEx-l79` / `RemEx-hht` | Stale / wrong-arch `.so` packaged into APK | **IMPLEMENTED** — content-tracked inputs + AArch64 ELF header check in `SyncRemexCoreSoTask` |
+| `RemEx-b3m` IPC-8 | `UnauthorizedAccessException` collapsed into generic IPC error | **IMPLEMENTED** — dedicated catch in `RemExLocalIPC` |
+| `RemEx-00x` NSD-6 | Untrusted mDNS SRV port/host injected into WebSocket URL | **IMPLEMENTED** — `MdnsDiscoveryService` SRV validation |
+
 ### Security Areas — Heightened Caution
 
 When touching any of these files, treat as security-critical and require user sign-off:
 - `Remex.Core/Services/Network/RemexNetworkListener.cs` — 8338 channel; `PairedClientChannelAuthenticator` now gates dispatch (PROTO-1 implemented); PROTO-2 still open
+- `Remex.Core/Services/Network/MdnsDiscoveryService.cs` — SRV port + host validated before WebSocket URL composition (NSD-6 implemented); further NSD hardening (NSD-4/5) still open
+- `Remex.Core/Validation/CoordinateValidation.cs` — sanitizes untrusted float coordinates from remote clients; any change here affects all pointer/scroll/drag security
 - `RemEx.Host/Services/IPC/LocalIpcServerService.cs` — pipe ACL still grants `Everyone`; privileged-action gate (interactive-user check) is in place but pipe ACL fix (IPC-1) is OPEN
 - `RemEx.Host/Services/Security/PairingService.cs` — ECDH state machine with 5-attempt cap and ~120s timeout; PAIR-2 implemented; verify HMAC comparison uses constant-time bytes (PAIR-6)
 - `RemEx.Host/Services/Security/CertificateService.cs` — SPKI hash management; host private key world-readable (PAIR-3) is still OPEN
 - `RemEx.Host/Services/Security/PairedClientRegistry.cs` — proof-of-possession reconnect auth implemented (PAIR-1); legacy presence-only entries still accepted for desktop-stream gate
 - `RemEx.Host/HostBootstrapper.cs` — `EvaluateDesktopAuth` now enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop`; verify pairing endpoint exposure (PAIR-5 implemented)
-- `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — pending JNI exceptions abort JVM (JNI-1/2 OPEN)
+- `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — JNI-4/5 implemented; JNI-1/2 (exceptions abort JVM) still OPEN
 
 ### Cross-Platform Rule for All Orders
 
