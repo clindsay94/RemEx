@@ -289,7 +289,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 ### Security Areas — Heightened Caution
 
 When touching any of these files, treat as security-critical and require user sign-off:
-- `Remex.Core/Services/Network/RemexNetworkListener.cs` — unauthenticated 8338 command channel (PROTO-1/2)
+- `Remex.Core/Services/Network/RemexNetworkListener.cs` — unauthenticated 8338 command channel (PROTO-1/2); AUTHENTICATED-REMOTE fix in progress (keep `IPAddress.Any`, add PairedClientRegistry token gate)
 - `RemEx.Host/Services/IPC/LocalIpcServerService.cs` — Everyone-writable pipe leaking PIN (IPC-1/2/3)
 - `RemEx.Host/Services/Security/PairingService.cs` — no PIN throttle, HMAC compares string not bytes (PAIR-2/6)
 - `RemEx.Host/Services/Security/CertificateService.cs` — host private key world-readable (PAIR-3)
@@ -301,11 +301,11 @@ When touching any of these files, treat as security-critical and require user si
 
 Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileSecurity`, SIDs) **must** be guarded with `OperatingSystem.IsWindows()` and include a Linux branch using `UnixFileMode`/`SetUnixFileMode 0600` (owner-only). Validate on Windows **and** CachyOS before closing the bead.
 
-### Open Design Decisions (require user input before applying orders)
+### Design Decisions — Resolved 2026-06-22 (user-confirmed)
 
-- **8338 binding (PROTO-1/B1):** loopback-only vs. authenticated-remote is a product choice — confirm before applying B1.
-- **IPC-6 cross-session ACL:** only required if the GUI host runs as a different identity than the LocalSystem agent — confirm deployment topology.
-- **`Remex.Client` phase-out timeline:** still in `Remex.sln` and referenced by tests; affects NSD-6 (`RemEx-00x`) and the legacy `PinnedCertStore` cleanup.
+- **8338 channel (PROTO-1): AUTHENTICATED-REMOTE.** Keep `IPAddress.Any`; do NOT bind loopback. The host runs as LocalSystem in Session 0 so remote commands + telemetry work with no user logged in — restricting to loopback breaks the product's core purpose. Fix: require a paired-client identity (`PairedClientRegistry` token) before `ExecuteCommandAsync` dispatch.
+- **IPC / Session-0 model: confirmed unchanged.** Remote commands and telemetry flow through the Session-0 service directly; they do NOT traverse the named pipe. Pipe ACL orders (IPC-1/IPC-5/IPC-6) govern only the local tray/dashboard UI (interactive user) talking to the service. Fixing the pipe ACL has no bearing on the headless "works without login" remote requirement.
+- **`Remex.Client` removal (new bead `RemEx-d8s`): NOT a clean delete.** `Remex.Host` still references `Remex.Client.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`. Migrate all still-used types into `RemEx.Host`/`Remex.Core` first, then delete the legacy UI and remove `Remex.Client` + `Remex.Client.Tests` from `Remex.sln`. `RemEx-d8s` subsumes NSD-6 (`RemEx-00x`). Sequence AFTER all P0/P1 security fixes.
 
 ### Definition of Done (release)
 
