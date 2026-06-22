@@ -305,7 +305,10 @@ public static class HostBootstrapper
         // a 404 (not a 403) so the endpoint is not advertised to network scanners.
         app.MapGet("/pairing-pin", (HttpContext httpContext, IPairingService pairingService) =>
         {
-            if (!System.Net.IPAddress.IsLoopback(httpContext.Connection.RemoteIpAddress))
+            // A null RemoteIpAddress (e.g. a non-IP transport) is not loopback — reject it, and avoid
+            // the ArgumentNullException that IsLoopback(null) would otherwise throw inside the handler.
+            var remoteIp = httpContext.Connection.RemoteIpAddress;
+            if (remoteIp is null || !System.Net.IPAddress.IsLoopback(remoteIp))
             {
                 return Results.NotFound();
             }
@@ -326,7 +329,10 @@ public static class HostBootstrapper
             HttpContext httpContext,
             Remex.Host.Services.Security.PairingService pairingService) =>
         {
-            if (!System.Net.IPAddress.IsLoopback(httpContext.Connection.RemoteIpAddress))
+            // A null RemoteIpAddress (e.g. a non-IP transport) is not loopback — reject it, and avoid
+            // the ArgumentNullException that IsLoopback(null) would otherwise throw inside the handler.
+            var remoteIp = httpContext.Connection.RemoteIpAddress;
+            if (remoteIp is null || !System.Net.IPAddress.IsLoopback(remoteIp))
             {
                 return Results.NotFound();
             }

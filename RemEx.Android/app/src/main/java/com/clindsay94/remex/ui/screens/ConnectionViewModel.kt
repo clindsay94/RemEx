@@ -9,6 +9,7 @@ import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.NsdDiscoveryManager
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -47,6 +48,11 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _isDiscovering = MutableStateFlow(false)
     val isDiscovering: StateFlow<Boolean> = _isDiscovering.asStateFlow()
+
+    // Tracks the in-flight discovery so a new request cancels the previous one instead of stacking
+    // overlapping NSD resolves / multicast-lock cycles (RemEx-4bb). _isDiscovering is set inside the
+    // coroutine, so it can't be used as a pre-launch guard without a race; the job handle can.
+    private var discoveryJob: Job? = null
 
     private val _discoveredHost = MutableStateFlow<DiscoveredHost?>(null)
     val discoveredHost: StateFlow<DiscoveredHost?> = _discoveredHost.asStateFlow()
@@ -136,7 +142,10 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         // unnecessary and, over a VPN such as Tailscale, only re-triggers Android's local-network
         // permission prompt on top of the active stream. (RemEx-fkz)
         if (RemexClientManager.isConnected.value) return
-        viewModelScope.launch {
+        // Cancel any still-running discovery before relaunching so overlapping manual + self-heal
+        // calls don't stack NSD resolves or multicast-lock cycles (RemEx-4bb). One in-flight at a time.
+        discoveryJob?.cancel()
+        discoveryJob = viewModelScope.launch {
             _isDiscovering.value = true
             _discoveredHost.value = null
             _connectionError.value = null

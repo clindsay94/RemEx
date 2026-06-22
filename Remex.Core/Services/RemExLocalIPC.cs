@@ -132,6 +132,16 @@ public static class RemExLocalIPC
             return RemexJson.Deserialize(responseBytes, RemexJsonSerializerContext.Default.CommandResponse)
                 ?? new CommandResponse(false, "Failed to deserialize response.", null);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            // An ACL denial (the pipe exists but this account isn't permitted to open it) is a
+            // distinct, actionable failure — surface it as a permission problem rather than
+            // collapsing it into the generic "IPC Error" / "no server" path (IPC-8 / RemEx-b3m).
+            return new CommandResponse(
+                false,
+                "Permission denied connecting to the RemEx service. This account is not authorized to use the local service pipe.",
+                $"{ex.GetType().Name}: {ex.Message}");
+        }
         catch (Exception ex)
         {
             return new CommandResponse(false, $"IPC Error: {ex.Message}", ex.ToString());

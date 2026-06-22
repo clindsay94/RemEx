@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Validation;
 using Remex.Host.Services;
 using Remex.Host;
 using Remex.Host.Services.Input;
@@ -36,11 +37,6 @@ public sealed class RemoteDesktopHandler : IDisposable
     // Upper bound on the target frame rate. Capped at 120 — higher is pointless (client displays top
     // out at ~120 Hz) and just wastes capture/encode/bandwidth.
     private const int MaxTargetFps = 120;
-
-    // Wire type for an on-demand keyframe request (client → host). Defined here as a literal because
-    // the shared MessageTypes constant lives in Remex.Core (owned separately); adding the typed
-    // constant there is an additive, backward-compatible follow-up. (RemEx-bqc)
-    private const string DesktopKeyframeRequestType = "desktop_keyframe_request";
 
     private int _quality = 50;
     private double _scale = 0.6;
@@ -800,9 +796,9 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                     // On-demand keyframe request from a client whose H.264 decoder desynced (dropped
                     // frames / output-format change). Additive + backward-compatible: legacy hosts
-                    // simply don't recognize the type and ignore it. Uses the wire string literal
-                    // because the typed MessageTypes constant lives in Remex.Core. (RemEx-bqc)
-                    case DesktopKeyframeRequestType:
+                    // simply don't recognize the type and ignore it. Uses the shared typed Core
+                    // constant so host and client agree on the wire string. (RemEx-bqc / RemEx-kjq)
+                    case MessageTypes.DesktopKeyframeRequest:
                         _activeH264Encoder?.RequestKeyframe();
                         break;
 
@@ -1317,6 +1313,12 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         InputEvent? input = null;
 
+        // The sample's coordinates/deltas are untrusted floats from the network client and can be
+        // NaN/±Infinity or wildly out of range. Clamp against the active stream pixel bounds before
+        // any (int) cast so a hostile sample cannot wrap into an arbitrary MoveMouse coordinate
+        // (RD-8 / RemEx-q6u). GetScreenSize() reads cached DXGI dimensions, so this is cheap.
+        var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
+
         switch (sample.Phase)
         {
             case PointerPhase.HoverMove:
@@ -1332,8 +1334,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                     input = new InputEvent
                     {
                         EventType = InputEventTypes.MouseMove,
-                        DeltaX = (int)sample.Dx,
-                        DeltaY = (int)sample.Dy,
+                        DeltaX = CoordinateValidation.ClampDelta(sample.Dx, screenWidth),
+                        DeltaY = CoordinateValidation.ClampDelta(sample.Dy, screenHeight),
                     };
                 }
                 else
@@ -1341,8 +1343,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                     input = new InputEvent
                     {
                         EventType = InputEventTypes.MouseMove,
-                        X = (int)sample.LogicalX,
-                        Y = (int)sample.LogicalY,
+                        X = CoordinateValidation.ClampAbsolute(sample.LogicalX, screenWidth),
+                        Y = CoordinateValidation.ClampAbsolute(sample.LogicalY, screenHeight),
                     };
                 }
                 break;
@@ -1355,8 +1357,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     EventType = InputEventTypes.MouseDown,
                     Button = 0,
-                    X = (int)sample.LogicalX,
-                    Y = (int)sample.LogicalY,
+                    X = CoordinateValidation.ClampAbsolute(sample.LogicalX, screenWidth),
+                    Y = CoordinateValidation.ClampAbsolute(sample.LogicalY, screenHeight),
                 };
                 break;
 

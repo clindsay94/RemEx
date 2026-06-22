@@ -310,6 +310,15 @@ abstract class SyncRemexCoreSoTask : DefaultTask() {
     @get:Input
     abstract val rcDir: Property<String>
 
+    // The dotnet-published source .so candidates, declared as CONTENT-tracked inputs. Without this,
+    // gradle only sees the (unchanging) configuration/rcDir strings and keeps the task UP-TO-DATE on an
+    // -NoClean build even when the published library changed — so the APK packaged a stale .so and the
+    // downstream hash verification failed (RemEx-l79). PathSensitivity.NONE: only content matters, not
+    // which candidate path supplied it. Missing candidates are treated as empty by gradle.
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val sourceCandidates: ConfigurableFileCollection
+
     @get:OutputFile
     abstract val generatedSo: RegularFileProperty
 
@@ -319,24 +328,50 @@ abstract class SyncRemexCoreSoTask : DefaultTask() {
         val generated = generatedSo.get().asFile
         val rcDirFile = File(rcDir.get())
 
-        // Search both the legacy per-project bin/ layout and the repo-wide artifacts/ layout
-        // (Directory.Build.props sets UseArtifactsOutput=true). rcDirFile is <repoRoot>/Remex.Core.
-        val repoRoot = rcDirFile.parentFile
-        val artifactsPivot = "${conf.lowercase()}_net10.0-android_android-arm64"
-        val candidates = listOf(
-            File(repoRoot, "artifacts/bin/Remex.Core/$artifactsPivot/native/libRemexCore.so"),
-            File(repoRoot, "artifacts/publish/Remex.Core/$artifactsPivot/libRemexCore.so"),
-            File(rcDirFile, "bin/$conf/net10.0-android/android-arm64/native/libRemexCore.so"),
-            File(rcDirFile, "bin/$conf/net10.0-android/android-arm64/publish/libRemexCore.so")
-        )
+        // Same candidate set that is declared as task inputs (sourceCandidates) so the up-to-date check
+        // and the actual copy can never diverge — both go through arm64PublishedSoCandidates
+        // (RemEx-l79 / RemEx-hht). rcDirFile is <repoRoot>/Remex.Core.
+        val candidates = arm64PublishedSoCandidates(rcDirFile, conf)
 
+        // Verify a file is a 64-bit AArch64 ELF so a stale/corrupt/cross-config artifact can never be
+        // packaged into the APK (RemEx-hht). ELF header: magic 0x7F454C46, EI_CLASS==2 (64-bit) at
+        // offset 4, e_machine==0xB7 (EM_AARCH64) little-endian u16 at offset 18.
+        fun isAarch64Elf(file: File): Boolean = try {
+            file.inputStream().use { input ->
+                val header = ByteArray(20)
+                if (input.read(header) < header.size) {
+                    false
+                } else {
+                    val magicOk = header[0] == 0x7F.toByte() && header[1] == 'E'.code.toByte() &&
+                        header[2] == 'L'.code.toByte() && header[3] == 'F'.code.toByte()
+                    val is64Bit = header[4].toInt() == 2
+                    val machine = (header[18].toInt() and 0xFF) or ((header[19].toInt() and 0xFF) shl 8)
+                    magicOk && is64Bit && machine == 0xB7
+                }
+            }
+        } catch (e: Exception) {
+            false
+        }
+
+        // Restrict candidates to the requested configuration before choosing the newest. artifactsPivot
+        // lowercases conf while bin/$conf preserves case, so the substring match must be case-insensitive
+        // (RemEx-hht) — otherwise a "Release" request could match a path the casing comparison missed.
+        val confLower = conf.lowercase()
         val source = candidates
             .filter { it.exists() }
+            .filter { it.absolutePath.lowercase().contains(confLower) }
             .maxByOrNull { it.lastModified() }
             ?: candidates.first()
 
         if (!source.exists()) {
             throw GradleException("Published $conf libRemexCore.so not found: ${source.absolutePath}")
+        }
+
+        if (!isAarch64Elf(source)) {
+            throw GradleException(
+                "$conf libRemexCore.so at ${source.absolutePath} is not a 64-bit AArch64 ELF " +
+                    "(stale, corrupt, or cross-config build). Rebuild Remex.Core for android-arm64."
+            )
         }
 
         generated.parentFile.mkdirs()
@@ -381,6 +416,7 @@ val syncRemexCoreDebugSo by project.tasks.registering(SyncRemexCoreSoTask::class
 
     configuration.set("Debug")
     rcDir.set(remexCoreProjectDirLocal.absolutePath)
+    sourceCandidates.from(arm64PublishedSoCandidates(remexCoreProjectDirLocal, "Debug"))
     generatedSo.set(remexGeneratedDebugArm64So)
 }
 
@@ -391,6 +427,7 @@ val syncRemexCoreReleaseSo by project.tasks.registering(SyncRemexCoreSoTask::cla
 
     configuration.set("Release")
     rcDir.set(remexCoreProjectDirLocal.absolutePath)
+    sourceCandidates.from(arm64PublishedSoCandidates(remexCoreProjectDirLocal, "Release"))
     generatedSo.set(remexGeneratedReleaseArm64So)
 }
 

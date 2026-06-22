@@ -139,6 +139,12 @@ public static class AndroidNativeExports
     private static ClientWebSocket? _pairingWebSocket;
     private static PairingClient? _activePairingClient;
     private static PairingResponse? _activePairingResponse;
+    // Serializes all transitions of the pairing-session statics above. Kept SEPARATE from SyncRoot:
+    // SyncRoot guards the high-frequency callback/frame paths and must never be held across the
+    // blocking pairing handshake (up to 60s), so the two locks must not be conflated. A concurrent
+    // StartPairing/SubmitPin from a second Java thread waits here instead of disposing-then-using
+    // the active ClientWebSocket (JNI-4 / RemEx-8ay).
+    private static readonly object PairingSyncRoot = new();
     private static readonly ConcurrentDictionary<string, string> _pinnedHashes = new();
     private static readonly Channel<RemexMessage> OutboundMessageQueue = Channel.CreateUnbounded<RemexMessage>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
@@ -451,126 +457,133 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartPairingNative")]
     public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr, IntPtr clientIdPtr)
     {
-        var hostUrl = JniHelper.ReadJString(env, hostUrlPtr);
-        var clientName = JniHelper.ReadJString(env, clientNamePtr);
-        var clientVersion = JniHelper.ReadJString(env, clientVersionPtr);
-        var clientId = JniHelper.ReadJString(env, clientIdPtr);
-
         return Export(env, () =>
         {
-            ClientWebSocket? ws = null;
-            PairingClient? client = null;
-            try
+            // Marshal inside the Export guard (JNI-5 / RemEx-85i): a managed throw while reading
+            // the jstrings is now caught by Export rather than propagating past [UnmanagedCallersOnly].
+            var hostUrl = JniHelper.ReadJString(env, hostUrlPtr);
+            var clientName = JniHelper.ReadJString(env, clientNamePtr);
+            var clientVersion = JniHelper.ReadJString(env, clientVersionPtr);
+            var clientId = JniHelper.ReadJString(env, clientIdPtr);
+
+            // Serialize the full attempt so a concurrent pairing export from another Java thread
+            // waits here instead of disposing-then-using the active ClientWebSocket (JNI-4).
+            lock (PairingSyncRoot)
             {
-                // Always discard any previous pairing state before starting a new attempt.
-                ClearActivePairingState();
-
-                if (string.IsNullOrEmpty(hostUrl))
-                    return "ERROR: Host URL is required";
-                if (string.IsNullOrEmpty(clientName))
-                    return "ERROR: Client name is required";
-                if (string.IsNullOrEmpty(clientVersion))
-                    return "ERROR: Client version is required";
-                if (string.IsNullOrWhiteSpace(clientId))
-                    return "ERROR: Client ID is required";
-
-                // Phase 0: TCP probe. Distinguishes L4 reachability (host/firewall) from L6/L7 issues
-                // (TLS, HTTP upgrade). Without this, ConnectAsync hangs for the full TLS budget on
-                // unreachable hosts and the user can't tell whether to debug network or crypto.
-                Uri uri;
+                ClientWebSocket? ws = null;
+                PairingClient? client = null;
                 try
                 {
-                    uri = new Uri(hostUrl);
-                }
-                catch (UriFormatException ufx)
-                {
-                    return $"ERROR: Invalid host URL '{hostUrl}': {ufx.Message}";
-                }
+                    // Always discard any previous pairing state before starting a new attempt.
+                    ClearActivePairingState();
 
-                Console.Error.WriteLine($"[Pairing] Phase 0 — TCP probe {uri.Host}:{uri.Port} (10s budget)");
-                using (var tcp = new System.Net.Sockets.TcpClient { NoDelay = true })
-                {
-                    var probeTask = tcp.ConnectAsync(uri.Host, uri.Port);
-                    var probeWon = probeTask.Wait(TimeSpan.FromSeconds(10));
-                    if (!probeWon)
-                    {
-                        return $"ERROR: TCP probe to {uri.Host}:{uri.Port} timed out after 10s — host unreachable, firewall, or wrong IP/port";
-                    }
-                    if (probeTask.IsFaulted)
-                    {
-                        var inner = probeTask.Exception?.GetBaseException();
-                        return $"ERROR: TCP probe to {uri.Host}:{uri.Port} refused — {inner?.GetType().Name}: {inner?.Message}";
-                    }
-                    Console.Error.WriteLine($"[Pairing] TCP probe OK — {uri.Host}:{uri.Port} accepted a connection");
-                }
+                    if (string.IsNullOrEmpty(hostUrl))
+                        return "ERROR: Host URL is required";
+                    if (string.IsNullOrEmpty(clientName))
+                        return "ERROR: Client name is required";
+                    if (string.IsNullOrEmpty(clientVersion))
+                        return "ERROR: Client version is required";
+                    if (string.IsNullOrWhiteSpace(clientId))
+                        return "ERROR: Client ID is required";
 
-                ws = new ClientWebSocket();
-                // For initial pairing, we trust the cert because the PIN/QR is the out-of-band trust
-                ws.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
-
-                Console.Error.WriteLine($"[Pairing] Phase 1 — TLS handshake + WebSocket upgrade to {hostUrl} (20s budget)");
-
-                // Phase 1: connect (TLS handshake + HTTP/1.1 upgrade). Bounded so a wedged TLS
-                // doesn't hang the JNI thread.
-                using (var connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
-                {
+                    // Phase 0: TCP probe. Distinguishes L4 reachability (host/firewall) from L6/L7 issues
+                    // (TLS, HTTP upgrade). Without this, ConnectAsync hangs for the full TLS budget on
+                    // unreachable hosts and the user can't tell whether to debug network or crypto.
+                    Uri uri;
                     try
                     {
-                        ws.ConnectAsync(uri, connectCts.Token).GetAwaiter().GetResult();
+                        uri = new Uri(hostUrl);
                     }
-                    catch (OperationCanceledException) when (connectCts.IsCancellationRequested)
+                    catch (UriFormatException ufx)
                     {
-                        return $"ERROR: TLS/upgrade timed out after 20s — TCP reached {uri.Host}:{uri.Port} but TLS handshake or WebSocket upgrade did not complete (check host cert and that path '{uri.AbsolutePath}' is mapped)";
+                        return $"ERROR: Invalid host URL '{hostUrl}': {ufx.Message}";
                     }
-                }
 
-                Console.Error.WriteLine("[Pairing] Phase 2 — WebSocket connected. Sending PairingRequest, awaiting PairingResponse (60s budget)");
-
-                // Phase 2: pairing handshake (send PairingRequest, await PairingResponse).
-                // Generous budget — host generates PIN, derives ECDH session key, computes HMAC, and sends back.
-                // Should be fast (<1s) but allow margin for first-time TLS sessions, slow hardware, etc.
-                using (var handshakeCts = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
-                {
-                    client = new PairingClient(ws, log: msg => Console.Error.WriteLine($"[PairingClient] {msg}"))
+                    Console.Error.WriteLine($"[Pairing] Phase 0 — TCP probe {uri.Host}:{uri.Port} (10s budget)");
+                    using (var tcp = new System.Net.Sockets.TcpClient { NoDelay = true })
                     {
-                        ClientId = clientId
-                    };
-                    try
-                    {
-                        _activePairingResponse = client.StartPairingAsync(clientName, clientVersion, handshakeCts.Token).GetAwaiter().GetResult();
+                        var probeTask = tcp.ConnectAsync(uri.Host, uri.Port);
+                        var probeWon = probeTask.Wait(TimeSpan.FromSeconds(10));
+                        if (!probeWon)
+                        {
+                            return $"ERROR: TCP probe to {uri.Host}:{uri.Port} timed out after 10s — host unreachable, firewall, or wrong IP/port";
+                        }
+                        if (probeTask.IsFaulted)
+                        {
+                            var inner = probeTask.Exception?.GetBaseException();
+                            return $"ERROR: TCP probe to {uri.Host}:{uri.Port} refused — {inner?.GetType().Name}: {inner?.Message}";
+                        }
+                        Console.Error.WriteLine($"[Pairing] TCP probe OK — {uri.Host}:{uri.Port} accepted a connection");
                     }
-                    catch (OperationCanceledException) when (handshakeCts.IsCancellationRequested)
+
+                    ws = new ClientWebSocket();
+                    // For initial pairing, we trust the cert because the PIN/QR is the out-of-band trust
+                    ws.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
+
+                    Console.Error.WriteLine($"[Pairing] Phase 1 — TLS handshake + WebSocket upgrade to {hostUrl} (20s budget)");
+
+                    // Phase 1: connect (TLS handshake + HTTP/1.1 upgrade). Bounded so a wedged TLS
+                    // doesn't hang the JNI thread.
+                    using (var connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
                     {
+                        try
+                        {
+                            ws.ConnectAsync(uri, connectCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (connectCts.IsCancellationRequested)
+                        {
+                            return $"ERROR: TLS/upgrade timed out after 20s — TCP reached {uri.Host}:{uri.Port} but TLS handshake or WebSocket upgrade did not complete (check host cert and that path '{uri.AbsolutePath}' is mapped)";
+                        }
+                    }
+
+                    Console.Error.WriteLine("[Pairing] Phase 2 — WebSocket connected. Sending PairingRequest, awaiting PairingResponse (60s budget)");
+
+                    // Phase 2: pairing handshake (send PairingRequest, await PairingResponse).
+                    // Generous budget — host generates PIN, derives ECDH session key, computes HMAC, and sends back.
+                    // Should be fast (<1s) but allow margin for first-time TLS sessions, slow hardware, etc.
+                    using (var handshakeCts = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
+                    {
+                        client = new PairingClient(ws, log: msg => Console.Error.WriteLine($"[PairingClient] {msg}"))
+                        {
+                            ClientId = clientId
+                        };
+                        try
+                        {
+                            _activePairingResponse = client.StartPairingAsync(clientName, clientVersion, handshakeCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (handshakeCts.IsCancellationRequested)
+                        {
+                            try { ws.Dispose(); } catch { }
+                            return "ERROR: Pairing handshake timed out — host did not return PairingResponse within 60s";
+                        }
+                    }
+
+                    if (_activePairingResponse == null)
+                    {
+                        _activePairingClient = null;
                         try { ws.Dispose(); } catch { }
-                        return "ERROR: Pairing handshake timed out — host did not return PairingResponse within 60s";
+                        return "ERROR: Host responded but PairingResponse payload was missing";
                     }
-                }
 
-                if (_activePairingResponse == null)
+                    _activePairingClient = client;
+                    _pairingWebSocket = ws;
+                    ws = null; // ownership transferred to the static field
+                    Console.Error.WriteLine($"[Pairing] PairingResponse received from host {_activePairingResponse.HostId}");
+                    return "OK";
+                }
+                catch (Exception ex)
                 {
                     _activePairingClient = null;
-                    try { ws.Dispose(); } catch { }
-                    return "ERROR: Host responded but PairingResponse payload was missing";
+                    Console.Error.WriteLine($"[Pairing] StartPairing failed: {ex.GetType().Name}: {ex.Message}");
+                    return $"ERROR: {ex.GetType().Name}: {ex.Message}";
                 }
-
-                _activePairingClient = client;
-                _pairingWebSocket = ws;
-                ws = null; // ownership transferred to the static field
-                Console.Error.WriteLine($"[Pairing] PairingResponse received from host {_activePairingResponse.HostId}");
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                _activePairingClient = null;
-                Console.Error.WriteLine($"[Pairing] StartPairing failed: {ex.GetType().Name}: {ex.Message}");
-                return $"ERROR: {ex.GetType().Name}: {ex.Message}";
-            }
-            finally
-            {
-                // If we created a socket but didn't promote it to _pairingWebSocket, dispose it now.
-                if (ws != null)
+                finally
                 {
-                    try { ws.Dispose(); } catch { }
+                    // If we created a socket but didn't promote it to _pairingWebSocket, dispose it now.
+                    if (ws != null)
+                    {
+                        try { ws.Dispose(); } catch { }
+                    }
                 }
             }
         });
@@ -579,57 +592,63 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SubmitPairingPinNative")]
     public static IntPtr SubmitPairingPinNative(IntPtr env, IntPtr thiz, IntPtr pinPtr)
     {
-        var pin = JniHelper.ReadJString(env, pinPtr);
-
         return Export(env, () =>
         {
-            try
+            // Marshal inside the Export guard (JNI-5 / RemEx-85i).
+            var pin = JniHelper.ReadJString(env, pinPtr);
+
+            // Serialize against StartPairing/Clear so the session statics aren't disposed-then-used
+            // by a concurrent pairing export (JNI-4 / RemEx-8ay).
+            lock (PairingSyncRoot)
             {
-                if (string.IsNullOrEmpty(pin))
-                    return "ERROR: PIN is required";
-                if (_pairingWebSocket == null || _activePairingResponse == null)
-                    return "ERROR: No active pairing session";
-                if (_activePairingClient == null)
-                    return "ERROR: Pairing session lost client key state";
-
-                Console.Error.WriteLine("[Pairing] Submitting PIN — sending PairingComplete, awaiting host confirmation (30s budget)");
-
-                var client = _activePairingClient;
-                bool success;
-                using (var completeCts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+                try
                 {
-                    try
+                    if (string.IsNullOrEmpty(pin))
+                        return "ERROR: PIN is required";
+                    if (_pairingWebSocket == null || _activePairingResponse == null)
+                        return "ERROR: No active pairing session";
+                    if (_activePairingClient == null)
+                        return "ERROR: Pairing session lost client key state";
+
+                    Console.Error.WriteLine("[Pairing] Submitting PIN — sending PairingComplete, awaiting host confirmation (30s budget)");
+
+                    var client = _activePairingClient;
+                    bool success;
+                    using (var completeCts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
                     {
-                        success = client.CompletePairingAsync(pin, _activePairingResponse, completeCts.Token).GetAwaiter().GetResult();
+                        try
+                        {
+                            success = client.CompletePairingAsync(pin, _activePairingResponse, completeCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (completeCts.IsCancellationRequested)
+                        {
+                            ClearActivePairingState();
+                            return "ERROR: PIN submission timed out — host did not confirm within 30s";
+                        }
                     }
-                    catch (OperationCanceledException) when (completeCts.IsCancellationRequested)
+
+                    if (success)
                     {
+                        // Surface the reconnect secret (PAIR-1) as a third pipe-delimited field so the
+                        // Kotlin layer can persist it in the Android keystore and supply it on future
+                        // connects (AndroidNativeInitRequest.ReconnectSecret). Empty if unavailable.
+                        var reconnectSecret = client.LastReconnectSecretBase64 ?? string.Empty;
+                        var result = $"OK:{_activePairingResponse.HostId}|{_activePairingResponse.CertificateSpkiHashBase64}|{reconnectSecret}";
                         ClearActivePairingState();
-                        return "ERROR: PIN submission timed out — host did not confirm within 30s";
+                        Console.Error.WriteLine("[Pairing] Pairing complete and verified.");
+                        return result;
                     }
-                }
 
-                if (success)
-                {
-                    // Surface the reconnect secret (PAIR-1) as a third pipe-delimited field so the
-                    // Kotlin layer can persist it in the Android keystore and supply it on future
-                    // connects (AndroidNativeInitRequest.ReconnectSecret). Empty if unavailable.
-                    var reconnectSecret = client.LastReconnectSecretBase64 ?? string.Empty;
-                    var result = $"OK:{_activePairingResponse.HostId}|{_activePairingResponse.CertificateSpkiHashBase64}|{reconnectSecret}";
+                    // PIN HMAC mismatch or host rejected — tear down so the user can retry cleanly.
                     ClearActivePairingState();
-                    Console.Error.WriteLine("[Pairing] Pairing complete and verified.");
-                    return result;
+                    return "ERROR: Pairing verification failed (incorrect PIN or session expired)";
                 }
-
-                // PIN HMAC mismatch or host rejected — tear down so the user can retry cleanly.
-                ClearActivePairingState();
-                return "ERROR: Pairing verification failed (incorrect PIN or session expired)";
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"[Pairing] SubmitPairingPin failed: {ex.GetType().Name}: {ex.Message}");
-                ClearActivePairingState();
-                return $"ERROR: {ex.GetType().Name}: {ex.Message}";
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[Pairing] SubmitPairingPin failed: {ex.GetType().Name}: {ex.Message}");
+                    ClearActivePairingState();
+                    return $"ERROR: {ex.GetType().Name}: {ex.Message}";
+                }
             }
         });
     }
@@ -1022,7 +1041,14 @@ public static class AndroidNativeExports
             if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
 
             IntPtr jArray = JniHelper.NewByteArray(env, frame.Length);
-            if (jArray == IntPtr.Zero) return;
+            if (jArray == IntPtr.Zero)
+            {
+                // Allocation failed — likely a pending OutOfMemoryError. The dispatcher reuses one
+                // daemon-thread env across callbacks, so a pending exception left set here would
+                // poison the next callback (JNI-3 / RemEx-ymb). Clear it before bailing.
+                if (JniHelper.ExceptionCheck(env)) JniHelper.ExceptionClear(env);
+                return;
+            }
 
             try
             {
@@ -1089,7 +1115,13 @@ public static class AndroidNativeExports
             if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
 
             IntPtr jString = JniHelper.CreateJString(env, json);
-            if (jString == IntPtr.Zero) return;
+            if (jString == IntPtr.Zero)
+            {
+                // Clear any pending exception from NewString (e.g. OutOfMemoryError) so it cannot
+                // bleed into the next callback on the shared dispatcher env (JNI-3 / RemEx-ymb).
+                if (JniHelper.ExceptionCheck(env)) JniHelper.ExceptionClear(env);
+                return;
+            }
             try
             {
                 JniHelper.CallVoidMethod(env, callback, methodId, jString);

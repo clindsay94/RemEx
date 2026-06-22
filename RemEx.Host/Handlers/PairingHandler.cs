@@ -97,7 +97,10 @@ public sealed class PairingHandler
                     _logger.LogWarning(cancelEx, "Failed to cancel pairing during error recovery.");
                 }
             }
-            return MakeError($"Pairing request failed: {ex.Message}");
+            // Generic message to the peer (PAIR-7 / RemEx-xk9): a malformed client ECDH public key
+            // makes DeriveSessionKeyAsync throw, and interpolating ex.Message would leak crypto
+            // internals to an unauthenticated caller. Full detail is logged host-side above.
+            return MakeError("Pairing request failed: invalid pairing key or request.");
         }
     }
 
@@ -158,7 +161,9 @@ public sealed class PairingHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to handle pairing complete.");
-            return MakeError($"Pairing verification failed: {ex.Message}");
+            // Same generic message as the wrong-PIN path (line above) so a crypto/parse error can't
+            // be distinguished from an incorrect PIN by the peer (PAIR-7 / RemEx-xk9).
+            return MakeError("PIN verification failed. Please try again.");
         }
     }
 

@@ -242,6 +242,8 @@ public static class MessageTypes
     public const string DesktopWindowQuery = "desktop_window_query";
     public const string DesktopWindowAction = "desktop_window_action";
     public const string DesktopWindowResult = "desktop_window_result";
+    /// <summary>Client-to-host request for an on-demand keyframe (IDR) after decoder desync (RD-2).</summary>
+    public const string DesktopKeyframeRequest = "desktop_keyframe_request";
 
     // ── 2.0 Pairing ──
     public const string PairingRequest = "pairing_request";

@@ -39,7 +39,7 @@ RemEx 2.0+ uses **TLS 1.3 with certificate pinning** and **ECDH NIST P-256 key e
 
 **TCP Command Port (Port 8338):**
 
-The TCP command port is now TLS 1.3 encrypted. Access is restricted to clients that have completed a pairing handshake from the same IP address within the last 24 hours. While slightly less granular than the WebSocket pairing, this provides a strong barrier against unauthorized commands.
+The TCP command port is TLS 1.3 encrypted (server-only certificate) and **default-deny** (PROTO-1 / RemEx-htt). Because server-only TLS cannot identify the caller, authentication happens at the application layer: every `CommandRequest` must carry a `ClientId` that is registered in the host's paired-client registry (the same registry used by the `/ws` channel). A request with a missing or unknown `ClientId` is rejected with `Unauthorized` and the connection is closed before any power action runs. No first-party client uses 8338 (Android uses `/ws`; the local UI uses the named pipe); external automation scripts must pair first and include their paired `ClientId` on every command. See `docs/API_CONTRACTS.md` §4 for the payload.
 
 ### 1.x Security Model (Legacy, End-of-Life)
 

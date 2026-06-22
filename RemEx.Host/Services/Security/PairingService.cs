@@ -162,6 +162,28 @@ public sealed class PairingService : IPairingService
         return VerifyClientHmacCoreAsync(clientHmacBase64, ct);
     }
 
+    // Constant-time comparison of the client-supplied acknowledgement HMAC against the expected
+    // value. The client sends its HMAC base64-encoded; we decode to RAW bytes and compare those
+    // (PAIR-6 / RemEx-29e). Comparing the base64 TEXT instead would compare encoding artifacts,
+    // and malformed base64 must fail closed (return false) rather than throw out of the verify
+    // path. Mirrors the client side in PairingClient. expectedHmac is always 32 bytes; FixedTimeEquals
+    // returns false on any length mismatch without leaking timing.
+    private bool HmacMatches(byte[] expectedHmac, string clientHmacBase64)
+    {
+        byte[] clientHmac;
+        try
+        {
+            clientHmac = Convert.FromBase64String(clientHmacBase64);
+        }
+        catch (FormatException)
+        {
+            _logger.LogWarning("Pairing verification failed: client acknowledgement HMAC was not valid base64.");
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(expectedHmac, clientHmac);
+    }
+
     public async Task<PairingVerificationResult> VerifyClientHmacAndCaptureSecretAsync(
         string clientHmacBase64, CancellationToken ct)
     {
@@ -183,11 +205,7 @@ public sealed class PairingService : IPairingService
             // Compute expected HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
             var ackMessage = Encoding.UTF8.GetBytes("ack:" + _activePin);
             var expectedHmac = HMACSHA256.HashData(_sessionKey, ackMessage);
-            var expectedBase64 = Convert.ToBase64String(expectedHmac);
-
-            var match = CryptographicOperations.FixedTimeEquals(
-                Encoding.UTF8.GetBytes(expectedBase64),
-                Encoding.UTF8.GetBytes(clientHmacBase64));
+            var match = HmacMatches(expectedHmac, clientHmacBase64);
 
             if (match)
             {
@@ -246,11 +264,7 @@ public sealed class PairingService : IPairingService
             // Compute expected HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
             var ackMessage = Encoding.UTF8.GetBytes("ack:" + _activePin);
             var expectedHmac = HMACSHA256.HashData(_sessionKey, ackMessage);
-            var expectedBase64 = Convert.ToBase64String(expectedHmac);
-
-            var match = CryptographicOperations.FixedTimeEquals(
-                Encoding.UTF8.GetBytes(expectedBase64),
-                Encoding.UTF8.GetBytes(clientHmacBase64));
+            var match = HmacMatches(expectedHmac, clientHmacBase64);
 
             if (match)
             {

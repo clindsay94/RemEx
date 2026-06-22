@@ -129,13 +129,18 @@ public class LocalIpcServerService : BackgroundService
                     "Access denied creating named pipe '{Pipe}'. " +
                     "Another process may own the pipe, or the service account lacks pipe-creation rights. Retrying in 5s.",
                     PipeName);
-                await Task.Delay(5000, stoppingToken);
+                // Guard the backoff so shutdown exits the loop cleanly instead of surfacing a
+                // cancelled task from ExecuteAsync (IPC-7 / RemEx-79h).
+                try { await Task.Delay(5000, stoppingToken); }
+                catch (OperationCanceledException) { break; }
             }
             catch (Exception ex)
             {
                 pipeServer?.Dispose();
                 _logger.LogError(ex, "Error in IPC Server execution loop.");
-                await Task.Delay(1000, stoppingToken); // Backoff
+                // Backoff — guarded so a shutdown during the delay breaks cleanly (IPC-7 / RemEx-79h).
+                try { await Task.Delay(1000, stoppingToken); }
+                catch (OperationCanceledException) { break; }
             }
         }
     }

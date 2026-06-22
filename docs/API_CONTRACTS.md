@@ -103,11 +103,18 @@ The host defines "Shared Roots" (e.g., "Downloads", "Documents"). Clients browse
 
 ## 4. TCP Command Ingress (External Network Listener)
 
-The external TCP listener is now encrypted via TLS 1.3 and requires pairing verification.
+The external TCP listener is encrypted via TLS 1.3 (server-only certificate) and is **default-deny**: it
+authenticates every command against the paired-client registry (PROTO-1 / RemEx-htt).
 
 **Endpoint:** TCP Socket on Port `8338` (Configurable via `Remex:CommandPort`)
 
-⚠️ **Security Warning:** Clients must have completed a WSS pairing from the same IP address within the last 24 hours to be authorized for TCP commands.
+⚠️ **Security Warning:** Because the 8338 channel uses server-only TLS, the transport cannot identify the
+caller. Authentication is therefore performed at the application layer: every `CommandRequest` **must**
+carry a `ClientId` that has completed pairing over `/ws` and is present in the host's paired-client
+registry. A request with a missing or unrecognized `ClientId` is rejected with an `Unauthorized`
+`CommandResponse` and the connection is closed — **no power action is executed**. External automation
+scripts that drove 8338 before 2.0 must be updated to pair first and then include their paired `ClientId`
+on every command; an unauthenticated sender no longer works.
 
 ### Request Payload: `CommandRequest`
 
@@ -118,9 +125,15 @@ The client must send a UTF-8 encoded JSON string matching the following structur
   "Action": "string",
   "Parameters": {
     "Key": "Value"
-  }
+  },
+  "ClientId": "<paired-client-id>"
 }
 ```
+
+> **Note:** No first-party RemEx client uses the 8338 channel — the Android app connects over `/ws`
+> (port 5005) and the local tray/dashboard UI uses the named pipe. Port 8338 exists solely for
+> third-party/external script ingress, which is why the `ClientId` requirement is a documentation and
+> integration concern rather than a coordinated client release.
 
 ---
 

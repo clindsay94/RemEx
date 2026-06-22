@@ -88,6 +88,20 @@ public class MdnsDiscoveryService : IMdnsDiscoveryService
             ?? args.Message.AdditionalRecords.OfType<ARecord>().FirstOrDefault(record => record.Name == srv.Target);
 
         var resolvedHost = addressRecord?.Address.ToString() ?? hostName;
+
+        // The SRV port and target come from an untrusted multicast responder. Validate both before
+        // baking them into a ws:// URL a client would dial (NSD-6 / RemEx-00x). SRVRecord.Port is a
+        // ushort (already bounded to 0..65535); port 0 is the only invalid value. The host must be a
+        // valid IP literal or DNS name, otherwise the composed URL is malformed/hostile.
+        if (srv.Port < 1)
+        {
+            return null;
+        }
+        if (string.IsNullOrWhiteSpace(resolvedHost) || Uri.CheckHostName(resolvedHost) == UriHostNameType.Unknown)
+        {
+            return null;
+        }
+
         var webSocketUrl = $"ws://{resolvedHost}:{srv.Port}{RemexConstants.WebSocketPath}";
         return new MdnsHostDiscoveredEventArgs(args.ServiceInstanceName.ToString(), hostName, srv.Port, webSocketUrl);
     }
