@@ -10,6 +10,42 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - Connection is always Android → PC, always non-loopback.
 - If you find old references to a "desktop client" connecting to a "desktop host", update them to reflect the current architecture.
 
+<!-- AUTO-MANAGED: build-commands -->
+### Build & Run
+
+`build-remex.ps1` is the canonical cross-platform entry point (runs under `pwsh` on Windows and Linux).
+
+```powershell
+# Full release build for all platforms
+./build-remex.ps1 -c release -t all
+
+# Platform-specific targets
+./build-remex.ps1 -t windows        # publish + Inno Setup installer
+./build-remex.ps1 -t android        # APK + AAB via Gradle
+./build-remex.ps1 -t linux          # tar.gz via installer/build-linux.sh (WSL on Windows)
+
+# Target aliases
+./build-remex.ps1 -t installer      # Windows installer only (skips publish if artifacts/ exists)
+./build-remex.ps1 -t windows-client # Windows publish only (skips installer)
+./build-remex.ps1 -t apk            # alias for -t android
+
+# Incremental rebuild (skip clean, reuse artifacts/)
+./build-remex.ps1 -t windows -NoClean
+```
+
+**Build output layout:**
+- Intermediate / publish: `artifacts/` (UseArtifactsOutput — not per-project `bin/` or `obj/`)
+  - Windows publish: `artifacts/publish/RemEx.Host/{Config}_win-x64/`
+- Final distributables: `build_output/windows/`, `build_output/android/`, `build_output/linux/`
+
+**Android prerequisites** (auto-installed by the script if missing):
+- Android SDK API Level 37
+- NDK version `30.0.14904198`
+- Requires `ANDROID_HOME` env var or `RemEx.Android/local.properties` (`sdk.dir=...`)
+
+**Version sync:** script reads `versionName` from `RemEx.Android/app/version.properties` and patches `Directory.Build.props` automatically on every run.
+<!-- END AUTO-MANAGED -->
+
 ### MCP Tool Discipline
 
 Before reaching for `grep`, `Read`, or raw `Bash`, consult the decision matrix in `CLAUDE.md`:
@@ -38,7 +74,7 @@ Use `bd` for ALL task tracking. Create an issue before writing code. Claim it. C
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (11178 symbols, 21590 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (11183 symbols, 21595 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
