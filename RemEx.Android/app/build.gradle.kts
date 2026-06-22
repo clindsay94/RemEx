@@ -326,12 +326,13 @@ abstract class SyncRemexCoreSoTask : DefaultTask() {
     fun doSync() {
         val conf = configuration.get()
         val generated = generatedSo.get().asFile
-        val rcDirFile = File(rcDir.get())
 
-        // Same candidate set that is declared as task inputs (sourceCandidates) so the up-to-date check
-        // and the actual copy can never diverge — both go through arm64PublishedSoCandidates
-        // (RemEx-l79 / RemEx-hht). rcDirFile is <repoRoot>/Remex.Core.
-        val candidates = arm64PublishedSoCandidates(rcDirFile, conf)
+        // Read the candidate .so paths straight from the declared task inputs, so the up-to-date check
+        // and the actual copy can never diverge (RemEx-l79). This MUST read the task property rather
+        // than call the script-level arm64PublishedSoCandidates(): referencing a build-script function
+        // from inside the task class captures the script instance and makes Gradle reject the class as
+        // a non-static inner class. The registration populates sourceCandidates from that same helper.
+        val candidates = sourceCandidates.files.toList()
 
         // Verify a file is a 64-bit AArch64 ELF so a stale/corrupt/cross-config artifact can never be
         // packaged into the APK (RemEx-hht). ELF header: magic 0x7F454C46, EI_CLASS==2 (64-bit) at
