@@ -148,6 +148,14 @@ public sealed record RemexMessage
     [JsonPropertyName("pairingComplete")]
     public PairingComplete? PairingComplete { get; init; }
 
+    /// <summary>Host → client reconnect challenge (proof-of-possession nonce).</summary>
+    [JsonPropertyName("reconnectChallenge")]
+    public ReconnectChallenge? ReconnectChallenge { get; init; }
+
+    /// <summary>Client → host reconnect proof (HMAC over the challenge nonce).</summary>
+    [JsonPropertyName("reconnectProof")]
+    public ReconnectProof? ReconnectProof { get; init; }
+
     // ── 2.0 File Transfer ──
 
     [JsonPropertyName("fileTransferStart")]
@@ -240,6 +248,10 @@ public static class MessageTypes
     public const string PairingResponse = "pairing_response";
     public const string PairingComplete = "pairing_complete";
     public const string PairingError = "pairing_error";
+    /// <summary>Host → client reconnect challenge (proof-of-possession nonce).</summary>
+    public const string ReconnectChallenge = "reconnect_challenge";
+    /// <summary>Client → host reconnect proof (HMAC over the challenge nonce).</summary>
+    public const string ReconnectProof = "reconnect_proof";
 
     // ── 2.0 File Transfer ──
     public const string FileTransferStart = "file_transfer_start";

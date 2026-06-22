@@ -19,6 +19,15 @@ public class PairingClient
 
     public string? ClientId { get; set; }
 
+    /// <summary>
+    /// On a successful <see cref="CompletePairingAsync"/>, holds the base64-encoded reconnect secret
+    /// (the ECDH/HKDF-derived session key). The caller must persist this securely (Android keystore)
+    /// and supply it on future connects so the host can verify proof-of-possession (PAIR-1). The host
+    /// derives the identical key during pairing, so the secret itself is never sent over the wire.
+    /// Null until pairing succeeds; cleared key material is never exposed beyond this value.
+    /// </summary>
+    public string? LastReconnectSecretBase64 { get; private set; }
+
     // Constructor intentionally avoids any dependency on Microsoft.Extensions.Logging
     // because this type is invoked from the Android NativeAOT entrypoints
     // (AndroidNativeExports), which load before any DI container is built and
@@ -140,6 +149,12 @@ public class PairingClient
 
             if (confirm != null && confirm.Type == MessageTypes.PairingComplete && confirm.CommandSuccess == true)
             {
+                // Capture the reconnect secret (session key) for the caller to persist BEFORE the
+                // finally block zeroes the field. This is the proof-of-possession material (PAIR-1).
+                if (_sessionKey is not null)
+                {
+                    LastReconnectSecretBase64 = Convert.ToBase64String(_sessionKey);
+                }
                 _log?.Invoke("Pairing successful.");
                 return true;
             }

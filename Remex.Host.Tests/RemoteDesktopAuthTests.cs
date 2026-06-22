@@ -114,7 +114,7 @@ public sealed class RemoteDesktopAuthTests
     }
 
     [Fact]
-    public void ProtocolVersion_OtherValue_Returns400()
+    public void ProtocolVersion_OlderValue_Returns400()
     {
         var registry = NewRegistry();
         registry.RegisterClient("paired-android-device");
@@ -128,6 +128,24 @@ public sealed class RemoteDesktopAuthTests
         Assert.Equal(StatusCodes.Status400BadRequest, status);
         Assert.NotNull(reason);
         Assert.Contains("'1'", reason);
+    }
+
+    [Fact]
+    public void ProtocolVersion_NewerValue_IsAccepted()
+    {
+        // Forward-compat / accept-range policy (ProtocolVersionPolicy): a client advertising a
+        // protocol version newer than the host minimum must NOT be bricked. The wire envelope is
+        // additive, so a current host safely ignores any extra fields a future client adds.
+        var registry = NewRegistry();
+        registry.RegisterClient("paired-android-device");
+
+        var (status, _) = HostBootstrapper.EvaluateDesktopAuth(
+            IPAddress.Parse("192.168.1.50"),
+            clientId: "paired-android-device",
+            protocolVersion: "3",
+            registry);
+
+        Assert.Equal(StatusCodes.Status200OK, status);
     }
 
     [Fact]

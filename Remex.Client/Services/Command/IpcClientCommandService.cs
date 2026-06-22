@@ -2,18 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
+using Remex.Core.Services;
 using Remex.Core.Services.Command;
 
 namespace Remex.Client.Services.Command;
 
 public class IpcClientCommandService : ISystemCommandService
 {
-    private const string PipeName = "RemExLocalIPC";
+    private const string PipeName = RemExLocalIPC.PipeName;
 
     public Task Shutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Shutdown", CreateDelayParameters(delaySeconds)));
     public Task ForceShutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceShutdown", CreateDelayParameters(delaySeconds)));
@@ -46,16 +46,13 @@ public class IpcClientCommandService : ISystemCommandService
             using var pipeClient = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await pipeClient.ConnectAsync(5000); // 5 seconds timeout
 
-            var json = JsonSerializer.Serialize(request, RemexJson.Compact);
-            var bytes = Encoding.UTF8.GetBytes(json);
-            await pipeClient.WriteAsync(bytes, 0, bytes.Length);
+            var requestBytes = RemexJson.SerializeToUtf8Bytes(request, RemexJsonSerializerContext.Default.CommandRequest);
+            await RemExLocalIPC.WriteFrameAsync(pipeClient, requestBytes);
 
-            var buffer = new byte[8192];
-            var bytesRead = await pipeClient.ReadAsync(buffer, 0, buffer.Length);
-            if (bytesRead > 0)
+            var responseBytes = await RemExLocalIPC.ReadFrameAsync(pipeClient);
+            if (responseBytes != null)
             {
-                var responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                var response = JsonSerializer.Deserialize<CommandResponse>(responseJson, RemexJson.Compact);
+                var response = RemexJson.Deserialize(responseBytes, RemexJsonSerializerContext.Default.CommandResponse);
                 if (response != null && !response.Success)
                 {
                     throw new Exception($"Command Failed: {response.Message}. Details: {response.ErrorDetails}");

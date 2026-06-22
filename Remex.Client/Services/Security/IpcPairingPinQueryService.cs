@@ -1,11 +1,9 @@
-using System.IO;
 using System.IO.Pipes;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
+using Remex.Core.Services;
 
 namespace Remex.Client.Services.Security;
 
@@ -15,57 +13,31 @@ public sealed class IpcPairingPinQueryService : IPairingPinQueryService
 
     public IpcPairingPinQueryService(string? pipeName = null)
     {
-        _pipeName = string.IsNullOrWhiteSpace(pipeName) ? "RemExLocalIPC" : pipeName;
+        _pipeName = string.IsNullOrWhiteSpace(pipeName) ? RemExLocalIPC.PipeName : pipeName;
     }
 
-    public async Task<PairingPinInfo?> GetActivePairingPinAsync(CancellationToken cancellationToken = default)
+    public Task<PairingPinInfo?> GetActivePairingPinAsync(CancellationToken cancellationToken = default)
+        => QueryPinAsync("GETPAIRINGPIN", cancellationToken);
+
+    public Task<PairingPinInfo?> GeneratePairingPinAsync(CancellationToken cancellationToken = default)
+        => QueryPinAsync("GENERATEPAIRINGPIN", cancellationToken);
+
+    private async Task<PairingPinInfo?> QueryPinAsync(string action, CancellationToken cancellationToken)
     {
         try
         {
             using var client = new NamedPipeClientStream(".", _pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await client.ConnectAsync(2000, cancellationToken);
 
-            var request = new CommandRequest("GETPAIRINGPIN", null);
-            var json = JsonSerializer.Serialize(request, RemexJson.Compact);
-            var bytes = Encoding.UTF8.GetBytes(json);
+            var request = new CommandRequest(action, null);
+            var requestBytes = RemexJson.SerializeToUtf8Bytes(request, RemexJsonSerializerContext.Default.CommandRequest);
+            await RemExLocalIPC.WriteFrameAsync(client, requestBytes, cancellationToken);
 
-            await client.WriteAsync(bytes, cancellationToken);
-
-            var buffer = new byte[8192];
-            var bytesRead = await client.ReadAsync(buffer, cancellationToken);
-            if (bytesRead <= 0)
+            var responseBytes = await RemExLocalIPC.ReadFrameAsync(client, cancellationToken);
+            if (responseBytes == null)
                 return null;
 
-            var responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            var response = JsonSerializer.Deserialize<CommandResponse>(responseJson, RemexJson.Compact);
-            return response?.Success == true ? response.PairingPinInfo : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<PairingPinInfo?> GeneratePairingPinAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var client = new NamedPipeClientStream(".", _pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            await client.ConnectAsync(2000, cancellationToken);
-
-            var request = new CommandRequest("GENERATEPAIRINGPIN", null);
-            var json = JsonSerializer.Serialize(request, RemexJson.Compact);
-            var bytes = Encoding.UTF8.GetBytes(json);
-
-            await client.WriteAsync(bytes, cancellationToken);
-
-            var buffer = new byte[8192];
-            var bytesRead = await client.ReadAsync(buffer, cancellationToken);
-            if (bytesRead <= 0)
-                return null;
-
-            var responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            var response = JsonSerializer.Deserialize<CommandResponse>(responseJson, RemexJson.Compact);
+            var response = RemexJson.Deserialize(responseBytes, RemexJsonSerializerContext.Default.CommandResponse);
             return response?.Success == true ? response.PairingPinInfo : null;
         }
         catch

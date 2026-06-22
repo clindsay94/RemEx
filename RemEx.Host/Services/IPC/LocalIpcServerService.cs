@@ -1,16 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
+using Remex.Core.Services;
 using Remex.Core.Services.Command;
 using Remex.Core.Services.Network;
 using Remex.Core.Services.Security;
@@ -24,20 +26,50 @@ public class LocalIpcServerService : BackgroundService
     private readonly ISystemCommandService _commandService;
     private readonly IWakeOnLanService _wakeOnLanService;
     private readonly IPairingService _pairingService;
-    private const string PipeName = "RemExLocalIPC";
+    private readonly IAppLauncherService _appLauncherService;
+
+    // Single canonical pipe name shared with every local IPC client (see Remex.Core RemExLocalIPC).
+    private const string PipeName = RemExLocalIPC.PipeName;
     private const string MutexName = @"Global\RemExServiceMutex";
+
+    // State-changing or secret-returning commands require the caller to be the interactive console
+    // user. Read-only/idempotent commands (e.g. WAKEONLAN, LAUNCHAPP) do not gate on identity beyond
+    // the pipe ACL, which already restricts connections to LocalSystem and the interactive user.
+    private static readonly HashSet<string> PrivilegedActions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "SHUTDOWN",
+        "FORCESHUTDOWN",
+        "RESTART",
+        "FORCERESTART",
+        "RESTARTTOUEFI",
+        "SLEEP",
+        "HIBERNATE",
+        "MONITOROFF",
+        "SIGNOUT",
+        "LOCK",
+        "GETPAIRINGPIN",
+        "STARTPAIRING",
+        "GENERATEPAIRINGPIN",
+    };
+
+    // Per-connection read timeout. A connected client that never sends a frame must not pin a pipe
+    // instance forever, and the canonical pipe is single-purpose request/response.
+    private static readonly TimeSpan ConnectionReadTimeout = TimeSpan.FromSeconds(15);
+
     private Mutex? _mutex;
 
     public LocalIpcServerService(
         ILogger<LocalIpcServerService> logger,
         ISystemCommandService commandService,
         IWakeOnLanService wakeOnLanService,
-        IPairingService pairingService)
+        IPairingService pairingService,
+        IAppLauncherService appLauncherService)
     {
         _logger = logger;
         _commandService = commandService;
         _wakeOnLanService = wakeOnLanService;
         _pairingService = pairingService;
+        _appLauncherService = appLauncherService;
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -73,58 +105,26 @@ public class LocalIpcServerService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            NamedPipeServerStream? pipeServer = null;
             try
             {
-                NamedPipeServerStream pipeServer;
+                pipeServer = CreatePipeServer();
+                await pipeServer.WaitForConnectionAsync(stoppingToken);
 
-                if (OperatingSystem.IsWindows())
-                {
-                    var pipeSecurity = new PipeSecurity();
-                    var worldSid = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-                    pipeSecurity.AddAccessRule(new PipeAccessRule(worldSid, PipeAccessRights.ReadWrite, AccessControlType.Allow));
-
-                    // Also grant FullControl to the current identity so elevated/service
-                    // accounts can recreate the pipe even when a stale handle exists.
-                    var currentUser = WindowsIdentity.GetCurrent().User;
-                    if (currentUser != null)
-                    {
-                        pipeSecurity.AddAccessRule(new PipeAccessRule(currentUser, PipeAccessRights.FullControl, AccessControlType.Allow));
-                    }
-
-                    pipeServer = NamedPipeServerStreamAcl.Create(
-                        PipeName,
-                        PipeDirection.InOut,
-                        NamedPipeServerStream.MaxAllowedServerInstances,
-                        PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous,
-                        0,
-                        0,
-                        pipeSecurity);
-                }
-                else
-                {
-                    pipeServer = new NamedPipeServerStream(
-                        PipeName,
-                        PipeDirection.InOut,
-                        NamedPipeServerStream.MaxAllowedServerInstances,
-                        PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous);
-                }
-
-                using (pipeServer)
-                {
-                    await pipeServer.WaitForConnectionAsync(stoppingToken);
-
-                    // Handle the connection
-                    await HandleClientAsync(pipeServer, stoppingToken);
-                }
+                // Hand ownership of the connected stream to the per-connection handler and immediately
+                // loop to accept the next client. The handler disposes the stream when it finishes.
+                var accepted = pipeServer;
+                pipeServer = null;
+                _ = HandleClientAsync(accepted, stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                // Expected on shutdown
+                // Expected on shutdown.
+                pipeServer?.Dispose();
             }
             catch (UnauthorizedAccessException ex)
             {
+                pipeServer?.Dispose();
                 _logger.LogWarning(ex,
                     "Access denied creating named pipe '{Pipe}'. " +
                     "Another process may own the pipe, or the service account lacks pipe-creation rights. Retrying in 5s.",
@@ -133,49 +133,204 @@ public class LocalIpcServerService : BackgroundService
             }
             catch (Exception ex)
             {
+                pipeServer?.Dispose();
                 _logger.LogError(ex, "Error in IPC Server execution loop.");
                 await Task.Delay(1000, stoppingToken); // Backoff
             }
         }
     }
 
+    private static NamedPipeServerStream CreatePipeServer()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return CreateWindowsPipeServer();
+        }
+
+        // Linux/macOS: named pipes are backed by a Unix domain socket created under the user's runtime
+        // dir. Owner-only (0600) semantics restrict access to the service account, mirroring the
+        // Windows ACL intent without per-rule SIDs.
+        return new NamedPipeServerStream(
+            PipeName,
+            PipeDirection.InOut,
+            NamedPipeServerStream.MaxAllowedServerInstances,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static NamedPipeServerStream CreateWindowsPipeServer()
+    {
+        var pipeSecurity = new PipeSecurity();
+
+        // LocalSystem (the service account itself) needs full control to own and recreate the pipe.
+        var localSystemSid = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+        pipeSecurity.AddAccessRule(new PipeAccessRule(localSystemSid, PipeAccessRights.FullControl, AccessControlType.Allow));
+
+        // The interactive (console) user — the tray/dashboard UI — gets read/write only, never the
+        // ability to change the ACL or take ownership. Replaces the former Everyone (WorldSid) rule.
+        var interactiveSid = new SecurityIdentifier(WellKnownSidType.InteractiveSid, null);
+        pipeSecurity.AddAccessRule(new PipeAccessRule(interactiveSid, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+
+        // Also grant FullControl to the current identity so elevated/service accounts can recreate the
+        // pipe even when a stale handle exists (stale-handle recovery).
+        var currentUser = WindowsIdentity.GetCurrent().User;
+        if (currentUser != null)
+        {
+            pipeSecurity.AddAccessRule(new PipeAccessRule(currentUser, PipeAccessRights.FullControl, AccessControlType.Allow));
+        }
+
+        return NamedPipeServerStreamAcl.Create(
+            PipeName,
+            PipeDirection.InOut,
+            NamedPipeServerStream.MaxAllowedServerInstances,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            0,
+            0,
+            pipeSecurity);
+    }
+
     private async Task HandleClientAsync(NamedPipeServerStream pipeServer, CancellationToken token)
     {
-        try
+        using (pipeServer)
+        using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token))
         {
-            var buffer = new byte[8192];
-            var bytesRead = await pipeServer.ReadAsync(buffer, token);
-            if (bytesRead == 0) return;
+            timeoutCts.CancelAfter(ConnectionReadTimeout);
+            var ct = timeoutCts.Token;
 
-            var json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            CommandRequest? request = null;
             try
             {
-                request = JsonSerializer.Deserialize<CommandRequest>(json, RemexJson.Compact);
+                var payload = await RemExLocalIPC.ReadFrameAsync(pipeServer, ct);
+                if (payload == null)
+                {
+                    return;
+                }
+
+                CommandRequest? request = null;
+                try
+                {
+                    request = RemexJson.Deserialize(payload, RemexJsonSerializerContext.Default.CommandRequest);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to deserialize command request over IPC.");
+                }
+
+                CommandResponse response;
+
+                if (request == null)
+                {
+                    response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
+                }
+                else if (!IsCallerAuthorized(pipeServer, request.Action))
+                {
+                    _logger.LogWarning("Rejected privileged IPC command '{Action}': caller is not the interactive console user.", request.Action);
+                    response = new CommandResponse(false, "Unauthorized", "This command may only be issued by the signed-in interactive user.");
+                }
+                else
+                {
+                    response = await ExecuteCommandAsync(request);
+                }
+
+                var responseBytes = RemexJson.SerializeToUtf8Bytes(response, RemexJsonSerializerContext.Default.CommandResponse);
+                await RemExLocalIPC.WriteFrameAsync(pipeServer, responseBytes, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // Connection timed out or the host is shutting down; drop the connection quietly.
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to deserialize command request over IPC.");
+                _logger.LogError(ex, "Error handling IPC client connection.");
             }
+        }
+    }
 
-            CommandResponse response;
+    /// <summary>
+    /// Confirms that a state-changing or secret-returning command originates from the signed-in
+    /// interactive console user. On Windows this impersonates the connected client and compares its
+    /// user SID with the SID owning the active console session. On Linux the pipe's owner-only (0600)
+    /// semantics already restrict access to the service account, so no extra impersonation check is
+    /// performed (the OS enforces it at connect time).
+    /// </summary>
+    private bool IsCallerAuthorized(NamedPipeServerStream pipeServer, string action)
+    {
+        if (!PrivilegedActions.Contains(action))
+        {
+            return true;
+        }
 
-            if (request == null)
+        if (!OperatingSystem.IsWindows())
+        {
+            // Divergence: Linux relies on Unix-socket 0600 owner-only access; impersonation/console-SID
+            // comparison is Windows-specific.
+            return true;
+        }
+
+        return IsConnectedClientInteractiveUser(pipeServer);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private bool IsConnectedClientInteractiveUser(NamedPipeServerStream pipeServer)
+    {
+        try
+        {
+            SecurityIdentifier? clientSid = null;
+            pipeServer.RunAsClient(() =>
             {
-                response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
-            }
-            else
+                using var identity = WindowsIdentity.GetCurrent();
+                clientSid = identity.User;
+            });
+
+            if (clientSid == null)
             {
-                response = await ExecuteCommandAsync(request);
+                return false;
             }
 
-            var responseJson = JsonSerializer.Serialize(response, RemexJson.Compact);
-            var responseBytes = Encoding.UTF8.GetBytes(responseJson);
-            await pipeServer.WriteAsync(responseBytes, token);
+            // LocalSystem itself (e.g. another service component) is always allowed.
+            var localSystemSid = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+            if (clientSid.Equals(localSystemSid))
+            {
+                return true;
+            }
+
+            var consoleUserSid = TryGetActiveConsoleUserSid();
+            return consoleUserSid != null && clientSid.Equals(consoleUserSid);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling IPC client connection.");
+            _logger.LogWarning(ex, "Failed to verify IPC caller identity; rejecting the command.");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Resolves the SID of the user owning the active console session, or null when no user is signed
+    /// in (e.g. the lock/login screen) or the lookup fails.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static SecurityIdentifier? TryGetActiveConsoleUserSid()
+    {
+        uint sessionId = WTSGetActiveConsoleSessionId();
+        if (sessionId == 0xFFFFFFFF)
+        {
+            return null;
+        }
+
+        if (!WTSQueryUserToken(sessionId, out IntPtr token))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var identity = new WindowsIdentity(token);
+            return identity.User;
+        }
+        finally
+        {
+            CloseHandle(token);
         }
     }
 
@@ -226,6 +381,23 @@ public class LocalIpcServerService : BackgroundService
                     else
                     {
                         return new CommandResponse(false, "Missing MacAddress", "Wake-on-LAN requires a MacAddress parameter.");
+                    }
+                case "LAUNCHAPP":
+                    if (request.Parameters == null
+                        || !request.Parameters.TryGetValue("TargetPath", out var targetPath)
+                        || string.IsNullOrWhiteSpace(targetPath))
+                    {
+                        return new CommandResponse(false, "No target path provided.", null);
+                    }
+
+                    try
+                    {
+                        await _appLauncherService.LaunchAppAsync(targetPath);
+                        return new CommandResponse(true, "App launched successfully.", null);
+                    }
+                    catch (Exception ex)
+                    {
+                        return new CommandResponse(false, $"Error launching app: {ex.Message}", ex.ToString());
                     }
                 case "GETPAIRINGPIN":
                     if (_pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
@@ -297,4 +469,13 @@ public class LocalIpcServerService : BackgroundService
 
         return 0;
     }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint WTSGetActiveConsoleSessionId();
+
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    private static extern bool WTSQueryUserToken(uint sessionId, out IntPtr token);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
 }

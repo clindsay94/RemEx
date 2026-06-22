@@ -27,25 +27,46 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     private readonly ISystemCommandService _commandService;
     private readonly IWakeOnLanService _wakeOnLanService;
     private readonly ICertificateService? _certificateService;
+    private readonly ICommandChannelAuthenticator? _authenticator;
     private const int MaxPayloadSize = 10 * 1024 * 1024; // 10MB limit for JSON commands
+
+    // Bound the number of concurrent TCP command sessions so a flood of half-open
+    // connections cannot exhaust threads/sockets. Configurable via Remex:CommandMaxConcurrent.
+    private const int DefaultMaxConcurrentClients = 16;
+
+    // Time budget for the TLS handshake. A client that connects but never completes the
+    // handshake otherwise pins a slot indefinitely. Configurable via Remex:CommandHandshakeTimeoutSeconds.
+    private const int DefaultHandshakeTimeoutSeconds = 10;
+
+    // Time budget for reading the length-prefixed request payload. Configurable via
+    // Remex:CommandReadTimeoutSeconds.
+    private const int DefaultReadTimeoutSeconds = 30;
+
     private TcpListener? _tcpListener;
     private CancellationTokenSource? _cts;
     private Task? _listenTask;
     private X509Certificate2? _serverCert;
+    private SemaphoreSlim? _connectionGate;
+    private int _connectionGateMax;
+    private TimeSpan _handshakeTimeout;
+    private TimeSpan _readTimeout;
 
     public RemexNetworkListener(
         IConfiguration configuration,
         ILogger<RemexNetworkListener> logger,
         ISystemCommandService commandService,
         IWakeOnLanService wakeOnLanService,
-        ICertificateService? certificateService = null)
+        ICertificateService? certificateService = null,
+        ICommandChannelAuthenticator? authenticator = null)
     {
         _configuration = configuration;
         _logger = logger;
         _commandService = commandService;
         _wakeOnLanService = wakeOnLanService;
         _certificateService = certificateService;
-        // Access key removed in 2.0 — TLS + pairing protocol provides authentication
+        _authenticator = authenticator;
+        // Authentication is enforced application-side via _authenticator (paired-client identity);
+        // the legacy shared access key was removed in 2.0.
     }
 
     public async Task StartListeningAsync(CancellationToken cancellationToken)
@@ -55,6 +76,15 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         {
             port = 8338;
         }
+
+        // Bound concurrency + per-connection timeouts (config with sane defaults).
+        int maxConcurrent = ReadPositiveIntConfig("Remex:CommandMaxConcurrent", DefaultMaxConcurrentClients);
+        _connectionGateMax = maxConcurrent;
+        _connectionGate = new SemaphoreSlim(maxConcurrent, maxConcurrent);
+        _handshakeTimeout = TimeSpan.FromSeconds(
+            ReadPositiveIntConfig("Remex:CommandHandshakeTimeoutSeconds", DefaultHandshakeTimeoutSeconds));
+        _readTimeout = TimeSpan.FromSeconds(
+            ReadPositiveIntConfig("Remex:CommandReadTimeoutSeconds", DefaultReadTimeoutSeconds));
 
         // Load TLS certificate for secure TCP connections (Phase 1 Track 1A).
         // FAIL-CLOSED: if the certificate cannot be loaded the listener must not
@@ -175,11 +205,26 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     {
         try
         {
+            var gate = _connectionGate;
             while (!token.IsCancellationRequested)
             {
                 if (_tcpListener == null) break;
 
                 var client = await _tcpListener.AcceptTcpClientAsync(token);
+
+                // Bound concurrency: only spawn a handler if a slot is free. At capacity we
+                // reject immediately (close the socket) rather than queueing, so a connection
+                // flood cannot pin unbounded resources. The slot is released in the handler's
+                // finally block.
+                if (gate != null && !await gate.WaitAsync(0, token))
+                {
+                    _logger.LogWarning(
+                        "Command channel at capacity ({Max} concurrent connections); rejecting new connection.",
+                        _connectionGateMax);
+                    client.Dispose();
+                    continue;
+                }
+
                 _ = HandleClientSafeAsync(client, token);
             }
         }
@@ -222,6 +267,11 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             // Only catch exceptions we can handle; let fatal exceptions propagate
             _logger.LogError(ex, "Unexpected exception in client handler");
         }
+        finally
+        {
+            // Release the concurrency slot acquired in AcceptClientsAsync.
+            _connectionGate?.Release();
+        }
     }
 
     private async Task HandleClientAsync(TcpClient client, CancellationToken token)
@@ -238,12 +288,26 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                     var sslStream = new SslStream(client.GetStream(), false);
                     try
                     {
-                        await sslStream.AuthenticateAsServerAsync(
-                            _serverCert,
-                            clientCertificateRequired: false,
-                            checkCertificateRevocation: false);
+                        // Bound the handshake: a client that connects but stalls the handshake
+                        // would otherwise hold its concurrency slot indefinitely. The token is
+                        // threaded into the handshake so CancelAfter actually aborts it.
+                        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                        handshakeCts.CancelAfter(_handshakeTimeout);
+                        var serverAuthOptions = new SslServerAuthenticationOptions
+                        {
+                            ServerCertificate = _serverCert,
+                            ClientCertificateRequired = false,
+                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                        };
+                        await sslStream.AuthenticateAsServerAsync(serverAuthOptions, handshakeCts.Token);
                         stream = sslStream;
                         _logger.LogDebug("TLS handshake completed with TCP client");
+                    }
+                    catch (OperationCanceledException) when (!token.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("TLS handshake timed out after {Timeout}s - rejecting connection", _handshakeTimeout.TotalSeconds);
+                        await sslStream.DisposeAsync();
+                        return;
                     }
                     catch (IOException ex)
                     {
@@ -266,9 +330,15 @@ public class RemexNetworkListener : INetworkListener, IDisposable
 
                 using (stream)
                 {
+                    // Bound the request read: a client that completes the TLS handshake but then
+                    // sends no (or partial) data would otherwise hold its concurrency slot until
+                    // shutdown. The timeout applies to reading the length prefix AND the payload.
+                    using var readCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    readCts.CancelAfter(_readTimeout);
+
                     // 1. Read 4-byte length prefix
                     var lengthBuffer = new byte[4];
-                    await stream.ReadExactlyAsync(lengthBuffer, 0, 4, token);
+                    await stream.ReadExactlyAsync(lengthBuffer, 0, 4, readCts.Token);
                     var length = BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
 
                     // 2. Validate length
@@ -280,7 +350,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
 
                     // 3. Read payload
                     var buffer = new byte[length];
-                    await stream.ReadExactlyAsync(buffer, 0, length, token);
+                    await stream.ReadExactlyAsync(buffer, 0, length, readCts.Token);
 
                     var json = Encoding.UTF8.GetString(buffer);
                     CommandRequest? request = null;
@@ -302,10 +372,32 @@ public class RemexNetworkListener : INetworkListener, IDisposable
                     {
                         response = new CommandResponse(false, "Invalid Request", "Payload could not be parsed as CommandRequest.");
                     }
+                    else if (!IsRequestAuthenticated(request))
+                    {
+                        // Default-deny: the 8338 channel uses server-only TLS, so the caller is not
+                        // identified by the transport. Commands must carry a ClientId that maps to a
+                        // client which has completed PIN-based pairing — mirroring the /ws pairing gate.
+                        // Reject before dispatch and close the connection.
+                        _logger.LogWarning(
+                            "Rejecting command {Action} from unauthenticated TCP client (ClientId='{ClientId}').",
+                            request.Action,
+                            request.ClientId);
+                        response = new CommandResponse(
+                            false,
+                            "Unauthorized",
+                            "Command rejected: the client is not paired. Complete PIN-based pairing before issuing commands.");
+
+                        // Send the rejection, then close the connection (do not dispatch).
+                        var unauthorizedJson = RemexJson.Serialize(response, RemexJsonSerializerContext.Default.CommandResponse);
+                        var unauthorizedBytes = Encoding.UTF8.GetBytes(unauthorizedJson);
+                        var unauthorizedLengthBuffer = new byte[4];
+                        BinaryPrimitives.WriteInt32BigEndian(unauthorizedLengthBuffer, unauthorizedBytes.Length);
+                        await stream.WriteAsync(unauthorizedLengthBuffer, token);
+                        await stream.WriteAsync(unauthorizedBytes, token);
+                        return;
+                    }
                     else
                     {
-                        // Access key validation removed in 2.0 — TLS + pairing replaces it.
-                        // Phase 1: TLS handshake enforced, pairing verification deferred to later track.
                         response = await ExecuteCommandAsync(request);
                     }
 
@@ -416,11 +508,42 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     // ValidateAccessKey removed in 2.0 — TLS certificate pinning + pairing protocol replaced it.
     // See: master-plan.md Track 1B
 
+    /// <summary>
+    /// Gates an inbound command on a paired-client identity. Default-deny: if no authenticator is
+    /// wired (e.g. the host has not registered <see cref="ICommandChannelAuthenticator"/>) the
+    /// command is rejected, because the 8338 channel carries privileged power commands and must
+    /// never run unauthenticated.
+    /// </summary>
+    private bool IsRequestAuthenticated(CommandRequest request)
+    {
+        if (_authenticator is null)
+        {
+            _logger.LogError(
+                "No command-channel authenticator is configured; rejecting all TCP commands. " +
+                "RemEx.Host must register an ICommandChannelAuthenticator implementation.");
+            return false;
+        }
+
+        return _authenticator.IsClientAuthenticated(request.ClientId);
+    }
+
+    private int ReadPositiveIntConfig(string key, int defaultValue)
+    {
+        var raw = _configuration[key];
+        if (int.TryParse(raw, out var parsed) && parsed > 0)
+        {
+            return parsed;
+        }
+
+        return defaultValue;
+    }
+
     public void Dispose()
     {
         StopListening();
         _cts?.Dispose();
         _serverCert?.Dispose();
+        _connectionGate?.Dispose();
     }
 
     private static int ParseDelaySeconds(Dictionary<string, string>? parameters)

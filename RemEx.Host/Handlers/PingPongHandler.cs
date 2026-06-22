@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
@@ -37,6 +38,12 @@ public sealed class PingPongHandler(
         // We also check the registry to see if this client (by ID) has previously paired.
         bool isPaired = isLoopback;
         bool pairingStarted = false;
+
+        // PAIR-1 proof-of-possession reconnect state. When a known paired client reconnects we
+        // send a one-time random nonce and require HMAC-SHA256(reconnectSecret, nonce) back before
+        // trusting the connection. A bare clientId no longer authenticates.
+        byte[]? pendingChallengeNonce = null;
+        bool challengeIssued = false;
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -120,21 +127,51 @@ public sealed class PingPongHandler(
                 logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
                     message.Type, message.ProtocolVersion);
 
-                // Check registry for persistent pairing if not already connection-paired
-                if (!isPaired && !string.IsNullOrWhiteSpace(message.ClientId))
+                // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
+                // presence, challenge the reconnecting client to prove possession of the reconnect
+                // secret established at pairing time. We issue the challenge once, the first time an
+                // unpaired connection presents a clientId that maps to a stored secret. The actual
+                // authentication happens when the matching reconnect_proof arrives (handled below).
+                if (!isPaired
+                    && !challengeIssued
+                    && message.Type != MessageTypes.ReconnectProof
+                    && !string.IsNullOrWhiteSpace(message.ClientId))
                 {
-                    if (pairedClientRegistry.IsClientPaired(message.ClientId))
+                    if (pairedClientRegistry.TryGetReconnectSecret(message.ClientId, out var secretProbe))
                     {
-                        isPaired = true;
-                        logger.LogInformation("Connection authenticated via paired client identity: {ClientId}", message.ClientId);
+                        // Don't keep the secret around; we only needed to confirm one exists.
+                        CryptographicOperations.ZeroMemory(secretProbe);
+
+                        pendingChallengeNonce = RandomNumberGenerator.GetBytes(32);
+                        challengeIssued = true;
+
+                        var challenge = new RemexMessage
+                        {
+                            Type = MessageTypes.ReconnectChallenge,
+                            ReconnectChallenge = new ReconnectChallenge
+                            {
+                                NonceBase64 = Convert.ToBase64String(pendingChallengeNonce),
+                            },
+                        };
+                        await MessageSerializer.SendAsync(webSocket, challenge, ct);
+                        logger.LogInformation(
+                            "Issued reconnect challenge to client {ClientId}; awaiting proof-of-possession.",
+                            message.ClientId);
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "Client {ClientId} presented a clientId with no reconnect secret on file — bare clientId does not authenticate; pairing required.",
+                            message.ClientId);
                     }
                 }
 
-                // Reject messages from clients running a protocol version older than 2.
-                // 1.x clients will get a clear rejection rather than silently operating in a
-                // degraded state.  ProtocolVersion defaults to 2 in RemEx 2.0 messages, so a
-                // zero value also indicates a legacy or malformed client.
-                if (message.ProtocolVersion < 2)
+                // Reject messages from clients running an unsupported protocol version. The single
+                // accept/reject rule lives in ProtocolVersionPolicy so /ws and /ws/desktop can never
+                // diverge. 1.x clients get a clear rejection rather than silently operating in a
+                // degraded state; ProtocolVersion defaults to 2 in RemEx 2.0 messages, so a zero
+                // value also indicates a legacy or malformed client.
+                if (!ProtocolVersionPolicy.IsSupported(message.ProtocolVersion))
                 {
                     logger.LogWarning(
                         "Rejecting client with ProtocolVersion={Version} — minimum required is 2.",
@@ -255,6 +292,29 @@ public sealed class PingPongHandler(
                         }
                         break;
 
+                    case MessageTypes.ReconnectProof:
+                        // PAIR-1: verify the client's proof-of-possession against the nonce we issued.
+                        // A correct HMAC-SHA256(reconnectSecret, nonce) authenticates the reconnect; a
+                        // missing/incorrect proof (or a clientId with no stored secret) is rejected.
+                        if (TryAuthenticateReconnect(message, pendingChallengeNonce, pairedClientRegistry, logger))
+                        {
+                            isPaired = true;
+                            logger.LogInformation(
+                                "Reconnect proof verified — connection authenticated for client {ClientId}.",
+                                message.ReconnectProof?.ClientId ?? message.ClientId);
+                        }
+                        else
+                        {
+                            logger.LogWarning("Reconnect proof verification failed — connection remains unpaired.");
+                        }
+
+                        if (pendingChallengeNonce is not null)
+                        {
+                            CryptographicOperations.ZeroMemory(pendingChallengeNonce);
+                            pendingChallengeNonce = null;
+                        }
+                        break;
+
                     // ── 2.0 File Transfer ──
                     case MessageTypes.FileRootsRequest:
                         await fileTransferHandler.HandleFileRootsRequestAsync(webSocket, ct);
@@ -306,29 +366,44 @@ public sealed class PingPongHandler(
         {
             logger.LogWarning(ex, "WebSocket error.");
         }
-
-        // Clean up any active file transfers for this connection
-        await fileTransferHandler.CleanupAllTransfersAsync();
-
-        if (pairingStarted)
+        catch (InvalidOperationException ex)
         {
-            pairingHandler.CancelActivePairing();
-            logger.LogInformation("Cancelled interrupted pairing session for disconnected client.");
+            // Defensive: a WebSocket used out of order (e.g. a concurrent send/receive race or a
+            // socket aborted mid-operation) surfaces as InvalidOperationException rather than
+            // WebSocketException. Catch it here so it can never escape the receive loop and skip
+            // the cleanup in the finally block below.
+            logger.LogWarning(ex, "WebSocket session ended with an invalid-state error.");
         }
-
-        // Cancel background stream
-        streamCts.Cancel();
-        try { await streamTask; } catch (OperationCanceledException) { } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
-
-        if (webSocket.State == WebSocketState.Open)
+        finally
         {
-            await webSocket.CloseAsync(
-                WebSocketCloseStatus.NormalClosure,
-                "Server shutting down",
-                CancellationToken.None);
-        }
+            // Cleanup MUST run for every exit path — graceful close, cancellation, socket abort, or
+            // an unexpected exception type. Previously this lived after the catch blocks (outside a
+            // finally), so an exception that didn't match the catch clauses would leak the file
+            // transfers, pairing session, and telemetry stream-CTS for this connection.
 
-        logger.LogInformation("Client disconnected.");
+            // Clean up any active file transfers for this connection
+            await fileTransferHandler.CleanupAllTransfersAsync();
+
+            if (pairingStarted)
+            {
+                pairingHandler.CancelActivePairing();
+                logger.LogInformation("Cancelled interrupted pairing session for disconnected client.");
+            }
+
+            // Cancel background stream
+            streamCts.Cancel();
+            try { await streamTask; } catch (OperationCanceledException) { } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
+
+            if (webSocket.State == WebSocketState.Open)
+            {
+                await webSocket.CloseAsync(
+                    WebSocketCloseStatus.NormalClosure,
+                    "Server shutting down",
+                    CancellationToken.None);
+            }
+
+            logger.LogInformation("Client disconnected.");
+        }
     }
 
 
@@ -435,8 +510,66 @@ public sealed class PingPongHandler(
         MessageTypes.Ping => false,
         MessageTypes.PairingRequest => false,
         MessageTypes.PairingComplete => false,
+        // The reconnect challenge/response handshake is itself how an unpaired connection
+        // authenticates, so it must be permitted before pairing is established.
+        MessageTypes.ReconnectProof => false,
         _ => true,
     };
+
+    /// <summary>
+    /// PAIR-1 proof-of-possession verification. Confirms the client returned
+    /// HMAC-SHA256(reconnectSecret, nonce) for the nonce previously issued on this connection.
+    /// Returns false (without leaking timing) when there is no outstanding challenge, the proof or
+    /// clientId is missing/malformed, the client has no stored secret, or the HMAC does not match.
+    /// </summary>
+    private static bool TryAuthenticateReconnect(
+        RemexMessage message,
+        byte[]? pendingChallengeNonce,
+        PairedClientRegistry pairedClientRegistry,
+        ILogger logger)
+    {
+        if (pendingChallengeNonce is null)
+        {
+            logger.LogWarning("Received reconnect_proof with no outstanding challenge.");
+            return false;
+        }
+
+        var proof = message.ReconnectProof;
+        if (proof is null || string.IsNullOrWhiteSpace(proof.ProofHmacBase64))
+        {
+            logger.LogWarning("Received reconnect_proof with no proof payload.");
+            return false;
+        }
+
+        var clientId = proof.ClientId ?? message.ClientId;
+        if (!pairedClientRegistry.TryGetReconnectSecret(clientId, out var reconnectSecret))
+        {
+            logger.LogWarning("Reconnect proof references a client with no stored secret.");
+            return false;
+        }
+
+        try
+        {
+            var expected = HMACSHA256.HashData(reconnectSecret, pendingChallengeNonce);
+
+            byte[] provided;
+            try
+            {
+                provided = Convert.FromBase64String(proof.ProofHmacBase64);
+            }
+            catch (FormatException)
+            {
+                logger.LogWarning("Reconnect proof HMAC was not valid base64.");
+                return false;
+            }
+
+            return CryptographicOperations.FixedTimeEquals(expected, provided);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(reconnectSecret);
+        }
+    }
 
     private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
     {

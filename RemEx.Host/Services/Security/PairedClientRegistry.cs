@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -11,10 +13,20 @@ namespace Remex.Host.Services.Security;
 /// Maintains a registry of clients that have successfully completed the PIN-based pairing handshake.
 /// Allows pairing state to persist across WebSocket reconnections.
 /// </summary>
+/// <remarks>
+/// Each paired client is bound to a 32-byte reconnect secret (the ECDH/HKDF-derived session key
+/// from pairing). On reconnect the host challenges the client to prove possession of this secret
+/// (HMAC over a fresh nonce) rather than trusting a bare clientId — a clientId alone is a guessable
+/// bearer token and no longer authenticates. The secret is persisted (base64) keyed by clientId.
+/// Legacy stores that listed only clientIds load as secret-less entries: such clients cannot answer
+/// the challenge and must re-pair, which is the intended hardening.
+/// </remarks>
 public sealed class PairedClientRegistry
 {
     private readonly ILogger<PairedClientRegistry> _logger;
-    private readonly ConcurrentDictionary<string, byte> _pairedClientIds = new(StringComparer.Ordinal);
+    // clientId → base64 reconnect secret. An empty/whitespace value means a legacy, secret-less
+    // entry that cannot satisfy proof-of-possession (the client must re-pair).
+    private readonly ConcurrentDictionary<string, string> _pairedClients = new(StringComparer.Ordinal);
     private readonly object _persistenceGate = new();
     private readonly string _storePath;
 
@@ -46,29 +58,88 @@ public sealed class PairedClientRegistry
         _logger.LogInformation(
             "Paired client registry ready at {Path} ({Count} paired client(s)).",
             _storePath,
-            _pairedClientIds.Count);
+            _pairedClients.Count);
     }
 
+    /// <summary>
+    /// Legacy presence-only registration. Registers a clientId WITHOUT a reconnect secret, so the
+    /// client cannot satisfy proof-of-possession and must re-pair to obtain one. Retained only for
+    /// the desktop-stream presence gate and existing tests; the production pairing path must use
+    /// <see cref="RegisterClient(string, byte[])"/> to bind the secret.
+    /// </summary>
     public void RegisterClient(string clientId)
     {
         if (string.IsNullOrWhiteSpace(clientId)) return;
 
-        if (_pairedClientIds.TryAdd(clientId, 0))
+        if (_pairedClients.TryAdd(clientId, string.Empty))
         {
             PersistToDisk();
-            _logger.LogInformation("Client {ClientId} registered as paired.", clientId);
+            _logger.LogInformation("Client {ClientId} registered as paired (presence only, no reconnect secret).", clientId);
         }
     }
 
+    /// <summary>
+    /// Registers a paired client and binds it to its 32-byte reconnect secret (the pairing
+    /// session key). The secret is what the client proves possession of on every reconnect.
+    /// Overwrites any prior entry for the same clientId (a fresh pairing replaces the old secret).
+    /// </summary>
+    public void RegisterClient(string clientId, byte[] reconnectSecret)
+    {
+        if (string.IsNullOrWhiteSpace(clientId)) return;
+        ArgumentNullException.ThrowIfNull(reconnectSecret);
+        if (reconnectSecret.Length == 0)
+        {
+            throw new ArgumentException("Reconnect secret must not be empty.", nameof(reconnectSecret));
+        }
+
+        var secretBase64 = Convert.ToBase64String(reconnectSecret);
+        _pairedClients[clientId] = secretBase64;
+        PersistToDisk();
+        _logger.LogInformation("Client {ClientId} registered as paired with a reconnect secret.", clientId);
+    }
+
+    /// <summary>
+    /// Returns whether a clientId has a paired entry. This is a presence check only — it does NOT
+    /// authenticate. Reconnect authentication must use the proof-of-possession challenge
+    /// (<see cref="TryGetReconnectSecret"/> + HMAC verification). Retained for the desktop-stream
+    /// auth gate, which combines it with TLS cert pinning and (where applicable) the challenge.
+    /// </summary>
     public bool IsClientPaired(string? clientId)
     {
         if (string.IsNullOrWhiteSpace(clientId)) return false;
-        return _pairedClientIds.ContainsKey(clientId);
+        return _pairedClients.ContainsKey(clientId);
+    }
+
+    /// <summary>
+    /// Retrieves the reconnect secret bound to <paramref name="clientId"/> for proof-of-possession
+    /// verification. Returns <c>false</c> when the client is unknown or is a legacy secret-less
+    /// entry (which must re-pair). The returned bytes are a fresh copy the caller may zero.
+    /// </summary>
+    public bool TryGetReconnectSecret(string? clientId, out byte[] reconnectSecret)
+    {
+        reconnectSecret = [];
+        if (string.IsNullOrWhiteSpace(clientId)) return false;
+        if (!_pairedClients.TryGetValue(clientId, out var secretBase64)
+            || string.IsNullOrWhiteSpace(secretBase64))
+        {
+            return false;
+        }
+
+        try
+        {
+            reconnectSecret = Convert.FromBase64String(secretBase64);
+            return reconnectSecret.Length > 0;
+        }
+        catch (FormatException)
+        {
+            reconnectSecret = [];
+            return false;
+        }
     }
 
     public void UnregisterClient(string clientId)
     {
-        if (_pairedClientIds.TryRemove(clientId, out _))
+        if (_pairedClients.TryRemove(clientId, out _))
         {
             PersistToDisk();
             _logger.LogInformation("Client {ClientId} unregistered (pairing revoked).", clientId);
@@ -85,16 +156,37 @@ public sealed class PairedClientRegistry
             }
 
             var json = File.ReadAllText(_storePath);
-            var clientIds = JsonSerializer.Deserialize<string[]>(json) ?? [];
-            foreach (var clientId in clientIds.Where(id => !string.IsNullOrWhiteSpace(id)))
-            {
-                _pairedClientIds[clientId] = 0;
-            }
 
-            _logger.LogInformation(
-                "Loaded {Count} paired client IDs from {Path}.",
-                _pairedClientIds.Count,
-                _storePath);
+            // New format: { "clientId": "base64Secret", ... }. Legacy format: ["clientId", ...].
+            // Detect by the first non-whitespace token so we can migrate old stores in place.
+            var trimmed = json.TrimStart();
+            if (trimmed.StartsWith('['))
+            {
+                var clientIds = JsonSerializer.Deserialize<string[]>(json) ?? [];
+                foreach (var clientId in clientIds.Where(id => !string.IsNullOrWhiteSpace(id)))
+                {
+                    // Secret-less legacy entry: present but unable to satisfy proof-of-possession.
+                    _pairedClients[clientId] = string.Empty;
+                }
+
+                _logger.LogWarning(
+                    "Loaded {Count} legacy (secret-less) paired client IDs from {Path}. These clients must re-pair to obtain a reconnect secret.",
+                    _pairedClients.Count,
+                    _storePath);
+            }
+            else
+            {
+                var entries = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
+                foreach (var kvp in entries.Where(kvp => !string.IsNullOrWhiteSpace(kvp.Key)))
+                {
+                    _pairedClients[kvp.Key] = kvp.Value ?? string.Empty;
+                }
+
+                _logger.LogInformation(
+                    "Loaded {Count} paired client(s) from {Path}.",
+                    _pairedClients.Count,
+                    _storePath);
+            }
         }
         catch (JsonException ex)
         {
@@ -117,12 +209,75 @@ public sealed class PairedClientRegistry
             }
 
             var tempPath = _storePath + ".tmp";
-            var clientIds = _pairedClientIds.Keys.OrderBy(id => id, StringComparer.Ordinal).ToArray();
-            var json = JsonSerializer.Serialize(clientIds, new JsonSerializerOptions { WriteIndented = true });
+            var entries = _pairedClients
+                .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.Ordinal);
+            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
 
             File.WriteAllText(tempPath, json);
             File.Move(tempPath, _storePath, overwrite: true);
+
+            // PAIR-4: the store now holds per-client reconnect secrets, so it is sensitive key
+            // material. Restrict it to the service identity (+ admins on Windows) on both OSes.
+            RestrictStorePermissions(_storePath, _logger);
         }
+    }
+
+    /// <summary>
+    /// Hardens the on-disk permissions of the registry store so only the service identity can read
+    /// the reconnect secrets it now contains. Best-effort: a failure here is logged but never blocks
+    /// pairing persistence. Cross-platform — Windows ACL vs. Unix 0600 owner-only.
+    /// </summary>
+    internal static void RestrictStorePermissions(string path, ILogger logger)
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                RestrictStorePermissionsWindows(path);
+            }
+            else if (!OperatingSystem.IsAndroid())
+            {
+                // Owner read/write only (0600). Android keeps app-private storage semantics and has
+                // no equivalent multi-user file ACL surface, so we skip it there.
+                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to harden permissions on paired client registry at {Path}; the file may be readable by other local users.",
+                path);
+        }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static void RestrictStorePermissionsWindows(string path)
+    {
+        var fileInfo = new FileInfo(path);
+        var security = new System.Security.AccessControl.FileSecurity();
+
+        // Owner: the account the service runs as (LocalSystem in production). Disable inheritance
+        // so the broad ProgramData ACL does not leak access; grant only LocalSystem + Administrators.
+        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+
+        var localSystem = new System.Security.Principal.SecurityIdentifier(
+            System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
+        var administrators = new System.Security.Principal.SecurityIdentifier(
+            System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
+
+        security.SetOwner(localSystem);
+        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+            localSystem,
+            System.Security.AccessControl.FileSystemRights.FullControl,
+            System.Security.AccessControl.AccessControlType.Allow));
+        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+            administrators,
+            System.Security.AccessControl.FileSystemRights.FullControl,
+            System.Security.AccessControl.AccessControlType.Allow));
+
+        fileInfo.SetAccessControl(security);
     }
 
     private static string GetDefaultStorePath()

@@ -4,8 +4,11 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 
 data class DiscoveredHost(
@@ -19,6 +22,13 @@ class NsdDiscoveryManager(private val context: Context) {
     companion object {
         private const val TAG = "NsdDiscoveryManager"
         private const val SERVICE_TYPE = "_remex._tcp."
+
+        // Pre-API-34, NsdManager.resolveService() allows only a single in-flight resolve
+        // per process; a second concurrent call fails with FAILURE_ALREADY_ACTIVE. The
+        // manual discovery path and the heartbeat self-heal path (RemexClientManager) can
+        // race, so serialise resolves process-wide. On API 34+ we use the concurrent,
+        // cancellable registerServiceInfoCallback API and do not contend on this lock.
+        private val resolveMutex = Mutex()
     }
 
     suspend fun discoverHost(timeoutMs: Long = 5000): DiscoveredHost? {
@@ -105,35 +115,123 @@ class NsdDiscoveryManager(private val context: Context) {
             }
         } ?: return null
 
-        // Phase 2: Resolve the discovered service to get host + port
-        return suspendCancellableCoroutine { cont ->
-            try {
-                @Suppress("DEPRECATION")
-                nsdManager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
-                    override fun onResolveFailed(service: NsdServiceInfo, errorCode: Int) {
-                        Log.e(TAG, "Resolve failed for ${service.serviceName}: $errorCode")
-                        if (cont.isActive) cont.resumeWith(Result.success(null))
-                    }
+        // Phase 2: Resolve the discovered service to get host + port.
+        // On API 34+ the modern registerServiceInfoCallback API supports concurrent,
+        // cancellable resolves, so no process-wide serialisation is required. On older
+        // platforms only one resolveService() may be in flight per process, so guard it
+        // with the shared mutex to avoid the FAILURE_ALREADY_ACTIVE race.
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            resolveServiceModern(nsdManager, serviceInfo)
+        } else {
+            resolveMutex.withLock {
+                resolveServiceLegacy(nsdManager, serviceInfo)
+            }
+        }
+    }
 
-                    override fun onServiceResolved(service: NsdServiceInfo) {
-                        @Suppress("DEPRECATION")
-                        val host = service.host?.hostAddress ?: return run {
-                            if (cont.isActive) cont.resumeWith(Result.success(null))
-                        }
-                        Log.i(TAG, "Resolved ${service.serviceName} → $host:${service.port}")
-                        if (cont.isActive) cont.resumeWith(Result.success(
-                            DiscoveredHost(
-                                service.serviceName,
-                                host,
-                                service.port
-                            )
-                        ))
-                    }
-                })
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start resolve", e)
+    @Suppress("DEPRECATION")
+    private suspend fun resolveServiceLegacy(
+        nsdManager: NsdManager,
+        serviceInfo: NsdServiceInfo
+    ): DiscoveredHost? = suspendCancellableCoroutine { cont ->
+        val listener = object : NsdManager.ResolveListener {
+            override fun onResolveFailed(service: NsdServiceInfo, errorCode: Int) {
+                Log.e(TAG, "Resolve failed for ${service.serviceName}: $errorCode")
                 if (cont.isActive) cont.resumeWith(Result.success(null))
             }
+
+            override fun onServiceResolved(service: NsdServiceInfo) {
+                val host = service.host?.hostAddress ?: return run {
+                    if (cont.isActive) cont.resumeWith(Result.success(null))
+                }
+                Log.i(TAG, "Resolved ${service.serviceName} → $host:${service.port}")
+                if (cont.isActive) cont.resumeWith(Result.success(
+                    DiscoveredHost(
+                        service.serviceName,
+                        host,
+                        service.port
+                    )
+                ))
+            }
+        }
+
+        try {
+            nsdManager.resolveService(serviceInfo, listener)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start resolve", e)
+            if (cont.isActive) cont.resumeWith(Result.success(null))
+            return@suspendCancellableCoroutine
+        }
+
+        // The legacy ResolveListener cannot be cancelled; the single-resolve slot frees
+        // itself once the callback fires. Nothing to unregister here, but install the
+        // hook so cancellation does not leave the continuation dangling silently.
+        cont.invokeOnCancellation {
+            Log.d(TAG, "Legacy resolve cancelled before completion")
+        }
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private suspend fun resolveServiceModern(
+        nsdManager: NsdManager,
+        serviceInfo: NsdServiceInfo
+    ): DiscoveredHost? = suspendCancellableCoroutine { cont ->
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        var unregistered = false
+        lateinit var callback: NsdManager.ServiceInfoCallback
+
+        fun cleanup() {
+            if (!unregistered) {
+                unregistered = true
+                try { nsdManager.unregisterServiceInfoCallback(callback) } catch (_: Exception) {}
+            }
+            executor.shutdown()
+        }
+
+        callback = object : NsdManager.ServiceInfoCallback {
+            override fun onServiceInfoCallbackRegistrationFailed(errorCode: Int) {
+                Log.e(TAG, "Resolve registration failed for ${serviceInfo.serviceName}: $errorCode")
+                cleanup()
+                if (cont.isActive) cont.resumeWith(Result.success(null))
+            }
+
+            override fun onServiceUpdated(service: NsdServiceInfo) {
+                val host = service.hostAddresses.firstOrNull()?.hostAddress
+                if (host == null) {
+                    // No usable address yet; wait for a subsequent update.
+                    return
+                }
+                Log.i(TAG, "Resolved ${service.serviceName} → $host:${service.port}")
+                cleanup()
+                if (cont.isActive) cont.resumeWith(Result.success(
+                    DiscoveredHost(
+                        service.serviceName,
+                        host,
+                        service.port
+                    )
+                ))
+            }
+
+            override fun onServiceLost() {
+                Log.d(TAG, "Service lost during resolve: ${serviceInfo.serviceName}")
+            }
+
+            override fun onServiceInfoCallbackUnregistered() {
+                Log.d(TAG, "Resolve callback unregistered")
+            }
+        }
+
+        try {
+            nsdManager.registerServiceInfoCallback(serviceInfo, executor, callback)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start resolve", e)
+            cleanup()
+            if (cont.isActive) cont.resumeWith(Result.success(null))
+            return@suspendCancellableCoroutine
+        }
+
+        cont.invokeOnCancellation {
+            cleanup()
         }
     }
 }

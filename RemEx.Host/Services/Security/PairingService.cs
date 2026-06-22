@@ -38,8 +38,18 @@ public sealed class PairingService : IPairingService
     private string? _hostPublicKeyBase64;
     private string? _clientPublicKeyBase64;
 
+    // PIN brute-force throttle: a 6-digit PIN has only 1,000,000 possibilities, so an
+    // attacker who can submit pairing_complete repeatedly within a single live session can
+    // grind it down. We cap failed PIN attempts per session and burn the session (forcing a
+    // brand-new PIN) once the cap is hit. Reset whenever a new session is started/consumed.
+    private int _failedHmacAttempts;
+    private const int MaxFailedHmacAttempts = 5;
+
     private const int PinLength = 6;
-    private const int PairingTimeoutSeconds = 600; // 10 minutes — gives remote users time to receive and enter PIN
+    // Short session lifetime limits the window for online brute-force. A legitimate user
+    // receiving the PIN out-of-band and entering it on Android comfortably fits in ~2 minutes;
+    // the session can always be restarted. Previously 600s, which left a 10-minute grinding window.
+    private const int PairingTimeoutSeconds = 120;
 
     public event Action<string, long>? PinDisplayed;
     public event Action? PinCleared;
@@ -152,6 +162,70 @@ public sealed class PairingService : IPairingService
         return VerifyClientHmacCoreAsync(clientHmacBase64, ct);
     }
 
+    public async Task<PairingVerificationResult> VerifyClientHmacAndCaptureSecretAsync(
+        string clientHmacBase64, CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            if (_activePin is null || !IsPairingActive)
+            {
+                _logger.LogWarning("Pairing verification attempted but no active session or session expired.");
+                return new PairingVerificationResult(false, []);
+            }
+
+            if (_sessionKey is null)
+            {
+                _logger.LogWarning("Pairing verification attempted but session key not yet derived (client public key not received).");
+                return new PairingVerificationResult(false, []);
+            }
+
+            // Compute expected HMAC: HMAC-SHA256(sessionKey, "ack:" + PIN)
+            var ackMessage = Encoding.UTF8.GetBytes("ack:" + _activePin);
+            var expectedHmac = HMACSHA256.HashData(_sessionKey, ackMessage);
+            var expectedBase64 = Convert.ToBase64String(expectedHmac);
+
+            var match = CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(expectedBase64),
+                Encoding.UTF8.GetBytes(clientHmacBase64));
+
+            if (match)
+            {
+                // Capture a copy of the session key BEFORE CancelPairingCore zeroes it. This becomes
+                // the per-client reconnect secret persisted by the registry — the client derives the
+                // identical key during pairing, so no secret is ever transmitted over the wire.
+                var reconnectSecret = (byte[])_sessionKey.Clone();
+                _logger.LogInformation("Pairing verification successful; reconnect secret captured.");
+                CancelPairingCore(); // Consume the session.
+                return new PairingVerificationResult(true, reconnectSecret);
+            }
+
+            _failedHmacAttempts++;
+            _logger.LogWarning(
+                "Pairing verification failed — HMAC mismatch ({Attempts}/{Max}).",
+                _failedHmacAttempts,
+                MaxFailedHmacAttempts);
+
+            if (_failedHmacAttempts >= MaxFailedHmacAttempts)
+            {
+                _logger.LogWarning(
+                    "Maximum failed PIN attempts reached — burning the pairing session. A fresh PIN must be generated to retry.");
+                CancelPairingCore();
+            }
+
+            return new PairingVerificationResult(false, []);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during pairing verification.");
+            return new PairingVerificationResult(false, []);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     private async Task<bool> VerifyClientHmacCoreAsync(string clientHmacBase64, CancellationToken ct)
     {
         await _lock.WaitAsync(ct);
@@ -185,7 +259,18 @@ public sealed class PairingService : IPairingService
             }
             else
             {
-                _logger.LogWarning("Pairing verification failed — HMAC mismatch.");
+                _failedHmacAttempts++;
+                _logger.LogWarning(
+                    "Pairing verification failed — HMAC mismatch ({Attempts}/{Max}).",
+                    _failedHmacAttempts,
+                    MaxFailedHmacAttempts);
+
+                if (_failedHmacAttempts >= MaxFailedHmacAttempts)
+                {
+                    _logger.LogWarning(
+                        "Maximum failed PIN attempts reached — burning the pairing session. A fresh PIN must be generated to retry.");
+                    CancelPairingCore(); // Burns the session and forces a brand-new PIN.
+                }
             }
 
             return match;
@@ -217,6 +302,7 @@ public sealed class PairingService : IPairingService
     private void CancelPairingCore()
     {
         _activePin = null;
+        _failedHmacAttempts = 0;
         if (_sharedSecret != null)
         {
             CryptographicOperations.ZeroMemory(_sharedSecret);
@@ -348,6 +434,7 @@ public sealed class PairingService : IPairingService
 
         _activePin = GeneratePin();
         _expiresAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(PairingTimeoutSeconds).ToUnixTimeMilliseconds();
+        _failedHmacAttempts = 0;
 
         _clientPublicKeyBase64 = null;
 

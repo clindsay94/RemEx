@@ -59,20 +59,40 @@ public static class MessageSerializer
         using var ms = new System.IO.MemoryStream();
         var buffer = new byte[4096];
         System.Net.WebSockets.WebSocketReceiveResult result;
+        var oversize = false;
 
         do
         {
             result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-            
+
             if (result.MessageType == WebSocketMessageType.Close)
                 return null;
 
-            ms.Write(buffer, 0, result.Count);
+            if (oversize)
+            {
+                // Already over the cap: keep reading and discarding the remaining frames so the
+                // socket stays in a clean, framed state for the next message instead of leaving a
+                // half-consumed oversize message that would desync the protocol. We deliberately do
+                // NOT throw — a single oversize message must not crash the /ws receive loop.
+                continue;
+            }
 
-            if (ms.Length > MaxMessageSize)
-                throw new InvalidOperationException($"WebSocket message exceeded {MaxMessageSize} byte limit.");
-        } 
+            // Only grow the buffer while we're still under the cap. Once we cross it we stop
+            // accumulating (to bound memory) but continue draining the frames above.
+            if (ms.Length + result.Count > MaxMessageSize)
+            {
+                oversize = true;
+                continue;
+            }
+
+            ms.Write(buffer, 0, result.Count);
+        }
         while (!result.EndOfMessage);
+
+        // Oversize message: the frames have been drained, so the socket is ready for the next
+        // message. Treat it as an invalid message (null) rather than throwing.
+        if (oversize)
+            return null;
 
         return Deserialize(ms.ToArray());
     }

@@ -37,6 +37,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     // out at ~120 Hz) and just wastes capture/encode/bandwidth.
     private const int MaxTargetFps = 120;
 
+    // Wire type for an on-demand keyframe request (client → host). Defined here as a literal because
+    // the shared MessageTypes constant lives in Remex.Core (owned separately); adding the typed
+    // constant there is an additive, backward-compatible follow-up. (RemEx-bqc)
+    private const string DesktopKeyframeRequestType = "desktop_keyframe_request";
+
     private int _quality = 50;
     private double _scale = 0.6;
     private int _targetFps = 120;
@@ -45,6 +50,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     private DesktopCodecKind _negotiatedCodec = DesktopCodecKind.Mjpeg;
     private DesktopCodecKind _activeCodec = DesktopCodecKind.Mjpeg;
     private DesktopClientCapabilities _clientCapabilities = new();
+
+    // The H.264 encoder currently driving the stream, published by the capture loop so the input
+    // receive loop can route an on-demand keyframe request to it. Null when streaming MJPEG or between
+    // encoder rebuilds. (RemEx-bqc)
+    private volatile IH264Encoder? _activeH264Encoder;
 
     // Bumped whenever an encoder-affecting setting (quality/fps/scale) changes, so the capture loop
     // knows to rebuild the H.264 encoder mid-stream.
@@ -320,11 +330,24 @@ public sealed class RemoteDesktopHandler : IDisposable
                     byte[]? frameBytes = null;
                     DesktopCodecKind frameCodec = _activeCodec;
                     var frameFlags = DesktopFrameFlags.None;
+
+                    // On-demand IDR: a client whose decoder desynced asks for a keyframe. With a
+                    // rawvideo stdin pipe there is no per-frame ffmpeg keyframe API, so the real
+                    // mechanism is to reinitialize the encoder (fresh SPS/PPS + forced IDR). Consume
+                    // the request here and force the rebuild path below. (RemEx-bqc)
+                    if (_activeCodec == DesktopCodecKind.H264 &&
+                        h264Encoder is not null && h264Encoder.ConsumeKeyframeRequest())
+                    {
+                        encoderSerial = -1;
+                    }
+
                     // Rebuild the encoder on a stream-serial change (target switch) OR when an
-                    // encoder-affecting setting (quality/fps/scale) changed mid-stream.
+                    // encoder-affecting setting (quality/fps/scale) changed mid-stream, OR when an
+                    // on-demand keyframe was requested (encoderSerial forced to -1 above).
                     if (_activeCodec == DesktopCodecKind.H264 &&
                         (encoderSerial != captureSerial || encoderConfigVersion != configVersion))
                     {
+                        _activeH264Encoder = null;
                         h264Encoder?.Dispose();
                         h264Encoder = TryCreateH264Encoder();
                         encoderSerial = captureSerial;
@@ -336,6 +359,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                         }
                         else
                         {
+                            // Publish the live encoder so the receive loop can request on-demand IDRs.
+                            _activeH264Encoder = h264Encoder;
                             frameCodec = DesktopCodecKind.H264;
                             frameFlags = DesktopFrameFlags.KeyFrame;
                         }
@@ -594,6 +619,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 await captureTask;
             }
             catch { }
+            _activeH264Encoder = null;
             h264Encoder?.Dispose();
             frameAvailable.Dispose();
         }
@@ -771,6 +797,14 @@ public sealed class RemoteDesktopHandler : IDisposable
                     case MessageTypes.DesktopStop:
                         await streamCts.CancelAsync();
                         return;
+
+                    // On-demand keyframe request from a client whose H.264 decoder desynced (dropped
+                    // frames / output-format change). Additive + backward-compatible: legacy hosts
+                    // simply don't recognize the type and ignore it. Uses the wire string literal
+                    // because the typed MessageTypes constant lives in Remex.Core. (RemEx-bqc)
+                    case DesktopKeyframeRequestType:
+                        _activeH264Encoder?.RequestKeyframe();
+                        break;
 
                     case MessageTypes.DesktopPointerBatch when message.DesktopPointerBatch is not null:
                         // Stage 3: high-rate stylus/pointer batches from Android.

@@ -32,4 +32,19 @@ public interface IH264Encoder : IDisposable
     /// <param name="forceKeyframe">If true, forces the encoder to produce a keyframe (I-frame) for this frame.</param>
     /// <returns>H.264 Annex B bytes (including start codes), or null if encoding failed.</returns>
     byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe);
+
+    /// <summary>
+    /// Requests an on-demand keyframe (IDR with fresh SPS/PPS). A client whose decoder desynced
+    /// (dropped frames / output-format change) calls this so it can recover without waiting up to a
+    /// full GOP. The flag is consumed by <see cref="ConsumeKeyframeRequest"/>; the stream-control
+    /// layer reinitializes the encoder when it is set, which emits a true IDR (codecs are configured
+    /// with forced-IDR so the reinit's first frame is independently decodable).
+    /// </summary>
+    void RequestKeyframe();
+
+    /// <summary>
+    /// Atomically reads-and-clears a pending keyframe request set by <see cref="RequestKeyframe"/>.
+    /// Returns true exactly once per request so the stream-control loop can force a keyframe path.
+    /// </summary>
+    bool ConsumeKeyframeRequest();
 }

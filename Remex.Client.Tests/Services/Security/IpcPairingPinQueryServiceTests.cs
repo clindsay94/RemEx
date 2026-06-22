@@ -4,6 +4,7 @@ using System.Text.Json;
 using Remex.Client.Services.Security;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
+using Remex.Core.Services;
 
 namespace Remex.Client.Tests.Services.Security;
 
@@ -61,9 +62,9 @@ public sealed class IpcPairingPinQueryServiceTests
 
         await server.WaitForConnectionAsync();
 
-        var buffer = new byte[8192];
-        var bytesRead = await server.ReadAsync(buffer);
-        var requestJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+        var requestBytes = await RemExLocalIPC.ReadFrameAsync(server);
+        Assert.NotNull(requestBytes);
+        var requestJson = Encoding.UTF8.GetString(requestBytes!);
         var request = JsonSerializer.Deserialize<CommandRequest>(requestJson, RemexJson.Compact);
         Assert.NotNull(request);
         Assert.Equal(expectedAction, request!.Action);
@@ -71,7 +72,7 @@ public sealed class IpcPairingPinQueryServiceTests
         var response = new CommandResponse(true, "ok", null) { PairingPinInfo = pinInfo };
         var responseJson = JsonSerializer.Serialize(response, RemexJson.Compact);
         var responseBytes = Encoding.UTF8.GetBytes(responseJson);
-        await server.WriteAsync(responseBytes);
+        await RemExLocalIPC.WriteFrameAsync(server, responseBytes);
         await server.FlushAsync();
         server.Disconnect();
     }

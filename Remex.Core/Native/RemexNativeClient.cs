@@ -4,12 +4,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Security;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Remex.Core.Messages;
+using Remex.Core.Models;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 
@@ -54,9 +56,21 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         set => _clientId = value;
     }
 
-    public async Task ConnectAsync(string host, int port, string? spkiHash = null, string? clientId = null, CancellationToken ct = default)
+    // PAIR-1: the reconnect secret (the pairing session key) the host uses to challenge us on
+    // reconnect. Base64-encoded; null when this client has never paired (a fresh pairing is then
+    // required). Decoded lazily when a challenge arrives.
+    private string? _reconnectSecretBase64;
+
+    public async Task ConnectAsync(
+        string host,
+        int port,
+        string? spkiHash = null,
+        string? clientId = null,
+        string? reconnectSecretBase64 = null,
+        CancellationToken ct = default)
     {
         _clientId = clientId;
+        _reconnectSecretBase64 = reconnectSecretBase64;
         await DisconnectAsync();
 
         _connectionCts = new CancellationTokenSource();
@@ -295,6 +309,13 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 ProcessListReceived?.Invoke(msg.ProcessList);
                 break;
 
+            case MessageTypes.ReconnectChallenge when msg.ReconnectChallenge is not null:
+                // PAIR-1: the host issued a proof-of-possession challenge. Answer with
+                // HMAC-SHA256(reconnectSecret, nonce). Done off the receive loop so we never
+                // block message processing on the outbound send gate.
+                RespondToReconnectChallenge(msg.ReconnectChallenge);
+                break;
+
             case MessageTypes.CommandResponse:
                 if (msg.CorrelationId is not null
                     && _pendingCommands.TryRemove(msg.CorrelationId, out var matchedTcs))
@@ -319,6 +340,56 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
 
         MessageReceived?.Invoke(msg);
+    }
+
+    /// <summary>
+    /// PAIR-1: answers a host reconnect challenge by sending HMAC-SHA256(reconnectSecret, nonce).
+    /// If we hold no reconnect secret (never paired, or paired before this client version) we cannot
+    /// answer; the host will then require a fresh pairing. Runs off the receive loop.
+    /// </summary>
+    private void RespondToReconnectChallenge(ReconnectChallenge challenge)
+    {
+        var secretBase64 = _reconnectSecretBase64;
+        if (string.IsNullOrWhiteSpace(secretBase64))
+        {
+            JniHelper.AndroidLogE("RemexNative", "Reconnect challenge received but no reconnect secret is stored — re-pairing required.");
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            byte[]? secret = null;
+            byte[]? nonce = null;
+            try
+            {
+                secret = Convert.FromBase64String(secretBase64);
+                nonce = Convert.FromBase64String(challenge.NonceBase64);
+
+                var proof = HMACSHA256.HashData(secret, nonce);
+                var message = new RemexMessage
+                {
+                    Type = MessageTypes.ReconnectProof,
+                    ProtocolVersion = 2,
+                    ClientId = _clientId,
+                    ReconnectProof = new ReconnectProof
+                    {
+                        ProofHmacBase64 = Convert.ToBase64String(proof),
+                        ClientId = _clientId,
+                    },
+                };
+
+                await SendMessageAsync(message);
+                JniHelper.AndroidLogE("RemexNative", "Sent reconnect proof in response to host challenge.");
+            }
+            catch (Exception ex)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"Failed to answer reconnect challenge: {ex.Message}");
+            }
+            finally
+            {
+                if (secret != null) CryptographicOperations.ZeroMemory(secret);
+            }
+        });
     }
 
     /// <summary>

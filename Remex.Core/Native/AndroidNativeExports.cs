@@ -611,7 +611,11 @@ public static class AndroidNativeExports
 
                 if (success)
                 {
-                    var result = $"OK:{_activePairingResponse.HostId}|{_activePairingResponse.CertificateSpkiHashBase64}";
+                    // Surface the reconnect secret (PAIR-1) as a third pipe-delimited field so the
+                    // Kotlin layer can persist it in the Android keystore and supply it on future
+                    // connects (AndroidNativeInitRequest.ReconnectSecret). Empty if unavailable.
+                    var reconnectSecret = client.LastReconnectSecretBase64 ?? string.Empty;
+                    var result = $"OK:{_activePairingResponse.HostId}|{_activePairingResponse.CertificateSpkiHashBase64}|{reconnectSecret}";
                     ClearActivePairingState();
                     Console.Error.WriteLine("[Pairing] Pairing complete and verified.");
                     return result;
@@ -687,7 +691,8 @@ public static class AndroidNativeExports
                     effectiveInitRequest.Host,
                     effectiveInitRequest.Port,
                     effectiveInitRequest.SpkiHash,
-                    effectiveInitRequest.ClientId);
+                    effectiveInitRequest.ClientId,
+                    effectiveInitRequest.ReconnectSecret);
             }
             catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"ConnectAsync failed: {ex.Message}"); }
         });
@@ -1127,16 +1132,37 @@ public static class AndroidNativeExports
         });
     }
 
+    // Pre-serialized constant returned when the failure path itself throws. Computed once
+    // at type init so the boundary catch block can never propagate a managed exception.
+    // camelCase keys to match RemexJsonSerializerContext (JsonKnownNamingPolicy.CamelCase),
+    // so the Android client deserializes this fallback exactly like a normal failure response.
+    private static readonly string ExportFallbackJson =
+        "{\"success\":false,\"message\":\"Native export failed and the error could not be serialized.\"}";
+
     private static IntPtr Export(IntPtr env, Func<string> action)
     {
+        // No JNI call may run while a Java exception is pending or the runtime aborts the
+        // process (SIGABRT). Clear any exception left over before entering the export body.
+        if (JniHelper.ExceptionCheck(env)) { JniHelper.ExceptionClear(env); }
         try
         {
             return JniHelper.CreateJString(env, action());
         }
         catch (Exception ex)
         {
-            return JniHelper.CreateJString(env,
-                SerializeOperationFailure("Unhandled native export failure.", ex.Message));
+            // Clear any exception raised inside the action before issuing the final JNI call,
+            // then make the failure path itself non-throwing so nothing escapes the boundary.
+            if (JniHelper.ExceptionCheck(env)) { JniHelper.ExceptionClear(env); }
+            try
+            {
+                return JniHelper.CreateJString(env,
+                    SerializeOperationFailure("Unhandled native export failure.", ex.Message));
+            }
+            catch
+            {
+                try { return JniHelper.CreateJString(env, ExportFallbackJson); }
+                catch { return IntPtr.Zero; }
+            }
         }
     }
 
@@ -1182,6 +1208,15 @@ public sealed record AndroidNativeInitRequest
     public int Port { get; init; } = 5005;
     public string SpkiHash { get; init; } = string.Empty;
     public string? ClientId { get; init; }
+
+    /// <summary>
+    /// Base64 reconnect secret persisted by the Android client after pairing (PAIR-1). Supplied on
+    /// connect so the native client can answer the host's proof-of-possession challenge. Empty/null
+    /// for clients that have not yet paired (or paired before this field existed) — they will be
+    /// challenged and must re-pair.
+    /// </summary>
+    public string? ReconnectSecret { get; init; }
+
     public int TelemetryPollIntervalMs { get; init; } = 1000;
     public bool StartTelemetryPolling { get; init; } = true;
     public bool WarmupTelemetry { get; init; } = true;

@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Remex.Core.Models.IPC;
+using Remex.Core.Services;
 using Remex.Core.Services.Command;
 using Remex.Core.Services.Network;
 using Remex.Core.Services.Security;
@@ -28,7 +29,8 @@ public class LocalIpcServerServiceTests
             NullLogger<LocalIpcServerService>.Instance,
             new Mock<ISystemCommandService>().Object,
             new Mock<IWakeOnLanService>().Object,
-            pairingService);
+            pairingService,
+            new Mock<IAppLauncherService>().Object);
 
         var first = await InvokeExecuteCommandAsync(ipcService, new CommandRequest("STARTPAIRING", null));
         var second = await InvokeExecuteCommandAsync(ipcService, new CommandRequest("GENERATEPAIRINGPIN", null));

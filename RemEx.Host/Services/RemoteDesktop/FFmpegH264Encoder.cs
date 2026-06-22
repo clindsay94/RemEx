@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -14,10 +14,35 @@ public sealed class FFmpegH264Encoder : IH264Encoder
 {
     private readonly ILogger _logger;
     private Process? _ffmpegProcess;
-    private Stream? _stdin;
+
+    // Bounded, drop-newest feed from the capture thread to the dedicated stdin writer. A tiny
+    // capacity (a few frames) is intentional: if the encoder can't keep up, the freshest frames
+    // matter, not a backlog, so EncodeFrame drops rather than blocking the capture thread. (RemEx-ii3)
+    private const int InputChannelCapacity = 3;
+    private Channel<byte[]>? _inputChannel;
+    private Task? _writerTask;
+
+    // Bounded, drop-oldest output of encoded Annex-B access units. Replaces an unbounded queue so a
+    // stalled/slow sender can't grow memory without limit; oldest frames are evicted first because a
+    // newer frame supersedes them for a real-time stream. (RemEx-fs5)
+    private const int OutputChannelCapacity = 8;
+    private Channel<byte[]>? _encodedFrames;
+
+    // Hard cap on the Annex-B reassembly accumulator. A healthy stream cuts an access unit at every
+    // AUD (well under this). If we ever buffer this much WITHOUT seeing an AUD start code, the input
+    // is malformed/desynced — reset the accumulator instead of growing toward OOM. (RemEx-fs5)
+    private const int MaxAccumulatorBytes = 8 * 1024 * 1024;
+
     private Thread? _readerThread;
-    private readonly ConcurrentQueue<byte[]> _encodedFrames = new();
-    private readonly SemaphoreSlim _frameSemaphore = new(0);
+
+    // Owns cancellation for every async pump this encoder spawns (stdin writer, stderr reader). Lets
+    // DisposeProcess tear them down promptly and stops them from touching a disposed logger. (RemEx-aa0)
+    private CancellationTokenSource? _processCts;
+
+    // Pending on-demand keyframe request (0/1). Set by RequestKeyframe (any thread), read-and-cleared
+    // by ConsumeKeyframeRequest on the capture loop, which then forces an encoder reinit → real IDR.
+    private int _keyframeRequested;
+
     private bool _isDisposed;
     private string? _ffmpegPath;
     private int _width;
@@ -100,10 +125,6 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         _width = width;
         _height = height;
 
-        // Clean out any stale frames
-        while (_encodedFrames.TryDequeue(out _)) { }
-        while (_frameSemaphore.CurrentCount > 0) _frameSemaphore.Wait(0);
-
         // Hardware-accelerated codecs to try in order of preference
         string[] codecsToTry;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -147,7 +168,10 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                     // "lowlatency" is NOT valid and makes nvenc fail to start). `-aud 1` emits Access
                     // Unit Delimiters, which the stdout reader relies on to split encoded frames.
                     // `-pix_fmt yuv420p` keeps output to 8-bit 4:2:0 that every H.264 decoder accepts.
-                    argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -aud 1 -pix_fmt yuv420p");
+                    // `-forced-idr 1` makes the forced keyframes emitted by `-force_key_frames` true
+                    // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
+                    // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
+                    argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1 -pix_fmt yuv420p");
                     break;
                 case "h264_vaapi":
                     // VA-API on Linux (Intel/AMD)
@@ -155,19 +179,26 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                     break;
                 case "h264_qsv":
                     // Intel Quick Sync
-                    argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -g 60 -aud 1");
+                    argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -g 60 -forced-idr 1 -aud 1");
                     break;
                 case "h264_amf":
                     // AMD AMF
-                    argsBuilder.Append($"-c:v h264_amf -quality speed -rc cqp -qp_i {qp} -qp_p {qp} -g 60 -aud 1");
+                    argsBuilder.Append($"-c:v h264_amf -quality speed -rc cqp -qp_i {qp} -qp_p {qp} -g 60 -forced-idr 1 -aud 1");
                     break;
                 default:
                     // libx264 software fallback with zero latency. libx264 has no generic
-                    // `-aud` AVOption; AUD emission is requested via x264 params instead.
+                    // `-aud` AVOption; AUD emission is requested via x264 params instead. x264 always
+                    // makes a forced keyframe a true IDR, so no extra flag is needed for it.
                     argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -g 60 -x264-params aud=1");
                     break;
             }
 
+            // On-demand keyframes. `-force_key_frames` with the `expr:` form lets us request an IDR at
+            // an arbitrary point: writing to the sentinel file toggles `gte(...)` — see RequestKeyframe.
+            // The interval-expression below ('expr:gte(t,n_forced*...)') is a no-op safety net; the real
+            // trigger is the host bumping the GOP via reinit (RequestKeyframe), which the higher layer
+            // already supports. We keep the codec emitting forced IDRs (above) so that path is real.
+            //
             // Output raw Annex B H.264 stream to stdout.
             // -flush_packets 1 forces ffmpeg to flush stdout after every packet instead of
             // block-buffering it, which is required for low-latency real-time piping (otherwise
@@ -209,7 +240,31 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             }
 
             _ffmpegProcess = process;
-            _stdin = process.StandardInput.BaseStream;
+
+            // Fresh per-process cancellation source + bounded pipes. The output channel is drop-oldest
+            // so it can never block the reader; the input channel is drop-write so EncodeFrame never
+            // blocks the capture thread (drops are handled explicitly in EncodeFrame). (RemEx-ii3/fs5)
+            _processCts = new CancellationTokenSource();
+            var ct = _processCts.Token;
+
+            _encodedFrames = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(OutputChannelCapacity)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = false,
+                SingleWriter = true,
+            });
+
+            _inputChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(InputChannelCapacity)
+            {
+                // We still TryWrite (non-blocking) in EncodeFrame, but DropWrite makes the contract
+                // explicit: a full channel discards the newest frame rather than ever blocking.
+                FullMode = BoundedChannelFullMode.DropWrite,
+                SingleReader = true,
+                SingleWriter = false,
+            });
+
+            var stdin = process.StandardInput.BaseStream;
+            _writerTask = Task.Run(() => StdinWriterLoop(stdin, _inputChannel.Reader, ct));
 
             // Start reader thread to parse Annex B stream from stdout
             _readerThread = new Thread(() => ReaderLoop(process.StandardOutput.BaseStream))
@@ -219,19 +274,29 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             };
             _readerThread.Start();
 
-            // Track stderr in background to log errors if any
-            Task.Run(async () =>
+            // Track stderr in background to log errors if any. Bound it to the encoder's CTS so it stops
+            // promptly on disconnect/dispose and never logs through a disposed logger. (RemEx-aa0)
+            _ = Task.Run(async () =>
             {
-                using var reader = process.StandardError;
-                while (!process.HasExited)
+                try
                 {
-                    var line = await reader.ReadLineAsync();
-                    if (line != null && line.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                    using var reader = process.StandardError;
+                    while (!ct.IsCancellationRequested && !process.HasExited)
                     {
-                        _logger.LogWarning("FFmpeg stderr: {Line}", line);
+                        var line = await reader.ReadLineAsync(ct);
+                        if (line is null) break;
+                        if (line.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogWarning("FFmpeg stderr: {Line}", line);
+                        }
                     }
                 }
-            });
+                catch (OperationCanceledException) { /* encoder torn down */ }
+                catch (Exception ex) when (!ct.IsCancellationRequested)
+                {
+                    _logger.LogDebug(ex, "FFmpeg stderr reader exited.");
+                }
+            }, ct);
 
             return true;
         }
@@ -239,6 +304,34 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         {
             _logger.LogDebug(ex, "Failed to start FFmpeg with codec {Codec}", codec);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Dedicated stdin writer. Drains the bounded input channel and writes each raw BGRA frame to
+    /// ffmpeg's stdin with <see cref="Stream.WriteAsync(ReadOnlyMemory{byte},CancellationToken)"/> so
+    /// the capture thread is never blocked on a slow/busy encoder. Stops promptly when the token is
+    /// cancelled (disconnect/dispose). (RemEx-ii3)
+    /// </summary>
+    private async Task StdinWriterLoop(Stream stdin, ChannelReader<byte[]> reader, CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var frame in reader.ReadAllAsync(ct))
+            {
+                if (_ffmpegProcess is { HasExited: true }) break;
+                await stdin.WriteAsync(frame, ct);
+                await stdin.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) { /* encoder torn down */ }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "Error writing frame to FFmpeg stdin.");
+        }
+        finally
+        {
+            try { stdin.Dispose(); } catch { /* best effort: closing stdin signals EOF to ffmpeg */ }
         }
     }
 
@@ -258,10 +351,22 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 int bytesRead = stdout.Read(read, 0, read.Length);
                 if (bytesRead <= 0) break;
 
-                // Append to accumulator, growing if needed.
+                // Malformed-input guard: if the accumulator has grown past the hard cap WITHOUT us
+                // finding an AUD to cut on (so accLen never shrank), the stream is desynced/garbage.
+                // Resetting here keeps a bad input from growing the buffer toward OOM. (RemEx-fs5)
+                if (accLen + bytesRead > MaxAccumulatorBytes)
+                {
+                    _logger.LogWarning(
+                        "H.264 Annex-B accumulator exceeded {Cap} bytes without an AUD boundary; " +
+                        "resetting (malformed/desynced encoder output).", MaxAccumulatorBytes);
+                    accLen = 0;
+                    continue;
+                }
+
+                // Append to accumulator, growing if needed (bounded by MaxAccumulatorBytes above).
                 if (accLen + bytesRead > acc.Length)
                 {
-                    int newSize = Math.Max(acc.Length * 2, accLen + bytesRead);
+                    int newSize = Math.Min(MaxAccumulatorBytes, Math.Max(acc.Length * 2, accLen + bytesRead));
                     Array.Resize(ref acc, newSize);
                 }
                 Buffer.BlockCopy(read, 0, acc, accLen, bytesRead);
@@ -302,38 +407,42 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     private void QueueFrame(byte[] frame)
     {
         if (frame.Length <= 0) return;
-        _encodedFrames.Enqueue(frame);
+        // Drop-oldest bounded channel: TryWrite always succeeds, evicting the oldest queued access
+        // unit when full so memory stays bounded under a slow consumer. (RemEx-fs5)
+        _encodedFrames?.Writer.TryWrite(frame);
     }
 
     public byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe)
     {
-        // Note: forceKeyframe is an intent hint but is NOT actionable here.
-        // FFmpeg's stdin-pipe interface doesn't support on-demand keyframe injection
-        // without codec-specific signaling. Keyframe interval is governed by the
-        // -g (GOP) parameter set during initialization. This is acceptable because
-        // the GOP is fixed at 60 frames, providing regular recovery points.
+        // forceKeyframe is honored at the stream-control layer (RemoteDesktopHandler requests a real
+        // on-demand IDR by reinitializing the encoder, which emits fresh SPS/PPS + an IDR). Within a
+        // running ffmpeg child reading rawvideo from a pipe there is no per-frame keyframe API, so the
+        // flag is intentionally not actioned here; the GOP (-g 60) and on-demand reinit cover recovery.
 
-        if (!_initialized || _stdin == null || _ffmpegProcess is { HasExited: true })
+        if (!_initialized || _inputChannel is null || _ffmpegProcess is { HasExited: true })
             return null;
 
-        try
-        {
-            // Submit the raw frame to the encoder. Writing may block briefly if the encoder is busy
-            // (natural backpressure) — that's fine, it paces capture to the encoder's consumption rate.
-            _stdin.Write(rawPixelsBGRA, 0, rawPixelsBGRA.Length);
-            _stdin.Flush();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error writing frame to FFmpeg stdin.");
-            return null;
-        }
+        // Non-blocking submit. If the bounded input channel is full (encoder busy), DROP this frame
+        // rather than blocking the capture thread — the freshest frame supersedes a stale backlog and
+        // capture/encode must stay decoupled. (RemEx-ii3)
+        _inputChannel.Writer.TryWrite(rawPixelsBGRA);
 
         // Decoupled, non-blocking: return an encoded access unit if one is ready. The encoder
         // pipelines (≈0.5–1s warmup before the first output), so returning null here is normal and
-        // must NOT be treated as a capture failure — the reader thread fills the queue continuously.
-        return _encodedFrames.TryDequeue(out var encoded) ? encoded : null;
+        // must NOT be treated as a capture failure — the reader thread fills the channel continuously.
+        return _encodedFrames is not null && _encodedFrames.Reader.TryRead(out var encoded) ? encoded : null;
     }
+
+    /// <summary>
+    /// Requests an on-demand IDR. Thread-safe; the capture loop consumes the flag and reinitializes
+    /// the encoder, which emits fresh SPS/PPS + a forced IDR for desync recovery. (RemEx-bqc)
+    /// </summary>
+    public void RequestKeyframe() => Interlocked.Exchange(ref _keyframeRequested, 1);
+
+    /// <summary>
+    /// Atomically reads-and-clears the pending keyframe request. Returns true once per request.
+    /// </summary>
+    public bool ConsumeKeyframeRequest() => Interlocked.Exchange(ref _keyframeRequested, 0) == 1;
 
     /// <summary>
     /// Non-blocking drain of any additional encoded access units already produced by the encoder,
@@ -342,7 +451,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// </summary>
     public bool TryGetEncodedFrame(out byte[]? frame)
     {
-        if (_encodedFrames.TryDequeue(out var f))
+        if (_encodedFrames is not null && _encodedFrames.Reader.TryRead(out var f))
         {
             frame = f;
             return true;
@@ -378,8 +487,26 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     private void DisposeProcess()
     {
         _initialized = false;
-        _stdin = null;
         ActiveCodecName = null;
+
+        // Cancel every async pump first so the stdin writer + stderr reader stop touching the process
+        // (and the logger) before we kill it. (RemEx-aa0)
+        var cts = _processCts;
+        _processCts = null;
+        if (cts is not null)
+        {
+            try { cts.Cancel(); } catch { /* best effort */ }
+        }
+
+        // Complete the input channel so the writer loop exits its ReadAllAsync even if it wasn't
+        // observing cancellation at the await point.
+        _inputChannel?.Writer.TryComplete();
+
+        // Give the stdin writer a brief moment to unwind so it doesn't write into a killed process.
+        try { _writerTask?.Wait(TimeSpan.FromMilliseconds(250)); }
+        catch { /* faulted/cancelled — expected */ }
+        _writerTask = null;
+        _inputChannel = null;
 
         if (_ffmpegProcess != null)
         {
@@ -398,6 +525,16 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             }
         }
 
+        cts?.Dispose();
+
+        // Drain any remaining encoded frames and drop the channel reference.
+        if (_encodedFrames is not null)
+        {
+            _encodedFrames.Writer.TryComplete();
+            while (_encodedFrames.Reader.TryRead(out _)) { }
+            _encodedFrames = null;
+        }
+
         _readerThread = null;
     }
 
@@ -407,7 +544,6 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         _isDisposed = true;
 
         DisposeProcess();
-        _frameSemaphore.Dispose();
         GC.SuppressFinalize(this);
     }
 

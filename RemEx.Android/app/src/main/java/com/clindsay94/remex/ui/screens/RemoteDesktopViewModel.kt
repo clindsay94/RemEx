@@ -1229,6 +1229,23 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Asks the host to emit an on-demand keyframe (IDR). Called by the H.264 decoder when it drops
+     * input or recovers from a transient codec error, so the stream resyncs from the next IDR instead
+     * of staying corrupt for up to a full GOP. Additive + backward-compatible: legacy hosts that don't
+     * recognize the message type simply ignore it (no protocolVersion bump). (RemEx-bqc)
+     */
+    fun requestKeyframe() {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!RemexCoreClient.isLibraryLoaded || !_isStreaming.value) {
+                return@launch
+            }
+            val message =
+                    JSONObject().apply { put("type", "desktop_keyframe_request") }
+            RemexCoreClient.SendMessage(message.toString()).getOrNull()
+        }
+    }
+
     private fun sendWindowAction(
             action: String,
             windowId: String,

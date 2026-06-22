@@ -333,7 +333,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 streamPixelHeight = streamPixelHeight,
                 onActiveH264DecoderChange = { decoder -> viewModel.activeH264Decoder = decoder },
                 onH264DecoderReleased = { decoder -> viewModel.onH264DecoderReleased(decoder) },
-                onH264DecoderInitFailed = { viewModel.onH264DecoderInitFailed() }
+                onH264DecoderInitFailed = { viewModel.onH264DecoderInitFailed() },
+                onH264KeyframeNeeded = { viewModel.requestKeyframe() }
         )
 }
 
@@ -383,7 +384,8 @@ fun RemoteDesktopScreenContent(
         streamPixelHeight: Int = 1080,
         onActiveH264DecoderChange: (H264StreamDecoder?) -> Unit = {},
         onH264DecoderReleased: (H264StreamDecoder) -> Unit = {},
-        onH264DecoderInitFailed: () -> Unit = {}
+        onH264DecoderInitFailed: () -> Unit = {},
+        onH264KeyframeNeeded: () -> Unit = {}
 ) {
         val activity = LocalActivity.current
         val scope = rememberCoroutineScope()
@@ -1849,7 +1851,8 @@ fun RemoteDesktopScreenContent(
                                                                                                 streamPixelWidth,
                                                                                                 streamPixelHeight,
                                                                                                 surface,
-                                                                                                onInitFailure = onH264DecoderInitFailed
+                                                                                                onInitFailure = onH264DecoderInitFailed,
+                                                                                                onKeyframeNeeded = onH264KeyframeNeeded
                                                                                         )
                                                                                         localDecoder = decoder
                                                                                         onActiveH264DecoderChange(decoder)

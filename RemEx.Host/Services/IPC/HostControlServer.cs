@@ -1,5 +1,7 @@
 using System;
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -50,12 +52,7 @@ public sealed class HostControlServer : IAsyncDisposable
         {
             try
             {
-                using var pipe = new NamedPipeServerStream(
-                    _pipeName,
-                    PipeDirection.InOut,
-                    maxNumberOfServerInstances: 1,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
+                using var pipe = CreateControlPipe();
 
                 await pipe.WaitForConnectionAsync(ct);
 
@@ -86,6 +83,62 @@ public sealed class HostControlServer : IAsyncDisposable
                 try { await Task.Delay(500, ct); } catch (OperationCanceledException) { break; }
             }
         }
+    }
+
+    /// <summary>
+    /// Creates the <c>RemExHostControl</c> handoff pipe.
+    ///
+    /// On Windows the agent runs as LocalSystem in Session 0 while the GUI host runs in the signed-in
+    /// user's interactive session (HIGH integrity via the user's linked admin token — see
+    /// <c>InteractiveDesktopHostLauncher</c>). The two endpoints therefore live in different security
+    /// contexts, so the pipe carries an explicit ACL: LocalSystem gets FullControl (it owns and
+    /// recreates the pipe across the yield/reclaim loop) and the interactive logon session gets
+    /// ReadWrite (so the GUI host — and nothing outside an interactive session — can connect). Without
+    /// this, the default DACL would deny the cross-session connect or expose the control channel to
+    /// other principals.
+    ///
+    /// On Linux there is no ACL API; the named pipe is created with the plain constructor and is
+    /// governed by Unix filesystem permissions.
+    /// </summary>
+    private NamedPipeServerStream CreateControlPipe()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return CreateSecuredControlPipe();
+        }
+
+        return new NamedPipeServerStream(
+            _pipeName,
+            PipeDirection.InOut,
+            maxNumberOfServerInstances: 1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous);
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private NamedPipeServerStream CreateSecuredControlPipe()
+    {
+        var pipeSecurity = new PipeSecurity();
+
+        // LocalSystem (the service identity that owns this pipe) needs FullControl so it can recreate
+        // the pipe on each yield/reclaim cycle even when a stale handle lingers.
+        var localSystemSid = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+        pipeSecurity.AddAccessRule(new PipeAccessRule(localSystemSid, PipeAccessRights.FullControl, AccessControlType.Allow));
+
+        // The interactive logon session (where the GUI host lives) gets ReadWrite so it can connect and
+        // exchange the yield ack — but no one outside an interactive session can reach the channel.
+        var interactiveSid = new SecurityIdentifier(WellKnownSidType.InteractiveSid, null);
+        pipeSecurity.AddAccessRule(new PipeAccessRule(interactiveSid, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+
+        return NamedPipeServerStreamAcl.Create(
+            _pipeName,
+            PipeDirection.InOut,
+            maxNumberOfServerInstances: 1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            inBufferSize: 0,
+            outBufferSize: 0,
+            pipeSecurity);
     }
 
     private static async Task WaitForDisconnectAsync(NamedPipeServerStream pipe, CancellationToken ct)

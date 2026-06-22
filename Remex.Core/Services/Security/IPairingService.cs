@@ -29,3 +29,10 @@ public interface IPairingService
 }
 
 public sealed record PairingState(string HostPublicKeyBase64, string Pin, long ExpiresAtUnixMs);
+
+/// <summary>
+/// Result of a PIN-HMAC verification that also captures the reconnect secret on success.
+/// <see cref="ReconnectSecret"/> is the ECDH/HKDF-derived session key (32 bytes) bound to the
+/// paired client; it is empty when <see cref="Verified"/> is false.
+/// </summary>
+public sealed record PairingVerificationResult(bool Verified, byte[] ReconnectSecret);

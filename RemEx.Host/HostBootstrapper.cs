@@ -90,6 +90,9 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<Remex.Core.Services.Network.IWakeOnLanService, Remex.Core.Services.Network.WakeOnLanService>();
         builder.Services.AddSingleton<Remex.Core.Services.Network.INetworkListener, Remex.Core.Services.Network.RemexNetworkListener>();
+        // PROTO-1 (RemEx-htt): the 8338 command channel authenticates callers against the paired-client
+        // registry. Without this registration the listener fails closed (rejects every command).
+        builder.Services.AddSingleton<Remex.Core.Services.Network.ICommandChannelAuthenticator, Remex.Host.Services.Network.PairedClientChannelAuthenticator>();
         builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
         builder.Services.AddSingleton<IDesktopWindowControlService, UnsupportedDesktopWindowControlService>();
         builder.Services.AddHostedService<Remex.Host.Services.IPC.LocalIpcServerService>();
@@ -137,7 +140,8 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Host.Services.AppLauncherService>();
-        builder.Services.AddHostedService<IpcHostServer>();
+        // IpcHostServer was removed: its sole action (LaunchApp) is now handled by the single
+        // LocalIpcServerService (registered above), which owns the canonical RemExLocalIPC pipe.
 
         // ── 2.0 Security Services ──
         // CertificateService is instantiated once here so that Kestrel and the DI container
@@ -294,12 +298,18 @@ public static class HostBootstrapper
             });
         });
 
-        // Returns the active pairing PIN so remote tools (MCP, scripts) can relay it
-        // to a user who cannot see the host screen. Only returns when a session is live;
-        // 404 means no pairing is in progress. The PIN itself is already visible on the
-        // host UI, so exposing it here adds no new attack surface for local-network threats.
-        app.MapGet("/pairing-pin", (IPairingService pairingService) =>
+        // Returns the active pairing PIN so the local host UI/tray can relay it to a user.
+        // Gated to loopback only: the PIN is the pairing secret, so disclosing it to a
+        // remote caller would defeat the out-of-band pairing model entirely. The tray UI
+        // reads the PIN over the local IPC path, not over HTTP. A non-loopback caller gets
+        // a 404 (not a 403) so the endpoint is not advertised to network scanners.
+        app.MapGet("/pairing-pin", (HttpContext httpContext, IPairingService pairingService) =>
         {
+            if (!System.Net.IPAddress.IsLoopback(httpContext.Connection.RemoteIpAddress))
+            {
+                return Results.NotFound();
+            }
+
             if (pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
             {
                 return Results.Ok(new { pin, expiresAtUnixMs });
@@ -308,11 +318,34 @@ public static class HostBootstrapper
         });
 
         // Proactively starts a pairing session and returns the PIN immediately.
-        // Designed for remote workflows where the user cannot see the host screen:
-        // call this endpoint first, get the PIN, then have the user tap Connect on Android.
-        // When Android sends pairing_request, the host reuses this already-active session.
-        app.MapPost("/start-pairing", async (Remex.Host.Services.Security.PairingService pairingService) =>
+        // Gated to loopback only for the same reason as /pairing-pin: a non-loopback caller
+        // could otherwise start a session and read the PIN without any host-side consent,
+        // enabling remote takeover. If a genuine remote-provisioning flow is ever required,
+        // it must require an already-paired client token rather than being open.
+        app.MapPost("/start-pairing", async (
+            HttpContext httpContext,
+            Remex.Host.Services.Security.PairingService pairingService) =>
         {
+            if (!System.Net.IPAddress.IsLoopback(httpContext.Connection.RemoteIpAddress))
+            {
+                return Results.NotFound();
+            }
+
+            // Defense-in-depth: even though this endpoint is loopback-only, the per-IP throttle
+            // bounds repeated session churn from any single source (loopback is never throttled).
+            // Resolved optionally so the endpoint still works before the DI registration lands;
+            // see the integration follow-up to register PairingThrottle as a singleton.
+            var pairingThrottle = httpContext.RequestServices
+                .GetService(typeof(Remex.Host.Services.Security.PairingThrottle))
+                as Remex.Host.Services.Security.PairingThrottle;
+            if (pairingThrottle is not null
+                && !pairingThrottle.TryRegisterAttempt(httpContext.Connection.RemoteIpAddress, out var retryAfter))
+            {
+                httpContext.Response.Headers.RetryAfter =
+                    ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+            }
+
             try
             {
                 var acquisition = await pairingService.AcquirePairingSessionAsync(CancellationToken.None);
@@ -548,13 +581,20 @@ public static class HostBootstrapper
         string protocolVersion,
         PairedClientRegistry registry)
     {
-        // Optional protocol-version handshake parameter: if supplied, must be "2".
-        // Clients that omit it are accepted for backwards compatibility — the current
-        // Android client doesn't set it yet — but a wrong value is a clear-cut reject.
-        if (!string.IsNullOrEmpty(protocolVersion) && protocolVersion != "2")
+        // Optional protocol-version handshake parameter. Clients that omit it are accepted for
+        // backwards compatibility — the current Android client doesn't set it yet. When supplied it
+        // is parsed once and run through the same ProtocolVersionPolicy rule as the /ws control
+        // channel, so the two paths can never disagree on what counts as supported. A value that is
+        // non-numeric or below the supported range is a clear-cut reject.
+        if (!string.IsNullOrEmpty(protocolVersion))
         {
-            return (StatusCodes.Status400BadRequest,
-                $"Unsupported protocolVersion '{protocolVersion}'. Expected '2'.");
+            if (!int.TryParse(protocolVersion, out var parsedVersion)
+                || !Remex.Core.Messages.ProtocolVersionPolicy.IsSupported(parsedVersion))
+            {
+                return (StatusCodes.Status400BadRequest,
+                    $"Unsupported protocolVersion '{protocolVersion}'. " +
+                    $"Expected '{Remex.Core.Messages.ProtocolVersionPolicy.Minimum}' or later.");
+            }
         }
 
         var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
@@ -568,6 +608,12 @@ public static class HostBootstrapper
             return (StatusCodes.Status401Unauthorized, "Paired client ID is required.");
         }
 
+        // PAIR-1: this is a presence check, not the authentication. The desktop binary stream is
+        // a secondary channel — a client must first authenticate on the /ws control channel via
+        // the reconnect proof-of-possession handshake (HMAC over a host nonce), and the transport
+        // is TLS with the host SPKI pinned by the client at pairing time. A bare clientId on /ws
+        // no longer authenticates; this gate additionally requires the client to be a known paired
+        // identity before any screen-capture/PipeWire session is started.
         if (!registry.IsClientPaired(clientId))
         {
             return (StatusCodes.Status403Forbidden, "Client is not paired.");

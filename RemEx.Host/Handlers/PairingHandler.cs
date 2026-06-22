@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Models;
@@ -114,16 +115,30 @@ public sealed class PairingHandler
 
         try
         {
-            var verified = await _pairingService.VerifyClientHmacAsync(
+            var verification = await _pairingService.VerifyClientHmacAndCaptureSecretAsync(
                 message.PairingComplete.ClientPinHmacBase64, ct);
 
-            if (verified)
+            if (verification.Verified)
             {
                 _logger.LogInformation("Pairing completed successfully.");
-                
-                if (!string.IsNullOrWhiteSpace(message.PairingComplete.ClientId))
+
+                try
                 {
-                    _pairedClientRegistry.RegisterClient(message.PairingComplete.ClientId);
+                    if (!string.IsNullOrWhiteSpace(message.PairingComplete.ClientId)
+                        && verification.ReconnectSecret.Length > 0)
+                    {
+                        // Bind the client to its reconnect secret (the pairing session key) so future
+                        // reconnects must prove possession of it (PAIR-1). The client derives the same
+                        // key during pairing, so the secret never travels over the wire.
+                        _pairedClientRegistry.RegisterClient(
+                            message.PairingComplete.ClientId,
+                            verification.ReconnectSecret);
+                    }
+                }
+                finally
+                {
+                    // The registry copied the bytes it needed; zero our captured copy promptly.
+                    CryptographicOperations.ZeroMemory(verification.ReconnectSecret);
                 }
 
                 return new RemexMessage

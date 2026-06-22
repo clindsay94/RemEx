@@ -42,10 +42,14 @@ public static unsafe class JniHelper
         var releaseStringChars = (delegate* unmanaged<IntPtr, IntPtr, char*, void>)env->Functions[166];
 
         int length = getStringLength(envPtr, jstring);
+        // No JNI call may run while a pending Java exception is set, or the runtime
+        // aborts the process (SIGABRT). Clear and bail out to a managed null instead.
+        if (ExceptionCheck(envPtr)) { ExceptionClear(envPtr); return null; }
         if (length < 0) return null;
         if (length == 0) return string.Empty;
 
         char* chars = getStringChars(envPtr, jstring, null);
+        if (ExceptionCheck(envPtr)) { ExceptionClear(envPtr); return null; }
         if (chars == null) return null;
 
         try
