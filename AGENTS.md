@@ -219,10 +219,19 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
 
 - `Remex.Core/` — shared models, messages, validation, Guards, serialization; also compiled as `libRemexCore.so` (NativeAOT JNI) for Android. Must stay NativeAOT-safe.
 - `Remex.Host/` — the PC side: Windows Service / Linux daemon, ASP.NET Minimal APIs, WebSocket, mDNS. Runs as LocalSystem in Session 0 on Windows.
+  - `Handlers/` — `PairingHandler` (ECDH P-256 handshake), `RemoteDesktopHandler` (codec negotiation, H.264/MJPEG streaming), `PingPongHandler` (keep-alive).
+  - `Services/Security/` — `PairingService` (ECDH state machine), `PairedClientRegistry` (proof-of-possession reconnect auth), `PairingThrottle` (per-IP rate limiting), `CertificateService` (SPKI management).
+  - `Services/Network/` — `PairedClientChannelAuthenticator` (8338 TCP channel auth gate via `PairedClientRegistry`).
+  - `Services/IPC/` — `LocalIpcServerService` (`RemExLocalIPC` pipe, privileged-action gate), `HostControlServer` (`RemExHostControl` pipe, headless agent ↔ GUI port-handoff coordination).
+  - `Services/RemoteDesktop/` — `IH264Encoder` / `FFmpegH264Encoder` (FFmpeg subprocess, bounded channels, on-demand keyframe).
 - `RemEx.Android/` — the only client: Kotlin + Jetpack Compose + JNI → `libRemexCore.so`.
+  - `data/NsdDiscoveryManager` — mDNS discovery (`_remex._tcp.`); API 34+ uses concurrent `registerServiceInfoCallback`, pre-34 serialises via process-wide `resolveMutex`.
+  - `ui/screens/H264StreamDecoder` — `MediaCodec` async hardware decoder; bounded backlog (4 frames), `onKeyframeNeeded` / `onInitFailure` callbacks.
+  - `ui/screens/RemoteDesktopViewModel` — stream config, display-target selection, cursor shape overlay, frame-arrival watchdog.
+  - `ui/screens/RemoteDesktopScreen` — Jetpack Compose UI, gesture handling (tap/scroll/pinch), immersive full-screen.
 - `Remex.Client/`, `Remex.Client.Desktop/` — legacy, being phased out; do not add new code.
 
-Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS (8338, external script ingress), Named Pipe `RemExLocalIPC` (local service IPC). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning.
+Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS 8338 (external script ingress — requires paired `clientId` via `PairedClientChannelAuthenticator`), Named Pipe `RemExLocalIPC` (local service IPC), Named Pipe `RemExHostControl` (agent↔GUI port handoff). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning.
 
 <!-- END AUTO-MANAGED -->
 
@@ -245,6 +254,14 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - MVVM in `Remex.Host` (`Views/`, `ViewModels/`, `Services/`); four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass) — verify UI changes across all four.
 - Cross-platform parity (Windows ↔ CachyOS/Linux) required for every PC-side change; each `.ps1` needs a `pwsh`-compatible path or `.sh` equivalent.
 - Every change updates `CHANGELOG.md` (Keep a Changelog) and affected docs.
+- **Proof-of-possession reconnect auth**: `PairedClientRegistry` stores a 32-byte ECDH/HKDF session key per client; reconnect auth is HMAC-over-nonce challenge, NOT bare clientId lookup. `RegisterClient(string, byte[])` is the production path.
+- **Bounded channel drop in H.264 pipeline**: `FFmpegH264Encoder` uses bounded `Channel<T>` (drop-newest for input, drop-oldest for output); `H264StreamDecoder` uses a bounded backlog (4 frames, drop-oldest). On overflow both fire a keyframe-needed callback to recover stream sync rather than accumulating stale frames.
+- **On-demand keyframe recovery**: `IH264Encoder.RequestKeyframe()` / `ConsumeKeyframeRequest()` atomic flag consumed by the capture loop; `H264StreamDecoder.onKeyframeNeeded` callback on Android. Both ends coordinate to recover from decoder desync without waiting a full GOP.
+- **`IInteractiveSessionGuard` check before streaming**: `RemoteDesktopHandler` checks `IHostCapabilitiesProvider.SupportsRemoteDesktop` and the session guard before starting a desktop stream; sends structured `DesktopErrorCodes` on failure (not generic WebSocket close).
+- **`EvaluateDesktopAuth` pre-auth for `/ws/desktop`**: `HostBootstrapper.EvaluateDesktopAuth` enforces: loopback → allow unconditionally; non-loopback → must have paired `clientId` (PairedClientRegistry) AND `protocolVersion >= 2`. Unknown or missing clientId → 401/403; old protocol → 400; newer-than-host → 200 (forward compat).
+- **`PairingThrottle` per-IP rate limiting**: singleton sliding-window throttle applied to `/start-pairing` and `pairing_complete`. Loopback callers bypass (local UI is trusted). Cryptographic jitter on retry hint. `PairingService` additionally caps failed HMAC attempts at 5 per session with a ~120s session timeout.
+- **`NsdDiscoveryManager` API-level strategy**: API 34+ uses concurrent, cancellable `registerServiceInfoCallback`; pre-34 serialises resolves process-wide via a `Mutex` (NsdManager pre-34 allows only one in-flight resolve). Always acquires a `WifiManager.MulticastLock` for mDNS reliability.
+- **Frame-arrival watchdog in `RemoteDesktopViewModel`**: arms on stream start, resets on every decoded frame, triggers reconnect if no frame arrives within stall timeout. Backstops H.264 decoder-init silent-death path.
 
 <!-- END AUTO-MANAGED -->
 
@@ -274,28 +291,56 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 
 ### Confirmed Ship-Blockers (do not ship until resolved)
 
-1. **PROTO-1 (RemEx-htt)** — `RemexNetworkListener` binds `IPAddress.Any` on 8338 and dispatches SHUTDOWN/RESTART/SLEEP/LOCK with **zero client authentication**. Any device on the LAN can power-control the PC.
-2. **PAIR-5 (RemEx-a75) + PAIR-2 (RemEx-lhd)** — `/start-pairing` and `/pairing-pin` are reachable by unauthenticated remote callers; PIN verification has no brute-force throttle over a 10-minute session.
-3. **IPC-1 (RemEx-m1i)** — `RemExLocalIPC` pipe ACL grants `Everyone` read/write; any local user can read the live pairing PIN or issue power commands.
+1. **PROTO-1 (RemEx-htt)** — ~~`RemexNetworkListener` dispatches with zero client authentication.~~ **IMPLEMENTED:** `PairedClientChannelAuthenticator` now gates the 8338 TCP channel via `PairedClientRegistry.IsClientPaired()`. Verify bead close + tests.
+2. **PAIR-5 (RemEx-a75) + PAIR-2 (RemEx-lhd)** — ~~No brute-force throttle; 10-minute session window.~~ **IMPLEMENTED:** `PairingThrottle` per-IP sliding-window singleton; `PairingService` caps failed HMAC attempts at 5 per session with ~120s timeout. Verify bead close + tests.
+3. **IPC-1 (RemEx-m1i)** — `RemExLocalIPC` pipe ACL grants `Everyone` read/write; any local user can read the live pairing PIN or issue power commands. **OPEN — not yet fixed.**
 
 ### P0 Beads (all must be closed before ship)
 
-`RemEx-htt` PROTO-1 · `RemEx-a75` PAIR-5 · `RemEx-m1i` IPC-1 · `RemEx-lhd` PAIR-2 · `RemEx-dta` PAIR-3 · `RemEx-n6u` IPC-2 · `RemEx-4ky` PROTO-2 · `RemEx-288` PROTO-3 · `RemEx-e3z` JNI-1 · `RemEx-9m1` JNI-2 · `RemEx-ii3` RD-1 · `RemEx-fs5` RD-3 · `RemEx-bqc` RD-2 · `RemEx-a13` NSD-1
+| Bead | Issue | Status |
+|------|-------|--------|
+| `RemEx-htt` PROTO-1 | 8338 channel unauthenticated | **IMPLEMENTED** — `PairedClientChannelAuthenticator` |
+| `RemEx-a75` PAIR-5 | `/start-pairing` open to remote | **IMPLEMENTED** — `PairingThrottle` |
+| `RemEx-lhd` PAIR-2 | PIN brute-force / 10-min window | **IMPLEMENTED** — `PairingThrottle` + 5-attempt cap |
+| `RemEx-ii3` RD-1 | H.264 encoder backpressure | **IMPLEMENTED** — `FFmpegH264Encoder` bounded channels |
+| `RemEx-fs5` RD-3 | H.264 output unbounded queue | **IMPLEMENTED** — `FFmpegH264Encoder` drop-oldest output channel |
+| `RemEx-bqc` RD-2 | H.264 keyframe / decoder recovery | **IMPLEMENTED** — `RemoteDesktopHandler` + `H264StreamDecoder` |
+| `RemEx-a13` NSD-1 | NSD discovery reliability | **IMPLEMENTED** — `NsdDiscoveryManager` API 34+/pre-34 strategy |
+| `RemEx-m1i` IPC-1 | Pipe ACL `Everyone` writable | **OPEN** |
+| `RemEx-dta` PAIR-3 | Host private key world-readable | **OPEN** |
+| `RemEx-n6u` IPC-2 | IPC-2 | **OPEN** |
+| `RemEx-4ky` PROTO-2 | PROTO-2 | **OPEN** |
+| `RemEx-288` PROTO-3 | PROTO-3 | **OPEN** |
+| `RemEx-e3z` JNI-1 | JNI exceptions abort JVM | **OPEN** |
+| `RemEx-9m1` JNI-2 | JNI-2 | **OPEN** |
 
 ### P1 Beads (required for quality 2.0)
 
-`RemEx-3n6` PAIR-1 · `RemEx-rc4` PAIR-4 · `RemEx-irl` IPC-4 · `RemEx-qg2` IPC-5 · `RemEx-oj8` IPC-6 · `RemEx-4ic` IPC-3 · `RemEx-ngs` NSD-4 · `RemEx-i8x` NSD-5 · `RemEx-kx4` RD-5 · `RemEx-aa0` RD-4 · `RemEx-4uy` PROTO-4 · `RemEx-jny` PROTO-5
+| Bead | Issue | Status |
+|------|-------|--------|
+| `RemEx-3n6` PAIR-1 | clientId-only reconnect auth | **IMPLEMENTED** — `PairedClientRegistry` proof-of-possession |
+| `RemEx-kx4` RD-5 | H.264 decoder output format change | **IMPLEMENTED** — `RemoteDesktopHandler` + `H264StreamDecoder` |
+| `RemEx-aa0` RD-4 | FFmpeg pump cancellation on dispose | **IMPLEMENTED** — `FFmpegH264Encoder` `_processCts` |
+| `RemEx-rc4` PAIR-4 | PAIR-4 | **OPEN** |
+| `RemEx-irl` IPC-4 | IPC-4 | **OPEN** |
+| `RemEx-qg2` IPC-5 | IPC-5 | **OPEN** |
+| `RemEx-oj8` IPC-6 | IPC-6 | **OPEN** |
+| `RemEx-4ic` IPC-3 | IPC-3 | **OPEN** |
+| `RemEx-ngs` NSD-4 | NSD-4 | **OPEN** |
+| `RemEx-i8x` NSD-5 | NSD-5 | **OPEN** |
+| `RemEx-4uy` PROTO-4 | PROTO-4 | **OPEN** |
+| `RemEx-jny` PROTO-5 | PROTO-5 | **OPEN** |
 
 ### Security Areas — Heightened Caution
 
 When touching any of these files, treat as security-critical and require user sign-off:
-- `Remex.Core/Services/Network/RemexNetworkListener.cs` — unauthenticated 8338 command channel (PROTO-1/2); AUTHENTICATED-REMOTE fix in progress (keep `IPAddress.Any`, add PairedClientRegistry token gate)
-- `RemEx.Host/Services/IPC/LocalIpcServerService.cs` — Everyone-writable pipe leaking PIN (IPC-1/2/3)
-- `RemEx.Host/Services/Security/PairingService.cs` — no PIN throttle, HMAC compares string not bytes (PAIR-2/6)
-- `RemEx.Host/Services/Security/CertificateService.cs` — host private key world-readable (PAIR-3)
-- `RemEx.Host/Services/Security/PairedClientRegistry.cs` — clientId alone authenticates reconnect (PAIR-1)
-- `RemEx.Host/HostBootstrapper.cs` — pairing endpoints open to remote callers (PAIR-5)
-- `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — pending JNI exceptions abort JVM (JNI-1/2)
+- `Remex.Core/Services/Network/RemexNetworkListener.cs` — 8338 channel; `PairedClientChannelAuthenticator` now gates dispatch (PROTO-1 implemented); PROTO-2 still open
+- `RemEx.Host/Services/IPC/LocalIpcServerService.cs` — pipe ACL still grants `Everyone`; privileged-action gate (interactive-user check) is in place but pipe ACL fix (IPC-1) is OPEN
+- `RemEx.Host/Services/Security/PairingService.cs` — ECDH state machine with 5-attempt cap and ~120s timeout; PAIR-2 implemented; verify HMAC comparison uses constant-time bytes (PAIR-6)
+- `RemEx.Host/Services/Security/CertificateService.cs` — SPKI hash management; host private key world-readable (PAIR-3) is still OPEN
+- `RemEx.Host/Services/Security/PairedClientRegistry.cs` — proof-of-possession reconnect auth implemented (PAIR-1); legacy presence-only entries still accepted for desktop-stream gate
+- `RemEx.Host/HostBootstrapper.cs` — `EvaluateDesktopAuth` now enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop`; verify pairing endpoint exposure (PAIR-5 implemented)
+- `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — pending JNI exceptions abort JVM (JNI-1/2 OPEN)
 
 ### Cross-Platform Rule for All Orders
 
@@ -303,7 +348,7 @@ Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileS
 
 ### Design Decisions — Resolved 2026-06-22 (user-confirmed)
 
-- **8338 channel (PROTO-1): AUTHENTICATED-REMOTE.** Keep `IPAddress.Any`; do NOT bind loopback. The host runs as LocalSystem in Session 0 so remote commands + telemetry work with no user logged in — restricting to loopback breaks the product's core purpose. Fix: require a paired-client identity (`PairedClientRegistry` token) before `ExecuteCommandAsync` dispatch.
+- **8338 channel (PROTO-1): AUTHENTICATED-REMOTE.** Keep `IPAddress.Any`; do NOT bind loopback. The host runs as LocalSystem in Session 0 so remote commands + telemetry work with no user logged in — restricting to loopback breaks the product's core purpose. Fix: require a paired-client identity (`PairedClientRegistry` token) before `ExecuteCommandAsync` dispatch. **`PairedClientChannelAuthenticator` now implements this.**
 - **IPC / Session-0 model: confirmed unchanged.** Remote commands and telemetry flow through the Session-0 service directly; they do NOT traverse the named pipe. Pipe ACL orders (IPC-1/IPC-5/IPC-6) govern only the local tray/dashboard UI (interactive user) talking to the service. Fixing the pipe ACL has no bearing on the headless "works without login" remote requirement.
 - **`Remex.Client` removal (new bead `RemEx-d8s`): NOT a clean delete.** `Remex.Host` still references `Remex.Client.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`. Migrate all still-used types into `RemEx.Host`/`Remex.Core` first, then delete the legacy UI and remove `Remex.Client` + `Remex.Client.Tests` from `Remex.sln`. `RemEx-d8s` subsumes NSD-6 (`RemEx-00x`). Sequence AFTER all P0/P1 security fixes.
 
