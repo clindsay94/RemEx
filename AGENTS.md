@@ -267,6 +267,57 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 
 <!-- END AUTO-MANAGED -->
 
+<!-- AUTO-MANAGED: release-gate -->
+## RemEx 2.0 Release Gate
+
+**Status: NO-SHIP.** Full ordered edit plan: `REMEX_2.0_FINAL.md` (read-only audit — no code was modified by the audit itself).
+
+### Confirmed Ship-Blockers (do not ship until resolved)
+
+1. **PROTO-1 (RemEx-htt)** — `RemexNetworkListener` binds `IPAddress.Any` on 8338 and dispatches SHUTDOWN/RESTART/SLEEP/LOCK with **zero client authentication**. Any device on the LAN can power-control the PC.
+2. **PAIR-5 (RemEx-a75) + PAIR-2 (RemEx-lhd)** — `/start-pairing` and `/pairing-pin` are reachable by unauthenticated remote callers; PIN verification has no brute-force throttle over a 10-minute session.
+3. **IPC-1 (RemEx-m1i)** — `RemExLocalIPC` pipe ACL grants `Everyone` read/write; any local user can read the live pairing PIN or issue power commands.
+
+### P0 Beads (all must be closed before ship)
+
+`RemEx-htt` PROTO-1 · `RemEx-a75` PAIR-5 · `RemEx-m1i` IPC-1 · `RemEx-lhd` PAIR-2 · `RemEx-dta` PAIR-3 · `RemEx-n6u` IPC-2 · `RemEx-4ky` PROTO-2 · `RemEx-288` PROTO-3 · `RemEx-e3z` JNI-1 · `RemEx-9m1` JNI-2 · `RemEx-ii3` RD-1 · `RemEx-fs5` RD-3 · `RemEx-bqc` RD-2 · `RemEx-a13` NSD-1
+
+### P1 Beads (required for quality 2.0)
+
+`RemEx-3n6` PAIR-1 · `RemEx-rc4` PAIR-4 · `RemEx-irl` IPC-4 · `RemEx-qg2` IPC-5 · `RemEx-oj8` IPC-6 · `RemEx-4ic` IPC-3 · `RemEx-ngs` NSD-4 · `RemEx-i8x` NSD-5 · `RemEx-kx4` RD-5 · `RemEx-aa0` RD-4 · `RemEx-4uy` PROTO-4 · `RemEx-jny` PROTO-5
+
+### Security Areas — Heightened Caution
+
+When touching any of these files, treat as security-critical and require user sign-off:
+- `Remex.Core/Services/Network/RemexNetworkListener.cs` — unauthenticated 8338 command channel (PROTO-1/2)
+- `RemEx.Host/Services/IPC/LocalIpcServerService.cs` — Everyone-writable pipe leaking PIN (IPC-1/2/3)
+- `RemEx.Host/Services/Security/PairingService.cs` — no PIN throttle, HMAC compares string not bytes (PAIR-2/6)
+- `RemEx.Host/Services/Security/CertificateService.cs` — host private key world-readable (PAIR-3)
+- `RemEx.Host/Services/Security/PairedClientRegistry.cs` — clientId alone authenticates reconnect (PAIR-1)
+- `RemEx.Host/HostBootstrapper.cs` — pairing endpoints open to remote callers (PAIR-5)
+- `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — pending JNI exceptions abort JVM (JNI-1/2)
+
+### Cross-Platform Rule for All Orders
+
+Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileSecurity`, SIDs) **must** be guarded with `OperatingSystem.IsWindows()` and include a Linux branch using `UnixFileMode`/`SetUnixFileMode 0600` (owner-only). Validate on Windows **and** CachyOS before closing the bead.
+
+### Open Design Decisions (require user input before applying orders)
+
+- **8338 binding (PROTO-1/B1):** loopback-only vs. authenticated-remote is a product choice — confirm before applying B1.
+- **IPC-6 cross-session ACL:** only required if the GUI host runs as a different identity than the LocalSystem agent — confirm deployment topology.
+- **`Remex.Client` phase-out timeline:** still in `Remex.sln` and referenced by tests; affects NSD-6 (`RemEx-00x`) and the legacy `PinnedCertStore` cleanup.
+
+### Definition of Done (release)
+
+Every P0 and P1 bead closed via an applied order from `REMEX_2.0_FINAL.md`, with:
+- Green build on Windows, Linux (CachyOS via `build-remex.ps1`), and Android (`scripts/android-fresh.ps1`)
+- Green tests (`dotnet test Remex.sln`) plus new regression tests named in each order's DoD
+- Cross-platform parity verified for every order touching ACL/file-permission/native code
+- `CHANGELOG.md` updated under `Security`/`Fixed`/`Changed`
+- `protocolVersion` bump coordinated only if a wire-format break is taken (PAIR-1 can avoid it via additive optional fields)
+
+<!-- END AUTO-MANAGED -->
+
 <!-- MANUAL -->
 ## Custom Notes
 
