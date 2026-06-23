@@ -228,6 +228,7 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
   - `Services/ScreenCapture/` — `DxgiDesktopCapture` (DXGI Desktop Duplication API, Windows 10/11, MPO/GPU-composited content); `DuplicationReinitThrottle` (exponential-backoff gate for `DuplicateOutput` re-init; prevents driver-wedge on display power transitions).
 - `RemEx.Android/` — the only client: Kotlin + Jetpack Compose + JNI → `libRemexCore.so`.
   - `data/NsdDiscoveryManager` — mDNS discovery (`_remex._tcp.`); API 34+ uses concurrent `registerServiceInfoCallback`, pre-34 serialises via process-wide `resolveMutex`.
+  - `security/PinnedHostStore` — Tink AES-256-GCM AEAD encrypted storage for paired host SPKI hashes and PAIR-1 reconnect secrets; two DataStores (`remex_pinned_hosts`, `remex_reconnect_secrets`); Android Keystore-backed keyset; corruption self-recovery.
   - `ui/screens/H264StreamDecoder` — `MediaCodec` async hardware decoder; bounded backlog (4 frames), `onKeyframeNeeded` / `onInitFailure` callbacks.
   - `ui/screens/RemoteDesktopViewModel` — stream config, display-target selection, cursor shape overlay, frame-arrival watchdog.
   - `ui/screens/RemoteDesktopScreen` — Jetpack Compose UI, gesture handling (tap/scroll/pinch), immersive full-screen.
@@ -272,6 +273,9 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - **`ConnectionViewModel` single in-flight discovery**: `discoveryJob: Job?` tracks the active NSD coroutine; `startDiscovery()` cancels any prior job before launching so overlapping manual + self-heal calls do not stack NSD resolves or multicast-lock cycles (RemEx-4bb).
 - **`SyncRemexCoreSoTask` ELF verification**: Content-tracks `sourceCandidates` as Gradle inputs (prevents stale `.so` on `-NoClean` builds) and validates the `.so` is AArch64 ELF (magic `0x7F454C46` + `EI_CLASS=2` + `e_machine=0xB7`) before copying into the APK (RemEx-l79 / RemEx-hht).
 - **`DuplicationReinitThrottle` DXGI re-init throttle**: `DxgiDesktopCapture` gates all `TryReinitializeDuplication` / `DuplicateOutput` calls through `DuplicationReinitThrottle` (backoff: 1s base, 8s max, exponential escalation). On `DXGI_ERROR_ACCESS_LOST`, at most one re-init attempt is made per backoff window; confirmed-healthy frames (real frame or `WAIT_TIMEOUT`) call `RecordHealthyFrame()` to reset. Prevents the "display-off storm" that wedged DWM + NVIDIA driver at stream frame rate (RemEx-crk). Clock-injected for deterministic unit tests.
+- **`PinnedHostStore` reconnect-secret persistence (PAIR-1/RemEx-xuo)**: After a successful Android pairing, `RemexClientManager` extracts the `reconnectSecret` from the `OK:hostId|spki|reconnectSecret` result and calls `PinnedHostStore.setReconnectSecret(context, hostId, ...)` + `setReconnectSecret(context, host, ...)`. On reconnect, `getReconnectSecret()` supplies the secret to `RemexCoreClient` to answer the host's proof-of-possession challenge; without a stored secret, the host rejects the reconnect and forces a re-pair. Secrets live in a dedicated DataStore (`remex_reconnect_secrets`, separate from `remex_pinned_hosts`) encrypted via Tink AES-256-GCM AEAD with `hostId` as associated data.
+- **`isMulticastReachableHost` mDNS guard (RemEx-fkz)**: `RemexClientManager` gates self-healing mDNS discovery behind `isMulticastReachableHost(host)`, which returns `false` for Tailscale/CGNAT (100.64.0.0/10) and public IPs. Prevents spamming Android's local-network permission prompt when the saved host is a VPN or public address. Private LAN (10.x, 172.16–31.x, 192.168.x), link-local (169.254.x), and non-IP hostnames all pass as multicast-reachable.
+- **`PinnedHostStore` Tink AEAD corruption recovery**: `aead()` uses a double-checked lock; on init failure (lock-screen key invalidation, app-data cleared with Keystore intact, etc.) it clears the `remex_tink_prefs` SharedPreferences keyset, clears both DataStores, and retries — preventing a permanently bricked app. Keyset is Android Keystore-backed; no deprecated `EncryptedSharedPreferences` or `MasterKey` APIs.
 
 <!-- END AUTO-MANAGED -->
 
@@ -391,6 +395,7 @@ When touching any of these files, treat as security-critical and require user si
 - `RemEx.Host/Services/Security/PairedClientRegistry.cs` — proof-of-possession reconnect auth implemented (PAIR-1 closed); reconnect-secret file 0600 (PAIR-4 closed)
 - `RemEx.Host/HostBootstrapper.cs` — `EvaluateDesktopAuth` enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop` (PAIR-5 closed, PROTO-2 closed)
 - `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — JNI-1/2/3/4/5 all closed; export guard catches managed exceptions before escaping `[UnmanagedCallersOnly]`
+- `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` — Tink AES-256-GCM AEAD encrypted SPKI hashes and PAIR-1 reconnect secrets; two DataStores; Android Keystore-backed; corruption self-recovery. Changes here affect all client-side certificate pinning and reconnect auth.
 
 ### Cross-Platform Rule for All Orders
 
