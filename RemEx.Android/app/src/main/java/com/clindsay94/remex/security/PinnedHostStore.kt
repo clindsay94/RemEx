@@ -18,6 +18,11 @@ import kotlinx.coroutines.flow.first
 private val Context.pinnedHostDataStore: DataStore<Preferences> by
         preferencesDataStore(name = "remex_pinned_hosts")
 
+// Separate DataStore for PAIR-1 reconnect secrets, kept distinct from the SPKI store so listPaired()
+// over the pinned-host store is never polluted by secret entries. (RemEx-xuo)
+private val Context.reconnectSecretDataStore: DataStore<Preferences> by
+        preferencesDataStore(name = "remex_reconnect_secrets")
+
 /**
  * Encrypted storage for paired host SPKI hashes.
  *
@@ -109,6 +114,44 @@ object PinnedHostStore {
 
     suspend fun removePin(context: Context, hostId: String) {
         context.applicationContext.pinnedHostDataStore.edit { prefs ->
+            prefs.remove(prefKey(hostId))
+        }
+    }
+
+    /**
+     * Persists the PAIR-1 reconnect secret for [hostId], encrypted with the same Tink AEAD as the
+     * pinned SPKI hashes (host identifier bound as associated data). The native client supplies this
+     * on connect to answer the host's proof-of-possession reconnect challenge; without it a paired
+     * client is challenged and rejected as unverified. (RemEx-xuo)
+     */
+    suspend fun setReconnectSecret(context: Context, hostId: String, secret: String) {
+        val cipher =
+                aead(context)
+                        .encrypt(
+                                secret.toByteArray(Charsets.UTF_8),
+                                hostId.toByteArray(Charsets.UTF_8)
+                        )
+        val encoded = Base64.getEncoder().encodeToString(cipher)
+        context.applicationContext.reconnectSecretDataStore.edit { prefs ->
+            prefs[prefKey(hostId)] = encoded
+        }
+    }
+
+    suspend fun getReconnectSecret(context: Context, hostId: String): String? {
+        val prefs = context.applicationContext.reconnectSecretDataStore.data.first()
+        val encoded = prefs[prefKey(hostId)] ?: return null
+        return try {
+            val cipher = Base64.getDecoder().decode(encoded)
+            val plain = aead(context).decrypt(cipher, hostId.toByteArray(Charsets.UTF_8))
+            String(plain, Charsets.UTF_8)
+        } catch (_: Exception) {
+            // Corrupted or tampered entry — treat as no stored secret (forces re-pair).
+            null
+        }
+    }
+
+    suspend fun removeReconnectSecret(context: Context, hostId: String) {
+        context.applicationContext.reconnectSecretDataStore.edit { prefs ->
             prefs.remove(prefKey(hostId))
         }
     }

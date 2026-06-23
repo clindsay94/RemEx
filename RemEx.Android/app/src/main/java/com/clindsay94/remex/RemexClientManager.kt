@@ -311,6 +311,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                             newHash
                                     )
                                     spkiHash = newHash
+                                    // PAIR-1: persist the reconnect secret from the pairing result
+                                    // (OK:hostId|spki|reconnectSecret) so later reconnects can answer
+                                    // the host's proof-of-possession challenge. Stored per-host (by id
+                                    // and ip), mirroring the SPKI pin above. (RemEx-xuo)
+                                    if (parts.size >= 3 && parts[2].isNotBlank()) {
+                                        com.clindsay94.remex.security.PinnedHostStore
+                                                .setReconnectSecret(context, hostId, parts[2])
+                                        com.clindsay94.remex.security.PinnedHostStore
+                                                .setReconnectSecret(context, host, parts[2])
+                                    }
                                     Log.i("RemexManager", "Automatic pairing successful for $host")
                                 }
                             } else {
@@ -337,6 +347,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                     }
                 }
 
+                // PAIR-1: supply the stored reconnect secret so the native client can answer the
+                // host's proof-of-possession challenge on reconnect; without it the host rejects every
+                // request from the connection as unpaired. Null/blank before the first paired
+                // reconnect-secret is stored (then the host challenges and a re-pair is required). (RemEx-xuo)
+                val reconnectSecret =
+                        com.clindsay94.remex.security.PinnedHostStore.getReconnectSecret(context, host)
                 val initRequest =
                         JSONObject().apply {
                             put("host", host)
@@ -344,6 +360,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             put("spkiHash", spkiHash)
                             put("clientId", clientId)
                             put("startTelemetryPolling", true)
+                            if (!reconnectSecret.isNullOrBlank()) {
+                                put("reconnectSecret", reconnectSecret)
+                            }
                         }
                 val initResult = RemexCoreClient.InitRemex(initRequest.toString())
                 val result = initResult.getOrNull() ?: ""
