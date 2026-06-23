@@ -17,8 +17,15 @@
 .PARAMETER NonInteractive
     Skip interactive prompts and use default parameters or passed parameters immediately.
 
+.PARAMETER NoClean
+    Skip the clean phase. Keeps existing artifacts/, bin/, and obj/ folders for faster
+    incremental rebuilds. Use this when iterating on a single platform and you don't need
+    a pristine build environment. Example: -t windows -NoClean
+
 .EXAMPLE
     ./build-remex.ps1 -c release -t all
+.EXAMPLE
+    ./build-remex.ps1 -t windows -NoClean
 .EXAMPLE
     ./build-remex.ps1 (starts interactive wizard if no args are specified)
 #>
@@ -34,7 +41,10 @@ param(
     [string]$Target = "",
 
     [Parameter(Mandatory=$false)]
-    [switch]$NonInteractive
+    [switch]$NonInteractive,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$NoClean
 )
 
 Set-StrictMode -Version Latest
@@ -134,6 +144,8 @@ Write-Host "Selected Configuration: " -NoNewline -ForegroundColor DarkCyan
 Write-Host "$Config" -ForegroundColor Green
 Write-Host "Selected Target(s):     " -NoNewline -ForegroundColor DarkCyan
 Write-Host "$Target" -ForegroundColor Green
+Write-Host "Clean Phase:            " -NoNewline -ForegroundColor DarkCyan
+Write-Host "$(if ($NoClean) { 'Skipped' } else { 'Full' })" -ForegroundColor $(if ($NoClean) { 'Yellow' } else { 'Green' })
 
 # Locate repository root folder
 $RepoRoot = $PSScriptRoot
@@ -198,62 +210,73 @@ function Convert-WindowsPathToWslPath {
 }
 
 # 3. Clean Phase
-Write-Host "=== Starting Hard Clean Phase ===" -ForegroundColor Yellow
+if ($NoClean) {
+    Write-Host "=== Skipping Clean Phase (-NoClean) ===" -ForegroundColor DarkGray
+    Write-Host "Existing artifacts/, bin/, obj/, and Gradle cache will be reused." -ForegroundColor DarkGray
+    # Always refresh the staging folder so output is current
+    if (Test-Path $BuildOutputDir) {
+        Remove-Item -Path $BuildOutputDir -Recurse -Force -ErrorAction Stop
+    }
+    New-Item -ItemType Directory -Force -Path $BuildOutputDir | Out-Null
+    Write-Host "----------------------------------------------------------" -ForegroundColor Gray
+} else {
+    Write-Host "=== Starting Hard Clean Phase ===" -ForegroundColor Yellow
 
-# Clean Output Dir
-if (Test-Path $BuildOutputDir) {
-    Write-Host "Removing existing build_output folder..." -ForegroundColor DarkGray
-    Remove-Item -Path $BuildOutputDir -Recurse -Force -ErrorAction Stop
-}
-New-Item -ItemType Directory -Force -Path $BuildOutputDir | Out-Null
+    # Clean Output Dir
+    if (Test-Path $BuildOutputDir) {
+        Write-Host "Removing existing build_output folder..." -ForegroundColor DarkGray
+        Remove-Item -Path $BuildOutputDir -Recurse -Force -ErrorAction Stop
+    }
+    New-Item -ItemType Directory -Force -Path $BuildOutputDir | Out-Null
 
-# Clean .NET build output to avoid stale caches. With UseArtifactsOutput (Directory.Build.props)
-# all output is consolidated under artifacts/, so that's the primary target; the recursive bin/obj
-# sweep stays as a safety net for any stray legacy folders (e.g. checkouts from before the switch).
-$artifactsDir = Join-Paths $RepoRoot "artifacts"
-if (Test-Path $artifactsDir) {
-    Write-Host "Removing consolidated artifacts/ folder..." -ForegroundColor DarkGray
-    Remove-Item -Path $artifactsDir -Recurse -Force -ErrorAction SilentlyContinue
-}
+    # Clean .NET build output to avoid stale caches. With UseArtifactsOutput (Directory.Build.props)
+    # all output is consolidated under artifacts/, so that's the primary target; the recursive bin/obj
+    # sweep stays as a safety net for any stray legacy folders (e.g. checkouts from before the switch).
+    $artifactsDir = Join-Paths $RepoRoot "artifacts"
+    if (Test-Path $artifactsDir) {
+        Write-Host "Removing consolidated artifacts/ folder..." -ForegroundColor DarkGray
+        Remove-Item -Path $artifactsDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
-Write-Host "Recursively purging any stray .NET bin/obj folders..." -ForegroundColor DarkGray
-$dotNetDirs = Get-ChildItem -Path $RepoRoot -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "bin" -or $_.Name -eq "obj" }
-foreach ($dir in $dotNetDirs) {
-    if ($null -ne $dir -and (Test-Path $dir.FullName)) {
-        try {
-            Write-Host "  Removing directory: $($dir.FullName)" -ForegroundColor DarkGray
-            Remove-Item -Path $dir.FullName -Recurse -Force -ErrorAction Stop
-        } catch {
-            Write-Warning "Could not delete: $($dir.FullName). File may be locked by a running process."
+    Write-Host "Recursively purging any stray .NET bin/obj folders..." -ForegroundColor DarkGray
+    $dotNetDirs = Get-ChildItem -Path $RepoRoot -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "bin" -or $_.Name -eq "obj" }
+    foreach ($dir in $dotNetDirs) {
+        if ($null -ne $dir -and (Test-Path $dir.FullName)) {
+            try {
+                Write-Host "  Removing directory: $($dir.FullName)" -ForegroundColor DarkGray
+                Remove-Item -Path $dir.FullName -Recurse -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "Could not delete: $($dir.FullName). File may be locked by a running process."
+            }
         }
     }
-}
 
-# Clean Android gradle
-if ($Target -eq "android" -or $Target -eq "all") {
-    $gradlew = if ($IsWin) { "gradlew.bat" } else { "gradlew" }
-    $gradlePath = Join-Paths $RepoRoot "RemEx.Android"
-    $gradleCmd = Join-Paths $gradlePath $gradlew
-    if (Test-Path $gradleCmd) {
-        Write-Host "Running Gradle clean..." -ForegroundColor DarkGray
-        Push-Location $gradlePath
-        try {
-            if ($IsWin) {
-                & $gradleCmd clean
-            } else {
-                & bash $gradleCmd clean
+    # Clean Android gradle
+    if ($Target -eq "android" -or $Target -eq "all") {
+        $gradlew = if ($IsWin) { "gradlew.bat" } else { "gradlew" }
+        $gradlePath = Join-Paths $RepoRoot "RemEx.Android"
+        $gradleCmd = Join-Paths $gradlePath $gradlew
+        if (Test-Path $gradleCmd) {
+            Write-Host "Running Gradle clean..." -ForegroundColor DarkGray
+            Push-Location $gradlePath
+            try {
+                if ($IsWin) {
+                    & $gradleCmd clean
+                } else {
+                    & bash $gradleCmd clean
+                }
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Error "Gradle clean failed with exit code $LASTEXITCODE"
+                    exit 1
+                }
+            } finally {
+                Pop-Location
             }
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error "Gradle clean failed with exit code $LASTEXITCODE"
-                exit 1
-            }
-        } finally {
-            Pop-Location
         }
     }
+    Write-Host "Clean phase completed successfully." -ForegroundColor Green
+    Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 }
-Write-Host "Clean phase completed successfully." -ForegroundColor Green
-Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 
 # 4. Synchronize version with Directory.Build.props
 $BuildProps = Join-Paths $RepoRoot "Directory.Build.props"
@@ -605,6 +628,7 @@ Write-Host "==========================================================" -Foregro
 Write-Host "Configuration: $Config" -ForegroundColor DarkCyan
 Write-Host "Target(s):     $Target" -ForegroundColor DarkCyan
 Write-Host "Version:       $Version" -ForegroundColor DarkCyan
+Write-Host "Clean:         $(if ($NoClean) { 'Skipped (-NoClean)' } else { 'Full' })" -ForegroundColor DarkCyan
 Write-Host "Output Folder: $BuildOutputDir" -ForegroundColor DarkCyan
 Write-Host "----------------------------------------------------------" -ForegroundColor Gray
 

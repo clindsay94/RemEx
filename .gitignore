@@ -143,4 +143,9 @@ RemEx.Android/app/google-services.json
 .beads/proxieddb/
 /Remex.Host.Native.Linux/build
 /.ralph
-/Remex.Host.Native.Linux/build
+/.claude-commit-validation.txt
+.claude-session
+.token-savior-cache.json
+FINAL_AUDIT_OPUS.md
+FINAL_AUDIT_SONNET.md
+

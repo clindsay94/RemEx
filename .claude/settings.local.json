@@ -81,7 +81,9 @@
       "mcp__token-savior__set_project_root",
       "mcp__token-savior__get_function_source",
       "PowerShell(bd list *)",
-      "PowerShell(bd show *)"
+      "PowerShell(bd show *)",
+      "Bash(bd list *)",
+      "Bash(bd show *)"
     ]
   },
   "skillOverrides": {
