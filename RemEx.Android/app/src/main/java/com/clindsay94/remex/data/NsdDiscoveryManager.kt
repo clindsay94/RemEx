@@ -176,7 +176,17 @@ class NsdDiscoveryManager(private val context: Context) {
         nsdManager: NsdManager,
         serviceInfo: NsdServiceInfo
     ): DiscoveredHost? = suspendCancellableCoroutine { cont ->
-        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        // Single-thread executor that SILENTLY DISCARDS tasks submitted after shutdown instead of
+        // throwing RejectedExecutionException. unregisterServiceInfoCallback() is asynchronous, so
+        // NsdManager can post a final ServiceInfoCallback event (e.g. onServiceInfoCallbackUnregistered)
+        // to this executor after cleanup() has already shut it down. With the default AbortPolicy that
+        // rejected task is thrown on the system ConnectivityThread and crashes the whole app
+        // ("RemEx has stopped"); DiscardPolicy makes the late post a harmless no-op. (RemEx-0ov)
+        val executor = java.util.concurrent.ThreadPoolExecutor(
+            1, 1, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+            java.util.concurrent.LinkedBlockingQueue(),
+            java.util.concurrent.ThreadPoolExecutor.DiscardPolicy(),
+        )
         var unregistered = false
         lateinit var callback: NsdManager.ServiceInfoCallback
 
