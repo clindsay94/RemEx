@@ -34,10 +34,15 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     private bool _disposed;
 
-    // Throttle for recovery attempts after the duplication is lost (e.g. secure desktop / UAC /
-    // lock screen returns E_ACCESSDENIED). Prevents hammering DuplicateOutput every frame.
-    private DateTime _nextReinitAttemptUtc = DateTime.MinValue;
-    private static readonly TimeSpan ReinitBackoff = TimeSpan.FromSeconds(1);
+    // Rate-limits DuplicateOutput re-initialization after the duplication is lost. A display powering
+    // off (idle sleep), a fullscreen app flipping, or a secure desktop (UAC/lock) makes AcquireNextFrame
+    // return ACCESS_LOST — often on EVERY frame for the whole transition. Re-creating the duplication on
+    // each loss would call DuplicateOutput at the stream's full frame rate against a display mid
+    // power-transition, which wedges DWM (dwmredir.dll) + the NVIDIA driver and black-screens the host
+    // (RemEx-crk). The throttle caps re-init to one attempt per (escalating) backoff window; a healthy
+    // frame resets it so a one-off loss (UAC/resolution change) still recovers within the base interval.
+    private readonly DuplicationReinitThrottle _reinitThrottle =
+        new(baseBackoff: TimeSpan.FromSeconds(1), maxBackoff: TimeSpan.FromSeconds(8));
 
     public int Width  { get; private set; }
     public int Height { get; private set; }
@@ -412,7 +417,10 @@ internal sealed class DxgiDesktopCapture : IDisposable
         var hr = AcquireNextFrame(50u, out var frameInfo, out dxgiResource);
 
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+        {
+            _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
             return _lastRawFrame;
+        }
 
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
         {
@@ -426,6 +434,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
             _logger.LogDebug("AcquireNextFrame hr=0x{Hr:X8}", hr);
             return _lastRawFrame;
         }
+
+        _reinitThrottle.RecordHealthyFrame(); // acquired a real frame — output confirmed healthy
 
         try
         {
@@ -555,7 +565,10 @@ internal sealed class DxgiDesktopCapture : IDisposable
         var hr = AcquireNextFrame(50u, out var frameInfo, out dxgiResource);
 
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+        {
+            _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
             return _lastFrame; // Desktop unchanged — bandwidth-efficient reuse
+        }
 
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
         {
@@ -569,6 +582,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
             _logger.LogDebug("AcquireNextFrame hr=0x{Hr:X8}", hr);
             return _lastFrame;
         }
+
+        _reinitThrottle.RecordHealthyFrame(); // acquired a real frame — output confirmed healthy
 
         try
         {
@@ -685,11 +700,22 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     private void TryReinitializeDuplication()
     {
-        // Release only the duplication + staging texture. Keep D3D device/context alive.
+        // Release the lost duplication + staging texture FIRST so IsAvailable reports false (callers fall
+        // back to GDI) and we never AcquireNextFrame against a dead output. Keep D3D device/context alive.
         Release(ref _stagingTexture);
         Release(ref _duplOutput);
         Width = 0;
         Height = 0;
+
+        // Throttle the DuplicateOutput re-init. While a display is powering off or an app is flipping
+        // fullscreen, AcquireNextFrame returns ACCESS_LOST every frame; without this gate the stream loop
+        // — which treats the cached frame returned below as a successful capture and so never engages its
+        // own failure-backoff — would re-create the duplication at the full frame rate and wedge the GPU
+        // driver (RemEx-crk). Skip until the (escalating) backoff window elapses; TryRecover() retries later.
+        var now = DateTime.UtcNow;
+        if (!_reinitThrottle.ShouldAttempt(now))
+            return;
+        _reinitThrottle.RecordAttempt(now);
 
         try
         {
@@ -700,9 +726,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
         catch (Exception ex)
         {
             UnavailableReason = ex.Message;
-            // Schedule a backoff so TryRecover() doesn't retry immediately. This is normal while a
-            // secure desktop (UAC/lock) is up; recovery succeeds once the user returns to the desktop.
-            _nextReinitAttemptUtc = DateTime.UtcNow + ReinitBackoff;
+            // Normal while a secure desktop (UAC/lock) is up or the display is asleep; the escalating
+            // backoff (already advanced by RecordAttempt) keeps retries from hammering the driver.
             _logger.LogWarning("DXGI reinitialize failed: {Msg}. Falling back to GDI; will retry shortly.", ex.Message);
         }
     }
@@ -717,14 +742,16 @@ internal sealed class DxgiDesktopCapture : IDisposable
     public void TryRecover()
     {
         if (IsAvailable || _disposed) return;
-        if (DateTime.UtcNow < _nextReinitAttemptUtc) return;
+        if (!_reinitThrottle.ShouldAttempt(DateTime.UtcNow)) return;
 
         // Non-blocking: if a capture is mid-flight, skip this attempt.
         if (!_lock.Wait(0)) return;
         try
         {
             if (IsAvailable || _disposed) return;
-            _nextReinitAttemptUtc = DateTime.UtcNow + ReinitBackoff;
+            var now = DateTime.UtcNow;
+            if (!_reinitThrottle.ShouldAttempt(now)) return; // re-check under lock
+            _reinitThrottle.RecordAttempt(now);
 
             // The D3D device usually survives a desktop switch; recreate it only if it was torn down
             // (e.g. driver reset / TDR) so duplication has a valid device to bind to.
@@ -807,6 +834,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         var hr = AcquireNextFrame(0, out var frameInfo, out dxgiResource);
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
         {
+            _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
             return;
         }
 
@@ -822,6 +850,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
             _logger.LogDebug("DXGI pointer-shape refresh AcquireNextFrame hr=0x{Hr:X8}", hr);
             return;
         }
+
+        _reinitThrottle.RecordHealthyFrame(); // acquired a real frame — output confirmed healthy
 
         try
         {
