@@ -298,17 +298,31 @@ public static class HostBootstrapper
             });
         });
 
-        // Returns the active pairing PIN so the local host UI/tray can relay it to a user.
-        // Gated to loopback only: the PIN is the pairing secret, so disclosing it to a
-        // remote caller would defeat the out-of-band pairing model entirely. The tray UI
-        // reads the PIN over the local IPC path, not over HTTP. A non-loopback caller gets
-        // a 404 (not a 403) so the endpoint is not advertised to network scanners.
+        // Returns the active pairing PIN so the local host UI/tray — or a phone reaching the host over
+        // an authenticated Tailscale tunnel — can auto-fill it for the user.
+        //
+        // INTENTIONAL: the Tailscale path exists specifically so someone connecting to their PC remotely
+        // (NOT on the same LAN, so they obviously can't see the PIN shown on the PC screen) can still
+        // pair. Over a Tailscale tunnel the transport is already mutually authenticated and encrypted, so
+        // auto-serving the PIN there is safe and is the only way a genuinely-remote user could ever read
+        // it. Do not "harden" this back to loopback-only without a replacement remote-pairing path — that
+        // is the regression this restores (RemEx-i9e).
+        //
+        // Gated to loopback OR a
+        // genuine Tailscale path (caller AND the host-side address both in the 100.64.0.0/10 /
+        // fd7a:115c:a1e0::/48 ranges; see TransportTrust): on those paths the channel is already
+        // mutually-authenticated and MITM-resistant, so relaying the PIN leaks nothing an attacker could
+        // use. On plain LAN/internet the PIN keeps its out-of-band, anti-MITM purpose and is never served.
+        // This only relays the PIN of an already-active session a human started at the PC, so it adds no
+        // remote-initiation capability. A disallowed caller gets a 404 (not a 403) so the endpoint is not
+        // advertised to network scanners.
         app.MapGet("/pairing-pin", (HttpContext httpContext, IPairingService pairingService) =>
         {
-            // A null RemoteIpAddress (e.g. a non-IP transport) is not loopback — reject it, and avoid
-            // the ArgumentNullException that IsLoopback(null) would otherwise throw inside the handler.
+            // Null remote/local (e.g. a non-IP transport) is treated as untrusted by TransportTrust, which
+            // also avoids the ArgumentNullException that IsLoopback(null) would throw.
             var remoteIp = httpContext.Connection.RemoteIpAddress;
-            if (remoteIp is null || !System.Net.IPAddress.IsLoopback(remoteIp))
+            var localIp = httpContext.Connection.LocalIpAddress;
+            if (!Remex.Host.Services.Security.TransportTrust.IsTrustedForPinAutoFetch(remoteIp, localIp))
             {
                 return Results.NotFound();
             }
@@ -321,10 +335,12 @@ public static class HostBootstrapper
         });
 
         // Proactively starts a pairing session and returns the PIN immediately.
-        // Gated to loopback only for the same reason as /pairing-pin: a non-loopback caller
-        // could otherwise start a session and read the PIN without any host-side consent,
-        // enabling remote takeover. If a genuine remote-provisioning flow is ever required,
-        // it must require an already-paired client token rather than being open.
+        // Deliberately stays loopback-only — unlike /pairing-pin, which was widened to trusted Tailscale
+        // paths. This endpoint *creates* a session and discloses its PIN with no host-side consent, so a
+        // non-loopback caller (even over Tailscale) could otherwise begin pairing and read the PIN with
+        // nobody present at the PC, enabling remote takeover. The auto-fill flow only needs /pairing-pin
+        // (a human starts pairing at the PC; the phone reads the already-active PIN). If a genuine
+        // remote-provisioning flow is ever required, it must require an already-paired client token.
         app.MapPost("/start-pairing", async (
             HttpContext httpContext,
             Remex.Host.Services.Security.PairingService pairingService) =>
