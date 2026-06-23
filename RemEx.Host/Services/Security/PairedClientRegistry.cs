@@ -243,8 +243,12 @@ public sealed class PairedClientRegistry
                 File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException or InvalidOperationException)
         {
+            // InvalidOperationException covers "The security identifier is not allowed to be the owner
+            // of this object" — thrown by SetAccessControl when SetOwner targets a principal the
+            // process can't assign without SeRestorePrivilege. Hardening is best-effort and must never
+            // block pairing persistence, so any of these are logged and swallowed. (RemEx-sgj)
             logger.LogWarning(
                 ex,
                 "Failed to harden permissions on paired client registry at {Path}; the file may be readable by other local users.",
@@ -258,8 +262,8 @@ public sealed class PairedClientRegistry
         var fileInfo = new FileInfo(path);
         var security = new System.Security.AccessControl.FileSecurity();
 
-        // Owner: the account the service runs as (LocalSystem in production). Disable inheritance
-        // so the broad ProgramData ACL does not leak access; grant only LocalSystem + Administrators.
+        // Disable inheritance so the broad ProgramData ACL does not leak access to the reconnect
+        // secrets; grant access only to the service identity, admins, and (when interactive) the user.
         security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
 
         var localSystem = new System.Security.Principal.SecurityIdentifier(
@@ -267,7 +271,16 @@ public sealed class PairedClientRegistry
         var administrators = new System.Security.Principal.SecurityIdentifier(
             System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
 
-        security.SetOwner(localSystem);
+        // Owner: prefer LocalSystem (the production service identity), but only when the process can
+        // actually assign it. Setting the owner to a principal other than yourself requires
+        // SeRestorePrivilege, which the host lacks when it runs interactively as the signed-in user
+        // rather than the LocalSystem service — there SetOwner(LocalSystem) throws
+        // InvalidOperationException ("The security identifier is not allowed to be the owner of this
+        // object"). The current user is always an assignable owner, so fall back to it. (RemEx-sgj)
+        using var current = System.Security.Principal.WindowsIdentity.GetCurrent();
+        var ownerSid = current.IsSystem ? localSystem : (current.User ?? localSystem);
+        security.SetOwner(ownerSid);
+
         security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
             localSystem,
             System.Security.AccessControl.FileSystemRights.FullControl,
@@ -276,6 +289,17 @@ public sealed class PairedClientRegistry
             administrators,
             System.Security.AccessControl.FileSystemRights.FullControl,
             System.Security.AccessControl.AccessControlType.Allow));
+
+        // When the host runs interactively, the signed-in user owns this instance and must keep access
+        // to the store it just wrote; LocalSystem + Administrators still get full control so a later
+        // run as the Windows service can read it. (No extra rule when already running as LocalSystem.)
+        if (!current.IsSystem && current.User != null)
+        {
+            security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+                current.User,
+                System.Security.AccessControl.FileSystemRights.FullControl,
+                System.Security.AccessControl.AccessControlType.Allow));
+        }
 
         fileInfo.SetAccessControl(security);
     }

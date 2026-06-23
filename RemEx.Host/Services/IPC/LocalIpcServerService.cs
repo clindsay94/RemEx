@@ -300,7 +300,12 @@ public class LocalIpcServerService : BackgroundService
                 return true;
             }
 
-            var consoleUserSid = TryGetActiveConsoleUserSid();
+            // Resolve the signed-in interactive user. Strategy 1 (the active console user via
+            // WTSQueryUserToken) works when the host runs as the LocalSystem service. Strategy 2 covers
+            // the merged Avalonia host running interactively as the signed-in user, where
+            // WTSQueryUserToken is unavailable (it needs SE_TCB_NAME / LocalSystem) and the host process
+            // itself IS that user.
+            var consoleUserSid = TryGetActiveConsoleUserSid() ?? TryGetInteractiveHostUserSid();
             return consoleUserSid != null && clientSid.Equals(consoleUserSid);
         }
         catch (Exception ex)
@@ -337,6 +342,39 @@ public class LocalIpcServerService : BackgroundService
         {
             CloseHandle(token);
         }
+    }
+
+    /// <summary>
+    /// Fallback used when the host is NOT the LocalSystem service. When RemEx.Host runs interactively
+    /// (the merged Avalonia app launched by the signed-in user), <see cref="WTSQueryUserToken"/> fails
+    /// because it requires the SE_TCB_NAME privilege that only LocalSystem holds, so the active-console
+    /// lookup is unavailable. In that mode the host process is owned by the signed-in user, so its own
+    /// identity is the authoritative reference: a privileged command is authorized when the caller's SID
+    /// matches the host's own user. Returns null for service accounts (LocalSystem/NetworkService/
+    /// LocalService), which are never interactive logons and are handled by the WTS / LocalSystem path.
+    /// <para>
+    /// This deliberately does NOT require the host to occupy the active console session.
+    /// <see cref="WTSGetActiveConsoleSessionId"/> reports the session currently attached to the physical
+    /// console, which drifts independently of the session the interactive host was launched in
+    /// (lock/unlock, fast-user-switch, RDP reconnect, or the session-keep-unlocked <c>tscon</c> can
+    /// renumber it). The security boundary is "same user as the host", not "same session as the
+    /// physical console".
+    /// </para>
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static SecurityIdentifier? TryGetInteractiveHostUserSid()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var user = identity.User;
+        if (identity.IsSystem
+            || user == null
+            || user.IsWellKnown(WellKnownSidType.NetworkServiceSid)
+            || user.IsWellKnown(WellKnownSidType.LocalServiceSid))
+        {
+            return null;
+        }
+
+        return user;
     }
 
     private async Task<CommandResponse> ExecuteCommandAsync(CommandRequest request)
