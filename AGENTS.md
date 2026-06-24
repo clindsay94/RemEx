@@ -60,6 +60,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 **Recommended execution:** follow `looper-output/RUN_IN_SESSION.md` (in-session operator)
 
 **Root cause (load-bearing):** `RemoteDesktopHandler.cs:383` counts any non-empty pixel buffer as a captured frame. `DxgiDesktopCapture` returns its cached `_lastFrame`/`_lastRawFrame` indistinguishably on `DXGI_ERROR_ACCESS_LOST`; `DuplicationReinitThrottle` can replay that stale buffer for up to 8 s. Net: stale replay counts as success, `consecutiveFailures` never reaches 5, no coded error is emitted — client shows a frozen frame under a live cursor.
+- **RemEx-hmj complete (prereq):** Deferred init landed — `DxgiDesktopCapture` no longer calls `DuplicateOutput` in its constructor; the slot is opened on first actual capture via `EnsureInitialized()`. The idle-slot-hold contention with Windows RDP is resolved. The stale-replay bug (`STALE_CACHE_ON_ACCESS_LOST`) is **still open** and remains the active loop target.
 
 **Load-bearing fix:** thread a freshness signal `capture → handler → consecutiveFailures` — e.g. `CaptureResult { Pixels, IsLive, IsStaleReplay }` or a nullable/out variant — so a stale replay stops counting as a captured frame.
 
@@ -77,6 +78,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - Path casing is load-bearing on Linux: source dir is `RemEx.Host` (capital E-x); test projects are `Remex.Host.Tests` / `Remex.Core.Tests` (lower e-x); solution is `Remex.sln`. Wrong casing passes on Windows, breaks on CachyOS.
 - The live-bit breadcrumb added to the frame envelope must be an **additive optional field** — non-breaking, no `protocolVersion` bump required.
 - Pre-existing test failures in `PairedClientRegistry`/`RemoteDesktopAuth`/`PairingHandler` (issue `RemEx-jgw`) are filtered from gates; gates assert a minimum test count so a zero-match filter cannot show green.
+- **Test host safe doubles (RemEx-21g):** `RemexHostFactory` now default-registers three safe doubles FIRST in DI (last-wins, so `WithServices(...)` overrides still win): `FakeScreenCaptureService` (pure managed, no DXGI/D3D/GDI), `NoOpInteractiveSessionGuard` (no `tscon` call), `NoOpSystemCommandService` (no lock/reboot/shutdown). Defined in `SafeHostTestDoubles.cs`. `ScreenCaptureFakeRegistrationTests` asserts all three resolve to the safe doubles on every default host build. No integration test now touches the GPU, locks the session, or runs a power command.
 <!-- END AUTO-MANAGED -->
 
 ### MCP Tool Discipline
