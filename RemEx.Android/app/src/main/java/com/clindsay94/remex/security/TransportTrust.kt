@@ -39,6 +39,23 @@ object TransportTrust {
         return first == 100 && second in 64..127
     }
 
+    /**
+     * Tailscale MagicDNS gives every node a stable name of the form
+     * `<machine>.<tailnet>.ts.net`. Such a name resolves only inside the tailnet and is
+     * reachable solely through the WireGuard tunnel, so — exactly like a Tailscale CGNAT
+     * address — being able to reach the host by this name implies the tunnel is up and the
+     * peer has been authenticated by Tailscale. A trailing-dot FQDN form is tolerated.
+     *
+     * This deliberately matches only the `.ts.net` suffix (never a bare single-label name,
+     * which is ambiguous with any LAN host, and never a lookalike such as
+     * `evil.ts.net.attacker.com`). Callers still AND this with [isVpnActive], so a `.ts.net`
+     * name with no live tunnel never unlocks trusted-transport behaviour.
+     */
+    fun isTailscaleHostname(host: String): Boolean {
+        val h = host.trim().lowercase().removeSuffix(".")
+        return h.endsWith(".ts.net")
+    }
+
     /** True when the device currently routes through a VPN transport (e.g. Tailscale). */
     fun isVpnActive(context: Context): Boolean {
         return try {
