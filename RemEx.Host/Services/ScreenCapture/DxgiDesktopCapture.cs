@@ -33,6 +33,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private CursorShapeSnapshot? _lastPointerShape;
 
     private bool _disposed;
+    private bool _initialized;
 
     // Rate-limits DuplicateOutput re-initialization after the duplication is lost. A display powering
     // off (idle sleep), a fullscreen app flipping, or a secure desktop (UAC/lock) makes AcquireNextFrame
@@ -238,6 +239,18 @@ internal sealed class DxgiDesktopCapture : IDisposable
     public DxgiDesktopCapture(ILogger logger)
     {
         _logger = logger;
+        // Deferred: DXGI device/duplication not opened until the first actual capture.
+        // The idle service must not hold a Desktop Duplication consumer slot with no
+        // active client — that contends with Windows Remote Desktop's own consumer
+        // ("something watching") and wedges DWM (RemEx-hmj).
+    }
+
+    // Must be called under _lock. Sets _initialized = true after the first attempt so
+    // subsequent callers are no-ops; success or failure is reflected in IsAvailable / UnavailableReason.
+    private void EnsureInitialized()
+    {
+        if (_initialized || _disposed) return;
+        _initialized = true;
         try
         {
             InitializeDevice();
@@ -365,7 +378,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     /// </summary>
     public byte[]? TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor = true)
     {
-        if (!IsAvailable) return null;
+        if (_disposed) return null;
 
         // Non-blocking: if another capture is already in progress, return last frame immediately.
         // This prevents queue buildup for high-FPS streams with multiple concurrent connections.
@@ -374,6 +387,8 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         try
         {
+            EnsureInitialized();
+            if (!IsAvailable) return null;
             return CaptureInternal(quality, scale, jpegEncoder, drawCursor);
         }
         catch (Exception ex)
@@ -391,13 +406,15 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     public byte[]? TryCaptureRaw(double scale, bool drawCursor)
     {
-        if (!IsAvailable) return null;
+        if (_disposed) return null;
 
         if (!_lock.Wait(0))
             return _lastRawFrame;
 
         try
         {
+            EnsureInitialized();
+            if (!IsAvailable) return null;
             return CaptureRawInternal(scale, drawCursor);
         }
         catch (Exception ex)
@@ -742,12 +759,15 @@ internal sealed class DxgiDesktopCapture : IDisposable
     public void TryRecover()
     {
         if (IsAvailable || _disposed) return;
-        if (!_reinitThrottle.ShouldAttempt(DateTime.UtcNow)) return;
+        // Pre-lock throttle check: skip only when _initialized (i.e. first-time init already ran).
+        // Before first init, _initialized is false so we always fall through to EnsureInitialized().
+        if (_initialized && !_reinitThrottle.ShouldAttempt(DateTime.UtcNow)) return;
 
         // Non-blocking: if a capture is mid-flight, skip this attempt.
         if (!_lock.Wait(0)) return;
         try
         {
+            EnsureInitialized();
             if (IsAvailable || _disposed) return;
             var now = DateTime.UtcNow;
             if (!_reinitThrottle.ShouldAttempt(now)) return; // re-check under lock
