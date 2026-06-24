@@ -44,6 +44,12 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - Requires `ANDROID_HOME` env var or `RemEx.Android/local.properties` (`sdk.dir=...`)
 
 **Version sync:** script reads `versionName` from `RemEx.Android/app/version.properties` and patches `Directory.Build.props` automatically on every run.
+
+**Android Gradle tasks (direct):**
+- `./gradlew remexFreshAssembleDebug` / `remexFreshAssembleRelease` — build without bumping version.
+- `./gradlew remexPublishRelease` — bumps patch version (`versionCode+1`, minor+1, patch→0) and writes back to `version.properties` before building. Use only for actual releases.
+- Signing: reads `remex.signing.*` keys from `local.properties`; falls back to debug signing if absent (safe for local test builds).
+- `libRemexCore.so` is resolved from `artifacts/bin/Remex.Core/<config>_net10.0-android_android-arm64/native/` (UseArtifactsOutput layout) with fallback to legacy `bin/`. APK output named `RemEx-V${versionName}-${variant}.apk`.
 <!-- END AUTO-MANAGED -->
 
 ### MCP Tool Discipline
@@ -221,7 +227,7 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
   - `Validation/CoordinateValidation` — `ClampAbsolute(float, int)` / `ClampDelta(float, int)`: sanitize untrusted float coordinates from remote clients before pixel cast (rejects NaN/±Infinity).
 - `Remex.Host/` — the PC side: Windows Service / Linux daemon, ASP.NET Minimal APIs, WebSocket, mDNS. Runs as LocalSystem in Session 0 on Windows.
   - `Handlers/` — `PairingHandler` (ECDH P-256 handshake), `RemoteDesktopHandler` (codec negotiation, H.264/MJPEG streaming), `PingPongHandler` (keep-alive).
-  - `Services/Security/` — `PairingService` (ECDH state machine), `PairedClientRegistry` (proof-of-possession reconnect auth), `PairingThrottle` (per-IP rate limiting), `CertificateService` (SPKI management).
+  - `Services/Security/` — `PairingService` (ECDH state machine), `PairedClientRegistry` (proof-of-possession reconnect auth), `PairingThrottle` (per-IP rate limiting), `CertificateService` (SPKI management), `TransportTrust` (network-path trust classifier: loopback / Tailscale / LAN — gates PIN auto-fetch).
   - `Services/Network/` — `PairedClientChannelAuthenticator` (8338 TCP channel auth gate via `PairedClientRegistry`).
   - `Services/IPC/` — `LocalIpcServerService` (`RemExLocalIPC` pipe, privileged-action gate), `HostControlServer` (`RemExHostControl` pipe, headless agent ↔ GUI port-handoff coordination).
   - `Services/RemoteDesktop/` — `IH264Encoder` / `FFmpegH264Encoder` (FFmpeg subprocess, bounded channels, on-demand keyframe).
@@ -274,6 +280,8 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - **`SyncRemexCoreSoTask` ELF verification**: Content-tracks `sourceCandidates` as Gradle inputs (prevents stale `.so` on `-NoClean` builds) and validates the `.so` is AArch64 ELF (magic `0x7F454C46` + `EI_CLASS=2` + `e_machine=0xB7`) before copying into the APK (RemEx-l79 / RemEx-hht).
 - **`DuplicationReinitThrottle` DXGI re-init throttle**: `DxgiDesktopCapture` gates all `TryReinitializeDuplication` / `DuplicateOutput` calls through `DuplicationReinitThrottle` (backoff: 1s base, 8s max, exponential escalation). On `DXGI_ERROR_ACCESS_LOST`, at most one re-init attempt is made per backoff window; confirmed-healthy frames (real frame or `WAIT_TIMEOUT`) call `RecordHealthyFrame()` to reset. Prevents the "display-off storm" that wedged DWM + NVIDIA driver at stream frame rate (RemEx-crk). Clock-injected for deterministic unit tests.
 - **`PinnedHostStore` reconnect-secret persistence (PAIR-1/RemEx-xuo)**: After a successful Android pairing, `RemexClientManager` extracts the `reconnectSecret` from the `OK:hostId|spki|reconnectSecret` result and calls `PinnedHostStore.setReconnectSecret(context, hostId, ...)` + `setReconnectSecret(context, host, ...)`. On reconnect, `getReconnectSecret()` supplies the secret to `RemexCoreClient` to answer the host's proof-of-possession challenge; without a stored secret, the host rejects the reconnect and forces a re-pair. Secrets live in a dedicated DataStore (`remex_reconnect_secrets`, separate from `remex_pinned_hosts`) encrypted via Tink AES-256-GCM AEAD with `hostId` as associated data.
+- **`TransportTrust` PIN auto-fetch gate**: `TransportTrust.IsTrustedForPinAutoFetch(remote, local)` decides whether the active pairing PIN may be served automatically. Allowed only when the caller is loopback, or when BOTH the remote and local addresses are Tailscale (`100.64.0.0/10` or `fd7a:115c:a1e0::/48`). Requiring both ends to be Tailscale defeats a LAN attacker who spoofs a `100.64.x.x` source while connecting to the host's LAN IP. Host-side mirror of Android's `TransportTrust.kt`; both sides must agree for PIN auto-fill to work over a tunnel. IPv4-mapped addresses (`::ffff:100.64.x.x`) handled for Kestrel compatibility. Pure static — unit-testable without a live connection.
+- **Interactive-host IPC/pairing fallback (RemEx-dqj/RemEx-sgj)**: When `Remex.Host` runs as the signed-in user (not LocalSystem), `LocalIpcServerService` falls back to `TryGetSelfAsActiveConsoleUserSid` — grants privileged commands only when the host process is itself in the active console session as a real (non-system) logon. `PairedClientRegistry.RestrictStorePermissionsWindows` grants full control to the current user (not only LocalSystem + Administrators) so `SetAccessControl` succeeds without `SeRestorePrivilege`. Both paths are identity-gated; a host in a non-console session (RDP, fast-user-switch, Session 0) still cannot authorize another session's identity.
 - **`isMulticastReachableHost` mDNS guard (RemEx-fkz)**: `RemexClientManager` gates self-healing mDNS discovery behind `isMulticastReachableHost(host)`, which returns `false` for Tailscale/CGNAT (100.64.0.0/10) and public IPs. Prevents spamming Android's local-network permission prompt when the saved host is a VPN or public address. Private LAN (10.x, 172.16–31.x, 192.168.x), link-local (169.254.x), and non-IP hostnames all pass as multicast-reachable.
 - **`PinnedHostStore` Tink AEAD corruption recovery**: `aead()` uses a double-checked lock; on init failure (lock-screen key invalidation, app-data cleared with Keystore intact, etc.) it clears the `remex_tink_prefs` SharedPreferences keyset, clears both DataStores, and retries — preventing a permanently bricked app. Keyset is Android Keystore-backed; no deprecated `EncryptedSharedPreferences` or `MasterKey` APIs.
 
@@ -367,6 +375,16 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 | `RemEx-kjq` RD-2 const | RD-2 const | **CLOSED** |
 | `RemEx-lbk` | 8338 docs P1 follow-up | **CLOSED** |
 
+### Post-Release-Gate Fixes (closed after 2.0 gate)
+
+| Bead | Issue | Status |
+|------|-------|--------|
+| `RemEx-i9e` | Pairing PIN auto-populate broken over Tailscale | **CLOSED** — `TransportTrust` host-side classifier; PIN served to verified Tailscale tunnels (`100.64.0.0/10` / `fd7a:115c:a1e0::/48`) in addition to loopback |
+| `RemEx-dqj` | Privileged IPC commands rejected when host runs interactively | **CLOSED** — `LocalIpcServerService.TryGetSelfAsActiveConsoleUserSid` fallback for non-LocalSystem console-session host |
+| `RemEx-sgj` | Pairing persistence throws `InvalidOperationException` when host runs interactively | **CLOSED** — `PairedClientRegistry.RestrictStorePermissionsWindows` uses assignable owner; catch extended |
+| `RemEx-xuo` | Android reconnect rejected (no proof-of-possession secret) | **CLOSED** — `RemexClientManager` persists reconnect secret via `PinnedHostStore`; clients must re-pair once |
+| `RemEx-0ov` | Android crashes on mDNS discovery (`RejectedExecutionException` kills process) | **CLOSED** — `NsdDiscoveryManager` executor uses `DiscardPolicy` instead of `AbortPolicy` |
+
 ### Deferred Beads (measurement-gated, not release blockers)
 
 | Bead | Issue | Status |
@@ -396,6 +414,7 @@ When touching any of these files, treat as security-critical and require user si
 - `RemEx.Host/HostBootstrapper.cs` — `EvaluateDesktopAuth` enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop` (PAIR-5 closed, PROTO-2 closed)
 - `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — JNI-1/2/3/4/5 all closed; export guard catches managed exceptions before escaping `[UnmanagedCallersOnly]`
 - `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` — Tink AES-256-GCM AEAD encrypted SPKI hashes and PAIR-1 reconnect secrets; two DataStores; Android Keystore-backed; corruption self-recovery. Changes here affect all client-side certificate pinning and reconnect auth.
+- `RemEx.Host/Services/Security/TransportTrust.cs` — gates pairing PIN auto-fetch to loopback and verified Tailscale tunnels; must stay in sync with Android's `TransportTrust.kt`; breakage silently opens PIN to LAN callers or breaks tunnel auto-fill.
 
 ### Cross-Platform Rule for All Orders
 
