@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Remex.Core.Services;
 
 namespace Remex.Host.Tests;
 
@@ -52,7 +53,26 @@ public sealed class RemexHostFactory : WebApplicationFactory<Program>
             Array.Empty<string>(),
             mode: _mode,
             configureWebHost: webHost => webHost.UseTestServer(),
-            configureServices: _configureServices);
+            configureServices: services =>
+            {
+                // Replace OS-disrupting host services with safe doubles for ALL test hosts. Registered
+                // FIRST so any caller override via WithServices(...) runs last and still wins (e.g.
+                // RemoteDesktopHandlerTests' own MockScreenCaptureService / MockCommandService).
+                //
+                //  • Capture: the real WindowsScreenCaptureService opens a live DXGI Desktop Duplication
+                //    session in its constructor, and HostBootstrapper resolves IHostCapabilitiesProvider
+                //    (which depends on IScreenCaptureService) eagerly at startup — so without this every
+                //    fixture boot opens a real session; across the full suite that storm wedges GPU/DWM.
+                //  • Session guard: the real WindowsInteractiveSessionGuard runs `tscon /dest:console`
+                //    (when the keep-session-unlocked flag is set) which physically locks the developer's
+                //    Windows session — screen flash → login/PIN screen.
+                //  • System commands: defense-in-depth so a test can never lock/sign-out/reboot the box.
+                // (RemEx-21g.)
+                services.AddSingleton<IScreenCaptureService, FakeScreenCaptureService>();
+                services.AddSingleton<Remex.Host.Services.Session.IInteractiveSessionGuard, NoOpInteractiveSessionGuard>();
+                services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, NoOpSystemCommandService>();
+                _configureServices?.Invoke(services);
+            });
         app.Start();
         return app;
     }
