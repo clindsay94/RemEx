@@ -52,6 +52,33 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - `libRemexCore.so` is resolved from `artifacts/bin/Remex.Core/<config>_net10.0-android_android-arm64/native/` (UseArtifactsOutput layout) with fallback to legacy `bin/`. APK output named `RemEx-V${versionName}-${variant}.apk`.
 <!-- END AUTO-MANAGED -->
 
+<!-- AUTO-MANAGED: active-loops -->
+### Active Looper Loop — Remote Desktop Frame Fix
+
+**Loop:** `looper-output/loop.yaml` · `looper-output/inputs/context-map.md`
+**Gate dispatcher:** `scripts/gate.ps1 <subcommand>` (preflight | diagnostic | build | host-tests | core-tests | capture-selftest | scope-exclusion | android-build)
+**Recommended execution:** follow `looper-output/RUN_IN_SESSION.md` (in-session operator)
+
+**Root cause (load-bearing):** `RemoteDesktopHandler.cs:383` counts any non-empty pixel buffer as a captured frame. `DxgiDesktopCapture` returns its cached `_lastFrame`/`_lastRawFrame` indistinguishably on `DXGI_ERROR_ACCESS_LOST`; `DuplicationReinitThrottle` can replay that stale buffer for up to 8 s. Net: stale replay counts as success, `consecutiveFailures` never reaches 5, no coded error is emitted — client shows a frozen frame under a live cursor.
+
+**Load-bearing fix:** thread a freshness signal `capture → handler → consecutiveFailures` — e.g. `CaptureResult { Pixels, IsLive, IsStaleReplay }` or a nullable/out variant — so a stale replay stops counting as a captured frame.
+
+**Frame-path failure-mode enum** (every iteration must tag its hypothesis with exactly one):
+`STALE_CACHE_ON_ACCESS_LOST` · `FFMPEG_SILENT_MJPEG_FALLBACK` · `WARMUP_NULL_FRAMES` · `DROPWRITE_CHANNEL_DROP` · `ANDROID_BITMAPFACTORY_NULL_DROP` · `ANDROID_DECODER_SWALLOW_RENDER_ZERO` · `DXGI_REINIT_STORM` · `DISPLAY_OFF_SESSION0`
+
+**Scope exclusions — scope-exclusion gate FAILS any diff touching:**
+- `RemEx.Host/Services/Security/**`
+- `Handlers/Pairing*`
+- `RemexMessage` envelope / `protocolVersion`
+- Named-Pipe (`RemExLocalIPC`) setup
+
+**Agent rules for this work:**
+- `DxgiDesktopCapture` is `sealed` + `[SupportedOSPlatform("windows")]` + P/Invokes GPU — uninstantiable headless/in Session 0. The self-test **must** hit a seam, not the live class.
+- Path casing is load-bearing on Linux: source dir is `RemEx.Host` (capital E-x); test projects are `Remex.Host.Tests` / `Remex.Core.Tests` (lower e-x); solution is `Remex.sln`. Wrong casing passes on Windows, breaks on CachyOS.
+- The live-bit breadcrumb added to the frame envelope must be an **additive optional field** — non-breaking, no `protocolVersion` bump required.
+- Pre-existing test failures in `PairedClientRegistry`/`RemoteDesktopAuth`/`PairingHandler` (issue `RemEx-jgw`) are filtered from gates; gates assert a minimum test count so a zero-match filter cannot show green.
+<!-- END AUTO-MANAGED -->
+
 ### MCP Tool Discipline
 
 Before reaching for `grep`, `Read`, or raw `Bash`, consult the decision matrix in `CLAUDE.md`:
