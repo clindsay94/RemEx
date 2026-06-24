@@ -439,10 +439,17 @@ abstract class VerifyRemexCoreInApkTask : DefaultTask() {
     @get:Input
     abstract val rcDir: Property<String>
 
-    @get:InputFile
+    // Not @InputFile: both files are produced by upstream tasks (syncRemexCore*So and
+    // mergeXNativeLibs) and do not exist yet at task-property-validation time on a fresh/clean
+    // build. With the configuration cache enabled, declaring them @InputFile makes Gradle fail
+    // validation ("input file ... doesn't exist") before the producing task runs — this is what
+    // broke `remexFreshAssembleDebug` until the config cache was cleared by hand. Same rationale
+    // as strippedArm64So/apkDirectory below: the task has no outputs (so it always reruns) and
+    // verifies existence + content hashes at execution time, so a formal input adds nothing.
+    @get:Internal
     abstract val generatedArm64So: RegularFileProperty
 
-    @get:InputFile
+    @get:Internal
     abstract val mergedArm64So: RegularFileProperty
 
     @get:Internal
@@ -654,17 +661,20 @@ val remexPublishRelease by project.tasks.registering {
     }
 }
 
-tasks.matching { it.name == "assembleDebug" }.configureEach {
-    mustRunAfter("clean")
-}
-
-
-tasks.matching { it.name == "assembleRelease" }.configureEach {
-    mustRunAfter("clean")
-}
-
-tasks.matching { it.name == "bundleRelease" }.configureEach {
-    mustRunAfter("clean")
+// Force EVERY task (except clean itself) to run after clean whenever clean is part of the build.
+// The remexFreshAssemble* tasks declare dependsOn("clean") + dependsOn("assemble..."), but Gradle
+// does not order those dependencies relative to each other, and a mustRunAfter("clean") on the
+// top-level assemble task does NOT propagate to its hundreds of transitive AGP tasks
+// (processDebugMainManifest, generateDebugGlobalSynthetics, the native sync/merge, etc.). Without
+// this, clean runs concurrently with those tasks and deletes their inputs/outputs mid-build, which
+// produced intermittent failures: vanished navigation.json, R8 "Compilation failed", "Generated
+// libRemexCore.so not found", and "clean: Unable to delete directory (a process is still writing)".
+// mustRunAfter is a soft ordering — inert when clean is not in the graph, so a plain
+// `assembleDebug`/`assembleRelease` (no clean) is unaffected.
+tasks.configureEach {
+    if (name != "clean") {
+        mustRunAfter("clean")
+    }
 }
 
 tasks.matching { it.name == "installDebug" }.configureEach {

@@ -52,7 +52,7 @@ class PairingViewModel : ViewModel() {
             host: String,
             port: Int,
             pin: String,
-            onSuccess: suspend (String, String) -> Unit
+            onSuccess: suspend (String, String, String) -> Unit
     ): Boolean {
         _uiState.value = PairingUiState(isLoading = true)
 
@@ -64,7 +64,10 @@ class PairingViewModel : ViewModel() {
         if (result.startsWith("OK:")) {
             val parts = result.substring(3).split("|")
             if (parts.size >= 2) {
-                onSuccess(parts[0], parts[1])
+                // parts[2] is the PAIR-1 reconnect secret (OK:hostId|spki|reconnectSecret).
+                // Older/edge responses may omit it, so default to empty and let the caller
+                // skip persistence when blank.
+                onSuccess(parts[0], parts[1], if (parts.size >= 3) parts[2] else "")
                 _uiState.value = PairingUiState(isLoading = false)
                 return true
             }
@@ -235,12 +238,21 @@ fun PairingScreen(
         onSubmitPin = {
             coroutineScope.launch {
                 val paired =
-                        viewModel.submitPin(context, host, port, pin) { hostId, spkiHash ->
+                        viewModel.submitPin(context, host, port, pin) { hostId, spkiHash, reconnectSecret ->
                             try {
                                 RemexCoreClient.SetPinnedHostHash(hostId, spkiHash)
                                 RemexCoreClient.SetPinnedHostHash(host, spkiHash)
                                 PinnedHostStore.setPin(context, hostId, spkiHash)
                                 PinnedHostStore.setPin(context, host, spkiHash)
+                                // Persist the PAIR-1 reconnect secret so the next reconnect —
+                                // always non-loopback over Tailscale — can answer the host's
+                                // ReconnectChallenge. Without this the PIN screen pairs OK but
+                                // the first reconnect fails with "Pairing required". Stored under
+                                // both keys, mirroring the auto-connect path (RemexClientManager).
+                                if (reconnectSecret.isNotBlank()) {
+                                    PinnedHostStore.setReconnectSecret(context, hostId, reconnectSecret)
+                                    PinnedHostStore.setReconnectSecret(context, host, reconnectSecret)
+                                }
                             } catch (e: Exception) {
                                 viewModel.setError(
                                         context.getString(R.string.pairing_error_save_failed)

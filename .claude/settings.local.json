@@ -88,7 +88,6 @@
   },
   "skillOverrides": {
     "aspnet-core": "off",
-    "code-reviewer": "off",
     "figma-designer": "off",
     "frontend-design": "off",
     "mcp-builder": "off",
@@ -101,5 +100,6 @@
     "workflow-orchestrator": "off"
   },
   "enabledPlugins": {},
-  "outputStyle": "default"
+  "outputStyle": "default",
+  "spinnerTipsEnabled": true
 }

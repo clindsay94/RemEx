@@ -58,7 +58,10 @@ object TransportTrust {
      */
     fun canAutoFetchPin(context: Context, host: String): Boolean {
         if (isLoopback(host)) return true
-        return isTailscaleAddress(host) && isVpnActive(context)
+        // Keep isVpnActive() as a mandatory conjunct: the active WireGuard transport is what
+        // actually supplies the authenticated, MITM-resistant property. A Tailscale-looking
+        // address OR a *.ts.net name with no live tunnel must NOT unlock auto-fetch.
+        return (isTailscaleAddress(host) || isTailscaleHostname(host)) && isVpnActive(context)
     }
 
     /**
@@ -69,6 +72,6 @@ object TransportTrust {
      * user denied local-network access but reached the host over Tailscale.
      */
     fun requiresLocalNetworkAccess(host: String): Boolean {
-        return !(isLoopback(host) || isTailscaleAddress(host))
+        return !(isLoopback(host) || isTailscaleAddress(host) || isTailscaleHostname(host))
     }
 }
