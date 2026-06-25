@@ -16,12 +16,12 @@ Thanks for your interest in contributing! This document covers how to set up the
 
 ```text
 Remex.sln                    .NET solution
-├── Remex.Core/              Shared models, messages, and validation logic
+├── remex.core/              Shared models, messages, and validation logic
 │                            ↳ Also compiled as libRemexCore.so (NativeAOT) for Android JNI
-├── Remex.Host/              ASP.NET headless service (Minimal APIs + WebSocket + mDNS)
-├── Remex.Client/            Shared Avalonia UI — views, viewmodels, controls, services, themes
-├── Remex.Client.Desktop/    Desktop entry point (Windows / Linux)
-├── RemEx.Android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+├── remex.agent/              ASP.NET headless service (Minimal APIs + WebSocket + mDNS)
+├── remex.desktop/            Shared Avalonia UI — views, viewmodels, controls, services, themes
+├── remex.desktop/    Desktop entry point (Windows / Linux)
+├── remex.android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
 ├── docs/                    Architectural guidelines (Async, Null Safety, Validation)
 ├── scripts/                 Utility scripts (Windows Service installer, android-fresh pipeline)
 └── installer/               Build scripts for Windows (Inno Setup) and Linux (bash)
@@ -34,10 +34,10 @@ Remex.sln                    .NET solution
 ### Host Service & Desktop Client
 ```bash
 # Run Host
-dotnet run --project Remex.Host
+dotnet run --project remex.agent
 
 # Run Client
-dotnet run --project Remex.Client.Desktop
+dotnet run --project remex.desktop
 ```
 
 ### Tests
@@ -67,7 +67,7 @@ pwsh ./installer/build-installer.ps1 -Target Windows
 pwsh ./installer/build-installer.ps1 -Target Linux
 ```
 
-### Native Android App (`RemEx.Android`)
+### Native Android App (`remex.android`)
 The native Android app requires `libRemexCore.so` to be built from `Remex.Core` before assembling the APK.
 ```powershell
 # Build + Verify + Install (recommended)
@@ -90,14 +90,14 @@ We have established strict architectural patterns to ensure "Production Readines
 Managed centrally in `Directory.Build.props`.
 
 ### Android Native App
-Managed in `RemEx.Android/app/version.properties`:
+Managed in `remex.android/app/version.properties`:
 ```properties
 versionCode=15
 versionName=2.0.0
 ```
 
-Use `.\gradlew remexPublishRelease` from the `RemEx.Android/` directory to auto-increment these values and prepare a release build.
-Use `.\gradlew remexFreshAssembleRelease` from the `RemEx.Android/` directory to build a release build without incrementing version.
+Use `.\gradlew remexPublishRelease` from the `remex.android/` directory to auto-increment these values and prepare a release build.
+Use `.\gradlew remexFreshAssembleRelease` from the `remex.android/` directory to build a release build without incrementing version.
 
 ---
 

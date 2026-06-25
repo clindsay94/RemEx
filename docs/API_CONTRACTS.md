@@ -197,7 +197,7 @@ Input events (mouse move, click, scroll, keyboard) are sent from client → host
 - **Response:**
   ```json
   {
-    "service": "Remex.Host",
+    "service": "remex.agent",
     "status": "running",
     "version": "2.0.0"
   }

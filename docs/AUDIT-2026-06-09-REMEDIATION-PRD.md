@@ -6,7 +6,7 @@
 
 ## 0. Agent Ground Rules (read first)
 
-1. **Never delete** any class registered in `RemEx.Android/app/src/main/AndroidManifest.xml` (all `tile/*TileService`, `widget/*Widget*`, `widget/*ConfigActivity`, `service/*`). A reference-count scan flags them as "unused" — they are instantiated by the OS, not by Kotlin code.
+1. **Never delete** any class registered in `remex.android/app/src/main/AndroidManifest.xml` (all `tile/*TileService`, `widget/*Widget*`, `widget/*ConfigActivity`, `service/*`). A reference-count scan flags them as "unused" — they are instantiated by the OS, not by Kotlin code.
 2. Do not run `git commit`, `git push`, or `bd dolt push`. Leave the working tree dirty and report changed files at the end.
 3. If GitNexus MCP tools are available, run `gitnexus_impact({target: "<symbol>", direction: "upstream"})` before editing any C# symbol, per `CLAUDE.md`.
 4. Do **NOT** add `ConfigureAwait(false)` anywhere — repo convention forbids it (`docs/ASYNC_GUIDELINES.md`).
@@ -18,7 +18,7 @@
 ## 1. P0 — Critical (crash / data-corruption / release-integrity)
 
 ### JNI-1: `NewStringUTF`/`GetStringUTFChars` violate Modified-UTF-8 — corrupts or aborts on non-BMP text
-**File:** `Remex.Core/Native/JniHelper.cs` (functions `CreateJString` lines ~46–58, `ReadJString` lines ~23–44)
+**File:** `remex.core/Native/JniHelper.cs` (functions `CreateJString` lines ~46–58, `ReadJString` lines ~23–44)
 
 **Problem:** `CreateJString` passes **standard UTF-8** bytes (`Encoding.UTF8.GetBytes`) to JNI `NewStringUTF` (fn index 167), which requires **Modified UTF-8** (CESU-8: supplementary chars as 6-byte surrogate pairs, `\0` as `0xC0 0x80`). Any emoji / CJK-extension char in a hostname, process name, app label, or file name (these all flow through `NotifyJavaData` JSON) produces malformed Modified-UTF-8 → ART aborts the process under CheckJNI, or silently corrupts the string in release. Symmetrically, `ReadJString` decodes `GetStringUTFChars` output (Modified UTF-8) with `Marshal.PtrToStringUTF8` (standard UTF-8) → supplementary chars from Kotlin (e.g. a file path with emoji sent to `SendMessageNative`) decode as garbage replacement chars.
 
@@ -74,7 +74,7 @@ public static IntPtr CreateJString(IntPtr envPtr, string? value)
 ---
 
 ### JNI-2: No `ExceptionCheck`/`ExceptionClear` after calling into Kotlin callbacks — pending-exception UB
-**File:** `Remex.Core/Native/AndroidNativeExports.cs` — `NotifyJavaData` (~line 953), `NotifyJavaFrame` (~line 884), `NotifyJavaConnectionState` (~line 987)
+**File:** `remex.core/Native/AndroidNativeExports.cs` — `NotifyJavaData` (~line 953), `NotifyJavaFrame` (~line 884), `NotifyJavaConnectionState` (~line 987)
 
 **Problem:** After `JniHelper.CallVoidMethod(...)` invokes a Kotlin `RemexCallback` method, the Kotlin code may throw. JNI leaves that exception **pending on the attached thread**; the code then calls `DeleteLocalRef` / `DetachCurrentThread` and, worse, the *next* callback on a reused .NET thread-pool thread makes JNI calls with a pending exception — undefined behavior, typically a runtime abort ("JNI called with pending exception").
 
@@ -95,7 +95,7 @@ Place it inside the existing `try` block, directly after the `CallVoidMethod` li
 ---
 
 ### BLD-1: Release APK is signed with the **debug** keystore
-**File:** `RemEx.Android/app/build.gradle.kts`, `buildTypes { release { ... } }` block (~line 90)
+**File:** `remex.android/app/build.gradle.kts`, `buildTypes { release { ... } }` block (~line 90)
 
 **Problem:** A `release` signing config is created from `local.properties` (`remex.signing.*`) but the release build type sets `signingConfig = signingConfigs.getByName("debug")`. Every "release" APK is debug-signed: not installable as an upgrade over a properly-signed build, not uploadable to Play.
 
@@ -118,7 +118,7 @@ else
 ---
 
 ### BLD-2: `abiFilters` declares `x86_64` but only an `arm64-v8a` `libRemexCore.so` is produced
-**File:** `RemEx.Android/app/build.gradle.kts`, `defaultConfig { ndk { abiFilters += listOf("arm64-v8a", "x86_64") } }` (~line 73)
+**File:** `remex.android/app/build.gradle.kts`, `defaultConfig { ndk { abiFilters += listOf("arm64-v8a", "x86_64") } }` (~line 73)
 
 **Problem:** The NativeAOT pipeline generates only `generated/remexJniLibs/<variant>/arm64-v8a/libRemexCore.so` (see the `remexGenerated*Arm64So` vals later in the same file). On an x86_64 emulator the APK installs, `System.loadLibrary("RemexCore")` throws `UnsatisfiedLinkError`, `RemexCoreClient.isLibraryLoaded` stays `false`, and every feature silently degrades to "Library not loaded" failures.
 
@@ -137,7 +137,7 @@ Do **not** attempt to add a linux-bionic-x64 NativeAOT build in this pass.
 ## 2. P1 — High (glitches users will hit)
 
 ### JNI-3: `CallVoidMethod` (variadic) invoked through a fixed-arg function pointer
-**Files:** `Remex.Core/Native/JniHelper.cs` (both `CallVoidMethod` overloads, lines ~132–146)
+**Files:** `remex.core/Native/JniHelper.cs` (both `CallVoidMethod` overloads, lines ~132–146)
 
 **Problem:** JNI's `CallVoidMethod` is a **varargs** C function. Calling it through `delegate* unmanaged<IntPtr, IntPtr, IntPtr, IntPtr, void>` works on Android arm64 by ABI coincidence (AAPCS64 passes anonymous args like named ones) but is undefined behavior in general and breaks on x86-64 System-V (the `AL` register protocol for varargs) — i.e. exactly the emulator scenario from BLD-2, and any future ABI. The correct fixed-signature API is **`CallVoidMethodA`** (fn index 63), which takes a `jvalue[]`.
 
@@ -180,7 +180,7 @@ Method signatures and call sites stay identical, so `AndroidNativeExports.cs` ne
 ---
 
 ### JNI-4: AttachCurrentThread/DetachCurrentThread per callback — expensive on the 30–60 fps frame path
-**File:** `Remex.Core/Native/AndroidNativeExports.cs` — `NotifyJavaFrame`, `NotifyJavaData`, `NotifyJavaConnectionState`
+**File:** `remex.core/Native/AndroidNativeExports.cs` — `NotifyJavaFrame`, `NotifyJavaData`, `NotifyJavaConnectionState`
 
 **Problem:** Every telemetry tick and **every video frame** attaches the calling .NET thread to the JVM and detaches it again. Attach/detach allocates a `JNIEnv`, registers the thread with ART, and tears it down — measurable per-frame overhead and lock churn during remote-desktop streaming.
 
@@ -258,28 +258,28 @@ In `TryGetEnv`, after a successful attach: create the key once (`Interlocked.Com
 **Problem:** `collectAsState()` collects forever while the composition exists — including when the Activity is STOPPED. Telemetry/state flows backed by the JNI bridge keep pumping JSON into UI state in the background → battery drain and wasted JNI traffic. `collectAsStateWithLifecycle()` suspends collection below STARTED.
 
 **Fix:**
-1. Add to `RemEx.Android/gradle/libs.versions.toml` `[libraries]`:
+1. Add to `remex.android/gradle/libs.versions.toml` `[libraries]`:
 ```toml
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version = "2.11.0-beta02" }
 ```
 (same version as the existing `lifecycle-runtime-ktx` entry).
-2. Add to `RemEx.Android/app/build.gradle.kts` dependencies block:
+2. Add to `remex.android/app/build.gradle.kts` dependencies block:
 ```kotlin
 implementation(libs.androidx.lifecycle.runtime.compose)
 ```
-3. In every `.kt` file under `RemEx.Android/app/src/main` that contains `collectAsState(`:
+3. In every `.kt` file under `remex.android/app/src/main` that contains `collectAsState(`:
    - replace import `androidx.compose.runtime.collectAsState` with `androidx.lifecycle.compose.collectAsStateWithLifecycle`
    - mechanically replace `.collectAsState()` → `.collectAsStateWithLifecycle()`
    - replace `.collectAsState(initial = X)` / `.collectAsState(X)` → `.collectAsStateWithLifecycle(initialValue = X)` (note: parameter is named `initialValue`, not `initial`)
 4. **Exception:** `data/SettingsManager.kt` (~line 187) has a comment describing `collectAsState(initial = null)` semantics — update the comment wording to match.
 5. **Exception:** Glance widget composables (`widget/*`) do not run in a lifecycle-owner composition — if any `collectAsState` lives in Glance `provideContent` code, leave those untouched. Check each `widget/` file before converting.
 
-**Acceptance:** `grep -rn "androidx.compose.runtime.collectAsState" RemEx.Android/app/src/main` returns 0 hits outside `widget/`; app builds; Dashboard still updates live.
+**Acceptance:** `grep -rn "androidx.compose.runtime.collectAsState" remex.android/app/src/main` returns 0 hits outside `widget/`; app builds; Dashboard still updates live.
 
 ---
 
 ### CMP-2: Splash screen replays on every rotation / config change
-**File:** `RemEx.Android/app/src/main/java/com/clindsay94/remex/MainActivity.kt` (~line 28)
+**File:** `remex.android/app/src/main/java/com/clindsay94/remex/MainActivity.kt` (~line 28)
 
 **Problem:** `var splashShown by remember { mutableStateOf(false) }` — `remember` does not survive configuration changes, so rotating the phone replays the ~1,900-line animated splash.
 
@@ -295,7 +295,7 @@ var splashShown by rememberSaveable { mutableStateOf(false) }
 ---
 
 ### CMP-3: Theme rebuilds `Typography` (and seeded `ColorScheme`) on every recomposition
-**File:** `RemEx.Android/.../ui/theme/Theme.kt`, `RemExTheme` (~lines 336–391)
+**File:** `remex.android/.../ui/theme/Theme.kt`, `RemExTheme` (~lines 336–391)
 
 **Problem:** `MaterialTheme(typography = typographyForFontFamily(fontFamilyKey, fontScale), ...)` constructs 15 `TextStyle`s and potentially Google-Font `FontFamily` objects **on every recomposition of the theme**, and `colorSchemeFromSeed(...)` runs full HCT palette math per recomposition when `themePalette == "custom"`.
 
@@ -347,7 +347,7 @@ Note: `remember` inside a `when` branch is safe here because the branch conditio
 ---
 
 ### JNI-5: Native error path emits hand-concatenated JSON with unescaped exception text
-**File:** `Remex.Core/Native/AndroidNativeExports.cs`, `Export` (~line 1014) and `SerializeTelemetryFailure` (~line 1035)
+**File:** `remex.core/Native/AndroidNativeExports.cs`, `Export` (~line 1014) and `SerializeTelemetryFailure` (~line 1035)
 
 **Problem:** `"{\"success\":false,...,\"error\":\"" + ex.Message + "\"}"` — any quote/backslash/newline in `ex.Message` (socket exceptions frequently quote host strings) produces invalid JSON, breaking Kotlin-side parsing of the failure response exactly when error reporting matters.
 
@@ -377,7 +377,7 @@ private static string SerializeTelemetryFailure(string message, string? error = 
 ## 3. P2 — Medium (correctness debt, dead code, conventions)
 
 ### PG-1: ProGuard rules reference classes/methods that don't exist; cargo-cult keeps
-**File:** `RemEx.Android/app/proguard-rules.pro` — apply all four:
+**File:** `remex.android/app/proguard-rules.pro` — apply all four:
 
 1. `-keepclassmembers class com.clindsay94.remex.security.PairingViewModel { *; }` — `PairingViewModel` actually lives in `com.clindsay94.remex.ui.screens` (declared in `PairingScreen.kt`); the rule is a silent no-op and ViewModels need no keep rule. **Delete the line.**
 2. The block
@@ -404,14 +404,14 @@ private static string SerializeTelemetryFailure(string message, string? error = 
 1. **`FreeMemory` JNI export (dead on both sides):** delete `@JvmStatic internal external fun FreeMemory(pointer: Long)` from `RemexCoreClient.kt` (~line 319) AND the `Java_com_clindsay94_remex_RemexCoreClient_FreeMemory` export method in `AndroidNativeExports.cs`. It is never called from Kotlin (all native returns are jstrings whose refs JNI manages).
 2. `ui/components/HapticModifier.kt` → `triggerHaptic` (only reference is its own declaration). Delete the function; delete the file if it becomes empty.
 3. `ui/screens/RemoteMouseScreen.kt` → `FloatingMouseIsland` composable (only reference is its own declaration). Delete it.
-4. `RemEx.Android/gradle/libs.versions.toml`: after VC-1 below, delete every `[versions]` key with zero remaining `version.ref` references (currently: `glance`, `junitVersion`, `espressoCore`, `lifecycleVersion`, `materialIconsExtended`, `androidxGraphicsPath`, `androidxGraphicsShapes`, `navigationCompose`, `androidxDatastorePreferences`; `activityCompose` becomes USED by VC-1 — keep it). Verify each with grep before deleting.
+4. `remex.android/gradle/libs.versions.toml`: after VC-1 below, delete every `[versions]` key with zero remaining `version.ref` references (currently: `glance`, `junitVersion`, `espressoCore`, `lifecycleVersion`, `materialIconsExtended`, `androidxGraphicsPath`, `androidxGraphicsShapes`, `navigationCompose`, `androidxDatastorePreferences`; `activityCompose` becomes USED by VC-1 — keep it). Verify each with grep before deleting.
 
 **Guardrail reminder:** do not touch `tile/`, `widget/`, or `service/` classes (manifest-registered, OS-instantiated).
 
-**Acceptance:** `grep -rn "FreeMemory\|triggerHaptic\|FloatingMouseIsland" RemEx.Android/app/src Remex.Core` → 0 hits; both builds pass.
+**Acceptance:** `grep -rn "FreeMemory\|triggerHaptic\|FloatingMouseIsland" remex.android/app/src Remex.Core` → 0 hits; both builds pass.
 
 ### VC-1: Version-catalog integrity
-**File:** `RemEx.Android/gradle/libs.versions.toml`
+**File:** `remex.android/gradle/libs.versions.toml`
 
 1. **Bug:** `androidx-activity-compose = { ..., version.ref = "material" }` — activity-compose's version is accidentally tied to the Material version ref (works only because both happen to be `1.13.0` today; bumping Material would silently change activity-compose). Change to `version.ref = "activityCompose"` (key exists, value `1.13.0`).
 2. **Drift:** `[versions] material = "1.13.0"` (with a justifying comment) vs the library entry's inline override `version = "1.14.0"`. Keep **1.14.0** (currently shipping): set the version key to `1.14.0`, change the library to `version.ref = "material"`, update the comment. The restricted `color.utilities` classes used by `Theme.kt`/`DynamicSchemes.kt` must still resolve — the build fails fast if not.
@@ -444,22 +444,22 @@ Replace each `decoder!!.` in the body with the captured local `decoder.`.
 
 **Fix:** make the function `suspend` and replace `try { Thread.sleep(400) } catch (_: InterruptedException) {}` with `kotlinx.coroutines.delay(400)`. The only caller (`startPairing`, ~line 128) already invokes it inside `withContext(Dispatchers.IO) { ... }`, so adding `suspend` compiles cleanly.
 
-### CS-1: `ConfigureAwait` violations in `Remex.Host` (repo convention forbids it)
+### CS-1: `ConfigureAwait` violations in `remex.agent` (repo convention forbids it)
 **Files & counts:** `LinuxPortalInputInjector.cs` ×12, `LinuxPortalRemoteDesktopSessionService.cs` ×15, `PortalDbusHelper.cs` ×3, `PortalRecoveryHelper.cs` ×4, `HostDoctor.cs` ×3, `Program.cs` ×1
 
 **Fix:** delete every `.ConfigureAwait(false)` suffix — mechanical removal, the awaited expression stays. See `docs/ASYNC_GUIDELINES.md`.
 
-**Acceptance:** `grep -rn "ConfigureAwait" Remex.Host` → 0 hits; `dotnet build` + `dotnet test Remex.Host.Tests` pass.
+**Acceptance:** `grep -rn "ConfigureAwait" remex.agent` → 0 hits; `dotnet build` + `dotnet test remex.agent.tests` pass.
 
 ### CS-2: `GetService<T>()` → `GetRequiredService<T>()` (null-safety convention)
-**Files:** `Remex.Client/.../ConnectionViewModel.cs` ×5, `Remex.Client/App.axaml.cs` ×3, `Remex.Client/MainWindow.axaml.cs` ×3, `Remex.Host/HostBootstrapper.cs` ×1
+**Files:** `remex.desktop/.../ConnectionViewModel.cs` ×5, `remex.desktop/App.axaml.cs` ×3, `remex.desktop/MainWindow.axaml.cs` ×3, `remex.agent/HostBootstrapper.cs` ×1
 
 **Fix:** replace `GetService<T>()` with `GetRequiredService<T>()` **only where the result is dereferenced unconditionally or null-forgiven**. Where code legitimately branches on null (optional service), leave it and add `// optional service`. Inspect each of the 12 sites individually.
 
 **Acceptance:** `dotnet build Remex.sln` and `dotnet test Remex.sln` pass.
 
 ### CS-3: `IpcClientCommandService` blocks with `.Wait()` ×10
-**File:** `Remex.Client/Services/IpcClientCommandService.cs` (locate by name)
+**File:** `remex.desktop/Services/IpcClientCommandService.cs` (locate by name)
 
 **Problem:** ten sync-over-async `.Wait()` calls; any reached from the Avalonia UI thread freeze rendering for a named-pipe round trip.
 
@@ -515,7 +515,7 @@ dotnet build Remex.sln -c Release
 dotnet test Remex.sln
 
 # 6.2 Android — compile + lint (CMP-*, PG-*, VC-*, KT-*)
-cd RemEx.Android
+cd remex.android
 .\gradlew :app:assembleDebug :app:lintDebug
 cd ..
 
@@ -536,7 +536,7 @@ For each issue ID: `FIXED | SKIPPED (reason) | BLOCKED (error text)`, list of fi
 
 # Addendum A — Splash Screen Animation Audit (SPL-1 … SPL-7)
 
-**File under audit:** `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/SplashScreen.kt` (1,908 lines, single `SplashScreen` composable + `drawStylizedRLogo` DrawScope helper). Two styles exist and **both are reachable** — `"RemexCommand"` (default) and `"CosmicZoom"`, selectable in Personalization (`PersonalizationScreen.kt` ~line 491, persisted via `SettingsManager.SPLASH_STYLE_KEY`). **Do not delete the CosmicZoom branch.**
+**File under audit:** `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/SplashScreen.kt` (1,908 lines, single `SplashScreen` composable + `drawStylizedRLogo` DrawScope helper). Two styles exist and **both are reachable** — `"RemexCommand"` (default) and `"CosmicZoom"`, selectable in Personalization (`PersonalizationScreen.kt` ~line 491, persisted via `SettingsManager.SPLASH_STYLE_KEY`). **Do not delete the CosmicZoom branch.**
 
 These issues supersede the "document-only" stance of CMP-7 for the specific items below (CMP-7's full-file split remains out of scope).
 
@@ -707,27 +707,27 @@ SPL-1/2/3/4 are covered by §6.2 builds plus this manual pass: play both splash 
 
 # Addendum B — Desktop Client Audit: Avalonia UI, Localization, FAQ/Tutorial (AVA / LOC / FAQ / E issues)
 
-**Scope:** `Remex.Client` (shared Avalonia UI), 26 `.axaml` views, 9 `.resx` localization files (en + es, fr, hi, id, pl, pt-BR, tr, uk), themes in `Remex.Client/Themes/`. Same ground rules as §0. Architecture context the agent needs: `App.axaml` merges `BaseDarkGlass.axaml` at startup; `ThemeService.ApplyBaseThemeInternal` (`Services/ThemeService.cs` ~line 145) **removes all** merged theme dictionaries and inserts only the selected theme file — so every theme file must define the complete key vocabulary (no fallback to BaseDarkGlass).
+**Scope:** `remex.desktop` (shared Avalonia UI), 26 `.axaml` views, 9 `.resx` localization files (en + es, fr, hi, id, pl, pt-BR, tr, uk), themes in `remex.desktop/Themes/`. Same ground rules as §0. Architecture context the agent needs: `App.axaml` merges `BaseDarkGlass.axaml` at startup; `ThemeService.ApplyBaseThemeInternal` (`Services/ThemeService.cs` ~line 145) **removes all** merged theme dictionaries and inserts only the selected theme file — so every theme file must define the complete key vocabulary (no fallback to BaseDarkGlass).
 
 ---
 
 ## B1. P0 — Broken resource references (runtime failures)
 
 ### AVA-1: `RemoteDesktopView` references a converter that does not exist anywhere
-**File:** `Remex.Client/Views/RemoteDesktopView.axaml` lines ~263 and ~269:
+**File:** `remex.desktop/Views/RemoteDesktopView.axaml` lines ~263 and ~269:
 ```xml
 Opacity="{Binding IsRemoteCursorOverlayVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1.0|0.0'}"
 ```
 `BoolToDoubleConverter` is defined in **no** `.axaml` and **no** `.cs` file in the repo. A `StaticResource` that fails to resolve throws at XAML load — this is the remote-cursor overlay added in commit `1493d29`, so the remote-desktop view is at risk of failing to construct (or did at minimum never bind these opacities).
 
 **Fix:**
-1. Create `Remex.Client/Converters/BoolToDoubleConverter.cs`:
+1. Create `remex.desktop/Converters/BoolToDoubleConverter.cs`:
 ```csharp
 using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace Remex.Client.Converters;
+namespace remex.desktop.Converters;
 
 /// <summary>Converts bool → double using a "trueValue|falseValue" ConverterParameter (e.g. '1.0|0.0').</summary>
 public sealed class BoolToDoubleConverter : IValueConverter
@@ -754,12 +754,12 @@ public sealed class BoolToDoubleConverter : IValueConverter
 ```xml
 <conv:BoolToDoubleConverter x:Key="BoolToDoubleConverter"/>
 ```
-(match the file's existing `xmlns` alias for `Remex.Client.Converters`).
+(match the file's existing `xmlns` alias for `remex.desktop.Converters`).
 
-**Acceptance:** `dotnet build Remex.Client` passes; opening the Remote Desktop view no longer throws; the cursor overlay opacity toggles with `IsRemoteCursorOverlayVisible`.
+**Acceptance:** `dotnet build remex.desktop` passes; opening the Remote Desktop view no longer throws; the cursor overlay opacity toggles with `IsRemoteCursorOverlayVisible`.
 
 ### AVA-2: `DiagnosticLogsView` references undefined `TabControlTheme`
-**File:** `Remex.Client/Views/DiagnosticLogsView.axaml` line ~34: `<TabControl Theme="{StaticResource TabControlTheme}">` — no `TabControlTheme` ControlTheme exists anywhere. Same StaticResource-throws-at-load failure mode as AVA-1, on the Diagnostic Logs view.
+**File:** `remex.desktop/Views/DiagnosticLogsView.axaml` line ~34: `<TabControl Theme="{StaticResource TabControlTheme}">` — no `TabControlTheme` ControlTheme exists anywhere. Same StaticResource-throws-at-load failure mode as AVA-1, on the Diagnostic Logs view.
 
 **Fix:** delete the attribute → `<TabControl>`. (Do not author a custom ControlTheme in this pass.)
 
@@ -791,15 +791,15 @@ Views reference them via `DynamicResource` (e.g. `ShellView.axaml` ~line 105 `Co
 **Acceptance:** run the client, switch through all four themes in Customization — rounded corners persist in the nav rail and cards under every theme.
 
 ### AVA-4: `ShellView` style references nonexistent `AccentPrimaryHoverBrush`
-**File:** `Remex.Client/Views/ShellView.axaml` line ~84 — a style setter uses `{DynamicResource AccentPrimaryHoverBrush}`; the defined key in every theme is `AccentHoverBrush`. The hover state silently does nothing.
+**File:** `remex.desktop/Views/ShellView.axaml` line ~84 — a style setter uses `{DynamicResource AccentPrimaryHoverBrush}`; the defined key in every theme is `AccentHoverBrush`. The hover state silently does nothing.
 **Fix:** change `AccentPrimaryHoverBrush` → `AccentHoverBrush`.
 
 ### AVA-5: `PairingDialog` error text uses nonexistent `ErrorTextBrush`
-**File:** `Remex.Client/Views/PairingDialog.axaml` line ~39 — `Foreground="{DynamicResource ErrorTextBrush}"`. Every theme defines `SystemErrorBrush`.
+**File:** `remex.desktop/Views/PairingDialog.axaml` line ~39 — `Foreground="{DynamicResource ErrorTextBrush}"`. Every theme defines `SystemErrorBrush`.
 **Fix:** change `ErrorTextBrush` → `SystemErrorBrush`.
 
 ### AVA-6: Dead theme file `Themes/Material3Android.axaml`
-Defines 14 `M3*` keys (`M3CardCornerRadius`, `M3Elevation1`, …) with **zero consumers** anywhere, is absent from the `AppTheme` enum (`AppTheme.cs`: BaseDarkGlass, CyberNOC, SolarFlare, Monolith, Dynamic), and lacks the ~38 keys live views require — selecting it would break the whole UI if it were ever reachable. **Fix:** delete `Remex.Client/Themes/Material3Android.axaml`. Verify nothing references it: `grep -rn "Material3Android" Remex.Client Remex.Client.Desktop` must return 0 hits afterward (the `.csproj` includes themes by wildcard, so no project-file edit is needed).
+Defines 14 `M3*` keys (`M3CardCornerRadius`, `M3Elevation1`, …) with **zero consumers** anywhere, is absent from the `AppTheme` enum (`AppTheme.cs`: BaseDarkGlass, CyberNOC, SolarFlare, Monolith, Dynamic), and lacks the ~38 keys live views require — selecting it would break the whole UI if it were ever reachable. **Fix:** delete `remex.desktop/Themes/Material3Android.axaml`. Verify nothing references it: `grep -rn "Material3Android" remex.desktop remex.desktop` must return 0 hits afterward (the `.csproj` includes themes by wildcard, so no project-file edit is needed).
 
 **Acceptance (AVA-4/5/6):** `dotnet build Remex.sln` passes; pairing-dialog error text renders red/rose; grep confirms `AccentPrimaryHoverBrush`, `ErrorTextBrush`, and `Material3Android` each have 0 remaining references.
 
@@ -849,9 +849,9 @@ Base `Strings.resx` has 804 keys; **all eight** language files have exactly thes
 **Acceptance:** re-run the parity check — every language file has 804 keys, 0 missing:
 ```powershell
 # quick parity check (PowerShell)
-$base = ([xml](Get-Content Remex.Client/Localization/Strings.resx)).root.data.name
+$base = ([xml](Get-Content remex.desktop/Localization/Strings.resx)).root.data.name
 foreach ($l in 'es','fr','hi','id','pl','pt-BR','tr','uk') {
-  $k = ([xml](Get-Content "Remex.Client/Localization/Strings.$l.resx")).root.data.name
+  $k = ([xml](Get-Content "remex.desktop/Localization/Strings.$l.resx")).root.data.name
   "${l}: missing=" + (Compare-Object $base $k | Where-Object SideIndicator -eq '<=' | Measure-Object).Count
 }
 ```
@@ -997,7 +997,7 @@ The only view without compiled bindings. Add `x:DataType="vm:ConfirmationDialogV
 **Scope:** build scripts (`build-remex.ps1`, `scripts/`, `installer/`), NuGet dependency graph, the headless-host-vs-embedded-host architecture decision, and the remote-desktop input pipeline (Android keyboard → host injection). Same ground rules as §0.
 
 **Architecture facts established by this audit (the agent should treat these as ground truth):**
-- `Remex.Client.Desktop/Program.cs` starts an **embedded in-process host** (`TryStartHost` on port 5005, falling back to 5006) — **unless** the Windows service `RemexHost` is running (line ~51), in which case it skips embedding.
+- `remex.desktop/Program.cs` starts an **embedded in-process host** (`TryStartHost` on port 5005, falling back to 5006) — **unless** the Windows service `RemexHost` is running (line ~51), in which case it skips embedding.
 - The Inno installer (`installer/RemEx.iss`) offers "Desktop Client only" vs "Client + Host Service"; the service is registered by `scripts/install-service.ps1` (`New-Service`, StartupType Automatic, runs as a **user account** whose credentials are collected in the wizard).
 - A Windows service runs in **session 0**: power commands, telemetry, WOL, and pairing all work there, but DXGI desktop duplication **cannot capture the interactive desktop** — the `.iss` text itself admits "Session 0 cannot provide interactive desktop features by itself", and `HostBootstrapper` ships a `WindowsRemoteDesktopDiagnosticReport` for exactly this failure.
 - `RemoteDesktopViewModel.cs` (~line 792) already disambiguates hosts via `meta.HostInstanceId == App.EmbeddedHostInstanceId`.
@@ -1013,7 +1013,7 @@ Delete: root `package.json` (contents: `{}`), root `package-lock.json`, `install
 Symptoms: `Microsoft.Extensions.*` split between `10.0.3` and `10.0.5` across projects; `Microsoft.Win32.Registry 5.0.0` referenced on net10.0 where the API is in-box (legacy shim package).
 1. Create `Directory.Packages.props` at repo root with `<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>` and one `<PackageVersion>` entry per package, taking the **highest** version currently used (i.e. all `Microsoft.Extensions.*` and `System.*` 10.0.x packages → `10.0.5`; everything else stays at its current version).
 2. Strip `Version=` attributes from every `<PackageReference>` in all 7 `.csproj` files.
-3. Remove `<PackageReference Include="Microsoft.Win32.Registry" ...>` from `Remex.Host.csproj`; build — if `Microsoft.Win32.Registry` types fail to resolve, restore the reference at `10.0.x` band equivalent (do not keep 5.0.0).
+3. Remove `<PackageReference Include="Microsoft.Win32.Registry" ...>` from `remex.agent.csproj`; build — if `Microsoft.Win32.Registry` types fail to resolve, restore the reference at `10.0.x` band equivalent (do not keep 5.0.0).
 4. **Do NOT bump:** `FluentAssertions` 7.0.0 (v8 changed license — the pin is deliberate; add a comment saying so), `SkiaSharp` 2.88.8 (3.x is a breaking major; file a follow-up bead instead), `Makaretu.Dns.Multicast` 0.27.0 (unmaintained but load-bearing for mDNS; document the risk in a comment, no replacement in this pass).
 
 **Acceptance:** `dotnet build Remex.sln -c Release` and `dotnet test Remex.sln` pass; `dotnet list Remex.sln package` shows no duplicate-version packages.
@@ -1025,8 +1025,8 @@ Symptoms: `Microsoft.Extensions.*` split between `10.0.3` and `10.0.5` across pr
 ```markdown
 | Task                          | Command |
 |---|---|
-| Run host (dev)                | dotnet run --project Remex.Host |
-| Run desktop client (dev)      | dotnet run --project Remex.Client.Desktop |
+| Run host (dev)                | dotnet run --project remex.agent |
+| Run desktop client (dev)      | dotnet run --project remex.desktop |
 | All tests                     | dotnet test Remex.sln |
 | Full release, all platforms   | ./build-remex.ps1 -c release -t all |
 | Windows client publish only   | ./build-remex.ps1 -c release -t windows-client |
@@ -1036,7 +1036,7 @@ Symptoms: `Microsoft.Extensions.*` split between `10.0.3` and `10.0.5` across pr
 | Linux packages                | ./installer/build-linux.sh   (WSL on Windows) |
 | Install Windows service       | ./scripts/install-service.ps1 -Action Install  (admin) |
 | Remove Windows service        | ./scripts/install-service.ps1 -Action Uninstall (admin) |
-| Linux host prerequisites      | dotnet run --project Remex.Host -- --doctor |
+| Linux host prerequisites      | dotnet run --project remex.agent -- --doctor |
 ```
 3. Update the stale "API Level 36" comment in `build-remex.ps1` (~line 330) and its sdkmanager install target to API 37 (gradle already targets `compileSdk = 37`); same DOC-1 drift as CLAUDE.md.
 
@@ -1045,20 +1045,20 @@ Symptoms: `Microsoft.Extensions.*` split between `10.0.3` and `10.0.5` across pr
 ## C2. Architecture: headless host vs. integrated client — DECISION + fixes
 
 ### ARCH-0 (decision record — add to `docs/`, no code): Keep the hybrid; it is the only design that satisfies the requirement
-The question was whether to drop `Remex.Host` (headless) and just autostart the desktop client. **Answer: no — keep both planes, because Windows makes them physically non-mergeable:**
+The question was whether to drop `remex.agent` (headless) and just autostart the desktop client. **Answer: no — keep both planes, because Windows makes them physically non-mergeable:**
 - A user-session process (desktop client + embedded host) **cannot run before login**. If the requirement is "phone can send commands while the PC sits at the login screen / nobody logged in," only a session-0 Windows service (or scheduled task at boot — same constraint) can serve it.
 - A session-0 service **cannot stream the interactive desktop** (DXGI duplication requires an interactive session; capturing the secure login desktop is privileged territory RemEx should not enter).
 
 So the correct model — which the codebase already 80% implements — is **two planes**:
 | Plane | Process | Runs | Provides |
 |---|---|---|---|
-| Command plane | `Remex.Host` as Windows service / systemd unit | from boot, pre-login | power commands, telemetry, WOL, pairing |
-| Interactive plane | embedded host inside `Remex.Client.Desktop` | from user login | remote desktop streaming, input, app launcher |
+| Command plane | `remex.agent` as Windows service / systemd unit | from boot, pre-login | power commands, telemetry, WOL, pairing |
+| Interactive plane | embedded host inside `remex.desktop` | from user login | remote desktop streaming, input, app launcher |
 
 Write this as `docs/ARCHITECTURE-HOST.md` (one page, the table above plus the three findings below). The remaining work is closing the three gaps:
 
 ### ARCH-1 (P1): Installing the service currently *disables* remote desktop streaming
-`Remex.Client.Desktop/Program.cs` ~line 51: if `IsWindowsServiceRunning("RemexHost")`, the client **skips** starting its embedded host. The service (session 0) cannot stream the desktop → a user who chose "Client + Host Service" in the installer gets *worse* remote desktop than one who chose client-only.
+`remex.desktop/Program.cs` ~line 51: if `IsWindowsServiceRunning("RemexHost")`, the client **skips** starting its embedded host. The service (session 0) cannot stream the desktop → a user who chose "Client + Host Service" in the installer gets *worse* remote desktop than one who chose client-only.
 
 **Fix:** always start the embedded host; when the service is running, start on the fallback port so both coexist:
 ```csharp
@@ -1075,8 +1075,8 @@ EmbeddedHostPort = TryStartHost(args, preferredPort)
 **Risk note — discovery chain verified 2026-06-12:** the advertised port is the real bound port, not a constant (`HostBootstrapper.cs:191` writes `actualPort` into `Host:Port`; `MdnsAdvertisingService.cs:30` reads it), and the phone resolves the advertised port rather than assuming 5005 (`NsdDiscoveryManager.kt` ~lines 123–128 takes `service.port` from the NSD resolve callback). **One gap found:** `MdnsAdvertisingService.cs:31` uses bare `Environment.MachineName` as the mDNS instance name, so with both planes running the two `_remex._tcp` responders would advertise the *same* instance name — an mDNS conflict; the phone may resolve either one nondeterministically. **Include in ARCH-1:** make the instance name port-qualified off the default port, e.g. `string instanceName = port == RemexConstants.DefaultPort ? Environment.MachineName : $"{Environment.MachineName} ({port})";`. The manual two-plane test remains the gate: if the phone cannot reach the 5006 host after this change, STOP, revert, and report BLOCKED with findings — do not improvise a protocol change.
 
 ### ARCH-2 (P1): The desired "runs automatically on PC startup" piece is missing — no client launch-at-login exists
-No autostart implementation exists anywhere in `Remex.Client`/`Remex.Client.Desktop` (no registry Run key, no startup shortcut). Combined with close-to-tray (already shipped in `b352a24`), a launch-at-login toggle completes the story: service covers pre-login, autostarted tray client covers everything after login.
-1. New service `Remex.Client.Desktop/Services/StartupRegistrationService.cs` (Windows: registry `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value name `RemEx`, data `"<exe path>" --minimized`; Linux: write `~/.config/autostart/remex-client.desktop` derived from `installer/linux/remex-client.desktop` with `X-GNOME-Autostart-enabled=true`):
+No autostart implementation exists anywhere in `remex.desktop`/`remex.desktop` (no registry Run key, no startup shortcut). Combined with close-to-tray (already shipped in `b352a24`), a launch-at-login toggle completes the story: service covers pre-login, autostarted tray client covers everything after login.
+1. New service `remex.desktop/Services/StartupRegistrationService.cs` (Windows: registry `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value name `RemEx`, data `"<exe path>" --minimized`; Linux: write `~/.config/autostart/remex-client.desktop` derived from `installer/linux/remex-client.desktop` with `X-GNOME-Autostart-enabled=true`):
 ```csharp
 public interface IStartupRegistrationService
 {
@@ -1122,7 +1122,7 @@ keyboardActions = KeyboardActions(
 Notes for the agent: (a) confirm the `BasicTextField` is **not** `singleLine = true` — multiline is required for the ↵ path; (b) if the project's Compose version names the option `autoCorrect` instead of `autoCorrectEnabled`, use the available one; (c) `autoCorrect` off reduces Gboard composing-region churn, which the diff algorithm otherwise has to unwind as backspaces.
 
 ### REM-2 (P1): Verify the Enter keycode survives the Linux host path
-`LinuxInputBackendRouter.KeyDown` (~line 130) appears to pass the **raw** keycode to `_eis.SendKey((uint)keyCode, ...)`. The Android client sends Windows-style VK codes (13 = Enter), but EIS/uinput expect **evdev** codes (`KEY_ENTER` = 28). `LinuxInputEventTranslator` has the correct mapping (`0x0D => 28`, ~line 159) — confirm `LinuxInputSimulationService.KeyDown/KeyUp` runs the translator **before** calling the router; if any branch (EIS, uinput, portal, xdotool) receives untranslated VK codes, route it through `LinuxInputEventTranslator` first. Add/extend a unit test in `Remex.Host.Tests` asserting VK 13 → evdev 28 and VK 8 (backspace) → evdev 14 through the public KeyDown path with a fake backend.
+`LinuxInputBackendRouter.KeyDown` (~line 130) appears to pass the **raw** keycode to `_eis.SendKey((uint)keyCode, ...)`. The Android client sends Windows-style VK codes (13 = Enter), but EIS/uinput expect **evdev** codes (`KEY_ENTER` = 28). `LinuxInputEventTranslator` has the correct mapping (`0x0D => 28`, ~line 159) — confirm `LinuxInputSimulationService.KeyDown/KeyUp` runs the translator **before** calling the router; if any branch (EIS, uinput, portal, xdotool) receives untranslated VK codes, route it through `LinuxInputEventTranslator` first. Add/extend a unit test in `remex.agent.tests` asserting VK 13 → evdev 28 and VK 8 (backspace) → evdev 14 through the public KeyDown path with a fake backend.
 
 ### REM-3 (P2): On-screen utility key row (UX hardening)
 Priority note: P2 (not P3) is deliberate — this is a capability gap, not polish: the diff-based keyboard can never express non-text keys (Esc, Tab, arrows, Ctrl+x). Add a compact horizontal key bar shown only while the remote keyboard is open (anchor it above the IME, alongside the existing remote-desktop controls in `RemoteDesktopScreen.kt`): chips for `Esc`(27) `Tab`(9) `⌫`(8) `↵`(13) `←`(37) `↑`(38) `↓`(40) `→`(39) `Del`(46) `Win`(91), each calling `viewModel.sendKeyPress(code)` — codes are Windows VKs, which REM-2 makes safe on Linux too. Use `FilledTonalButton`/`AssistChip` in a `LazyRow` with M3 spacing (8.dp gaps, `MaterialTheme.colorScheme` tokens), haptic on press (the codebase has `HapticFeedbackConstants` patterns to copy). New string resources for content descriptions in `strings.xml` + all locale files (follow the project's localization completeness convention).
@@ -1147,7 +1147,7 @@ Priority note: P2 (not P3) is deliberate — this is a capability gap, not polis
 dotnet build Remex.sln -c Release && dotnet test Remex.sln          # BLD-C2, REM-2 test
 ./build-remex.ps1 -c release -t windows-client                       # BLD-C3 new target
 ./build-remex.ps1 -c release -t installer                            # BLD-C3 new target
-cd RemEx.Android; .\gradlew :app:assembleDebug; cd ..                # REM-1/3
+cd remex.android; .\gradlew :app:assembleDebug; cd ..                # REM-1/3
 
 # Manual (report SKIPPED per item if no device/second machine):
 # 1. Install service (no credentials) → reboot → phone sends shutdown command at login screen (ARCH-3, command plane)
@@ -1164,10 +1164,10 @@ ARCH-1 sits last because it ends in a manual hardware gate, not because anything
 **Commit grain:** one commit per PRD ID (`[Agent:<Name>] type: <ID> description` per AGENTS.md). Mechanical sweeps (CS-1, CS-2, CMP-1) are one commit each even when they touch many files.
 ```powershell
 dotnet build Remex.sln -c Release
-dotnet test Remex.Client.Tests
+dotnet test remex.desktop.tests
 
 # Manual pass:
-# 1. Launch client (dotnet run --project Remex.Client.Desktop)
+# 1. Launch client (dotnet run --project remex.desktop)
 # 2. Open Diagnostic Logs view (AVA-2) and Remote Desktop view (AVA-1) — no crash
 # 3. Customization → switch all 4 themes — corner radii + nav colors correct (AVA-3, E-1)
 # 4. Settings → switch each of the 8 languages — close-to-tray section translates (LOC-1),

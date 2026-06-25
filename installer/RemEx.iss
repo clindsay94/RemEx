@@ -10,11 +10,11 @@
 
 #define AppName        "RemEx"
 #define AppPublisher   "Connor Lindsay"
-#define AppExeName     "RemEx.Host.exe"
-#define AppHostExe     "RemEx.Host.exe"
+#define AppExeName     "Remex.Agent.exe"
+#define AppHostExe     "Remex.Agent.exe"
 #define ServiceScript  "scripts\install-service.ps1"
 #ifndef SourceDir
-  #define SourceDir      "..\artifacts\publish\RemEx.Host\release_win-x64"
+  #define SourceDir      "..\artifacts\publish\remex.agent\release_win-x64"
 #endif
 
 [Setup]
@@ -33,7 +33,7 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 
 LicenseFile=terms.rtf
-SetupIconFile=..\RemEx.Host\icon.ico
+SetupIconFile=..\remex.agent\icon.ico
 WizardResizable=yes
 WizardStyle=modern
 

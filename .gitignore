@@ -64,7 +64,7 @@ coverage.opencover.xml
 local.properties
 proguard/
 .gradle/
-RemEx.Android/build/
+remex.android/build/
 .externalNativeBuild
 .cxx
 *.keystore
@@ -80,8 +80,8 @@ test_*.txt
 run_*.txt
 hwinfo_reg.txt
 publish/
-RemEx.Android/app/src/main/jniLibs/
-RemEx.Android/conductor/
+remex.android/app/src/main/jniLibs/
+remex.android/conductor/
 *.agent/*
 
 # AI tool directories
@@ -131,7 +131,7 @@ review-report.md
 .claude/settings.local.json
 
 # Firebase
-RemEx.Android/app/google-services.json
+remex.android/app/google-services.json
 
 # Claude Code auto-memory
 .claude/auto-memory/dirty-files*
@@ -141,7 +141,7 @@ RemEx.Android/app/google-services.json
 *.db
 .beads-credential-key
 .beads/proxieddb/
-/Remex.Host.Native.Linux/build
+/remex.agent.native.linux/build
 /.ralph
 /.claude-commit-validation.txt
 .claude-session

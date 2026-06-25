@@ -4,9 +4,9 @@ These rules apply to ALL agents working in this repository. They are not overrid
 
 ### Host = PC, Client = Android. End of Story.
 
-- `Remex.Host` is the **entire PC side** — Windows Service/daemon plus all PC functionality. Android connects TO this.
-- `RemEx.Android` is the **only** network client. Nothing else is a client.
-- `Remex.Client/` and `Remex.Client.Desktop/` are legacy folders being phased out. Do NOT add new code there.
+- `remex.agent` is the **entire PC side** — Windows Service/daemon plus all PC functionality. Android connects TO this.
+- `remex.android` is the **only** network client. Nothing else is a client.
+- `remex.desktop/` and `remex.desktop/` are legacy folders being phased out. Do NOT add new code there.
 - Connection is always Android → PC, always non-loopback.
 - If you find old references to a "desktop client" connecting to a "desktop host", update them to reflect the current architecture.
 
@@ -35,21 +35,21 @@ These rules apply to ALL agents working in this repository. They are not overrid
 
 **Build output layout:**
 - Intermediate / publish: `artifacts/` (UseArtifactsOutput — not per-project `bin/` or `obj/`)
-  - Windows publish: `artifacts/publish/RemEx.Host/{Config}_win-x64/`
+  - Windows publish: `artifacts/publish/remex.agent/{Config}_win-x64/`
 - Final distributables: `build_output/windows/`, `build_output/android/`, `build_output/linux/`
 
 **Android prerequisites** (auto-installed by the script if missing):
 - Android SDK API Level 37
 - NDK version `30.0.14904198`
-- Requires `ANDROID_HOME` env var or `RemEx.Android/local.properties` (`sdk.dir=...`)
+- Requires `ANDROID_HOME` env var or `remex.android/local.properties` (`sdk.dir=...`)
 
-**Version sync:** script reads `versionName` from `RemEx.Android/app/version.properties` and patches `Directory.Build.props` automatically on every run.
+**Version sync:** script reads `versionName` from `remex.android/app/version.properties` and patches `Directory.Build.props` automatically on every run.
 
 **Android Gradle tasks (direct):**
 - `./gradlew remexFreshAssembleDebug` / `remexFreshAssembleRelease` — build without bumping version.
 - `./gradlew remexPublishRelease` — bumps patch version (`versionCode+1`, minor+1, patch→0) and writes back to `version.properties` before building. Use only for actual releases.
 - Signing: reads `remex.signing.*` keys from `local.properties`; falls back to debug signing if absent (safe for local test builds).
-- `libRemexCore.so` is resolved from `artifacts/bin/Remex.Core/<config>_net10.0-android_android-arm64/native/` (UseArtifactsOutput layout) with fallback to legacy `bin/`. APK output named `RemEx-V${versionName}-${variant}.apk`.
+- `libRemexCore.so` is resolved from `artifacts/bin/remex.core/<config>_net10.0-android_android-arm64/native/` (UseArtifactsOutput layout) with fallback to legacy `bin/`. APK output named `RemEx-V${versionName}-${variant}.apk`.
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: active-loops -->
@@ -62,10 +62,29 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - **STALE_CACHE_ON_ACCESS_LOST (CLOSED):** `IScreenCaptureService` now returns `ScreenCaptureResult { Pixels, IsLive }`. `RemoteDesktopHandler` only resets `consecutiveFailures` on `IsLive = true`; stale replays now propagate to the coded-error path. `FakeScreenCaptureService` covers the `IsLive = false` path in `RemoteDesktopHandlerTests`.
 - **RemEx-960 (CLOSED):** Display-power pause — `WindowsDisplayPowerMonitor` (sealed, `[SupportedOSPlatform("windows")]`) hosts a message-only HWND on a dedicated background thread (`RemEx-DisplayPowerMonitor`) and registers `GUID_CONSOLE_DISPLAY_STATE`. `WindowsScreenCaptureService` forwards `IScreenCaptureService.IsDisplayPoweredOff` from it; the capture loop skips DXGI polling while the monitor is asleep, driving re-init attempts to zero during display-off. `WindowsDisplayPowerMonitor` fails open: if the window/notification cannot be created, `IsDisplayOff` stays `false` and capture behaves exactly as before.
 
-**Agent rules carried forward (still apply to this area):**
+### WGC Capture Backend — CLOSED (RemEx-g6r)
+
+**What landed:** Windows screen capture now uses a **WGC → DXGI → GDI** backend ladder. Windows.Graphics.Capture (WGC) is the preferred per-monitor path; DXGI Desktop Duplication is the fallback; GDI is the last resort. This targets the recurring DXGI driver-wedge / black-screen / cursor-only freeze bug class (`RemEx-crk`, `DXGI_ERROR_ACCESS_LOST`, `RemEx-ltd`) without any change to the wire protocol, H.264 encoder, Android client, or pairing.
+
+**New project:** `remex.agent.windows` (TFM `net10.0-windows10.0.19041.0`) — isolates all WinRT code so the Linux build is completely unaffected. Referenced from `remex.agent.csproj` only under the Windows condition, behind the `WGC_CAPTURE` compile constant. Do NOT add Linux or cross-platform code to this project.
+
+**Key components:**
+- `WgcDesktopCapture` — WGC implementation (`GraphicsCaptureItem` + `Direct3D11CaptureFramePool`). Captures cursor-less (`IsCursorCaptureEnabled = false`); yellow border suppressed (`IsBorderRequired = false` via `IGraphicsCaptureSession3`, no-ops cleanly on older Windows). Implements `IWgcCaptureSource`.
+- `IWgcCaptureSource` — new interface in `remex.core/Services/` defining the WGC contract; keeps WinRT out of Core itself.
+- `CaptureBackendPreference` — reads `HKLM\SOFTWARE\RemEx\Capture\Backend`; parses `Auto` (default) | `Wgc` | `Dxgi` | `Gdi`; fails open to `Auto` on any bad/missing value. Registered in DI via `HostBootstrapper` (Windows only). New operator knobs for capture must go here, not hardcoded.
+- `CaptureScaling` — **moved from `remex.agent` to `Remex.Core`** so both `remex.agent` and `remex.agent.windows` share the encoder-dimension formula. Do not move it back or duplicate it.
+- `WindowsScreenCaptureService` — drives the WGC → DXGI → GDI ladder using `CaptureBackendPreference`.
+
+**Testing seam:** WGC and DXGI both require an interactive session + GPU and are not Session 0 testable. CI coverage is at the `IScreenCaptureService` seam (`FakeScreenCaptureService`) and the HKLM preference parse (`CaptureBackendPreferenceTests`). The real backend matrix requires manual interactive validation.
+
+**Agent rules (carry forward to all work in this area):**
 - `DxgiDesktopCapture` is `sealed` + `[SupportedOSPlatform("windows")]` + P/Invokes GPU — uninstantiable headless/in Session 0. Tests must use `FakeScreenCaptureService`, not the live class.
+- `WgcDesktopCapture` is likewise `[SupportedOSPlatform("windows")]` and requires WinRT + GPU — never instantiate in tests; always use `FakeScreenCaptureService`.
 - `WindowsDisplayPowerMonitor` is also `[SupportedOSPlatform("windows")]` and requires a real message pump — never instantiate it in tests. The `IScreenCaptureService.IsDisplayPoweredOff` property defaults to `false`; fakes and Linux backends inherit that default automatically.
-- Path casing is load-bearing on Linux: source dir is `RemEx.Host` (capital E-x); test projects are `Remex.Host.Tests` / `Remex.Core.Tests` (lower e-x); solution is `Remex.sln`. Wrong casing passes on Windows, breaks on CachyOS.
+- `remex.agent.windows` must stay Windows-only. Never add cross-platform or Linux code there.
+- `CaptureScaling` lives in `Remex.Core` (NativeAOT-safe). Do not move it back to `remex.agent` or create a duplicate.
+- `CaptureBackendPreference` is the single source of truth for operator capture knobs. New per-backend toggles go there.
+- Path casing is load-bearing on Linux: source dir is `remex.agent` (capital E-x); test projects are `remex.agent.tests` / `remex.core.tests` (lower e-x); solution is `Remex.sln`. Wrong casing passes on Windows, breaks on CachyOS.
 - Pre-existing test failures in `PairedClientRegistry`/`RemoteDesktopAuth`/`PairingHandler` (issue `RemEx-jgw`) are filtered from gates; gates assert a minimum test count so a zero-match filter cannot show green.
 - **Test host safe doubles (RemEx-21g):** `RemexHostFactory` default-registers three safe doubles FIRST in DI: `FakeScreenCaptureService` (pure managed, no DXGI/D3D/GDI), `NoOpInteractiveSessionGuard` (no `tscon` call), `NoOpSystemCommandService` (no lock/reboot/shutdown). Defined in `SafeHostTestDoubles.cs`. No integration test touches the GPU, locks the session, or runs a power command.
 <!-- END AUTO-MANAGED -->
@@ -85,7 +104,7 @@ Every PC-side change must work on **both Windows and CachyOS/Linux**. The repo l
 
 ### Code Quality
 
-No lazy code. Use the most correct, robust, maintainable approach. No stub methods, `TODO:` bodies, or "good enough for now" placeholders. Check existing infrastructure (`Remex.Core/Guards`, `Remex.Core/Validation`) before writing new utilities.
+No lazy code. Use the most correct, robust, maintainable approach. No stub methods, `TODO:` bodies, or "good enough for now" placeholders. Check existing infrastructure (`remex.core/Guards`, `remex.core/Validation`) before writing new utilities.
 
 ### Docs & CHANGELOG on Every Change
 
@@ -222,42 +241,42 @@ bd prime                # Refresh Beads context
 <!-- AUTO-MANAGED: project-description -->
 ## Overview
 
-Remote Execution (RemEx) is a cross-platform PC remote management tool. Architecture is **Android (client) → PC (host)**, always non-loopback. `Remex.Host` is the entire PC side (Windows Service / Linux daemon plus all PC functionality). `RemEx.Android` is the only network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+Remote Execution (RemEx) is a cross-platform PC remote management tool. Architecture is **Android (client) → PC (host)**, always non-loopback. `remex.agent` is the entire PC side (Windows Service / Linux daemon plus all PC functionality). `remex.android` is the only network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
 
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: build-commands -->
 ## Build & Development Commands
 
-- `dotnet run --project Remex.Host` — run the PC host service (Android connects to this).
+- `dotnet run --project remex.agent` — run the PC host service (Android connects to this).
 - `dotnet test Remex.sln` — run all tests.
 - `pwsh ./build-remex.ps1 -c release -t all` — unified cross-platform release build (canonical entry point).
 - `.\scripts\android-fresh.ps1 -Configuration Release` — hardened fresh Android build.
 - `./installer/build-linux.sh` — build Linux packages (uses WSL on Windows).
-- `dotnet run --project Remex.Host -- --doctor` — check Linux PipeWire/X11/VAAPI prerequisites.
+- `dotnet run --project remex.agent -- --doctor` — check Linux PipeWire/X11/VAAPI prerequisites.
 
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: architecture -->
 ## Architecture
 
-- `Remex.Core/` — shared models, messages, validation, Guards, serialization; also compiled as `libRemexCore.so` (NativeAOT JNI) for Android. Must stay NativeAOT-safe.
+- `remex.core/` — shared models, messages, validation, Guards, serialization; also compiled as `libRemexCore.so` (NativeAOT JNI) for Android. Must stay NativeAOT-safe.
   - `Validation/CoordinateValidation` — `ClampAbsolute(float, int)` / `ClampDelta(float, int)`: sanitize untrusted float coordinates from remote clients before pixel cast (rejects NaN/±Infinity).
-- `Remex.Host/` — the PC side: Windows Service / Linux daemon, ASP.NET Minimal APIs, WebSocket, mDNS. Runs as LocalSystem in Session 0 on Windows.
+- `remex.agent/` — the PC side: Windows Service / Linux daemon, ASP.NET Minimal APIs, WebSocket, mDNS. Runs as LocalSystem in Session 0 on Windows.
   - `Handlers/` — `PairingHandler` (ECDH P-256 handshake), `RemoteDesktopHandler` (codec negotiation, H.264/MJPEG streaming), `PingPongHandler` (keep-alive).
   - `Services/Security/` — `PairingService` (ECDH state machine), `PairedClientRegistry` (proof-of-possession reconnect auth), `PairingThrottle` (per-IP rate limiting), `CertificateService` (SPKI management), `TransportTrust` (network-path trust classifier: loopback / Tailscale / LAN — gates PIN auto-fetch).
   - `Services/Network/` — `PairedClientChannelAuthenticator` (8338 TCP channel auth gate via `PairedClientRegistry`).
   - `Services/IPC/` — `LocalIpcServerService` (`RemExLocalIPC` pipe, privileged-action gate), `HostControlServer` (`RemExHostControl` pipe, headless agent ↔ GUI port-handoff coordination).
   - `Services/RemoteDesktop/` — `IH264Encoder` / `FFmpegH264Encoder` (FFmpeg subprocess, bounded channels, on-demand keyframe).
   - `Services/ScreenCapture/` — `DxgiDesktopCapture` (DXGI Desktop Duplication API, Windows 10/11, MPO/GPU-composited content; deferred init via `EnsureInitialized()` on first capture — no idle-slot hold at construction); `DuplicationReinitThrottle` (exponential-backoff gate for `DuplicateOutput` re-init; prevents driver-wedge on display power transitions); `WindowsScreenCaptureService` wraps captures as `ScreenCaptureResult { Pixels, IsLive }` — GDI path always `IsLive = true`; DXGI path sets `IsLive = false` on stale `_lastFrame` replays. `IScreenCaptureService` (in `Remex.Core`) defines `ScreenCaptureResult` and the capture contract.
-- `RemEx.Android/` — the only client: Kotlin + Jetpack Compose + JNI → `libRemexCore.so`.
+- `remex.android/` — the only client: Kotlin + Jetpack Compose + JNI → `libRemexCore.so`.
   - `data/NsdDiscoveryManager` — mDNS discovery (`_remex._tcp.`); API 34+ uses concurrent `registerServiceInfoCallback`, pre-34 serialises via process-wide `resolveMutex`.
   - `security/PinnedHostStore` — Tink AES-256-GCM AEAD encrypted storage for paired host SPKI hashes and PAIR-1 reconnect secrets; two DataStores (`remex_pinned_hosts`, `remex_reconnect_secrets`); Android Keystore-backed keyset; corruption self-recovery.
   - `ui/screens/H264StreamDecoder` — `MediaCodec` async hardware decoder; bounded backlog (4 frames), `onKeyframeNeeded` / `onInitFailure` callbacks.
   - `ui/screens/RemoteDesktopViewModel` — stream config, display-target selection, cursor shape overlay, frame-arrival watchdog.
   - `ui/screens/RemoteDesktopScreen` — Jetpack Compose UI, gesture handling (tap/scroll/pinch), immersive full-screen.
   - `ui/screens/ConnectionViewModel` — NSD discovery lifecycle; `discoveryJob: Job?` ensures one in-flight discovery at a time.
-- `Remex.Client/`, `Remex.Client.Desktop/` — legacy, being phased out; do not add new code.
+- `remex.desktop/`, `remex.desktop/` — legacy, being phased out; do not add new code.
 
 Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS 8338 (external script ingress — requires paired `clientId` via `PairedClientChannelAuthenticator`; `CommandRequest` JSON must include `ClientId` field), Named Pipe `RemExLocalIPC` (local service IPC), Named Pipe `RemExHostControl` (agent↔GUI port handoff). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning. Wire message types include `MessageTypes.DesktopKeyframeRequest` (`"desktop_keyframe_request"`) for client-to-host on-demand IDR keyframe requests.
 
@@ -268,18 +287,18 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 
 - Do NOT use `ConfigureAwait(false)` anywhere (CA2007 suppressed).
 - Nullable reference types enabled everywhere; use `Guard.NotNull(arg)` and `GetRequiredService<T>()`.
-- Validate all network-facing input via `Remex.Core/Validation/`.
+- Validate all network-facing input via `remex.core/Validation/`.
 - `Remex.Core` must be NativeAOT-safe: no reflection, no dynamic codegen, source-generated JSON only.
-- On Windows, `Remex.Host` runs as LocalSystem in Session 0: never use `HKCU`/`%APPDATA%`; use `HKLM` and `ProgramData`; keep correct Named Pipe ACLs.
-- All user-facing strings in `Remex.Host` go through `Localization/` (8 languages, live switching).
-- Versions: .NET in `Directory.Build.props`; Android in `RemEx.Android/app/version.properties`.
+- On Windows, `remex.agent` runs as LocalSystem in Session 0: never use `HKCU`/`%APPDATA%`; use `HKLM` and `ProgramData`; keep correct Named Pipe ACLs.
+- All user-facing strings in `remex.agent` go through `Localization/` (8 languages, live switching).
+- Versions: .NET in `Directory.Build.props`; Android in `remex.android/app/version.properties`.
 
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: patterns -->
 ## Detected Patterns
 
-- MVVM in `Remex.Host` (`Views/`, `ViewModels/`, `Services/`); four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass) — verify UI changes across all four.
+- MVVM in `remex.agent` (`Views/`, `ViewModels/`, `Services/`); four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass) — verify UI changes across all four.
 - Cross-platform parity (Windows ↔ CachyOS/Linux) required for every PC-side change; each `.ps1` needs a `pwsh`-compatible path or `.sh` equivalent.
 - Every change updates `CHANGELOG.md` (Keep a Changelog) and affected docs.
 - **Proof-of-possession reconnect auth**: `PairedClientRegistry` stores a 32-byte ECDH/HKDF session key per client; reconnect auth is HMAC-over-nonce challenge, NOT bare clientId lookup. `RegisterClient(string, byte[])` is the production path.
@@ -290,7 +309,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - **`PairingThrottle` per-IP rate limiting**: singleton sliding-window throttle applied to `/start-pairing` and `pairing_complete`. Loopback callers bypass (local UI is trusted). Cryptographic jitter on retry hint. `PairingService` additionally caps failed HMAC attempts at 5 per session with a ~120s session timeout.
 - **`NsdDiscoveryManager` API-level strategy**: API 34+ uses concurrent, cancellable `registerServiceInfoCallback`; pre-34 serialises resolves process-wide via a `Mutex` (NsdManager pre-34 allows only one in-flight resolve). Always acquires a `WifiManager.MulticastLock` for mDNS reliability.
 - **Frame-arrival watchdog in `RemoteDesktopViewModel`**: arms on stream start, resets on every decoded frame, triggers reconnect if no frame arrives within stall timeout. Backstops H.264 decoder-init silent-death path.
-- **`CoordinateValidation` float sanitization**: All absolute pointer coordinates use `CoordinateValidation.ClampAbsolute(float, int)` and all relative deltas use `CoordinateValidation.ClampDelta(float, int)` before casting to `int`. Rejects NaN/±Infinity; clamps to valid pixel bounds. Regression tests in `Remex.Core.Tests/CoordinateValidationTests.cs` (RD-8).
+- **`CoordinateValidation` float sanitization**: All absolute pointer coordinates use `CoordinateValidation.ClampAbsolute(float, int)` and all relative deltas use `CoordinateValidation.ClampDelta(float, int)` before casting to `int`. Rejects NaN/±Infinity; clamps to valid pixel bounds. Regression tests in `remex.core.tests/CoordinateValidationTests.cs` (RD-8).
 - **`AndroidNativeExports` dual-lock model**: `PairingSyncRoot` (separate from the high-frequency `SyncRoot`) serializes pairing-session state transitions so a concurrent `StartPairing`/`SubmitPin` call from a second Java thread waits rather than disposing-then-using the active `ClientWebSocket` (JNI-4). JNI string marshalling (`ReadJString`) happens inside the `Export` guard so managed throws are caught before escaping `[UnmanagedCallersOnly]` (JNI-5).
 - **`MdnsDiscoveryService` SRV validation**: Before composing the `ws://` URL from untrusted multicast data, validates SRV port >= 1 and resolved host passes `Uri.CheckHostName != Unknown` (NSD-6).
 - **`RemExLocalIPC` ACL error surfacing**: `UnauthorizedAccessException` on pipe open returns a distinct "Permission denied" `CommandResponse` rather than collapsing into the generic `IPC Error` path, giving users an actionable message (IPC-8).
@@ -300,7 +319,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 - **`ScreenCaptureResult.IsLive` stale-replay signal (RemEx-hmj / STALE_CACHE_ON_ACCESS_LOST — CLOSED)**: `IScreenCaptureService` capture methods return `ScreenCaptureResult { Pixels, IsLive }`. `IsLive = true` means a fresh real frame was produced; `IsLive = false` means the cached `_lastFrame` was replayed (e.g. on `DXGI_ERROR_ACCESS_LOST` during the `DuplicationReinitThrottle` backoff window). `RemoteDesktopHandler` only resets `consecutiveFailures` on `IsLive = true`; stale replays now propagate to the coded-error path. `DxgiDesktopCapture` deferred init (`EnsureInitialized()` on first capture, not in constructor) eliminates the idle-slot-hold that blocked Windows RDP when RemEx was idle. GDI fallback path always returns `IsLive = true` (never cached). Tested via `FakeScreenCaptureService` in `RemoteDesktopHandlerTests`.
 - **`PinnedHostStore` reconnect-secret persistence (PAIR-1/RemEx-xuo)**: After a successful Android pairing, `RemexClientManager` extracts the `reconnectSecret` from the `OK:hostId|spki|reconnectSecret` result and calls `PinnedHostStore.setReconnectSecret(context, hostId, ...)` + `setReconnectSecret(context, host, ...)`. On reconnect, `getReconnectSecret()` supplies the secret to `RemexCoreClient` to answer the host's proof-of-possession challenge; without a stored secret, the host rejects the reconnect and forces a re-pair. Secrets live in a dedicated DataStore (`remex_reconnect_secrets`, separate from `remex_pinned_hosts`) encrypted via Tink AES-256-GCM AEAD with `hostId` as associated data.
 - **`TransportTrust` PIN auto-fetch gate**: Host-side `TransportTrust.IsTrustedForPinAutoFetch(remote, local)` and Android-side `TransportTrust.canAutoFetchPin(context, host)` must agree for PIN auto-fill to work end-to-end. Host allows PIN auto-fetch when caller is loopback OR both remote and local addresses are Tailscale CGNAT (`100.64.0.0/10` / `fd7a:115c:a1e0::/48`) — requiring both ends defeats a LAN attacker spoofing a `100.64.x.x` source. Android allows PIN auto-fetch for loopback OR (Tailscale address / `*.ts.net` MagicDNS hostname) AND `TRANSPORT_VPN` active — VPN-active check is mandatory; a Tailscale-looking address with no live tunnel must NOT unlock auto-fetch. Host handles IPv4-mapped addresses (`::ffff:100.64.x.x`) for Kestrel. Android `requiresLocalNetworkAccess(host)` returns `false` for loopback/Tailscale/`*.ts.net` targets, gating `NEARBY_WIFI_DEVICES`/`ACCESS_LOCAL_NETWORK` runtime permission requests — changes here can silently break Tailscale users (spurious permission prompts) or open LAN permission gates. Both sides are security-critical and must be kept in sync; changes require explicit user sign-off.
-- **Interactive-host IPC/pairing fallback (RemEx-dqj/RemEx-sgj)**: When `Remex.Host` runs as the signed-in user (not LocalSystem), `LocalIpcServerService` falls back to `TryGetSelfAsActiveConsoleUserSid` — grants privileged commands only when the host process is itself in the active console session as a real (non-system) logon. `PairedClientRegistry.RestrictStorePermissionsWindows` grants full control to the current user (not only LocalSystem + Administrators) so `SetAccessControl` succeeds without `SeRestorePrivilege`. Both paths are identity-gated; a host in a non-console session (RDP, fast-user-switch, Session 0) still cannot authorize another session's identity.
+- **Interactive-host IPC/pairing fallback (RemEx-dqj/RemEx-sgj)**: When `remex.agent` runs as the signed-in user (not LocalSystem), `LocalIpcServerService` falls back to `TryGetSelfAsActiveConsoleUserSid` — grants privileged commands only when the host process is itself in the active console session as a real (non-system) logon. `PairedClientRegistry.RestrictStorePermissionsWindows` grants full control to the current user (not only LocalSystem + Administrators) so `SetAccessControl` succeeds without `SeRestorePrivilege`. Both paths are identity-gated; a host in a non-console session (RDP, fast-user-switch, Session 0) still cannot authorize another session's identity.
 - **`isMulticastReachableHost` mDNS guard (RemEx-fkz)**: `RemexClientManager` gates self-healing mDNS discovery behind `isMulticastReachableHost(host)`, which returns `false` for Tailscale/CGNAT (100.64.0.0/10) and public IPs. Prevents spamming Android's local-network permission prompt when the saved host is a VPN or public address. Private LAN (10.x, 172.16–31.x, 192.168.x), link-local (169.254.x), and non-IP hostnames all pass as multicast-reachable.
 - **`PinnedHostStore` Tink AEAD corruption recovery**: `aead()` uses a double-checked lock; on init failure (lock-screen key invalidation, app-data cleared with Keystore intact, etc.) it clears the `remex_tink_prefs` SharedPreferences keyset, clears both DataStores, and retries — preventing a permanently bricked app. Keyset is Android Keystore-backed; no deprecated `EncryptedSharedPreferences` or `MasterKey` APIs.
 
@@ -310,7 +329,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 ## Git Insights
 
 - Active development branch: `2.0` (main branch for PRs: `main`).
-- Hottest areas by recent history: `Remex.Host` (PC side), `RemEx.Android`, `Remex.Host.Native.Linux`, with `Remex.Client` being phased out.
+- Hottest areas by recent history: `remex.agent` (PC side), `remex.android`, `remex.agent.native.linux`, with `remex.desktop` being phased out.
 - Gitignored (do not commit): AI tool dirs (`.gemini/`, `.superpowers/`, `.antigravitycli/`), `.claude/auto-memory/dirty-files*`, `.claude/settings.local.json`, `.beads/proxieddb/`, `.beads-credential-key`, `.dolt/`, `*.db`. Only `.beads/issues.jsonl` is tracked (passive Beads export).
 
 <!-- END AUTO-MANAGED -->
@@ -338,7 +357,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 | All P1 beads closed | PASSED (12/12) |
 | Linux runtime parity | PENDING (RemEx-lr9 — in-progress, environment-blocked on Windows dev host) |
 | Deferred perf (RD-6/RD-7) | DEFERRED — measurement-gated, logged on bead |
-| Remex.Client removal | DEFERRED (RemEx-d8s, P2) |
+| remex.desktop removal | DEFERRED (RemEx-d8s, P2) |
 
 ### P0 Beads — ALL CLOSED
 
@@ -417,23 +436,23 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 | Bead | Priority | Description |
 |------|----------|-------------|
 | `RemEx-lr9` | P1 — IN PROGRESS | CachyOS/Linux runtime parity validation (IPC pipe 0600, CertPFX 0600, paired_clients.json 0600, MdnsAdvertising virtual-iface filter). Code compiles cross-platform; runtime validation environment-blocked on Windows dev host. |
-| `RemEx-d8s` | P2 — open | Remove `Remex.Client` entirely — migrate Host-used services into Host/Core, delete legacy UI. Sequence after all P0/P1 fixes. |
+| `RemEx-d8s` | P2 — open | Remove `remex.desktop` entirely — migrate Host-used services into Host/Core, delete legacy UI. Sequence after all P0/P1 fixes. |
 | `RemEx-5i9` | P3 — open | Android RD: investigate >60fps ceiling (DXGI capture / display-refresh bound, not codec). |
 
 ### Security Areas — Heightened Caution
 
 When touching any of these files, treat as security-critical and require user sign-off:
-- `Remex.Core/Services/Network/RemexNetworkListener.cs` — 8338 channel; `PairedClientChannelAuthenticator` gates dispatch (PROTO-1 closed); all PROTO P0/P1 beads closed
-- `Remex.Core/Services/Network/MdnsDiscoveryService.cs` — SRV port + host validated before WebSocket URL composition (NSD-6 closed); all NSD P0/P1 beads closed
-- `Remex.Core/Validation/CoordinateValidation.cs` — sanitizes untrusted float coordinates from remote clients; any change here affects all pointer/scroll/drag security
-- `RemEx.Host/Services/IPC/LocalIpcServerService.cs` — pipe ACL now restricted to interactive user + LocalSystem (IPC-1 closed); all IPC P0/P1 beads closed
-- `RemEx.Host/Services/Security/PairingService.cs` — ECDH state machine with 5-attempt cap and ~120s timeout; constant-time raw-byte HMAC implemented (PAIR-6 closed); all PAIR P0/P1 beads closed
-- `RemEx.Host/Services/Security/CertificateService.cs` — SPKI hash management; PFX file permissions 0600 (PAIR-3 closed)
-- `RemEx.Host/Services/Security/PairedClientRegistry.cs` — proof-of-possession reconnect auth implemented (PAIR-1 closed); reconnect-secret file 0600 (PAIR-4 closed)
-- `RemEx.Host/HostBootstrapper.cs` — `EvaluateDesktopAuth` enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop` (PAIR-5 closed, PROTO-2 closed)
-- `Remex.Core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — JNI-1/2/3/4/5 all closed; export guard catches managed exceptions before escaping `[UnmanagedCallersOnly]`
-- `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` — Tink AES-256-GCM AEAD encrypted SPKI hashes and PAIR-1 reconnect secrets; two DataStores; Android Keystore-backed; corruption self-recovery. Changes here affect all client-side certificate pinning and reconnect auth.
-- `RemEx.Host/Services/Security/TransportTrust.cs` — gates pairing PIN auto-fetch to loopback and verified Tailscale tunnels; must stay in sync with Android's `TransportTrust.kt`; breakage silently opens PIN to LAN callers or breaks tunnel auto-fill.
+- `remex.core/Services/Network/RemexNetworkListener.cs` — 8338 channel; `PairedClientChannelAuthenticator` gates dispatch (PROTO-1 closed); all PROTO P0/P1 beads closed
+- `remex.core/Services/Network/MdnsDiscoveryService.cs` — SRV port + host validated before WebSocket URL composition (NSD-6 closed); all NSD P0/P1 beads closed
+- `remex.core/Validation/CoordinateValidation.cs` — sanitizes untrusted float coordinates from remote clients; any change here affects all pointer/scroll/drag security
+- `remex.agent/Services/IPC/LocalIpcServerService.cs` — pipe ACL now restricted to interactive user + LocalSystem (IPC-1 closed); all IPC P0/P1 beads closed
+- `remex.agent/Services/Security/PairingService.cs` — ECDH state machine with 5-attempt cap and ~120s timeout; constant-time raw-byte HMAC implemented (PAIR-6 closed); all PAIR P0/P1 beads closed
+- `remex.agent/Services/Security/CertificateService.cs` — SPKI hash management; PFX file permissions 0600 (PAIR-3 closed)
+- `remex.agent/Services/Security/PairedClientRegistry.cs` — proof-of-possession reconnect auth implemented (PAIR-1 closed); reconnect-secret file 0600 (PAIR-4 closed)
+- `remex.agent/HostBootstrapper.cs` — `EvaluateDesktopAuth` enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop` (PAIR-5 closed, PROTO-2 closed)
+- `remex.core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — JNI-1/2/3/4/5 all closed; export guard catches managed exceptions before escaping `[UnmanagedCallersOnly]`
+- `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` — Tink AES-256-GCM AEAD encrypted SPKI hashes and PAIR-1 reconnect secrets; two DataStores; Android Keystore-backed; corruption self-recovery. Changes here affect all client-side certificate pinning and reconnect auth.
+- `remex.agent/Services/Security/TransportTrust.cs` — gates pairing PIN auto-fetch to loopback and verified Tailscale tunnels; must stay in sync with Android's `TransportTrust.kt`; breakage silently opens PIN to LAN callers or breaks tunnel auto-fill.
 
 ### Cross-Platform Rule for All Orders
 
@@ -443,7 +462,7 @@ Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileS
 
 - **8338 channel (PROTO-1): AUTHENTICATED-REMOTE.** Keep `IPAddress.Any`; do NOT bind loopback. The host runs as LocalSystem in Session 0 so remote commands + telemetry work with no user logged in — restricting to loopback breaks the product's core purpose. Fix: require a paired-client identity (`PairedClientRegistry` token) before `ExecuteCommandAsync` dispatch. **`PairedClientChannelAuthenticator` implements this — CLOSED.**
 - **IPC / Session-0 model: confirmed unchanged.** Remote commands and telemetry flow through the Session-0 service directly; they do NOT traverse the named pipe. Pipe ACL orders (IPC-1/IPC-5/IPC-6) govern only the local tray/dashboard UI (interactive user) talking to the service. All IPC beads now closed.
-- **`Remex.Client` removal (bead `RemEx-d8s`): NOT a clean delete.** `Remex.Host` still references `Remex.Client.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`. Migrate all still-used types into `RemEx.Host`/`Remex.Core` first, then delete the legacy UI and remove `Remex.Client` + `Remex.Client.Tests` from `Remex.sln`. Sequence AFTER all P0/P1 security fixes (which are now done).
+- **`remex.desktop` removal (bead `RemEx-d8s`): NOT a clean delete.** `remex.agent` still references `remex.desktop.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`. Migrate all still-used types into `remex.agent`/`Remex.Core` first, then delete the legacy UI and remove `remex.desktop` + `remex.desktop.tests` from `Remex.sln`. Sequence AFTER all P0/P1 security fixes (which are now done).
 
 ### Definition of Done (release)
 

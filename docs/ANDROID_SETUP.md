@@ -71,7 +71,7 @@ This guide helps you configure the Android SDK for building the RemEx Android ap
 
 5. **Create `local.properties`:**
    ```bash
-   cd /path/to/RemEx/RemEx.Android
+   cd /path/to/RemEx/remex.android
    echo "sdk.dir=$HOME/Android/Sdk" > local.properties
    ```
 
@@ -122,7 +122,7 @@ This guide helps you configure the Android SDK for building the RemEx Android ap
 
 5. **Create `local.properties`:**
    ```powershell
-   cd \path\to\RemEx\RemEx.Android
+   cd \path\to\RemEx\remex.android
    
    # PowerShell
    "sdk.dir=C:\\Android\\Sdk" | Out-File -Encoding ASCII local.properties
@@ -184,7 +184,7 @@ This guide helps you configure the Android SDK for building the RemEx Android ap
 
 5. **Create `local.properties`:**
    ```bash
-   cd /path/to/RemEx/RemEx.Android
+   cd /path/to/RemEx/remex.android
    echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties
    ```
 
@@ -212,7 +212,7 @@ sdk.dir=C:\\Android\\Sdk
 
 For convenience, copy from the template:
 ```bash
-cd RemEx.Android
+cd remex.android
 cp local.properties.example local.properties
 # Edit local.properties and update the sdk.dir path
 ```
@@ -223,7 +223,7 @@ cp local.properties.example local.properties
 
 ### Test the build:
 ```bash
-cd RemEx.Android
+cd remex.android
 dotnet build
 ```
 
@@ -243,7 +243,7 @@ dotnet build
 **Cause:** `local.properties` missing or has incorrect path.
 
 **Solution:**
-1. Verify `local.properties` exists in `RemEx.Android/`
+1. Verify `local.properties` exists in `remex.android/`
 2. Check the `sdk.dir` path is correct
 3. Ensure path uses correct separators (forward slashes on Linux/macOS, double backslashes on Windows)
 
@@ -332,7 +332,7 @@ For production builds, Firebase Crashlytics is used for crash reporting and NDK 
 ### Prerequisites
 1. Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
 2. Add an Android app with package name `com.clindsay94.remex`.
-3. Download `google-services.json` and place it in `RemEx.Android/app/`.
+3. Download `google-services.json` and place it in `remex.android/app/`.
 
 ### NDK Symbol Upload
 The build system is configured to automatically upload unstripped native symbols (`libRemexCore.so`) to Firebase. This enables full C# stack traces for native crashes.

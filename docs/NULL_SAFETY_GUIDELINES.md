@@ -32,7 +32,7 @@ This means:
 
 ## Guard Class Usage
 
-The `Guard` class in `Remex.Core/Guards/Guard.cs` provides runtime null checking.
+The `Guard` class in `remex.core/Guards/Guard.cs` provides runtime null checking.
 
 ### Guard.NotNull&lt;T&gt;
 

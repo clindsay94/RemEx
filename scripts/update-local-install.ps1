@@ -1,19 +1,19 @@
 #Requires -RunAsAdministrator
 <#
 .SYNOPSIS
-    Rebuilds RemEx.Host and copies the fresh self-contained publish over an existing
+    Rebuilds Remex.Agent and copies the fresh self-contained publish over an existing
     local installation — the fast "I changed code, update my installed copy" loop.
 
 .DESCRIPTION
     The installer (installer/RemEx.iss) ships a SELF-CONTAINED win-x64 publish: a whole
-    folder of DLLs + the .NET runtime, not just RemEx.Host.exe. Code changes land in the
-    managed DLLs (RemEx.Host.dll, Remex.Core.dll, ...), NOT in the .exe (which is just a
+    folder of DLLs + the .NET runtime, not just Remex.Agent.exe. Code changes land in the
+    managed DLLs (Remex.Agent.dll, Remex.Core.dll, ...), NOT in the .exe (which is just a
     native bootstrap shim). So updating an install means copying the WHOLE publish folder,
     never swapping the .exe alone.
 
     This script:
       1. Stops the RemexHost service if it is installed + running (files are locked otherwise).
-      2. Publishes RemEx.Host exactly like the installer (-r win-x64 --self-contained).
+      2. Publishes Remex.Agent exactly like the installer (-r win-x64 --self-contained).
       3. Copies the publish output over the install directory.
       4. Restarts the service if it was running before.
 
@@ -41,8 +41,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $RepoRoot   = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$HostProj   = Join-Path $RepoRoot "RemEx.Host"
-$PublishDir = Join-Path $RepoRoot "artifacts\publish\RemEx.Host\release_win-x64"
+$HostProj   = Join-Path $RepoRoot "remex.agent"
+$PublishDir = Join-Path $RepoRoot "artifacts\publish\remex.agent\release_win-x64"
 $ServiceName = "RemexHost"
 
 if (-not (Test-Path $InstallDir)) {
@@ -74,7 +74,7 @@ if ($SkipPublish) {
     }
     Write-Host "Reusing existing publish output: $PublishDir" -ForegroundColor DarkGray
 } else {
-    Write-Host "Publishing RemEx.Host (self-contained, win-x64)..." -ForegroundColor Cyan
+    Write-Host "Publishing Remex.Agent (self-contained, win-x64)..." -ForegroundColor Cyan
     dotnet publish $HostProj -c Release -r win-x64 --self-contained
     if ($LASTEXITCODE -ne 0) {
         Write-Error "dotnet publish failed (exit $LASTEXITCODE)."

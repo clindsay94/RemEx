@@ -47,7 +47,7 @@ busctl --user introspect org.freedesktop.portal.Desktop /org/freedesktop/portal/
 systemctl --user status pipewire wireplumber
 
 # Or use the bundled doctor (after install)
-~/.local/share/remex-host/Remex.Host --doctor
+~/.local/share/remex-host/remex.agent --doctor
 ```
 
 **Checkpoint:** `busctl introspect` shows both `org.freedesktop.portal.RemoteDesktop` and `org.freedesktop.portal.ScreenCast`. PipeWire and WirePlumber are `Active: active (running)`. ✓
@@ -65,7 +65,7 @@ tar -xzf remex-client-v2.0.0-linux-x64.tar.gz
 
 You will get a folder named `remex-client-v2.0.0-linux-x64/`.
 
-**Checkpoint:** `ls remex-client-v2.0.0-linux-x64/` shows `install.sh` and `Remex.Client.Desktop`. ✓
+**Checkpoint:** `ls remex-client-v2.0.0-linux-x64/` shows `install.sh` and `remex.desktop`. ✓
 
 ---
 
@@ -277,8 +277,8 @@ tar -xzf remex-host-v2.0.0-linux-x64.tar.gz
 If you want to run without going through the full package/install cycle — for example, after making a code change — use:
 
 ```bash
-dotnet publish Remex.Client.Desktop -c Release -r linux-x64 --self-contained
-./Remex.Client.Desktop/bin/Release/net10.0/linux-x64/publish/Remex.Client.Desktop
+dotnet publish remex.desktop -c Release -r linux-x64 --self-contained
+./remex.desktop/bin/Release/net10.0/linux-x64/publish/remex.desktop
 ```
 
 The MSBuild targets in the `.csproj` automatically copy `libremex_linux_bridge.so` into `publish/runtimes/linux-x64/native/` during the publish step, so no manual copying is needed.
@@ -328,7 +328,7 @@ Then restart the host:
 systemctl --user restart remex-host
 ```
 
-**RemEx ships an automated check.** The host detects this state and self-repairs on the first failed `CreateSession` call per process. The installer's `install.sh install` runs the same `import-environment + restart` pre-emptively, and `~/.local/share/remex-host/Remex.Host --doctor` prints a detailed report plus an option to apply safe repairs.
+**RemEx ships an automated check.** The host detects this state and self-repairs on the first failed `CreateSession` call per process. The installer's `install.sh install` runs the same `import-environment + restart` pre-emptively, and `~/.local/share/remex-host/remex.agent --doctor` prints a detailed report plus an option to apply safe repairs.
 
 If `--doctor` reports that the backend package is missing entirely (rather than "frontend stale"), install it via the dependency table in section A1.
 

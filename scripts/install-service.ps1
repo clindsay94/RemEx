@@ -41,9 +41,9 @@ param(
 $ServiceName   = "RemexHost"
 $DisplayName   = "Remex Host"
 $Description   = "Remex remote execution and telemetry host service."
-$ProjectDir    = Join-Path $PSScriptRoot "..\RemEx.Host"
+$ProjectDir    = Join-Path $PSScriptRoot "..\remex.agent"
 $EventLogName  = "Application"
-$EventSource   = "RemEx.Host"
+$EventSource   = "Remex.Agent"
 
 function Test-EventSourceRegistered {
     return [System.Diagnostics.EventLog]::SourceExists($EventSource)
@@ -81,18 +81,18 @@ $PublishDir = if ($HostPath -and (Test-Path $HostPath)) {
     if (Test-Path $HostPath -PathType Leaf) { Split-Path $HostPath -Parent } else { $HostPath }
 } elseif ($env:REMEX_HOST_PATH -and (Test-Path $env:REMEX_HOST_PATH)) {
     if (Test-Path $env:REMEX_HOST_PATH -PathType Leaf) { Split-Path $env:REMEX_HOST_PATH -Parent } else { $env:REMEX_HOST_PATH }
-} elseif (Test-Path (Join-Path $PSScriptRoot "RemEx.Host.exe")) {
+} elseif (Test-Path (Join-Path $PSScriptRoot "Remex.Agent.exe")) {
     $PSScriptRoot
-} elseif (Test-Path (Join-Path $PSScriptRoot "..\RemEx.Host\RemEx.Host.exe")) {
-    Join-Path $PSScriptRoot "..\RemEx.Host"
+} elseif (Test-Path (Join-Path $PSScriptRoot "..\remex.agent\Remex.Agent.exe")) {
+    Join-Path $PSScriptRoot "..\remex.agent"
 } else {
     # Dev-time fallback: matches the artifacts publish layout used by the installer and
     # update-local-install.ps1 (self-contained win-x64 → artifacts/publish/<Project>/<pivot>).
-    Join-Path $PSScriptRoot "..\artifacts\publish\RemEx.Host\release_win-x64"
+    Join-Path $PSScriptRoot "..\artifacts\publish\remex.agent\release_win-x64"
 }
 
 function Publish-Host {
-    Write-Host "Publishing RemEx.Host..." -ForegroundColor Cyan
+    Write-Host "Publishing Remex.Agent..." -ForegroundColor Cyan
     dotnet publish $ProjectDir -c Release -r win-x64 -o $PublishDir --self-contained
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Publish failed."
@@ -187,12 +187,12 @@ switch ($Action) {
             exit 1
         }
 
-        $exePath = Join-Path $PublishDir "RemEx.Host.exe"
+        $exePath = Join-Path $PublishDir "Remex.Agent.exe"
         if (-not (Test-Path $exePath)) {
             if (-not (Test-Path $ProjectDir)) {
                 Write-Error "Executable not found at: $exePath"
-                Write-Error "RemEx.Host project directory was not found at: $ProjectDir"
-                Write-Error "Pass -HostPath to an existing RemEx.Host.exe when installing from a packaged build."
+                Write-Error "Remex.Agent project directory was not found at: $ProjectDir"
+                Write-Error "Pass -HostPath to an existing Remex.Agent.exe when installing from a packaged build."
                 exit 1
             }
 
@@ -241,7 +241,7 @@ switch ($Action) {
             $hostRuleName = "RemexHostInbound"
             $clientRuleName = "RemexClientInbound"
 
-            # 1. Firewall rule for RemEx.Host.exe (background service / embedded host)
+            # 1. Firewall rule for Remex.Agent.exe (background service / embedded host)
             if (Test-Path $exePath) {
                 $existingHostRule = Get-NetFirewallRule -Name $hostRuleName -ErrorAction SilentlyContinue
                 if ($existingHostRule) {
@@ -260,8 +260,8 @@ switch ($Action) {
                 Write-Host "Firewall rule 'Remex Host Service' configured successfully." -ForegroundColor Green
             }
 
-            # 2. Firewall rule for RemEx.Host.exe (desktop UI / in-process host)
-            $clientExePath = Join-Path $PublishDir "RemEx.Host.exe"
+            # 2. Firewall rule for Remex.Agent.exe (desktop UI / in-process host)
+            $clientExePath = Join-Path $PublishDir "Remex.Agent.exe"
             if (Test-Path $clientExePath) {
                 $existingClientRule = Get-NetFirewallRule -Name $clientRuleName -ErrorAction SilentlyContinue
                 if ($existingClientRule) {

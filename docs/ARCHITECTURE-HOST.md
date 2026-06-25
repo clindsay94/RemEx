@@ -1,7 +1,7 @@
 # Host Architecture: Two Planes (Decision Record)
 
-**Decision (2026-06):** keep both the headless `Remex.Host` service **and** the embedded
-in-process host inside `Remex.Client.Desktop`. Do not merge them — Windows makes the two
+**Decision (2026-06):** keep both the headless `remex.agent` service **and** the embedded
+in-process host inside `remex.desktop`. Do not merge them — Windows makes the two
 roles physically non-mergeable:
 
 - A user-session process (desktop client + embedded host) **cannot run before login**.
@@ -15,12 +15,12 @@ roles physically non-mergeable:
 
 | Plane | Process | Runs | Provides |
 |---|---|---|---|
-| Command plane | `Remex.Host` as Windows service / systemd unit | from boot, pre-login | power commands, telemetry, WOL, pairing |
-| Interactive plane | embedded host inside `Remex.Client.Desktop` | from user login | remote desktop streaming, input, app launcher |
+| Command plane | `remex.agent` as Windows service / systemd unit | from boot, pre-login | power commands, telemetry, WOL, pairing |
+| Interactive plane | embedded host inside `remex.desktop` | from user login | remote desktop streaming, input, app launcher |
 
 ## How they coexist (ARCH-1)
 
-`Remex.Client.Desktop/Program.cs` always starts the embedded host. When the `RemexHost`
+`remex.desktop/Program.cs` always starts the embedded host. When the `RemexHost`
 service is running it owns the default port (5005), so the embedded host takes 5006 (with
 one further fallback). The phone disambiguates hosts via `DesktopMeta.HostInstanceId`, and
 mDNS instance names are port-qualified off the default port

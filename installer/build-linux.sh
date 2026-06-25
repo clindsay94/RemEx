@@ -74,7 +74,7 @@ cleanup_linux_package_artifacts() {
 }
 
 # ── Version ─────────────────────────────────────────────────────────────────
-VERSION_FILE="$REPO_ROOT/RemEx.Android/app/version.properties"
+VERSION_FILE="$REPO_ROOT/remex.android/app/version.properties"
 if [[ ! -f "$VERSION_FILE" ]]; then
     echo "Error: version.properties not found at $VERSION_FILE" >&2
     exit 1
@@ -90,7 +90,7 @@ echo "Version: $VERSION"
 mkdir -p "$OUTPUT_DIR"
 cleanup_linux_package_artifacts
 
-NATIVE_BRIDGE_DIR="$REPO_ROOT/Remex.Host.Native.Linux"
+NATIVE_BRIDGE_DIR="$REPO_ROOT/remex.agent.native.linux"
 NATIVE_BRIDGE_BUILD_DIR="$NATIVE_BRIDGE_DIR/build"
 NATIVE_BRIDGE_SO="$NATIVE_BRIDGE_BUILD_DIR/libremex_linux_bridge.so"
 
@@ -114,13 +114,13 @@ echo "Native bridge → $NATIVE_BRIDGE_SO"
 
 # ── Client ───────────────────────────────────────────────────────────────────
 if [[ "$SKIP_CLIENT" == false ]]; then
-    CLIENT_PROJ="$REPO_ROOT/RemEx.Host"
-    CLIENT_PUBLISH="$REPO_ROOT/artifacts/publish/RemEx.Host/release_linux-x64"
+    CLIENT_PROJ="$REPO_ROOT/remex.agent"
+    CLIENT_PUBLISH="$REPO_ROOT/artifacts/publish/remex.agent/release_linux-x64"
     CLIENT_BRIDGE="$CLIENT_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     CLIENT_STAGE="$OUTPUT_DIR/remex-client-v${VERSION}-linux-x64"
 
     echo ""
-    echo "── Publishing RemEx.Host (linux-x64) ──────────────────────────"
+    echo "── Publishing Remex.Agent (linux-x64) ──────────────────────────"
     rm -rf "$CLIENT_PUBLISH"
     dotnet publish "$CLIENT_PROJ" -c Release -r linux-x64 --self-contained
 
@@ -141,7 +141,7 @@ if [[ "$SKIP_CLIENT" == false ]]; then
     rm -rf "$CLIENT_STAGE"
     mkdir -p "$CLIENT_STAGE"
     cp -r "$CLIENT_PUBLISH/." "$CLIENT_STAGE/"
-    chmod +x "$CLIENT_STAGE/RemEx.Host"
+    chmod +x "$CLIENT_STAGE/Remex.Agent"
 
     # Desktop entry and install script
     cp "$LINUX_DIR/remex-client.desktop" "$CLIENT_STAGE/"
@@ -149,7 +149,7 @@ if [[ "$SKIP_CLIENT" == false ]]; then
     chmod +x "$CLIENT_STAGE/install.sh"
 
     # Icon — prefer New-REMEX.png, then icon.png, then icon.ico
-    if   [[ -f "$REPO_ROOT/Remex.Client/Assets/New-REMEX.png" ]]; then cp "$REPO_ROOT/Remex.Client/Assets/New-REMEX.png" "$CLIENT_STAGE/remex.png"
+    if   [[ -f "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" ]]; then cp "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" "$CLIENT_STAGE/remex.png"
     elif [[ -f "$CLIENT_PROJ/icon.png" ]]; then cp "$CLIENT_PROJ/icon.png" "$CLIENT_STAGE/remex.png"
     elif [[ -f "$CLIENT_PROJ/icon.ico" ]]; then cp "$CLIENT_PROJ/icon.ico" "$CLIENT_STAGE/remex.ico"
     fi
@@ -162,22 +162,22 @@ fi
 
 # ── Host ─────────────────────────────────────────────────────────────────────
 if [[ "$SKIP_HOST" == false ]]; then
-    HOST_PROJ="$REPO_ROOT/RemEx.Host"
-    HOST_PUBLISH="$REPO_ROOT/artifacts/publish/RemEx.Host/release_linux-x64"
+    HOST_PROJ="$REPO_ROOT/remex.agent"
+    HOST_PUBLISH="$REPO_ROOT/artifacts/publish/remex.agent/release_linux-x64"
     HOST_BRIDGE="$HOST_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
     HOST_STAGE="$OUTPUT_DIR/remex-host-v${VERSION}-linux-x64"
 
-    # The host and the desktop client are now the same consolidated RemEx.Host binary, published to
+    # The host and the desktop client are now the same consolidated Remex.Agent binary, published to
     # the same path. Reuse the client's publish output when it is already present (built just above);
     # only publish here when the client stage was skipped.
-    if [[ ! -f "$HOST_PUBLISH/RemEx.Host" ]]; then
+    if [[ ! -f "$HOST_PUBLISH/Remex.Agent" ]]; then
         echo ""
-        echo "── Publishing RemEx.Host (linux-x64) ───────────────────────────────────"
+        echo "── Publishing Remex.Agent (linux-x64) ───────────────────────────────────"
         rm -rf "$HOST_PUBLISH"
         dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
     else
         echo ""
-        echo "── Reusing RemEx.Host publish from the client stage (same consolidated binary) ──"
+        echo "── Reusing Remex.Agent publish from the client stage (same consolidated binary) ──"
     fi
 
     echo ""
@@ -197,7 +197,7 @@ if [[ "$SKIP_HOST" == false ]]; then
     rm -rf "$HOST_STAGE"
     mkdir -p "$HOST_STAGE"
     cp -r "$HOST_PUBLISH/." "$HOST_STAGE/"
-    chmod +x "$HOST_STAGE/RemEx.Host"
+    chmod +x "$HOST_STAGE/Remex.Agent"
 
     cp "$LINUX_DIR/remex-host.service" "$HOST_STAGE/"
     cp "$LINUX_DIR/host-install.sh"    "$HOST_STAGE/install.sh"

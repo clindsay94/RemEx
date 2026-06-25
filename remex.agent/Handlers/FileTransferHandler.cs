@@ -1,0 +1,508 @@
+using System.Collections.Concurrent;
+using System.IO;
+using System.Net.WebSockets;
+using System.Security.Cryptography;
+using Remex.Core.Messages;
+using Remex.Core.Models;
+using Remex.Core.Services.FileTransfer;
+
+namespace Remex.Agent.Handlers;
+
+public sealed class FileTransferHandler(
+    ILogger<FileTransferHandler> logger,
+    IFileTransferService fileTransferService)
+{
+    private const int ProgressChunkInterval = 10;
+
+    // Defensive running cap. FileTransferService applies the same limit to
+    // start.TotalBytes, but mobile clients send 0 for unknown content URIs, so
+    // a malicious / buggy peer could otherwise stream unbounded bytes past the
+    // initial check. Kept identical to FileTransferService.MaxUploadBytes.
+    private const long MaxUploadBytes = 5_000_000_000L;
+
+    private sealed class FileTransferState
+    {
+        public required string TransferId { get; init; }
+        public required string Direction { get; init; }
+        public required string RemotePath { get; init; }
+        public required string ExpectedSha256 { get; init; }
+        public required long TotalBytes { get; init; }
+        public required Stream FileStream { get; init; }
+        public required SHA256 Hasher { get; init; }
+        public long BytesTransferred { get; set; }
+        public int ChunkCount { get; set; }
+    }
+
+    private readonly ConcurrentDictionary<string, FileTransferState> _activeTransfers = new();
+
+    public async Task HandleFileRootsRequestAsync(WebSocket ws, CancellationToken ct)
+    {
+        try
+        {
+            var roots = await fileTransferService.ListRootsAsync(ct);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileRootsResponse,
+                FileRootsResponse = new FileRootsResponse
+                {
+                    Roots = [.. roots]
+                }
+            }, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Listing file roots failed.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileRootsResponse,
+                FileRootsResponse = new FileRootsResponse
+                {
+                    Roots = [],
+                    ErrorMessage = ex.Message
+                }
+            }, ct);
+        }
+    }
+
+    public async Task HandleFileBrowseRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileBrowseRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(req.RootId))
+                throw new UnauthorizedAccessException("A shared root is required for remote browsing.");
+
+            var entries = await fileTransferService.BrowseAsync(req.RootId, req.RelativePath ?? string.Empty, ct);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileBrowseResponse,
+                FileBrowseResponse = new FileBrowseResponse
+                {
+                    RequestId = req.RequestId,
+                    Path = req.Path,
+                    RootId = req.RootId,
+                    RelativePath = req.RelativePath ?? string.Empty,
+                    Entries = [.. entries]
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Browse failed for root {RootId}, path {Path}", req.RootId, req.RelativePath ?? req.Path);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileBrowseResponse,
+                FileBrowseResponse = new FileBrowseResponse
+                {
+                    RequestId = req.RequestId,
+                    Path = req.Path,
+                    RootId = req.RootId,
+                    RelativePath = req.RelativePath ?? string.Empty,
+                    Entries = [],
+                    ErrorMessage = ex.Message
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    public async Task HandleFileTransferStartAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var start = message.FileTransferStart;
+        if (start is null) return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(start.RemoteRootId))
+                throw new UnauthorizedAccessException("A shared root is required for file transfer operations.");
+
+            var remoteRelativePath = start.RemoteRelativePath ?? string.Empty;
+            Stream stream = start.Direction == "upload"
+                ? await fileTransferService.OpenForWriteAsync(start.RemoteRootId, remoteRelativePath, start.TotalBytes, ct)
+                : await fileTransferService.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, ct);
+
+            var totalBytes = start.Direction == "download" && stream.CanSeek
+                ? stream.Length
+                : start.TotalBytes;
+
+            var state = new FileTransferState
+            {
+                TransferId = start.TransferId,
+                Direction = start.Direction,
+                RemotePath = stream is FileStream fileStream ? fileStream.Name : start.RemotePath,
+                ExpectedSha256 = start.Sha256Base64,
+                TotalBytes = totalBytes,
+                FileStream = stream,
+                Hasher = SHA256.Create()
+            };
+            _activeTransfers[start.TransferId] = state;
+
+            if (start.Direction == "download")
+            {
+                // Wrap in a local async lambda so exceptions are caught and surfaced to the
+                // client rather than silently swallowed by a fire-and-forget Task.
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await StreamDownloadAsync(state, ws, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Unhandled exception in StreamDownloadAsync for {TransferId}", start.TransferId);
+                        try
+                        {
+                            await MessageSerializer.SendAsync(ws, new RemexMessage
+                            {
+                                Type = MessageTypes.FileTransferEnd,
+                                FileTransferEnd = new FileTransferEnd
+                                {
+                                    TransferId = start.TransferId,
+                                    Success = false,
+                                    ErrorMessage = $"Download failed: {ex.Message}"
+                                }
+                            }, CancellationToken.None);
+                        }
+                        catch (Exception sendEx)
+                        {
+                            logger.LogWarning(sendEx, "Could not send error response for failed download {TransferId}", start.TransferId);
+                        }
+                    }
+                }, ct);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileTransferStart failed for {TransferId}", start.TransferId);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileTransferEnd,
+                FileTransferEnd = new FileTransferEnd
+                {
+                    TransferId = start.TransferId,
+                    Success = false,
+                    ErrorMessage = ex.Message
+                }
+            }, ct);
+        }
+    }
+
+    public async Task HandleFileTransferChunkAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var chunk = message.FileTransferChunk;
+        if (chunk is null || !_activeTransfers.TryGetValue(chunk.TransferId, out var state)) return;
+
+        try
+        {
+            var data = Convert.FromBase64String(chunk.DataBase64);
+
+            if (state.Direction == "upload" && state.BytesTransferred + data.Length > MaxUploadBytes)
+            {
+                logger.LogWarning(
+                    "Upload {TransferId} exceeded {Cap}-byte cap (transferred={Transferred}, incoming={Incoming}); aborting.",
+                    chunk.TransferId, MaxUploadBytes, state.BytesTransferred, data.Length);
+                await CleanupTransferAsync(chunk.TransferId, deleteFile: true);
+                await MessageSerializer.SendAsync(ws, new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferEnd,
+                    FileTransferEnd = new FileTransferEnd
+                    {
+                        TransferId = chunk.TransferId,
+                        Success = false,
+                        ErrorMessage = $"Upload exceeded the {MaxUploadBytes / 1_000_000_000.0:0.#} GB cap.",
+                    }
+                }, ct);
+                return;
+            }
+
+            await state.FileStream.WriteAsync(data, ct);
+            state.Hasher.TransformBlock(data, 0, data.Length, null, 0);
+            state.BytesTransferred += data.Length;
+            state.ChunkCount++;
+
+            if (state.ChunkCount % ProgressChunkInterval == 0)
+            {
+                await MessageSerializer.SendAsync(ws, new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferProgress,
+                    FileTransferProgress = new FileTransferProgress
+                    {
+                        TransferId = chunk.TransferId,
+                        BytesTransferred = state.BytesTransferred,
+                        TotalBytes = state.TotalBytes
+                    }
+                }, ct);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Chunk write failed for {TransferId}", chunk.TransferId);
+            await CleanupTransferAsync(chunk.TransferId, deleteFile: true);
+        }
+    }
+
+    public async Task HandleFileTransferEndAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var end = message.FileTransferEnd;
+        if (end is null || !_activeTransfers.TryGetValue(end.TransferId, out var state)) return;
+
+        try
+        {
+            state.Hasher.TransformFinalBlock([], 0, 0);
+            var actualHash = Convert.ToBase64String(state.Hasher.Hash!);
+            // Accept hash from End message (incremental path) or from Start (legacy path)
+            var expectedHash = !string.IsNullOrEmpty(end.Sha256Base64) ? end.Sha256Base64 : state.ExpectedSha256;
+            var success = string.IsNullOrEmpty(expectedHash) || actualHash == expectedHash;
+
+            await state.FileStream.FlushAsync(ct);
+            await CleanupTransferAsync(end.TransferId, deleteFile: !success);
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileTransferEnd,
+                FileTransferEnd = new FileTransferEnd
+                {
+                    TransferId = end.TransferId,
+                    Success = success,
+                    ErrorMessage = success ? null : "SHA-256 mismatch — file corrupted in transit."
+                }
+            }, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileTransferEnd failed for {TransferId}", end.TransferId);
+            await CleanupTransferAsync(end.TransferId, deleteFile: true);
+        }
+    }
+
+    public async Task HandleFileTransferCancelAsync(RemexMessage message)
+    {
+        var cancel = message.FileTransferCancel;
+        if (cancel is null) return;
+
+        await CleanupTransferAsync(cancel.TransferId, deleteFile: true);
+    }
+
+    public async Task HandleFileManageRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileManageRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            switch (req.Operation)
+            {
+                case "delete":
+                    await fileTransferService.DeleteAsync(req.RootId, req.RelativePath, ct);
+                    break;
+                case "rename":
+                    if (string.IsNullOrWhiteSpace(req.NewName))
+                        throw new ArgumentException("NewName is required for rename.");
+                    await fileTransferService.RenameAsync(req.RootId, req.RelativePath, req.NewName, ct);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown operation '{req.Operation}'.");
+            }
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManageResponse,
+                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = true }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileManage {Operation} failed for {Path}", req.Operation, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManageResponse,
+                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = false, ErrorMessage = ex.Message }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileHashRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            var hash = await fileTransferService.ComputeSha256Async(req.RootId, req.RelativePath, ct);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileHashResponse,
+                FileHashResponse = new FileHashResponse { RequestId = req.RequestId, Sha256Base64 = hash }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileHash failed for {Path}", req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileHashResponse,
+                FileHashResponse = new FileHashResponse { RequestId = req.RequestId, ErrorMessage = ex.Message }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    public async Task HandleFileRootManageRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileRootManageRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            IReadOnlyList<FileSharedRoot> updatedRoots;
+            switch (req.Operation)
+            {
+                case "add":
+                    if (string.IsNullOrWhiteSpace(req.SourceRootId) || string.IsNullOrWhiteSpace(req.SourceRelativePath))
+                        throw new ArgumentException("SourceRootId and SourceRelativePath are required for add.");
+                    updatedRoots = await fileTransferService.AddRootFromPathAsync(req.SourceRootId, req.SourceRelativePath, ct);
+                    break;
+                case "remove":
+                    if (string.IsNullOrWhiteSpace(req.RootId))
+                        throw new ArgumentException("RootId is required for remove.");
+                    updatedRoots = await fileTransferService.RemoveRootAsync(req.RootId, ct);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown operation '{req.Operation}'.");
+            }
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageResponse,
+                FileRootManageResponse = new FileRootManageResponse { RequestId = req.RequestId, Roots = [.. updatedRoots] }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "FileRootManage {Operation} failed", req.Operation);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageResponse,
+                FileRootManageResponse = new FileRootManageResponse { RequestId = req.RequestId, Roots = [], ErrorMessage = ex.Message }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    public async Task CleanupAllTransfersAsync()
+    {
+        foreach (var id in _activeTransfers.Keys.ToList())
+            await CleanupTransferAsync(id, deleteFile: true);
+    }
+
+    private async Task CleanupTransferAsync(string transferId, bool deleteFile)
+    {
+        if (!_activeTransfers.TryRemove(transferId, out var state)) return;
+
+        try { await state.FileStream.DisposeAsync(); } catch { /* best-effort */ }
+        state.Hasher.Dispose();
+
+        if (deleteFile && state.Direction == "upload" && File.Exists(state.RemotePath))
+        {
+            try { File.Delete(state.RemotePath); }
+            catch (Exception ex) { logger.LogWarning(ex, "Failed to delete partial upload: {Path}", state.RemotePath); }
+        }
+    }
+
+    private async Task StreamDownloadAsync(FileTransferState state, WebSocket ws, CancellationToken ct)
+    {
+        const int chunkSize = 65536;
+        var buffer = new byte[chunkSize];
+        int read;
+        int chunkCount = 0;
+
+        try
+        {
+            while ((read = await state.FileStream.ReadAsync(buffer.AsMemory(0, chunkSize), ct)) > 0)
+            {
+                var slice = buffer[..read];
+                state.Hasher.TransformBlock(slice, 0, read, null, 0);
+                state.BytesTransferred += read;
+                chunkCount++;
+
+                await MessageSerializer.SendAsync(ws, new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferChunk,
+                    FileTransferChunk = new FileTransferChunk
+                    {
+                        TransferId = state.TransferId,
+                        Offset = state.BytesTransferred - read,
+                        DataBase64 = Convert.ToBase64String(slice)
+                    }
+                }, ct);
+
+                if (chunkCount % ProgressChunkInterval == 0)
+                {
+                    await MessageSerializer.SendAsync(ws, new RemexMessage
+                    {
+                        Type = MessageTypes.FileTransferProgress,
+                        FileTransferProgress = new FileTransferProgress
+                        {
+                            TransferId = state.TransferId,
+                            BytesTransferred = state.BytesTransferred,
+                            TotalBytes = state.TotalBytes
+                        }
+                    }, ct);
+                }
+            }
+
+            state.Hasher.TransformFinalBlock([], 0, 0);
+            var hash = Convert.ToBase64String(state.Hasher.Hash!);
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileTransferEnd,
+                FileTransferEnd = new FileTransferEnd
+                {
+                    TransferId = state.TransferId,
+                    Success = true,
+                    Sha256Base64 = hash,
+                }
+            }, ct);
+
+            logger.LogInformation("Download complete for {TransferId}, sha256={Hash}", state.TransferId, hash);
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogInformation("Download cancelled for {TransferId}", state.TransferId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Download failed for {TransferId}", state.TransferId);
+            try
+            {
+                await MessageSerializer.SendAsync(ws, new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferEnd,
+                    FileTransferEnd = new FileTransferEnd
+                    {
+                        TransferId = state.TransferId,
+                        Success = false,
+                        ErrorMessage = ex.Message
+                    }
+                }, ct);
+            }
+            catch { /* connection already gone */ }
+        }
+        finally
+        {
+            await CleanupTransferAsync(state.TransferId, deleteFile: false);
+        }
+    }
+}

@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$gradleRoot = Join-Path $repoRoot "RemEx.Android"
+$gradleRoot = Join-Path $repoRoot "remex.android"
 $gradlew = Join-Path $gradleRoot "gradlew.bat"
 
 if (-not (Test-Path $gradlew)) {

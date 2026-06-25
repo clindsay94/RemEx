@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="using:Remex.Desktop.Views"
+    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="Remex — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="PreferSystemChrome" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="#0A0A10" WindowStartupLocation="CenterScreen">
+
+    <Window.KeyBindings>
+        <!-- Direct navigation shortcuts -->
+        <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateToHomeCommand}" />
+        <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateToCanvasCommand}" />
+        <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToRemoteCommand}" />
+        <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToAppLauncherCommand}" />
+        <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateToTaskManagerCommand}" />
+        <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToRemoteDesktopCommand}" />
+        <!-- Settings (Ctrl+,) -->
+        <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding ToggleSettingsPanelCommand}" />
+        <!-- Dismiss overlays -->
+        <KeyBinding Gesture="Escape" Command="{Binding DismissOverlaysCommand}" />
+        <!-- Refresh / sync sensors -->
+        <KeyBinding Gesture="F5" Command="{Binding NavigateToCanvasCommand}" />
+        <!-- Command palette -->
+        <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenCommandPaletteCommand}" />
+        <!-- Canvas undo / redo -->
+        <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoCommand}" />
+        <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoCommand}" />
+    </Window.KeyBindings>
+
+    <views:ShellView />
+</Window>
+

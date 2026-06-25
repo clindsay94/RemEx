@@ -3,7 +3,7 @@
 # Manage with:  sudo systemctl {start,stop,status,restart} remex-host
 #               journalctl -u remex-host -f
 #
-# Runs the consolidated RemEx.Host binary in headless command-agent mode (--agent) as a SYSTEM
+# Runs the consolidated Remex.Agent binary in headless command-agent mode (--agent) as a SYSTEM
 # service, so it answers remote power commands (shutdown / restart / sleep) even while the machine
 # is logged out — at the login screen, or mid-reboot. It runs as root so `systemctl poweroff` /
 # `reboot` succeed with no active login session (otherwise polkit denies a logged-out request).
@@ -21,7 +21,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=REMEX_INSTALL_DIR/RemEx.Host --agent
+ExecStart=REMEX_INSTALL_DIR/Remex.Agent --agent
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=15

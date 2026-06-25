@@ -22,10 +22,10 @@ Use the standard .NET CLI to run or test local code during development.
 
 | Task | Command |
 |---|---|
-| Run host in dev mode | `dotnet run --project Remex.Host` |
-| Run client in dev mode | `dotnet run --project Remex.Client.Desktop` |
+| Run host in dev mode | `dotnet run --project remex.agent` |
+| Run client in dev mode | `dotnet run --project remex.desktop` |
 | Run entire test suite | `dotnet test Remex.sln` |
-| Run Linux host Doctor | `dotnet run --project Remex.Host -- --doctor` |
+| Run Linux host Doctor | `dotnet run --project remex.agent -- --doctor` |
 
 ## Android Development
 

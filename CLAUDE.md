@@ -66,17 +66,17 @@ Only intervene via `Edit`/`Write` if the diff reveals hallucinations or logic fl
 
 ## Project Overview
 
-Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `Remex.Host` is the **entire PC side** — Windows Service/daemon plus all PC-side functionality, combining what were formerly separate host and desktop projects. `RemEx.Android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `remex.agent` is the **entire PC side** — Windows Service/daemon plus all PC-side functionality, combining what were formerly separate host and desktop projects. `remex.android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
 
-> **There is no desktop client.** `Remex.Client/` and `Remex.Client.Desktop/` are legacy folders being phased out — do not add new code there. If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `Remex.Host` only. The Android app is the only client.
+> **There is no desktop client.** `remex.desktop/` and `remex.desktop/` are legacy folders being phased out — do not add new code there. If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `remex.agent` only. The Android app is the only client.
 
 ## Build & Run
 
 ```powershell
 # Run PC host service (Android connects to this — this IS the entire PC side)
-dotnet run --project Remex.Host
+dotnet run --project remex.agent
 
-# NOTE: Remex.Client.Desktop is a legacy entry point merged into Remex.Host. Do not use for new work.
+# NOTE: remex.desktop is a legacy entry point merged into remex.agent. Do not use for new work.
 
 # Run all tests
 dotnet test Remex.sln
@@ -94,14 +94,14 @@ pwsh ./build-remex.ps1 -c release -t all
 ## Architecture
 
 ```
-Remex.Core/         Shared models, messages, validation, Guards, serialization
+remex.core/         Shared models, messages, validation, Guards, serialization
                     ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
-Remex.Host/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
+remex.agent/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
                     ↳ Combines the former host service + desktop UI into a single project.
                     ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
-RemEx.Android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
-                    ↳ Android phone app. Connects to Remex.Host on the PC. Nothing else is a client.
-Remex.Client/       LEGACY — remnant folder being phased out. Do not add new code here.
+remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+                    ↳ Android phone app. Connects to remex.agent on the PC. Nothing else is a client.
+remex.desktop/       LEGACY — remnant folder being phased out. Do not add new code here.
 ```
 
 ### Communication Protocols
@@ -117,21 +117,21 @@ All messages over `/ws` use the `RemexMessage` JSON envelope with `protocolVersi
 
 ### High-Risk Code Areas
 
-The following areas are **security-critical or tightly coupled between `Remex.Host` and `RemEx.Android`**. Changes here require explicit user sign-off and must be coordinated across both sides of the connection:
+The following areas are **security-critical or tightly coupled between `remex.agent` and `remex.android`**. Changes here require explicit user sign-off and must be coordinated across both sides of the connection:
 
 - **Pairing flow** (`PairingHandler`, `PairedClientRegistry`) — ECDH P-256 key exchange and PIN verification. `PairedClientRegistry` is the ONLY authentication path in production (non-loopback). Breakage silently bricks all device pairing with no clear error on either end.
 - **Certificate pinning** — Android pins the host's SPKI hash at pairing time. If the host cert changes without a re-pair, the connection is permanently refused until the user re-pairs. Never regenerate or rotate certs silently.
 - **`RemexMessage` envelope / `protocolVersion`** — Wire format changes must be backward-compatible or require a `protocolVersion` bump AND a coordinated Android + host release. Mismatched versions cause silent deserialization failures.
 - **Named Pipe security** (`RemExLocalIPC`) — Incorrect security descriptors on the pipe block the dashboard UI from communicating with the Windows Service (Session 0 isolation). Test pipe connectivity after any change to the pipe setup code.
 
-### Key Directories in Remex.Host
+### Key Directories in remex.agent
 
 `Views/` and `ViewModels/` follow standard MVVM. `Services/` holds connection, layout, telemetry, and theme services. `Themes/` has the four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass). `Localization/` drives live 8-language switching without restart.
 
 ## Versioning
 
 - **.NET projects**: centrally managed in `Directory.Build.props` (`<Version>`)
-- **Android**: managed in `RemEx.Android/app/version.properties` (`versionName` / `versionCode`)
+- **Android**: managed in `remex.android/app/version.properties` (`versionName` / `versionCode`)
 - `build-remex.ps1` syncs `Directory.Build.props` from `version.properties` automatically
 
 ## Coding Conventions
@@ -140,10 +140,10 @@ The following areas are **security-critical or tightly coupled between `Remex.Ho
 **Do NOT use `ConfigureAwait(false)` anywhere.** Neither Avalonia nor ASP.NET Core uses `SynchronizationContext`. CA2007 is suppressed in `.editorconfig`. See `docs/ASYNC_GUIDELINES.md`.
 
 ### Null Safety
-Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (from `Remex.Core/Guards/Guard.cs`) in constructors for required dependencies. Use `GetRequiredService<T>()` (not `GetService<T>()`) for DI resolution. See `docs/NULL_SAFETY_GUIDELINES.md`.
+Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (from `remex.core/Guards/Guard.cs`) in constructors for required dependencies. Use `GetRequiredService<T>()` (not `GetService<T>()`) for DI resolution. See `docs/NULL_SAFETY_GUIDELINES.md`.
 
 ### Validation
-All network-facing input must be validated through the shared validation helpers in `Remex.Core/Validation/`. See `docs/VALIDATION_GUIDELINES.md`.
+All network-facing input must be validated through the shared validation helpers in `remex.core/Validation/`. See `docs/VALIDATION_GUIDELINES.md`.
 
 ### NativeAOT Constraints (`Remex.Core`)
 
@@ -155,9 +155,9 @@ All network-facing input must be validated through the shared validation helpers
 - **Source-generated JSON** — use `[JsonSerializable]` + `JsonSerializerContext` for any new serializable types. Do not use `JsonSerializer.Serialize<T>(obj)` without a source-gen context.
 - If you're unsure whether something is NativeAOT-safe, check `Remex.Core` for existing patterns before writing new code.
 
-### Windows Service / Session 0 (`Remex.Host` on Windows)
+### Windows Service / Session 0 (`remex.agent` on Windows)
 
-`Remex.Host` runs as **LocalSystem in Session 0** (the isolated service session, separate from the interactive user desktop). This has concrete implications:
+`remex.agent` runs as **LocalSystem in Session 0** (the isolated service session, separate from the interactive user desktop). This has concrete implications:
 
 - **Never use `HKCU` or `%APPDATA%`** — LocalSystem's registry hive and profile are not the user's. Use `HKLM` for machine-wide config and `ProgramData` for file-based persistence.
 - **Machine-wide storage** — state that needs to survive across service restarts or be shared with the tray UI must be stored in machine-wide locations (registry under `HKLM`, files under `ProgramData`).
@@ -166,7 +166,7 @@ All network-facing input must be validated through the shared validation helpers
 
 ### Localization
 
-All user-facing strings in `Remex.Host` (UI labels, tooltips, error messages, notifications) **must** go through the localization system in `Localization/`. The app supports 8 languages with live switching — hardcoded English strings are a regression. Rules:
+All user-facing strings in `remex.agent` (UI labels, tooltips, error messages, notifications) **must** go through the localization system in `Localization/`. The app supports 8 languages with live switching — hardcoded English strings are a regression. Rules:
 
 - Add new strings to the appropriate `.resx` / localization file, not inline in code or XAML.
 - Never use `string.Format` or interpolation directly in UI-bound properties; use localized format strings.
@@ -175,7 +175,7 @@ All user-facing strings in `Remex.Host` (UI labels, tooltips, error messages, no
 ### Protocol Versioning
 
 `RemexMessage` carries `protocolVersion: 2`. If you make a breaking change to the wire format:
-1. Bump `protocolVersion` in both `Remex.Host` and `RemEx.Android`.
+1. Bump `protocolVersion` in both `remex.agent` and `remex.android`.
 2. Coordinate the release — a version mismatch between host and Android causes silent deserialization failures, not clean errors.
 3. Non-breaking additions (new optional fields) do not require a bump, but document them in CHANGELOG.md.
 
@@ -184,15 +184,15 @@ All user-facing strings in `Remex.Host` (UI labels, tooltips, error messages, no
 - Android SDK API Level 37 platform required
 - NDK version **30.0.14904198** required for NativeAOT JNI compilation
 - `build-remex.ps1` auto-installs both via `sdkmanager` if absent
-- Set `ANDROID_HOME` or configure `RemEx.Android/local.properties` (`sdk.dir=...`)
+- Set `ANDROID_HOME` or configure `remex.android/local.properties` (`sdk.dir=...`)
 
 ## Host Diagnostics
 
-On Linux, run `dotnet run --project Remex.Host -- --doctor` to check PipeWire/X11/VAAPI prerequisites.
+On Linux, run `dotnet run --project remex.agent -- --doctor` to check PipeWire/X11/VAAPI prerequisites.
 
 ## Cross-Platform Parity (Windows ↔ CachyOS/Linux)
 
-This repo lives on a shared drive and must work equally on **Windows** and **CachyOS/Linux**. Any change that touches the PC side (Remex.Host, scripts, installers, build tooling) **must maintain parity**:
+This repo lives on a shared drive and must work equally on **Windows** and **CachyOS/Linux**. Any change that touches the PC side (remex.agent, scripts, installers, build tooling) **must maintain parity**:
 
 - Every `.ps1` script must work under `pwsh` on Linux **or** have a `.sh` equivalent that does the same thing.
 - Never hardcode Windows-only paths. Use path helpers or environment variables.
@@ -206,7 +206,7 @@ This repo lives on a shared drive and must work equally on **Windows** and **Cac
 - Use `gitnexus: query` and `token-savior` to understand existing patterns **before** writing new code. Match the codebase's conventions.
 - No placeholder implementations, stub methods, `TODO:` bodies, or "good enough for now" code. If a full implementation is out of scope, file a beads issue and implement what IS in scope correctly.
 - Prefer correctness over speed-to-write. If there's a real tradeoff, explain it.
-- Use existing infrastructure before rolling new ones: `Remex.Core/Guards`, `Remex.Core/Validation`, `GetRequiredService<T>()`, etc.
+- Use existing infrastructure before rolling new ones: `remex.core/Guards`, `remex.core/Validation`, `GetRequiredService<T>()`, etc.
 
 ## Documentation & CHANGELOG Maintenance
 
@@ -215,7 +215,7 @@ This repo lives on a shared drive and must work equally on **Windows** and **Cac
 1. **CHANGELOG.md** has an entry under the correct version heading (Keep a Changelog format: `Added`, `Changed`, `Fixed`, `Removed`, `Security`).
 2. Affected XML doc comments, README sections, or `docs/` guideline files are updated.
 3. `AGENTS.md` / `CLAUDE.md` are updated if project structure, tooling, or conventions changed.
-4. `Directory.Build.props` and `RemEx.Android/app/version.properties` are bumped if the change warrants a version increment.
+4. `Directory.Build.props` and `remex.android/app/version.properties` are bumped if the change warrants a version increment.
 
 ## User Experience Standards
 
@@ -256,7 +256,7 @@ See global instructions: `~/.claude/CLAUDE.md`
 
 **Project-level coordination for RemEx 2.0:**
 - Root mission control: `AGENTS.md` in this repo — project rules, architecture, phase gates
-- Sub-project playbooks: `Remex.Core/AGENTS.md`, `Remex.Host/AGENTS.md`, etc.
+- Sub-project playbooks: `remex.core/AGENTS.md`, `remex.agent/AGENTS.md`, etc.
 
 Read the relevant sub-project `AGENTS.md` before touching files in that directory.
 <!-- agent-team:end -->

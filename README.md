@@ -35,7 +35,7 @@ Most remote tools make you choose: smooth *or* secure, simple *or* powerful, Win
 
 It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264 pipeline, injects pixel‑perfect touch, stylus, and keyboard input — even into elevated admin windows — and does it all over a **TLS 1.3** channel locked to *your* device with cryptographic pairing and certificate pinning. The host runs as a hardened background service on Windows **and** Linux; the client is a gorgeous, glassmorphic Android app that speaks eight languages and adapts to your phone live.
 
-> **Architecture in one line:** the PC runs `Remex.Host` (the entire PC side — service + dashboard UI), and your Android phone is the one and only client. The connection is always direct, non‑loopback, and encrypted.
+> **Architecture in one line:** the PC runs `remex.agent` (the entire PC side — service + dashboard UI), and your Android phone is the one and only client. The connection is always direct, non‑loopback, and encrypted.
 
 ---
 
@@ -107,7 +107,7 @@ RemEx 2.0 is a ground‑up overhaul of the streaming and input pipeline. The hea
 - Android can host shared folders the PC can reach.
 
 ### 🔌 Cross‑Platform Host
-- One `Remex.Host` codebase runs as a **Windows Service (LocalSystem, Session 0)** or a **Linux daemon**.
+- One `remex.agent` codebase runs as a **Windows Service (LocalSystem, Session 0)** or a **Linux daemon**.
 - Linux remote input via **Wayland portal** integration; `--doctor` flag checks PipeWire/X11/VAAPI prerequisites.
 
 ---
@@ -118,14 +118,14 @@ Three .NET projects share one wire contract. The Android client and the PC host 
 
 ```mermaid
 flowchart TB
-    subgraph PHONE["📱 RemEx.Android · the only client"]
+    subgraph PHONE["📱 remex.android · the only client"]
         direction TB
         UI["Jetpack Compose UI · Kotlin"]
         JNI["JNI bridge"]
         UI --> JNI
     end
 
-    subgraph PC["🖥️ Remex.Host · the entire PC side"]
+    subgraph PC["🖥️ remex.agent · the entire PC side"]
         direction TB
         SVC["Windows Service (Session 0) / Linux daemon<br/>.NET 10 · ASP.NET Minimal API · mDNS discovery"]
         CAP["Screen capture → H.264 / MJPEG encode"]
@@ -153,8 +153,8 @@ flowchart TB
 | Project | Role |
 |---|---|
 | **`Remex.Core`** | Shared models, the `RemexMessage` envelope, Guards, validation, source‑generated JSON. Also compiled as a **NativeAOT JNI** library (`libRemexCore.so`) for Android — so client and host share one source of truth for the wire format. |
-| **`Remex.Host`** | The **entire PC side** — Windows Service / Linux daemon plus all PC functionality (capture, encode, input, telemetry, file transfer, dashboard UI). Android connects *to* this. |
-| **`RemEx.Android`** | The **only** network client. Kotlin + Jetpack Compose, calling into `libRemexCore.so` over JNI. |
+| **`remex.agent`** | The **entire PC side** — Windows Service / Linux daemon plus all PC functionality (capture, encode, input, telemetry, file transfer, dashboard UI). Android connects *to* this. |
+| **`remex.android`** | The **only** network client. Kotlin + Jetpack Compose, calling into `libRemexCore.so` over JNI. |
 
 ---
 
@@ -200,14 +200,14 @@ RemEx is built so that the only way in is the way *you* authorized.
 
 **Windows** — run the host service:
 ```powershell
-dotnet run --project Remex.Host
+dotnet run --project remex.agent
 ```
 A friendly ANSI startup banner prints the active ports, platform, and state. The dashboard UI lets you view the pairing PIN and manage devices.
 
 **Linux** — check prerequisites first, then run:
 ```bash
-dotnet run --project Remex.Host -- --doctor   # verifies PipeWire / X11 / VAAPI
-dotnet run --project Remex.Host
+dotnet run --project remex.agent -- --doctor   # verifies PipeWire / X11 / VAAPI
+dotnet run --project remex.agent
 ```
 See [`docs/LINUX_INSTALL.md`](docs/LINUX_INSTALL.md) for packaged installs.
 
@@ -247,7 +247,7 @@ dotnet test Remex.sln
 **Android prerequisites** (auto‑installed by the build script via `sdkmanager` if missing):
 - Android SDK **API Level 37**
 - NDK **30.0.14904198** (required for NativeAOT JNI)
-- `ANDROID_HOME` set, or `sdk.dir=...` in `RemEx.Android/local.properties`
+- `ANDROID_HOME` set, or `sdk.dir=...` in `remex.android/local.properties`
 
 Build output is consolidated under a single repo‑root `artifacts/` folder. Detailed instructions live in [`docs/BUILDING.md`](docs/BUILDING.md).
 
@@ -291,17 +291,17 @@ RemEx is meant to look as good as it performs — for technical and non‑techni
 ## 📂 Project Layout
 
 ```
-Remex.Core/         Shared models, RemexMessage envelope, Guards, validation, source-gen JSON
+remex.core/         Shared models, RemexMessage envelope, Guards, validation, source-gen JSON
                     ↳ also compiled as libRemexCore.so (NativeAOT JNI) for Android
-Remex.Host/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
+remex.agent/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
                     ↳ Views/ + ViewModels/ (MVVM) · Services/ · Themes/ · Localization/
-RemEx.Android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
 docs/               Architecture, security, build, contributing, changelog, guidelines
 installer/          Windows (Inno Setup) + Linux packaging
 scripts/            Build & maintenance tooling (cross-platform)
 ```
 
-> The PC ships as a single product — **`Remex.Host`** is the whole PC side, and the Android app is the only network client. There is no separate desktop client that connects to the host.
+> The PC ships as a single product — **`remex.agent`** is the whole PC side, and the Android app is the only network client. There is no separate desktop client that connects to the host.
 
 ---
 

@@ -109,7 +109,7 @@ def extract_premium_3d_logo(src_path, out_png, out_ico, out_ico_desktop, proj_ro
             
         # 4. Generate Android Adaptive Icon Foreground Layers
         print("\nGenerating Android multi-density adaptive icon foregrounds...")
-        android_res_path = os.path.join(proj_root, "RemEx.Android", "app", "src", "main", "res")
+        android_res_path = os.path.join(proj_root, "remex.android", "app", "src", "main", "res")
         
         # Build conflict safety: rename old XML foreground to prevent name duplicate conflicts
         old_vector_fg = os.path.join(android_res_path, "drawable", "ic_launcher_foreground.xml")
@@ -162,8 +162,8 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     proj_root = os.path.dirname(script_dir)
     
-    out_png = os.path.join(proj_root, "Remex.Client", "Assets", "icon.png")
-    out_ico = os.path.join(proj_root, "Remex.Client", "Assets", "icon.ico")
-    out_ico_desktop = os.path.join(proj_root, "RemEx.Host", "icon.ico")
+    out_png = os.path.join(proj_root, "remex.desktop", "Assets", "icon.png")
+    out_ico = os.path.join(proj_root, "remex.desktop", "Assets", "icon.ico")
+    out_ico_desktop = os.path.join(proj_root, "remex.agent", "icon.ico")
     
     extract_premium_3d_logo(master_path, out_png, out_ico, out_ico_desktop, proj_root)

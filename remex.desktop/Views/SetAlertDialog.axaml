@@ -1,0 +1,90 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Remex.Desktop.ViewModels"
+        xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        xmlns:conv="clr-namespace:Remex.Desktop.Converters"
+        x:Class="Remex.Desktop.Views.SetAlertDialog"
+        x:DataType="vm:SetAlertViewModel"
+        Title="{local:Localize SetAlert_Title}"
+        Width="360"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="32">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="24,44,24,24">
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20" Spacing="4">
+            <TextBlock Text="{local:Localize SetAlert_Header}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <TextBlock Text="{Binding SensorName}" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentPrimaryBrush}"
+                       TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <!-- Threshold -->
+        <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,12">
+            <TextBlock Text="{local:Localize SetAlert_ThresholdValue}" FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <NumericUpDown Value="{Binding Threshold}" Increment="1"
+                           Minimum="-99999" Maximum="99999"
+                           FormatString="F1"
+                           Background="{DynamicResource GlassBaseMediumBrush}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           BorderBrush="{DynamicResource CardBorderBrush}"
+                           CornerRadius="8" Padding="8,6" FontSize="14"/>
+        </StackPanel>
+
+        <!-- Direction -->
+        <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,12">
+            <TextBlock Text="{local:Localize SetAlert_TriggerDirection}" FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <ComboBox ItemsSource="{Binding Directions}" SelectedItem="{Binding Direction}"
+                      Background="{DynamicResource GlassBaseMediumBrush}"
+                      Foreground="{DynamicResource TextPrimaryBrush}"
+                      BorderBrush="{DynamicResource CardBorderBrush}"
+                      CornerRadius="8" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={x:Static conv:EnumLocalizerConverter.Instance}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Severity -->
+        <StackPanel Grid.Row="3" Spacing="6" Margin="0,0,0,24">
+            <TextBlock Text="{local:Localize SetAlert_Severity}" FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <ComboBox ItemsSource="{Binding Severities}" SelectedItem="{Binding Severity}"
+                      Background="{DynamicResource GlassBaseMediumBrush}"
+                      Foreground="{DynamicResource TextPrimaryBrush}"
+                      BorderBrush="{DynamicResource CardBorderBrush}"
+                      CornerRadius="8" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={x:Static conv:EnumLocalizerConverter.Instance}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto,Auto">
+            <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Command="{Binding ClearAlertCommand}"
+                    Classes="glass-button" Foreground="#FF6B6B"
+                    MinWidth="72" Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}"
+                    Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>
+            <Button Grid.Column="3" Content="{local:Localize SetAlert_SetAlertBtn}" Command="{Binding ConfirmCommand}"
+                    MinWidth="100" CornerRadius="8" Padding="16,10"
+                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
+                    FontWeight="SemiBold" FontSize="13"/>
+        </Grid>
+
+    </Grid>
+</Window>

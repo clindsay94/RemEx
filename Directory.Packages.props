@@ -33,7 +33,7 @@
 
     <!-- Pinned SkiaSharp (2.88.x line - do not upgrade to 3.x, which has breaking changes).
          2.88.9 matches the floor required by Avalonia.Skia 11.3.11, now that the host's direct
-         SkiaSharp use (Linux JPEG encode) and Avalonia live in the same RemEx.Host project. -->
+         SkiaSharp use (Linux JPEG encode) and Avalonia live in the same remex.agent project. -->
     <PackageVersion Include="SkiaSharp" Version="2.88.9" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
 

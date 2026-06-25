@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # RemEx Host — command-agent installer (Linux, SYSTEM service)
 #
-# Installs the consolidated RemEx.Host binary and registers it as a SYSTEM systemd service running in
+# Installs the consolidated Remex.Agent binary and registers it as a SYSTEM systemd service running in
 # headless command-agent mode (--agent), so it answers remote power commands (shutdown / restart /
 # sleep) even while the machine is logged out. It runs as root (system service) so those commands
 # succeed with no active login session.
@@ -44,7 +44,7 @@ install)
         ! -name '.' \
         -exec cp -r {} "$INSTALL_DIR/" \;
 
-    $SUDO chmod +x "$INSTALL_DIR/RemEx.Host"
+    $SUDO chmod +x "$INSTALL_DIR/Remex.Agent"
 
     # Install the system unit with the real install path substituted.
     sed "s|REMEX_INSTALL_DIR|$INSTALL_DIR|g" "$SCRIPT_DIR/remex-host.service" \
@@ -87,7 +87,7 @@ stop)
     ;;
 
 doctor)
-    "$INSTALL_DIR/RemEx.Host" --doctor
+    "$INSTALL_DIR/Remex.Agent" --doctor
     ;;
 
 *)

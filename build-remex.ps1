@@ -155,14 +155,14 @@ if ([string]::IsNullOrEmpty($RepoRoot)) {
 $BuildOutputDir = Join-Paths $RepoRoot "build_output"
 
 if ($isInstallerTarget) {
-    $publishDir = Join-Paths $RepoRoot "artifacts" "publish" "RemEx.Host" "${Config}_win-x64"
+    $publishDir = Join-Paths $RepoRoot "artifacts" "publish" "remex.agent" "${Config}_win-x64"
     if (Test-Path $publishDir) {
         $skipPublish = $true
     }
 }
 
 # 2. Dynamic Version Retrieval from version.properties
-$VersionFile = Join-Paths $RepoRoot "RemEx.Android" "app" "version.properties"
+$VersionFile = Join-Paths $RepoRoot "remex.android" "app" "version.properties"
 if (-not (Test-Path $VersionFile)) {
     Write-Error "version.properties not found at $VersionFile. Verify your clone directory."
     exit 1
@@ -254,7 +254,7 @@ if ($NoClean) {
     # Clean Android gradle
     if ($Target -eq "android" -or $Target -eq "all") {
         $gradlew = if ($IsWin) { "gradlew.bat" } else { "gradlew" }
-        $gradlePath = Join-Paths $RepoRoot "RemEx.Android"
+        $gradlePath = Join-Paths $RepoRoot "remex.android"
         $gradleCmd = Join-Paths $gradlePath $gradlew
         if (Test-Path $gradleCmd) {
             Write-Host "Running Gradle clean..." -ForegroundColor DarkGray
@@ -329,9 +329,9 @@ function Find-IsccCompiler {
 if ($Target -eq "windows" -or $Target -eq "all") {
     Write-Host "=== Compiling Windows Platform ===" -ForegroundColor Yellow
     
-    $clientProj = Join-Paths $RepoRoot "RemEx.Host" "RemEx.Host.csproj"
+    $clientProj = Join-Paths $RepoRoot "remex.agent" "remex.agent.csproj"
     if (-not $skipPublish) {
-        Write-Host "Publishing RemEx.Host ($Config, win-x64)..." -ForegroundColor DarkCyan
+        Write-Host "Publishing Remex.Agent ($Config, win-x64)..." -ForegroundColor DarkCyan
         dotnet publish $clientProj -c $Config -r win-x64 --self-contained
         if ($LASTEXITCODE -ne 0) {
             Write-Error "dotnet publish for Windows failed with exit code $LASTEXITCODE"
@@ -347,7 +347,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
         if ($null -ne $iscc) {
             Write-Host "Building Windows Installer (Inno Setup)..." -ForegroundColor DarkCyan
             $issFile = Join-Paths $RepoRoot "installer" "RemEx.iss"
-            $sourceDirArg = "..\artifacts\publish\RemEx.Host\${Config}_win-x64"
+            $sourceDirArg = "..\artifacts\publish\remex.agent\${Config}_win-x64"
             
             & $iscc "/DAppVersion=$Version" "/DSourceDir=$sourceDirArg" $issFile
             if ($LASTEXITCODE -ne 0) {
@@ -368,7 +368,7 @@ if ($Target -eq "windows" -or $Target -eq "all") {
             }
         } else {
             Write-Warning "ISCC.exe (Inno Setup 6) was not found in standard paths. Skipping installer packaging."
-            Write-Warning "Raw published files are available under artifacts\publish\RemEx.Host\${Config}_win-x64\"
+            Write-Warning "Raw published files are available under artifacts\publish\remex.agent\${Config}_win-x64\"
         }
     }
     Write-Host "----------------------------------------------------------" -ForegroundColor Gray
@@ -379,7 +379,7 @@ if ($Target -eq "android" -or $Target -eq "all") {
     Write-Host "=== Compiling Android Platform ===" -ForegroundColor Yellow
     
     $gradlew = if ($IsWin) { "gradlew.bat" } else { "gradlew" }
-    $gradlePath = Join-Paths $RepoRoot "RemEx.Android"
+    $gradlePath = Join-Paths $RepoRoot "remex.android"
     $gradleCmd = Join-Paths $gradlePath $gradlew
     $tasks = if ($Config -eq "release") { 
         @("assembleRelease", "bundleRelease", "verifyRemexCoreInReleaseApk")
@@ -419,7 +419,7 @@ if ($Target -eq "android" -or $Target -eq "all") {
         $apiJar = Join-Paths $sdkDir "platforms" "android-37" "android.jar"
         if (-not (Test-Path $apiJar)) {
             Write-Host "Android API Level 37 platform is missing. Attempting auto-installation..." -ForegroundColor Yellow
-            $coreProj = Join-Paths $RepoRoot "Remex.Core" "Remex.Core.csproj"
+            $coreProj = Join-Paths $RepoRoot "remex.core" "remex.core.csproj"
             dotnet build $coreProj -t:InstallAndroidDependencies -f net10.0-android "-p:AndroidSdkDirectory=$sdkDir" "-p:AcceptAndroidSDKLicenses=true"
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "Android API Level 37 dependency resolved successfully." -ForegroundColor Green
@@ -500,7 +500,7 @@ if ($Target -eq "android" -or $Target -eq "all") {
 
             if (-not [string]::IsNullOrEmpty($sdkDir)) {
                 Write-Host "Attempting to auto-install missing Android SDK dependencies in: $sdkDir" -ForegroundColor Cyan
-                $coreProj = Join-Paths $RepoRoot "Remex.Core" "Remex.Core.csproj"
+                $coreProj = Join-Paths $RepoRoot "remex.core" "remex.core.csproj"
                 
                 # Run the dependency installer target
                 dotnet build $coreProj -t:InstallAndroidDependencies -f net10.0-android "-p:AndroidSdkDirectory=$sdkDir" "-p:AcceptAndroidSDKLicenses=true"
