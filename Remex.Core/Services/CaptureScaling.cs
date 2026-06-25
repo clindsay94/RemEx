@@ -1,4 +1,4 @@
-namespace Remex.Host.Services.ScreenCapture;
+namespace Remex.Core.Services;
 
 /// <summary>
 /// Single source of truth for the scaled output dimensions of a captured frame.
@@ -10,11 +10,16 @@ namespace Remex.Host.Services.ScreenCapture;
 /// computed dimensions slightly differently (even-alignment vs none, and different "skip scaling"
 /// thresholds), so any scale that produced an odd dimension broke H.264.
 ///
-/// All capture sites (encoder init, GDI <c>ScaleBitmap</c>, DXGI <c>EncodeToRawBgra</c>) MUST derive
-/// their dimensions from <see cref="ScaledEven"/> so the delivered buffer always matches the encoder.
-/// Dimensions are floored to an even value because most H.264 encoders require even width/height.
+/// All capture sites (encoder init, GDI <c>ScaleBitmap</c>, DXGI <c>EncodeToRawBgra</c>, and the
+/// WGC backend) MUST derive their dimensions from <see cref="ScaledEven"/> so the delivered buffer
+/// always matches the encoder. Dimensions are floored to an even value because most H.264 encoders
+/// require even width/height.
+///
+/// Lives in <c>Remex.Core</c> (not <c>RemEx.Host</c>) so the Windows-only WGC capture project — a
+/// separate assembly that cannot reference <c>RemEx.Host</c> — shares the exact same formula rather
+/// than duplicating it and risking drift. Pure arithmetic: NativeAOT-safe for the Android JNI build.
 /// </summary>
-internal static class CaptureScaling
+public static class CaptureScaling
 {
     /// <summary>
     /// Returns the scaled, even-aligned size of a single dimension (width or height).

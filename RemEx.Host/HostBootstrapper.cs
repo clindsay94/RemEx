@@ -111,7 +111,17 @@ public static class HostBootstrapper
                     sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Host.Services.Command.SessionBridgingCommandService>>(),
                     sp.GetRequiredService<Remex.Core.Services.Command.WindowsSystemCommandService>()));
             builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
-            builder.Services.AddSingleton<IScreenCaptureService, Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService>();
+#if WGC_CAPTURE
+            // Windows.Graphics.Capture backend (preferred). Only compiled/referenced on Windows — the
+            // WGC_CAPTURE constant is defined alongside the Windows-only ProjectReference in RemEx.Host.csproj.
+            builder.Services.AddSingleton<Remex.Core.Services.IWgcCaptureSource, RemEx.Host.Windows.Capture.WgcDesktopCapture>();
+#endif
+            // Resolve WGC as an OPTIONAL dependency: GetService returns null when the WGC project isn't
+            // referenced (so the orchestrator falls through to its DXGI → GDI tiers unchanged).
+            builder.Services.AddSingleton<IScreenCaptureService>(sp =>
+                new Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService(
+                    sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Host.Services.ScreenCapture.WindowsScreenCaptureService>>(),
+                    sp.GetService<Remex.Core.Services.IWgcCaptureSource>()));
             builder.Services.AddSingleton<IInputSimulationService, Remex.Host.Services.Input.WindowsInputSimulationService>();
             builder.Services.AddSingleton<IDesktopWindowControlService, Remex.Host.Services.Input.WindowsDesktopWindowControlService>();
         }

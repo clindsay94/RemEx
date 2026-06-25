@@ -1306,8 +1306,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 screenWidth, screenHeight, MaxH264EncodeDimension, scale, _scale);
         }
 
-        int targetWidth = Services.ScreenCapture.CaptureScaling.ScaledEven(screenWidth, scale);
-        int targetHeight = Services.ScreenCapture.CaptureScaling.ScaledEven(screenHeight, scale);
+        int targetWidth = CaptureScaling.ScaledEven(screenWidth, scale);
+        int targetHeight = CaptureScaling.ScaledEven(screenHeight, scale);
 
         var encoder = new FFmpegH264Encoder(_logger);
         if (encoder.Initialize(targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))

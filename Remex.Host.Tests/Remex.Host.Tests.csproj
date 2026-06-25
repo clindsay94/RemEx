@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Match RemEx.Host's conditional TFM: Windows-versioned on Windows (so the ProjectReference to the
+         now-windows-versioned host resolves), plain net10.0 on Linux. See RemEx.Host.csproj for rationale. -->
+    <TargetFramework Condition="$([MSBuild]::IsOSPlatform('Windows'))">net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>

@@ -23,6 +23,16 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     private readonly WindowsDisplayPowerMonitor _displayPower;
     private readonly object _displayLock = new();
 
+    // WGC (Windows.Graphics.Capture) is the preferred backend when present. Injected as an optional
+    // dependency: null on Linux (the Windows-only capture project isn't referenced) or when WGC init
+    // failed — in which case capture falls through to the existing DXGI → GDI tiers unchanged. The
+    // backend preference (HKLM) decides where in the WGC → DXGI → GDI ladder we start.
+    private readonly IWgcCaptureSource? _wgc;
+    private readonly CaptureBackend _backend;
+
+    // WGC participates only when present and not pinned below it by the HKLM preference (Dxgi/Gdi).
+    private bool WgcEnabled => _wgc is not null && _backend is not (CaptureBackend.Dxgi or CaptureBackend.Gdi);
+
     private List<DisplayDefinition> _displays = [];
     private DesktopCaptureTarget _activeTarget = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
     private int _displayListVersion = 1;
@@ -42,8 +52,20 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     }
 
     public WindowsScreenCaptureService(ILogger<WindowsScreenCaptureService> logger)
+        : this(logger, wgc: null)
+    {
+    }
+
+    public WindowsScreenCaptureService(ILogger<WindowsScreenCaptureService> logger, IWgcCaptureSource? wgc)
     {
         _logger = logger;
+        _wgc = wgc;
+        // HKLM-backed backend preference (LocalSystem/Session 0 → HKLM, never HKCU). Fails open to Auto.
+        _backend = OperatingSystem.IsWindows() ? CaptureBackendPreference.Read(logger) : CaptureBackend.Auto;
+        if (_wgc is not null)
+        {
+            _logger.LogInformation("WGC capture backend available; preference = {Backend}.", _backend);
+        }
 
         // Detect Session 0 early — screen capture will never work there.
         var sessionId = Process.GetCurrentProcess().SessionId;
@@ -84,8 +106,60 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
     }
 
-    public string? BackendName => CanUseDxgiForCurrentTarget() ? "dxgi" : "gdi";
+    public string? BackendName => WgcServesActiveTarget() ? "wgc" : CanUseDxgiForCurrentTarget() ? "dxgi" : "gdi";
     public bool IsDisplayPoweredOff => _displayPower.IsDisplayOff;
+
+    // Win32 device name (e.g. \\.\DISPLAY1) of the active per-monitor target, or null for virtual-desktop
+    // mode or an unresolved display. WGC and DXGI both capture per-monitor; virtual-desktop stays on GDI.
+    private string? ActiveMonitorDeviceName()
+    {
+        lock (_displayLock)
+        {
+            if (_activeTarget.CaptureMode != DesktopCaptureMode.Monitor || string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+            {
+                return null;
+            }
+
+            var display = _displays.FirstOrDefault(candidate =>
+                string.Equals(candidate.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
+            return string.IsNullOrWhiteSpace(display?.DeviceName) ? null : display.DeviceName;
+        }
+    }
+
+    // Pure capability check (no side effects) — safe to call from the BackendName getter and the hot path.
+    private bool WgcServesActiveTarget()
+    {
+        if (!WgcEnabled || _wgc is null || !_wgc.IsAvailable)
+        {
+            return false;
+        }
+
+        var deviceName = ActiveMonitorDeviceName();
+        return deviceName is not null &&
+               string.Equals(_wgc.OutputDeviceName, deviceName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Points WGC at the active monitor when the target changed. TrySelectMonitor (re)creates the WGC
+    // session only when the device name differs, so this is cheap on the steady-state capture path.
+    private void EnsureWgcSelectedForActiveTarget()
+    {
+        if (!WgcEnabled || _wgc is null)
+        {
+            return;
+        }
+
+        var deviceName = ActiveMonitorDeviceName();
+        if (deviceName is null ||
+            string.Equals(_wgc.OutputDeviceName, deviceName, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!_wgc.TrySelectMonitor(deviceName, out var error) && error is not null)
+        {
+            _logger.LogDebug("WGC could not target {Device}: {Error}. Falling back to DXGI/GDI.", deviceName, error);
+        }
+    }
     public bool IsDxgiAvailable => _dxgi.IsAvailable;
     public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
     public string? LastCaptureFailureReason { get; private set; }
@@ -165,6 +239,23 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         scale = Math.Clamp(scale, 0.25, 1.0);
         ct.ThrowIfCancellationRequested();
 
+        // Tier 1 — WGC (preferred, per-monitor). Driver-robust replacement for DXGI Desktop Duplication;
+        // returns BGRA already scaled to CaptureScaling.ScaledEven so it matches the encoder's input size.
+        if (WgcEnabled)
+        {
+            EnsureWgcSelectedForActiveTarget();
+            if (WgcServesActiveTarget())
+            {
+                _wgc!.TryRecover();
+                var wgcFrame = _wgc.TryCaptureRaw(scale, drawCursor, out var wgcLive);
+                if (wgcFrame is { Length: > 0 })
+                {
+                    LastCaptureFailureReason = null;
+                    return new ScreenCaptureResult(wgcFrame, wgcLive);
+                }
+            }
+        }
+
         _dxgi.TryRecover();
 
         if (CanUseDxgiForCurrentTarget())
@@ -225,6 +316,30 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
         ct.ThrowIfCancellationRequested();
+
+        // Tier 1 — WGC (preferred). WGC delivers raw BGRA; JPEG-encode it for the MJPEG fallback path.
+        if (WgcEnabled)
+        {
+            EnsureWgcSelectedForActiveTarget();
+            if (WgcServesActiveTarget())
+            {
+                _wgc!.TryRecover();
+                var wgcRaw = _wgc.TryCaptureRaw(scale, drawCursor, out var wgcLive);
+                if (wgcRaw is { Length: > 0 })
+                {
+                    var jpeg = EncodeBgraToJpeg(
+                        wgcRaw,
+                        CaptureScaling.ScaledEven(_wgc.Width, scale),
+                        CaptureScaling.ScaledEven(_wgc.Height, scale),
+                        quality);
+                    if (jpeg is { Length: > 0 })
+                    {
+                        LastCaptureFailureReason = null;
+                        return new ScreenCaptureResult(jpeg, wgcLive);
+                    }
+                }
+            }
+        }
 
         _dxgi.TryRecover();
 
@@ -297,6 +412,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     {
         _displayPower.Dispose();
         _dxgi.Dispose();
+        _wgc?.Dispose();
     }
 
     private Rectangle GetActiveBounds()
@@ -457,6 +573,35 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             GetSystemMetrics(SM_YVIRTUALSCREEN),
             GetSystemMetrics(SM_CXVIRTUALSCREEN),
             GetSystemMetrics(SM_CYVIRTUALSCREEN));
+
+    // JPEG-encodes a tightly-packed BGRA buffer (as produced by the WGC backend) for the MJPEG path.
+    // BGRA byte order matches Format32bppArgb's in-memory layout, and 32bpp has no row padding, so the
+    // width*height*4 bytes copy directly into the locked bitmap. Returns null if the buffer is undersized.
+    private static byte[]? EncodeBgraToJpeg(byte[] bgra, int width, int height, int quality)
+    {
+        if (width <= 0 || height <= 0 || bgra.Length < width * height * 4)
+        {
+            return null;
+        }
+
+        using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+        var rect = new Rectangle(0, 0, width, height);
+        var data = bitmap.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+        try
+        {
+            Marshal.Copy(bgra, 0, data.Scan0, width * height * 4);
+        }
+        finally
+        {
+            bitmap.UnlockBits(data);
+        }
+
+        using var ms = new MemoryStream();
+        var encoderParams = new EncoderParameters(1);
+        encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
+        bitmap.Save(ms, GetJpegEncoder(), encoderParams);
+        return ms.ToArray();
+    }
 
     private static ImageCodecInfo? _cachedJpegEncoder;
 

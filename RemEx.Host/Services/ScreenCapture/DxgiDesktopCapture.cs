@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Services; // CaptureScaling (relocated to Remex.Core so the WGC project can share it)
 
 namespace Remex.Host.Services.ScreenCapture;
 
