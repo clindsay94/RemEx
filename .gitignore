@@ -82,7 +82,6 @@ hwinfo_reg.txt
 publish/
 remex.android/app/src/main/jniLibs/
 remex.android/conductor/
-*.agent/*
 
 # AI tool directories
 .gemini/
