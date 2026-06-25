@@ -173,6 +173,28 @@ public sealed class RemexDesktopClient : IDisposable
     }
 
     /// <summary>
+    /// Asks the host to emit an on-demand keyframe (IDR) on the active stream after a decoder desync.
+    /// MUST be sent on the desktop stream socket so it reaches <c>RemoteDesktopHandler</c>; the control
+    /// <c>/ws</c> channel does not handle desktop stream messages and would log it as "Unknown message
+    /// type". No-op when not connected/streaming (nothing to resync). Additive + backward-compatible:
+    /// legacy hosts ignore the type. (RemEx-bqc / #2a)
+    /// </summary>
+    public async Task RequestKeyframeAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
+
+        if (!_isStreaming)
+        {
+            return;
+        }
+
+        await SendMessageAsync(new RemexMessage
+        {
+            Type = MessageTypes.DesktopKeyframeRequest,
+        }, ct);
+    }
+
+    /// <summary>
     /// Sends a batch of high-resolution pointer/stylus samples to the host (Stage 3).
     /// Falls back silently if not connected or not streaming.
     /// </summary>

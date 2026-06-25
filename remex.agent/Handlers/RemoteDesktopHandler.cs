@@ -313,6 +313,20 @@ public sealed class RemoteDesktopHandler : IDisposable
         long encoderSerial = -1;
         int encoderConfigVersion = -1;
 
+        // On-demand keyframe reinit throttle — a RARE backstop, not the primary resync path. Honoring a
+        // keyframe request means a full ~1s ffmpeg/nvenc restart (a rawvideo stdin pipe has no per-frame
+        // IDR API). The encoder already emits a keyframe every 60 frames (`-g 60`), which at a healthy
+        // 60–120 FPS is every 0.5–1s — so a desynced decoder resyncs on the next natural GOP keyframe
+        // WITHOUT any reinit. A desynced decoder also floods keyframe requests (its 4-frame input backlog
+        // overflows on each post-reinit catch-up burst); honoring them reinitializes the encoder
+        // continuously, which is the very stall that keeps the stream from ever smoothing out (a few FPS,
+        // black). So we honor at most one keyframe-driven reinit per long cooldown: one fresh IDR plus the
+        // frequent GOP keyframes resync the decoder, and once delivery is smooth the flood stops on its
+        // own. Legitimate rebuilds (target switch, quality/fps/scale change) are unaffected.
+        const double keyframeReinitCooldownMs = 5000;
+        double lastEncoderRebuildMs = double.NegativeInfinity;
+        int throttledKeyframeRequests = 0;
+
         // Start capture/encode loop in a separate task
         var captureTask = Task.Run(async () =>
         {
@@ -349,7 +363,18 @@ public sealed class RemoteDesktopHandler : IDisposable
                     if (_activeCodec == DesktopCodecKind.H264 &&
                         h264Encoder is not null && h264Encoder.ConsumeKeyframeRequest())
                     {
-                        encoderSerial = -1;
+                        // Throttle: only rebuild for a keyframe request if we have not just rebuilt. A
+                        // request that arrives inside the cooldown is swallowed (the decoder re-requests
+                        // if it is still desynced; the first request after the cooldown is honored). This
+                        // breaks the reinit storm that otherwise pins the stream at ~2 FPS / black.
+                        if (loopTimer.Elapsed.TotalMilliseconds - lastEncoderRebuildMs >= keyframeReinitCooldownMs)
+                        {
+                            encoderSerial = -1;
+                        }
+                        else
+                        {
+                            throttledKeyframeRequests++;
+                        }
                     }
 
                     // Rebuild the encoder on a stream-serial change (target switch) OR when an
@@ -358,6 +383,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                     if (_activeCodec == DesktopCodecKind.H264 &&
                         (encoderSerial != captureSerial || encoderConfigVersion != configVersion))
                     {
+                        // Any rebuild (target switch, config change, or on-demand keyframe) emits a fresh
+                        // IDR, so it also satisfies the keyframe cooldown window above.
+                        lastEncoderRebuildMs = loopTimer.Elapsed.TotalMilliseconds;
+                        // Name the trigger so a reinit storm is diagnosable from the log: encoderSerial==-1
+                        // means an on-demand keyframe forced it; a differing real serial is a target switch;
+                        // otherwise an encoder-affecting config change (quality/fps/scale).
+                        _logger.LogInformation(
+                            "Rebuilding H.264 encoder (reason={Reason}, encoderSerial={EncSerial}, captureSerial={CapSerial}, encoderCfg={EncCfg}, cfg={Cfg}).",
+                            encoderSerial == -1 ? "keyframe" : encoderSerial != captureSerial ? "target-switch" : "config-change",
+                            encoderSerial, captureSerial, encoderConfigVersion, configVersion);
                         _activeH264Encoder = null;
                         h264Encoder?.Dispose();
                         h264Encoder = TryCreateH264Encoder();
@@ -623,14 +658,17 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                     _logger.LogInformation(
                         "Stream Metrics: Sent {Sent} frames ({FPS:F1} FPS), Captured {Cap} frames, " +
-                        "Dropped {Drop} frames. Avg Capture+Encode: {AvgCap:F1}ms, Avg Send: {AvgSend:F1}ms.",
-                        totalFramesSent, effectiveFps, totalFramesCaptured, totalFramesDropped, avgCaptureMs, avgSendMs);
+                        "Dropped {Drop} frames. Avg Capture+Encode: {AvgCap:F1}ms, Avg Send: {AvgSend:F1}ms. " +
+                        "Throttled keyframe reinits: {Throttled}.",
+                        totalFramesSent, effectiveFps, totalFramesCaptured, totalFramesDropped, avgCaptureMs, avgSendMs,
+                        throttledKeyframeRequests);
 
                     totalFramesSent = 0;
                     totalFramesCaptured = 0;
                     totalFramesDropped = 0;
                     totalCaptureMs = 0;
                     totalSendMs = 0;
+                    throttledKeyframeRequests = 0;
                 }
             }
         }

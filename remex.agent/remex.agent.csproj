@@ -16,6 +16,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\remex.desktop\Assets\icon.ico</ApplicationIcon>
     <UserSecretsId>dotnet-Remex.Host-250abb58-e6f9-4331-93e2-4801f7e26382</UserSecretsId>
+    <!-- NU1510: System.Threading.AccessControl is explicitly referenced (not redundant) because
+         PipeSecurity/PipeAccessRights/MutexAcl are used directly in Services/IPC. The NoWarn
+         attribute on <PackageReference> does not suppress restore-phase warnings; only this form does. -->
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
 
   <!-- The consolidated Remex.Agent is both the Avalonia GUI host and the in-process ASP.NET host. -->
@@ -51,7 +55,7 @@
     <PackageReference Include="System.Diagnostics.PerformanceCounter" />
     <PackageReference Include="System.Drawing.Common" />
     <PackageReference Include="System.Management" />
-    <PackageReference Include="System.Threading.AccessControl" NoWarn="NU1510" />
+    <PackageReference Include="System.Threading.AccessControl" />
     <PackageReference Include="Tmds.DBus.Protocol" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />

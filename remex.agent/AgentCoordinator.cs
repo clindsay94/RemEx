@@ -117,7 +117,7 @@ internal sealed class AgentCoordinator : IHostedService, IAsyncDisposable
                 {
                     _logger.LogWarning(
                         "Command agent bound port {BoundPort} instead of the canonical port {CanonicalPort}. " +
-                        "Android clients dialing {CanonicalPort} will not connect. " +
+                        "Android clients dialing that port will not connect. " +
                         "Restart the service to retry binding the canonical port.",
                         boundPort, RemexConstants.DefaultPort);
                 }

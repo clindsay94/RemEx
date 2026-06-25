@@ -101,5 +101,5 @@
   },
   "enabledPlugins": {},
   "outputStyle": "Explanatory",
-  "spinnerTipsEnabled": true
+  "spinnerTipsEnabled": false
 }

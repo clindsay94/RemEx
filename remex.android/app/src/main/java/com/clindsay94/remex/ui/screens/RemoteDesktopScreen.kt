@@ -1842,41 +1842,47 @@ fun RemoteDesktopScreenContent(
                                                 AndroidView(
                                                         factory = { context ->
                                                                 var localDecoder: H264StreamDecoder? = null
-                                                                android.view.TextureView(context).apply {
-                                                                        surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
-                                                                                override fun onSurfaceTextureAvailable(surfaceTexture: android.graphics.SurfaceTexture, width: Int, height: Int) {
-                                                                                        val surface = android.view.Surface(surfaceTexture)
-                                                                                        // Use the encoded stream dimensions from DesktopMeta, not the surface view size
+                                                                android.view.SurfaceView(context).apply {
+                                                                        // Use a SurfaceView (NOT TextureView) for the H.264 video. Its consumer is
+                                                                        // SurfaceFlinger — a dedicated hardware-overlay layer that accepts the Qualcomm
+                                                                        // c2 decoder's native (UBWC) graphic buffers and always drains them. A TextureView's
+                                                                        // GL SurfaceTexture consumer cannot accept those buffers ("? is not a supported pixel
+                                                                        // format" / setOutputSurface BAD_INDEX → onOutputBufferAvailable never fires), so the
+                                                                        // decoder produces no output, its input pool exhausts after ~2 frames, and the stream
+                                                                        // stays black. The cursor overlay Canvas and pan/zoom graphicsLayer below still apply.
+                                                                        // (#2b decode-stall, Qualcomm output-surface negotiation)
+                                                                        holder.addCallback(object : android.view.SurfaceHolder.Callback {
+                                                                                override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                                                                                        // Pin the surface buffer geometry to the DECODED size; SurfaceFlinger scales
+                                                                                        // this overlay layer to the view rect, so the displayed size still follows layout.
+                                                                                        holder.setFixedSize(streamPixelWidth, streamPixelHeight)
                                                                                         val decoder = H264StreamDecoder(
                                                                                                 streamPixelWidth,
                                                                                                 streamPixelHeight,
-                                                                                                surface,
+                                                                                                holder.surface,
                                                                                                 onInitFailure = onH264DecoderInitFailed,
                                                                                                 onKeyframeNeeded = onH264KeyframeNeeded
                                                                                         )
                                                                                         localDecoder = decoder
                                                                                         onActiveH264DecoderChange(decoder)
-                                                                                        Log.i(TAG, "H.264 stream surface created: encoded=${streamPixelWidth}x${streamPixelHeight}, surface=${width}x${height}")
+                                                                                        Log.i(TAG, "H.264 SurfaceView created: encoded=${streamPixelWidth}x${streamPixelHeight}")
                                                                                 }
-                                                                                override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
-                                                                                override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
-                                                                                        // Capture and clear the local reference first. When key(streamPixelWidth,
-                                                                                        // streamPixelHeight) rebuilds this AndroidView on a resolution change, the
-                                                                                        // NEW view's onSurfaceTextureAvailable may fire BEFORE this (old) view's
-                                                                                        // destroy callback. Releasing via the guarded callback ensures we only
-                                                                                        // clear the ViewModel's active decoder if it still points at THIS decoder,
-                                                                                        // never the freshly-created one — otherwise frames would be starved.
+                                                                                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {}
+                                                                                override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                                                                                        // Guarded release: when key(streamPixelWidth, streamPixelHeight) rebuilds this
+                                                                                        // AndroidView on a resolution change, the NEW view's surfaceCreated may fire
+                                                                                        // BEFORE this (old) view's surfaceDestroyed. onH264DecoderReleased only clears
+                                                                                        // the ViewModel's active decoder if it still points at THIS decoder, never the
+                                                                                        // freshly-created one — otherwise frames would be starved.
                                                                                         val released = localDecoder
                                                                                         localDecoder = null
                                                                                         if (released != null) {
                                                                                                 released.release()
                                                                                                 onH264DecoderReleased(released)
                                                                                         }
-                                                                                        Log.i(TAG, "H.264 stream surface destroyed.")
-                                                                                        return true
+                                                                                        Log.i(TAG, "H.264 SurfaceView destroyed.")
                                                                                 }
-                                                                                override fun onSurfaceTextureUpdated(surface: android.graphics.SurfaceTexture) {}
-                                                                        }
+                                                                        })
                                                                 }
                                                         },
                                                         // Letterbox to the source aspect ratio instead of stretching to fill

@@ -917,6 +917,21 @@ public static class AndroidNativeExports
                 });
                 return true;
 
+            // On-demand keyframe (IDR) request after a decoder desync. Routed onto the desktop stream
+            // socket so it reaches RemoteDesktopHandler; without this case it fell through to the
+            // control /ws channel and was logged as "Unknown message type". (RemEx-bqc / #2a)
+            case MessageTypes.DesktopKeyframeRequest:
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                        await RemexDesktopClient.Current.RequestKeyframeAsync(host, port, clientId, spkiHash);
+                    }
+                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopKeyframeRequest failed: {ex.Message}"); }
+                });
+                return true;
+
             default:
                 return false;
         }
