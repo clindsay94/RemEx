@@ -20,6 +20,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 {
     private readonly ILogger<WindowsScreenCaptureService> _logger;
     private readonly DxgiDesktopCapture _dxgi;
+    private readonly WindowsDisplayPowerMonitor _displayPower;
     private readonly object _displayLock = new();
 
     private List<DisplayDefinition> _displays = [];
@@ -53,6 +54,10 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 "Run the Remex Desktop app interactively, or configure the service to log on as a user.");
         }
 
+        // Watch the console display power state so the stream loop can pause while the monitor is off
+        // (RemEx-960). Fails open — if it can't register, IsDisplayPoweredOff stays false.
+        _displayPower = new WindowsDisplayPowerMonitor(logger);
+
         // Initialize DXGI Desktop Duplication. Falls back gracefully to GDI if unavailable.
         _dxgi = new DxgiDesktopCapture(logger);
         if (_dxgi.IsAvailable)
@@ -80,6 +85,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     }
 
     public string? BackendName => CanUseDxgiForCurrentTarget() ? "dxgi" : "gdi";
+    public bool IsDisplayPoweredOff => _displayPower.IsDisplayOff;
     public bool IsDxgiAvailable => _dxgi.IsAvailable;
     public string? DxgiUnavailableReason => _dxgi.UnavailableReason;
     public string? LastCaptureFailureReason { get; private set; }
@@ -149,6 +155,12 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     }
 
     public Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult(CaptureRawCore(scale, drawCursor, ct).Pixels);
+
+    public Task<ScreenCaptureResult> CaptureRawScreenLiveAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult(CaptureRawCore(scale, drawCursor, ct));
+
+    private ScreenCaptureResult CaptureRawCore(double scale, bool drawCursor, CancellationToken ct)
     {
         scale = Math.Clamp(scale, 0.25, 1.0);
         ct.ThrowIfCancellationRequested();
@@ -157,11 +169,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
         if (CanUseDxgiForCurrentTarget())
         {
-            var dxgiFrame = _dxgi.TryCaptureRaw(scale, drawCursor);
+            var dxgiFrame = _dxgi.TryCaptureRaw(scale, drawCursor, out var dxgiLive);
             if (dxgiFrame is { Length: > 0 })
             {
                 LastCaptureFailureReason = null;
-                return Task.FromResult<byte[]?>(dxgiFrame);
+                // dxgiLive is false when DXGI replayed a stale cached frame (ACCESS_LOST etc.); the handler
+                // uses it to stop counting a frozen output as a successful capture (RemEx-ltd).
+                return new ScreenCaptureResult(dxgiFrame, dxgiLive);
             }
         }
 
@@ -180,7 +194,8 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 byte[] bgraValues = new byte[bytesCount];
                 Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
                 LastCaptureFailureReason = null;
-                return Task.FromResult<byte[]?>(bgraValues);
+                // GDI BitBlt produces a fresh frame whenever it succeeds.
+                return new ScreenCaptureResult(bgraValues, isLive: true);
             }
             finally
             {
@@ -195,11 +210,17 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             {
                 _logger.LogError(ex, "Failed to capture raw screen (Session {SessionId}).", sessionId);
             }
-            return Task.FromResult<byte[]?>(null);
+            return new ScreenCaptureResult(null, isLive: false);
         }
     }
 
     public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct).Pixels ?? Array.Empty<byte>());
+
+    public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct));
+
+    private ScreenCaptureResult CaptureScreenCore(int quality, double scale, bool drawCursor, CancellationToken ct)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);
@@ -209,11 +230,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
         if (CanUseDxgiForCurrentTarget())
         {
-            var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder(), drawCursor);
+            var dxgiFrame = _dxgi.TryCapture(quality, scale, GetJpegEncoder(), drawCursor, out var dxgiLive);
             if (dxgiFrame is { Length: > 0 })
             {
                 LastCaptureFailureReason = null;
-                return Task.FromResult(dxgiFrame);
+                return new ScreenCaptureResult(dxgiFrame, dxgiLive);
             }
         }
 
@@ -230,7 +251,8 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
             bitmap.Save(ms, jpegEncoder, encoderParams);
             LastCaptureFailureReason = null;
-            return Task.FromResult(ms.ToArray());
+            // GDI BitBlt produces a fresh frame whenever it succeeds.
+            return new ScreenCaptureResult(ms.ToArray(), isLive: true);
         }
         catch (Exception ex)
         {
@@ -244,7 +266,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                         ? "Session 0 cannot capture the desktop. Run the Remex Desktop app interactively."
                         : "Ensure the desktop is not locked and the process has screen access.");
             }
-            return Task.FromResult(Array.Empty<byte>());
+            return new ScreenCaptureResult(Array.Empty<byte>(), isLive: false);
         }
     }
 
@@ -271,7 +293,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         return WindowsCursorShapeCapture.TryCaptureCurrentShape(out snapshot) && snapshot is not null;
     }
 
-    public void Dispose() => _dxgi.Dispose();
+    public void Dispose()
+    {
+        _displayPower.Dispose();
+        _dxgi.Dispose();
+    }
 
     private Rectangle GetActiveBounds()
     {

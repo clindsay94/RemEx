@@ -376,25 +376,30 @@ internal sealed class DxgiDesktopCapture : IDisposable
     /// (DXGI_ERROR_WAIT_TIMEOUT), reducing CPU/bandwidth on static screens.
     /// Thread-safe: concurrent callers get the last frame without blocking.
     /// </summary>
-    public byte[]? TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor = true)
+    public byte[]? TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, out bool isLive)
     {
+        isLive = false;
         if (_disposed) return null;
 
         // Non-blocking: if another capture is already in progress, return last frame immediately.
         // This prevents queue buildup for high-FPS streams with multiple concurrent connections.
+        // A concurrent in-flight capture is doing the real work, so this replay counts as live.
         if (!_lock.Wait(0))
+        {
+            isLive = true;
             return _lastFrame;
+        }
 
         try
         {
             EnsureInitialized();
-            if (!IsAvailable) return null;
-            return CaptureInternal(quality, scale, jpegEncoder, drawCursor);
+            if (!IsAvailable) return null; // caller falls back to GDI; isLive is unused on a null return
+            return CaptureInternal(quality, scale, jpegEncoder, drawCursor, out isLive);
         }
         catch (Exception ex)
         {
             _logger.LogDebug("DXGI capture error: {Msg}", ex.Message);
-            return _lastFrame;
+            return _lastFrame; // stale: a thrown capture is a genuine failure
         }
         finally
         {
@@ -404,23 +409,33 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     private byte[]? _lastRawFrame;
 
-    public byte[]? TryCaptureRaw(double scale, bool drawCursor)
+    // isLive distinguishes a fresh/confirmed-healthy capture from a STALE cached replay (RemEx-ltd). It is
+    // true exactly where the duplication is confirmed alive (a real frame, or a no-change frame on a healthy
+    // output — the same points RecordHealthyFrame fires); false when a cached frame is replayed because the
+    // output was lost/errored, so a sustained freeze stops counting as a successful capture upstream.
+    public byte[]? TryCaptureRaw(double scale, bool drawCursor, out bool isLive)
     {
+        isLive = false;
         if (_disposed) return null;
 
+        // Another capture holds the lock: returning its in-flight cached frame is not a stall (the concurrent
+        // capture is doing the real work), so report live.
         if (!_lock.Wait(0))
+        {
+            isLive = true;
             return _lastRawFrame;
+        }
 
         try
         {
             EnsureInitialized();
-            if (!IsAvailable) return null;
-            return CaptureRawInternal(scale, drawCursor);
+            if (!IsAvailable) return null; // caller falls back to GDI; isLive is unused on a null return
+            return CaptureRawInternal(scale, drawCursor, out isLive);
         }
         catch (Exception ex)
         {
             _logger.LogDebug("DXGI raw capture error: {Msg}", ex.Message);
-            return _lastRawFrame;
+            return _lastRawFrame; // stale: a thrown capture is a genuine failure, not a static screen
         }
         finally
         {
@@ -428,14 +443,16 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
-    private byte[]? CaptureRawInternal(double scale, bool drawCursor)
+    private byte[]? CaptureRawInternal(double scale, bool drawCursor, out bool isLive)
     {
+        isLive = false; // stale until a healthy path proves otherwise
         IntPtr dxgiResource = IntPtr.Zero;
         var hr = AcquireNextFrame(50u, out var frameInfo, out dxgiResource);
 
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
         {
             _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
+            isLive = true; // healthy static screen
             return _lastRawFrame;
         }
 
@@ -443,13 +460,13 @@ internal sealed class DxgiDesktopCapture : IDisposable
         {
             _logger.LogInformation("DXGI access lost (hr=0x{Hr:X8}) — reinitializing.", hr);
             TryReinitializeDuplication();
-            return _lastRawFrame;
+            return _lastRawFrame; // stale: output lost
         }
 
         if (hr != S_OK)
         {
             _logger.LogDebug("AcquireNextFrame hr=0x{Hr:X8}", hr);
-            return _lastRawFrame;
+            return _lastRawFrame; // stale: acquire failed
         }
 
         _reinitThrottle.RecordHealthyFrame(); // acquired a real frame — output confirmed healthy
@@ -460,11 +477,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
             if (frameInfo.AccumulatedFrames == 0 && _lastRawFrame is not null)
             {
+                isLive = true; // healthy output, no new content this tick
                 return _lastRawFrame;
             }
 
             hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
-            if (hr != S_OK) return _lastRawFrame;
+            if (hr != S_OK) return _lastRawFrame; // stale: couldn't read the acquired frame
 
             try
             {
@@ -488,13 +506,14 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (hr != S_OK)
         {
             Marshal.FreeHGlobal(mappedPtr);
-            return _lastRawFrame;
+            return _lastRawFrame; // stale: map failed
         }
 
         try
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
             _lastRawFrame = EncodeToRawBgra(mapped.pData, (int)mapped.RowPitch, Width, Height, scale, drawCursor, DesktopLeft, DesktopTop);
+            isLive = true; // fresh frame produced
             return _lastRawFrame;
         }
         finally
@@ -573,8 +592,9 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
-    private byte[]? CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor)
+    private byte[]? CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, out bool isLive)
     {
+        isLive = false; // stale until a healthy path proves otherwise
         // AcquireNextFrame — slot 8 on IDXGIOutputDuplication
         // Timeout 50ms: wait up to 50ms for a new frame.
         // Returns DXGI_ERROR_WAIT_TIMEOUT if no new frame; we reuse last JPEG (desktop unchanged).
@@ -584,6 +604,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
         {
             _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
+            isLive = true; // healthy static screen
             return _lastFrame; // Desktop unchanged — bandwidth-efficient reuse
         }
 
@@ -591,13 +612,13 @@ internal sealed class DxgiDesktopCapture : IDisposable
         {
             _logger.LogInformation("DXGI access lost (hr=0x{Hr:X8}) — reinitializing.", hr);
             TryReinitializeDuplication();
-            return _lastFrame;
+            return _lastFrame; // stale: output lost
         }
 
         if (hr != S_OK)
         {
             _logger.LogDebug("AcquireNextFrame hr=0x{Hr:X8}", hr);
-            return _lastFrame;
+            return _lastFrame; // stale: acquire failed
         }
 
         _reinitThrottle.RecordHealthyFrame(); // acquired a real frame — output confirmed healthy
@@ -608,12 +629,13 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
             if (frameInfo.AccumulatedFrames == 0 && _lastFrame is not null)
             {
+                isLive = true; // healthy output, no new content this tick
                 return _lastFrame;
             }
 
             // QI IDXGIResource → ID3D11Texture2D
             hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
-            if (hr != S_OK) return _lastFrame;
+            if (hr != S_OK) return _lastFrame; // stale: couldn't read the acquired frame
 
             try
             {
@@ -643,13 +665,14 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (hr != S_OK)
         {
             Marshal.FreeHGlobal(mappedPtr);
-            return _lastFrame;
+            return _lastFrame; // stale: map failed
         }
 
         try
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
             _lastFrame = EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder, drawCursor, DesktopLeft, DesktopTop);
+            isLive = true; // fresh frame produced
             return _lastFrame;
         }
         finally

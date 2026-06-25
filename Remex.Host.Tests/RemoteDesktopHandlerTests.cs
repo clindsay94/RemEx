@@ -119,6 +119,52 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         }
     }
 
+    /// <summary>
+    /// Returns a non-empty frame but reports <see cref="ScreenCaptureResult.IsLive"/> = false on every
+    /// capture — simulating DXGI replaying its last good frame after the output was lost (ACCESS_LOST /
+    /// session disconnect). Proves the handler stops counting a frozen output as a successful capture and
+    /// emits a coded <c>desktop_error</c> instead of silently freezing the stream (RemEx-ltd).
+    /// </summary>
+    private sealed class StaleReplayScreenCaptureService : IScreenCaptureService
+    {
+        private static readonly byte[] FakeFrame = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x02, 0x00, 0x00, 0xFF, 0xD9];
+
+        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(FakeFrame);
+
+        public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(new ScreenCaptureResult(FakeFrame, isLive: false));
+
+        public Task<ScreenCaptureResult> CaptureRawScreenLiveAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(new ScreenCaptureResult(FakeFrame, isLive: false));
+
+        public (int Width, int Height, int Left, int Top) GetScreenSize() => (1920, 1080, 0, 0);
+    }
+
+    /// <summary>
+    /// Reports the display as powered off (and, like a real powered-off DXGI output, would only return
+    /// stale frames). Proves the handler pauses capture and emits NO <c>desktop_error</c> while the
+    /// monitor is asleep — even though these stale frames would trip the coded capture-stopped error if
+    /// the display were on (RemEx-960, defense-in-depth for RemEx-crk).
+    /// </summary>
+    private sealed class DisplayOffScreenCaptureService : IScreenCaptureService
+    {
+        private static readonly byte[] FakeFrame = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x02, 0x00, 0x00, 0xFF, 0xD9];
+
+        public bool IsDisplayPoweredOff => true;
+
+        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(FakeFrame);
+
+        public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(new ScreenCaptureResult(FakeFrame, isLive: false));
+
+        public Task<ScreenCaptureResult> CaptureRawScreenLiveAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(new ScreenCaptureResult(FakeFrame, isLive: false));
+
+        public (int Width, int Height, int Left, int Top) GetScreenSize() => (1920, 1080, 0, 0);
+    }
+
     private class MockInputSimulationService : IInputSimulationService
     {
         public List<string> ReceivedEvents { get; } = new();
@@ -183,12 +229,14 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         };
     }
 
-    private RemexHostFactory GetFactory(MockHostCapabilitiesProvider? hostCapabilitiesProvider = null)
+    private RemexHostFactory GetFactory(
+        MockHostCapabilitiesProvider? hostCapabilitiesProvider = null,
+        IScreenCaptureService? captureOverride = null)
     {
         hostCapabilitiesProvider ??= new MockHostCapabilitiesProvider();
         return new RemexHostFactory().WithServices(services =>
         {
-            services.AddSingleton<IScreenCaptureService, MockScreenCaptureService>();
+            services.AddSingleton<IScreenCaptureService>(captureOverride ?? new MockScreenCaptureService());
             services.AddSingleton<MockInputSimulationService>();
             services.AddSingleton<IInputSimulationService>(sp => sp.GetRequiredService<MockInputSimulationService>());
             services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
@@ -669,6 +717,110 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         Assert.Equal(MessageTypes.DesktopError, message!.Type);
         Assert.Contains("Winlogon", message.ErrorText);
         Assert.Contains("Unlock the session", message.ErrorText);
+    }
+
+    [Fact]
+    public async Task DesktopStart_WhenCaptureReplaysStaleFrames_SendsCodedCaptureError()
+    {
+        // Capture output is "frozen": every tick returns a non-empty but STALE (IsLive=false) frame, as
+        // DXGI does when it replays its last good frame after ACCESS_LOST. The handler must stop counting
+        // these as successful captures and emit a coded desktop_error rather than silently freezing the
+        // stream while the cursor (a separate stream) keeps moving (RemEx-ltd).
+        var factory = GetFactory(captureOverride: new StaleReplayScreenCaptureService());
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig { Quality = 50, Scale = 0.5, TargetFps = 30 },
+        }, CancellationToken.None);
+
+        // desktop_meta and desktop_stream_descriptor precede the error; no binary frame should ever arrive
+        // on a frozen output. Read text messages until the coded capture error appears (bounded timeout).
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        RemexMessage? errorMessage = null;
+        try
+        {
+            while (errorMessage is null)
+            {
+                var (messageType, payload) = await ReceiveSocketMessageAsync(ws, cts.Token);
+                if (messageType != WebSocketMessageType.Text)
+                {
+                    continue;
+                }
+
+                var message = DeserializeRemexMessage(payload);
+                if (message?.Type == MessageTypes.DesktopError)
+                {
+                    errorMessage = message;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Fall through to the assertion, which fails clearly if no coded error arrived in time.
+        }
+
+        Assert.NotNull(errorMessage);
+        Assert.NotNull(errorMessage!.ErrorText);
+        // Coded path: capture never produced a live frame, so the host reports CaptureUnavailable. The code
+        // travels inside errorText as "code␟arg␟englishFallback" (DesktopErrorCodes.Format), so a substring
+        // check recovers it without coupling to the human-readable fallback.
+        Assert.Contains(DesktopErrorCodes.CaptureUnavailable, errorMessage.ErrorText!);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task DesktopStart_WhenDisplayPoweredOff_PausesWithoutCaptureError()
+    {
+        // Display asleep: the handler must pause capture and emit NO desktop_error, even though the
+        // underlying capture returns stale frames that — with the display ON — trip the coded
+        // capture-stopped error (see DesktopStart_WhenCaptureReplaysStaleFrames_SendsCodedCaptureError).
+        var factory = GetFactory(captureOverride: new DisplayOffScreenCaptureService());
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.DesktopStart,
+            DesktopConfig = new DesktopConfig { Quality = 50, Scale = 0.5, TargetFps = 30 },
+        }, CancellationToken.None);
+
+        // Watch for ~2.5 s — far longer than the <0.3 s a non-paused stale-replay path takes to reach
+        // the 5-failure error at 30 fps. No desktop_error and no binary frame should ever arrive.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2.5));
+        var sawError = false;
+        var sawBinaryFrame = false;
+        try
+        {
+            while (true)
+            {
+                var (messageType, payload) = await ReceiveSocketMessageAsync(ws, cts.Token);
+                if (messageType == WebSocketMessageType.Binary)
+                {
+                    sawBinaryFrame = true;
+                    continue;
+                }
+
+                var message = DeserializeRemexMessage(payload);
+                if (message?.Type == MessageTypes.DesktopError)
+                {
+                    sawError = true;
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected success path: the stream idles, so we time out with no error.
+        }
+
+        Assert.False(sawError, "A powered-off display must not surface a capture error.");
+        Assert.False(sawBinaryFrame, "A powered-off display must not stream frames.");
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, CancellationToken.None);
     }
 
     private static async Task<RemexMessage> ReceiveTextMessageAsync(WebSocket webSocket, CancellationToken ct)

@@ -318,6 +318,21 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             while (!ct.IsCancellationRequested)
             {
+                // Display powered off (monitor sleep): pause capture entirely so we never poke a
+                // powered-off Desktop Duplication output (RemEx-960, defense-in-depth for RemEx-crk).
+                // This is NOT a capture failure — clear any in-flight failure state so a sleeping
+                // monitor never surfaces a misleading "capture stopped" error, and just idle until the
+                // display powers back on (the stream stays connected and resumes automatically).
+                if (_screenCapture.IsDisplayPoweredOff)
+                {
+                    consecutiveFailures = 0;
+                    errorReported = false;
+                    nextFrameTargetMs = loopTimer.Elapsed.TotalMilliseconds;
+                    try { await Task.Delay(500, ct); }
+                    catch (OperationCanceledException) { break; }
+                    continue;
+                }
+
                 captureStopwatch.Restart();
                 try
                 {
@@ -374,11 +389,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                         bool forceKeyframe = frameFlags.HasFlag(DesktopFrameFlags.KeyFrame) || (totalFramesCaptured % 60 == 0);
                         // Capture at the encoder's (possibly hardware-capped) scale so the raw buffer
                         // size matches the encoder's fixed -s WxH input exactly.
-                        var rawPixels = await _screenCapture.CaptureRawScreenAsync(_h264CaptureScale, _drawCursor, ct);
+                        var rawResult = await _screenCapture.CaptureRawScreenLiveAsync(_h264CaptureScale, _drawCursor, ct);
                         if (captureSerial != sessionState.StreamSerial)
                             continue;
 
-                        if (rawPixels is { Length: > 0 })
+                        var rawPixels = rawResult.Pixels;
+                        // A stale cached replay (IsLive == false) means the capture output froze
+                        // (DXGI_ERROR_ACCESS_LOST / session disconnect). Skip it so the freeze advances
+                        // consecutiveFailures and trips the coded desktop_error, instead of silently
+                        // re-encoding and re-sending the last good frame forever (RemEx-ltd).
+                        if (rawPixels is { Length: > 0 } && rawResult.IsLive)
                         {
                             captureSucceeded = true;
 
@@ -403,10 +423,17 @@ public sealed class RemoteDesktopHandler : IDisposable
                     }
                     else
                     {
-                        frameBytes = await _screenCapture.CaptureScreenAsync(_quality, _scale, _drawCursor, ct);
+                        var jpegResult = await _screenCapture.CaptureScreenLiveAsync(_quality, _scale, _drawCursor, ct);
                         if (captureSerial != sessionState.StreamSerial)
                             continue;
-                        captureSucceeded = frameBytes is { Length: > 0 };
+                        if (jpegResult.IsLive)
+                        {
+                            frameBytes = jpegResult.Pixels;
+                            captureSucceeded = frameBytes is { Length: > 0 };
+                        }
+                        // else: stale cached replay (IsLive == false) — leave frameBytes null and
+                        // captureSucceeded false so a sustained freeze advances consecutiveFailures and
+                        // trips the coded desktop_error instead of re-sending the last good frame (RemEx-ltd).
                     }
 
                     if (frameBytes is { Length: > 0 })
