@@ -9,7 +9,7 @@ description: "Skill for the ViewModels area of RemEx. 280 symbols across 26 file
 
 ## When to Use
 
-- Working with code in `Remex.Client/`
+- Working with code in `remex.desktop/`
 - Understanding how TaskManagerViewModel, RemoteViewModel, RemoteDesktopViewModel work
 - Modifying viewmodels-related functionality
 
@@ -17,51 +17,51 @@ description: "Skill for the ViewModels area of RemEx. 280 symbols across 26 file
 
 | File | Symbols |
 |------|---------|
-| `Remex.Client/ViewModels/SettingsViewModel.cs` | RefreshServiceAsync, BrowseHostPathAsync, InstallServiceAsync, InstallWindowsServiceAsync, InstallLinuxServiceAsync (+47) |
-| `Remex.Client/ViewModels/ConnectionViewModel.cs` | SendAsync, LockAsync, SleepAsync, HibernateAsync, SignOutAsync (+29) |
-| `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | OnConnectionPropertyChanged, OnLayoutProfileReceived, OnLayoutProfileReceivedAsync, InitializeAsync, EnsureDefaultCards (+27) |
-| `Remex.Client/ViewModels/ShellViewModel.cs` | NotifyIfDisconnected, SetTransitionAndNavigate, NavigateToCanvas, NavigateToRemote, NavigateToAppLauncher (+22) |
-| `Remex.Client/ViewModels/RemoteViewModel.cs` | RemoteViewModel, LoadWolConfigAsync, ConfirmAsync, LockPcAsync, ShutdownPcAsync (+13) |
-| `Remex.Client/ViewModels/CustomizationViewModel.cs` | CustomizationViewModel, FindSnap, VibrateCardCornerRadius, VibrateRemoteCornerRadius, OnSelectedThemeChanged (+13) |
-| `Remex.Client/ViewModels/FileTransferViewModel.cs` | FileTransferViewModel, OnSelectedRemoteRootChanged, InitializeAsync, LoadRemoteRootsAsync, BrowseRemoteAsync (+10) |
-| `Remex.Client.Tests/ViewModels/ConnectionViewModelTests.cs` | Dispose, Constructor_WithAllNullDependencies_ShouldNotThrow, Dispose_ShouldNotThrowOnDoubleDispose, DiscoverHostsCommand_WhenNoDiscoveryService_ShouldNotCrash, RequestProcessListAsync_WhenNotConnected_ShouldNotThrow (+10) |
-| `Remex.Client/ViewModels/TaskManagerViewModel.cs` | TaskManagerViewModel, RefreshProcessesAsync, KillProcessAsync, StartPolling, PollAsync (+6) |
-| `Remex.Client/ViewModels/AppLauncherViewModel.cs` | LaunchAppAsync, NavigateBack, NormalizeEntry, NormalizeString, RemoveAppAsync (+5) |
+| `remex.desktop/ViewModels/SettingsViewModel.cs` | RefreshServiceAsync, BrowseHostPathAsync, InstallServiceAsync, InstallWindowsServiceAsync, InstallLinuxServiceAsync (+47) |
+| `remex.desktop/ViewModels/ConnectionViewModel.cs` | SendAsync, LockAsync, SleepAsync, HibernateAsync, SignOutAsync (+29) |
+| `remex.desktop/ViewModels/CanvasDashboardViewModel.cs` | OnConnectionPropertyChanged, OnLayoutProfileReceived, OnLayoutProfileReceivedAsync, InitializeAsync, EnsureDefaultCards (+27) |
+| `remex.desktop/ViewModels/ShellViewModel.cs` | NotifyIfDisconnected, SetTransitionAndNavigate, NavigateToCanvas, NavigateToRemote, NavigateToAppLauncher (+22) |
+| `remex.desktop/ViewModels/RemoteViewModel.cs` | RemoteViewModel, LoadWolConfigAsync, ConfirmAsync, LockPcAsync, ShutdownPcAsync (+13) |
+| `remex.desktop/ViewModels/CustomizationViewModel.cs` | CustomizationViewModel, FindSnap, VibrateCardCornerRadius, VibrateRemoteCornerRadius, OnSelectedThemeChanged (+13) |
+| `remex.desktop/ViewModels/FileTransferViewModel.cs` | FileTransferViewModel, OnSelectedRemoteRootChanged, InitializeAsync, LoadRemoteRootsAsync, BrowseRemoteAsync (+10) |
+| `remex.desktop.tests/ViewModels/ConnectionViewModelTests.cs` | Dispose, Constructor_WithAllNullDependencies_ShouldNotThrow, Dispose_ShouldNotThrowOnDoubleDispose, DiscoverHostsCommand_WhenNoDiscoveryService_ShouldNotCrash, RequestProcessListAsync_WhenNotConnected_ShouldNotThrow (+10) |
+| `remex.desktop/ViewModels/TaskManagerViewModel.cs` | TaskManagerViewModel, RefreshProcessesAsync, KillProcessAsync, StartPolling, PollAsync (+6) |
+| `remex.desktop/ViewModels/AppLauncherViewModel.cs` | LaunchAppAsync, NavigateBack, NormalizeEntry, NormalizeString, RemoveAppAsync (+5) |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`TaskManagerViewModel`** (Class) — `Remex.Client/ViewModels/TaskManagerViewModel.cs:14`
-- **`RemoteViewModel`** (Class) — `Remex.Client/ViewModels/RemoteViewModel.cs:14`
-- **`RemoteDesktopViewModel`** (Class) — `Remex.Client/ViewModels/RemoteDesktopViewModel.cs:20`
-- **`FileTransferViewModel`** (Class) — `Remex.Client/ViewModels/FileTransferViewModel.cs:17`
-- **`AboutViewModel`** (Class) — `Remex.Client/ViewModels/AboutViewModel.cs:13`
+- **`TaskManagerViewModel`** (Class) — `remex.desktop/ViewModels/TaskManagerViewModel.cs:14`
+- **`RemoteViewModel`** (Class) — `remex.desktop/ViewModels/RemoteViewModel.cs:14`
+- **`RemoteDesktopViewModel`** (Class) — `remex.desktop/ViewModels/RemoteDesktopViewModel.cs:20`
+- **`FileTransferViewModel`** (Class) — `remex.desktop/ViewModels/FileTransferViewModel.cs:17`
+- **`AboutViewModel`** (Class) — `remex.desktop/ViewModels/AboutViewModel.cs:13`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `TaskManagerViewModel` | Class | `Remex.Client/ViewModels/TaskManagerViewModel.cs` | 14 |
-| `RemoteViewModel` | Class | `Remex.Client/ViewModels/RemoteViewModel.cs` | 14 |
-| `RemoteDesktopViewModel` | Class | `Remex.Client/ViewModels/RemoteDesktopViewModel.cs` | 20 |
-| `FileTransferViewModel` | Class | `Remex.Client/ViewModels/FileTransferViewModel.cs` | 17 |
-| `AboutViewModel` | Class | `Remex.Client/ViewModels/AboutViewModel.cs` | 13 |
-| `SensorViewModel` | Class | `Remex.Client/ViewModels/SensorViewModel.cs` | 11 |
-| `CanvasCardViewModel` | Class | `Remex.Client/ViewModels/CanvasCardViewModel.cs` | 13 |
-| `ShellViewModel` | Class | `Remex.Client/ViewModels/ShellViewModel.cs` | 23 |
-| `SettingsViewModel` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 25 |
-| `SensorPinItem` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 1388 |
-| `CustomizationViewModel` | Class | `Remex.Client/ViewModels/CustomizationViewModel.cs` | 17 |
-| `FileTransferRootSettingsService` | Class | `Remex.Client/Services/FileTransfer/FileTransferRootSettingsService.cs` | 9 |
-| `FileTransferSharedRootItem` | Class | `Remex.Client/ViewModels/SettingsViewModel.cs` | 1410 |
-| `RemoveCardOperation` | Class | `Remex.Client/Services/ICanvasOperation.cs` | 68 |
-| `ConnectionViewModel` | Class | `Remex.Client/ViewModels/ConnectionViewModel.cs` | 33 |
-| `SensorActivationItem` | Class | `Remex.Client/ViewModels/CanvasDashboardViewModel.cs` | 1064 |
-| `CommandPaletteViewModel` | Class | `Remex.Client/ViewModels/CommandPaletteViewModel.cs` | 12 |
-| `NavigateToCanvas` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 461 |
-| `NavigateToRemote` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 468 |
-| `NavigateToAppLauncher` | Method | `Remex.Client/ViewModels/ShellViewModel.cs` | 479 |
+| `TaskManagerViewModel` | Class | `remex.desktop/ViewModels/TaskManagerViewModel.cs` | 14 |
+| `RemoteViewModel` | Class | `remex.desktop/ViewModels/RemoteViewModel.cs` | 14 |
+| `RemoteDesktopViewModel` | Class | `remex.desktop/ViewModels/RemoteDesktopViewModel.cs` | 20 |
+| `FileTransferViewModel` | Class | `remex.desktop/ViewModels/FileTransferViewModel.cs` | 17 |
+| `AboutViewModel` | Class | `remex.desktop/ViewModels/AboutViewModel.cs` | 13 |
+| `SensorViewModel` | Class | `remex.desktop/ViewModels/SensorViewModel.cs` | 11 |
+| `CanvasCardViewModel` | Class | `remex.desktop/ViewModels/CanvasCardViewModel.cs` | 13 |
+| `ShellViewModel` | Class | `remex.desktop/ViewModels/ShellViewModel.cs` | 23 |
+| `SettingsViewModel` | Class | `remex.desktop/ViewModels/SettingsViewModel.cs` | 25 |
+| `SensorPinItem` | Class | `remex.desktop/ViewModels/SettingsViewModel.cs` | 1388 |
+| `CustomizationViewModel` | Class | `remex.desktop/ViewModels/CustomizationViewModel.cs` | 17 |
+| `FileTransferRootSettingsService` | Class | `remex.desktop/Services/FileTransfer/FileTransferRootSettingsService.cs` | 9 |
+| `FileTransferSharedRootItem` | Class | `remex.desktop/ViewModels/SettingsViewModel.cs` | 1410 |
+| `RemoveCardOperation` | Class | `remex.desktop/Services/ICanvasOperation.cs` | 68 |
+| `ConnectionViewModel` | Class | `remex.desktop/ViewModels/ConnectionViewModel.cs` | 33 |
+| `SensorActivationItem` | Class | `remex.desktop/ViewModels/CanvasDashboardViewModel.cs` | 1064 |
+| `CommandPaletteViewModel` | Class | `remex.desktop/ViewModels/CommandPaletteViewModel.cs` | 12 |
+| `NavigateToCanvas` | Method | `remex.desktop/ViewModels/ShellViewModel.cs` | 461 |
+| `NavigateToRemote` | Method | `remex.desktop/ViewModels/ShellViewModel.cs` | 468 |
+| `NavigateToAppLauncher` | Method | `remex.desktop/ViewModels/ShellViewModel.cs` | 479 |
 
 ## Execution Flows
 
@@ -82,7 +82,7 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Remex.Host.Tests | 6 calls |
+| remex.agent.tests | 6 calls |
 | Services | 6 calls |
 | Native | 3 calls |
 | FileTransfer | 3 calls |

@@ -1,15 +1,15 @@
 ---
 name: remex-core-tests
-description: "Skill for the Remex.Core.Tests area of RemEx. 23 symbols across 6 files."
+description: "Skill for the remex.core.tests area of RemEx. 23 symbols across 6 files."
 ---
 
-# Remex.Core.Tests
+# remex.core.tests
 
 23 symbols | 6 files | Cohesion: 57%
 
 ## When to Use
 
-- Working with code in `Remex.Core.Tests/`
+- Working with code in `remex.core.tests/`
 - Understanding how RoundTrip_DesktopMetaMessage_PreservesAllFields, RoundTrip_DesktopInputKeyDown_PreservesKeyCode, RoundTrip_DesktopStopMessage work
 - Modifying remex.core.tests-related functionality
 
@@ -17,47 +17,47 @@ description: "Skill for the Remex.Core.Tests area of RemEx. 23 symbols across 6 
 
 | File | Symbols |
 |------|---------|
-| `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | RoundTrip_DesktopMetaMessage_PreservesAllFields, RoundTrip_DesktopInputKeyDown_PreservesKeyCode, RoundTrip_DesktopStopMessage, RoundTrip_DesktopStartWithConfig_PreservesAllFields, RoundTrip_DesktopInputMouseMove_PreservesAllFields (+2) |
-| `Remex.Core.Tests/MessageSerializerTests.cs` | RoundTrip_PingMessage_PreservesAllFields, RoundTrip_NullTimestamp_IsPreserved, Deserialize_MalformedJson_ReturnsNull, Deserialize_EmptyBytes_ReturnsNull, Serialize_PingMessage_ProducesValidJson (+1) |
-| `Remex.Core.Tests/WakeOnLanServiceTests.cs` | WakeAsync_Accepts_Valid_MAC_Formats, WakeAsync_Rejects_Invalid_MAC, WakeAsync_Rejects_Invalid_BroadcastIp, WakeAsync_Accepts_Valid_BroadcastIp |
-| `Remex.Core.Tests/RemexMessageTests.cs` | RemexMessage_CommandType_SerializesCorrectly, HostInfoMessage_RoundTripsCapabilities |
-| `Remex.Core/Messages/MessageSerializer.cs` | Deserialize, Serialize |
-| `Remex.Core/Services/Network/WakeOnLanService.cs` | WakeAsync, SendToEndpointAsync |
+| `remex.core.tests/RemoteDesktopMessageTests.cs` | RoundTrip_DesktopMetaMessage_PreservesAllFields, RoundTrip_DesktopInputKeyDown_PreservesKeyCode, RoundTrip_DesktopStopMessage, RoundTrip_DesktopStartWithConfig_PreservesAllFields, RoundTrip_DesktopInputMouseMove_PreservesAllFields (+2) |
+| `remex.core.tests/MessageSerializerTests.cs` | RoundTrip_PingMessage_PreservesAllFields, RoundTrip_NullTimestamp_IsPreserved, Deserialize_MalformedJson_ReturnsNull, Deserialize_EmptyBytes_ReturnsNull, Serialize_PingMessage_ProducesValidJson (+1) |
+| `remex.core.tests/WakeOnLanServiceTests.cs` | WakeAsync_Accepts_Valid_MAC_Formats, WakeAsync_Rejects_Invalid_MAC, WakeAsync_Rejects_Invalid_BroadcastIp, WakeAsync_Accepts_Valid_BroadcastIp |
+| `remex.core.tests/RemexMessageTests.cs` | RemexMessage_CommandType_SerializesCorrectly, HostInfoMessage_RoundTripsCapabilities |
+| `remex.core/Messages/MessageSerializer.cs` | Deserialize, Serialize |
+| `remex.core/Services/Network/WakeOnLanService.cs` | WakeAsync, SendToEndpointAsync |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`RoundTrip_DesktopMetaMessage_PreservesAllFields`** (Method) — `Remex.Core.Tests/RemoteDesktopMessageTests.cs:27`
-- **`RoundTrip_DesktopInputKeyDown_PreservesKeyCode`** (Method) — `Remex.Core.Tests/RemoteDesktopMessageTests.cs:71`
-- **`RoundTrip_DesktopStopMessage`** (Method) — `Remex.Core.Tests/RemoteDesktopMessageTests.cs:117`
-- **`RemexMessage_CommandType_SerializesCorrectly`** (Method) — `Remex.Core.Tests/RemexMessageTests.cs:7`
-- **`RoundTrip_PingMessage_PreservesAllFields`** (Method) — `Remex.Core.Tests/MessageSerializerTests.cs:18`
+- **`RoundTrip_DesktopMetaMessage_PreservesAllFields`** (Method) — `remex.core.tests/RemoteDesktopMessageTests.cs:27`
+- **`RoundTrip_DesktopInputKeyDown_PreservesKeyCode`** (Method) — `remex.core.tests/RemoteDesktopMessageTests.cs:71`
+- **`RoundTrip_DesktopStopMessage`** (Method) — `remex.core.tests/RemoteDesktopMessageTests.cs:117`
+- **`RemexMessage_CommandType_SerializesCorrectly`** (Method) — `remex.core.tests/RemexMessageTests.cs:7`
+- **`RoundTrip_PingMessage_PreservesAllFields`** (Method) — `remex.core.tests/MessageSerializerTests.cs:18`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `RoundTrip_DesktopMetaMessage_PreservesAllFields` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 27 |
-| `RoundTrip_DesktopInputKeyDown_PreservesKeyCode` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 71 |
-| `RoundTrip_DesktopStopMessage` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 117 |
-| `RemexMessage_CommandType_SerializesCorrectly` | Method | `Remex.Core.Tests/RemexMessageTests.cs` | 7 |
-| `RoundTrip_PingMessage_PreservesAllFields` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 18 |
-| `RoundTrip_NullTimestamp_IsPreserved` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 42 |
-| `Deserialize_MalformedJson_ReturnsNull` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 53 |
-| `Deserialize_EmptyBytes_ReturnsNull` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 61 |
-| `Deserialize` | Method | `Remex.Core/Messages/MessageSerializer.cs` | 20 |
-| `RoundTrip_DesktopStartWithConfig_PreservesAllFields` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 7 |
-| `RoundTrip_DesktopInputMouseMove_PreservesAllFields` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 46 |
-| `RoundTrip_DesktopInputMouseScroll_PreservesDelta` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 93 |
-| `RoundTrip_DesktopConfigMessage` | Method | `Remex.Core.Tests/RemoteDesktopMessageTests.cs` | 128 |
-| `HostInfoMessage_RoundTripsCapabilities` | Method | `Remex.Core.Tests/RemexMessageTests.cs` | 58 |
-| `Serialize_PingMessage_ProducesValidJson` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 6 |
-| `RoundTrip_PongMessage_PreservesAllFields` | Method | `Remex.Core.Tests/MessageSerializerTests.cs` | 30 |
-| `Serialize` | Method | `Remex.Core/Messages/MessageSerializer.cs` | 13 |
-| `WakeAsync_Accepts_Valid_MAC_Formats` | Method | `Remex.Core.Tests/WakeOnLanServiceTests.cs` | 8 |
-| `WakeAsync_Rejects_Invalid_MAC` | Method | `Remex.Core.Tests/WakeOnLanServiceTests.cs` | 20 |
-| `WakeAsync_Rejects_Invalid_BroadcastIp` | Method | `Remex.Core.Tests/WakeOnLanServiceTests.cs` | 30 |
+| `RoundTrip_DesktopMetaMessage_PreservesAllFields` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 27 |
+| `RoundTrip_DesktopInputKeyDown_PreservesKeyCode` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 71 |
+| `RoundTrip_DesktopStopMessage` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 117 |
+| `RemexMessage_CommandType_SerializesCorrectly` | Method | `remex.core.tests/RemexMessageTests.cs` | 7 |
+| `RoundTrip_PingMessage_PreservesAllFields` | Method | `remex.core.tests/MessageSerializerTests.cs` | 18 |
+| `RoundTrip_NullTimestamp_IsPreserved` | Method | `remex.core.tests/MessageSerializerTests.cs` | 42 |
+| `Deserialize_MalformedJson_ReturnsNull` | Method | `remex.core.tests/MessageSerializerTests.cs` | 53 |
+| `Deserialize_EmptyBytes_ReturnsNull` | Method | `remex.core.tests/MessageSerializerTests.cs` | 61 |
+| `Deserialize` | Method | `remex.core/Messages/MessageSerializer.cs` | 20 |
+| `RoundTrip_DesktopStartWithConfig_PreservesAllFields` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 7 |
+| `RoundTrip_DesktopInputMouseMove_PreservesAllFields` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 46 |
+| `RoundTrip_DesktopInputMouseScroll_PreservesDelta` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 93 |
+| `RoundTrip_DesktopConfigMessage` | Method | `remex.core.tests/RemoteDesktopMessageTests.cs` | 128 |
+| `HostInfoMessage_RoundTripsCapabilities` | Method | `remex.core.tests/RemexMessageTests.cs` | 58 |
+| `Serialize_PingMessage_ProducesValidJson` | Method | `remex.core.tests/MessageSerializerTests.cs` | 6 |
+| `RoundTrip_PongMessage_PreservesAllFields` | Method | `remex.core.tests/MessageSerializerTests.cs` | 30 |
+| `Serialize` | Method | `remex.core/Messages/MessageSerializer.cs` | 13 |
+| `WakeAsync_Accepts_Valid_MAC_Formats` | Method | `remex.core.tests/WakeOnLanServiceTests.cs` | 8 |
+| `WakeAsync_Rejects_Invalid_MAC` | Method | `remex.core.tests/WakeOnLanServiceTests.cs` | 20 |
+| `WakeAsync_Rejects_Invalid_BroadcastIp` | Method | `remex.core.tests/WakeOnLanServiceTests.cs` | 30 |
 
 ## Execution Flows
 

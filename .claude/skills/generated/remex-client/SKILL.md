@@ -1,15 +1,15 @@
 ---
 name: remex-client
-description: "Skill for the Remex.Client area of RemEx. 18 symbols across 5 files."
+description: "Skill for the remex.desktop area of RemEx. 18 symbols across 5 files."
 ---
 
-# Remex.Client
+# remex.desktop
 
 18 symbols | 5 files | Cohesion: 94%
 
 ## When to Use
 
-- Working with code in `Remex.Client/`
+- Working with code in `remex.desktop/`
 - Understanding how MainWindow, ShellView, TrayFlyoutWindow work
 - Modifying remex.client-related functionality
 
@@ -17,44 +17,44 @@ description: "Skill for the Remex.Client area of RemEx. 18 symbols across 5 file
 
 | File | Symbols |
 |------|---------|
-| `Remex.Client/App.axaml.cs` | InitializeAppAsync, OnShowMainWindow, TriggerPlatformWidgetUpdate, UpdateTrayTooltip, OnToggleTheme (+7) |
-| `Remex.Client/Views/TrayFlyoutWindow.axaml.cs` | TrayFlyoutWindow, ShowAtTray |
-| `Remex.Client/Services/CommandModeContext.cs` | ConfigureServices, StartListener |
-| `Remex.Client/MainWindow.axaml.cs` | MainWindow |
-| `Remex.Client/Views/ShellView.axaml.cs` | ShellView |
+| `remex.desktop/App.axaml.cs` | InitializeAppAsync, OnShowMainWindow, TriggerPlatformWidgetUpdate, UpdateTrayTooltip, OnToggleTheme (+7) |
+| `remex.desktop/Views/TrayFlyoutWindow.axaml.cs` | TrayFlyoutWindow, ShowAtTray |
+| `remex.desktop/Services/CommandModeContext.cs` | ConfigureServices, StartListener |
+| `remex.desktop/MainWindow.axaml.cs` | MainWindow |
+| `remex.desktop/Views/ShellView.axaml.cs` | ShellView |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`MainWindow`** (Class) — `Remex.Client/MainWindow.axaml.cs:10`
-- **`ShellView`** (Class) — `Remex.Client/Views/ShellView.axaml.cs:9`
-- **`TrayFlyoutWindow`** (Class) — `Remex.Client/Views/TrayFlyoutWindow.axaml.cs:8`
-- **`ShowAtTray`** (Method) — `Remex.Client/Views/TrayFlyoutWindow.axaml.cs:30`
-- **`OnFrameworkInitializationCompleted`** (Method) — `Remex.Client/App.axaml.cs:42`
+- **`MainWindow`** (Class) — `remex.desktop/MainWindow.axaml.cs:10`
+- **`ShellView`** (Class) — `remex.desktop/Views/ShellView.axaml.cs:9`
+- **`TrayFlyoutWindow`** (Class) — `remex.desktop/Views/TrayFlyoutWindow.axaml.cs:8`
+- **`ShowAtTray`** (Method) — `remex.desktop/Views/TrayFlyoutWindow.axaml.cs:30`
+- **`OnFrameworkInitializationCompleted`** (Method) — `remex.desktop/App.axaml.cs:42`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `MainWindow` | Class | `Remex.Client/MainWindow.axaml.cs` | 10 |
-| `ShellView` | Class | `Remex.Client/Views/ShellView.axaml.cs` | 9 |
-| `TrayFlyoutWindow` | Class | `Remex.Client/Views/TrayFlyoutWindow.axaml.cs` | 8 |
-| `ShowAtTray` | Method | `Remex.Client/Views/TrayFlyoutWindow.axaml.cs` | 30 |
-| `OnFrameworkInitializationCompleted` | Method | `Remex.Client/App.axaml.cs` | 42 |
-| `ConfigureServices` | Method | `Remex.Client/Services/CommandModeContext.cs` | 20 |
-| `StartListener` | Method | `Remex.Client/Services/CommandModeContext.cs` | 89 |
-| `InitializeAppAsync` | Method | `Remex.Client/App.axaml.cs` | 109 |
-| `OnShowMainWindow` | Method | `Remex.Client/App.axaml.cs` | 231 |
-| `TriggerPlatformWidgetUpdate` | Method | `Remex.Client/App.axaml.cs` | 262 |
-| `UpdateTrayTooltip` | Method | `Remex.Client/App.axaml.cs` | 266 |
-| `OnToggleTheme` | Method | `Remex.Client/App.axaml.cs` | 275 |
-| `UpdateThemeToggleLabel` | Method | `Remex.Client/App.axaml.cs` | 298 |
-| `FindThemeToggleMenuItem` | Method | `Remex.Client/App.axaml.cs` | 307 |
-| `OnTrayIconClicked` | Method | `Remex.Client/App.axaml.cs` | 201 |
-| `OnToggleLiveGlance` | Method | `Remex.Client/App.axaml.cs` | 206 |
-| `ToggleLiveGlance` | Method | `Remex.Client/App.axaml.cs` | 208 |
-| `ApplyThemeBeforeWindowShown` | Method | `Remex.Client/App.axaml.cs` | 82 |
+| `MainWindow` | Class | `remex.desktop/MainWindow.axaml.cs` | 10 |
+| `ShellView` | Class | `remex.desktop/Views/ShellView.axaml.cs` | 9 |
+| `TrayFlyoutWindow` | Class | `remex.desktop/Views/TrayFlyoutWindow.axaml.cs` | 8 |
+| `ShowAtTray` | Method | `remex.desktop/Views/TrayFlyoutWindow.axaml.cs` | 30 |
+| `OnFrameworkInitializationCompleted` | Method | `remex.desktop/App.axaml.cs` | 42 |
+| `ConfigureServices` | Method | `remex.desktop/Services/CommandModeContext.cs` | 20 |
+| `StartListener` | Method | `remex.desktop/Services/CommandModeContext.cs` | 89 |
+| `InitializeAppAsync` | Method | `remex.desktop/App.axaml.cs` | 109 |
+| `OnShowMainWindow` | Method | `remex.desktop/App.axaml.cs` | 231 |
+| `TriggerPlatformWidgetUpdate` | Method | `remex.desktop/App.axaml.cs` | 262 |
+| `UpdateTrayTooltip` | Method | `remex.desktop/App.axaml.cs` | 266 |
+| `OnToggleTheme` | Method | `remex.desktop/App.axaml.cs` | 275 |
+| `UpdateThemeToggleLabel` | Method | `remex.desktop/App.axaml.cs` | 298 |
+| `FindThemeToggleMenuItem` | Method | `remex.desktop/App.axaml.cs` | 307 |
+| `OnTrayIconClicked` | Method | `remex.desktop/App.axaml.cs` | 201 |
+| `OnToggleLiveGlance` | Method | `remex.desktop/App.axaml.cs` | 206 |
+| `ToggleLiveGlance` | Method | `remex.desktop/App.axaml.cs` | 208 |
+| `ApplyThemeBeforeWindowShown` | Method | `remex.desktop/App.axaml.cs` | 82 |
 
 ## Execution Flows
 

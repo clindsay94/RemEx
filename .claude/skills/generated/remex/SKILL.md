@@ -9,7 +9,7 @@ description: "Skill for the Remex area of RemEx. 41 symbols across 15 files."
 
 ## When to Use
 
-- Working with code in `RemEx.Android/`
+- Working with code in `remex.android/`
 - Understanding how QrScannerScreen, PairingScreen, AppNavigation work
 - Modifying remex-related functionality
 
@@ -17,51 +17,51 @@ description: "Skill for the Remex area of RemEx. 41 symbols across 15 files."
 
 | File | Symbols |
 |------|---------|
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | InitRemex, InitRemexNative, GetPinnedHostHashNative, GetPinnedHostHash, SetPinnedHostHashNative (+13) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | aead, prefKey, setPin, getPin, removePin (+1) |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | PairingUiState, submitPin, startPairing, PairingScreen |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt` | connect, initialize |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/QrScannerScreen.kt` | QrScannerScreen |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/MainActivity.kt` | onCreate |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/widget/AppLauncherWidget.kt` | onAction |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | SettingsManager |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionViewModel.kt` | applyQrResultAndConnect |
-| `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt` | AppNavigation |
+| `remex.android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | InitRemex, InitRemexNative, GetPinnedHostHashNative, GetPinnedHostHash, SetPinnedHostHashNative (+13) |
+| `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | aead, prefKey, setPin, getPin, removePin (+1) |
+| `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | PairingUiState, submitPin, startPairing, PairingScreen |
+| `remex.android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt` | connect, initialize |
+| `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/QrScannerScreen.kt` | QrScannerScreen |
+| `remex.android/app/src/main/java/com/clindsay94/remex/MainActivity.kt` | onCreate |
+| `remex.android/app/src/main/java/com/clindsay94/remex/widget/AppLauncherWidget.kt` | onAction |
+| `remex.android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | SettingsManager |
+| `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/ConnectionViewModel.kt` | applyQrResultAndConnect |
+| `remex.android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt` | AppNavigation |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`QrScannerScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/QrScannerScreen.kt:39`
-- **`PairingScreen`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt:122`
-- **`AppNavigation`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt:113`
-- **`hapticClickable`** (Function) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/components/HapticModifier.kt:14`
-- **`PairingUiState`** (Class) — `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt:27`
+- **`QrScannerScreen`** (Function) — `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/QrScannerScreen.kt:39`
+- **`PairingScreen`** (Function) — `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt:122`
+- **`AppNavigation`** (Function) — `remex.android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt:113`
+- **`hapticClickable`** (Function) — `remex.android/app/src/main/java/com/clindsay94/remex/ui/components/HapticModifier.kt:14`
+- **`PairingUiState`** (Class) — `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt:27`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `PairingUiState` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 27 |
-| `SettingsManager` | Class | `RemEx.Android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | 16 |
-| `QrScannerScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/QrScannerScreen.kt` | 39 |
-| `PairingScreen` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 122 |
-| `AppNavigation` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt` | 113 |
-| `hapticClickable` | Function | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/components/HapticModifier.kt` | 14 |
-| `InitRemex` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 58 |
-| `GetPinnedHostHash` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 251 |
-| `SetPinnedHostHash` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 272 |
-| `setPin` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 58 |
-| `getPin` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 71 |
-| `removePin` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 84 |
-| `listPaired` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 90 |
-| `StartPairing` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 201 |
-| `SubmitPairingPin` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 225 |
-| `submitPin` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 39 |
-| `startPairing` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 83 |
-| `initialize` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt` | 59 |
-| `onCreate` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/MainActivity.kt` | 18 |
-| `onAction` | Method | `RemEx.Android/app/src/main/java/com/clindsay94/remex/widget/AppLauncherWidget.kt` | 211 |
+| `PairingUiState` | Class | `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 27 |
+| `SettingsManager` | Class | `remex.android/app/src/main/java/com/clindsay94/remex/data/SettingsManager.kt` | 16 |
+| `QrScannerScreen` | Function | `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/QrScannerScreen.kt` | 39 |
+| `PairingScreen` | Function | `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 122 |
+| `AppNavigation` | Function | `remex.android/app/src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt` | 113 |
+| `hapticClickable` | Function | `remex.android/app/src/main/java/com/clindsay94/remex/ui/components/HapticModifier.kt` | 14 |
+| `InitRemex` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 58 |
+| `GetPinnedHostHash` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 251 |
+| `SetPinnedHostHash` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 272 |
+| `setPin` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 58 |
+| `getPin` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 71 |
+| `removePin` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 84 |
+| `listPaired` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` | 90 |
+| `StartPairing` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 201 |
+| `SubmitPairingPin` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/RemexCoreClient.kt` | 225 |
+| `submitPin` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 39 |
+| `startPairing` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt` | 83 |
+| `initialize` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt` | 59 |
+| `onCreate` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/MainActivity.kt` | 18 |
+| `onAction` | Method | `remex.android/app/src/main/java/com/clindsay94/remex/widget/AppLauncherWidget.kt` | 211 |
 
 ## Execution Flows
 
