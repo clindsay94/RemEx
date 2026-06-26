@@ -96,8 +96,10 @@ pwsh ./build-remex.ps1 -c release -t all
 ```
 remex.core/         Shared models, messages, validation, Guards, serialization
                     ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
-remex.agent/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
-                    ↳ Combines the former host service + desktop UI into a single project.
+remex.agent/         ★ THE PC SIDE — single elevated interactive-session app + all PC functionality
+                    ↳ Combines the former host service + desktop UI into ONE process. No Windows
+                      Service: it runs in the signed-in user's session, always elevated, auto-started
+                      by a Task Scheduler logon task (Windows). Linux: systemd user service follow-up.
                     ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
 remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
                     ↳ Android phone app. Connects to remex.agent on the PC. Nothing else is a client.
@@ -111,7 +113,9 @@ remex.desktop/       LEGACY — remnant folder being phased out. Do not add new 
 | WSS | `/ws` | 5005 | Telemetry, power commands, pairing, file transfer |
 | WSS | `/ws/desktop` | 5005 | H.264 / MJPEG remote desktop stream |
 | TCP (TLS) | — | 8338 | External script command ingress |
-| Named Pipe | `RemExLocalIPC` | — | Local IPC between client and Windows Service |
+
+> The former `RemExLocalIPC` / `RemExHostControl` named pipes are **gone** (RemEx-aep). The UI and host
+> live in one process, so the UI resolves host services straight from DI via `EmbeddedHostServiceLocator`.
 
 All messages over `/ws` use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN; clients then pin the host certificate SPKI hash.
 
@@ -122,7 +126,7 @@ The following areas are **security-critical or tightly coupled between `remex.ag
 - **Pairing flow** (`PairingHandler`, `PairedClientRegistry`) — ECDH P-256 key exchange and PIN verification. `PairedClientRegistry` is the ONLY authentication path in production (non-loopback). Breakage silently bricks all device pairing with no clear error on either end.
 - **Certificate pinning** — Android pins the host's SPKI hash at pairing time. If the host cert changes without a re-pair, the connection is permanently refused until the user re-pairs. Never regenerate or rotate certs silently.
 - **`RemexMessage` envelope / `protocolVersion`** — Wire format changes must be backward-compatible or require a `protocolVersion` bump AND a coordinated Android + host release. Mismatched versions cause silent deserialization failures.
-- **Named Pipe security** (`RemExLocalIPC`) — Incorrect security descriptors on the pipe block the dashboard UI from communicating with the Windows Service (Session 0 isolation). Test pipe connectivity after any change to the pipe setup code.
+- **Elevation + cert ACLs** (`app.manifest`, `CertificateService`, `PairedClientRegistry`) — `remex.agent` MUST start elevated (`requireAdministrator`). An elevated token keeps FullControl over the machine-wide `cert.pfx` / `paired_clients.json` (ACL = LocalSystem + Administrators, inheritance disabled). A non-elevated start gets Administrators as deny-only, fails to read `cert.pfx`, and would brick every SPKI-pinned pairing. Never ship a path that auto-starts non-elevated. `CertificateService` has a brick canary: it logs Critical and refuses to regenerate when an existing `cert.pfx` is unreadable.
 
 ### Key Directories in remex.agent
 
@@ -155,14 +159,14 @@ All network-facing input must be validated through the shared validation helpers
 - **Source-generated JSON** — use `[JsonSerializable]` + `JsonSerializerContext` for any new serializable types. Do not use `JsonSerializer.Serialize<T>(obj)` without a source-gen context.
 - If you're unsure whether something is NativeAOT-safe, check `Remex.Core` for existing patterns before writing new code.
 
-### Windows Service / Session 0 (`remex.agent` on Windows)
+### Elevated interactive-session app (`remex.agent` on Windows)
 
-`remex.agent` runs as **LocalSystem in Session 0** (the isolated service session, separate from the interactive user desktop). This has concrete implications:
+`remex.agent` runs **in the signed-in user's interactive session, always elevated (high integrity)** — NOT as a Windows Service and NOT in Session 0. It is auto-started by a Task Scheduler logon task (`scripts/install-service.ps1`, task name `RemEx`, `RunLevel=Highest`, `LogonType=InteractiveToken`) so it starts elevated at sign-in with no UAC prompt. (RemEx-aep.) Implications:
 
-- **Never use `HKCU` or `%APPDATA%`** — LocalSystem's registry hive and profile are not the user's. Use `HKLM` for machine-wide config and `ProgramData` for file-based persistence.
-- **Machine-wide storage** — state that needs to survive across service restarts or be shared with the tray UI must be stored in machine-wide locations (registry under `HKLM`, files under `ProgramData`).
-- **Named Pipe ACLs** — the pipe (`RemExLocalIPC`) must grant access to both LocalSystem (service side) and the interactive user (tray UI side). Session 0 isolation blocks cross-session handles without explicit ACLs.
-- **No UI from the service** — the service cannot display windows or dialogs. All user interaction goes through the tray/dashboard UI, which communicates back via Named Pipe.
+- **Capture + input work directly** — being inside the session, screen capture and `SendInput` reach the user's desktop; HIGH→HIGH UIPI is permitted so input reaches elevated windows. There is no session bridging or `CreateProcessAsUser`.
+- **Machine-wide config still uses `HKLM` / `ProgramData`** — `cert.pfx`, `paired_clients.json`, and `CaptureBackendPreference` stay machine-wide so they are stable across logins and protected by the elevated-only ACL (see High-Risk Areas). `HKCU` / `%APPDATA%` are now valid for genuinely user-scoped state, but keep security-sensitive state machine-wide.
+- **Elevation is load-bearing, never weaken it** — see the Elevation + cert ACLs high-risk note. A medium-integrity start bricks pairings.
+- **No Windows Service, no named pipes** — `LocalIpcServerService`, `RemExLocalIPC`, `HostControlServer/Client`, `AgentCoordinator`, `SessionBridgingCommandService`, and `WindowsActiveSession` were deleted. The UI resolves host services in-process via `EmbeddedHostServiceLocator`.
 
 ### Localization
 
