@@ -51,7 +51,6 @@
     </PackageReference>
     <!-- Host server deps (absorbed from the former Remex.Host project) -->
     <PackageReference Include="Makaretu.Dns.Multicast" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" />
     <PackageReference Include="System.Drawing.Common" />
     <PackageReference Include="System.Management" />

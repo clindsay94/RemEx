@@ -11,18 +11,17 @@ using Remex.Core;
 using Remex.Desktop;
 using Remex.Desktop.Services;
 using Remex.Agent;
-using Remex.Agent.Services.IPC;
 
 // Program is intentionally in the GLOBAL namespace so the host integration tests resolve it via
 // WebApplicationFactory<Program> (HostFactoryResolver intercepts the embedded host build below).
 //
-// The consolidated Remex.Agent binary is the PC host. Launched interactively it runs the full GUI
-// host (commands + remote-desktop streaming). `--doctor` runs the Linux prerequisite report. A
-// headless `--agent` command-only mode (system service, logged out) is added in a later phase.
+// The consolidated Remex.Agent binary is the ENTIRE PC side: a single interactive user-session
+// Avalonia app that runs the full GUI host (commands + remote-desktop streaming) in-process,
+// always elevated. There is no Windows Service and no second process. `--doctor` runs the Linux
+// prerequisite report.
 public partial class Program
 {
     private static Microsoft.AspNetCore.Builder.WebApplication? _hostApp;
-    private static HostControlClient? _hostControlClient;
 
     // Held for the process lifetime to enforce one interactive GUI host per session (see Main).
     private static Mutex? _guiInstanceLock;
@@ -34,7 +33,7 @@ public partial class Program
     internal static int? EmbeddedHostPort { get; private set; }
 
     /// <summary>
-    /// Stops the embedded host so a sibling instance (or the system service) can bind the port.
+    /// Stops the embedded host so a sibling instance can bind the port.
     /// Safe to call when no host is running (no-op).
     /// </summary>
     internal static async Task StopEmbeddedHostAsync()
@@ -51,8 +50,8 @@ public partial class Program
     // Remex.Agent is a WinExe (GUI subsystem) so launching it interactively does not pop a console
     // window. The trade-off: when launched FROM a terminal, Windows does not attach the process to
     // the parent console, so Console.WriteLine output is silently discarded. For the console-mode
-    // commands (--doctor, --agent) we explicitly attach to the parent console first so their output
-    // shows up in the terminal the user ran us from. No-op / harmless on non-Windows.
+    // command (--doctor) we explicitly attach to the parent console first so its output shows up in
+    // the terminal the user ran us from. No-op / harmless on non-Windows.
     private const int ATTACH_PARENT_PROCESS = -1;
 
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -114,23 +113,12 @@ public partial class Program
             return 2;
         }
 
-        // --agent: run as the headless command agent (no GUI, no desktop streaming). The background
-        // service launches the binary this way so remote power commands + telemetry/status work
-        // without a logged-in desktop session. Blocks until the host stops (SIGTERM / Ctrl+C /
-        // service stop).
-        if (Array.Exists(args, a => a.Equals("--agent", StringComparison.OrdinalIgnoreCase)))
-        {
-            AttachToParentConsole();
-            return RunAgent(args);
-        }
-
         // Single-instance guard for the interactive GUI host: at most one per session. A duplicate
-        // launch (the HKCU Run entry firing while one is already up, a dev run, or a stale instance)
+        // launch (the logon task firing while one is already up, a dev run, or a stale instance)
         // would collide on the canonical port — and StalePortReclaimer would then terminate the
-        // running host (including the LocalSystem agent/service) to grab it. If another GUI host in
-        // this session already holds the guard, exit quietly. The agent (--agent, Session 0) returns
-        // above and never reaches here, so it never contends for this lock. Local\ scopes it per
-        // session so fast-user-switching sessions each get their own GUI host.
+        // running host to grab it. If another GUI host in this session already holds the guard, exit
+        // quietly. Local\ scopes it per session so fast-user-switching sessions each get their own
+        // GUI host.
         _guiInstanceLock = new Mutex(initiallyOwned: true, @"Local\RemExGuiHost", out bool createdNewGuiInstance);
         if (!createdNewGuiInstance)
         {
@@ -145,16 +133,9 @@ public partial class Program
         // the first action means the resolver/test path never loads Avalonia. The build is
         // deliberately NOT wrapped in a catch-all (a swallowing catch would break the resolver); we
         // still degrade to client-only mode on a genuine startup failure. HostBootstrapper owns port
-        // selection (canonical port, with stale-port reclaim + fallback probing).
-        // Single-port handoff: if the headless agent is holding the canonical port, ask it to yield
-        // (it stops its web host, releasing the port + the RemExLocalIPC mutex/pipe) so this GUI host
-        // can own the full host on the canonical port. The control connection is held open for the
-        // life of the process; on exit the agent observes the drop and reclaims the port. If no agent
-        // is running this returns immediately and we just bind the port ourselves.
-        _hostControlClient = new HostControlClient();
-        try { _hostControlClient.RequestTakeoverAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult(); }
-        catch { /* best-effort; StalePortReclaimer is the fallback inside CreateApplication */ }
-
+        // selection (canonical port, with stale-port reclaim + fallback probing). With a single
+        // process there is no port handoff partner — StalePortReclaimer inside CreateApplication is
+        // the sole backstop for a stale instance still holding the canonical port.
         int preferredPort = RemexConstants.DefaultPort;
 
         try
@@ -188,11 +169,11 @@ public partial class Program
 
         App.StopEmbeddedHostAsync = StopEmbeddedHostAsync;
 
-        // One-time migration: remove any legacy HKCU Run "RemEx" launch-at-login entry. On Windows the
-        // Session-0 service now owns elevated autostart; a lingering Run key would start a competing
+        // One-time migration: remove any legacy HKCU Run "RemEx" launch-at-login entry. Auto-start is
+        // now the elevated Task Scheduler logon task; a lingering Run key would start a competing
         // medium-integrity host that wins the single-instance guard and reintroduces the UIPI input
-        // block. This runs in the interactive user's session (HKCU = the signed-in user's hive), so it
-        // is the correct place to clean it — the LocalSystem service cannot. No-op off Windows. (RemEx-hmk)
+        // block. Runs in the interactive user's session (HKCU = the signed-in user's hive). No-op off
+        // Windows. (RemEx-hmk)
         Remex.Agent.Services.StartupRegistrationService.RemoveLegacyWindowsRunKey();
 
         try
@@ -210,46 +191,8 @@ public partial class Program
                 _hostApp.StopAsync().GetAwaiter().GetResult();
                 (_hostApp as IDisposable)?.Dispose();
             }
-
-            // Drop the control connection so a waiting agent reclaims the canonical port.
-            _hostControlClient?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
-        return 0;
-    }
-
-    /// <summary>
-    /// Runs the process as the headless command agent inside a generic host, so process lifetime is
-    /// handled the same way on every platform: a clean Windows Service (SCM) stop via UseWindowsService,
-    /// and SIGTERM (systemd stop) / SIGINT (Ctrl+C) via the default console lifetime elsewhere. The
-    /// agent serves the command plane on the canonical port and runs the single-port handoff with an
-    /// interactive GUI host (see <see cref="AgentCoordinator"/>). Blocks until the host is stopped.
-    /// </summary>
-    private static int RunAgent(string[] args)
-    {
-        var host = Host.CreateDefaultBuilder(args)
-            .UseWindowsService(options => options.ServiceName = "RemexHost")
-            .ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-                logging.AddConsole();
-            })
-            .ConfigureServices(services =>
-            {
-                services.AddHostedService(sp =>
-                    new AgentCoordinator(args, sp.GetRequiredService<ILoggerFactory>().CreateLogger("Remex.Agent.Agent")));
-
-                // On Windows, the Session-0 service owns the interactive GUI host's lifetime and
-                // launches it at HIGH integrity (linked admin token) so remote input can reach
-                // elevated windows (UIPI). This supersedes the per-user HKCU Run-key autostart.
-                if (OperatingSystem.IsWindows())
-                {
-                    services.AddHostedService<Remex.Agent.Services.InteractiveDesktopHostLauncher>();
-                }
-            })
-            .Build();
-
-        host.Run();
         return 0;
     }
 
@@ -298,42 +241,6 @@ public partial class Program
     /// </summary>
     private static bool IsHostResolverProbe(Exception ex)
         => ex.GetType().FullName?.Contains("StopTheHostException", StringComparison.Ordinal) == true;
-
-    private static bool IsWindowsServiceRunning(string serviceName)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return false;
-        }
-
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "sc.exe",
-                    Arguments = $"query {serviceName}",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-
-            return process.ExitCode == 0
-                && output.Contains("STATE", StringComparison.OrdinalIgnoreCase)
-                && output.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     // Avalonia configuration, don't remove; also used by the visual designer.
     public static AppBuilder BuildAvaloniaApp()

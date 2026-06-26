@@ -1,5 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Security;
+using System.Security.Principal;
+using System.Text;
 using Microsoft.Win32;
 using Remex.Desktop.Services;
 
@@ -7,25 +11,32 @@ namespace Remex.Agent.Services;
 
 /// <summary>
 /// Windows and Linux implementation of the launch-at-login registration service.
+///
+/// Windows: RemEx 2.0 has no Windows Service. Auto-start is an elevated Task Scheduler
+/// "logon task" (LogonType=InteractiveToken, RunLevel=HighestAvailable) that starts the
+/// single interactive user-session app at sign-in, elevated, with no UAC prompt. This
+/// service is the in-app source of truth for the Settings "Launch at login" toggle; the
+/// installer (install-service.ps1 / RemEx.iss) registers an equivalent task at setup time.
+///
+/// Linux: per-user XDG autostart .desktop file (unchanged).
 /// </summary>
 public class StartupRegistrationService : IStartupRegistrationService
 {
     private const string ValueName = "RemEx";
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
-    // On Windows the Session-0 service owns elevated autostart: it spawns the interactive GUI host at
-    // HIGH integrity (see InteractiveDesktopHostLauncher). A per-user HKCU Run entry would start a
-    // competing MEDIUM-integrity instance that wins the single-instance guard and reintroduces the
-    // UIPI input block, so launch-at-login is NOT user-managed on Windows. Linux still uses the
-    // per-user XDG autostart .desktop file. (RemEx-hmk)
-    public bool IsSupported => OperatingSystem.IsLinux();
+    // Keep "RemEx" stable — install-service.ps1 and the verification steps query this exact
+    // task name. The toggle and the installer must manage the same task.
+    private const string WindowsTaskName = "RemEx";
+
+    public bool IsSupported => OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
 
     /// <summary>
-    /// Deletes any legacy per-user HKCU Run "RemEx" launch-at-login entry on Windows. The Session-0
-    /// service now owns elevated autostart; a lingering Run key would start a competing
-    /// medium-integrity GUI host that wins the single-instance guard and reintroduces the UIPI input
+    /// Deletes any legacy per-user HKCU Run "RemEx" launch-at-login entry on Windows. Auto-start
+    /// is now an elevated Task Scheduler logon task; a lingering Run key would start a competing
+    /// medium-integrity instance that wins the single-instance guard and reintroduces the UIPI input
     /// block. Safe to call repeatedly; must run in the interactive user's session (HKCU is the
-    /// signed-in user's hive), not the LocalSystem service. No-op off Windows. (RemEx-hmk)
+    /// signed-in user's hive). No-op off Windows. (RemEx-hmk)
     /// </summary>
     public static void RemoveLegacyWindowsRunKey()
     {
@@ -49,9 +60,7 @@ public class StartupRegistrationService : IStartupRegistrationService
     {
         if (OperatingSystem.IsWindows())
         {
-            // Launch-at-login is service-managed on Windows (see IsSupported); the HKCU Run key is
-            // legacy and proactively removed, so it is never the source of truth here.
-            return false;
+            return WindowsTaskExists();
         }
         else if (OperatingSystem.IsLinux())
         {
@@ -83,10 +92,17 @@ public class StartupRegistrationService : IStartupRegistrationService
     {
         if (OperatingSystem.IsWindows())
         {
-            // Never create the HKCU Run key on Windows — the Session-0 service owns elevated
-            // autostart. Always clear any legacy entry so an old "launch at login" value cannot start
-            // a competing medium-integrity host. (RemEx-hmk)
+            // The Run key is dead on Windows; always clear any legacy value so it can never start a
+            // competing medium-integrity host, then enable/disable the elevated logon task. (RemEx-hmk)
             RemoveLegacyWindowsRunKey();
+            if (enabled)
+            {
+                RegisterWindowsLogonTask();
+            }
+            else
+            {
+                RemoveWindowsLogonTask();
+            }
         }
         else if (OperatingSystem.IsLinux())
         {
@@ -109,7 +125,7 @@ public class StartupRegistrationService : IStartupRegistrationService
                 // Try to find the system desktop file to copy, or generate one
                 var systemDesktopFile = "/usr/share/applications/remex-client.desktop";
                 var exePath = Environment.ProcessPath ?? "remex-client";
-                
+
                 string content;
                 if (File.Exists(systemDesktopFile))
                 {
@@ -162,5 +178,148 @@ X-GNOME-Autostart-enabled=true
                 // Ignored
             }
         }
+    }
+
+    // ---- Windows scheduled-task helpers ----------------------------------------------------
+
+    private static bool WindowsTaskExists()
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        try
+        {
+            // schtasks /Query exits 0 when the task exists, 1 when it does not.
+            return RunSchtasks($"/Query /TN \"{WindowsTaskName}\"") == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void RegisterWindowsLogonTask()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var exePath = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
+        {
+            Debug.WriteLine("[Remex] RegisterWindowsLogonTask: could not resolve the running executable path.");
+            return;
+        }
+
+        var account = WindowsIdentity.GetCurrent().Name; // DOMAIN\User or COMPUTER\User
+        var xml = BuildLogonTaskXml(exePath, account);
+
+        // schtasks is encoding-sensitive: write the definition as UTF-16 (with BOM).
+        var xmlPath = Path.Combine(Path.GetTempPath(), $"remex-logon-task-{Environment.ProcessId}.xml");
+        try
+        {
+            File.WriteAllText(xmlPath, xml, new UnicodeEncoding(bigEndian: false, byteOrderMark: true));
+            var exit = RunSchtasks($"/Create /TN \"{WindowsTaskName}\" /XML \"{xmlPath}\" /F");
+            if (exit != 0)
+            {
+                Debug.WriteLine($"[Remex] schtasks /Create for '{WindowsTaskName}' returned exit code {exit}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Remex] Failed to register the RemEx logon task: {ex.Message}");
+        }
+        finally
+        {
+            try { if (File.Exists(xmlPath)) File.Delete(xmlPath); } catch { /* best effort */ }
+        }
+    }
+
+    private static void RemoveWindowsLogonTask()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        try
+        {
+            // /F suppresses the confirmation prompt; a missing task is a non-fatal non-zero exit.
+            RunSchtasks($"/Delete /TN \"{WindowsTaskName}\" /F");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Remex] Failed to remove the RemEx logon task: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Task Scheduler XML for an elevated logon task. LogonType=InteractiveToken +
+    /// RunLevel=HighestAvailable is what makes RemEx start elevated at sign-in with no UAC prompt;
+    /// this mirrors the install-service.ps1 New-ScheduledTaskPrincipal definition (kept in sync).
+    /// </summary>
+    private static string BuildLogonTaskXml(string exePath, string account)
+    {
+        var safeExe = SecurityElement.Escape(exePath);
+        var safeAccount = SecurityElement.Escape(account);
+        return $"""
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Starts RemEx at sign-in, elevated, so your PC is reachable from your phone.</Description>
+    <URI>\{WindowsTaskName}</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <UserId>{safeAccount}</UserId>
+    </LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>{safeAccount}</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>false</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>{safeExe}</Command>
+      <Arguments>--minimized</Arguments>
+    </Exec>
+  </Actions>
+</Task>
+""";
+    }
+
+    private static int RunSchtasks(string arguments)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+
+        using var proc = Process.Start(psi);
+        if (proc is null) return -1;
+        proc.StandardOutput.ReadToEnd();
+        proc.StandardError.ReadToEnd();
+        proc.WaitForExit();
+        return proc.ExitCode;
     }
 }

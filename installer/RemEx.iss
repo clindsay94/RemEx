@@ -61,8 +61,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 Name: "launchatlogin"; Description: "Launch {#AppName} when you sign in"; GroupDescription: "Startup options:"
 
-[Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RemEx"; ValueData: """{app}\{#AppExeName}"" --minimized"; Tasks: launchatlogin; Flags: uninsdeletevalue
+; NOTE: No HKCU Run-key entry. RemEx auto-start is an elevated Task Scheduler logon
+; task (registered below via install-service.ps1). A Run-key would start a competing
+; MEDIUM-integrity instance that wins the single-instance mutex and reintroduces the
+; UIPI input block, so it must not exist.
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -80,12 +82,12 @@ Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilenam
 Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-; Stop and remove the Windows Service (if it was installed) before files are deleted.
-; The script handles the case where the service doesn't exist gracefully.
+; Remove the elevated logon task, firewall rules, event-log source, and any legacy
+; RemexHost service before files are deleted. The script handles "not installed" gracefully.
 Filename: "powershell.exe"; \
   Parameters: "-ExecutionPolicy Bypass -NonInteractive -File ""{app}\{#ServiceScript}"" -Action Uninstall"; \
   Flags: runhidden waituntilterminated; \
-  RunOnceId: "UninstallRemexService"
+  RunOnceId: "UninstallRemexLogonTask"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{localappdata}\Remex"
@@ -96,69 +98,14 @@ Type: filesandordirs; Name: "{commonappdata}\RemEx"
 ; ============================================================
 [Code]
 
-var
-  // Custom wizard pages
-  InstallTypePage:  TInputOptionWizardPage;   // Client-only vs Client+Service
-  ServiceModePage:  TInputOptionWizardPage;   // Auto (service) vs Manual
-
-  // Values captured from the wizard
-  InstallService:   Boolean;
-  ServiceAutoStart: Boolean;
-
-
 // ------------------------------------------------------------------
-// Build all custom wizard pages on startup
-// ------------------------------------------------------------------
-procedure InitializeWizard;
-begin
-  // --- Page 1: Installation type ---
-  InstallTypePage := CreateInputOptionPage(
-    wpSelectDir,
-    'Installation Type',
-    'Choose how you want to install RemEx.',
-    'Select the components you want to install:',
-    True,   // exclusive (radio buttons)
-    False   // no scrollable list
-  );
-  InstallTypePage.Add('Desktop Client only');
-  InstallTypePage.Add('Desktop Client + Host Service');
-  InstallTypePage.SelectedValueIndex := 0;
-
-  // --- Page 2: Service startup mode ---
-  ServiceModePage := CreateInputOptionPage(
-    InstallTypePage.ID,
-    'Host Service Startup',
-    'Choose when the RemEx Host service should start.' + #13#10 +
-    'The service runs as LocalSystem — no credentials required.',
-    'How should the host service start?',
-    True,   // exclusive (radio buttons)
-    False
-  );
-  ServiceModePage.Add(
-    'Automatically before Windows login (recommended for remote access without logging in)'
-  );
-  ServiceModePage.Add(
-    'Manually / on-demand (you start it from services.msc or the desktop app)'
-  );
-  ServiceModePage.SelectedValueIndex := 0;
-end;
-
-
-// ------------------------------------------------------------------
-// Skip pages that are not relevant to the chosen install type
-// ------------------------------------------------------------------
-function ShouldSkipPage(PageID: Integer): Boolean;
-begin
-  Result := False;
-
-  // Hide service mode page if "Client only" was selected
-  if PageID = ServiceModePage.ID then
-    Result := (InstallTypePage.SelectedValueIndex = 0);
-end;
-
-
-// ------------------------------------------------------------------
-// After files are installed, register the Windows Service if needed
+// After files are installed, register the elevated logon auto-start
+// task when the user opted into "Launch RemEx when you sign in".
+//
+// RemEx 2.0 is a single interactive user-session app (no Windows Service).
+// install-service.ps1 -Action Install registers a Task Scheduler logon task
+// that starts RemEx elevated at sign-in with no UAC prompt, and configures
+// the firewall so your phone can connect.
 // ------------------------------------------------------------------
 procedure CurStepChanged(CurStep: TSetupStep);
 var
@@ -168,14 +115,9 @@ var
 begin
   if CurStep <> ssPostInstall then Exit;
 
-  // Capture wizard selections into variables
-  InstallService   := (InstallTypePage.SelectedValueIndex = 1);
-  ServiceAutoStart := InstallService and (ServiceModePage.SelectedValueIndex = 0);
+  // Only set up auto-start if the user kept the "Launch at login" task checked.
+  if not WizardIsTaskSelected('launchatlogin') then Exit;
 
-  if not InstallService then Exit;
-  if not ServiceAutoStart then Exit;
-
-  // Install as LocalSystem — no credentials needed
   PSArgs :=
     '-ExecutionPolicy Bypass -NonInteractive' +
     ' -File "' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + '"' +
@@ -184,16 +126,16 @@ begin
 
   if not Exec('powershell.exe', PSArgs, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
-    ErrMsg := 'Could not launch PowerShell to install the Windows Service.' + #13#10 +
-              'You can install it manually later by running:' + #13#10 +
+    ErrMsg := 'Could not launch PowerShell to set up automatic start-up.' + #13#10 +
+              'You can set it up later from the RemEx Settings screen, or by running:' + #13#10 +
               '  ' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + ' -Action Install';
     MsgBox(ErrMsg, mbError, MB_OK);
   end
   else if ResultCode <> 0 then
   begin
-    ErrMsg := 'The Windows Service installer returned exit code ' + IntToStr(ResultCode) + '.' + #13#10 +
-              'The desktop client is still installed and fully functional.' + #13#10 + #13#10 +
-              'To retry service installation, run as Administrator:' + #13#10 +
+    ErrMsg := 'Setting up automatic start-up returned exit code ' + IntToStr(ResultCode) + '.' + #13#10 +
+              'RemEx is still installed and you can start it from the Start Menu.' + #13#10 + #13#10 +
+              'To retry, run as Administrator:' + #13#10 +
               '  ' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + ' -Action Install';
     MsgBox(ErrMsg, mbInformation, MB_OK);
   end;

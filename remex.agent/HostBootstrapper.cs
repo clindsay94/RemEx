@@ -69,15 +69,11 @@ public static class HostBootstrapper
             ContentRootPath = AppContext.BaseDirectory
         });
 
-        // Do NOT register the Windows Service (SCM) lifetime here. When this web host runs nested
-        // inside the headless agent's generic host (HostMode.CommandAgent), that outer host already
-        // owns the SCM lifetime via UseWindowsService() in Program.RunAgent. A process can only
-        // connect to the service control dispatcher once: a second WindowsServiceLifetime calls
-        // ServiceBase.Run() after the dispatcher is already consumed, returns without OnStart firing,
-        // and throws InvalidOperationException("Stopped without starting") from _app.StartAsync().
-        // The GUI/desktop path (HostMode.Full) runs interactively, never under the SCM, so it needs
-        // no Windows Service lifetime either. This host's lifetime is driven explicitly via
-        // StartAsync()/StopAsync() in AgentCoordinator and Program.Main.
+        // No Windows Service (SCM) lifetime: RemEx is a single interactive user-session app that runs
+        // the host in-process, always elevated, started by an elevated Task Scheduler logon task. This
+        // host's lifetime is driven explicitly via StartAsync()/StopAsync() in Program.Main. The
+        // `mode` parameter is retained purely as a test seam — HostAgentModeTests builds a non-Full
+        // host directly via RemexHostFactory.WithMode(...) to exercise the /ws/desktop 404 path.
 
         // Register custom in-memory logger provider to capture live host and Kestrel logs
         builder.Logging.AddProvider(new Remex.Core.Logging.InMemoryLoggerProvider());
@@ -454,8 +450,9 @@ public static class HostBootstrapper
         // Remote Desktop WebSocket endpoint (dedicated binary stream)
         app.Map("/ws/desktop", async (HttpContext context, PairedClientRegistry pairedClientRegistry) =>
         {
-            // The headless command agent (--agent) does not stream the desktop: respond 404 before
-            // any auth/capture/portal work so no screen-capture or PipeWire session is ever started.
+            // A non-Full host (test seam only; see CreateApplication) does not stream the desktop:
+            // respond 404 before any auth/capture/portal work so no screen-capture or PipeWire
+            // session is ever started.
             if (mode != HostMode.Full)
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -562,7 +559,7 @@ public static class HostBootstrapper
     /// <summary>
     /// Returns true when <paramref name="port"/> can be bound on the IPv4 (and, when available,
     /// IPv6 dual-stack) wildcard interface — i.e. no other process holds that port.
-    /// Used by <see cref="AgentCoordinator"/> to poll for port availability before reclaiming.
+    /// Used during startup to probe for port availability before reclaiming a stale instance.
     /// </summary>
     internal static bool IsPortFree(int port)
     {

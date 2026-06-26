@@ -56,13 +56,41 @@ public sealed class CertificateService : ICertificateService
             if (File.Exists(certPath))
             {
                 _logger.LogInformation("Loading existing certificate from {Path}", certPath);
-                _certificate = X509CertificateLoader.LoadPkcs12FromFile(certPath, null);
+                try
+                {
+                    _certificate = X509CertificateLoader.LoadPkcs12FromFile(certPath, null);
+                }
+                catch (Exception ex)
+                {
+                    // BRICK CANARY (read side): an existing cert.pfx is present but unreadable.
+                    // The machine-wide ACL is LocalSystem + Administrators FullControl with
+                    // inheritance disabled, so a MEDIUM-integrity (non-elevated) process gets
+                    // Administrators as a deny-only SID and is refused — the #1 symptom of RemEx
+                    // running without elevation. We must NOT regenerate here: a fresh cert changes
+                    // the SPKI and permanently breaks every SPKI-pinned Android pairing until the
+                    // user re-pairs. Fail loudly and preserve the existing key instead.
+                    _logger.LogCritical(ex,
+                        "RemEx could not read its existing certificate at {Path}. This almost always " +
+                        "means RemEx is running WITHOUT administrator elevation. RemEx will NOT generate " +
+                        "a new certificate (doing so would break every already-paired phone). Restart " +
+                        "RemEx elevated (the installed logon task runs it with highest privileges).",
+                        certPath);
+                    throw;
+                }
                 _logger.LogInformation("Certificate loaded. Subject={Subject}, Expires={Expiry}",
                     _certificate.Subject, _certificate.NotAfter);
             }
             else
             {
-                _logger.LogInformation("Generating new self-signed certificate at {Path}", certPath);
+                // BRICK CANARY (write side): generating a new cert is correct ONLY on first-ever
+                // setup. After a phone has paired, this path must never run again — a new cert means
+                // a new SPKI and a forced re-pair. Logged at Warning so it stands out in a normal
+                // restart's logs; verification asserts it does NOT fire on a paired-before restart.
+                _logger.LogWarning(
+                    "No existing certificate found at {Path} — generating a NEW self-signed certificate. " +
+                    "This is expected on first-time setup only. If you have already paired a phone, that " +
+                    "pairing will stop working (the certificate fingerprint changes) and you must re-pair.",
+                    certPath);
                 _certificate = GenerateAndSaveCertificate(certPath);
                 _logger.LogInformation("Certificate generated. Subject={Subject}, Expires={Expiry}",
                     _certificate.Subject, _certificate.NotAfter);

@@ -1,25 +1,38 @@
 #Requires -RunAsAdministrator
 <#
 .SYNOPSIS
-    Installs, uninstalls, or checks the status of the Remex Host Windows Service.
+    Installs, uninstalls, or checks the RemEx elevated logon auto-start task.
+
+.DESCRIPTION
+    RemEx no longer runs as a Windows Service. It is a single interactive
+    user-session app that hosts the listener itself, always elevated (high
+    integrity). This script registers a Task Scheduler "logon task" that starts
+    RemEx automatically when you sign in, with the highest privileges and WITHOUT
+    a UAC prompt. (A scheduled task set to "Run with highest privileges" is the
+    supported way to auto-start an elevated app at logon with no consent dialog.)
+
+    The filename is kept (install-service.ps1) so the installer and the in-app
+    Settings screen continue to resolve it; the word "service" is historical.
 
 .PARAMETER Action
-    The action to perform: Install, Uninstall, or Status.
+    The action to perform: Install, Uninstall, Status, Start, or Stop.
 
 .PARAMETER Username
-    (Install only) Optional. The Windows user account the service should run as.
-    Format: DOMAIN\User or .\User for local accounts.
-    When omitted the service runs as LocalSystem (recommended — no credential
-    required, service starts before any user logs in).
+    (Install only) Optional. The Windows account the logon task should run as and
+    trigger for. Format: DOMAIN\User or .\User. Defaults to the current user
+    (the person running this script / installing RemEx).
 
 .PARAMETER Password
-    (Install only) The password for -Username. If -Username is supplied but
-    -Password is omitted you will be prompted interactively via Get-Credential.
+    Accepted for backward compatibility only and ignored. A logon task running at
+    the interactive token needs no stored password.
+
+.PARAMETER HostPath
+    Path to Remex.Agent.exe (or its folder). Used by the installer to point the
+    task at the installed binary.
 
 .EXAMPLE
     .\install-service.ps1 -Action Install
     .\install-service.ps1 -Action Install -Username ".\Connor"
-    .\install-service.ps1 -Action Install -Username ".\Connor" -Password "secret"
     .\install-service.ps1 -Action Status
     .\install-service.ps1 -Action Uninstall
 #>
@@ -38,12 +51,15 @@ param(
     [string]$HostPath = ""
 )
 
-$ServiceName   = "RemexHost"
-$DisplayName   = "Remex Host"
-$Description   = "Remex remote execution and telemetry host service."
+# Scheduled-task identity. Keep "RemEx" stable — the in-app launch-at-login toggle
+# (StartupRegistrationService) and the verification steps query this exact name.
+$TaskName      = "RemEx"
+$DisplayName   = "RemEx"
+$Description   = "Starts RemEx at sign-in, elevated, so your PC is reachable from your phone."
 $ProjectDir    = Join-Path $PSScriptRoot "..\remex.agent"
 $EventLogName  = "Application"
 $EventSource   = "Remex.Agent"
+$LegacyService = "RemexHost"   # pre-2.0 Windows Service — removed on install/uninstall if present.
 
 function Test-EventSourceRegistered {
     return [System.Diagnostics.EventLog]::SourceExists($EventSource)
@@ -69,14 +85,34 @@ function Write-DiagnosticsGuidance {
     Write-Host ""
     if (Test-EventSourceRegistered) {
         Write-Host "Diagnostics: Event Viewer -> Windows Logs -> $EventLogName" -ForegroundColor Cyan
-        Write-Host "Filter by source '$EventSource' to inspect Remex Host service logs." -ForegroundColor Cyan
+        Write-Host "Filter by source '$EventSource' to inspect RemEx logs." -ForegroundColor Cyan
     } else {
         Write-Warning "Windows Event Log source '$EventSource' is not registered yet."
         Write-Warning "Re-run .\install-service.ps1 -Action Install as Administrator to provision Event Viewer diagnostics."
     }
 }
 
-# Resolve host binary location with multiple strategies
+# Remove any pre-2.0 RemexHost Windows Service. RemEx is now a single user-session
+# app; a leftover Session-0 service would compete for port 5005 and never be able to
+# capture the interactive desktop. Safe no-op when the service is absent.
+function Remove-LegacyService {
+    $svc = Get-Service -Name $LegacyService -ErrorAction SilentlyContinue
+    if (-not $svc) { return }
+
+    Write-Host "Removing legacy '$LegacyService' Windows Service (no longer used)..." -ForegroundColor Yellow
+    try {
+        if ($svc.Status -eq "Running") {
+            Stop-Service -Name $LegacyService -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+        }
+        sc.exe delete $LegacyService | Out-Null
+        Write-Host "Legacy service '$LegacyService' removed." -ForegroundColor Green
+    } catch {
+        Write-Warning "Could not remove legacy service '$LegacyService': $($_.Exception.Message)"
+    }
+}
+
+# Resolve host binary location with multiple strategies (unchanged from the service era).
 $PublishDir = if ($HostPath -and (Test-Path $HostPath)) {
     if (Test-Path $HostPath -PathType Leaf) { Split-Path $HostPath -Parent } else { $HostPath }
 } elseif ($env:REMEX_HOST_PATH -and (Test-Path $env:REMEX_HOST_PATH)) {
@@ -87,7 +123,7 @@ $PublishDir = if ($HostPath -and (Test-Path $HostPath)) {
     Join-Path $PSScriptRoot "..\remex.agent"
 } else {
     # Dev-time fallback: matches the artifacts publish layout used by the installer and
-    # update-local-install.ps1 (self-contained win-x64 → artifacts/publish/<Project>/<pivot>).
+    # update-local-install.ps1 (self-contained win-x64 -> artifacts/publish/<Project>/<pivot>).
     Join-Path $PSScriptRoot "..\artifacts\publish\remex.agent\release_win-x64"
 }
 
@@ -101,91 +137,43 @@ function Publish-Host {
     Write-Host "Published to: $PublishDir" -ForegroundColor Green
 }
 
-function Grant-LogOnAsService($accountName) {
-    Write-Host "Granting 'Log on as a service' right to $accountName..." -ForegroundColor Cyan
-    
-    $source = @"
-using System;
-using System.Runtime.InteropServices;
-using System.Text;
-
-public class LsaWrapper {
-    [StructLayout(LayoutKind.Sequential)]
-    struct LSA_UNICODE_STRING {
-        public ushort Length;
-        public ushort MaximumLength;
-        public IntPtr Buffer;
+function Resolve-Account {
+    if ($Username) { return $Username }
+    if ($env:USERDOMAIN -and $env:USERDOMAIN -ne $env:COMPUTERNAME) {
+        return "$env:USERDOMAIN\$env:USERNAME"
     }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct LSA_OBJECT_ATTRIBUTES {
-        public int Length;
-        public IntPtr RootDirectory;
-        public LSA_UNICODE_STRING ObjectName;
-        public uint Attributes;
-        public IntPtr SecurityDescriptor;
-        public IntPtr SecurityQualityOfService;
-    }
-
-    [DllImport("advapi32.dll", PreserveSig = true)]
-    static extern uint LsaOpenPolicy(ref LSA_UNICODE_STRING SystemName, ref LSA_OBJECT_ATTRIBUTES ObjectAttributes, uint DesiredAccess, out IntPtr PolicyHandle);
-
-    [DllImport("advapi32.dll", PreserveSig = true)]
-    static extern uint LsaAddAccountRights(IntPtr PolicyHandle, IntPtr AccountSid, LSA_UNICODE_STRING[] UserRights, uint CountOfRights);
-
-    [DllImport("advapi32.dll", PreserveSig = true)]
-    static extern uint LsaClose(IntPtr ObjectHandle);
-
-    [DllImport("advapi32.dll", PreserveSig = true)]
-    static extern uint LsaNtStatusToWinError(uint Status);
-
-    public static void GrantRight(string accountName, string privilege) {
-        var sid = new System.Security.Principal.NTAccount(accountName).Translate(typeof(System.Security.Principal.SecurityIdentifier)) as System.Security.Principal.SecurityIdentifier;
-        byte[] sidBytes = new byte[sid.BinaryLength];
-        sid.GetBinaryForm(sidBytes, 0);
-        IntPtr sidPtr = Marshal.AllocHGlobal(sidBytes.Length);
-        Marshal.Copy(sidBytes, 0, sidPtr, sidBytes.Length);
-
-        LSA_OBJECT_ATTRIBUTES objAttr = new LSA_OBJECT_ATTRIBUTES();
-        objAttr.Length = Marshal.SizeOf(typeof(LSA_OBJECT_ATTRIBUTES));
-
-        LSA_UNICODE_STRING systemName = new LSA_UNICODE_STRING();
-        IntPtr policyHandle;
-        uint status = LsaOpenPolicy(ref systemName, ref objAttr, 0x0010 | 0x0800, out policyHandle);
-        if (status != 0) throw new Exception("LsaOpenPolicy failed with status " + status);
-
-        LSA_UNICODE_STRING right = new LSA_UNICODE_STRING();
-        right.Buffer = Marshal.StringToHGlobalUni(privilege);
-        right.Length = (ushort)(privilege.Length * 2);
-        right.MaximumLength = (ushort)((privilege.Length + 1) * 2);
-
-        status = LsaAddAccountRights(policyHandle, sidPtr, new LSA_UNICODE_STRING[] { right }, 1);
-        LsaClose(policyHandle);
-        Marshal.FreeHGlobal(sidPtr);
-        Marshal.FreeHGlobal(right.Buffer);
-
-        if (status != 0) throw new Exception("LsaAddAccountRights failed with status " + status);
-    }
+    return "$env:COMPUTERNAME\$env:USERNAME"
 }
-"@
-    Add-Type -TypeDefinition $source -ErrorAction SilentlyContinue
+
+function Configure-FirewallRules($exePath) {
+    Write-Host "Configuring Windows Defender Firewall rules..." -ForegroundColor Cyan
     try {
-        [LsaWrapper]::GrantRight($accountName, "SeServiceLogonRight")
-        Write-Host "Successfully granted 'Log on as a service' right." -ForegroundColor Green
+        foreach ($ruleName in @("RemexHostInbound", "RemexClientInbound")) {
+            if (Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue) {
+                Remove-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue
+            }
+            New-NetFirewallRule `
+                -Name $ruleName `
+                -DisplayName "RemEx" `
+                -Description "Allows incoming connections to RemEx from your phone." `
+                -Direction Inbound `
+                -Program "$exePath" `
+                -Action Allow `
+                -Enabled True `
+                -Profile Any `
+                -ErrorAction Stop | Out-Null
+        }
+        Write-Host "Firewall rules configured successfully." -ForegroundColor Green
     } catch {
-        Write-Warning "Failed to grant 'Log on as a service' right automatically: $($_.Exception.Message)"
-        Write-Warning "You may need to grant this manually in Local Security Policy (secpol.msc)."
+        Write-Warning "Failed to configure Windows Firewall rules automatically: $($_.Exception.Message)"
+        Write-Warning "You may need to allow Remex.Agent.exe through the firewall manually."
     }
 }
 
 switch ($Action) {
     "Install" {
-        # Check if already installed
-        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if ($existing) {
-            Write-Warning "Service '$ServiceName' already exists (Status: $($existing.Status)). Uninstall first or check status."
-            exit 1
-        }
+        # Always retire any pre-2.0 service first so the two can never co-exist.
+        Remove-LegacyService
 
         $exePath = Join-Path $PublishDir "Remex.Agent.exe"
         if (-not (Test-Path $exePath)) {
@@ -206,110 +194,61 @@ switch ($Action) {
 
         Ensure-EventSourceRegistered
 
-        if ($Username) {
-            # Named account: collect credential and grant logon-as-service right.
-            Write-Host "Registering Windows Service '$ServiceName' as '$Username'..." -ForegroundColor Cyan
-            if ($Password) {
-                $securePass = ConvertTo-SecureString $Password -AsPlainText -Force
-                $cred = New-Object System.Management.Automation.PSCredential($Username, $securePass)
-            } else {
-                Write-Host "You will be prompted for the password of '$Username'." -ForegroundColor Yellow
-                $cred = Get-Credential -UserName $Username -Message "Enter password for the Remex service account"
-            }
-            Grant-LogOnAsService $Username
-            New-Service `
-                -Name $ServiceName `
-                -BinaryPathName "`"$exePath`" --agent" `
-                -DisplayName $DisplayName `
-                -Description $Description `
-                -StartupType Automatic `
-                -Credential $cred
-        } else {
-            # Default: LocalSystem — no credential needed.
-            Write-Host "Registering Windows Service '$ServiceName' as LocalSystem..." -ForegroundColor Cyan
-            New-Service `
-                -Name $ServiceName `
-                -BinaryPathName "`"$exePath`" --agent" `
-                -DisplayName $DisplayName `
-                -Description $Description `
-                -StartupType Automatic
-        }
+        $account = Resolve-Account
+        Write-Host "Registering RemEx logon task for '$account' (elevated, no UAC prompt)..." -ForegroundColor Cyan
 
-        # Configure Windows Defender Firewall rules to allow inbound TCP/UDP connections for both the host and client
-        Write-Host "Configuring Windows Defender Firewall rules..." -ForegroundColor Cyan
         try {
-            $hostRuleName = "RemexHostInbound"
-            $clientRuleName = "RemexClientInbound"
+            $action    = New-ScheduledTaskAction -Execute $exePath -Argument "--minimized"
+            $trigger   = New-ScheduledTaskTrigger -AtLogOn -User $account
+            $principal = New-ScheduledTaskPrincipal -UserId $account -LogonType Interactive -RunLevel Highest
+            $settings  = New-ScheduledTaskSettingsSet `
+                            -AllowStartIfOnBatteries `
+                            -DontStopIfGoingOnBatteries `
+                            -ExecutionTimeLimit ([TimeSpan]::Zero) `
+                            -MultipleInstances IgnoreNew `
+                            -RestartCount 0
 
-            # 1. Firewall rule for Remex.Agent.exe (background service / embedded host)
-            if (Test-Path $exePath) {
-                $existingHostRule = Get-NetFirewallRule -Name $hostRuleName -ErrorAction SilentlyContinue
-                if ($existingHostRule) {
-                    Remove-NetFirewallRule -Name $hostRuleName -ErrorAction SilentlyContinue
-                }
-                New-NetFirewallRule `
-                    -Name $hostRuleName `
-                    -DisplayName "Remex Host Service" `
-                    -Description "Allows incoming TCP/UDP connections for the Remex Host Service" `
-                    -Direction Inbound `
-                    -Program "$exePath" `
-                    -Action Allow `
-                    -Enabled True `
-                    -Profile Any `
-                    -ErrorAction Stop | Out-Null
-                Write-Host "Firewall rule 'Remex Host Service' configured successfully." -ForegroundColor Green
-            }
+            Register-ScheduledTask `
+                -TaskName $TaskName `
+                -Description $Description `
+                -Action $action `
+                -Trigger $trigger `
+                -Principal $principal `
+                -Settings $settings `
+                -Force | Out-Null
 
-            # 2. Firewall rule for Remex.Agent.exe (desktop UI / in-process host)
-            $clientExePath = Join-Path $PublishDir "Remex.Agent.exe"
-            if (Test-Path $clientExePath) {
-                $existingClientRule = Get-NetFirewallRule -Name $clientRuleName -ErrorAction SilentlyContinue
-                if ($existingClientRule) {
-                    Remove-NetFirewallRule -Name $clientRuleName -ErrorAction SilentlyContinue
-                }
-                New-NetFirewallRule `
-                    -Name $clientRuleName `
-                    -DisplayName "Remex Desktop Client" `
-                    -Description "Allows incoming TCP/UDP connections for the Remex Desktop Client" `
-                    -Direction Inbound `
-                    -Program "$clientExePath" `
-                    -Action Allow `
-                    -Enabled True `
-                    -Profile Any `
-                    -ErrorAction Stop | Out-Null
-                Write-Host "Firewall rule 'Remex Desktop Client' configured successfully." -ForegroundColor Green
-            }
+            Write-Host "Logon task '$TaskName' registered." -ForegroundColor Green
         } catch {
-            Write-Warning "Failed to configure Windows Firewall rules automatically: $($_.Exception.Message)"
-            Write-Warning "You may need to allow the executables through the firewall manually."
+            Write-Error "Failed to register the RemEx logon task: $($_.Exception.Message)"
+            exit 1
         }
 
-        Write-Host "Starting service..." -ForegroundColor Cyan
-        Start-Service -Name $ServiceName
+        Configure-FirewallRules $exePath
 
         Write-Host ""
-        $runAs = if ($Username) { $Username } else { "LocalSystem" }
-        Write-Host "Service '$DisplayName' installed and started as '$runAs'." -ForegroundColor Green
-        Write-Host "It will auto-start on boot. View in services.msc or use: .\install-service.ps1 -Action Status"
-        Write-Warning "Interactive desktop features still require the Remex Desktop app to be running in the signed-in Windows session."
+        Write-Host "RemEx will now start automatically when '$account' signs in." -ForegroundColor Green
+        Write-Host "Check it with: .\install-service.ps1 -Action Status"
+        Write-Host "It starts elevated and minimized to the tray, ready for your phone to connect."
         Write-DiagnosticsGuidance
     }
 
     "Uninstall" {
-        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if ($existing) {
-            if ($existing.Status -eq "Running") {
-                Write-Host "Stopping service..." -ForegroundColor Yellow
-                Stop-Service -Name $ServiceName -Force
-                Start-Sleep -Seconds 2
+        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if ($task) {
+            Write-Host "Removing RemEx logon task '$TaskName'..." -ForegroundColor Cyan
+            try {
+                Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+                Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+                Write-Host "Logon task '$TaskName' removed." -ForegroundColor Green
+            } catch {
+                Write-Warning "Failed to remove logon task '$TaskName': $($_.Exception.Message)"
             }
-
-            Write-Host "Removing service '$ServiceName'..." -ForegroundColor Cyan
-            sc.exe delete $ServiceName | Out-Null
-            Write-Host "Service '$DisplayName' removed successfully." -ForegroundColor Green
         } else {
-            Write-Warning "Service '$ServiceName' is not installed."
+            Write-Warning "RemEx logon task '$TaskName' is not installed."
         }
+
+        # Retire any pre-2.0 Windows Service as well (transition cleanup).
+        Remove-LegacyService
 
         # Remove event log source
         if (Test-EventSourceRegistered) {
@@ -334,35 +273,42 @@ switch ($Action) {
     }
 
     "Status" {
-        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if (-not $existing) {
-            Write-Host "Service '$ServiceName' is not installed." -ForegroundColor Yellow
+        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if (-not $task) {
+            Write-Host "RemEx logon task '$TaskName' is not installed." -ForegroundColor Yellow
         } else {
+            $info      = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
+            $principal = $task.Principal
             Write-Host ""
-            Write-Host "  Service : $($existing.DisplayName)" -ForegroundColor Cyan
-            Write-Host "  Status  : $($existing.Status)"
-            Write-Host "  Startup : $($existing.StartType)"
+            Write-Host "  Task      : $TaskName" -ForegroundColor Cyan
+            Write-Host "  State     : $($task.State)"
+            Write-Host "  Run as    : $($principal.UserId)"
+            Write-Host "  Run level : $($principal.RunLevel)"
+            Write-Host "  Logon type: $($principal.LogonType)"
+            if ($info) {
+                Write-Host "  Last run  : $($info.LastRunTime) (result 0x{0:X})" -ForegroundColor DarkGray -f $info.LastTaskResult
+            }
             Write-DiagnosticsGuidance
         }
     }
 
     "Start" {
-        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if (-not $existing) {
-            Write-Error "Service '$ServiceName' is not installed."
+        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if (-not $task) {
+            Write-Error "RemEx logon task '$TaskName' is not installed."
             exit 1
         }
-        Write-Host "Starting service '$ServiceName'..." -ForegroundColor Cyan
-        Start-Service -Name $ServiceName
+        Write-Host "Starting RemEx now via task '$TaskName'..." -ForegroundColor Cyan
+        Start-ScheduledTask -TaskName $TaskName
     }
 
     "Stop" {
-        $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-        if (-not $existing) {
-            Write-Error "Service '$ServiceName' is not installed."
+        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if (-not $task) {
+            Write-Error "RemEx logon task '$TaskName' is not installed."
             exit 1
         }
-        Write-Host "Stopping service '$ServiceName'..." -ForegroundColor Yellow
-        Stop-Service -Name $ServiceName -Force
+        Write-Host "Stopping the running RemEx task instance '$TaskName'..." -ForegroundColor Yellow
+        Stop-ScheduledTask -TaskName $TaskName
     }
 }

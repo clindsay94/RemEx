@@ -16,4 +16,24 @@
       <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
     </application>
   </compatibility>
+
+  <!-- RemEx runs as a single interactive user-session app that ALWAYS requires elevation.
+       Elevation (high integrity) is load-bearing for three reasons:
+         1. Cert safety: an elevated token carries Administrators as an ENABLED group, so it keeps
+            FullControl over the machine-wide cert.pfx / paired_clients.json (ACL = LocalSystem +
+            Administrators, inheritance disabled). A medium-integrity start would get Administrators
+            as deny-only, fail to read cert.pfx, regenerate it, and brick every SPKI-pinned Android
+            pairing. requireAdministrator removes that catastrophic path entirely.
+         2. UIPI: HIGH->HIGH SendInput is permitted, so input reaches elevated windows (Windows
+            Terminal as admin, etc.). A medium-integrity sender is silently dropped by UIPI.
+         3. HKLM writes (e.g. CaptureBackendPreference) succeed.
+       uiAccess="false": we do not need the accessibility UI-automation privilege (which would also
+       require a signed binary in a trusted Program Files path). -->
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
 </assembly>
