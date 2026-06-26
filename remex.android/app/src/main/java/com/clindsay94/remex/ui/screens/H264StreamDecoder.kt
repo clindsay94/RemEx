@@ -69,6 +69,21 @@ class H264StreamDecoder(
     // Touched only on the decode thread.
     private var renderedFrames = 0
 
+    // Adaptive-playback / input-buffer upper bound: the host's full-screen (scale 1.0) frame. We don't
+    // know the exact monitor size here, so bound to 4K — that covers essentially all PC displays; the
+    // explicit mid-stream reconfigure handles anything larger or decoders without adaptive support.
+    private val maxWidth = maxOf(width, 3840)
+    private val maxHeight = maxOf(height, 2160)
+    // Compressed IDRs are far smaller than a raw frame, so an 8 MiB ceiling is a safe upper bound for
+    // any resolution up to ~4K while keeping the input-buffer pool reasonable — and never under-sized
+    // for a scale-up keyframe (the original bug). (RemEx-aep Phase 5)
+    private val maxInputSize =
+        (maxWidth.toLong() * maxHeight * 3 / 2).coerceIn(4L * 1024 * 1024, 8L * 1024 * 1024).toInt()
+
+    // The csd-0 (SPS) bytes the codec is currently configured with. Used to detect a mid-stream SPS
+    // change (the host rebuilt its encoder at a new capture scale) so we can reconfigure. Decode-thread only.
+    private var configuredCsd0: ByteArray? = null
+
     init {
         decodeThread.start()
     }
@@ -111,16 +126,9 @@ class H264StreamDecoder(
                     }
                     val csd0 = au.copyOfRange(sps.start, sps.end)
                     val csd1 = au.copyOfRange(pps.start, pps.end)
-                    val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
-                        // A 1440p+ IDR can exceed the default input buffer; size it explicitly.
-                        setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxOf(width * height * 3 / 2, 4 * 1024 * 1024))
-                        setByteBuffer("csd-0", ByteBuffer.wrap(csd0))
-                        setByteBuffer("csd-1", ByteBuffer.wrap(csd1))
-                    }
-                    codec.configure(format, surface, null, 0)
-                    codec.start()
+                    applyFormatAndStart(codec, csd0, csd1)
                     configured = true
-                    Log.i(TAG, "MediaCodec H.264 decoder configured+started (sync) from SPS/PPS (hint ${width}x$height, csd0=${csd0.size}B, csd1=${csd1.size}B)")
+                    Log.i(TAG, "MediaCodec H.264 decoder configured+started (sync) from SPS/PPS (hint ${width}x$height, csd0=${csd0.size}B, csd1=${csd1.size}B; adaptive max ${maxWidth}x$maxHeight)")
                     feedInput(codec, au)
                     continue
                 }
@@ -128,7 +136,12 @@ class H264StreamDecoder(
                 // Feed at most one input per iteration (block briefly so we don't spin when idle).
                 val au = frameQueue.pollFirst(2, TimeUnit.MILLISECONDS)
                 if (au != null) {
-                    feedInput(codec, au)
+                    // A mid-stream SPS change means the host rebuilt its encoder at a new capture scale.
+                    // Reconfigure so the decoder adopts the new resolution; otherwise a larger scale-up
+                    // IDR no longer fits the input buffer / layout and the stream goes black or garbage.
+                    if (!maybeReconfigureForNewSps(codec, au)) {
+                        feedInput(codec, au)
+                    }
                 }
 
                 // Drain all currently-available decoded output to the surface.
@@ -185,6 +198,55 @@ class H264StreamDecoder(
             // guarded by KEY_MAX_INPUT_SIZE but stay defensive) — drop and recover.
             Log.w(TAG, "queueInputBuffer failed: ${e.message}")
         }
+    }
+
+    /** Builds the decode MediaFormat from the stream's own SPS/PPS, sized for the adaptive max. */
+    private fun buildFormat(csd0: ByteArray, csd1: ByteArray): MediaFormat =
+        MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
+            // Size the input buffer for the host's full-screen (scale 1.0) IDR, not the initial hint —
+            // a scale-up keyframe must still fit (this is the fix for the scale-up black screen).
+            setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputSize)
+            // Adaptive playback: pre-size for the max so most scale changes are absorbed without a hard
+            // reconfigure. Decoders without FEATURE_AdaptivePlayback ignore these keys; the explicit
+            // reconfigure in maybeReconfigureForNewSps is the guaranteed fallback.
+            setInteger(MediaFormat.KEY_MAX_WIDTH, maxWidth)
+            setInteger(MediaFormat.KEY_MAX_HEIGHT, maxHeight)
+            // The codec adopts the SPS-declared resolution from csd-0, so the width/height hint above
+            // need not be exact — a stale hint cannot matter.
+            setByteBuffer("csd-0", ByteBuffer.wrap(csd0))
+            setByteBuffer("csd-1", ByteBuffer.wrap(csd1))
+        }
+
+    /** Configures + starts the codec from the given csd and records the active SPS. Decode thread only. */
+    private fun applyFormatAndStart(codec: MediaCodec, csd0: ByteArray, csd1: ByteArray) {
+        codec.configure(buildFormat(csd0, csd1), surface, null, 0)
+        codec.start()
+        configuredCsd0 = csd0
+    }
+
+    /**
+     * If [au] carries an SPS whose bytes differ from the currently-configured csd-0, reconfigures the
+     * codec (stop → configure → start) for the new resolution, feeds [au] (an IDR) into the fresh codec,
+     * and returns true. Returns false when there is no SPS or it is unchanged, so the caller feeds [au]
+     * normally. Comparing raw SPS NAL bytes avoids fragile Exp-Golomb parsing; the cheap
+     * [containsNalType] pre-check keeps P-frames on the fast path. On the host, a rebuilt encoder emits
+     * a fresh SPS/PPS + IDR, so the stream's own SPS is authoritative — no separate dimension protocol
+     * is needed. A stop/configure/start failure propagates to the decode loop's catch, which signals
+     * onInitFailure so the owner reconnects. (RemEx-aep Phase 5)
+     */
+    private fun maybeReconfigureForNewSps(codec: MediaCodec, au: ByteArray): Boolean {
+        if (!containsNalType(au, NAL_TYPE_SPS)) return false // only IDR AUs carry an SPS — fast path
+        val nals = findNalUnits(au)
+        val sps = nals.firstOrNull { it.type == NAL_TYPE_SPS } ?: return false
+        val newCsd0 = au.copyOfRange(sps.start, sps.end)
+        if (newCsd0.contentEquals(configuredCsd0)) return false // same SPS — no resolution change
+        val pps = nals.firstOrNull { it.type == NAL_TYPE_PPS } ?: return false
+        val csd1 = au.copyOfRange(pps.start, pps.end)
+        Log.i(TAG, "SPS changed mid-stream (csd0 ${configuredCsd0?.size}B -> ${newCsd0.size}B); reconfiguring decoder.")
+        codec.stop()
+        applyFormatAndStart(codec, newCsd0, csd1)
+        feedInput(codec, au)
+        return true
     }
 
     /** Releases native resources and stops the decode thread. */

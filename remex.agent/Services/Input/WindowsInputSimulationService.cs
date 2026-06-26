@@ -222,12 +222,19 @@ public class WindowsInputSimulationService : IInputSimulationService
             return;
         }
 
+        // UIPI canary: a partial/zero SendInput is the signature symptom of an integrity-level block.
+        // RemEx 2.0 always runs elevated (high integrity) in the interactive session, so HIGH→HIGH input
+        // is normally permitted — a block here almost always means the Secure Desktop is up (a UAC /
+        // credential prompt, Ctrl+Alt+Del, or the lock screen), which only winlogon can drive. If this
+        // fires against an ordinary admin window, suspect a medium-integrity RemEx instance (e.g. the app
+        // was launched without elevation, or a stale autostart entry won the single-instance guard).
         var error = Marshal.GetLastWin32Error();
         LastInputFailureReason = error != 0
-            ? $"Windows SendInput failed during {operation} (Win32 {error}: {new Win32Exception(error).Message}). The desktop may be locked, showing a UAC/credential prompt, or Remex may not be running in the active user session."
-            : $"Windows SendInput was blocked during {operation}. The desktop may be locked, showing a UAC/credential prompt, or Remex may not be running in the active user session.";
+            ? $"Windows SendInput delivered only {sent}/{inputs.Length} events during {operation} (Win32 {error}: {new Win32Exception(error).Message}). RemEx is elevated, so this usually means a Secure Desktop (UAC/credential prompt, lock screen) is active; if not, RemEx may be running at medium integrity (UIPI blocks input to elevated windows)."
+            : $"Windows SendInput was blocked (UIPI) during {operation} — {sent}/{inputs.Length} events delivered. RemEx runs at high integrity so input to elevated windows is normally allowed; a block here usually means the Secure Desktop (UAC/credential prompt or lock screen) is active.";
 
-        _logger.LogWarning("Input injection failed during {Operation}: {Reason}", operation, LastInputFailureReason);
+        _logger.LogWarning("Input injection failed during {Operation} ({Sent}/{Total} events sent): {Reason}",
+            operation, sent, inputs.Length, LastInputFailureReason);
 
         if (error != 0)
         {
