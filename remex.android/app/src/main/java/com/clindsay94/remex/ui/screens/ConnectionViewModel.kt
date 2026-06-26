@@ -176,7 +176,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 pairingPin = _pin,
                 desktopQuality = dp?.quality ?: 50,
                 desktopTargetFps = dp?.targetFps ?: 120,
-                desktopScale = dp?.scale ?: 0.6f
+                desktopScale = dp?.scale ?: 1.0f
         )
     }
 

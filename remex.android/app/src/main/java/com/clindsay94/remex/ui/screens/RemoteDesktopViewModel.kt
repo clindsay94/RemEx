@@ -46,7 +46,7 @@ data class RemoteDesktopCapabilityState(
 data class RemoteDesktopConfigState(
         val quality: Int = 50,
         val targetFps: Int = 120,
-        val scale: Float = 0.6f,
+        val scale: Float = 1.0f,
         val codec: String = "H264"
 )
 

@@ -49,11 +49,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedScaleIndex))]
-    private double _scale = 0.5;
+    private double _scale = 1.0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedFpsIndex))]
-    private int _targetFps = 10;
+    private int _targetFps = 120;
 
     [ObservableProperty]
     private string _resolution = "—";

@@ -105,7 +105,7 @@ class SettingsManager(val context: Context) {
         data class RemoteDesktopPreferences(
                 val quality: Int = 50,
                 val targetFps: Int = 120,
-                val scale: Float = 0.6f,
+                val scale: Float = 1.0f,
                 val directTouch: Boolean = false,
                 val pointerSpeed: Float = 1.0f,
                 val verticalScrollSensitivity: Float = 1.0f,
@@ -275,7 +275,7 @@ class SettingsManager(val context: Context) {
                         RemoteDesktopPreferences(
                                 quality = preferences[DESKTOP_QUALITY_KEY] ?: 50,
                                 targetFps = preferences[DESKTOP_TARGET_FPS_KEY] ?: 120,
-                                scale = preferences[DESKTOP_SCALE_KEY] ?: 0.6f,
+                                scale = preferences[DESKTOP_SCALE_KEY] ?: 1.0f,
                                 directTouch = preferences[DESKTOP_DIRECT_TOUCH_KEY] ?: false,
                                 pointerSpeed = preferences[DESKTOP_POINTER_SPEED_KEY] ?: 1.0f,
                                 verticalScrollSensitivity =

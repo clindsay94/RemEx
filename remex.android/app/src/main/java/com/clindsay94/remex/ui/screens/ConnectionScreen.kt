@@ -122,7 +122,7 @@ fun ConnectionScreenContent(
         var pairingPinInput by remember { mutableStateOf("") }
         var qualityInput by remember { mutableFloatStateOf(50f) }
         var targetFpsInput by remember { mutableFloatStateOf(120f) }
-        var scaleInput by remember { mutableFloatStateOf(0.6f) }
+        var scaleInput by remember { mutableFloatStateOf(1.0f) }
         var showHelpSection by remember { mutableStateOf(false) }
 
         // Pending flags for deferred actions after permission grants
@@ -250,7 +250,7 @@ fun ConnectionScreenContent(
                                 qualityInput = desktopPrefs.quality.toFloat()
                         if (targetFpsInput == 120f && desktopPrefs.targetFps != 120)
                                 targetFpsInput = desktopPrefs.targetFps.toFloat()
-                        if (scaleInput == 0.6f && desktopPrefs.scale != 0.6f) scaleInput =
+                        if (scaleInput == 1.0f && desktopPrefs.scale != 1.0f) scaleInput =
                             desktopPrefs.scale
                 }
         }
