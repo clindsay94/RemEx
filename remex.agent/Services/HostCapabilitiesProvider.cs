@@ -86,7 +86,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsInputSimulation = supportsInputSimulation,
             SupportsCursorQuery = SupportsCursorQuery(isInteractiveSession, linuxBackend),
             SupportsAdvancedWindowControl = SupportsAdvancedWindowControl(isInteractiveSession, linuxBackend),
-            SupportsInteractiveAppLaunch = !OperatingSystem.IsWindows() || isInteractiveSession || Process.GetCurrentProcess().SessionId == 0,
+            SupportsInteractiveAppLaunch = !OperatingSystem.IsWindows() || isInteractiveSession,
             InputBackend = GetInputBackendName(linuxBackend, prereqReport, windowsReport),
             WindowControlBackend = linuxBackend?.WindowControlBackendName,
             RemoteDesktopUnavailableReason = remoteDesktopReason,

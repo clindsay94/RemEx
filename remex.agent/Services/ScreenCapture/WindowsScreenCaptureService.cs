@@ -60,20 +60,12 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     {
         _logger = logger;
         _wgc = wgc;
-        // HKLM-backed backend preference (LocalSystem/Session 0 → HKLM, never HKCU). Fails open to Auto.
+        // Machine-wide backend preference, stored in HKLM (never HKCU) so it is shared regardless of
+        // which user is signed in and survives across logins. Fails open to Auto.
         _backend = OperatingSystem.IsWindows() ? CaptureBackendPreference.Read(logger) : CaptureBackend.Auto;
         if (_wgc is not null)
         {
             _logger.LogInformation("WGC capture backend available; preference = {Backend}.", _backend);
-        }
-
-        // Detect Session 0 early — screen capture will never work there.
-        var sessionId = Process.GetCurrentProcess().SessionId;
-        if (sessionId == 0)
-        {
-            _logger.LogWarning(
-                "Running in Session 0 (non-interactive). Screen capture will NOT work. " +
-                "Run the Remex Desktop app interactively, or configure the service to log on as a user.");
         }
 
         // Watch the console display power state so the stream loop can pause while the monitor is off
@@ -295,11 +287,10 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
         catch (Exception ex)
         {
-            var sessionId = Process.GetCurrentProcess().SessionId;
-            LastCaptureFailureReason = BuildCaptureFailureReason(sessionId, ex.Message);
+            LastCaptureFailureReason = BuildCaptureFailureReason(ex.Message);
             if (ShouldLogCaptureError())
             {
-                _logger.LogError(ex, "Failed to capture raw screen (Session {SessionId}).", sessionId);
+                _logger.LogError(ex, "Failed to capture raw screen.");
             }
             return new ScreenCaptureResult(null, isLive: false);
         }
@@ -371,15 +362,11 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
         catch (Exception ex)
         {
-            var sessionId = Process.GetCurrentProcess().SessionId;
-            LastCaptureFailureReason = BuildCaptureFailureReason(sessionId, ex.Message);
+            LastCaptureFailureReason = BuildCaptureFailureReason(ex.Message);
             if (ShouldLogCaptureError())
             {
-                _logger.LogError(ex, "Failed to capture screen (Session {SessionId}). {Hint}",
-                    sessionId,
-                    sessionId == 0
-                        ? "Session 0 cannot capture the desktop. Run the Remex Desktop app interactively."
-                        : "Ensure the desktop is not locked and the process has screen access.");
+                _logger.LogError(ex,
+                    "Failed to capture screen. Ensure the desktop is not locked and the process has screen access.");
             }
             return new ScreenCaptureResult(Array.Empty<byte>(), isLive: false);
         }
@@ -623,10 +610,8 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         throw new InvalidOperationException("JPEG encoder not found.");
     }
 
-    private static string BuildCaptureFailureReason(int sessionId, string message)
-        => sessionId == 0
-            ? $"Screen capture failed in Session 0 ({message}). Run Remex Desktop interactively or configure the Windows service to log on as the signed-in user."
-            : $"Screen capture failed ({message}). The desktop may be locked, showing a secure prompt, or denying screen capture access.";
+    private static string BuildCaptureFailureReason(string message)
+        => $"Screen capture failed ({message}). The desktop may be locked, showing a secure prompt, or denying screen capture access.";
 
     #region P/Invoke
 

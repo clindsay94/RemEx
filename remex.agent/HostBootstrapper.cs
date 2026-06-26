@@ -100,14 +100,12 @@ public static class HostBootstrapper
         if (OperatingSystem.IsWindows())
         {
             builder.Services.AddSingleton<ITelemetryService, WindowsTelemetryService>();
-            // The real command service is wrapped by SessionBridgingCommandService so that desktop-bound
-            // commands (lock / monitor-off / sign-out) reach the interactive session when the host runs
-            // headless in Session 0 (the LocalSystem service). Power commands pass straight through.
-            builder.Services.AddSingleton<Remex.Core.Services.Command.WindowsSystemCommandService>();
-            builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService>(sp =>
-                new Remex.Agent.Services.Command.SessionBridgingCommandService(
-                    sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Remex.Agent.Services.Command.SessionBridgingCommandService>>(),
-                    sp.GetRequiredService<Remex.Core.Services.Command.WindowsSystemCommandService>()));
+            // RemEx runs INSIDE the interactive user session, so lock / monitor-off / sign-out take
+            // effect directly — the former SessionBridgingCommandService (which forwarded them into the
+            // console session when headless in Session 0) is gone. Register the platform command service
+            // straight up. (RemEx-aep Phase 4)
+            builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService,
+                Remex.Core.Services.Command.WindowsSystemCommandService>();
             builder.Services.AddSingleton<IProcessMonitorService, WindowsProcessMonitorService>();
 #if WGC_CAPTURE
             // Windows.Graphics.Capture backend (preferred). Only compiled/referenced on Windows — the
@@ -135,7 +133,8 @@ public static class HostBootstrapper
         }
 
         // Interactive session guard: opt-in (off by default) feature that keeps the signed-in session
-        // unlocked while a paired client is connected. Windows-only mechanism; no-op elsewhere.
+        // AWAKE (no idle sleep / display-off) while a paired client is connected. Ref-counted across
+        // clients; Windows-only mechanism (SetThreadExecutionState), no-op elsewhere. (RemEx-aep Phase 4)
         builder.Services.AddSingleton<Remex.Agent.Services.Session.IInteractiveSessionGuard>(sp =>
             OperatingSystem.IsWindows()
                 ? new Remex.Agent.Services.Session.WindowsInteractiveSessionGuard(
@@ -247,16 +246,6 @@ public static class HostBootstrapper
         var hostCapabilitiesProvider = app.Services.GetRequiredService<IHostCapabilitiesProvider>();
 
         PrintStartupBanner(actualPort.ToString());
-
-        // Session 0 detection: warn when running as a non-interactive Windows service
-        if (OperatingSystem.IsWindows() && Process.GetCurrentProcess().SessionId == 0)
-        {
-            var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Remex.Agent");
-            logger.LogWarning(
-                "⚠ Remex.Agent is running in Session 0 (non-interactive). " +
-                "Screen capture and app launching will NOT work in this session. " +
-                "Configure the service to 'Log on as' your Windows user account.");
-        }
 
         if (OperatingSystem.IsWindows())
         {
