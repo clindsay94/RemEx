@@ -1,75 +1,27 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Pipes;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Remex.Core.Models.IPC;
-using Remex.Core.Serialization;
-using Remex.Core.Services;
 using Remex.Core.Services.Command;
 
 namespace Remex.Desktop.Services.Command;
 
+/// <summary>
+/// Forwards system commands from the desktop UI to the in-process host's real
+/// <see cref="ISystemCommandService"/>. Historically this opened the <c>RemExLocalIPC</c> named pipe
+/// to a separate service process; RemEx 2.0 runs the host in-process, so it now resolves the live
+/// service from <see cref="EmbeddedHostServiceLocator"/> and calls it directly. The name is retained
+/// to keep the DI registration in <c>CommandModeContext</c> stable. (RemEx-aep Phase 3)
+/// </summary>
 public class IpcClientCommandService : ISystemCommandService
 {
-    private const string PipeName = RemExLocalIPC.PipeName;
+    private static ISystemCommandService Inner => EmbeddedHostServiceLocator.Require<ISystemCommandService>();
 
-    public Task Shutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Shutdown", CreateDelayParameters(delaySeconds)));
-    public Task ForceShutdown(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceShutdown", CreateDelayParameters(delaySeconds)));
-    public Task Restart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("Restart", CreateDelayParameters(delaySeconds)));
-    public Task ForceRestart(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("ForceRestart", CreateDelayParameters(delaySeconds)));
-    public Task RestartToUefi(int delaySeconds = 0) => SendCommandAsync(new CommandRequest("RestartToUefi", CreateDelayParameters(delaySeconds)));
-    public Task Sleep() => SendCommandAsync(new CommandRequest("Sleep", null));
-    public Task Hibernate() => SendCommandAsync(new CommandRequest("Hibernate", null));
-    public Task SignOut() => SendCommandAsync(new CommandRequest("SignOut", null));
-    public Task Lock() => SendCommandAsync(new CommandRequest("Lock", null));
-    public Task MonitorOff() => SendCommandAsync(new CommandRequest("MonitorOff", null));
-
-    private static Dictionary<string, string>? CreateDelayParameters(int delaySeconds)
-    {
-        if (delaySeconds <= 0)
-        {
-            return null;
-        }
-
-        return new Dictionary<string, string>
-        {
-            ["DelaySeconds"] = delaySeconds.ToString()
-        };
-    }
-
-    private async Task SendCommandAsync(CommandRequest request)
-    {
-        try
-        {
-            using var pipeClient = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            await pipeClient.ConnectAsync(5000); // 5 seconds timeout
-
-            var requestBytes = RemexJson.SerializeToUtf8Bytes(request, RemexJsonSerializerContext.Default.CommandRequest);
-            await RemExLocalIPC.WriteFrameAsync(pipeClient, requestBytes);
-
-            var responseBytes = await RemExLocalIPC.ReadFrameAsync(pipeClient);
-            if (responseBytes != null)
-            {
-                var response = RemexJson.Deserialize(responseBytes, RemexJsonSerializerContext.Default.CommandResponse);
-                if (response != null && !response.Success)
-                {
-                    throw new Exception($"Command Failed: {response.Message}. Details: {response.ErrorDetails}");
-                }
-            }
-        }
-        catch (TimeoutException ex)
-        {
-            throw new Exception($"Failed to send command over IPC (connection timeout): {ex.Message}", ex);
-        }
-        catch (IOException ex)
-        {
-            throw new Exception($"Failed to send command over IPC (I/O error): {ex.Message}", ex);
-        }
-        catch (JsonException ex)
-        {
-            throw new Exception($"Failed to send command over IPC (JSON error): {ex.Message}", ex);
-        }
-    }
+    public Task Shutdown(int delaySeconds = 0) => Inner.Shutdown(delaySeconds);
+    public Task ForceShutdown(int delaySeconds = 0) => Inner.ForceShutdown(delaySeconds);
+    public Task Restart(int delaySeconds = 0) => Inner.Restart(delaySeconds);
+    public Task ForceRestart(int delaySeconds = 0) => Inner.ForceRestart(delaySeconds);
+    public Task RestartToUefi(int delaySeconds = 0) => Inner.RestartToUefi(delaySeconds);
+    public Task Sleep() => Inner.Sleep();
+    public Task Hibernate() => Inner.Hibernate();
+    public Task SignOut() => Inner.SignOut();
+    public Task Lock() => Inner.Lock();
+    public Task MonitorOff() => Inner.MonitorOff();
 }

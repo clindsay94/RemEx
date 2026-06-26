@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
-using Remex.Core.Models.IPC;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
 using Remex.Core.Messages;
@@ -144,11 +143,11 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         }
         else
         {
-            var request = new CommandRequest("LaunchApp", new System.Collections.Generic.Dictionary<string, string>
-            {
-                ["TargetPath"] = entry.TargetPath,
-            });
-            await RemExLocalIPC.SendCommandAsync(request);
+            // Not connected to a remote phone: launch on THIS PC via the in-process host's launcher.
+            // (Formerly forwarded over the RemExLocalIPC pipe to a separate service process.) (RemEx-aep Phase 3)
+            await Remex.Desktop.Services.EmbeddedHostServiceLocator
+                .Require<Remex.Core.Services.IAppLauncherService>()
+                .LaunchAppAsync(entry.TargetPath);
         }
     }
 

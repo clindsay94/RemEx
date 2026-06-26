@@ -91,7 +91,9 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.Network.ICommandChannelAuthenticator, Remex.Agent.Services.Network.PairedClientChannelAuthenticator>();
         builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
         builder.Services.AddSingleton<IDesktopWindowControlService, UnsupportedDesktopWindowControlService>();
-        builder.Services.AddHostedService<Remex.Agent.Services.IPC.LocalIpcServerService>();
+        // No LocalIpcServerService: the desktop UI runs in THIS process and resolves command/WoL/pairing
+        // services straight from DI (see EmbeddedHostServiceLocator), so the RemExLocalIPC named pipe and
+        // its cross-process identity gate were removed. (RemEx-aep Phase 3)
         builder.Services.AddHostedService<Remex.Agent.Services.Network.ExternalNetworkListenerService>();
         builder.Services.AddHostedService<Remex.Agent.Services.Network.MdnsAdvertisingService>();
 
@@ -146,8 +148,9 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IAppLauncherService, Remex.Agent.Services.AppLauncherService>();
-        // IpcHostServer was removed: its sole action (LaunchApp) is now handled by the single
-        // LocalIpcServerService (registered above), which owns the canonical RemExLocalIPC pipe.
+        // IAppLauncherService backs both the remote "LaunchApp" WebSocket command and the desktop UI's
+        // offline launch path (the UI resolves it in-process via EmbeddedHostServiceLocator). The old
+        // RemExLocalIPC pipe + LocalIpcServerService that used to bridge the UI here are gone. (RemEx-aep)
 
         // ── 2.0 Security Services ──
         // CertificateService is instantiated once here so that Kestrel and the DI container

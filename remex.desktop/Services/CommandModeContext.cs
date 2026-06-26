@@ -1,26 +1,38 @@
 using System;
-using System.IO;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Services.Command;
 using Remex.Core.Services.Network;
 using Remex.Desktop.Services.Command;
 using Remex.Desktop.Services.Network;
-using Microsoft.Extensions.Configuration;
 
 namespace Remex.Desktop.Services;
 
+/// <summary>
+/// Wires the desktop UI's command / Wake-on-LAN services to the in-process host.
+///
+/// RemEx 2.0 is a single process: the embedded host (<c>HostBootstrapper</c>) owns the real
+/// <see cref="ISystemCommandService"/>, <see cref="IWakeOnLanService"/>, and the network listeners.
+/// The UI only needs those interfaces in its own DI container to satisfy view-model dependencies, so
+/// it registers thin delegating adapters (<c>IpcClientCommandService</c> / <c>IpcWakeOnLanService</c>)
+/// that forward to <see cref="App.EmbeddedHostServices"/>.
+///
+/// The former two-process "server vs client" mode — a <c>Global\RemExServiceMutex</c> arbiter plus a
+/// duplicate network listener — is gone. Keeping it would double-bind the listener now that the host
+/// always runs in-process (the deleted <c>LocalIpcServerService</c> was the only thing that grabbed
+/// that mutex first and kept the UI in "client" mode). (RemEx-aep Phase 3)
+/// </summary>
 public static class CommandModeContext
 {
-    private const string MutexName = @"Global\RemExServiceMutex";
-    private static Mutex? _mutex;
-    private static CancellationTokenSource? _listenerCts;
-    public static bool IsServerMode { get; private set; }
+    /// <summary>
+    /// Retained for call sites that branch on the legacy two-process mode. There is no separate
+    /// service process in RemEx 2.0, so the UI is never the "server" — this is always false.
+    /// </summary>
+    public static bool IsServerMode => false;
 
     public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        // Add Logging
         services.AddLogging(configure =>
         {
             configure.AddConsole();
@@ -28,98 +40,28 @@ public static class CommandModeContext
         });
         services.AddSingleton(configuration);
 
-        // Determine Mode via Mutex
-        bool createdNew = false;
-        try
-        {
-            string finalMutexName = OperatingSystem.IsWindows() ? MutexName : "RemExServiceMutex";
-            _mutex = new Mutex(false, finalMutexName, out createdNew);
-            IsServerMode = createdNew;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // If we get an unauthorized access exception, the Mutex exists but we can't acquire it (likely created by service)
-            IsServerMode = false;
-        }
-        catch (IOException ex)
-        {
-            Console.WriteLine($"I/O error checking Mutex: {ex.Message}");
-            IsServerMode = false; // default to client mode to be safe
-        }
-        catch (PlatformNotSupportedException ex)
-        {
-            Console.WriteLine($"Platform does not support Mutex: {ex.Message}");
-            IsServerMode = false; // default to client mode to be safe
-        }
-
-        if (IsServerMode)
-        {
-            Console.WriteLine("Initializing Remex.Desktop in Server Mode (Direct Execution)");
-            // Register Direct Execution Services
-            if (OperatingSystem.IsWindows())
-            {
-                services.AddSingleton<ISystemCommandService, WindowsSystemCommandService>();
-            }
-            else if (OperatingSystem.IsLinux())
-            {
-                services.AddSingleton<ISystemCommandService, LinuxSystemCommandService>();
-            }
-            else
-            {
-                // Fallback for Android/iOS where direct commands might not be implemented yet.
-                // We map it to IpcClientCommandService or a NoOp just to satisfy DI
-                services.AddSingleton<ISystemCommandService, IpcClientCommandService>();
-            }
-
-            services.AddSingleton<IWakeOnLanService, WakeOnLanService>();
-            services.AddSingleton<INetworkListener, RemexNetworkListener>();
-        }
-        else
-        {
-            Console.WriteLine("Initializing Remex.Desktop in Client Mode (IPC forwarding)");
-            // Register IPC Forwarding Services
-            services.AddSingleton<ISystemCommandService, IpcClientCommandService>();
-            services.AddSingleton<IWakeOnLanService, IpcWakeOnLanService>();
-
-            // Release the mutex if we acquired it but decide we are in client mode somehow (fallback)    
-            if (createdNew)
-            {
-                _mutex?.ReleaseMutex();
-                _mutex?.Dispose();
-                _mutex = null;
-            }
-        }
+        // Delegating adapters: both forward to the in-process host's real services via
+        // EmbeddedHostServiceLocator. The host owns the network listeners and the concrete
+        // command / Wake-on-LAN implementations; the UI must NOT start its own listener.
+        services.AddSingleton<ISystemCommandService, IpcClientCommandService>();
+        services.AddSingleton<IWakeOnLanService, IpcWakeOnLanService>();
     }
 
+    /// <summary>
+    /// No-op: the embedded host runs the network listener. Kept so existing call sites
+    /// (<c>App.OnFrameworkInitializationCompleted</c>) need no change.
+    /// </summary>
     public static void StartListener(IServiceProvider provider)
     {
-        if (IsServerMode)
-        {
-            // Start the network listener in the background if we are the server
-            _listenerCts = new CancellationTokenSource();
-            var listener = provider.GetRequiredService<INetworkListener>();
-            _ = listener.StartListeningAsync(_listenerCts.Token);
-        }
+        // Intentionally empty — the in-process host owns the listener (see class summary).
     }
 
+    /// <summary>
+    /// No-op cleanup: there is no UI-owned mutex or listener to release. Kept so existing call sites
+    /// (<c>App.ShutdownApplication</c>, <c>Program.Main</c> finally) need no change.
+    /// </summary>
     public static void Cleanup()
     {
-        // Cancel the background listener so the process can exit
-        if (_listenerCts != null)
-        {
-            _listenerCts.Cancel();
-            _listenerCts.Dispose();
-            _listenerCts = null;
-        }
-
-        if (IsServerMode && _mutex != null)
-        {
-            try
-            {
-                _mutex.ReleaseMutex();
-            }
-            catch { /* Ignore if not owned */ }
-            _mutex.Dispose();
-        }
+        // Intentionally empty — see class summary.
     }
 }

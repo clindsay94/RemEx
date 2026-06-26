@@ -71,58 +71,6 @@
                 <!-- LEFT COLUMN -->
                 <StackPanel MinWidth="400" MaxWidth="600" Spacing="24" Margin="0,0,16,16">
 
-                    <!-- ═══ Service Section ═══ -->
-                    <Border Classes="glass-card" Padding="24" IsVisible="{Binding IsServiceSectionVisible}">
-                        <StackPanel Spacing="20">
-                            <TextBlock Text="{Binding ServiceSectionHeader}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                            <!-- Status row -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Spacing="6">
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Ellipse Width="12" Height="12" VerticalAlignment="Center">
-                                            <Ellipse.Fill>
-                                                <SolidColorBrush Color="{Binding IsServiceRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
-                                            </Ellipse.Fill>
-                                        </Ellipse>
-                                        <TextBlock Text="{Binding ServiceStatusText}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding ServiceAccountDisplay}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsServiceInstalled}"/>
-                                </StackPanel>
-                                <Button Grid.Column="1" Content="{local:Localize Settings_Refresh}" Command="{Binding RefreshServiceCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_RefreshServiceTooltip}"/>
-                            </Grid>
-
-                            <!-- Action buttons -->
-                            <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding !IsServiceBusy}">
-                                <Button Content="{local:Localize Settings_ConfigureLogin}" Command="{Binding ConfigureLoginCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_ConfigureLoginTooltip}"/>
-                                <Button Content="{local:Localize Settings_Install}" Command="{Binding InstallServiceCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowInstallButton}" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_InstallServiceTooltip}"/>
-
-                                <Button Content="{local:Localize Btn_Start}" Command="{Binding StartServiceCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding !IsServiceRunning}" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_StartServiceTooltip}"/>
-                                <Button Content="{local:Localize Btn_Stop}" Command="{Binding StopServiceCommand}" Background="{DynamicResource SystemWarningBrush}" Foreground="#1A1A1A" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="Bold" IsVisible="{Binding ShowStartStopButtons}" IsEnabled="{Binding IsServiceRunning}" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_StopServiceTooltip}"/>
-                                <Button Content="{local:Localize Settings_Uninstall}" Command="{Binding UninstallServiceCommand}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource SystemErrorBrush}" Padding="14,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding ShowStartStopButtons}" Cursor="Hand" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" ToolTip.Tip="{local:Localize Settings_UninstallServiceTooltip}"/>
-                            </StackPanel>
-
-                            <!-- Credential configuration panel -->
-                            <Border IsVisible="{Binding IsCredentialPanelOpen}" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <StackPanel Spacing="16">
-                                    <TextBlock Text="{local:Localize Settings_ServiceLogin}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="{local:Localize Settings_Username}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                        <TextBox Text="{Binding ServiceUsername}" Watermark="{local:Localize Settings_UsernameWatermark}" Classes="modern"/>
-                                        <TextBlock Text="{local:Localize Settings_UsernameHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="{local:Localize Settings_Password}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                        <TextBox PasswordChar="●" Text="{Binding ServicePassword}" Watermark="{local:Localize Settings_PasswordWatermark}" Classes="modern"/>
-                                    </StackPanel>
-                                    <Button Content="{local:Localize Btn_Apply}" Command="{Binding ApplyLoginCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="20,10" CornerRadius="8" FontSize="13" FontWeight="Bold" HorizontalAlignment="Right" IsVisible="{Binding IsServiceInstalled}" Cursor="Hand"/>
-                                </StackPanel>
-                            </Border>
-
-                            <TextBlock Text="{local:Localize Settings_ServiceDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" FontStyle="Italic" TextWrapping="Wrap" Opacity="0.7"/>
-                        </StackPanel>
-                    </Border>
-
                     <!-- ═══ Connection Section ═══ -->
                     <Border Classes="glass-card" Padding="24">
                         <StackPanel Spacing="20">
