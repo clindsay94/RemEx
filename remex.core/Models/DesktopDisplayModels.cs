@@ -26,6 +26,13 @@ public sealed record DesktopClientCapabilities
 
     [JsonPropertyName("supportsCursorShape")]
     public bool SupportsCursorShape { get; init; }
+
+    // RD-E: client can receive cursor POSITION as a binary "RDXC" packet over the desktop binary channel
+    // instead of a JSON desktop_cursor_state message (cuts GC churn at 60–90 Hz). Position only; the cursor
+    // shape still arrives as JSON. Default false keeps older hosts/clients on the JSON path. See
+    // DesktopCursorBinaryEnvelope.
+    [JsonPropertyName("supportsBinaryCursor")]
+    public bool SupportsBinaryCursor { get; init; }
 }
 
 public sealed record DesktopDisplayInfo

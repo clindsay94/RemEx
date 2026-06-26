@@ -291,11 +291,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var frameAvailable = new SemaphoreSlim(0);
         var captureStopwatch = new Stopwatch();
-        // Absolute-timeline frame pacer. Tracks the expected wall-clock time of the next
-        // frame start so that per-frame overruns shorten the following sleep rather than
-        // accumulating as drift. Reset after the failure-backoff so we don't burst on recovery.
-        var loopTimer = Stopwatch.StartNew();
-        double nextFrameTargetMs = 0;
+        // Absolute-timeline frame pacer (hybrid coarse-sleep + spin). See PrecisionPacer: a bare
+        // Task.Delay rounds up to the ~15.6 ms OS timer floor and would cap the stream near 60 FPS.
+        var pacer = new PrecisionPacer();
+        // Monotonic clock for the keyframe-reinit cooldown timestamps below (independent of pacing).
+        var rebuildClock = Stopwatch.StartNew();
 
         // Track consecutive failures to report capture failure to client
         int consecutiveFailures = 0;
@@ -341,7 +341,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     consecutiveFailures = 0;
                     errorReported = false;
-                    nextFrameTargetMs = loopTimer.Elapsed.TotalMilliseconds;
+                    pacer.Reset();
                     try { await Task.Delay(500, ct); }
                     catch (OperationCanceledException) { break; }
                     continue;
@@ -367,7 +367,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         // request that arrives inside the cooldown is swallowed (the decoder re-requests
                         // if it is still desynced; the first request after the cooldown is honored). This
                         // breaks the reinit storm that otherwise pins the stream at ~2 FPS / black.
-                        if (loopTimer.Elapsed.TotalMilliseconds - lastEncoderRebuildMs >= keyframeReinitCooldownMs)
+                        if (rebuildClock.Elapsed.TotalMilliseconds - lastEncoderRebuildMs >= keyframeReinitCooldownMs)
                         {
                             encoderSerial = -1;
                         }
@@ -385,7 +385,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                     {
                         // Any rebuild (target switch, config change, or on-demand keyframe) emits a fresh
                         // IDR, so it also satisfies the keyframe cooldown window above.
-                        lastEncoderRebuildMs = loopTimer.Elapsed.TotalMilliseconds;
+                        lastEncoderRebuildMs = rebuildClock.Elapsed.TotalMilliseconds;
                         // Name the trigger so a reinit storm is diagnosable from the log: encoderSerial==-1
                         // means an on-demand keyframe forced it; a differing real serial is a target switch;
                         // otherwise an encoder-affecting config change (quality/fps/scale).
@@ -548,39 +548,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                 if (consecutiveFailures >= 5)
                 {
                     // Reset the absolute timeline so the loop doesn't burst through a backlog
-                    // of "missed" ticks when capture recovers. The coarse backoff doesn't need
-                    // precise pacing, so a plain Task.Delay is fine here.
-                    nextFrameTargetMs = loopTimer.Elapsed.TotalMilliseconds;
+                    // of "missed" ticks when capture recovers.
+                    pacer.Reset();
                     try { await Task.Delay(500, ct); }
                     catch (OperationCanceledException) { break; }
                 }
                 else
                 {
-                    nextFrameTargetMs += 1000.0 / _targetFps;
-
-                    // Hybrid precision wait. A bare Task.Delay rounds up to the OS timer
-                    // resolution (~15.6ms on Windows): an 8.33ms wait (120 FPS) oversleeps to
-                    // ~15.6ms, which caps the stream near 60 FPS. Coarse-sleep the bulk of the
-                    // interval via Task.Delay, then busy-spin the final few ms with SpinWait for
-                    // sub-millisecond pacing. This is fully localized — no global timer changes
-                    // (timeBeginPeriod) — so it carries to Linux pacing too.
-                    const double spinMarginMs = 16.0;
-                    double remainingMs = nextFrameTargetMs - loopTimer.Elapsed.TotalMilliseconds;
-                    if (remainingMs > spinMarginMs)
-                    {
-                        try { await Task.Delay((int)(remainingMs - spinMarginMs), ct); }
-                        catch (OperationCanceledException) { break; }
-                    }
-
-                    // SpinWait avoids both the OS sleep floor and a hot 100% loop; the token
-                    // check keeps shutdown deadlock-free. If we're already past target (loop
-                    // overran), the condition is false and we proceed immediately.
-                    while (!ct.IsCancellationRequested
-                           && loopTimer.Elapsed.TotalMilliseconds < nextFrameTargetMs)
-                    {
-                        Thread.SpinWait(64);
-                    }
-                    if (ct.IsCancellationRequested) break;
+                    // Hybrid precision wait — see PrecisionPacer (do NOT replace with a bare
+                    // Task.Delay; that caps the stream near 60 FPS via the ~15.6 ms OS timer floor).
+                    if (!await pacer.WaitForNextTickAsync(1000.0 / _targetFps, ct)) break;
                 }
             }
         }, ct);
@@ -744,6 +721,10 @@ public sealed class RemoteDesktopHandler : IDisposable
         var (lastX, lastY) = _inputSimulation.GetCursorPosition();
         var lastShapeSerial = sessionState.GetCurrentCursorShape()?.ShapeSerial ?? 0;
         var tick = 0;
+        // ~90 Hz cursor pacing via the shared precision pacer. Task.Delay(11) rounds up to the
+        // ~15.6 ms OS timer floor (~64 Hz, missing the 90 Hz target) — see PrecisionPacer. (RD-A)
+        var pacer = new PrecisionPacer();
+        const double cursorIntervalMs = 1000.0 / 90.0;
 
         try
         {
@@ -794,7 +775,8 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                 tick++;
                 // ~90 Hz cursor position for smooth tracking (shape + clip throttled to ~10 Hz above).
-                await Task.Delay(11, ct);
+                // Precise pacing (not Task.Delay) — Task.Delay(11) oversleeps to ~15.6 ms / ~64 Hz.
+                if (!await pacer.WaitForNextTickAsync(cursorIntervalMs, ct)) break;
             }
         }
         catch (OperationCanceledException) { /* graceful shutdown */ }
@@ -1150,7 +1132,12 @@ public sealed class RemoteDesktopHandler : IDisposable
             }
         }, sendLock, ct);
 
-        if (sessionState.UseCursorState)
+        if (sessionState.UseBinaryCursor)
+        {
+            var bootShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: true, ct);
+            await SendCursorBinaryAsync(webSocket, sessionState, cursorX, cursorY, bootShape, sendLock, ct);
+        }
+        else if (sessionState.UseCursorState)
         {
             var currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: true, ct);
             await SendCursorStateAsync(webSocket, sessionState, cursorX, cursorY, currentShape, sendLock, ct);
@@ -1165,6 +1152,16 @@ public sealed class RemoteDesktopHandler : IDisposable
         SemaphoreSlim sendLock,
         CancellationToken ct)
     {
+        if (sessionState.UseBinaryCursor)
+        {
+            // RD-E hot path: pack the position into a 32-byte binary packet (no JSON/GC). Shape stays JSON.
+            var binShape = sessionState.UseCursorShape
+                ? await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct)
+                : null;
+            await SendCursorBinaryAsync(webSocket, sessionState, cursorX, cursorY, binShape, sendLock, ct);
+            return;
+        }
+
         if (sessionState.UseCursorState)
         {
             var currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
@@ -1197,6 +1194,25 @@ public sealed class RemoteDesktopHandler : IDisposable
                 StreamSerial = sessionState.StreamSerial,
             }
         }, sendLock, ct);
+    }
+
+    private async Task SendCursorBinaryAsync(
+        WebSocket webSocket,
+        DesktopSessionState sessionState,
+        int cursorX,
+        int cursorY,
+        DesktopCursorShape? currentShape,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
+    {
+        var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
+        bool visible = IsCursorInRegion(cursorX, cursorY, screenWidth, screenHeight, desktopLeft, desktopTop);
+        // RD-E: 32-byte binary position packet over the desktop binary channel (no JSON/GC). The shape
+        // itself is still delivered as JSON; we only carry its serial so the client shows the right cached
+        // bitmap. Demuxed from H.264 frames by the "RDXC" magic. See DesktopCursorBinaryEnvelope.
+        var payload = DesktopCursorBinaryEnvelope.Write(
+            cursorX, cursorY, visible, currentShape?.ShapeSerial ?? 0, sessionState.StreamSerial);
+        await SendBinaryAsync(webSocket, payload, sendLock, ct);
     }
 
     /// <summary>
@@ -1382,7 +1398,10 @@ public sealed class RemoteDesktopHandler : IDisposable
         // NaN/±Infinity or wildly out of range. Clamp against the active stream pixel bounds before
         // any (int) cast so a hostile sample cannot wrap into an arbitrary MoveMouse coordinate
         // (RD-8 / RemEx-q6u). GetScreenSize() reads cached DXGI dimensions, so this is cheap.
-        var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
+        // RD-D: capture desktopLeft/desktopTop too — a monitor left of/above primary has a NEGATIVE
+        // origin, so clamp to [origin, origin+size), not [0, size). Flooring at 0 stranded the cursor
+        // at the left edge and made the second (left) display unreachable via S-Pen hover.
+        var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
 
         switch (sample.Phase)
         {
@@ -1408,8 +1427,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                     input = new InputEvent
                     {
                         EventType = InputEventTypes.MouseMove,
-                        X = CoordinateValidation.ClampAbsolute(sample.LogicalX, screenWidth),
-                        Y = CoordinateValidation.ClampAbsolute(sample.LogicalY, screenHeight),
+                        X = CoordinateValidation.ClampToRange(sample.LogicalX, desktopLeft, desktopLeft + screenWidth),
+                        Y = CoordinateValidation.ClampToRange(sample.LogicalY, desktopTop, desktopTop + screenHeight),
                     };
                 }
                 break;
@@ -1422,8 +1441,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     EventType = InputEventTypes.MouseDown,
                     Button = 0,
-                    X = CoordinateValidation.ClampAbsolute(sample.LogicalX, screenWidth),
-                    Y = CoordinateValidation.ClampAbsolute(sample.LogicalY, screenHeight),
+                    X = CoordinateValidation.ClampToRange(sample.LogicalX, desktopLeft, desktopLeft + screenWidth),
+                    Y = CoordinateValidation.ClampToRange(sample.LogicalY, desktopTop, desktopTop + screenHeight),
                 };
                 break;
 
@@ -1565,6 +1584,9 @@ public sealed class RemoteDesktopHandler : IDisposable
         public bool SupportsTargetSwitch => Capabilities.SupportsTargetSwitch && Capabilities.SupportsFrameEnvelope;
 
         public bool UseCursorState => Capabilities.SupportsCursorState;
+
+        // RD-E: binary cursor-position packets ("RDXC") instead of JSON desktop_cursor_state.
+        public bool UseBinaryCursor => Capabilities.SupportsBinaryCursor;
 
         public bool UseCursorShape => Capabilities.SupportsCursorShape;
 

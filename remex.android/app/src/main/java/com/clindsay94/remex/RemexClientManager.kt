@@ -63,6 +63,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _desktopCursorState = MutableSharedFlow<String>(replay = 1)
     val desktopCursorState = _desktopCursorState.asSharedFlow()
 
+    // RD-E: raw binary "RDXC" cursor-position packets. replay=1 so a late collector gets the last position.
+    private val _desktopCursorBinary = MutableSharedFlow<ByteArray>(replay = 1)
+    val desktopCursorBinary = _desktopCursorBinary.asSharedFlow()
+
     private val _desktopCursorShape = MutableSharedFlow<String>(replay = 1)
     val desktopCursorShape = _desktopCursorShape.asSharedFlow()
 
@@ -458,6 +462,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onDesktopCursorState(stateJson: String?) {
         stateJson?.let { _desktopCursorState.tryEmit(it) }
+    }
+
+    override fun onDesktopCursorBinary(packet: ByteArray?) {
+        packet?.let { _desktopCursorBinary.tryEmit(it) }
     }
 
     override fun onDesktopCursorShape(shapeJson: String?) {

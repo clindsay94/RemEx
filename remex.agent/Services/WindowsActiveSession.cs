@@ -225,6 +225,19 @@ internal static class WindowsActiveSession
         if (!TryGetTokenElevationType(filteredToken, out int elevationType)
             || elevationType != TokenElevationTypeLimited)
         {
+            // RD-F (UIPI diagnosis): log WHY no linked elevated token is used. TokenElevationType
+            // 1=Default (UAC off / non-admin → no split token), 2=Full (already elevated), 3=Limited
+            // (split-token admin — the only case with a linked HIGH token). If input to admin windows is
+            // blocked and this logs type=1 while the signed-in user IS an admin, UAC Admin Approval Mode
+            // is likely off (everything runs at one integrity, so a service-launched medium host cannot
+            // drive an elevated window). type=2 means the host should already be HIGH — then check for a
+            // competing MEDIUM-integrity host instance (e.g. a leftover HKCU\...\Run entry) winning the
+            // single-instance guard. See docs/REMOTE_DESKTOP_PERFORMANCE.md.
+            logger?.LogInformation(
+                "Session guard: no linked elevated token (TokenElevationType={ElevationType}); launching the " +
+                "interactive host at the user's default integrity. Input to elevated (admin) foreground " +
+                "windows will be blocked by Windows UIPI unless that default is already HIGH.",
+                elevationType);
             return IntPtr.Zero;
         }
 

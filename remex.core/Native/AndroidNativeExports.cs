@@ -132,6 +132,8 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopDisplayCatalogMethodId;
     private static IntPtr _onDesktopCursorStateMethodId;
     private static IntPtr _onDesktopCursorShapeMethodId;
+    // RD-E: byte[] callback carrying the raw 32-byte "RDXC" cursor-position packet (parsed in Kotlin).
+    private static IntPtr _onDesktopCursorBinaryMethodId;
 
     private static IWakeOnLanService _wakeOnLanService = new WakeOnLanService();
     private static TelemetryPayload? _cachedTelemetry;
@@ -166,6 +168,7 @@ public static class AndroidNativeExports
         RemexDesktopClient.Current.StreamDescriptorReceived += OnNativeDesktopStreamDescriptor;
         RemexDesktopClient.Current.DisplayCatalogReceived += OnNativeDisplayCatalogReceived;
         RemexDesktopClient.Current.CursorStateReceived += OnNativeCursorStateReceived;
+        RemexDesktopClient.Current.CursorBinaryReceived += OnNativeCursorBinaryReceived;
         RemexDesktopClient.Current.CursorShapeReceived += OnNativeCursorShapeReceived;
 
         EnsureOutboundSendLoopStarted();
@@ -211,6 +214,7 @@ public static class AndroidNativeExports
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
         _onDesktopDisplayCatalogMethodId = IntPtr.Zero;
         _onDesktopCursorStateMethodId = IntPtr.Zero;
+        _onDesktopCursorBinaryMethodId = IntPtr.Zero;
         _onDesktopCursorShapeMethodId = IntPtr.Zero;
     }
 
@@ -304,6 +308,7 @@ public static class AndroidNativeExports
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
                 var onDesktopDisplayCatalogMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopDisplayCatalog", "(Ljava/lang/String;)V");
                 var onDesktopCursorStateMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorState", "(Ljava/lang/String;)V");
+                var onDesktopCursorBinaryMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorBinary", "([B)V");
                 var onDesktopCursorShapeMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorShape", "(Ljava/lang/String;)V");
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
@@ -320,6 +325,7 @@ public static class AndroidNativeExports
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
                     || onDesktopDisplayCatalogMethodId == IntPtr.Zero
                     || onDesktopCursorStateMethodId == IntPtr.Zero
+                    || onDesktopCursorBinaryMethodId == IntPtr.Zero
                     || onDesktopCursorShapeMethodId == IntPtr.Zero)
                 {
                     return;
@@ -341,6 +347,7 @@ public static class AndroidNativeExports
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
                 _onDesktopDisplayCatalogMethodId = onDesktopDisplayCatalogMethodId;
                 _onDesktopCursorStateMethodId = onDesktopCursorStateMethodId;
+                _onDesktopCursorBinaryMethodId = onDesktopCursorBinaryMethodId;
                 _onDesktopCursorShapeMethodId = onDesktopCursorShapeMethodId;
                 registrationSucceeded = true;
 
@@ -1033,29 +1040,37 @@ public static class AndroidNativeExports
     }
 
     private static void NotifyJavaFrame(byte[] frame)
+        => NotifyJavaByteArray(_onFrameReceivedMethodId, frame);
+
+    // RD-E: forward the raw 32-byte "RDXC" cursor-position packet to Java as a byte[] (parsed in Kotlin
+    // with ByteBuffer). Reuses the byte-array JNI path — no JSON string, no JSONObject on the hot path.
+    private static void OnNativeCursorBinaryReceived(byte[] packet)
+        => NotifyJavaByteArray(_onDesktopCursorBinaryMethodId, packet);
+
+    // Shared byte[] -> Java callback dispatch, used by both H.264 frames and the binary cursor packet.
+    private static void NotifyJavaByteArray(IntPtr targetMethodId, byte[] data)
     {
         lock (SyncRoot)
         {
-            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || _onFrameReceivedMethodId == IntPtr.Zero) return;
+            if (_javaVm == IntPtr.Zero || _callbackGlobalRef == IntPtr.Zero || targetMethodId == IntPtr.Zero) return;
         }
 
-        // The captured `frame` is a fresh per-frame array (RemexDesktopClient raises
-        // FrameReceived with ms.ToArray()), so holding the reference across the async
-        // hand-off is safe. INVARIANT: if that producer is ever changed to pool/reuse
-        // buffers, this MUST copy before enqueuing or the Java side will read torn frames.
+        // The captured `data` is a fresh per-message array (RemexDesktopClient raises FrameReceived /
+        // CursorBinaryReceived with ms.ToArray()), so holding the reference across the async hand-off is
+        // safe. INVARIANT: if that producer is ever changed to pool/reuse buffers, this MUST copy before
+        // enqueuing or the Java side will read torn data.
         PostToJavaThread(env =>
         {
-            // Re-read under lock at execution time: the global ref may have been replaced
-            // (and the old one deleted) between enqueue and dispatch.
-            IntPtr callback, methodId;
+            // Re-read the global ref under lock at execution time: it may have been replaced (and the old
+            // one deleted) between enqueue and dispatch. The method id is stable for a given method.
+            IntPtr callback;
             lock (SyncRoot)
             {
                 callback = _callbackGlobalRef;
-                methodId = _onFrameReceivedMethodId;
             }
-            if (callback == IntPtr.Zero || methodId == IntPtr.Zero) return;
+            if (callback == IntPtr.Zero || targetMethodId == IntPtr.Zero) return;
 
-            IntPtr jArray = JniHelper.NewByteArray(env, frame.Length);
+            IntPtr jArray = JniHelper.NewByteArray(env, data.Length);
             if (jArray == IntPtr.Zero)
             {
                 // Allocation failed — likely a pending OutOfMemoryError. The dispatcher reuses one
@@ -1067,8 +1082,8 @@ public static class AndroidNativeExports
 
             try
             {
-                JniHelper.SetByteArrayRegion(env, jArray, 0, frame.Length, frame);
-                JniHelper.CallVoidMethod(env, callback, methodId, jArray);
+                JniHelper.SetByteArrayRegion(env, jArray, 0, data.Length, data);
+                JniHelper.CallVoidMethod(env, callback, targetMethodId, jArray);
                 if (JniHelper.ExceptionCheck(env))
                 {
                     JniHelper.ExceptionClear(env);

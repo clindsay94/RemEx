@@ -645,17 +645,21 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
     // the buffer matches what the H.264 encoder was started with. Mirrors DxgiDesktopCapture.EncodeToRawBgra.
     private static byte[] EncodeToRawBgra(IntPtr pixelData, int rowPitch, int width, int height, double scale)
     {
+        // RD-C fast path: when no resample is needed, copy the mapped surface directly — no System.Drawing,
+        // no GDI+ blit, no intermediate Bitmap. The old per-frame GDI+ path is what capped the stream near
+        // 30 FPS (not the hardware NVENC encoder). See BgraFrameConverter / docs/REMOTE_DESKTOP_PERFORMANCE.md.
+        var fast = BgraFrameConverter.TryConvertNoScale(pixelData, rowPitch, width, height, scale);
+        if (fast is not null)
+        {
+            return fast;
+        }
+
+        // Downscale path: keep GDI+'s native bilinear resampler (a scalar managed bilinear would be slower).
         int sw = CaptureScaling.ScaledEven(width, scale);
         int sh = CaptureScaling.ScaledEven(height, scale);
 
         // Wrap the mapped GPU memory as a read-only Bitmap. We must not draw into this surface (mapped READ).
         using var src = new Bitmap(width, height, rowPitch, PixelFormat.Format32bppArgb, pixelData);
-
-        if (sw == width && sh == height)
-        {
-            return GetRawBgraBytes(src);
-        }
-
         using var scaled = new Bitmap(sw, sh, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(scaled))
         {

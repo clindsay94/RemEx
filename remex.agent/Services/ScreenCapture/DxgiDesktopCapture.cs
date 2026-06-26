@@ -527,6 +527,18 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private static byte[] EncodeToRawBgra(IntPtr pixelData, int rowPitch, int width, int height,
         double scale, bool drawCursor, int originX, int originY)
     {
+        // RD-C fast path: no cursor compositing AND no resample → direct row-wise copy, skipping the GDI+
+        // blit + intermediate Bitmaps that capped the stream near 30 FPS. See BgraFrameConverter /
+        // docs/REMOTE_DESKTOP_PERFORMANCE.md. (With a separate cursor overlay, drawCursor is normally false.)
+        if (!drawCursor)
+        {
+            var fast = BgraFrameConverter.TryConvertNoScale(pixelData, rowPitch, width, height, scale);
+            if (fast is not null)
+            {
+                return fast;
+            }
+        }
+
         using var src = new Bitmap(width, height, rowPitch, PixelFormat.Format32bppArgb, pixelData);
         using var writable = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(writable))

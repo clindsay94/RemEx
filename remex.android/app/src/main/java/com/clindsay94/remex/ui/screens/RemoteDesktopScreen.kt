@@ -400,6 +400,8 @@ fun RemoteDesktopScreenContent(
         var zoomFactor by remember { mutableFloatStateOf(1f) }
         var panOffsetX by remember { mutableFloatStateOf(0f) }
         var panOffsetY by remember { mutableFloatStateOf(0f) }
+        // RD-A3: whether the one-time fit-to-height framing has been applied for the current stream.
+        var didInitialFit by remember { mutableStateOf(false) }
         // While the user is manually panning/pinching, suppress cursor pan-follow so the two do
         // not fight. Set to now+cooldown on every manual pan write; pan-follow skips until then.
         var suppressPanFollowUntilMs by remember { mutableLongStateOf(0L) }
@@ -604,7 +606,10 @@ fun RemoteDesktopScreenContent(
             // This epsilon is load-bearing: when the host cursor sits past the max-pan clamp,
             // compute() returns the same clamped target every tick; this skip prevents the
             // animation from restarting forever. Do not remove.
-            if (abs(targetX - panOffsetX) < 0.5f && abs(targetY - panOffsetY) < 0.5f) {
+            // RD-A2: density-scaled (was a hardcoded 0.5f → sub-pixel on high-DPI panels, causing jitter
+            // at high zoom). ~0.75dp is a stable deadband across densities.
+            val panFollowEpsilonPx = with(density) { 0.75.dp.toPx() }
+            if (abs(targetX - panOffsetX) < panFollowEpsilonPx && abs(targetY - panOffsetY) < panFollowEpsilonPx) {
                 return@LaunchedEffect
             }
             val startX = panOffsetX
@@ -613,6 +618,29 @@ fun RemoteDesktopScreenContent(
                 panOffsetX = startX + (targetX - startX) * t
                 panOffsetY = startY + (targetY - startY) * t
             }
+        }
+
+        // RD-A3: on stream start, frame the host so it FILLS the phone's height. The old flat 1x letterboxed
+        // a wide host into a tiny strip; fit-to-height fills the vertical space and lets the user pan
+        // sideways. Runs once per stream (didInitialFit); manual pinch/pan afterward is preserved.
+        LaunchedEffect(uiState.isStreaming, imageSize, streamPixelWidth, streamPixelHeight) {
+            if (!uiState.isStreaming) {
+                didInitialFit = false
+                return@LaunchedEffect
+            }
+            if (didInitialFit) return@LaunchedEffect
+            if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
+            // Wait for the real stream dimensions so we fit the actual host aspect, not a placeholder.
+            if (streamPixelWidth <= 0 || streamPixelHeight <= 0) return@LaunchedEffect
+            val rect = contentRect()
+            if (rect.h <= 0f) return@LaunchedEffect
+            // Fill height: scale the fitted content so its height equals the viewport height. ≈1 (no-op)
+            // when the content already fills height (e.g. a 16:9 host in landscape); >1 for a wide host
+            // (content overflows horizontally → pan sideways).
+            zoomFactor = (imageSize.height / rect.h).coerceIn(1f, 5f)
+            panOffsetX = 0f
+            panOffsetY = 0f
+            didInitialFit = true
         }
 
         Scaffold(
@@ -1937,21 +1965,21 @@ fun RemoteDesktopScreenContent(
                                         // where they're pointing. Uses the same content rect as input
                                         // mapping, so the arrow, the video, and where clicks land all
                                         // agree. hostCursorX/Y are host-desktop coords; -1 = none yet.
-                                        val cursorLocal =
-                                                if (uiState.isStreaming && uiState.hostCursorVisible) {
-                                                        // Use the smoothed (animated) host position so
-                                                        // the overlay glides instead of stepping.
-                                                        mapHostToLocal(
-                                                                animatedCursorX.value,
-                                                                animatedCursorY.value
-                                                        )
-                                                } else {
-                                                        null
-                                                }
+                                        // RD-B: gate the overlay on visibility in COMPOSITION (changes rarely),
+                                        // but read the ANIMATED cursor position + pan/zoom inside the Canvas DRAW
+                                        // scope below, so the per-frame cursor animation invalidates only the draw
+                                        // phase (redraw), not composition. Reading animatedCursorX.value here in
+                                        // composition forced a full recompose every animation frame.
+                                        val cursorOverlayActive = uiState.isStreaming && uiState.hostCursorVisible
 
-                                        if (cursorLocal != null) {
+                                        if (cursorOverlayActive) {
                                                 val cursorBmp = uiState.cursorBitmap
                                                 Canvas(modifier = Modifier.fillMaxSize()) {
+                                                        // Smoothed (animated) host position, read in the DRAW phase (RD-B).
+                                                        val cursorLocal = mapHostToLocal(
+                                                                animatedCursorX.value,
+                                                                animatedCursorY.value
+                                                        ) ?: return@Canvas
                                                         if (cursorBmp != null) {
                                                                 // Draw the true native cursor bitmap (BGRA from the host) with
                                                                 // its hotspot at the mapped position. Scale it the same way the

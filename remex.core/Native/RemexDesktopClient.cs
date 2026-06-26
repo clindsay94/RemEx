@@ -24,6 +24,11 @@ public sealed class RemexDesktopClient : IDisposable
     private bool _isStreaming;
 
     public event Action<byte[]>? FrameReceived;
+
+    // RD-E: raised with the raw 32-byte "RDXC" cursor-position packet (demuxed from the binary channel).
+    // Carries the packet bytes unparsed so the Android JNI layer forwards them as a byte[] and Kotlin parses
+    // with ByteBuffer — no JSON string, no JSONObject on the 60–90 Hz hot path. See DesktopCursorBinaryEnvelope.
+    public event Action<byte[]>? CursorBinaryReceived;
     public event Action<DesktopMeta>? MetaReceived;
     public event Action<string>? ErrorReceived;
     public event Action<DesktopWindowResult>? WindowResultReceived;
@@ -342,7 +347,18 @@ public sealed class RemexDesktopClient : IDisposable
 
                 if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    FrameReceived?.Invoke(ms.ToArray());
+                    var bytes = ms.ToArray();
+                    // RD-E: cursor-position packets ("RDXC") share the binary channel with H.264 frames.
+                    // Demux by magic — H.264 (raw NAL 00 00 00 01 or the "RDXF" frame envelope) never starts
+                    // with "RDXC", so this is unambiguous regardless of frame-envelope use.
+                    if (DesktopCursorBinaryEnvelope.HasMagic(bytes))
+                    {
+                        CursorBinaryReceived?.Invoke(bytes);
+                    }
+                    else
+                    {
+                        FrameReceived?.Invoke(bytes);
+                    }
                 }
                 else if (result.MessageType == WebSocketMessageType.Text)
                 {

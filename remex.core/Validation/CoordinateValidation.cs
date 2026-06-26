@@ -29,6 +29,27 @@ public static class CoordinateValidation
     }
 
     /// <summary>
+    /// Clamps an absolute coordinate to <c>[minInclusive, maxExclusive - 1]</c>. Unlike
+    /// <see cref="ClampAbsolute(float,int)"/> this supports a non-zero — possibly NEGATIVE — origin, so
+    /// a monitor positioned left of / above the primary (which has negative virtual-desktop
+    /// coordinates) stays reachable. A non-finite value (NaN/±Infinity) or an empty range maps to
+    /// <paramref name="minInclusive"/> (a safe in-range default).
+    ///
+    /// REGRESSION GUARD (RD-D): negative virtual-desktop coordinates are VALID. Do not "simplify" this
+    /// back to a 0-floored clamp — that silently strands the cursor at x=0 and makes left/top monitors
+    /// unreachable. See docs/REMOTE_DESKTOP_PERFORMANCE.md.
+    /// </summary>
+    public static int ClampToRange(float value, int minInclusive, int maxExclusive)
+    {
+        if (!float.IsFinite(value) || maxExclusive <= minInclusive)
+        {
+            return minInclusive;
+        }
+
+        return (int)Math.Clamp(value, minInclusive, maxExclusive - 1);
+    }
+
+    /// <summary>
     /// Clamps a relative delta to <c>[-maxMagnitude, maxMagnitude]</c>. A non-finite value maps to
     /// <c>0</c> (no movement). A negative <paramref name="maxMagnitude"/> is treated as <c>0</c>.
     /// </summary>

@@ -426,6 +426,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
 
         viewModelScope.launch {
+            RemexClientManager.desktopCursorBinary.collect { packet ->
+                handleCursorBinary(packet)
+            }
+        }
+
+        viewModelScope.launch {
             RemexClientManager.desktopErrors.collect { errorText ->
                 Log.e(TAG, "Desktop stream error: $errorText")
                 _desktopError.value = localizeDesktopError(errorText)
@@ -1161,6 +1167,37 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * RD-E: parse the 32-byte binary "RDXC" cursor-position packet (little-endian) with zero
+     * JSONObject/String allocation on the 60–90 Hz hot path. Layout: magic[4] version[1] flags[1]
+     * reserved[2] X[int32] Y[int32] shapeSerial[int64] streamSerial[int64]. Mirrors handleCursorState.
+     */
+    private fun handleCursorBinary(packet: ByteArray) {
+        if (packet.size < 32) return
+        try {
+            val buf = java.nio.ByteBuffer.wrap(packet).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            val visible = (buf.get(5).toInt() and 0x1) != 0
+            val x = buf.getInt(8)
+            val y = buf.getInt(12)
+            val shapeSerial = buf.getLong(16)
+            _hostCursorVisible.value = visible
+            if (visible) {
+                _hostCursorX.value = x.toFloat()
+                _hostCursorY.value = y.toFloat()
+            }
+            activeCursorShapeSerial = shapeSerial
+            // Swap in the cached shape for this serial if present; the shape collector swaps it in later
+            // when the matching desktop_cursor_shape (still JSON) arrives.
+            cursorShapeCache[shapeSerial]?.let { entry ->
+                _cursorShapeBitmap.value = entry.bitmap
+                _cursorHotspotX.value = entry.hotspotX
+                _cursorHotspotY.value = entry.hotspotY
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse binary cursor packet", e)
+        }
+    }
+
     private fun persistDesktopDefaults() {
         viewModelScope.launch {
             settingsManager.saveRemoteDesktopDefaults(
@@ -1204,6 +1241,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                             put("supportsTargetSwitch", false)
                             put("supportsCursorState", true)
                             put("supportsCursorShape", true)
+                            // RD-E: receive cursor position as a binary packet (no JSON/GC at 60–90 Hz).
+                            put("supportsBinaryCursor", true)
                         }
                 )
                 put("captureMode", option.captureMode)

@@ -30,6 +30,8 @@ object RemexCoreClient {
         fun onDesktopStreamDescriptor(descriptor: String?)
         fun onDesktopDisplayCatalog(catalogJson: String?)
         fun onDesktopCursorState(stateJson: String?)
+        // RD-E: raw 32-byte "RDXC" cursor-position packet (parsed with ByteBuffer; no JSON/JSONObject).
+        fun onDesktopCursorBinary(packet: ByteArray?)
         fun onDesktopCursorShape(shapeJson: String?)
         fun onFileTransferMessage(json: String?)
         fun onConnectionError(reason: String?)
