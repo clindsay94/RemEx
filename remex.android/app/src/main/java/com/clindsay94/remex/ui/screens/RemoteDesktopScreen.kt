@@ -44,7 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
+
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
@@ -61,6 +61,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -440,8 +441,9 @@ fun RemoteDesktopScreenContent(
 
         // Keyboard support
         val focusRequester = remember { FocusRequester() }
+        val keyboardController = LocalSoftwareKeyboardController.current
         var textValue by remember { mutableStateOf(TextFieldValue("")) }
-        var isRemoteKeyboardOpen by remember { mutableStateOf(false) }
+        val isRemoteKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
         // Inertia job reference (cancelled on new touch)
         var inertiaJob by remember { mutableStateOf<Job?>(null) }
@@ -662,8 +664,12 @@ fun RemoteDesktopScreenContent(
                                                 IconButton(
                                                         onClick = {
                                                                 try {
-                                                                        focusRequester
-                                                                                .requestFocus()
+                                                                        if (!isRemoteKeyboardOpen) {
+                                                                                focusRequester.requestFocus()
+                                                                                keyboardController?.show()
+                                                                        } else {
+                                                                                keyboardController?.hide()
+                                                                        }
                                                                 } catch (_: Exception) {}
                                                         }
                                                 ) {
@@ -805,9 +811,6 @@ fun RemoteDesktopScreenContent(
                                         Modifier.size(1.dp)
                                                 .graphicsLayer { alpha = 0f }
                                                 .focusRequester(focusRequester)
-                                                .onFocusChanged {
-                                                        isRemoteKeyboardOpen = it.isFocused
-                                                }
                         )
 
                         Box(
@@ -2544,11 +2547,14 @@ fun RemoteDesktopScreenContent(
                                                                         // Left Click
                                                                         FilledTonalButton(
                                                                                 onClick = {
-                                                                                        onSendMouseAbsoluteClick(
-                                                                                                0,
-                                                                                                -1,
-                                                                                                -1
-                                                                                        )
+                                                                                        val host = mapLocalToHost(Offset(cursorX, cursorY))
+                                                                                        if (host != null) {
+                                                                                                onSendMouseAbsoluteClick(
+                                                                                                        0,
+                                                                                                        host.x.roundToInt(),
+                                                                                                        host.y.roundToInt()
+                                                                                                )
+                                                                                        }
                                                                                         showControlsWithTimer()
                                                                                 },
                                                                                 modifier =
@@ -2581,11 +2587,14 @@ fun RemoteDesktopScreenContent(
                                                                         // Middle Click
                                                                         FilledTonalButton(
                                                                                 onClick = {
-                                                                                        onSendMouseAbsoluteClick(
-                                                                                                1,
-                                                                                                -1,
-                                                                                                -1
-                                                                                        )
+                                                                                        val host = mapLocalToHost(Offset(cursorX, cursorY))
+                                                                                        if (host != null) {
+                                                                                                onSendMouseAbsoluteClick(
+                                                                                                        1,
+                                                                                                        host.x.roundToInt(),
+                                                                                                        host.y.roundToInt()
+                                                                                                )
+                                                                                        }
                                                                                         showControlsWithTimer()
                                                                                 },
                                                                                 modifier =
@@ -2618,11 +2627,14 @@ fun RemoteDesktopScreenContent(
                                                                         // Right Click
                                                                         FilledTonalButton(
                                                                                 onClick = {
-                                                                                        onSendMouseAbsoluteClick(
-                                                                                                2,
-                                                                                                -1,
-                                                                                                -1
-                                                                                        )
+                                                                                        val host = mapLocalToHost(Offset(cursorX, cursorY))
+                                                                                        if (host != null) {
+                                                                                                onSendMouseAbsoluteClick(
+                                                                                                        2,
+                                                                                                        host.x.roundToInt(),
+                                                                                                        host.y.roundToInt()
+                                                                                                )
+                                                                                        }
                                                                                         showControlsWithTimer()
                                                                                 },
                                                                                 modifier =
