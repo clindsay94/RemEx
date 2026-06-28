@@ -151,6 +151,12 @@ Key new components agents must know before touching remote desktop, capture, pai
 - All capability additions are additive/gated — no `protocolVersion` bump unless breaking.
 - `"RDXF"` = frame envelope magic (opt-in via `supportsFrameEnvelope`); `"RDXC"` = binary cursor magic. Never reuse either.
 - Legacy hosts that send untagged frames: client falls back to negotiated-codec routing automatically.
+
+**Android `RemoteDesktopScreen` — key facts for agents (commit `31afdcb` and series):**
+- **Unified control bar is gone.** The L/M/R click buttons, scroll, and zoom overlays were deleted (`31afdcb`). Do not re-add them to `RemoteDesktopScreen.kt`.
+- **`RemoteDesktopUiState.streamRequested`** drives an immediate rotation to landscape on "Start" tap, before the stream is actually live. It is distinct from `isStreaming`.
+- **`lastSentAbsHost`** is the authoritative field for the last host-coordinate pointer position. Click actions (left/middle/right) must read this field, not raw pointer position, to avoid coordinate drift (RemEx-gd7).
+- **`ContentRect`** maps the actual video content area within the view box: H.264 fills the full box (stretched), MJPEG is letterboxed via `ContentScale.Fit`. Any gesture-to-host-coordinate translation must go through `ContentRect`.
 <!-- END AUTO-MANAGED -->
 
 ### MCP Tool Discipline
