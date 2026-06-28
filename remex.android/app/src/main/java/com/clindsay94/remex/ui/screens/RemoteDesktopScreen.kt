@@ -410,6 +410,7 @@ fun RemoteDesktopScreenContent(
         var suppressPanFollowUntilMs by remember { mutableLongStateOf(0L) }
         var cursorX by remember { mutableFloatStateOf(0f) }
         var cursorY by remember { mutableFloatStateOf(0f) }
+        var lastSentAbsHost by remember { mutableStateOf<Offset?>(null) }
         var imageSize by remember { mutableStateOf(IntSize.Zero) }
 
         var isStylusActive by remember { mutableStateOf(false) }
@@ -1641,6 +1642,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 it.x.toInt(),
                                                                                                                                 it.y.toInt()
                                                                                                                         )
+                                                                                                                        lastSentAbsHost = it
                                                                                                                 }
                                                                                                         } else {
                                                                                                                 // Relative (trackpad)
@@ -2547,12 +2549,12 @@ fun RemoteDesktopScreenContent(
                                                                         // Left Click
                                                                         FilledTonalButton(
                                                                                 onClick = {
-                                                                                        val host = mapLocalToHost(Offset(cursorX, cursorY))
-                                                                                        if (host != null) {
+                                                                                        val target = lastSentAbsHost ?: mapLocalToHost(Offset(cursorX, cursorY))
+                                                                                        if (target != null) {
                                                                                                 onSendMouseAbsoluteClick(
                                                                                                         0,
-                                                                                                        host.x.roundToInt(),
-                                                                                                        host.y.roundToInt()
+                                                                                                        target.x.roundToInt(),
+                                                                                                        target.y.roundToInt()
                                                                                                 )
                                                                                         }
                                                                                         showControlsWithTimer()
@@ -2587,12 +2589,12 @@ fun RemoteDesktopScreenContent(
                                                                         // Middle Click
                                                                         FilledTonalButton(
                                                                                 onClick = {
-                                                                                        val host = mapLocalToHost(Offset(cursorX, cursorY))
-                                                                                        if (host != null) {
+                                                                                        val target = lastSentAbsHost ?: mapLocalToHost(Offset(cursorX, cursorY))
+                                                                                        if (target != null) {
                                                                                                 onSendMouseAbsoluteClick(
                                                                                                         1,
-                                                                                                        host.x.roundToInt(),
-                                                                                                        host.y.roundToInt()
+                                                                                                        target.x.roundToInt(),
+                                                                                                        target.y.roundToInt()
                                                                                                 )
                                                                                         }
                                                                                         showControlsWithTimer()
@@ -2627,12 +2629,12 @@ fun RemoteDesktopScreenContent(
                                                                         // Right Click
                                                                         FilledTonalButton(
                                                                                 onClick = {
-                                                                                        val host = mapLocalToHost(Offset(cursorX, cursorY))
-                                                                                        if (host != null) {
+                                                                                        val target = lastSentAbsHost ?: mapLocalToHost(Offset(cursorX, cursorY))
+                                                                                        if (target != null) {
                                                                                                 onSendMouseAbsoluteClick(
                                                                                                         2,
-                                                                                                        host.x.roundToInt(),
-                                                                                                        host.y.roundToInt()
+                                                                                                        target.x.roundToInt(),
+                                                                                                        target.y.roundToInt()
                                                                                                 )
                                                                                         }
                                                                                         showControlsWithTimer()
