@@ -157,6 +157,7 @@ Key new components agents must know before touching remote desktop, capture, pai
 - **`RemoteDesktopUiState.streamRequested`** drives an immediate rotation to landscape on "Start" tap, before the stream is actually live. It is distinct from `isStreaming`.
 - **`lastSentAbsHost`** is the authoritative field for the last host-coordinate pointer position. Click actions (left/middle/right) must read this field, not raw pointer position, to avoid coordinate drift (RemEx-gd7).
 - **`ContentRect`** maps the actual video content area within the view box: H.264 fills the full box (stretched), MJPEG is letterboxed via `ContentScale.Fit`. Any gesture-to-host-coordinate translation must go through `ContentRect`.
+- **`lastFitKey`** (replaces former `didInitialFit` boolean) tracks which `"$displayToken/$isLandscape"` pair has received the orientation-aware initial zoom. Landscape phone → `zoomFactor = 1.0` (whole desktop visible, pinch to zoom in). Portrait phone → fit-to-height so the full host height fills the screen and the user pans L/R. Resets to `""` on stream stop; re-fires on display switch or phone rotation. `LaunchedEffect` keys on `uiState.selectedDisplayToken` so it triggers on display switch (RD-A3, commit `ad49f1d`).
 <!-- END AUTO-MANAGED -->
 
 ### MCP Tool Discipline
