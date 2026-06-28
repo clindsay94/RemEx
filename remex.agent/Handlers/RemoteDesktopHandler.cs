@@ -211,6 +211,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                         var sessionState = new DesktopSessionState(_clientCapabilities);
                         var frameBuffer = new FrameBuffer();
+                        _screenCapture.WarmUpCapture();
                         await SendCurrentStreamBootstrapAsync(webSocket, sessionState, sendLock, ct);
 
                         // Keep the signed-in session usable (unlocked) for the life of this stream when

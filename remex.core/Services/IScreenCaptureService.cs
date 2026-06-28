@@ -77,6 +77,14 @@ public interface IScreenCaptureService
     (int Width, int Height, int Left, int Top) GetScreenSize();
 
     /// <summary>
+    /// Primes the capture backend for immediate use. Call once per client connection,
+    /// before the first <see cref="GetScreenSize"/> call, so dimensions reflect live
+    /// hardware state rather than a stale fallback (RemEx-6my).
+    /// Default: no-op — backends that initialize eagerly need no warm-up.
+    /// </summary>
+    void WarmUpCapture() { }
+
+    /// <summary>
     /// Human-readable name of the active capture backend for diagnostics and DesktopMeta.
     /// Returns null when not available.
     /// </summary>

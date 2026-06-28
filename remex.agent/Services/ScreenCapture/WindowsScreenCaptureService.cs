@@ -372,6 +372,14 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
     }
 
+    public void WarmUpCapture()
+    {
+        // DXGI is deferred until the first capture to avoid holding a Desktop Duplication
+        // consumer slot while idle (RemEx-hmj). A client is now connecting, so initialize
+        // it here so GetScreenSize() reports real hardware dims at bootstrap (RemEx-6my).
+        _dxgi.TryRecover();
+    }
+
     public (int Width, int Height, int Left, int Top) GetScreenSize()
     {
         var bounds = GetActiveBounds();
