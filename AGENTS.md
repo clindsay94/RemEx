@@ -112,6 +112,45 @@ These rules apply to ALL agents working in this repository. They are not overrid
 3. **HKLM writes:** `CaptureBackendPreference` and other machine-wide settings require elevation.
 
 **Session 0 rules no longer apply:** remex.agent runs in the interactive user session. HKCU and `%APPDATA%` are valid for user-scoped state. Machine-wide config (`cert.pfx`, `paired_clients.json`, `CaptureBackendPreference`) stays in HKLM/ProgramData for correctness across re-logins.
+
+### Remote Desktop 2.0 Infrastructure — CLOSED (batch landed in [Unreleased])
+
+Key new components agents must know before touching remote desktop, capture, pairing, or session-guard code:
+
+**Binary cursor protocol (`DesktopCursorBinaryEnvelope`, magic `"RDXC"`):**
+- High-frequency cursor position (60–90×/s) travels as a fixed 32-byte binary packet over `/ws/desktop` binary channel, demultiplexed from H.264 frames by magic bytes. Do NOT reuse `"RDXC"` or `"RDXF"` (frame envelope magic).
+- Capability-gated via `DesktopClientCapabilities.SupportsBinaryCursor`. **No `protocolVersion` bump** — older hosts/clients stay on the JSON `desktop_cursor_state` path automatically.
+- NativeAOT-safe (`BinaryPrimitives`/spans). Requires Android rebuild when the JNI layer changes.
+- Key symbols: `DesktopCursorBinaryEnvelope`, `RemoteDesktopHandler.SendCursorBinaryAsync`, `RemexDesktopClient`, `AndroidNativeExports`.
+
+**`BgraFrameConverter` — no System.Drawing on the capture→encode hot path:**
+- When `scale = 1.0`, reads the mapped staging texture into a tightly-packed buffer via a single row-wise `Marshal.Copy` (no Bitmap, no GDI+ blit). Downscale path keeps GDI+ bilinear resampler. Output byte-count is asserted equal to the encoder's `-s WxH` and unit-tested.
+- For maximum FPS: capture at full resolution (`scale 1.0`) and let the phone downscale for display — NVENC handles full-res easily.
+- Key symbols: `BgraFrameConverter`, `WgcDesktopCapture`, `DxgiDesktopCapture`.
+
+**`PrecisionPacer` — shared hybrid precision wait:**
+- Coarse `Task.Delay` + `Thread.SpinWait` busy-spin for the final milliseconds. Eliminates the ~15.6 ms Windows OS timer floor that previously capped 120 FPS targets at ~64 Hz.
+- Shared by the video-frame loop AND the cursor loop (`RemoteDesktopHandler`). Do not introduce separate `Task.Delay`-only pacing loops — route through `PrecisionPacer`.
+
+**`DuplicationReinitThrottle` — DXGI re-init rate limiter:**
+- One `DuplicateOutput` attempt per backoff window (1 s → 8 s escalating, reset on any confirmed-healthy frame). Prevents NVIDIA DWM wedge from back-to-back re-init storms on display power transitions.
+- 8 unit tests cover the throttle logic. Do not call `TryReinitializeDuplication` at frame-rate frequency.
+- Key symbols: `DuplicationReinitThrottle`, `DxgiDesktopCapture`.
+
+**`TransportTrust` — host-side Tailscale pairing PIN awareness:**
+- `/pairing-pin` is now served when the caller is on loopback **or** when both caller and host-side address are Tailscale IPs (`100.64.0.0/10` or `fd7a:115c:a1e0::/48`). `/start-pairing` remains loopback-only.
+- Requiring the host-side address to also be Tailscale defeats a LAN attacker spoofing a `100.64.x.x` source via the LAN IP. Plain LAN/internet stay closed (404).
+- Key symbols: `TransportTrust`, `HostBootstrapper`.
+
+**Keep-session-unlocked (security-sensitive, Windows-only):**
+- Settings toggle (off by default) that keeps the interactive session usable while a remote-desktop client is connected. Backed by `ISessionKeepUnlockedService` writing `ProgramData\RemEx\keep-session-unlocked.flag`. Prominent 8-language security warning shown while enabled.
+- `WindowsInteractiveSessionGuard` only reconnects/re-locks a session it **actually unlocked** — never disconnects its own session (`Process.GetCurrentProcess().SessionId`). A guard that disconnects the host's own session triggers the "black screen + access denied input" failure mode.
+- Key symbols: `IInteractiveSessionGuard`, `WindowsInteractiveSessionGuard`, `SessionGuardSettings`, `ISessionKeepUnlockedService`, `SettingsViewModel`.
+
+**Wire protocol carry-forward rules:**
+- All capability additions are additive/gated — no `protocolVersion` bump unless breaking.
+- `"RDXF"` = frame envelope magic (opt-in via `supportsFrameEnvelope`); `"RDXC"` = binary cursor magic. Never reuse either.
+- Legacy hosts that send untagged frames: client falls back to negotiated-codec routing automatically.
 <!-- END AUTO-MANAGED -->
 
 ### MCP Tool Discipline
