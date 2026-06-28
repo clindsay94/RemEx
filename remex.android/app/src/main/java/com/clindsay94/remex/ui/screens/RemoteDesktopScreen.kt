@@ -2188,6 +2188,53 @@ fun RemoteDesktopScreenContent(
                                                                         )
                                                         )
                                                 }
+                                                if (uiState.isStreaming) {
+                                                        FilledTonalIconButton(
+                                                                onClick = { onStopStreaming() },
+                                                                colors =
+                                                                        IconButtonDefaults
+                                                                                .filledTonalIconButtonColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .errorContainer
+                                                                                )
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Stop,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string.cd_stop
+                                                                                ),
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onErrorContainer
+                                                                )
+                                                        }
+                                                } else {
+                                                        FilledTonalIconButton(
+                                                                onClick = { onStartStreaming() },
+                                                                enabled = !uiState.streamRequested,
+                                                                colors =
+                                                                        IconButtonDefaults
+                                                                                .filledTonalIconButtonColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .primaryContainer
+                                                                                )
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.PlayArrow,
+                                                                        contentDescription = null,
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onPrimaryContainer
+                                                                )
+                                                        }
+                                                }
                                         }
                                 }
                         }
