@@ -161,7 +161,7 @@ All network-facing input must be validated through the shared validation helpers
 
 ### Elevated interactive-session app (`remex.agent` on Windows)
 
-`remex.agent` runs **in the signed-in user's interactive session, always elevated (high integrity)** — NOT as a Windows Service and NOT in Session 0. It is auto-started by a Task Scheduler logon task (`scripts/install-service.ps1`, task name `RemEx`, `RunLevel=Highest`, `LogonType=InteractiveToken`) so it starts elevated at sign-in with no UAC prompt. (RemEx-aep.) Implications:
+`remex.agent` runs **in the signed-in user's interactive session, always elevated (high integrity)** — NOT as a Windows Service and NOT in Session 0. It is auto-started by a Task Scheduler logon task (`scripts/autostart-remex.ps1`, task name `RemEx`, `RunLevel=Highest`, `LogonType=InteractiveToken`) so it starts elevated at sign-in with no UAC prompt. (RemEx-aep.) Implications:
 
 - **Capture + input work directly** — being inside the session, screen capture and `SendInput` reach the user's desktop; HIGH→HIGH UIPI is permitted so input reaches elevated windows. There is no session bridging or `CreateProcessAsUser`.
 - **Machine-wide config still uses `HKLM` / `ProgramData`** — `cert.pfx`, `paired_clients.json`, and `CaptureBackendPreference` stay machine-wide so they are stable across logins and protected by the elevated-only ACL (see High-Risk Areas). `HKCU` / `%APPDATA%` are now valid for genuinely user-scoped state, but keep security-sensitive state machine-wide.

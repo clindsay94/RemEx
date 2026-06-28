@@ -90,7 +90,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 
 ### remex.agent Execution Model — Interactive Elevated App (RemEx-aep, all 6 phases landed)
 
-**Status:** Phases 1–6 are committed on branch `2.0` and the build/tests are green (agent 291/291). Phase 1 (elevation manifest + logon-task auto-start), Phase 2 (second-process deletion), Phase 3 (collapse `LocalIpcServerService`/`RemExLocalIPC` to in-process DI), Phase 4 (Session-0 cleanup + keep-awake-only session guard), Phase 5 (Android `H264StreamDecoder` mid-stream SPS reconfigure — the headline image fix — + UIPI canary), Phase 6 (docs). **Pending:** Phase 1's runtime gate (deploy + sign-out/in: single High-integrity instance, no UAC, cert reused/SPKI unchanged, brick canary silent) — needs a real machine; and the **Linux follow-up** (`RemEx-aep.7`: systemd user service / autostart `.desktop`).
+**Status:** Phases 1–6 are committed on branch `2.0` and the build/tests are green (agent 291/291). Phase 1 (elevation manifest + logon-task auto-start), Phase 2 (second-process deletion), Phase 3 (collapse `LocalIpcServerService`/`RemExLocalIPC` to in-process DI), Phase 4 (Session-0 cleanup + keep-awake-only session guard), Phase 5 (Android `H264StreamDecoder` mid-stream SPS reconfigure — the headline image fix — + UIPI canary), Phase 6 (docs). **Pending:** Phase 1's runtime gate (`RemEx-aep.1`) — full checklist at `docs/superpowers/plans/aep1-runtime-verification-checklist.md` (deploy + sign-out/in: single High-integrity instance, no UAC, cert reused/SPKI unchanged, brick canary silent; `bd close RemEx-aep.1` when all assertions pass); and the **Linux follow-up** (`RemEx-aep.7`: systemd user service / autostart `.desktop`).
 
 **What changed:** remex.agent is no longer a Windows Service. It is a single interactive elevated user-session Avalonia app, always elevated (`requireAdministrator` in `app.manifest`), auto-started by an elevated Task Scheduler logon task (task name: `"RemEx"`, LogonType=InteractiveToken, RunLevel=HighestAvailable).
 
@@ -104,7 +104,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - Normal launch: single-instance Mutex guard → embedded `WebApplication` host → Avalonia GUI. A second instance defers to the running one.
 - `--doctor [--fix]`: Linux prerequisite report; exits without launching UI.
 
-**Auto-start:** `StartupRegistrationService` manages a Task Scheduler task named `"RemEx"` (name must stay stable — `install-service.ps1` and verification steps query this exact name). `RemoveLegacyWindowsRunKey()` cleans up any legacy HKCU Run entry on startup; a lingering Run key would start a competing medium-integrity instance, win the single-instance guard, and reintroduce the UIPI input block (RemEx-hmk).
+**Auto-start:** `StartupRegistrationService` manages a Task Scheduler task named `"RemEx"` (name must stay stable — `autostart-remex.ps1` and verification steps query this exact name). `RemoveLegacyWindowsRunKey()` cleans up any legacy HKCU Run entry on startup; a lingering Run key would start a competing medium-integrity instance, win the single-instance guard, and reintroduce the UIPI input block (RemEx-hmk).
 
 **Elevation rationale — `requireAdministrator` is load-bearing, do not remove it:**
 1. **Cert safety:** high integrity keeps FullControl over `cert.pfx` / `paired_clients.json`. A medium-integrity start gets Administrators as deny-only, regenerates the cert, and bricks all SPKI-pinned Android pairings.
