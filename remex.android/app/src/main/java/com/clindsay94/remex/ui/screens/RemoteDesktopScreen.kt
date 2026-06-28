@@ -403,8 +403,9 @@ fun RemoteDesktopScreenContent(
         var zoomFactor by remember { mutableFloatStateOf(1f) }
         var panOffsetX by remember { mutableFloatStateOf(0f) }
         var panOffsetY by remember { mutableFloatStateOf(0f) }
-        // RD-A3: whether the one-time fit-to-height framing has been applied for the current stream.
-        var didInitialFit by remember { mutableStateOf(false) }
+        // RD-A3: tracks which (displayToken, isLandscape) pair has already received the initial fit.
+        // Empty = no fit applied. Resets on stream stop; re-fits on display switch or orientation change.
+        var lastFitKey by remember { mutableStateOf("") }
         // While the user is manually panning/pinching, suppress cursor pan-follow so the two do
         // not fight. Set to now+cooldown on every manual pan write; pan-follow skips until then.
         var suppressPanFollowUntilMs by remember { mutableLongStateOf(0L) }
@@ -607,27 +608,25 @@ fun RemoteDesktopScreenContent(
             }
         }
 
-        // RD-A3: on stream start, frame the host so it FILLS the phone's height. The old flat 1x letterboxed
-        // a wide host into a tiny strip; fit-to-height fills the vertical space and lets the user pan
-        // sideways. Runs once per stream (didInitialFit); manual pinch/pan afterward is preserved.
-        LaunchedEffect(uiState.isStreaming, imageSize, streamPixelWidth, streamPixelHeight) {
+        // RD-A3: orientation-aware initial fit. Landscape → zoom 1.0 (whole desktop visible, pinch to
+        // zoom in). Portrait → fit-to-height so the full host height is visible and the user pans L/R
+        // across the wider desktop. Re-fits on display switch or phone rotation (fitKey encodes both).
+        LaunchedEffect(uiState.isStreaming, imageSize, streamPixelWidth, streamPixelHeight, uiState.selectedDisplayToken) {
             if (!uiState.isStreaming) {
-                didInitialFit = false
+                lastFitKey = ""
                 return@LaunchedEffect
             }
-            if (didInitialFit) return@LaunchedEffect
             if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
-            // Wait for the real stream dimensions so we fit the actual host aspect, not a placeholder.
             if (streamPixelWidth <= 0 || streamPixelHeight <= 0) return@LaunchedEffect
+            val isLandscapeBox = imageSize.width >= imageSize.height
+            val fitKey = "${uiState.selectedDisplayToken}/$isLandscapeBox"
+            if (lastFitKey == fitKey) return@LaunchedEffect
             val rect = contentRect()
             if (rect.h <= 0f) return@LaunchedEffect
-            // Fill height: scale the fitted content so its height equals the viewport height. ≈1 (no-op)
-            // when the content already fills height (e.g. a 16:9 host in landscape); >1 for a wide host
-            // (content overflows horizontally → pan sideways).
-            zoomFactor = (imageSize.height / rect.h).coerceIn(1f, 5f)
+            zoomFactor = if (isLandscapeBox) 1f else (imageSize.height / rect.h).coerceIn(1f, 5f)
             panOffsetX = 0f
             panOffsetY = 0f
-            didInitialFit = true
+            lastFitKey = fitKey
         }
 
         Scaffold(
