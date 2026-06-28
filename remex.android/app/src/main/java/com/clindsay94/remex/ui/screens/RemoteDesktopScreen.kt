@@ -54,6 +54,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -1913,23 +1915,28 @@ fun RemoteDesktopScreenContent(
                                                                         })
                                                                 }
                                                         },
-                                                        // Letterbox to the source aspect ratio instead of stretching to fill
-                                                        // (the parent Box centers us). A TextureView always scales its content
-                                                        // to its bounds, so we must size the view itself to the stream aspect —
-                                                        // this is the H.264 equivalent of MJPEG's ContentScale.Fit, and it
-                                                        // matches contentRect() so input/cursor/pan stay aligned. Fixes the
-                                                        // squished image in portrait orientation.
-                                                        modifier = Modifier.aspectRatio(
-                                                                if (streamPixelWidth > 0 && streamPixelHeight > 0)
-                                                                        streamPixelWidth.toFloat() / streamPixelHeight.toFloat()
-                                                                else 16f / 9f
-                                                        )
-                                                                .graphicsLayer {
-                                                                        scaleX = zoomFactor
-                                                                        scaleY = zoomFactor
-                                                                        translationX = panOffsetX
-                                                                        translationY = panOffsetY
+                                                        // A SurfaceView's native surface is composited at the view's LAYOUT
+                                                        // BOUNDS — Compose graphicsLayer (a draw-time transform) does NOT scale
+                                                        // or move it, so zoom/pan applied via graphicsLayer left the H.264 image
+                                                        // tiny and stranded in black while input/cursor/pan acted zoomed. Apply
+                                                        // zoom/pan via layout instead: size the view to contentRect()*zoom and
+                                                        // place it centered + panned. This matches mapHostToLocal exactly, so
+                                                        // the video, cursor overlay, input, and pan-follow all stay aligned.
+                                                        // The decode buffer size is pinned by holder.setFixedSize above, so the
+                                                        // compositor just scales that buffer to these bounds (no surface churn).
+                                                        modifier = Modifier.layout { measurable, constraints ->
+                                                                val rect = contentRect()
+                                                                val boxW = if (constraints.hasBoundedWidth) constraints.maxWidth else imageSize.width
+                                                                val boxH = if (constraints.hasBoundedHeight) constraints.maxHeight else imageSize.height
+                                                                val vw = if (rect.w > 0f) (rect.w * zoomFactor).roundToInt().coerceAtLeast(1) else boxW.coerceAtLeast(1)
+                                                                val vh = if (rect.h > 0f) (rect.h * zoomFactor).roundToInt().coerceAtLeast(1) else boxH.coerceAtLeast(1)
+                                                                val placeable = measurable.measure(Constraints.fixed(vw, vh))
+                                                                layout(boxW.coerceAtLeast(0), boxH.coerceAtLeast(0)) {
+                                                                        val x = ((boxW - vw) / 2f + panOffsetX).roundToInt()
+                                                                        val y = ((boxH - vh) / 2f + panOffsetY).roundToInt()
+                                                                        placeable.place(x, y)
                                                                 }
+                                                        }
                                                 )
                                                 }
                                         } else {

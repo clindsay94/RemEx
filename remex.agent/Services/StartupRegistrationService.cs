@@ -16,7 +16,7 @@ namespace Remex.Agent.Services;
 /// "logon task" (LogonType=InteractiveToken, RunLevel=HighestAvailable) that starts the
 /// single interactive user-session app at sign-in, elevated, with no UAC prompt. This
 /// service is the in-app source of truth for the Settings "Launch at login" toggle; the
-/// installer (install-service.ps1 / RemEx.iss) registers an equivalent task at setup time.
+/// installer (autostart-remex.ps1 / RemEx.iss) registers an equivalent task at setup time.
 ///
 /// Linux: per-user XDG autostart .desktop file (unchanged).
 /// </summary>
@@ -25,7 +25,7 @@ public class StartupRegistrationService : IStartupRegistrationService
     private const string ValueName = "RemEx";
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
-    // Keep "RemEx" stable — install-service.ps1 and the verification steps query this exact
+    // Keep "RemEx" stable — autostart-remex.ps1 and the verification steps query this exact
     // task name. The toggle and the installer must manage the same task.
     private const string WindowsTaskName = "RemEx";
 
@@ -248,7 +248,7 @@ X-GNOME-Autostart-enabled=true
     /// <summary>
     /// Task Scheduler XML for an elevated logon task. LogonType=InteractiveToken +
     /// RunLevel=HighestAvailable is what makes RemEx start elevated at sign-in with no UAC prompt;
-    /// this mirrors the install-service.ps1 New-ScheduledTaskPrincipal definition (kept in sync).
+    /// this mirrors the autostart-remex.ps1 New-ScheduledTaskPrincipal definition (kept in sync).
     /// </summary>
     private static string BuildLogonTaskXml(string exePath, string account)
     {

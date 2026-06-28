@@ -83,7 +83,8 @@
       "PowerShell(bd list *)",
       "PowerShell(bd show *)",
       "Bash(bd list *)",
-      "Bash(bd show *)"
+      "Bash(bd show *)",
+      "Bash(bd close *)"
     ]
   },
   "skillOverrides": {

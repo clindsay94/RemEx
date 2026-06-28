@@ -11,8 +11,9 @@
     a UAC prompt. (A scheduled task set to "Run with highest privileges" is the
     supported way to auto-start an elevated app at logon with no consent dialog.)
 
-    The filename is kept (install-service.ps1) so the installer and the in-app
-    Settings screen continue to resolve it; the word "service" is historical.
+    This script does NOT create a Windows Service. It also removes any leftover
+    pre-2.0 "RemexHost" service if one is found. The installer and the in-app
+    Settings screen resolve it by this filename (autostart-remex.ps1).
 
 .PARAMETER Action
     The action to perform: Install, Uninstall, Status, Start, or Stop.
@@ -31,10 +32,10 @@
     task at the installed binary.
 
 .EXAMPLE
-    .\install-service.ps1 -Action Install
-    .\install-service.ps1 -Action Install -Username ".\Connor"
-    .\install-service.ps1 -Action Status
-    .\install-service.ps1 -Action Uninstall
+    .\autostart-remex.ps1 -Action Install
+    .\autostart-remex.ps1 -Action Install -Username ".\Connor"
+    .\autostart-remex.ps1 -Action Status
+    .\autostart-remex.ps1 -Action Uninstall
 #>
 param(
     [Parameter(Mandatory)]
@@ -88,7 +89,7 @@ function Write-DiagnosticsGuidance {
         Write-Host "Filter by source '$EventSource' to inspect RemEx logs." -ForegroundColor Cyan
     } else {
         Write-Warning "Windows Event Log source '$EventSource' is not registered yet."
-        Write-Warning "Re-run .\install-service.ps1 -Action Install as Administrator to provision Event Viewer diagnostics."
+        Write-Warning "Re-run .\autostart-remex.ps1 -Action Install as Administrator to provision Event Viewer diagnostics."
     }
 }
 
@@ -198,7 +199,9 @@ switch ($Action) {
         Write-Host "Registering RemEx logon task for '$account' (elevated, no UAC prompt)..." -ForegroundColor Cyan
 
         try {
-            $action    = New-ScheduledTaskAction -Execute $exePath -Argument "--minimized"
+            # NOTE: must NOT be named $action — PowerShell variables are case-insensitive, so $action
+            # would alias the [ValidateSet] $Action parameter and re-validation rejects this object.
+            $taskAction = New-ScheduledTaskAction -Execute $exePath -Argument "--minimized"
             $trigger   = New-ScheduledTaskTrigger -AtLogOn -User $account
             $principal = New-ScheduledTaskPrincipal -UserId $account -LogonType Interactive -RunLevel Highest
             $settings  = New-ScheduledTaskSettingsSet `
@@ -211,7 +214,7 @@ switch ($Action) {
             Register-ScheduledTask `
                 -TaskName $TaskName `
                 -Description $Description `
-                -Action $action `
+                -Action $taskAction `
                 -Trigger $trigger `
                 -Principal $principal `
                 -Settings $settings `
@@ -227,7 +230,7 @@ switch ($Action) {
 
         Write-Host ""
         Write-Host "RemEx will now start automatically when '$account' signs in." -ForegroundColor Green
-        Write-Host "Check it with: .\install-service.ps1 -Action Status"
+        Write-Host "Check it with: .\autostart-remex.ps1 -Action Status"
         Write-Host "It starts elevated and minimized to the tray, ready for your phone to connect."
         Write-DiagnosticsGuidance
     }

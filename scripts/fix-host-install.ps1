@@ -13,7 +13,7 @@
       1. Stops + removes the RemexHost service (whatever path it currently points at).
       2. Kills any lingering Remex.Agent processes (so Program Files files aren't locked).
       3. Deploys the staged self-contained build into $InstallDir.
-      4. Re-installs the service pointing at $InstallDir\Remex.Agent.exe --agent (via install-service.ps1),
+      4. Re-registers the autostart logon task pointing at $InstallDir\Remex.Agent.exe --agent (via autostart-remex.ps1),
          which also refreshes the firewall rules + event-log source for the new path, then starts it.
 
     After this, the future "I changed code" loop is just scripts\update-local-install.ps1 (it copies to
@@ -45,7 +45,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot    = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $HostProj    = Join-Path $RepoRoot "remex.agent"
 $ServiceName = "RemexHost"
-$InstallScript = Join-Path $PSScriptRoot "install-service.ps1"
+$InstallScript = Join-Path $PSScriptRoot "autostart-remex.ps1"
 
 if ($Publish) {
     $StageDir = Join-Path $RepoRoot "artifacts\stage_fix"

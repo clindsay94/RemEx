@@ -637,7 +637,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     // Windows Service Management was removed in RemEx 2.0 (RemEx-aep Phase 3). RemEx no longer runs
     // as a Windows Service; auto-start is an elevated Task Scheduler logon task driven by the
-    // "Launch at login" toggle above (see StartupRegistrationService / install-service.ps1).
+    // "Launch at login" toggle above (see StartupRegistrationService / autostart-remex.ps1).
     // ═══════════════ Persistence ═══════════════
 
     private void Save()

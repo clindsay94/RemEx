@@ -41,12 +41,12 @@ For clean, standalone Android builds, use the provided helper script:
 
 ## Service Management (Windows)
 
-To install or uninstall the command-plane service:
+To set up or remove RemEx auto-start at sign-in (an elevated Task Scheduler logon task — **not** a Windows Service):
 
 ```powershell
-# Install service (Run as Administrator)
-.\scripts\install-service.ps1 -Action Install
+# Set up auto-start at login (Run as Administrator)
+.\scripts\autostart-remex.ps1 -Action Install
 
-# Uninstall service (Run as Administrator)
-.\scripts\install-service.ps1 -Action Uninstall
+# Remove auto-start at login (Run as Administrator)
+.\scripts\autostart-remex.ps1 -Action Uninstall
 ```

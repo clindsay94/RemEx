@@ -12,7 +12,7 @@
 #define AppPublisher   "Connor Lindsay"
 #define AppExeName     "Remex.Agent.exe"
 #define AppHostExe     "Remex.Agent.exe"
-#define ServiceScript  "scripts\install-service.ps1"
+#define AutostartScript  "scripts\autostart-remex.ps1"
 #ifndef SourceDir
   #define SourceDir      "..\artifacts\publish\remex.agent\release_win-x64"
 #endif
@@ -62,13 +62,13 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 Name: "launchatlogin"; Description: "Launch {#AppName} when you sign in"; GroupDescription: "Startup options:"
 
 ; NOTE: No HKCU Run-key entry. RemEx auto-start is an elevated Task Scheduler logon
-; task (registered below via install-service.ps1). A Run-key would start a competing
+; task (registered below via autostart-remex.ps1). A Run-key would start a competing
 ; MEDIUM-integrity instance that wins the single-instance mutex and reintroduces the
 ; UIPI input block, so it must not exist.
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\scripts\install-service.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "..\scripts\autostart-remex.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu
@@ -85,7 +85,7 @@ Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait
 ; Remove the elevated logon task, firewall rules, event-log source, and any legacy
 ; RemexHost service before files are deleted. The script handles "not installed" gracefully.
 Filename: "powershell.exe"; \
-  Parameters: "-ExecutionPolicy Bypass -NonInteractive -File ""{app}\{#ServiceScript}"" -Action Uninstall"; \
+  Parameters: "-ExecutionPolicy Bypass -NonInteractive -File ""{app}\{#AutostartScript}"" -Action Uninstall"; \
   Flags: runhidden waituntilterminated; \
   RunOnceId: "UninstallRemexLogonTask"
 
@@ -103,7 +103,7 @@ Type: filesandordirs; Name: "{commonappdata}\RemEx"
 // task when the user opted into "Launch RemEx when you sign in".
 //
 // RemEx 2.0 is a single interactive user-session app (no Windows Service).
-// install-service.ps1 -Action Install registers a Task Scheduler logon task
+// autostart-remex.ps1 -Action Install registers a Task Scheduler logon task
 // that starts RemEx elevated at sign-in with no UAC prompt, and configures
 // the firewall so your phone can connect.
 // ------------------------------------------------------------------
@@ -120,7 +120,7 @@ begin
 
   PSArgs :=
     '-ExecutionPolicy Bypass -NonInteractive' +
-    ' -File "' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + '"' +
+    ' -File "' + ExpandConstant('{app}') + '\' + '{#AutostartScript}' + '"' +
     ' -Action Install' +
     ' -HostPath "' + ExpandConstant('{app}') + '\{#AppHostExe}"';
 
@@ -128,7 +128,7 @@ begin
   begin
     ErrMsg := 'Could not launch PowerShell to set up automatic start-up.' + #13#10 +
               'You can set it up later from the RemEx Settings screen, or by running:' + #13#10 +
-              '  ' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + ' -Action Install';
+              '  ' + ExpandConstant('{app}') + '\' + '{#AutostartScript}' + ' -Action Install';
     MsgBox(ErrMsg, mbError, MB_OK);
   end
   else if ResultCode <> 0 then
@@ -136,7 +136,7 @@ begin
     ErrMsg := 'Setting up automatic start-up returned exit code ' + IntToStr(ResultCode) + '.' + #13#10 +
               'RemEx is still installed and you can start it from the Start Menu.' + #13#10 + #13#10 +
               'To retry, run as Administrator:' + #13#10 +
-              '  ' + ExpandConstant('{app}') + '\' + '{#ServiceScript}' + ' -Action Install';
+              '  ' + ExpandConstant('{app}') + '\' + '{#AutostartScript}' + ' -Action Install';
     MsgBox(ErrMsg, mbInformation, MB_OK);
   end;
 end;
