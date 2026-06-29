@@ -1087,6 +1087,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
         var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
 
+        // Bootstrap dimensions now come from the backend that actually serves the target, primed
+        // before this point (RemEx-4k4). Log them so a mis-framed first connect can be diagnosed
+        // from the host log alone (expected: the selected monitor's real size + correct backend).
+        _logger.LogInformation(
+            "RD bootstrap: streaming {Width}x{Height} @ ({Left},{Top}) via {Backend}.",
+            screenWidth, screenHeight, desktopLeft, desktopTop, _screenCapture.BackendName);
+
         await SendMessageAsync(webSocket, new RemexMessage
         {
             Type = MessageTypes.DesktopMeta,

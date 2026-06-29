@@ -250,6 +250,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val activeCodec by viewModel.activeCodecState.collectAsStateWithLifecycle()
         val streamPixelWidth by viewModel.streamPixelWidth.collectAsStateWithLifecycle()
         val streamPixelHeight by viewModel.streamPixelHeight.collectAsStateWithLifecycle()
+        val desktopMetaReady by viewModel.desktopMetaReady.collectAsStateWithLifecycle()
         val displayTargets by viewModel.displayTargets.collectAsStateWithLifecycle()
         val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsStateWithLifecycle()
 
@@ -334,6 +335,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 activeCodec = activeCodec,
                 streamPixelWidth = streamPixelWidth,
                 streamPixelHeight = streamPixelHeight,
+                desktopMetaReady = desktopMetaReady,
                 onActiveH264DecoderChange = { decoder -> viewModel.activeH264Decoder = decoder },
                 onH264DecoderReleased = { decoder -> viewModel.onH264DecoderReleased(decoder) },
                 onH264DecoderInitFailed = { viewModel.onH264DecoderInitFailed() },
@@ -385,6 +387,7 @@ fun RemoteDesktopScreenContent(
         activeCodec: String = "Mjpeg",
         streamPixelWidth: Int = 1920,
         streamPixelHeight: Int = 1080,
+        desktopMetaReady: Boolean = false,
         onActiveH264DecoderChange: (H264StreamDecoder?) -> Unit = {},
         onH264DecoderReleased: (H264StreamDecoder) -> Unit = {},
         onH264DecoderInitFailed: () -> Unit = {},
@@ -611,15 +614,22 @@ fun RemoteDesktopScreenContent(
         // RD-A3: orientation-aware initial fit. Landscape → zoom 1.0 (whole desktop visible, pinch to
         // zoom in). Portrait → fit-to-height so the full host height is visible and the user pans L/R
         // across the wider desktop. Re-fits on display switch or phone rotation (fitKey encodes both).
-        LaunchedEffect(uiState.isStreaming, imageSize, streamPixelWidth, streamPixelHeight, uiState.selectedDisplayToken) {
+        LaunchedEffect(uiState.isStreaming, desktopMetaReady, imageSize, streamPixelWidth, streamPixelHeight, uiState.selectedDisplayToken) {
             if (!uiState.isStreaming) {
                 lastFitKey = ""
                 return@LaunchedEffect
             }
             if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
+            // Wait for the host's REAL screen dimensions before framing. Fitting against the
+            // 1920x1080 placeholder mis-sizes the view until a monitor switch forces a re-fit — the
+            // exact "zoom is wrong on first connect, fixed by tapping monitors" bug (RemEx-4k4).
+            if (!desktopMetaReady) return@LaunchedEffect
             if (streamPixelWidth <= 0 || streamPixelHeight <= 0) return@LaunchedEffect
             val isLandscapeBox = imageSize.width >= imageSize.height
-            val fitKey = "${uiState.selectedDisplayToken}/$isLandscapeBox"
+            // Encode the real stream dimensions into the fit key so authoritative metadata that
+            // arrives or changes mid-stream (resolution / monitor / DPI) RE-FITS, instead of being
+            // ignored because the display token and orientation happened to be unchanged (RemEx-4k4).
+            val fitKey = "${uiState.selectedDisplayToken}/$isLandscapeBox/${streamPixelWidth}x$streamPixelHeight"
             if (lastFitKey == fitKey) return@LaunchedEffect
             val rect = contentRect()
             if (rect.h <= 0f) return@LaunchedEffect

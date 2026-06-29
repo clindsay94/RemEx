@@ -270,6 +270,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _streamPixelHeight = MutableStateFlow(1080)
     val streamPixelHeight: StateFlow<Int> = _streamPixelHeight.asStateFlow()
 
+    // False until the host delivers real desktop metadata (screen dimensions) for the CURRENT
+    // stream. The initial fit/zoom must wait for this so it never computes the framing against the
+    // 1920x1080 placeholders above — those exist only to give the H.264 decoder a valid surface
+    // before metadata arrives. Reset on every fresh stream start, set true on first real meta. (RemEx-4k4)
+    private val _desktopMetaReady = MutableStateFlow(false)
+    val desktopMetaReady: StateFlow<Boolean> = _desktopMetaReady.asStateFlow()
+
     val savedDesktopDefaults =
             settingsManager.remoteDesktopPreferencesFlow.stateIn(
                     viewModelScope,
@@ -448,6 +455,9 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     hostScreenHeight = json.optInt("screenHeight", 1080)
                     hostDesktopLeft = json.optInt("desktopLeft", 0)
                     hostDesktopTop = json.optInt("desktopTop", 0)
+                    // Real dimensions are now in hand for this stream — unblock the initial fit so it
+                    // frames against the true monitor size instead of the 1920x1080 placeholder. (RemEx-4k4)
+                    _desktopMetaReady.value = true
                     // Parse cursor position from host (for trackpad mode). When the host marks the
                     // cursor as outside the captured surface (e.g. on another monitor in single-
                     // display capture), hide the overlay via the hostCursorVisible flag. We keep the
@@ -729,6 +739,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         val config = buildConfigJson()
         _desktopError.value = null
+        // Wait for THIS stream's metadata before the initial fit fires (RemEx-4k4).
+        _desktopMetaReady.value = false
         reconnectAttempts = 0
         RemexCoreClient.StartDesktopStream(config.toString()).getOrNull()
         _isStreaming.value = true

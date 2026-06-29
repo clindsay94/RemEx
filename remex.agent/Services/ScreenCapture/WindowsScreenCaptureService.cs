@@ -378,17 +378,62 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         // consumer slot while idle (RemEx-hmj). A client is now connecting, so initialize
         // it here so GetScreenSize() reports real hardware dims at bootstrap (RemEx-6my).
         _dxgi.TryRecover();
+
+        // Prime the per-monitor backend too. WGC is what actually serves a single-monitor
+        // target, and GraphicsCaptureItem.Size is populated the instant the monitor is selected
+        // (before the first frame is pumped). Without this, GetScreenSize() at bootstrap falls
+        // through to GetActiveBounds()/DXGI dims that can disagree with the WGC frame — mis-framing
+        // the initial view and offsetting the cursor until a monitor switch forces re-selection
+        // (RemEx-4k4). Selecting here makes the bootstrap dimensions match the streamed pixels.
+        if (WgcEnabled)
+        {
+            EnsureWgcSelectedForActiveTarget();
+        }
     }
 
     public (int Width, int Height, int Left, int Top) GetScreenSize()
     {
-        var bounds = GetActiveBounds();
+        // Report the dimensions of the backend that ACTUALLY serves the active target, so the size
+        // Android uses to letterbox the video and map the cursor always matches the pixels it
+        // receives (RemEx-4k4). Order mirrors the capture path: WGC (per-monitor) -> DXGI -> GDI.
+        // Previously this ignored WGC and fell through to GetActiveBounds(), which on first connect
+        // (before WGC had been selected) reported probe dims that raced capture initialization.
+        if (WgcServesActiveTarget())
+        {
+            var (left, top) = ActiveMonitorOrigin();
+            return (_wgc!.Width, _wgc.Height, left, top);
+        }
+
         if (CanUseDxgiForCurrentTarget())
         {
             return (_dxgi.Width, _dxgi.Height, _dxgi.DesktopLeft, _dxgi.DesktopTop);
         }
 
+        var bounds = GetActiveBounds();
         return (bounds.Width, bounds.Height, bounds.Left, bounds.Top);
+    }
+
+    // Virtual-desktop origin (left/top) of the active per-monitor target, resolved from the display
+    // catalog. WGC reports the monitor SIZE (GraphicsCaptureItem.Size) but not its position; absolute
+    // cursor mapping needs the origin so a monitor left of/above the primary maps to negative coords.
+    private (int Left, int Top) ActiveMonitorOrigin()
+    {
+        lock (_displayLock)
+        {
+            var deviceName = _wgc?.OutputDeviceName;
+            if (!string.IsNullOrWhiteSpace(deviceName))
+            {
+                var display = _displays.FirstOrDefault(candidate =>
+                    string.Equals(candidate.DeviceName, deviceName, StringComparison.OrdinalIgnoreCase));
+                if (display is not null)
+                {
+                    return (display.Bounds.Left, display.Bounds.Top);
+                }
+            }
+
+            var bounds = GetActiveBounds();
+            return (bounds.Left, bounds.Top);
+        }
     }
 
     internal bool TryCaptureCurrentCursorShape(out CursorShapeSnapshot? snapshot, bool forceRefresh = false)
