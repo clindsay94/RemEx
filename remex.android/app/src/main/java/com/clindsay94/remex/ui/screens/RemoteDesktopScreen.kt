@@ -2,7 +2,9 @@ package com.clindsay94.remex.ui.screens
 
 import android.content.pm.ActivityInfo
 import android.view.HapticFeedbackConstants
+import android.content.Context
 import android.view.MotionEvent
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -432,6 +434,24 @@ fun RemoteDesktopScreenContent(
         var textValue by remember { mutableStateOf(TextFieldValue("")) }
         val isRemoteKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
+        // Robust keyboard toggle reused by every keyboard button. The hidden BasicTextField keeps
+        // Compose focus after a back-gesture IME dismiss, so a bare requestFocus()/show() no-ops and
+        // the keyboard never reopens (the RemEx-46q symptom: "loses the ability to come up"). Force
+        // the IME up via the platform InputMethodManager as a belt-and-braces so it appears every
+        // time, however many times it is invoked. (RemEx-46q)
+        val toggleRemoteKeyboard: () -> Unit = {
+            try {
+                if (!isRemoteKeyboardOpen) {
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                    (view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                        ?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+                } else {
+                    keyboardController?.hide()
+                }
+            } catch (_: Exception) {}
+        }
+
         // Inertia job reference (cancelled on new touch)
         var inertiaJob by remember { mutableStateOf<Job?>(null) }
 
@@ -654,16 +674,7 @@ fun RemoteDesktopScreenContent(
                                         },
                                         actions = {
                                                 IconButton(
-                                                        onClick = {
-                                                                try {
-                                                                        if (!isRemoteKeyboardOpen) {
-                                                                                focusRequester.requestFocus()
-                                                                                keyboardController?.show()
-                                                                        } else {
-                                                                                keyboardController?.hide()
-                                                                        }
-                                                                } catch (_: Exception) {}
-                                                        }
+                                                        onClick = { toggleRemoteKeyboard() }
                                                 ) {
                                                         Icon(
                                                                 Icons.Default.Keyboard,
@@ -2177,6 +2188,62 @@ fun RemoteDesktopScreenContent(
                                                         Icon(
                                                                 Icons.Default.Tune,
                                                                 contentDescription = "Settings"
+                                                        )
+                                                }
+                                                // FPS overlay toggle — re-added to the fullscreen
+                                                // controls after the control-bar removal orphaned it
+                                                // (onToggleFpsOverlay had no caller). Highlights while
+                                                // the live frame-rate counter is shown. Theme color
+                                                // roles keep contrast correct across all four themes.
+                                                FilledTonalIconButton(
+                                                        onClick = { onToggleFpsOverlay() },
+                                                        colors =
+                                                                IconButtonDefaults
+                                                                        .filledTonalIconButtonColors(
+                                                                                containerColor =
+                                                                                        if (showFpsOverlay)
+                                                                                                MaterialTheme.colorScheme.primaryContainer
+                                                                                        else
+                                                                                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                                                contentColor =
+                                                                                        if (showFpsOverlay)
+                                                                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                                                                        else
+                                                                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.Speed,
+                                                                contentDescription =
+                                                                        stringResource(
+                                                                                R.string.remote_desktop_fps_overlay_btn
+                                                                        )
+                                                        )
+                                                }
+                                                // Keyboard toggle in fullscreen — same robust re-invoke
+                                                // logic so the IME comes up every time without leaving
+                                                // immersive mode (RemEx-46q).
+                                                FilledTonalIconButton(
+                                                        onClick = { toggleRemoteKeyboard() },
+                                                        colors =
+                                                                IconButtonDefaults
+                                                                        .filledTonalIconButtonColors(
+                                                                                containerColor =
+                                                                                        if (isRemoteKeyboardOpen)
+                                                                                                MaterialTheme.colorScheme.primaryContainer
+                                                                                        else
+                                                                                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                                                contentColor =
+                                                                                        if (isRemoteKeyboardOpen)
+                                                                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                                                                        else
+                                                                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.Keyboard,
+                                                                contentDescription =
+                                                                        stringResource(R.string.cd_show_keyboard)
                                                         )
                                                 }
                                                 FilledTonalIconButton(
