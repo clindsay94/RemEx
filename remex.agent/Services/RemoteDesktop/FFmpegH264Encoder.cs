@@ -129,7 +129,9 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         string[] codecsToTry;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            codecsToTry = new[] { "h264_nvenc", "h264_qsv", "h264_amf", "libx264" };
+            // Try NVENC with GPU-side color conversion FIRST; it falls back to the CPU-convert
+            // NVENC path automatically if this ffmpeg build lacks the CUDA filters (RemEx fps).
+            codecsToTry = new[] { "h264_nvenc_cuda", "h264_nvenc", "h264_qsv", "h264_amf", "libx264" };
         }
         else // Linux
         {
@@ -163,6 +165,18 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             // Codec & Quality Optimization. qp drives constant-QP rate control (lower = better quality).
             switch (codec)
             {
+                case "h264_nvenc_cuda":
+                    // NVENC with GPU-side color conversion. The plain h264_nvenc path below appends
+                    // `-pix_fmt yuv420p`, which makes ffmpeg run a CPU swscale (BGRA->YUV) every frame
+                    // — ~20ms at 1440p, capping the stream near 35fps while the GPU sits idle. Here the
+                    // raw BGRA frame is uploaded to a CUDA surface and converted on the GPU
+                    // (hwupload_cuda + scale_cuda), so NVENC encodes with no CPU convert (~1ms),
+                    // unblocking 120fps at full resolution. Tried FIRST; if this ffmpeg build lacks the
+                    // CUDA filters it fails to start and we fall through to the CPU path below, so a
+                    // missing-filter build is never slower than before. ActiveCodecName reports which
+                    // path won, so the host log distinguishes the two. (RemEx fps)
+                    argsBuilder.Append($"-vf hwupload_cuda,scale_cuda=format=nv12 -c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1");
+                    break;
                 case "h264_nvenc":
                     // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
                     // "lowlatency" is NOT valid and makes nvenc fail to start). `-aud 1` emits Access

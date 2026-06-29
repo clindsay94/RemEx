@@ -522,6 +522,10 @@
     <string name="qr_error_setup_failed">QR setup failed</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
+    <string name="remote_desktop_presets_label">Presets</string>
+    <string name="remote_desktop_preset_performance">Performance</string>
+    <string name="remote_desktop_preset_balanced">Balanced</string>
+    <string name="remote_desktop_preset_crisp">Crisp</string>
     <string name="remote_desktop_left_initial">L</string>
     <string name="remote_desktop_left_btn">Left</string>
     <string name="remote_desktop_middle_initial">M</string>

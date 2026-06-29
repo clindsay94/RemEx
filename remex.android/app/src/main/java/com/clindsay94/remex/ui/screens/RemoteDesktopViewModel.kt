@@ -680,6 +680,24 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         pushConfigIfStreaming()
     }
 
+    /**
+     * Applies a performance preset in one shot — sets quality, target FPS, and capture scale together
+     * (persist + push once) instead of three separate slider writes. The capture SCALE is the real FPS
+     * lever: the host's rawvideo->ffmpeg encode time scales with pixel count, so a lower scale is what
+     * unlocks 120fps on a full-res monitor while the phone downscales for display anyway. (RemEx-4k4 fps)
+     */
+    fun applyDesktopPreset(quality: Int, fps: Int, scale: Float) {
+        _configState.update {
+            it.copy(
+                quality = quality.coerceIn(1, 100),
+                targetFps = fps.coerceIn(1, 120),
+                scale = scale.coerceIn(0.25f, 1.0f)
+            )
+        }
+        persistDesktopDefaults()
+        pushConfigIfStreaming()
+    }
+
     fun updateDirectTouch(enabled: Boolean) {
         viewModelScope.launch { settingsManager.saveRemoteDesktopDirectTouch(enabled) }
     }

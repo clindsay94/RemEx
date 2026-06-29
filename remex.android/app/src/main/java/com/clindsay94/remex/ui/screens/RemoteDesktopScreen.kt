@@ -312,6 +312,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onSendPointerBatch = { viewModel.sendPointerBatch(it) },
                 onUpdateQuality = { viewModel.updateQuality(it) },
                 onUpdateTargetFps = { viewModel.updateTargetFps(it) },
+                onApplyPreset = { q, f, s -> viewModel.applyDesktopPreset(q, f, s) },
                 onUpdateDirectTouch = { viewModel.updateDirectTouch(it) },
                 onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
                 onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
@@ -366,6 +367,7 @@ fun RemoteDesktopScreenContent(
         onSendPointerBatch: (String) -> Unit = {},
         onUpdateQuality: (Int) -> Unit,
         onUpdateTargetFps: (Int) -> Unit,
+        onApplyPreset: (Int, Int, Float) -> Unit = { _, _, _ -> },
         onUpdateDirectTouch: (Boolean) -> Unit,
         onUpdatePointerSpeed: (Float) -> Unit,
         onUpdateScrollSensitivity: (Float, Float) -> Unit,
@@ -2424,6 +2426,63 @@ fun RemoteDesktopScreenContent(
                                                                         .remote_desktop_section_stream
                                                         )
                                                 )
+                                                // Quick performance presets. Capture SCALE is the real
+                                                // FPS lever (host encode time scales with pixel count),
+                                                // so each preset bundles scale + fps + quality. A chip is
+                                                // selected when the live config matches its values.
+                                                Row(
+                                                        modifier =
+                                                                Modifier.fillMaxWidth()
+                                                                        .padding(bottom = 4.dp),
+                                                        horizontalArrangement =
+                                                                Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                        FilterChip(
+                                                                selected =
+                                                                        config.scale == 0.5f &&
+                                                                                config.targetFps == 120,
+                                                                onClick = {
+                                                                        onApplyPreset(85, 120, 0.5f)
+                                                                },
+                                                                label = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string.remote_desktop_preset_performance
+                                                                                )
+                                                                        )
+                                                                }
+                                                        )
+                                                        FilterChip(
+                                                                selected =
+                                                                        config.scale == 0.75f &&
+                                                                                config.targetFps == 90,
+                                                                onClick = {
+                                                                        onApplyPreset(90, 90, 0.75f)
+                                                                },
+                                                                label = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string.remote_desktop_preset_balanced
+                                                                                )
+                                                                        )
+                                                                }
+                                                        )
+                                                        FilterChip(
+                                                                selected =
+                                                                        config.scale == 1.0f &&
+                                                                                config.quality == 100,
+                                                                onClick = {
+                                                                        onApplyPreset(100, 120, 1.0f)
+                                                                },
+                                                                label = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string.remote_desktop_preset_crisp
+                                                                                )
+                                                                        )
+                                                                }
+                                                        )
+                                                }
                                                 SettingsPair(
                                                         isLandscape = isLandscape,
                                                         first = { m ->
