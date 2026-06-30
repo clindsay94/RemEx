@@ -80,6 +80,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 **Agent rules (carry forward to all work in this area):**
 - `DxgiDesktopCapture` is `sealed` + `[SupportedOSPlatform("windows")]` + P/Invokes GPU — uninstantiable headless/in Session 0. Tests must use `FakeScreenCaptureService`, not the live class.
 - `WgcDesktopCapture` is likewise `[SupportedOSPlatform("windows")]` and requires WinRT + GPU — never instantiate in tests; always use `FakeScreenCaptureService`.
+- **WinRT interop IID pitfall (RemEx-hvqv):** `IGraphicsCaptureItemInterop::CreateForMonitor` and `CreateForWindow` take the **interface** IID (`IID_IGraphicsCaptureItem = 79c3f95b-31f7-4ec2-a464-632ef5d30760`), NOT the runtimeclass GUID from `typeof(GraphicsCaptureItem)`. Passing the runtimeclass GUID silently returns `E_NOINTERFACE` — WGC falls back to DXGI/GDI as if it were never tried, with no obvious error. Always use the `IID_IGraphicsCaptureItem` constant defined in `WgcDesktopCapture.cs` for any future `CreateForMonitor`/`CreateForWindow` calls.
 - `WindowsDisplayPowerMonitor` is also `[SupportedOSPlatform("windows")]` and requires a real message pump — never instantiate it in tests. The `IScreenCaptureService.IsDisplayPoweredOff` property defaults to `false`; fakes and Linux backends inherit that default automatically.
 - `remex.agent.windows` must stay Windows-only. Never add cross-platform or Linux code there.
 - `CaptureScaling` lives in `Remex.Core` (NativeAOT-safe). Do not move it back to `remex.agent` or create a duplicate.
