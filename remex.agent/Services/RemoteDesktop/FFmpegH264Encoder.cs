@@ -129,9 +129,9 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         string[] codecsToTry;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            // Try NVENC with GPU-side color conversion FIRST; it falls back to the CPU-convert
-            // NVENC path automatically if this ffmpeg build lacks the CUDA filters (RemEx fps).
-            codecsToTry = new[] { "h264_nvenc_cuda", "h264_nvenc", "h264_qsv", "h264_amf", "libx264" };
+            // Try NVENC with NATIVE BGRA input FIRST (BGRA->YUV runs in fixed-function NVENC hardware —
+            // no CPU swscale, no CUDA filter); falls back to the CPU-convert NVENC path if it can't start.
+            codecsToTry = new[] { "h264_nvenc_bgra", "h264_nvenc", "h264_qsv", "h264_amf", "libx264" };
         }
         else // Linux
         {
@@ -165,17 +165,19 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             // Codec & Quality Optimization. qp drives constant-QP rate control (lower = better quality).
             switch (codec)
             {
-                case "h264_nvenc_cuda":
-                    // NVENC with GPU-side color conversion. The plain h264_nvenc path below appends
-                    // `-pix_fmt yuv420p`, which makes ffmpeg run a CPU swscale (BGRA->YUV) every frame
-                    // — ~20ms at 1440p, capping the stream near 35fps while the GPU sits idle. Here the
-                    // raw BGRA frame is uploaded to a CUDA surface and converted on the GPU
-                    // (hwupload_cuda + scale_cuda), so NVENC encodes with no CPU convert (~1ms),
-                    // unblocking 120fps at full resolution. Tried FIRST; if this ffmpeg build lacks the
-                    // CUDA filters it fails to start and we fall through to the CPU path below, so a
-                    // missing-filter build is never slower than before. ActiveCodecName reports which
-                    // path won, so the host log distinguishes the two. (RemEx fps)
-                    argsBuilder.Append($"-vf hwupload_cuda,scale_cuda=format=nv12 -c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1");
+                case "h264_nvenc_bgra":
+                    // Fast GPU path: NVENC ingests the raw BGRA frames DIRECTLY (the input above is already
+                    // `-pix_fmt bgra`) and does BGRA->YUV in fixed-function hardware. No `-pix_fmt yuv420p`,
+                    // so no per-frame CPU swscale (~20ms at 1440p on the plain path) and the GPU isn't idle;
+                    // no CUDA filter either. Tried FIRST; falls through to the CPU-convert h264_nvenc path
+                    // below if NVENC can't start. ActiveCodecName reports which path won.
+                    //
+                    // The previous approach used `hwupload_cuda,scale_cuda=format=nv12`, but scale_cuda in
+                    // every prebuilt Windows ffmpeg (Gyan + BtbN, both --enable-cuda-llvm) lacks the
+                    // RGB->NV12 kernel and dies at RUNTIME with CUDA_ERROR_NOT_FOUND ("named symbol not
+                    // found" / "Unsupported conversion: rgb0 -> semiplanar8"), killing FFmpeg mid-stream —
+                    // 0fps black screen. NVENC native BGRA input avoids the filter entirely. (RemEx-dptu)
+                    argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1");
                     break;
                 case "h264_nvenc":
                     // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;

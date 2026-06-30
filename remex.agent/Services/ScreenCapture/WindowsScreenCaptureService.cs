@@ -131,8 +131,17 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                string.Equals(_wgc.OutputDeviceName, deviceName, StringComparison.OrdinalIgnoreCase);
     }
 
+    // De-dupes the per-frame WGC selection outcome log (RemEx-hvqv) so a persistent state is logged once,
+    // not at the capture frame rate. Holds the last logged outcome key; logging fires only when it changes.
+    private string? _lastWgcSelectionStateKey;
+
     // Points WGC at the active monitor when the target changed. TrySelectMonitor (re)creates the WGC
     // session only when the device name differs, so this is cheap on the steady-state capture path.
+    //
+    // Diagnostics (RemEx-hvqv): WGC silently losing to DXGI/GDI used to be invisible — the only failure log
+    // here was at Debug, and the in-memory sink (/debug/logs) plus the Windows Event Log both floor above
+    // Debug. We now log the selection OUTCOME at Information/Warning, de-duplicated via _lastWgcSelectionStateKey
+    // so this per-frame hot path never floods, while making "why WGC isn't serving" visible in both sinks.
     private void EnsureWgcSelectedForActiveTarget()
     {
         if (!WgcEnabled || _wgc is null)
@@ -141,15 +150,50 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
 
         var deviceName = ActiveMonitorDeviceName();
-        if (deviceName is null ||
-            string.Equals(_wgc.OutputDeviceName, deviceName, StringComparison.OrdinalIgnoreCase))
+
+        // No per-monitor Win32 device name resolved. Expected in virtual-desktop mode (WGC is per-monitor
+        // only); a real fault in Monitor mode — the active display's name didn't resolve, so WGC can't target.
+        if (deviceName is null)
+        {
+            if (_activeTarget.CaptureMode == DesktopCaptureMode.Monitor)
+            {
+                var key = $"unresolved:{_activeTarget.DisplayId}";
+                if (_lastWgcSelectionStateKey != key)
+                {
+                    _lastWgcSelectionStateKey = key;
+                    _logger.LogWarning(
+                        "WGC not selected: no Win32 device name resolved for active monitor target (displayId={DisplayId}). Falling back to DXGI/GDI.",
+                        _activeTarget.DisplayId ?? "<null>");
+                }
+            }
+            return;
+        }
+
+        // Already targeting this monitor — steady state, nothing to do.
+        if (string.Equals(_wgc.OutputDeviceName, deviceName, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        if (!_wgc.TrySelectMonitor(deviceName, out var error) && error is not null)
+        if (_wgc.TrySelectMonitor(deviceName, out var error))
         {
-            _logger.LogDebug("WGC could not target {Device}: {Error}. Falling back to DXGI/GDI.", deviceName, error);
+            var key = $"ok:{deviceName}";
+            if (_lastWgcSelectionStateKey != key)
+            {
+                _lastWgcSelectionStateKey = key;
+                _logger.LogInformation("WGC now targeting {Device}.", deviceName);
+            }
+        }
+        else
+        {
+            var key = $"fail:{deviceName}:{error}";
+            if (_lastWgcSelectionStateKey != key)
+            {
+                _lastWgcSelectionStateKey = key;
+                _logger.LogWarning(
+                    "WGC could not target {Device}: {Error}. Falling back to DXGI/GDI.",
+                    deviceName, error ?? "unknown error");
+            }
         }
     }
     public bool IsDxgiAvailable => _dxgi.IsAvailable;

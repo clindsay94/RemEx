@@ -86,6 +86,9 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
     private static readonly Guid IID_IDXGIDevice = new("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
     private static readonly Guid IID_ID3D11Texture2D = new("6f15aaf2-d208-4e89-9ab4-489535d34f9c");
     private static readonly Guid IID_IGraphicsCaptureSession3 = new("f2cdd966-22ae-5ea1-9596-3a289344c3be");
+    // IGraphicsCaptureItem interface IID — the riid IGraphicsCaptureItemInterop::CreateForMonitor expects
+    // for the returned object. NOT the GraphicsCaptureItem runtimeclass GUID (that yields E_NOINTERFACE). (RemEx-hvqv)
+    private static readonly Guid IID_IGraphicsCaptureItem = new("79c3f95b-31f7-4ec2-a464-632ef5d30760");
 
     // ── P/Invoke ─────────────────────────────────────────────────────────────
 
@@ -254,9 +257,13 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
                 return false;
             }
 
-            // Marshal the IInspectable* into the WinRT IDirect3DDevice projection.
-            var inspectable = Marshal.GetObjectForIUnknown(graphicsDevicePtr);
-            _winrtDevice = inspectable as IDirect3DDevice;
+            // Project the IInspectable* into the WinRT IDirect3DDevice via CsWinRT. Using
+            // Marshal.GetObjectForIUnknown(...) as IDirect3DDevice yields a legacy __ComObject that CsWinRT
+            // cannot re-marshal — passing it to Direct3D11CaptureFramePool.CreateFreeThreaded then throws
+            // "Failed to create a CCW ... IDirect3DDevice: the specified cast is not valid", silently dropping
+            // WGC to DXGI/GDI. MarshalInspectable<T>.FromAbi mirrors the GraphicsCaptureItem.FromAbi pattern
+            // below (it AddRefs; the caller still Releases graphicsDevicePtr in the finally). (RemEx-hvqv)
+            _winrtDevice = WinRT.MarshalInspectable<IDirect3DDevice>.FromAbi(graphicsDevicePtr);
             if (_winrtDevice is null)
             {
                 _logger.LogInformation("WGC: could not project IDirect3DDevice.");
@@ -338,8 +345,9 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         // Create the GraphicsCaptureItem headlessly via the interop activation factory (no picker UI).
         IGraphicsCaptureItemInterop interop = GetCaptureItemInterop();
 
-        Guid itemIid = GuidFromType(typeof(GraphicsCaptureItem));
-        int hr = interop.CreateForMonitor(hMonitor, itemIid, out IntPtr itemPtr);
+        // CreateForMonitor's riid must be the IGraphicsCaptureItem *interface* IID, not the runtimeclass
+        // GUID — the latter returns E_NOINTERFACE (0x80004002) and silently drops WGC to DXGI/GDI. (RemEx-hvqv)
+        int hr = interop.CreateForMonitor(hMonitor, IID_IGraphicsCaptureItem, out IntPtr itemPtr);
         if (hr != S_OK || itemPtr == IntPtr.Zero)
         {
             error = $"CreateForMonitor failed hr=0x{hr:X8}.";
@@ -473,9 +481,6 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             WinRT.ActivationFactory.Get("Windows.Graphics.Capture.GraphicsCaptureItem");
         return factory.AsInterface<IGraphicsCaptureItemInterop>();
     }
-
-    // GraphicsCaptureItem.GUID is the projected runtimeclass IID; resolve it without reflection-prone paths.
-    private static Guid GuidFromType(Type t) => t.GUID;
 
     // ── Staging texture ────────────────────────────────────────────────────────
 
