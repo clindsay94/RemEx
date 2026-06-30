@@ -73,7 +73,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - `IWgcCaptureSource` — new interface in `remex.core/Services/` defining the WGC contract; keeps WinRT out of Core itself.
 - `CaptureBackendPreference` — reads `HKLM\SOFTWARE\RemEx\Capture\Backend`; parses `Auto` (default) | `Wgc` | `Dxgi` | `Gdi`; fails open to `Auto` on any bad/missing value. Registered in DI via `HostBootstrapper` (Windows only). New operator knobs for capture must go here, not hardcoded.
 - `CaptureScaling` — **moved from `remex.agent` to `Remex.Core`** so both `remex.agent` and `remex.agent.windows` share the encoder-dimension formula. Do not move it back or duplicate it.
-- `WindowsScreenCaptureService` — drives the WGC → DXGI → GDI ladder using `CaptureBackendPreference`.
+- `WindowsScreenCaptureService` — drives the WGC → DXGI → GDI ladder using `CaptureBackendPreference`. As of RemEx-hvqv, WGC monitor-selection outcomes are logged at Information (selected) / Warning (failed / unresolved device name), de-duped via `_lastWgcSelectionStateKey` so the per-frame hot path logs once-per-state rather than at frame rate. Previously these logs were at Debug (invisible in both the in-memory `/debug/logs` sink and the Windows Event Log, which floor at Information and Warning respectively).
 
 **Testing seam:** WGC and DXGI both require an interactive session + GPU and are not headless-testable. CI coverage is at the `IScreenCaptureService` seam (`FakeScreenCaptureService`) and the HKLM preference parse (`CaptureBackendPreferenceTests`). The real backend matrix requires manual interactive validation.
 
@@ -87,6 +87,7 @@ These rules apply to ALL agents working in this repository. They are not overrid
 - Path casing is load-bearing on Linux: source dir is `remex.agent` (capital E-x); test projects are `remex.agent.tests` / `remex.core.tests` (lower e-x); solution is `Remex.sln`. Wrong casing passes on Windows, breaks on CachyOS.
 - Pre-existing test failures in `PairedClientRegistry`/`RemoteDesktopAuth`/`PairingHandler` (issue `RemEx-jgw`) are filtered from gates; gates assert a minimum test count so a zero-match filter cannot show green.
 - **Test host safe doubles (RemEx-21g):** `RemexHostFactory` default-registers three safe doubles FIRST in DI: `FakeScreenCaptureService` (pure managed, no DXGI/D3D/GDI), `NoOpInteractiveSessionGuard` (no `tscon` call), `NoOpSystemCommandService` (no lock/reboot/shutdown). Defined in `SafeHostTestDoubles.cs`. No integration test touches the GPU, locks the session, or runs a power command.
+- **Diagnosing WGC not serving (RemEx-hvqv):** Check Information/Warning logs for the WGC selection outcome — `_lastWgcSelectionStateKey` de-dupes these so they appear once per state change, not at frame rate. Three states: `ok:{deviceName}` (WGC selected), `fail:{deviceName}:{error}` (TrySelectMonitor failed), `unresolved:{displayId}` (Monitor mode but no Win32 device name resolved). If only DXGI/GDI is serving and no WGC Warning appears, the target is likely virtual-desktop mode (expected — WGC is per-monitor only).
 
 ### remex.agent Execution Model — Interactive Elevated App (RemEx-aep, all 6 phases landed)
 
