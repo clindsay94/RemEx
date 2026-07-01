@@ -99,7 +99,7 @@ remex.core/         Shared models, messages, validation, Guards, serialization
 remex.agent/         ★ THE PC SIDE — single elevated interactive-session app + all PC functionality
                     ↳ Combines the former host service + desktop UI into ONE process. No Windows
                       Service: it runs in the signed-in user's session, always elevated, auto-started
-                      by a Task Scheduler logon task (Windows). Linux: systemd user service follow-up.
+                      by a Task Scheduler logon task (Windows) or an XDG autostart .desktop (Linux, RemEx-aep.7).
                     ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
 remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
                     ↳ Android phone app. Connects to remex.agent on the PC. Nothing else is a client.

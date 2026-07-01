@@ -26,6 +26,36 @@ public sealed class PairedClientRegistryTests
         }
     }
 
+    // PAIR-4 (RemEx-lr9): the paired-clients store also holds per-client reconnect secrets, so on
+    // Linux/Unix it must be owner-only (0600). Verifies PairedClientRegistry.RestrictStorePermissions
+    // produces exactly UserRead|UserWrite on real hardware, using the reconnect-secret overload so the
+    // sensitive material is actually present. No-op off Linux (Windows uses ACLs; Android app-private).
+    [Fact]
+    public void RegisterClient_OnLinux_WritesStoreWith0600Permissions()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var storePath = Path.Combine(tempDirectory.FullName, "paired_clients.json");
+
+            var registry = new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, storePath);
+            registry.RegisterClient("client-a", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 });
+
+            Assert.True(File.Exists(storePath));
+            var mode = File.GetUnixFileMode(storePath);
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, mode);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void UnregisterClient_PersistsRemovalAcrossInstances()
     {

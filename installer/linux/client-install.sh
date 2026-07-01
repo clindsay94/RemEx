@@ -11,6 +11,8 @@ INSTALL_DIR="$HOME/.local/share/remex-client"
 BIN_DIR="$HOME/.local/bin"
 APP_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+AUTOSTART_DIR="$HOME/.config/autostart"
+AUTOSTART_FILE="$AUTOSTART_DIR/remex-client.desktop"
 BRIDGE_PATH="$INSTALL_DIR/runtimes/linux-x64/native/libremex_linux_bridge.so"
 
 # ── Preflight (shared with the host installer) ─────────────────────────
@@ -93,24 +95,42 @@ install)
         gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
     fi
 
-    # .desktop file with real install path substituted
-    sed "s|REMEX_INSTALL_DIR|$INSTALL_DIR|g" \
+    # .desktop file with real install path substituted. Strip any CR first: the template lives on a
+    # shared Windows/Linux drive and may carry CRLF, which is invalid in a .desktop file on Linux.
+    sed -e "s|\r$||" -e "s|REMEX_INSTALL_DIR|$INSTALL_DIR|g" \
         "$SCRIPT_DIR/remex-client.desktop" > "$APP_DIR/remex-client.desktop"
     update-desktop-database "$APP_DIR" 2>/dev/null || true
     kbuildsycoca6 2>/dev/null || true  # KDE Plasma cache refresh
+
+    # Auto-start at login (the Linux equivalent of the Windows logon task). Writes an XDG autostart
+    # entry that launches RemEx minimized to the tray when you sign in, so your phone can reach this
+    # PC without you opening the app first. It is the SAME file the in-app Settings > "Launch at
+    # login" toggle manages, so the two stay in sync; uninstall (below) removes it.
+    mkdir -p "$AUTOSTART_DIR"
+    # Strip CR first (shared-drive CRLF), then substitute the path and append --minimized to Exec so
+    # RemEx starts to the tray. desktop-file-validate must pass on the result.
+    sed -e "s|\r$||" \
+        -e "s|REMEX_INSTALL_DIR|$INSTALL_DIR|g" \
+        -e "s|^Exec=\(.*\)$|Exec=\1 --minimized|" \
+        "$SCRIPT_DIR/remex-client.desktop" > "$AUTOSTART_FILE"
+    printf 'X-GNOME-Autostart-enabled=true\n' >> "$AUTOSTART_FILE"
 
     preflight
 
     echo ""
     echo "RemEx Client installed."
-    echo "  Launch:     remex-client"
-    echo "  Uninstall:  $INSTALL_DIR/install.sh uninstall"
+    echo "  Launch:        remex-client"
+    echo "  Starts at login: yes (minimized to the tray, so your phone can connect)."
+    echo "                   Turn this off in RemEx under Settings > \"Launch at login\","
+    echo "                   or run the uninstall below."
+    echo "  Uninstall:     $INSTALL_DIR/install.sh uninstall"
     ;;
 
 uninstall)
     echo "Removing RemEx Client ..."
     rm -f  "$BIN_DIR/remex-client"
     rm -f  "$APP_DIR/remex-client.desktop"
+    rm -f  "$AUTOSTART_FILE"
     rm -f  "$ICON_DIR/remex.png"
     rm -rf "$INSTALL_DIR"
     update-desktop-database "$APP_DIR" 2>/dev/null || true

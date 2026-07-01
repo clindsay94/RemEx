@@ -33,6 +33,25 @@ public sealed class CertificateServiceTests : IDisposable
         Assert.True(File.Exists(_certPath));
     }
 
+    // PAIR-3 (RemEx-lr9): on Linux/Unix the private-key PFX must be written owner-only (0600) so the
+    // key is never group/world-readable. Verifies the CertificateService.WriteProtectedFile Unix
+    // branch produces exactly UserRead|UserWrite on real hardware. No-op off Linux (Windows uses ACLs).
+    [Fact]
+    public async Task GetOrCreate_OnLinux_WritesCertWith0600Permissions()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var svc = CreateService();
+
+        await svc.GetOrCreateCertificateAsync(CancellationToken.None);
+
+        var mode = File.GetUnixFileMode(_certPath);
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, mode);
+    }
+
     [Fact]
     public async Task GetOrCreate_SecondCall_ReturnsSameCachedInstance()
     {

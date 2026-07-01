@@ -122,14 +122,24 @@ public class StartupRegistrationService : IStartupRegistrationService
 
                 Directory.CreateDirectory(autostartDir);
 
-                // Try to find the system desktop file to copy, or generate one
+                // Mirror the installed menu launcher when present so the autostart entry stays in sync
+                // with it. client-install.sh installs to the per-user applications dir; fall back to the
+                // system-wide one, then to a generated entry. Keep the "remex-client.desktop" basename:
+                // the whole Linux install (dir, symlink, launcher) uses that identifier and the installer
+                // manages the SAME autostart file — like the stable "RemEx" task name on Windows.
+                var userDesktopFile = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    ".local", "share", "applications", "remex-client.desktop");
                 var systemDesktopFile = "/usr/share/applications/remex-client.desktop";
+                var sourceDesktopFile = File.Exists(userDesktopFile) ? userDesktopFile
+                    : File.Exists(systemDesktopFile) ? systemDesktopFile
+                    : null;
                 var exePath = Environment.ProcessPath ?? "remex-client";
 
                 string content;
-                if (File.Exists(systemDesktopFile))
+                if (sourceDesktopFile is not null)
                 {
-                    content = File.ReadAllText(systemDesktopFile);
+                    content = File.ReadAllText(sourceDesktopFile);
                     // Update Exec line to include --minimized
                     var lines = content.Split('\n');
                     var hasAutostartFlag = false;
@@ -158,15 +168,18 @@ public class StartupRegistrationService : IStartupRegistrationService
                 }
                 else
                 {
+                    // Branding matches the installed launcher (installer/linux/remex-client.desktop):
+                    // Name=RemEx, Icon=remex. --minimized starts it to the tray, ready for the phone.
                     content = $"""
 [Desktop Entry]
 Type=Application
-Name=RemEx Client
-Comment=Remote PC Management Client
+Name=RemEx
+Comment=Remote desktop and system monitoring
 Exec="{exePath}" --minimized
-Icon=remex-client
-Categories=Utility;
+Icon=remex
+Categories=Network;RemoteAccess;
 Terminal=false
+StartupWMClass=Remex.Agent
 X-GNOME-Autostart-enabled=true
 """;
                 }
