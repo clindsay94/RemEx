@@ -49,7 +49,14 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     // handler reinitializes the encoder on every on-demand keyframe — without the cache each
     // reinit would re-pay an ffmpeg probe spawn. (RemEx: probe added for the lazy encoder-open
     // blind spot; see ProbeCodec.)
-    private static readonly ConcurrentDictionary<string, bool> ProbeCache = new();
+    //
+    // Positive verdicts are stable and cached for the process lifetime. Negative verdicts are
+    // NOT: a probe can fail transiently (5s timeout while the GPU/display is reconfiguring
+    // during a monitor switch, or portal/driver churn on reconnect), and a permanently cached
+    // failure used to pin that geometry to MJPEG until the host restarted. Failed verdicts are
+    // therefore retried after a cooldown. (RemEx-lq6h)
+    private static readonly ConcurrentDictionary<string, (bool Ok, long AtMs)> ProbeCache = new();
+    private const long FailedProbeRetryMs = 30_000;
 
     private bool _isDisposed;
     private string? _ffmpegPath;
@@ -266,8 +273,11 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         // qp is excluded from the key on purpose: it is clamped to a universally valid H.264
         // range in Initialize and never decides whether an encoder can open.
         var cacheKey = $"{codec}:{width}x{height}@{fps}";
-        if (ProbeCache.TryGetValue(cacheKey, out var cached))
-            return cached;
+        if (ProbeCache.TryGetValue(cacheKey, out var cached) &&
+            (cached.Ok || Environment.TickCount64 - cached.AtMs < FailedProbeRetryMs))
+        {
+            return cached.Ok;
+        }
 
         bool ok;
         try
@@ -280,7 +290,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             ok = false;
         }
 
-        ProbeCache[cacheKey] = ok;
+        ProbeCache[cacheKey] = (ok, Environment.TickCount64);
         return ok;
     }
 

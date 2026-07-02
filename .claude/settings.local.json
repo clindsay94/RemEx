@@ -89,7 +89,6 @@
     ]
   },
   "skillOverrides": {
-    "aspnet-core": "off",
     "figma-designer": "off",
     "frontend-design": "off",
     "mcp-builder": "off",
@@ -99,9 +98,18 @@
     "testing-strategies": "off",
     "verification-before-completion": "off",
     "winui-app": "off",
-    "workflow-orchestrator": "off"
+    "workflow-orchestrator": "off",
+    "deployment-engineer": "name-only",
+    "design-an-interface": "name-only",
+    "domain-modeling": "name-only",
+    "migrate-to-shoehorn": "off",
+    "obsidian-vault": "off",
+    "scaffold-exercises": "off",
+    "tdd": "off",
+    "test-automator": "off"
   },
   "enabledPlugins": {},
   "outputStyle": "Explanatory",
-  "spinnerTipsEnabled": false
+  "spinnerTipsEnabled": true,
+  "prefersReducedMotion": false
 }

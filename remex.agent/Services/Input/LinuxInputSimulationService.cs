@@ -49,9 +49,18 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
     }
 
-    public LinuxInputSimulationService(ILogger<LinuxInputSimulationService> logger)
+    // Unified ScreenCast + RemoteDesktop portal session owned by the capture lifetime. While a
+    // remote desktop stream is active this enables ABSOLUTE pointer injection — drift-free and
+    // compositor-clamped — instead of the relative-delta emulation below. Null in tests or when
+    // no capture lifetime is registered. (RemEx-lq6h)
+    private readonly Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? _captureLifetime;
+
+    public LinuxInputSimulationService(
+        ILogger<LinuxInputSimulationService> logger,
+        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null)
     {
         _logger = logger;
+        _captureLifetime = captureLifetime;
         _display = Environment.GetEnvironmentVariable("DISPLAY");
         _backendStatus = LinuxDesktopBackendProbe.Probe();
 
@@ -130,6 +139,19 @@ public class LinuxInputSimulationService : IInputSimulationService
 
     public void MoveMouse(int x, int y)
     {
+        // Preferred path: ABSOLUTE motion through the unified ScreenCast + RemoteDesktop portal
+        // session that the active remote desktop stream already holds. The compositor clamps the
+        // position to the stream surface, so there is no cumulative drift and the cursor can
+        // never escape or desync at screen edges. (RemEx-lq6h)
+        if (_captureLifetime?.TryInjectPointerMotionAbsolute(x, y) == true)
+        {
+            // Keep the relative-emulation tracker in sync so a later fallback doesn't snap.
+            _lastVirtualX = x;
+            _lastVirtualY = y;
+            _haveVirtualPosition = true;
+            return;
+        }
+
         // Portal path: input-only sessions cannot dispatch absolute motion (the portal
         // requires a PipeWire stream from a unified ScreenCast session). We convert
         // each absolute target into a delta from the prior absolute target and emit

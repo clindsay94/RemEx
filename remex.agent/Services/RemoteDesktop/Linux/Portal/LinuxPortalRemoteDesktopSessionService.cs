@@ -31,7 +31,7 @@ public enum PortalSessionState
 /// Responsibilities:
 ///   - Open a combined session via D-Bus (RemoteDesktop.CreateSession)
 ///   - Select devices (keyboard + pointer)
-///   - Select sources (monitor + embedded cursor)
+///   - Select sources (monitor; cursor mode configurable, hidden by default)
 ///   - Start the session and surface the PipeWire node IDs to the caller
 ///   - Close the session cleanly on dispose
 ///
@@ -64,11 +64,19 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
 
     public LinuxPortalRemoteDesktopSessionService(
         string appId = "com.clindsay94.RemEx",
-        ILogger<LinuxPortalRemoteDesktopSessionService>? logger = null)
+        ILogger<LinuxPortalRemoteDesktopSessionService>? logger = null,
+        PortalCursorMode cursorMode = PortalCursorMode.Hidden)
     {
         _appId = appId;
         _logger = logger ?? NullLogger<LinuxPortalRemoteDesktopSessionService>.Instance;
+        _cursorMode = cursorMode;
     }
+
+    // Cursor compositing requested from the compositor. Hidden by default: the production client
+    // (Android) always renders its own cursor from the streamed cursor state, so an Embedded
+    // compositor cursor showed up as a SECOND cursor in every frame. Embedded remains available
+    // for legacy clients that rely on host-composited cursors. (RemEx-lq6h)
+    private readonly PortalCursorMode _cursorMode;
 
     /// <summary>
     /// Opens the portal session and starts the PipeWire stream.
@@ -255,7 +263,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                 persistViaSelectDevices = requestDevicePersist;
             }
 
-            // Step 3 — SelectSources on ScreenCast (Monitor, Embedded cursor).
+            // Step 3 — SelectSources on ScreenCast (Monitor; cursor per _cursorMode, Hidden by default).
 
             // When persistence was already requested via SelectDevices (RemoteDesktop v2),
             // it MUST NOT be repeated here: KDE's portal rejects ScreenCast persistence on
@@ -280,7 +288,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
 
                 w.WriteDictionaryEntryStart();
                 w.WriteString("cursor_mode");
-                w.WriteVariantUInt32((uint)PortalCursorMode.Embedded);
+                w.WriteVariantUInt32((uint)_cursorMode);
 
                 if (requestPersist)
                 {
@@ -469,6 +477,50 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
 
         await CloseSessionCoreAsync();
         return await StartSessionAsync(ct);
+    }
+
+    /// <summary>
+    /// Injects an ABSOLUTE pointer position through this unified RemoteDesktop + ScreenCast
+    /// session (fire-and-forget). Coordinates are relative to the given ScreenCast stream's
+    /// surface — the compositor clamps them to the stream bounds natively, which eliminates the
+    /// cumulative drift of the relative-delta emulation used by input-only portal sessions.
+    /// Returns false when the session is not active (caller falls back to relative motion).
+    /// (RemEx-lq6h)
+    /// </summary>
+    public bool TryNotifyPointerMotionAbsolute(uint streamNodeId, double streamX, double streamY)
+    {
+        var sessionHandle = _sessionHandle;
+        var conn = _conn;
+        if (_state != PortalSessionState.Active || sessionHandle is null || conn is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var writer = conn.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDbusNames.PortalService,
+                path: PortalDbusNames.PortalPath,
+                @interface: PortalDbusNames.RemoteDesktopInterface,
+                member: "NotifyPointerMotionAbsolute",
+                signature: "oa{sv}udd",
+                flags: MessageFlags.NoReplyExpected);
+            writer.WriteObjectPath(sessionHandle);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart);
+            writer.WriteUInt32(streamNodeId);
+            writer.WriteDouble(streamX);
+            writer.WriteDouble(streamY);
+            var buf = writer.CreateMessage();
+            conn.TrySendMessage(buf);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "NotifyPointerMotionAbsolute failed.");
+            return false;
+        }
     }
 
     public async ValueTask DisposeAsync()

@@ -137,3 +137,7 @@
 {"id":"int-ee705fe8","kind":"field_change","created_at":"2026-07-02T13:53:34.294210353Z","actor":"Connor","issue_id":"RemEx-h038","extra":{"field":"status","new_value":"closed","old_value":"open"}}
 {"id":"int-00fc3bea","kind":"field_change","created_at":"2026-07-02T13:53:34.82962356Z","actor":"Connor","issue_id":"RemEx-mswt","extra":{"field":"status","new_value":"closed","old_value":"in_progress"}}
 {"id":"int-ca120c02","kind":"field_change","created_at":"2026-07-02T13:53:35.07270733Z","actor":"Connor","issue_id":"RemEx-82fk","extra":{"field":"status","new_value":"closed","old_value":"in_progress"}}
+{"id":"int-f9596490","kind":"field_change","created_at":"2026-07-02T16:17:54.917497966Z","actor":"Connor","issue_id":"RemEx-u0oc","extra":{"field":"status","new_value":"closed","old_value":"in_progress"}}
+{"id":"int-c7818e07","kind":"field_change","created_at":"2026-07-02T22:01:32.260594025Z","actor":"Connor","issue_id":"RemEx-eqxo","extra":{"field":"status","new_value":"closed","old_value":"open"}}
+{"id":"int-3d244516","kind":"field_change","created_at":"2026-07-02T22:42:46.896395921Z","actor":"Connor","issue_id":"RemEx-lq6h","extra":{"field":"status","new_value":"closed","old_value":"in_progress"}}
+{"id":"int-850d2ded","kind":"field_change","created_at":"2026-07-02T22:42:47.521802341Z","actor":"Connor","issue_id":"RemEx-nadp","extra":{"field":"status","new_value":"closed","old_value":"in_progress"}}

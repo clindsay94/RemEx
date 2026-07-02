@@ -598,7 +598,17 @@ static void *pw_thread_func(void *arg)
             SPA_VIDEO_FORMAT_BGRA,
             SPA_VIDEO_FORMAT_BGRx,
             SPA_VIDEO_FORMAT_RGBA,
-            SPA_VIDEO_FORMAT_RGBx));
+            SPA_VIDEO_FORMAT_RGBx),
+        /* Request a frame rate. Without an explicit max framerate, KWin's ScreenCast delivers on a
+         * slow, damage-driven cadence (~12 fps observed here, independent of on-screen activity),
+         * which caps the whole stream regardless of how fast we encode. A range [1,120] lets the
+         * compositor drive up to 120 fps; NVENC keeps up easily on the cropped single-monitor
+         * surface. This is the same request mature screencast clients (OBS, gnome-remote-desktop)
+         * make. (RemEx-nadp) */
+        SPA_FORMAT_VIDEO_maxFramerate, SPA_POD_CHOICE_RANGE_Fraction(
+            &SPA_FRACTION(120, 1),   /* default: aim high; KWin caps to the output refresh */
+            &SPA_FRACTION(1, 1),     /* min */
+            &SPA_FRACTION(120, 1))); /* max */
 
     /* node_id == 0 means the portal found no streams; use PW_ID_ANY so PipeWire
      * auto-selects the first suitable consumer node. */

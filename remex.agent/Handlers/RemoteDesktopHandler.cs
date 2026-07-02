@@ -328,6 +328,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         double lastEncoderRebuildMs = double.NegativeInfinity;
         int throttledKeyframeRequests = 0;
 
+        // Self-healing H.264: a failed encoder rebuild (transient GPU/driver/portal churn during a
+        // monitor switch or reconnect) no longer demotes the session to MJPEG permanently. The loop
+        // streams MJPEG-tagged frames while the encoder is down and retries H.264 on this cooldown.
+        // (RemEx-lq6h)
+        const double h264RetryCooldownMs = 3000;
+        double nextH264RetryMs = 0;
+
         // Start capture/encode loop in a separate task
         var captureTask = Task.Run(async () =>
         {
@@ -380,9 +387,11 @@ public sealed class RemoteDesktopHandler : IDisposable
 
                     // Rebuild the encoder on a stream-serial change (target switch) OR when an
                     // encoder-affecting setting (quality/fps/scale) changed mid-stream, OR when an
-                    // on-demand keyframe was requested (encoderSerial forced to -1 above).
+                    // on-demand keyframe was requested (encoderSerial forced to -1 above), OR when a
+                    // previous rebuild failed and the retry cooldown elapsed (self-healing recovery).
                     if (_activeCodec == DesktopCodecKind.H264 &&
-                        (encoderSerial != captureSerial || encoderConfigVersion != configVersion))
+                        (encoderSerial != captureSerial || encoderConfigVersion != configVersion ||
+                         (h264Encoder is null && rebuildClock.Elapsed.TotalMilliseconds >= nextH264RetryMs)))
                     {
                         // Any rebuild (target switch, config change, or on-demand keyframe) emits a fresh
                         // IDR, so it also satisfies the keyframe cooldown window above.
@@ -401,8 +410,26 @@ public sealed class RemoteDesktopHandler : IDisposable
                         encoderConfigVersion = configVersion;
                         if (h264Encoder is null)
                         {
-                            frameCodec = DesktopCodecKind.Mjpeg;
-                            _activeCodec = DesktopCodecKind.Mjpeg;
+                            if (sessionState.UseFrameEnvelope)
+                            {
+                                // Do NOT demote _activeCodec: a single failed rebuild used to lock the
+                                // whole session to MJPEG (12.5 FPS full-desktop CPU encode) with no way
+                                // back. Keep the negotiated codec, serve MJPEG-tagged frames meanwhile,
+                                // and retry after the cooldown. Safe because envelope-capable clients
+                                // route every frame by its own codec tag. (RemEx-lq6h)
+                                nextH264RetryMs = rebuildClock.Elapsed.TotalMilliseconds + h264RetryCooldownMs;
+                                _logger.LogWarning(
+                                    "H.264 encoder unavailable after rebuild; streaming MJPEG frames and retrying H.264 in {CooldownMs} ms.",
+                                    (int)h264RetryCooldownMs);
+                            }
+                            else
+                            {
+                                // Envelope-less legacy client: it routes frames by the negotiated codec,
+                                // so a mixed H.264/MJPEG stream would misroute. Keep the old permanent
+                                // fallback for these sessions.
+                                frameCodec = DesktopCodecKind.Mjpeg;
+                                _activeCodec = DesktopCodecKind.Mjpeg;
+                            }
                         }
                         else
                         {
@@ -459,6 +486,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                     }
                     else
                     {
+                        // This branch also serves an H.264 session whose encoder is temporarily down
+                        // (self-healing recovery window). Tag these frames as MJPEG so the client's
+                        // per-frame codec routing feeds them to the JPEG decoder, not MediaCodec.
+                        frameCodec = DesktopCodecKind.Mjpeg;
                         var jpegResult = await _screenCapture.CaptureScreenLiveAsync(_quality, _scale, _drawCursor, ct);
                         if (captureSerial != sessionState.StreamSerial)
                             continue;
@@ -907,14 +938,20 @@ public sealed class RemoteDesktopHandler : IDisposable
                 // drives the cursor off-screen so SendInput clamps it to the desktop edge. On the
                 // primary monitor the origin is (0,0), which is why the bug was invisible there.
                 case InputEventTypes.MouseMove when input.X.HasValue && input.Y.HasValue:
-                    _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                {
+                    var (mx, my) = ClampToActiveBounds(input.X.Value, input.Y.Value);
+                    _inputSimulation.MoveMouse(mx, my);
                     break;
+                }
                 case InputEventTypes.MouseMove when input.DeltaX.HasValue || input.DeltaY.HasValue:
                     _inputSimulation.MouseMoveRelative(input.DeltaX ?? 0, input.DeltaY ?? 0);
                     break;
                 case InputEventTypes.MouseDown when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    {
+                        var (dx, dy) = ClampToActiveBounds(input.X.Value, input.Y.Value);
+                        _inputSimulation.MoveMouse(dx, dy);
+                    }
                     _inputSimulation.MouseDown(input.Button.Value);
                     break;
                 case InputEventTypes.MouseUp when input.Button.HasValue:
@@ -922,7 +959,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                     break;
                 case InputEventTypes.MouseClick when input.Button.HasValue:
                     if (input.X.HasValue && input.Y.HasValue)
-                        _inputSimulation.MoveMouse(input.X.Value, input.Y.Value);
+                    {
+                        var (cx, cy) = ClampToActiveBounds(input.X.Value, input.Y.Value);
+                        _inputSimulation.MoveMouse(cx, cy);
+                    }
                     _inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
@@ -951,6 +991,23 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             _logger.LogWarning(ex, "Failed to dispatch input (invalid argument): {Type}", input.EventType);
         }
+    }
+
+    /// <summary>
+    /// Clamps an absolute pointer target into the bounds of the active capture region, so a client
+    /// coordinate that overshoots the streamed display (fast flicks, rounding at the edges) can
+    /// never drive the host cursor onto a monitor the remote user is not viewing — and, on Linux,
+    /// can never desync the portal's relative-motion tracker. (RemEx-lq6h)
+    /// </summary>
+    private (int X, int Y) ClampToActiveBounds(int x, int y)
+    {
+        var (width, height, left, top) = _screenCapture.GetScreenSize();
+        if (width <= 0 || height <= 0)
+        {
+            return (x, y);
+        }
+
+        return (Math.Clamp(x, left, left + width - 1), Math.Clamp(y, top, top + height - 1));
     }
 
     private void ApplyConfig(DesktopConfig config)

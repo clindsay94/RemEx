@@ -44,8 +44,12 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     // volatile ensures the reference is visible across threads without a lock.
     private volatile LinuxCaptureSessionCoordinator? _captureCoordinator;
 
-    // Cache of the last successfully captured JPEG frame for reuse on static screens/timeouts
-    private byte[]? _lastJpegFrame;
+    // Cache of the last successfully captured JPEG frame for reuse on static screens/timeouts.
+    // Guarded by the same capture-target signature as the raw cache: replaying a JPEG from a
+    // previous monitor/scale after a target switch would show the wrong screen. (RemEx-lq6h)
+    private sealed record JpegFrameCache(
+        byte[] Bytes, int ActiveLeft, int ActiveTop, int ActiveWidth, int ActiveHeight, double Scale);
+    private JpegFrameCache? _lastJpegFrame;
 
     private enum DisplayServer { Unknown, X11, Wayland }
     private readonly DisplayServer _displayServer;
@@ -88,24 +92,104 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         {
             lock (_targetSync)
             {
-                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
-                _activeLeft = _screenLeft;
-                _activeTop = _screenTop;
-                _activeWidth = _screenWidth;
-                _activeHeight = _screenHeight;
+                var realDisplays = _detectedDisplays.Where(d => d.DisplayId != "default").ToList();
+
+                // A monitor target that was already applied (client's explicit choice, possibly set
+                // by DesktopStart before the portal session finished opening, or carried over from
+                // the previous connection) must survive the session (re)open — resetting it here
+                // silently reverted the stream to the primary monitor on every reconnect. Only
+                // re-default when the chosen display no longer exists. (RemEx-lq6h)
+                if (_activeTarget.CaptureMode == DesktopCaptureMode.Monitor &&
+                    !string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
+                {
+                    var existing = realDisplays.FirstOrDefault(d =>
+                        string.Equals(d.DisplayId, _activeTarget.DisplayId, StringComparison.Ordinal));
+                    if (existing is not null)
+                    {
+                        _activeLeft = existing.Left;
+                        _activeTop = existing.Top;
+                        _activeWidth = existing.Width;
+                        _activeHeight = existing.Height;
+                        return;
+                    }
+                }
+
+                // Default a fresh PipeWire session to the primary monitor when more than one display
+                // exists: a single ~2560x1440 crop stays under the 4096px H.264 limit and encodes on
+                // NVENC without a CPU downscale, so the stream is fast out of the box. The client can
+                // still switch to another monitor or "both screens" (VirtualDesktop). (RemEx-nadp)
+                var primary = realDisplays.FirstOrDefault(d => d.IsPrimary) ?? realDisplays.FirstOrDefault();
+
+                if (realDisplays.Count > 1 && primary is not null)
+                {
+                    _activeTarget = new DesktopCaptureTarget
+                    {
+                        CaptureMode = DesktopCaptureMode.Monitor,
+                        DisplayId = primary.DisplayId,
+                    };
+                    _activeLeft = primary.Left;
+                    _activeTop = primary.Top;
+                    _activeWidth = primary.Width;
+                    _activeHeight = primary.Height;
+                }
+                else
+                {
+                    _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
+                    _activeLeft = _screenLeft;
+                    _activeTop = _screenTop;
+                    _activeWidth = _screenWidth;
+                    _activeHeight = _screenHeight;
+                }
             }
         }
     }
 
-    private byte[]? _lastRawFrame;
+    // Last successfully encoded raw frame plus the capture geometry/scale it was produced under.
+    // A cached frame may only be replayed while the active target and scale are UNCHANGED: the
+    // H.264 encoder's ffmpeg input size is fixed at creation, and replaying a frame from a
+    // previous target (e.g. right after a monitor switch) desyncs the rawvideo pipe and throws
+    // the encoder into a reinit storm. Stored as one reference so reads are atomic. (RemEx-lq6h)
+    // The offset is part of the signature: two monitors can share identical dimensions, and a
+    // replay from the previous monitor would otherwise pass the size check while showing the
+    // wrong screen's content after a target switch.
+    private sealed record RawFrameCache(
+        byte[] Bytes, int ActiveLeft, int ActiveTop, int ActiveWidth, int ActiveHeight, double Scale);
+    private RawFrameCache? _lastRawFrame;
 
     public async Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+    {
+        var (bytes, _) = await CaptureRawCoreAsync(scale, drawCursor, ct);
+        return bytes;
+    }
+
+    /// <summary>
+    /// Liveness-aware raw capture (parity with the Windows implementation, RemEx-ltd): a replay of
+    /// the cached frame on a healthy static screen stays IsLive = true (PipeWire is damage-driven,
+    /// so an unchanged screen legitimately delivers no frames), but a geometry-stale cache — the
+    /// active target or scale changed since it was encoded — is never replayed at all.
+    /// </summary>
+    public async Task<ScreenCaptureResult> CaptureRawScreenLiveAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+    {
+        var (bytes, isLive) = await CaptureRawCoreAsync(scale, drawCursor, ct);
+        return new ScreenCaptureResult(bytes, isLive);
+    }
+
+    private async Task<(byte[]? Bytes, bool IsLive)> CaptureRawCoreAsync(double scale, bool drawCursor, CancellationToken ct)
     {
         scale = Math.Clamp(scale, 0.25, 1.0);
 
         // ── Stage 2 fast path: PipeWire native capture ─────────────────
         if (_captureCoordinator is { IsRunning: true })
         {
+            int activeL, activeT, activeW, activeH;
+            lock (_targetSync)
+            {
+                activeL = _activeLeft;
+                activeT = _activeTop;
+                activeW = _activeWidth;
+                activeH = _activeHeight;
+            }
+
             try
             {
                 var frame = await _captureCoordinator.WaitForNextFrameAsync(timeoutMs: 80, ct: ct);
@@ -113,11 +197,12 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 {
                     try
                     {
-                        var raw = EncodeRaw(frame, scale, _logger);
+                        TryGetActiveCrop(frame.Width, frame.Height, out var cx, out var cy, out var cw, out var ch);
+                        var raw = EncodeRaw(frame, scale, _logger, cx, cy, cw, ch);
                         if (raw is { Length: > 0 })
                         {
-                            _lastRawFrame = raw;
-                            return raw;
+                            _lastRawFrame = new RawFrameCache(raw, activeL, activeT, activeW, activeH, scale);
+                            return (raw, true);
                         }
                     }
                     finally
@@ -134,7 +219,18 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 _logger.LogWarning(ex, "PipeWire raw capture loop encountered an error.");
             }
 
-            return _lastRawFrame;
+            // No fresh frame this tick — normal for a static screen on damage-driven PipeWire.
+            // Replay the cache only while its geometry/scale still match the active target.
+            var cache = _lastRawFrame;
+            if (cache is not null &&
+                cache.ActiveLeft == activeL && cache.ActiveTop == activeT &&
+                cache.ActiveWidth == activeW && cache.ActiveHeight == activeH &&
+                Math.Abs(cache.Scale - scale) < 0.0001)
+            {
+                return (cache.Bytes, true);
+            }
+
+            return (null, false);
         }
 
         // ── Fallback path (maim/spectacle) ───────────────────────────
@@ -152,7 +248,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     int bytesCount = Math.Abs(bmpData.Stride) * bmp.Height;
                     byte[] bgraValues = new byte[bytesCount];
                     System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, bgraValues, 0, bytesCount);
-                    return bgraValues;
+                    return (bgraValues, true);
                 }
                 finally
                 {
@@ -165,10 +261,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             _logger.LogWarning(ex, "Linux fallback raw capture failed.");
         }
 
-        return null;
+        return (null, false);
     }
 
-    private static byte[] EncodeRaw(LinuxFrameSnapshot frame, double scale, ILogger logger)
+    private static byte[] EncodeRaw(LinuxFrameSnapshot frame, double scale, ILogger logger, int cropX, int cropY, int cropW, int cropH)
     {
         System.Runtime.InteropServices.GCHandle pinHandle = default;
         try
@@ -197,17 +293,36 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
             if (image is null) return Array.Empty<byte>();
 
+            // Crop to the active monitor rect before scaling/encoding: shrinks per-frame work and, for a
+            // single ~2560x1440 monitor, keeps the surface under the 4096px H.264 limit so NVENC needs no
+            // CPU downscale. cropW<=0 means "no crop" (full virtual desktop). (RemEx-nadp)
+            SkiaSharp.SKImage? cropped = (cropW > 0 && cropH > 0)
+                ? image.Subset(SkiaSharp.SKRectI.Create(cropX, cropY, cropW, cropH))
+                : null;
+
             using (image)
+            using (cropped)
             {
-                SkiaSharp.SKImage finalImage = image;
+                SkiaSharp.SKImage baseImage = cropped ?? image;
+                int baseW = baseImage.Width;
+                int baseH = baseImage.Height;
+
+                SkiaSharp.SKImage finalImage = baseImage;
                 SkiaSharp.SKBitmap? scaledBitmap = null;
-                
-                if (scale < 0.99)
+
+                // The H.264 encoder's fixed ffmpeg input size is CaptureScaling.ScaledEven(activeW/H,
+                // scale) — see RemoteDesktopHandler.TryCreateH264Encoder. The raw buffer produced here
+                // MUST match that size byte-for-byte or the rawvideo pipe desyncs and the encoder
+                // reinitializes endlessly. Use the same even-aligned rounding, including at scale 1.0
+                // where an odd-sized monitor/crop would otherwise yield odd dimensions that no H.264
+                // encoder accepts. (RemEx-lq6h)
+                int targetW = CaptureScaling.ScaledEven(baseW, scale);
+                int targetH = CaptureScaling.ScaledEven(baseH, scale);
+
+                if (targetW != baseW || targetH != baseH)
                 {
-                    var targetW = Math.Max(1, (int)(frame.Width * scale));
-                    var targetH = Math.Max(1, (int)(frame.Height * scale));
                     var destInfo = new SkiaSharp.SKImageInfo(targetW, targetH, colorType, SkiaSharp.SKAlphaType.Premul);
-                    using var srcBitmap = SkiaSharp.SKBitmap.FromImage(image);
+                    using var srcBitmap = SkiaSharp.SKBitmap.FromImage(baseImage);
                     scaledBitmap = new SkiaSharp.SKBitmap(destInfo);
                     if (srcBitmap.ScalePixels(scaledBitmap, SkiaSharp.SKFilterQuality.Medium))
                     {
@@ -263,6 +378,15 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         // ── Stage 2 fast path: PipeWire native capture ─────────────────
         if (_captureCoordinator is { IsRunning: true })
         {
+            int activeL, activeT, activeW, activeH;
+            lock (_targetSync)
+            {
+                activeL = _activeLeft;
+                activeT = _activeTop;
+                activeW = _activeWidth;
+                activeH = _activeHeight;
+            }
+
             try
             {
                 var frame = await _captureCoordinator.WaitForNextFrameAsync(timeoutMs: 80, ct: ct);
@@ -270,11 +394,12 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 {
                     try
                     {
+                        TryGetActiveCrop(frame.Width, frame.Height, out var jcx, out var jcy, out var jcw, out var jch);
                         var jpeg = LinuxJpegEncoder.Encode(
-                            frame, quality, scale, _logger, out var formatTag);
+                            frame, quality, scale, _logger, out var formatTag, jcx, jcy, jcw, jch);
                         if (jpeg.Length > 0)
                         {
-                            _lastJpegFrame = jpeg;
+                            _lastJpegFrame = new JpegFrameCache(jpeg, activeL, activeT, activeW, activeH, scale);
                             return jpeg;
                         }
                         _logger.LogDebug(
@@ -291,13 +416,19 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 }
                 else
                 {
-                    // PipeWire timeout: screen is unchanged. Reuse last JPEG if available, avoiding shell-tool fallback.
-                    if (_lastJpegFrame is not null)
+                    // PipeWire timeout: screen is unchanged. Reuse the cached JPEG only while the
+                    // capture target and scale are unchanged (a stale-target replay would show the
+                    // previous monitor's content after a switch).
+                    var cache = _lastJpegFrame;
+                    if (cache is not null &&
+                        cache.ActiveLeft == activeL && cache.ActiveTop == activeT &&
+                        cache.ActiveWidth == activeW && cache.ActiveHeight == activeH &&
+                        Math.Abs(cache.Scale - scale) < 0.0001)
                     {
-                        return _lastJpegFrame;
+                        return cache.Bytes;
                     }
                     _logger.LogDebug(
-                        "PipeWire frame not available and no cached frame; falling back to legacy capture.");
+                        "PipeWire frame not available and no usable cached frame; falling back to legacy capture.");
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -345,7 +476,11 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             }
 
             var bytes = await File.ReadAllBytesAsync(tmpFile, ct);
-            _lastJpegFrame = bytes;
+            lock (_targetSync)
+            {
+                _lastJpegFrame = new JpegFrameCache(
+                    bytes, _activeLeft, _activeTop, _activeWidth, _activeHeight, scale);
+            }
             return bytes;
         }
         catch (Exception ex)
@@ -362,17 +497,32 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     public (int Width, int Height, int Left, int Top) GetScreenSize() =>
         (_activeWidth, _activeHeight, _activeLeft, _activeTop);
 
+    /// <summary>
+    /// Bounding box of the whole virtual desktop (all outputs), independent of the active capture
+    /// target. Used to map virtual-desktop pointer coordinates onto the portal ScreenCast stream
+    /// for absolute input injection. (RemEx-lq6h)
+    /// </summary>
+    public (int Left, int Top, int Width, int Height) GetVirtualDesktopBounds() =>
+        (_screenLeft, _screenTop, _screenWidth, _screenHeight);
+
     public DesktopDisplayCatalog GetDisplayCatalog()
     {
         RefreshDisplayTopology();
 
-        if (_captureCoordinator is { IsRunning: true } || _displayServer != DisplayServer.X11)
+        // Per-monitor capture is available whenever we enumerated real outputs (kscreen-doctor on KDE,
+        // xrandr on X11). The full virtual-desktop frame is captured once and cropped to the selected
+        // monitor, so Monitor mode works on Wayland and mid-session too — no dependency on the display
+        // server or on an active PipeWire session. (RemEx-nadp)
+        var hasRealDisplays = _detectedDisplays.Count > 0 &&
+            !(_detectedDisplays.Count == 1 && _detectedDisplays[0].DisplayId == "default");
+
+        if (!hasRealDisplays)
         {
             return new DesktopDisplayCatalog
             {
                 DisplayListVersion = ComputeDisplayListVersion(_detectedDisplays),
                 SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop],
-                Displays = [CreateFallbackDisplay()],
+                Displays = _detectedDisplays.Count > 0 ? _detectedDisplays.ToArray() : [CreateFallbackDisplay()],
             };
         }
 
@@ -390,20 +540,6 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
         lock (_targetSync)
         {
-            if (_captureCoordinator is { IsRunning: true })
-            {
-                if (target.CaptureMode != DesktopCaptureMode.VirtualDesktop)
-                {
-                    error = "The active Linux capture session only supports the full desktop surface. Stop and restart the stream to pick a different source.";
-                    return false;
-                }
-
-                SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
-                _activeTarget = new DesktopCaptureTarget { CaptureMode = DesktopCaptureMode.VirtualDesktop };
-                error = null;
-                return true;
-            }
-
             if (target.CaptureMode == DesktopCaptureMode.VirtualDesktop)
             {
                 SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
@@ -412,12 +548,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 return true;
             }
 
-            if (_displayServer != DisplayServer.X11)
-            {
-                error = "Per-monitor capture selection is currently unavailable for this Linux desktop session.";
-                return false;
-            }
-
+            // Monitor mode: crop the captured virtual-desktop frame to this output's rect. Works on any
+            // display server and mid-session because the crop is applied post-capture (EncodeRaw /
+            // LinuxJpegEncoder read the active bounds set here). (RemEx-nadp)
             var display = _detectedDisplays.FirstOrDefault(candidate =>
                 string.Equals(candidate.DisplayId, target.DisplayId, StringComparison.Ordinal));
             if (display is null)
@@ -443,8 +576,11 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
         lock (_targetSync)
         {
-            if (_captureCoordinator is { IsRunning: true } ||
-                _activeTarget.CaptureMode == DesktopCaptureMode.VirtualDesktop ||
+            // A Monitor target must survive a topology refresh even during an active PipeWire session
+            // (the crop is applied post-capture), so do NOT reset to VirtualDesktop just because the
+            // coordinator is running. Only fall back when the active target really is the full desktop
+            // or its display no longer exists. (RemEx-nadp)
+            if (_activeTarget.CaptureMode == DesktopCaptureMode.VirtualDesktop ||
                 string.IsNullOrWhiteSpace(_activeTarget.DisplayId))
             {
                 SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
@@ -484,6 +620,38 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         Width = _screenWidth,
         Height = _screenHeight,
     };
+
+    /// <summary>
+    /// Computes the crop rectangle (within a captured full virtual-desktop frame of the given size) for
+    /// the active capture target. Returns false — with all outs zeroed — when no crop is needed (the
+    /// active target is the whole desktop, or the bounds are unusable), in which case the encoders use
+    /// the full frame. Cropping to the selected monitor is what shrinks the per-frame surface. (RemEx-nadp)
+    /// </summary>
+    private bool TryGetActiveCrop(int frameWidth, int frameHeight, out int x, out int y, out int w, out int h)
+    {
+        int ax, ay, aw, ah;
+        lock (_targetSync)
+        {
+            ax = _activeLeft - _screenLeft;
+            ay = _activeTop - _screenTop;
+            aw = _activeWidth;
+            ah = _activeHeight;
+        }
+
+        // No crop: unusable bounds, or the active region already covers the whole captured frame.
+        if (aw <= 0 || ah <= 0 || (ax <= 0 && ay <= 0 && aw >= frameWidth && ah >= frameHeight))
+        {
+            x = 0; y = 0; w = 0; h = 0;
+            return false;
+        }
+
+        // Clamp defensively against topology drift between capture and crop.
+        x = Math.Clamp(ax, 0, Math.Max(0, frameWidth - 1));
+        y = Math.Clamp(ay, 0, Math.Max(0, frameHeight - 1));
+        w = Math.Clamp(aw, 1, frameWidth - x);
+        h = Math.Clamp(ah, 1, frameHeight - y);
+        return true;
+    }
 
     private string BuildCropScaleFilter(int captureWidth, int captureHeight)
     {
@@ -748,7 +916,13 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     {
         _detectedDisplays = [];
 
-        // Try xrandr first (works on both X11 and XWayland)
+        // KDE Wayland (KWin) first: KWin is not a wlroots compositor, so wlr-randr fails, and
+        // XWayland's xrandr view of KWin outputs is unreliable for per-monitor geometry. kscreen-doctor
+        // talks to KScreen directly (same API as KDE's own display settings) and reports true per-output
+        // geometry + the priority-1 primary — the reliable source for the per-monitor display selector.
+        if (_displayServer == DisplayServer.Wayland && TryDetectWithKScreenDoctor()) return;
+
+        // Try xrandr next (works on both X11 and XWayland)
         if (TryDetectWithXrandr()) return;
 
         // Try xdpyinfo (X11 only)
@@ -758,6 +932,160 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (_displayServer == DisplayServer.Wayland && TryDetectWithWlrRandr()) return;
 
         SetDefaultSize();
+    }
+
+    // Matches a kscreen-doctor "Geometry: X,Y WxH" line (ANSI colour codes stripped first).
+    private static readonly Regex KScreenGeometryRegex = new(
+        @"Geometry:\s*(?<x>-?\d+),(?<y>-?\d+)\s+(?<w>\d+)x(?<h>\d+)",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex AnsiEscapeRegex = new(
+        @"\x1b\[[0-9;]*m", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Enumerates per-monitor geometry on KDE Plasma (Wayland or X11) via <c>kscreen-doctor -o</c>.
+    /// Each enabled+connected output becomes a <see cref="DesktopDisplayInfo"/>; the priority-1 output
+    /// is the primary. Populates the virtual-desktop bounding box and <c>_detectedDisplays</c> so the
+    /// display catalog can offer per-monitor capture. Returns false (falling through to xrandr) when
+    /// kscreen-doctor is absent or yields no usable output.
+    /// </summary>
+    private bool TryDetectWithKScreenDoctor()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("kscreen-doctor", "-o")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc is null) return false;
+
+            var output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(3000);
+            if (string.IsNullOrWhiteSpace(output)) return false;
+
+            var clean = AnsiEscapeRegex.Replace(output, string.Empty);
+            var displays = ParseKScreenDisplays(clean);
+            if (displays.Count == 0) return false;
+
+            // Virtual-desktop bounding box across all outputs.
+            int minX = displays.Min(d => d.Left);
+            int minY = displays.Min(d => d.Top);
+            int maxRight = displays.Max(d => d.Left + d.Width);
+            int maxBottom = displays.Max(d => d.Top + d.Height);
+
+            _screenLeft = minX;
+            _screenTop = minY;
+            _screenWidth = maxRight - minX;
+            _screenHeight = maxBottom - minY;
+            _detectedDisplays = displays;
+
+            var primary = displays.FirstOrDefault(d => d.IsPrimary) ?? displays[0];
+            _primaryX = primary.Left;
+            _primaryY = primary.Top;
+            _primaryWidth = primary.Width;
+            _primaryHeight = primary.Height;
+
+            if (_activeWidth == 0 || _activeHeight == 0)
+            {
+                SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
+            }
+
+            _logger.LogInformation(
+                "kscreen-doctor detected {Count} display(s); virtual desktop {W}x{H} at ({X},{Y}); primary={Primary}.",
+                displays.Count, _screenWidth, _screenHeight, _screenLeft, _screenTop, primary.DisplayId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "kscreen-doctor display detection failed.");
+            return false;
+        }
+    }
+
+    // Parses the ANSI-stripped `kscreen-doctor -o` output into one DesktopDisplayInfo per
+    // enabled+connected output. Block form:
+    //   Output: <id> <NAME> <uuid>
+    //       enabled
+    //       connected
+    //       priority <n>        (priority 1 == primary)
+    //       Geometry: X,Y WxH
+    private static List<DesktopDisplayInfo> ParseKScreenDisplays(string cleanOutput)
+    {
+        var result = new List<DesktopDisplayInfo>();
+        var lines = cleanOutput.Split('\n');
+
+        string? name = null, uuid = null;
+        bool enabled = false, connected = false, isPrimary = false;
+        int? geomX = null, geomY = null, geomW = null, geomH = null;
+
+        void Flush()
+        {
+            if (name is not null && enabled && connected &&
+                geomW is > 0 && geomH is > 0)
+            {
+                result.Add(new DesktopDisplayInfo
+                {
+                    DisplayId = name,
+                    PersistentDisplayKey = string.IsNullOrEmpty(uuid) ? name : uuid,
+                    Name = name,
+                    IsPrimary = isPrimary,
+                    Left = geomX ?? 0,
+                    Top = geomY ?? 0,
+                    Width = geomW.Value,
+                    Height = geomH.Value,
+                });
+            }
+            name = uuid = null;
+            enabled = connected = isPrimary = false;
+            geomX = geomY = geomW = geomH = null;
+        }
+
+        foreach (var raw in lines)
+        {
+            var line = raw.Trim();
+            if (line.StartsWith("Output:", StringComparison.Ordinal))
+            {
+                Flush();
+                var parts = line["Output:".Length..].Trim()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                // parts[0] = index, parts[1] = NAME, parts[2] = uuid (optional)
+                if (parts.Length >= 2) name = parts[1];
+                if (parts.Length >= 3) uuid = parts[2];
+                continue;
+            }
+
+            if (line.Equals("enabled", StringComparison.OrdinalIgnoreCase)) enabled = true;
+            else if (line.Equals("disabled", StringComparison.OrdinalIgnoreCase)) enabled = false;
+            else if (line.Equals("connected", StringComparison.OrdinalIgnoreCase)) connected = true;
+            else if (line.StartsWith("priority ", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(line["priority ".Length..].Trim(), out var pr) && pr == 1)
+                    isPrimary = true;
+            }
+            else
+            {
+                var m = KScreenGeometryRegex.Match(line);
+                if (m.Success)
+                {
+                    geomX = int.Parse(m.Groups["x"].Value);
+                    geomY = int.Parse(m.Groups["y"].Value);
+                    geomW = int.Parse(m.Groups["w"].Value);
+                    geomH = int.Parse(m.Groups["h"].Value);
+                }
+            }
+        }
+        Flush();
+
+        // If kscreen-doctor reported no explicit priority-1 primary, treat the first as primary.
+        if (result.Count > 0 && !result.Any(d => d.IsPrimary))
+        {
+            result[0] = result[0] with { IsPrimary = true };
+        }
+        return result;
     }
 
     private bool TryDetectWithXrandr()

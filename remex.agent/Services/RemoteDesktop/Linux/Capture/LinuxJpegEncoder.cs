@@ -46,7 +46,11 @@ internal static class LinuxJpegEncoder
         int quality,
         double scale,
         ILogger logger,
-        out string formatTag)
+        out string formatTag,
+        int cropX = 0,
+        int cropY = 0,
+        int cropW = 0,
+        int cropH = 0)
     {
         formatTag = string.Empty;
         GCHandle pinHandle = default;
@@ -82,24 +86,32 @@ internal static class LinuxJpegEncoder
                 return Array.Empty<byte>();
             }
 
+            // Crop to the active monitor rect before scaling/encoding (cropW<=0 = full desktop). (RemEx-nadp)
+            SKImage? cropped = (cropW > 0 && cropH > 0)
+                ? image.Subset(SKRectI.Create(cropX, cropY, cropW, cropH))
+                : null;
+
             using (image)
+            using (cropped)
             {
+                SKImage baseImage = cropped ?? image;
+
                 if (scale >= 0.99)
                 {
-                    using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
+                    using var data = baseImage.Encode(SKEncodedImageFormat.Jpeg, quality);
                     return data?.ToArray() ?? Array.Empty<byte>();
                 }
 
-                var targetW = Math.Max(1, (int)(frame.Width * scale));
-                var targetH = Math.Max(1, (int)(frame.Height * scale));
+                var targetW = Math.Max(1, (int)(baseImage.Width * scale));
+                var targetH = Math.Max(1, (int)(baseImage.Height * scale));
                 var destInfo = new SKImageInfo(targetW, targetH, colorType, SKAlphaType.Premul);
-                using var srcBitmap = SKBitmap.FromImage(image);
+                using var srcBitmap = SKBitmap.FromImage(baseImage);
                 using var dstBitmap = new SKBitmap(destInfo);
                 if (!srcBitmap.ScalePixels(dstBitmap, SKFilterQuality.Medium))
                 {
                     logger.LogWarning(
                         "LinuxJpegEncoder: ScalePixels failed; encoding at original resolution.");
-                    using var fallback = image.Encode(SKEncodedImageFormat.Jpeg, quality);
+                    using var fallback = baseImage.Encode(SKEncodedImageFormat.Jpeg, quality);
                     return fallback?.ToArray() ?? Array.Empty<byte>();
                 }
 
