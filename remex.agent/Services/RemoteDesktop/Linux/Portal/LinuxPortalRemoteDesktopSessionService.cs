@@ -193,30 +193,34 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
             if (!string.IsNullOrEmpty(savedRestoreToken))
                 _logger.LogInformation("Replaying saved portal restore_token to avoid the permission prompt.");
 
-            var selectSrcResults = await PortalDbusHelper.CallPortalAsync(
-                _conn!,
-                _normalizedSender!,
-                PortalDbusNames.ScreenCastInterface,
-                method: "SelectSources",
-                signature: "oa{sv}",
-                requestTimeout: TimeSpan.FromSeconds(30),
-                writeArgs: (ref MessageWriter w, string handleToken) =>
+            // We first request persist_mode + restore_token so reconnects skip the
+            // "Share your screen?" dialog. Some compositors (KDE Plasma's
+            // xdg-desktop-portal-kde) reject persistence for RemoteDesktop sessions with
+            // InvalidArgument "Remote desktop sessions cannot persist". Failing the whole
+            // session there would leave RD with no capture, so retry once WITHOUT
+            // persistence: RD then works everywhere, and prompt-free reconnect still
+            // functions where persist is supported (e.g. GNOME). See RemEx-82fk;
+            // prompt-free reconnect on KDE is tracked separately by RemEx-mswt.
+            var requestPersist = true;
+            PortalDbusHelper.ArgWriter selectSourcesArgs = (ref MessageWriter w, string handleToken) =>
+            {
+                w.WriteObjectPath(sessionHandle);
+                var dictStart = w.WriteDictionaryStart();
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("handle_token");
+                w.WriteVariantString(handleToken);
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("types");
+                w.WriteVariantUInt32((uint)PortalSourceType.Monitor);
+
+                w.WriteDictionaryEntryStart();
+                w.WriteString("cursor_mode");
+                w.WriteVariantUInt32((uint)PortalCursorMode.Embedded);
+
+                if (requestPersist)
                 {
-                    w.WriteObjectPath(sessionHandle);
-                    var dictStart = w.WriteDictionaryStart();
-
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("handle_token");
-                    w.WriteVariantString(handleToken);
-
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("types");
-                    w.WriteVariantUInt32((uint)PortalSourceType.Monitor);
-
-                    w.WriteDictionaryEntryStart();
-                    w.WriteString("cursor_mode");
-                    w.WriteVariantUInt32((uint)PortalCursorMode.Embedded);
-
                     w.WriteDictionaryEntryStart();
                     w.WriteString("persist_mode");
                     w.WriteVariantUInt32((uint)PortalPersistMode.PersistUntilRevoked);
@@ -227,11 +231,46 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                         w.WriteString("restore_token");
                         w.WriteVariantString(savedRestoreToken);
                     }
+                }
 
-                    w.WriteDictionaryEnd(dictStart);
-                },
-                logger: _logger,
-                ct: ct);
+                w.WriteDictionaryEnd(dictStart);
+            };
+
+            Dictionary<string, VariantValue>? selectSrcResults;
+            try
+            {
+                selectSrcResults = await PortalDbusHelper.CallPortalAsync(
+                    _conn!,
+                    _normalizedSender!,
+                    PortalDbusNames.ScreenCastInterface,
+                    method: "SelectSources",
+                    signature: "oa{sv}",
+                    requestTimeout: TimeSpan.FromSeconds(30),
+                    writeArgs: selectSourcesArgs,
+                    logger: _logger,
+                    ct: ct);
+            }
+            catch (DBusException ex) when (
+                ex.ErrorName == "org.freedesktop.portal.Error.InvalidArgument" ||
+                (ex.Message?.Contains("persist", StringComparison.OrdinalIgnoreCase) ?? false))
+            {
+                _logger.LogWarning(
+                    "Portal rejected persist_mode ({Error}); retrying SelectSources without " +
+                    "persistence. Remote desktop will work, but this compositor will re-prompt " +
+                    "for the screen-share on each connect (no prompt-free reconnect for RemoteDesktop).",
+                    ex.ErrorName);
+                requestPersist = false;
+                selectSrcResults = await PortalDbusHelper.CallPortalAsync(
+                    _conn!,
+                    _normalizedSender!,
+                    PortalDbusNames.ScreenCastInterface,
+                    method: "SelectSources",
+                    signature: "oa{sv}",
+                    requestTimeout: TimeSpan.FromSeconds(30),
+                    writeArgs: selectSourcesArgs,
+                    logger: _logger,
+                    ct: ct);
+            }
 
             if (selectSrcResults is null)
             {
