@@ -1,311 +1,193 @@
-# RemEx — Linux Installation Guide
+# RemEx on Linux — Setup Guide
 
-This document covers two scenarios:
+This guide is written for everyone — you do not need to be a Linux expert. Copy-paste the
+commands as shown and check the ✓ checkpoints as you go.
 
-- **[A] Installing a release package** — you downloaded a `.tar.gz` from the Releases page.
-- **[B] Building from source** — you cloned the repository and want to build and install yourself.
+## How RemEx works on Linux (30 seconds)
 
-If you are an end user, follow **[A]**. If you are a developer or contributor, follow **[B]**.
+RemEx on your PC is **one app**: `Remex.Agent`. It is the window you see **and** the
+connection host your phone talks to, in a single program — the same design as on Windows.
+
+- It runs as **you**, inside your normal desktop session. **Nothing runs as root.**
+- It **starts automatically when you sign in** (minimized to the tray), so your phone can
+  always reach the PC.
+- There is **no background service**. If you used an older RemEx that installed a
+  `remex-host` service or a separate `remex-client` app, the installer removes those
+  automatically — see [Upgrading from an older RemEx](#upgrading-from-an-older-remex).
+
+### Where everything lives
+
+| What | Where |
+|---|---|
+| The app itself | `~/.local/share/remex-agent/` |
+| Pairing data (certificate + paired phones) | `~/.local/share/Remex/` |
+| "Start at login" entry | `~/.config/autostart/remex-agent.desktop` |
+| App-menu entry | `~/.local/share/applications/remex-agent.desktop` |
+| Terminal command | `remex-agent` |
+
+Everything is inside your home folder. Deleting those folders removes RemEx completely.
 
 ---
 
-## [A] Installing from a Release Package
+## [A] Installing a release package
 
-### A1. Prerequisites
+### A1. Install the helper packages
 
-RemEx talks to the desktop via `xdg-desktop-portal` (RemoteDesktop + ScreenCast) and streams pixels through PipeWire. The portal-backend package is **desktop-specific** — install the one matching your DE.
+RemEx shows your PC's screen on your phone through two standard Linux components:
+`xdg-desktop-portal` (the permission system) and PipeWire (the video stream). Install the
+one portal "backend" that matches your desktop:
 
-| Package | Purpose | Required | Arch / CachyOS / Manjaro | Ubuntu / Debian / Pop!_OS | Fedora |
-|---|---|---|---|---|---|
-| `xdg-desktop-portal` | Portal frontend (RemoteDesktop / ScreenCast) | Required | `sudo pacman -S xdg-desktop-portal` | `sudo apt install xdg-desktop-portal` | `sudo dnf install xdg-desktop-portal` |
-| `xdg-desktop-portal-kde` | Portal backend for KDE Plasma | KDE | `sudo pacman -S xdg-desktop-portal-kde` | `sudo apt install xdg-desktop-portal-kde` | `sudo dnf install xdg-desktop-portal-kde` |
-| `xdg-desktop-portal-gnome` | Portal backend for GNOME | GNOME | `sudo pacman -S xdg-desktop-portal-gnome` | `sudo apt install xdg-desktop-portal-gnome` | `sudo dnf install xdg-desktop-portal-gnome` |
-| `xdg-desktop-portal-wlr` | Portal backend for sway / Hyprland / other wlroots | Wayland WM | `sudo pacman -S xdg-desktop-portal-wlr` | `sudo apt install xdg-desktop-portal-wlr` | `sudo dnf install xdg-desktop-portal-wlr` |
-| `pipewire` + `wireplumber` | Screen capture stream | Required | `sudo pacman -S pipewire wireplumber` | `sudo apt install pipewire wireplumber` | `sudo dnf install pipewire wireplumber` |
-| `libei` | Wayland-native input injection | Recommended (Wayland) | `sudo pacman -S libei` | `sudo apt install libei1` | `sudo dnf install libei` |
-| `libevdev` | uinput virtual device support | Recommended | `sudo pacman -S libevdev` | `sudo apt install libevdev2` | `sudo dnf install libevdev` |
-| `ffmpeg` | H.264 hardware encoder (VAAPI/libx264) + MJPEG fallback | Recommended | `sudo pacman -S ffmpeg` | `sudo apt install ffmpeg` | `sudo dnf install ffmpeg` |
+| Package | Who needs it | Arch / CachyOS / Manjaro | Ubuntu / Debian / Pop!_OS | Fedora |
+|---|---|---|---|---|
+| `xdg-desktop-portal` | Everyone | `sudo pacman -S xdg-desktop-portal` | `sudo apt install xdg-desktop-portal` | `sudo dnf install xdg-desktop-portal` |
+| `xdg-desktop-portal-kde` | KDE Plasma | `sudo pacman -S xdg-desktop-portal-kde` | `sudo apt install xdg-desktop-portal-kde` | `sudo dnf install xdg-desktop-portal-kde` |
+| `xdg-desktop-portal-gnome` | GNOME | `sudo pacman -S xdg-desktop-portal-gnome` | `sudo apt install xdg-desktop-portal-gnome` | `sudo dnf install xdg-desktop-portal-gnome` |
+| `xdg-desktop-portal-wlr` | sway / Hyprland | `sudo pacman -S xdg-desktop-portal-wlr` | `sudo apt install xdg-desktop-portal-wlr` | `sudo dnf install xdg-desktop-portal-wlr` |
+| `pipewire` + `wireplumber` | Everyone | `sudo pacman -S pipewire wireplumber` | `sudo apt install pipewire wireplumber` | `sudo dnf install pipewire wireplumber` |
+| `libei` | Wayland users (recommended) | `sudo pacman -S libei` | `sudo apt install libei1` | `sudo dnf install libei` |
+| `ffmpeg` | Everyone (recommended) | `sudo pacman -S ffmpeg` | `sudo apt install ffmpeg` | `sudo dnf install ffmpeg` |
 
-Optional but useful (RemEx probes for these at startup and uses whichever is present):
-
-| Tool | Purpose | Arch | Ubuntu/Debian |
-|---|---|---|---|
-| `kdotool` | Window / cursor control on KDE | `sudo pacman -S kdotool` (AUR) | not in repos — build from source |
-| `xdotool` | X11 input + window control | `sudo pacman -S xdotool` | `sudo apt install xdotool` |
-| `ydotool` | Wayland-generic uinput input | `sudo pacman -S ydotool` | `sudo apt install ydotool` |
-| `spectacle` | KDE screenshot fallback | `sudo pacman -S spectacle` | `sudo apt install kde-spectacle` |
-| `grim` + `slurp` | wlroots screenshot fallback | `sudo pacman -S grim slurp` | `sudo apt install grim slurp` |
-
-**Verify the portal stack is healthy:**
+Not sure whether your setup is healthy? The installer checks for you, and you can always run
+the built-in health check afterwards:
 
 ```bash
-# Frontend must expose RemoteDesktop and ScreenCast for KDE/GNOME
-busctl --user introspect org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop \
-  | grep -E 'RemoteDesktop|ScreenCast'
-
-# PipeWire must be running
-systemctl --user status pipewire wireplumber
-
-# Or use the bundled doctor (after install)
-~/.local/share/remex-host/remex.agent --doctor
+~/.local/share/remex-agent/install.sh doctor
 ```
 
-**Checkpoint:** `busctl introspect` shows both `org.freedesktop.portal.RemoteDesktop` and `org.freedesktop.portal.ScreenCast`. PipeWire and WirePlumber are `Active: active (running)`. ✓
-
-If `RemoteDesktop` is missing even though the backend is installed, jump to the troubleshooting entry **"RemoteDesktop interface unavailable even though xdg-desktop-portal-kde is installed"** below.
-
----
-
-### A2. Extract the package
+### A2. Extract and install
 
 ```bash
 # Replace the filename with the version you downloaded
-tar -xzf remex-client-v2.0.0-linux-x64.tar.gz
+tar -xzf remex-agent-v2.0.0-linux-x64.tar.gz
+./remex-agent-v2.0.0-linux-x64/install.sh
 ```
 
-You will get a folder named `remex-client-v2.0.0-linux-x64/`.
+The installer:
+1. Removes anything left over from older RemEx versions (old service, old app, old
+   certificate location) — it will explain each step and may ask for your password **once**
+   if old root-owned files need to be cleaned up.
+2. Copies RemEx to `~/.local/share/remex-agent/`.
+3. Adds RemEx to your app menu and sets it to start at login (minimized to the tray).
 
-**Checkpoint:** `ls remex-client-v2.0.0-linux-x64/` shows `install.sh` and `remex.desktop`. ✓
+**Checkpoint:** the installer ends with `RemEx installed.` and no red warnings. ✓
+
+### A3. Launch it
+
+- **App menu:** look for **RemEx** (log out and back in if it doesn't appear, or run
+  `kbuildsycoca6` on KDE / `update-desktop-database ~/.local/share/applications` on GNOME).
+- **Terminal:** `remex-agent`
+
+**Checkpoint:** the RemEx window opens, and the connection host starts. To confirm the host
+is listening:
+
+```bash
+ss -tln | grep 5005
+```
+
+You should see a line with `:5005`. ✓
+
+### A4. Pair your phone
+
+1. Install the RemEx app on your Android phone.
+2. Make sure phone and PC are on the same network (same Wi-Fi, or both on Tailscale).
+3. In the phone app, add your PC — it is discovered automatically on a home network, or
+   enter the PC's IP address.
+4. RemEx on the PC shows a **6-digit PIN**. Enter it on the phone.
+
+That's it. The phone remembers this PC permanently (it "pins" the PC's security
+certificate). You only re-pair if you delete the pairing data folder.
+
+**Checkpoint:** the phone shows your PC as connected and live stats appear. ✓
+
+### A5. Uninstall
+
+```bash
+~/.local/share/remex-agent/install.sh uninstall
+```
+
+Your pairing data is deliberately kept (so a reinstall keeps your phones paired). The
+uninstaller prints the one command to wipe that too, if you want a truly clean slate.
 
 ---
 
-### A3. Run the installer
+## Upgrading from an older RemEx
 
-```bash
-./remex-client-v2.0.0-linux-x64/install.sh install
-```
+Older versions installed **two** things on Linux: a `remex-client` app and a `remex-host`
+root service. That design is gone — one app does everything now. Just run the new
+`install.sh`; it automatically:
 
-This copies the application to `~/.local/share/remex-client/`, creates a launcher symlink at `~/.local/bin/remex-client`, and registers the app in your application menu.
+- stops and removes the old `remex-host` system service (asks for your password once),
+- removes the old `remex-client` install, launcher, and autostart entries,
+- **moves your pairing certificate** from the old root-owned location (`/var/lib/remex`)
+  into your user folder — the certificate is not changed, so **already-paired phones keep
+  working**.
 
-**Checkpoint:** The installer prints `RemEx Client installed.` with no errors. ✓
-
----
-
-### A4. Verify the install
-
-```bash
-# Verify the binary is launchable
-~/.local/bin/remex-client --version 2>/dev/null || \
-  echo "binary is present — GUI app, no --version flag"
-
-# Verify the .desktop entry was created
-ls ~/.local/share/applications/remex-client.desktop
-```
-
-**Checkpoint:** Both commands succeed without "not found" errors. ✓
+Nothing else to do. If the installer could not get root access, it prints the exact
+commands to finish the cleanup yourself.
 
 ---
 
-### A5. Launch
+## Checking what's going on
 
-- **Application menu:** Look for **RemEx** in your app launcher. If it does not appear immediately, log out and back in (or run `kbuildsycoca6` on KDE / `update-desktop-database ~/.local/share/applications` on GNOME).
-- **Terminal:** `remex-client`
-
----
-
-### A6. Install the Host service (optional — only needed on the machine being controlled)
-
-The **host** is a background service that runs on the PC you want to remotely access. It is not required on the machine running only the client.
-
-```bash
-tar -xzf remex-host-v2.0.0-linux-x64.tar.gz
-./remex-host-v2.0.0-linux-x64/install.sh install
-```
-
-**Checkpoint:** Service is running:
-
-```bash
-systemctl --user status remex-host
-```
-
-The output should show `Active: active (running)`. ✓
-
-View live logs:
-
-```bash
-journalctl --user -u remex-host -f
-```
-
----
-
-### A7. Uninstall
-
-```bash
-# Uninstall client
-~/.local/share/remex-client/install.sh uninstall
-
-# Uninstall host service
-~/.local/share/remex-host/install.sh uninstall
-```
-
-### A8. Secure Remote Access via Tailscale
-
-By default, RemEx works on your local home network. If you need to access your PC securely from outside your home network (e.g., over cellular data or from a work Wi-Fi):
-
-1. **Automated Setup:** During host installation, the installer will interactively prompt you:
-   ```text
-   Would you like to configure Tailscale for secure remote access from outside your home network? [y/N]
-   ```
-   Answering `y` will check for Tailscale, install it if missing, and offer to start and authenticate it.
-
-2. **Manual Installation:**
-   ```bash
-   # Install Tailscale
-   curl -fsSL https://tailscale.com/install.sh | sh
-   
-   # Start the service and log in
-   sudo tailscale up
-   ```
-
-3. **Get Your Static IP:**
-   - On your Android phone, download the **Tailscale** app and log into the same account.
-   - Copy the private IP (starts with `100.x.y.z`) listed for your Linux host.
-   - Enter this IP in the RemEx Android app to connect securely from anywhere!
-
----
-
----
-
-## [B] Building from Source
-
-### B1. Prerequisites
-
-You need the following tools installed before running the build script. **All** of them are required — the build will fail partway through if any are missing.
-
-| Tool | Purpose | Install (Arch/CachyOS) | Install (Ubuntu/Debian) |
-|------|---------|----------------------|------------------------|
-| .NET 10 SDK | Compile the .NET projects | `sudo pacman -S dotnet-sdk` | See [dotnet.microsoft.com](https://dotnet.microsoft.com/download) |
-| cmake | Build the native PipeWire bridge | `sudo pacman -S cmake` | `sudo apt install cmake` |
-| pkg-config | Locate PipeWire headers | `sudo pacman -S pkgconf` | `sudo apt install pkg-config` |
-| PipeWire dev headers | Native bridge compilation | `sudo pacman -S pipewire` | `sudo apt install libpipewire-0.3-dev` |
-| gcc / clang | C compiler for the bridge | `sudo pacman -S base-devel` | `sudo apt install build-essential` |
-
-**Checkpoint:** Verify everything is present before continuing:
-
-```bash
-dotnet --version      # should print 10.x.x
-cmake --version       # should print cmake version 3.x
-pkg-config --version  # should print a version number
-gcc --version         # or: clang --version
-```
-
-All four commands must succeed. ✓
-
----
-
-### B2. Clone the repository (if you haven't already)
-
-```bash
-git clone https://github.com/clindsay94/remex.git
-cd remex
-```
-
----
-
-### B3. Run the build script
-
-This single command does everything: compiles .NET projects, builds the native bridge, and packages everything into `.tar.gz` archives.
-
-```bash
-./installer/build-linux.sh
-```
-
-> **Do not run `dotnet publish` manually before this.** The script handles publishing internally. Running it yourself beforehand is harmless but wasteful.
-
-You can build only one component if needed:
-
-```bash
-./installer/build-linux.sh --skip-host    # client package only
-./installer/build-linux.sh --skip-client  # host package only
-```
-
-The build typically takes 2–5 minutes on first run (NuGet restore + cmake configure). Subsequent builds are faster.
-
----
-
-### B4. Verify the build output
-
-```bash
-ls installer/Output/
-```
-
-**Checkpoint:** You should see files like:
-
-```
-remex-client-v2.0.0-linux-x64.tar.gz
-remex-host-v2.0.0-linux-x64.tar.gz
-```
-
-Both `.tar.gz` files must be present. ✓
-
-Verify the native bridge made it into each package:
-
-```bash
-# Client package contains the native bridge
-tar -tzf installer/Output/remex-client-v2.0.0-linux-x64.tar.gz | grep libremex_linux_bridge
-
-# Host package contains it too
-tar -tzf installer/Output/remex-host-v2.0.0-linux-x64.tar.gz | grep libremex_linux_bridge
-```
-
-**Checkpoint:** Both `grep` commands print a line like `remex-client-.../runtimes/linux-x64/native/libremex_linux_bridge.so`. ✓
-
-If either grep returns nothing, the native bridge did not get packaged. Check that cmake built successfully — the build script prints `Native bridge → ...` when it succeeds.
-
----
-
-### B5. Install from the built packages
-
-Follow steps **A2 → A7** above, pointing at the files in `installer/Output/` instead of downloaded files.
-
-```bash
-cd installer/Output
-
-# Install the client
-tar -xzf remex-client-v2.0.0-linux-x64.tar.gz
-./remex-client-v2.0.0-linux-x64/install.sh install
-
-# Install the host service (optional, only on the controlled machine)
-tar -xzf remex-host-v2.0.0-linux-x64.tar.gz
-./remex-host-v2.0.0-linux-x64/install.sh install
-```
-
----
-
-### B6. Running directly from the publish directory (dev shortcut)
-
-If you want to run without going through the full package/install cycle — for example, after making a code change — use:
-
-```bash
-dotnet publish remex.desktop -c Release -r linux-x64 --self-contained
-./remex.desktop/bin/Release/net10.0/linux-x64/publish/remex.desktop
-```
-
-The MSBuild targets in the `.csproj` automatically copy `libremex_linux_bridge.so` into `publish/runtimes/linux-x64/native/` during the publish step, so no manual copying is needed.
-
----
+| Question | Command |
+|---|---|
+| Is RemEx running? | `pgrep -af Remex.Agent` |
+| Is the host listening for the phone? | `ss -tln \| grep 5005` |
+| Is my screen-sharing stack healthy? | `~/.local/share/remex-agent/install.sh doctor` |
+| Watch RemEx's log output | run `remex-agent` from a terminal |
 
 ---
 
 ## Troubleshooting
 
-### RemoteDesktop interface unavailable even though xdg-desktop-portal-kde is installed
+### "RemEx could not read its certificate" / phone cannot connect
 
-**Symptom (host log):**
+**Symptom (log):**
+
+```
+crit: Remex.Agent.Services.Security.CertificateService[0]
+      RemEx could not read its certificate at /var/lib/remex/cert.pfx ...
+[Remex] Could not start embedded host on port 5005 ...
+```
+
+**Cause.** An older RemEx version ran as root and left a root-owned certificate behind.
+Your normal user cannot read it, and RemEx refuses to create a new one because that would
+break every phone you already paired.
+
+**Fix.** Re-run the installer — it repairs this automatically:
+
+```bash
+./remex-agent-v2.0.0-linux-x64/install.sh
+```
+
+Or do it by hand:
+
+```bash
+mkdir -p ~/.local/share/Remex
+sudo mv /var/lib/remex/cert.pfx ~/.local/share/Remex/cert.pfx
+sudo chown $USER: ~/.local/share/Remex/cert.pfx
+chmod 600 ~/.local/share/Remex/cert.pfx
+sudo rmdir /var/lib/remex
+```
+
+Then start RemEx again. Your paired phones keep working — the certificate itself never
+changed. (Never paired a phone? Then you can simply `sudo rm /var/lib/remex/cert.pfx`
+instead and RemEx will make a fresh one.)
+
+### Remote desktop shows no picture (portal error in the log)
+
+**Symptom (log):**
 
 ```
 warn: ...LinuxPortalRemoteDesktopSessionService[0]
-      Portal org.freedesktop.portal.RemoteDesktop.CreateSession returned a D-Bus error.
-      DBusException: org.freedesktop.DBus.Error.UnknownMethod:
-      No such interface "org.freedesktop.portal.RemoteDesktop" on object at path
-      /org/freedesktop/portal/desktop
-fail: ...LinuxCaptureSessionLifetime[0]
-      LinuxCaptureSessionLifetime: portal session creation failed; PipeWire capture unavailable.
+      Portal org.freedesktop.portal.RemoteDesktop.CreateSession returned a D-Bus error ...
+      No such interface "org.freedesktop.portal.RemoteDesktop"
 ```
 
-**Cause.** The `xdg-desktop-portal` frontend (D-Bus name `org.freedesktop.portal.Desktop`) was started by `systemd --user` before Plasma/GNOME pushed `XDG_CURRENT_DESKTOP`, `WAYLAND_DISPLAY`, etc. into the user manager. Without those vars, the frontend's portal-file matcher (`UseIn=KDE` / `UseIn=GNOME`) can't pick the correct backend, so it never exposes the `RemoteDesktop` interface — even after the backend process is later activated. The frontend's exposed-interface table is frozen at startup.
+**Cause.** The desktop portal started before your desktop environment finished setting up
+its environment variables, so it never loaded the right backend.
 
-**One-line fix (try this first):**
+**Fix (one-liner):**
 
 ```bash
 systemctl --user import-environment \
@@ -314,29 +196,11 @@ systemctl --user import-environment \
 systemctl --user restart xdg-desktop-portal.service
 ```
 
-Verify:
+Then restart RemEx. The installer runs this pre-emptively, RemEx self-repairs once per
+run, and `install.sh doctor` diagnoses it in detail. If `doctor` says the backend package
+is missing entirely, install it from the table in A1.
 
-```bash
-busctl --user introspect org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop \
-  | grep RemoteDesktop
-# Expected: org.freedesktop.portal.RemoteDesktop  interface
-```
-
-Then restart the host:
-
-```bash
-systemctl --user restart remex-host
-```
-
-**RemEx ships an automated check.** The host detects this state and self-repairs on the first failed `CreateSession` call per process. The installer's `install.sh install` runs the same `import-environment + restart` pre-emptively, and `~/.local/share/remex-host/remex.agent --doctor` prints a detailed report plus an option to apply safe repairs.
-
-If `--doctor` reports that the backend package is missing entirely (rather than "frontend stale"), install it via the dependency table in section A1.
-
----
-
-### App does not appear in the application launcher after install
-
-The `.desktop` entry is written to `~/.local/share/applications/`. Some desktop environments cache this directory and need a nudge:
+### RemEx doesn't appear in the app menu
 
 ```bash
 # KDE Plasma
@@ -346,67 +210,121 @@ kbuildsycoca6
 update-desktop-database ~/.local/share/applications
 ```
 
-If it still does not appear, log out and back in.
+If it still doesn't appear, log out and back in.
+
+### "PipeWire native library not available" in the log
+
+The native capture library is missing from the install. Re-run `install.sh` (it verifies
+the file and warns if a system library is missing). To check manually:
+
+```bash
+ls ~/.local/share/remex-agent/runtimes/linux-x64/native/libremex_linux_bridge.so
+ldd ~/.local/share/remex-agent/runtimes/linux-x64/native/libremex_linux_bridge.so
+```
+
+Any `not found` line means a system package is missing (usually `pipewire`).
+
+### Port 5005 already in use
+
+Another program — often a stale RemEx from an old install — is holding the port:
+
+```bash
+ss -tlnp | grep 5005
+```
+
+Note the process name/PID it prints, stop that program (`kill <PID>`), and start RemEx
+again. Running the new `install.sh` also prevents old RemEx copies from auto-starting at
+login again.
+
+### Two RemEx windows / RemEx starts twice at login
+
+Old and new autostart entries are both firing. Fix:
+
+```bash
+rm -f ~/.config/autostart/remex-client.desktop
+ls ~/.config/autostart | grep -i remex   # should list ONLY remex-agent.desktop
+```
+
+(New installs do this cleanup automatically.)
 
 ---
 
-### "PipeWire native library not available" in host logs
+## Remote access from outside your home (Tailscale)
 
-The native bridge `.so` is missing from the .NET runtime probing path. This usually means:
-
-1. You installed the host package that was built **before** the fix that added the bridge to the client package — rebuild from source using **[B]** above.
-2. Or the host was installed manually without running `install.sh` — run `~/.local/share/remex-host/install.sh install` to redo it.
-
-Verify the file exists after install:
+Out of the box, phone and PC must be on the same network. For secure access from anywhere:
 
 ```bash
-ls ~/.local/share/remex-host/runtimes/linux-x64/native/libremex_linux_bridge.so
-ls ~/.local/share/remex-client/runtimes/linux-x64/native/libremex_linux_bridge.so
+# On the PC
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
 ```
 
-Check its runtime dependencies are satisfied:
-
-```bash
-ldd ~/.local/share/remex-host/runtimes/linux-x64/native/libremex_linux_bridge.so
-```
-
-Any line containing `not found` indicates a missing system library. Install the package that provides it (usually `pipewire`).
+Then install the **Tailscale** app on your phone, sign in to the same account, and use the
+PC's Tailscale IP (starts with `100.`) in the RemEx phone app.
 
 ---
 
-### Host service fails to start
+## [B] Building from source (developers)
+
+### B1. Prerequisites
+
+| Tool | Arch/CachyOS | Ubuntu/Debian |
+|------|--------------|---------------|
+| .NET 10 SDK | `sudo pacman -S dotnet-sdk` | see [dotnet.microsoft.com](https://dotnet.microsoft.com/download) |
+| cmake | `sudo pacman -S cmake` | `sudo apt install cmake` |
+| pkg-config | `sudo pacman -S pkgconf` | `sudo apt install pkg-config` |
+| PipeWire dev headers | `sudo pacman -S pipewire` | `sudo apt install libpipewire-0.3-dev` |
+| gcc / clang | `sudo pacman -S base-devel` | `sudo apt install build-essential` |
+
+**Checkpoint:** `dotnet --version`, `cmake --version`, `pkg-config --version`, and
+`gcc --version` all print a version. ✓
+
+### B2. Build
 
 ```bash
-# Check status
-systemctl --user status remex-host
-
-# Read the full log
-journalctl --user -u remex-host --no-pager | tail -50
+./installer/build-linux.sh
 ```
 
-Common causes:
-- **Port 5005 already in use:** Another process is on that port. Check `ss -tlnp | grep 5005`.
-- **Missing PipeWire:** Install `pipewire` and ensure the PipeWire session is running (`systemctl --user status pipewire`).
+One command builds everything: the .NET app, the native PipeWire bridge, and the package.
 
----
-
-### cmake fails during build
+**Checkpoint:**
 
 ```bash
-# Confirm cmake can find PipeWire
-pkg-config --exists libpipewire-0.3 && echo "found" || echo "NOT FOUND"
+ls installer/Output/
+# → remex-agent-v2.0.0-linux-x64.tar.gz
 ```
 
-If `NOT FOUND`, install the PipeWire development package for your distro (see the prerequisites table in B1).
-
----
-
-### `dotnet` command not found
-
-Install .NET 10 SDK from [dotnet.microsoft.com](https://dotnet.microsoft.com/download). On Arch/CachyOS:
+Verify the native bridge made it into the package:
 
 ```bash
-sudo pacman -S dotnet-sdk
+tar -tzf installer/Output/remex-agent-v*.tar.gz | grep libremex_linux_bridge
 ```
 
-Verify with `dotnet --version` after install.
+**Checkpoint:** prints a `runtimes/linux-x64/native/libremex_linux_bridge.so` line. ✓
+
+### B3. Install your build
+
+```bash
+cd installer/Output
+tar -xzf remex-agent-v2.0.0-linux-x64.tar.gz
+./remex-agent-v2.0.0-linux-x64/install.sh
+```
+
+### B4. Dev shortcut (run without packaging)
+
+```bash
+dotnet run --project remex.agent
+```
+
+The publish/packaging steps are only needed for a real install; `dotnet run` is fine for
+iterating. The health check works here too:
+
+```bash
+dotnet run --project remex.agent -- --doctor
+```
+
+### Build problems
+
+- **cmake can't find PipeWire:** `pkg-config --exists libpipewire-0.3 && echo found` — if
+  not found, install the PipeWire dev package (table in B1).
+- **`dotnet` not found:** install the .NET 10 SDK (table in B1) and re-open the terminal.

@@ -29,6 +29,15 @@ public class StartupRegistrationService : IStartupRegistrationService
     // task name. The toggle and the installer must manage the same task.
     private const string WindowsTaskName = "RemEx";
 
+    // Keep "remex-agent.desktop" stable — agent-install.sh writes the SAME autostart file, like
+    // the stable "RemEx" task name on Windows. The legacy name is the pre-2.0 client/host-split
+    // identifier, still recognized (and cleaned up) so upgrades keep the user's setting.
+    private const string LinuxAutostartFileName = "remex-agent.desktop";
+    private const string LinuxLegacyAutostartFileName = "remex-client.desktop";
+
+    private static string GetLinuxAutostartDir() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart");
+
     public bool IsSupported => OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
 
     /// <summary>
@@ -56,6 +65,46 @@ public class StartupRegistrationService : IStartupRegistrationService
         }
     }
 
+    /// <summary>
+    /// One-time Linux migration: replaces a legacy "remex-client.desktop" autostart entry with
+    /// the current "remex-agent.desktop" one. The legacy entry may point at a removed install
+    /// directory (the pre-2.0 client/host split), so leaving it would relaunch a stale binary —
+    /// or nothing — at login. Launch-at-login intent is preserved by re-registering against the
+    /// running executable. Safe to call repeatedly; no-op off Linux. (RemEx-u0oc)
+    /// </summary>
+    public static void MigrateLegacyLinuxAutostartEntry()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        try
+        {
+            var autostartDir = GetLinuxAutostartDir();
+            var legacyFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
+            if (!File.Exists(legacyFile))
+            {
+                return;
+            }
+
+            var currentFile = Path.Combine(autostartDir, LinuxAutostartFileName);
+            if (File.Exists(currentFile))
+            {
+                File.Delete(legacyFile);
+                return;
+            }
+
+            // SetEnabled(true) writes the current-name entry pointing at this executable and
+            // removes the legacy file itself.
+            new StartupRegistrationService().SetEnabled(true);
+        }
+        catch
+        {
+            // Best-effort migration; a failure here is non-fatal.
+        }
+    }
+
     public bool IsEnabled()
     {
         if (OperatingSystem.IsWindows())
@@ -66,8 +115,13 @@ public class StartupRegistrationService : IStartupRegistrationService
         {
             try
             {
-                var autostartDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart");
-                var desktopFile = Path.Combine(autostartDir, "remex-client.desktop");
+                var autostartDir = GetLinuxAutostartDir();
+                var desktopFile = Path.Combine(autostartDir, LinuxAutostartFileName);
+                if (!File.Exists(desktopFile))
+                {
+                    // Pre-rename installs used the legacy basename; honor it until migrated.
+                    desktopFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
+                }
                 if (!File.Exists(desktopFile)) return false;
                 var lines = File.ReadAllLines(desktopFile);
                 foreach (var line in lines)
@@ -108,8 +162,16 @@ public class StartupRegistrationService : IStartupRegistrationService
         {
             try
             {
-                var autostartDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart");
-                var desktopFile = Path.Combine(autostartDir, "remex-client.desktop");
+                var autostartDir = GetLinuxAutostartDir();
+                var desktopFile = Path.Combine(autostartDir, LinuxAutostartFileName);
+                var legacyDesktopFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
+
+                // Whatever the new state is, the legacy entry must go: two autostart files would
+                // launch two competing instances at login.
+                if (File.Exists(legacyDesktopFile))
+                {
+                    File.Delete(legacyDesktopFile);
+                }
 
                 if (!enabled)
                 {
@@ -123,18 +185,18 @@ public class StartupRegistrationService : IStartupRegistrationService
                 Directory.CreateDirectory(autostartDir);
 
                 // Mirror the installed menu launcher when present so the autostart entry stays in sync
-                // with it. client-install.sh installs to the per-user applications dir; fall back to the
-                // system-wide one, then to a generated entry. Keep the "remex-client.desktop" basename:
-                // the whole Linux install (dir, symlink, launcher) uses that identifier and the installer
-                // manages the SAME autostart file — like the stable "RemEx" task name on Windows.
+                // with it. agent-install.sh installs to the per-user applications dir; fall back to the
+                // system-wide one, then to a generated entry. Only the current-name launcher is
+                // mirrored — a legacy remex-client.desktop may point at a removed install directory,
+                // so mirroring it would resurrect a stale binary at login.
                 var userDesktopFile = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    ".local", "share", "applications", "remex-client.desktop");
-                var systemDesktopFile = "/usr/share/applications/remex-client.desktop";
+                    ".local", "share", "applications", LinuxAutostartFileName);
+                var systemDesktopFile = "/usr/share/applications/" + LinuxAutostartFileName;
                 var sourceDesktopFile = File.Exists(userDesktopFile) ? userDesktopFile
                     : File.Exists(systemDesktopFile) ? systemDesktopFile
                     : null;
-                var exePath = Environment.ProcessPath ?? "remex-client";
+                var exePath = Environment.ProcessPath ?? "remex-agent";
 
                 string content;
                 if (sourceDesktopFile is not null)
@@ -168,7 +230,7 @@ public class StartupRegistrationService : IStartupRegistrationService
                 }
                 else
                 {
-                    // Branding matches the installed launcher (installer/linux/remex-client.desktop):
+                    // Branding matches the installed launcher (installer/linux/remex-agent.desktop):
                     // Name=RemEx, Icon=remex. --minimized starts it to the tray, ready for the phone.
                     content = $"""
 [Desktop Entry]

@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Builds the RemEx Linux packages:
-#   Output/remex-client-vX.Y.Z-linux-x64.tar.gz
-#   Output/remex-host-vX.Y.Z-linux-x64.tar.gz
+# Builds the RemEx Linux package:
+#   Output/remex-agent-vX.Y.Z-linux-x64.tar.gz
+#
+# There is ONE package. Remex.Agent is the entire PC side (host + desktop UI in a
+# single process), exactly like the Windows install. The old remex-client /
+# remex-host split no longer exists.
 #
 # Usage:
 #   ./installer/build-linux.sh
-#   ./installer/build-linux.sh --skip-client
-#   ./installer/build-linux.sh --skip-host
 
 set -euo pipefail
 
@@ -22,12 +23,11 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
     exit 1
 fi
 
-SKIP_CLIENT=false
-SKIP_HOST=false
 for arg in "$@"; do
     case "$arg" in
-        --skip-client) SKIP_CLIENT=true ;;
-        --skip-host)   SKIP_HOST=true   ;;
+        --skip-client|--skip-host)
+            echo "Warning: '$arg' is obsolete — there is a single remex-agent package now. Ignoring." >&2
+            ;;
         *) echo "Unknown argument: $arg"; exit 1 ;;
     esac
 done
@@ -59,7 +59,11 @@ reset_stale_cmake_cache() {
 
 cleanup_linux_package_artifacts() {
     shopt -s nullglob
+    # Also sweeps tarballs from the pre-2.0 client/host split so stale packages
+    # can never be installed by accident again.
     local artifacts=(
+        "$OUTPUT_DIR"/remex-agent-v*-linux-x64
+        "$OUTPUT_DIR"/remex-agent-v*-linux-x64.tar.gz
         "$OUTPUT_DIR"/remex-client-v*-linux-x64
         "$OUTPUT_DIR"/remex-client-v*-linux-x64.tar.gz
         "$OUTPUT_DIR"/remex-host-v*-linux-x64
@@ -94,7 +98,7 @@ NATIVE_BRIDGE_DIR="$REPO_ROOT/remex.agent.native.linux"
 NATIVE_BRIDGE_BUILD_DIR="$NATIVE_BRIDGE_DIR/build"
 NATIVE_BRIDGE_SO="$NATIVE_BRIDGE_BUILD_DIR/libremex_linux_bridge.so"
 
-# ── Native bridge (shared by client and host) ────────────────────────────────
+# ── Native bridge ────────────────────────────────────────────────────────────
 echo ""
 echo "── Building native Linux bridge (libremex_linux_bridge.so) ─────────────"
 reset_stale_cmake_cache "$NATIVE_BRIDGE_DIR" "$NATIVE_BRIDGE_BUILD_DIR"
@@ -112,105 +116,54 @@ if ! nm -D --defined-only "$NATIVE_BRIDGE_SO" | grep -q ' remex_pw_session_creat
 fi
 echo "Native bridge → $NATIVE_BRIDGE_SO"
 
-# ── Client ───────────────────────────────────────────────────────────────────
-if [[ "$SKIP_CLIENT" == false ]]; then
-    CLIENT_PROJ="$REPO_ROOT/remex.agent"
-    CLIENT_PUBLISH="$REPO_ROOT/artifacts/publish/remex.agent/release_linux-x64"
-    CLIENT_BRIDGE="$CLIENT_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
-    CLIENT_STAGE="$OUTPUT_DIR/remex-client-v${VERSION}-linux-x64"
+# ── Agent (the entire PC side) ───────────────────────────────────────────────
+AGENT_PROJ="$REPO_ROOT/remex.agent"
+AGENT_PUBLISH="$REPO_ROOT/artifacts/publish/remex.agent/release_linux-x64"
+AGENT_BRIDGE="$AGENT_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
+AGENT_STAGE="$OUTPUT_DIR/remex-agent-v${VERSION}-linux-x64"
 
-    echo ""
-    echo "── Publishing Remex.Agent (linux-x64) ──────────────────────────"
-    rm -rf "$CLIENT_PUBLISH"
-    dotnet publish "$CLIENT_PROJ" -c Release -r linux-x64 --self-contained
+echo ""
+echo "── Publishing Remex.Agent (linux-x64) ──────────────────────────────────"
+rm -rf "$AGENT_PUBLISH"
+dotnet publish "$AGENT_PROJ" -c Release -r linux-x64 --self-contained
 
-    echo ""
-    echo "── Verifying client native bridge publish layout ─────────────────────────"
-    if [[ ! -f "$CLIENT_BRIDGE" ]]; then
-        echo "Error: libremex_linux_bridge.so missing from client runtime path: $CLIENT_BRIDGE" >&2
-        exit 1
-    fi
-    if [[ -f "$CLIENT_PUBLISH/libremex_linux_bridge.so" ]]; then
-        echo "Error: stale client app-root libremex_linux_bridge.so should not be published." >&2
-        exit 1
-    fi
-    echo "Native bridge → $CLIENT_BRIDGE"
+echo ""
+echo "── Verifying native bridge publish layout ──────────────────────────────"
+if [[ ! -f "$AGENT_BRIDGE" ]]; then
+    echo "Error: libremex_linux_bridge.so missing from runtime path: $AGENT_BRIDGE" >&2
+    exit 1
+fi
+if [[ -f "$AGENT_PUBLISH/libremex_linux_bridge.so" ]]; then
+    echo "Error: stale app-root libremex_linux_bridge.so should not be published." >&2
+    exit 1
+fi
+echo "Native bridge → $AGENT_BRIDGE"
 
-    echo ""
-    echo "── Packaging client ─────────────────────────────────────────────────────"
-    rm -rf "$CLIENT_STAGE"
-    mkdir -p "$CLIENT_STAGE"
-    cp -r "$CLIENT_PUBLISH/." "$CLIENT_STAGE/"
-    chmod +x "$CLIENT_STAGE/Remex.Agent"
+echo ""
+echo "── Packaging remex-agent ────────────────────────────────────────────────"
+rm -rf "$AGENT_STAGE"
+mkdir -p "$AGENT_STAGE"
+cp -r "$AGENT_PUBLISH/." "$AGENT_STAGE/"
+chmod +x "$AGENT_STAGE/Remex.Agent"
 
-    # Desktop entry and install script
-    cp "$LINUX_DIR/remex-client.desktop" "$CLIENT_STAGE/"
-    cp "$LINUX_DIR/client-install.sh"    "$CLIENT_STAGE/install.sh"
-    chmod +x "$CLIENT_STAGE/install.sh"
+# Desktop entry and install script
+cp "$LINUX_DIR/remex-agent.desktop" "$AGENT_STAGE/"
+cp "$LINUX_DIR/agent-install.sh"    "$AGENT_STAGE/install.sh"
+chmod +x "$AGENT_STAGE/install.sh"
 
-    # Icon — prefer New-REMEX.png, then icon.png, then icon.ico
-    if   [[ -f "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" ]]; then cp "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" "$CLIENT_STAGE/remex.png"
-    elif [[ -f "$CLIENT_PROJ/icon.png" ]]; then cp "$CLIENT_PROJ/icon.png" "$CLIENT_STAGE/remex.png"
-    elif [[ -f "$CLIENT_PROJ/icon.ico" ]]; then cp "$CLIENT_PROJ/icon.ico" "$CLIENT_STAGE/remex.ico"
-    fi
-
-    tar -czf "$OUTPUT_DIR/remex-client-v${VERSION}-linux-x64.tar.gz" \
-        -C "$OUTPUT_DIR" "remex-client-v${VERSION}-linux-x64"
-    rm -rf "$CLIENT_STAGE"
-    echo "Client → $OUTPUT_DIR/remex-client-v${VERSION}-linux-x64.tar.gz"
+# Icon — prefer New-REMEX.png, then icon.png, then icon.ico
+if   [[ -f "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" ]]; then cp "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" "$AGENT_STAGE/remex.png"
+elif [[ -f "$AGENT_PROJ/icon.png" ]]; then cp "$AGENT_PROJ/icon.png" "$AGENT_STAGE/remex.png"
+elif [[ -f "$AGENT_PROJ/icon.ico" ]]; then cp "$AGENT_PROJ/icon.ico" "$AGENT_STAGE/remex.ico"
 fi
 
-# ── Host ─────────────────────────────────────────────────────────────────────
-if [[ "$SKIP_HOST" == false ]]; then
-    HOST_PROJ="$REPO_ROOT/remex.agent"
-    HOST_PUBLISH="$REPO_ROOT/artifacts/publish/remex.agent/release_linux-x64"
-    HOST_BRIDGE="$HOST_PUBLISH/runtimes/linux-x64/native/libremex_linux_bridge.so"
-    HOST_STAGE="$OUTPUT_DIR/remex-host-v${VERSION}-linux-x64"
-
-    # The host and the desktop client are now the same consolidated Remex.Agent binary, published to
-    # the same path. Reuse the client's publish output when it is already present (built just above);
-    # only publish here when the client stage was skipped.
-    if [[ ! -f "$HOST_PUBLISH/Remex.Agent" ]]; then
-        echo ""
-        echo "── Publishing Remex.Agent (linux-x64) ───────────────────────────────────"
-        rm -rf "$HOST_PUBLISH"
-        dotnet publish "$HOST_PROJ" -c Release -r linux-x64 --self-contained
-    else
-        echo ""
-        echo "── Reusing Remex.Agent publish from the client stage (same consolidated binary) ──"
-    fi
-
-    echo ""
-    echo "── Verifying host native bridge publish layout ───────────────────────────"
-    if [[ ! -f "$HOST_BRIDGE" ]]; then
-        echo "Error: libremex_linux_bridge.so missing from host runtime path: $HOST_BRIDGE" >&2
-        exit 1
-    fi
-    if [[ -f "$HOST_PUBLISH/libremex_linux_bridge.so" ]]; then
-        echo "Error: stale host app-root libremex_linux_bridge.so should not be published." >&2
-        exit 1
-    fi
-    echo "Native bridge → $HOST_BRIDGE"
-
-    echo ""
-    echo "── Packaging host ───────────────────────────────────────────────────────"
-    rm -rf "$HOST_STAGE"
-    mkdir -p "$HOST_STAGE"
-    cp -r "$HOST_PUBLISH/." "$HOST_STAGE/"
-    chmod +x "$HOST_STAGE/Remex.Agent"
-
-    cp "$LINUX_DIR/remex-host.service" "$HOST_STAGE/"
-    cp "$LINUX_DIR/host-install.sh"    "$HOST_STAGE/install.sh"
-    chmod +x "$HOST_STAGE/install.sh"
-
-    tar -czf "$OUTPUT_DIR/remex-host-v${VERSION}-linux-x64.tar.gz" \
-        -C "$OUTPUT_DIR" "remex-host-v${VERSION}-linux-x64"
-    rm -rf "$HOST_STAGE"
-    echo "Host   → $OUTPUT_DIR/remex-host-v${VERSION}-linux-x64.tar.gz"
-fi
+tar -czf "$OUTPUT_DIR/remex-agent-v${VERSION}-linux-x64.tar.gz" \
+    -C "$OUTPUT_DIR" "remex-agent-v${VERSION}-linux-x64"
+rm -rf "$AGENT_STAGE"
+echo "Agent → $OUTPUT_DIR/remex-agent-v${VERSION}-linux-x64.tar.gz"
 
 echo ""
 echo "═════════════════════════════════════════════════════"
-echo "  Linux packages built successfully!"
+echo "  Linux package built successfully!"
 echo "  Output: $OUTPUT_DIR/"
 echo "═════════════════════════════════════════════════════"

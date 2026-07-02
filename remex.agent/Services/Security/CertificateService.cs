@@ -63,18 +63,38 @@ public sealed class CertificateService : ICertificateService
                 catch (Exception ex)
                 {
                     // BRICK CANARY (read side): an existing cert.pfx is present but unreadable.
-                    // The machine-wide ACL is LocalSystem + Administrators FullControl with
-                    // inheritance disabled, so a MEDIUM-integrity (non-elevated) process gets
-                    // Administrators as a deny-only SID and is refused — the #1 symptom of RemEx
-                    // running without elevation. We must NOT regenerate here: a fresh cert changes
-                    // the SPKI and permanently breaks every SPKI-pinned Android pairing until the
-                    // user re-pairs. Fail loudly and preserve the existing key instead.
-                    _logger.LogCritical(ex,
-                        "RemEx could not read its existing certificate at {Path}. This almost always " +
-                        "means RemEx is running WITHOUT administrator elevation. RemEx will NOT generate " +
-                        "a new certificate (doing so would break every already-paired phone). Restart " +
-                        "RemEx elevated (the installed logon task runs it with highest privileges).",
-                        certPath);
+                    // We must NOT regenerate here: a fresh cert changes the SPKI and permanently
+                    // breaks every SPKI-pinned Android pairing until the user re-pairs. Fail
+                    // loudly and preserve the existing key instead. The likely cause differs by
+                    // OS, so the guidance does too:
+                    //  - Windows: the machine-wide ACL is LocalSystem + Administrators FullControl
+                    //    with inheritance disabled, so a MEDIUM-integrity (non-elevated) process
+                    //    gets Administrators as a deny-only SID and is refused — the #1 symptom of
+                    //    RemEx running without elevation.
+                    //  - Linux: the file is 0600 and owned by another user — almost always root,
+                    //    left behind by the retired remex-host system-service install. Elevating
+                    //    is the WRONG fix on Linux (it would create more root-owned state);
+                    //    ownership must be repaired instead.
+                    if (OperatingSystem.IsWindows())
+                    {
+                        _logger.LogCritical(ex,
+                            "RemEx could not read its existing certificate at {Path}. This almost always " +
+                            "means RemEx is running WITHOUT administrator elevation. RemEx will NOT generate " +
+                            "a new certificate (doing so would break every already-paired phone). Restart " +
+                            "RemEx elevated (the installed logon task runs it with highest privileges).",
+                            certPath);
+                    }
+                    else
+                    {
+                        _logger.LogCritical(ex,
+                            "RemEx could not read its certificate at {Path}. The file is probably owned by " +
+                            "another user — usually root, left behind by an old 'remex-host' system-service " +
+                            "install. RemEx will NOT generate a new certificate (doing so would break every " +
+                            "already-paired phone). To fix it, run:  sudo chown {User}: '{CertPath}'  and start " +
+                            "RemEx again (it will move the file to your per-user data folder automatically). " +
+                            "If you have never paired a phone, you can instead remove it:  sudo rm '{CertPath2}'",
+                            certPath, Environment.UserName, certPath, certPath);
+                    }
                     throw;
                 }
                 _logger.LogInformation("Certificate loaded. Subject={Subject}, Expires={Expiry}",
@@ -288,32 +308,72 @@ public sealed class CertificateService : ICertificateService
                 "RemEx", "cert.pfx");
         }
 
-        // Linux: prefer /var/lib/remex, fallback to local app data
-        const string systemPath = "/var/lib/remex";
-        if (Directory.Exists(systemPath) || TryCreateDirectory(systemPath))
-        {
-            return Path.Combine(systemPath, "cert.pfx");
-        }
-
-        return Path.Combine(
+        // Linux: per-user state, alongside paired_clients.json (PairedClientRegistry).
+        // /var/lib/remex is legacy — only the retired remex-host root systemd service ever
+        // created it, and a root-owned cert.pfx there bricks every non-root run. A readable
+        // legacy cert is migrated once (same key material → same SPKI → phones stay paired).
+        var userPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Remex", "cert.pfx");
+        const string legacyPath = "/var/lib/remex/cert.pfx";
+
+        return ResolveNonWindowsCertificatePath(userPath, legacyPath);
     }
 
-    private static bool TryCreateDirectory(string path)
+    /// <summary>
+    /// Picks the effective cert path on non-Windows systems and performs the one-time
+    /// migration from the legacy system path to the per-user path when possible.
+    /// Returns <paramref name="legacyPath"/> only when a legacy cert exists but cannot be
+    /// read/migrated — so the read-side brick canary in
+    /// <see cref="GetOrCreateCertificateAsync"/> fires instead of silently generating a new
+    /// identity that would orphan every paired phone.
+    /// </summary>
+    internal string ResolveNonWindowsCertificatePath(string userPath, string legacyPath)
+    {
+        if (File.Exists(userPath))
+            return userPath;
+
+        if (!File.Exists(legacyPath))
+            return userPath;
+
+        try
+        {
+            var pfxBytes = File.ReadAllBytes(legacyPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(userPath)!);
+            WriteProtectedFile(userPath, pfxBytes);
+            _logger.LogInformation(
+                "Migrated the RemEx certificate from the legacy system path {LegacyPath} to the " +
+                "per-user path {UserPath}. The certificate itself is unchanged, so already-paired " +
+                "phones keep working.",
+                legacyPath, userPath);
+            TryDeleteLegacyCertificate(legacyPath);
+            return userPath;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            // Unreadable legacy cert (usually root-owned). Point at it so the brick canary
+            // reports the real problem with repair instructions.
+            return legacyPath;
+        }
+    }
+
+    private void TryDeleteLegacyCertificate(string legacyPath)
     {
         try
         {
-            Directory.CreateDirectory(path);
-            return true;
+            File.Delete(legacyPath);
+            var legacyDir = Path.GetDirectoryName(legacyPath)!;
+            if (Directory.Exists(legacyDir) && Directory.GetFileSystemEntries(legacyDir).Length == 0)
+                Directory.Delete(legacyDir);
         }
-        catch (UnauthorizedAccessException)
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
-            return false;
-        }
-        catch (IOException)
-        {
-            return false;
+            // Expected when the legacy directory is root-owned: the copy in the per-user path
+            // wins on every future startup, so the leftover is inert. The installer's repair
+            // step removes it with sudo.
+            _logger.LogDebug(ex,
+                "Could not remove the legacy certificate at {LegacyPath}; it is no longer used.",
+                legacyPath);
         }
     }
 }

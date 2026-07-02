@@ -6,7 +6,7 @@
 .DESCRIPTION
     Target=Auto chooses the correct packaging flow by environment:
       - Windows / WSL: Windows installer (Inno Setup)
-      - Linux: Linux client/host packages via build-linux.sh
+      - Linux: single remex-agent package via build-linux.sh
 
 .PARAMETER Target
     Auto (default), Windows, or Linux.
@@ -16,12 +16,6 @@
 
 .PARAMETER SkipVersionSync
     Windows target only: skip syncing Directory.Build.props with version.properties.
-
-.PARAMETER SkipClient
-    Linux target only: pass --skip-client to build-linux.sh.
-
-.PARAMETER SkipHost
-    Linux target only: pass --skip-host to build-linux.sh.
 
 .PARAMETER ForwardedArgs
     Additional args forwarded to build-linux.sh (Linux target only).
@@ -33,15 +27,13 @@
     pwsh ./installer/build-installer.ps1 -Target Windows -SkipPublish
 
 .EXAMPLE
-    pwsh ./installer/build-installer.ps1 -Target Linux -- --skip-client
+    pwsh ./installer/build-installer.ps1 -Target Linux
 #>
 param(
     [ValidateSet("Auto", "Windows", "Linux")]
     [string]$Target = "Auto",
     [switch]$SkipPublish,
     [switch]$SkipVersionSync,
-    [switch]$SkipClient,
-    [switch]$SkipHost,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$ForwardedArgs
 )
@@ -328,8 +320,6 @@ Write-Host "Resolved target: $resolvedTarget" -ForegroundColor DarkGray
 
 if ($resolvedTarget -eq "Linux") {
     $linuxArgs = @()
-    if ($SkipClient) { $linuxArgs += "--skip-client" }
-    if ($SkipHost) { $linuxArgs += "--skip-host" }
     $extraArgs = @($ForwardedArgs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     if ($extraArgs.Count -gt 0) { $linuxArgs += $extraArgs }
     Invoke-LinuxBuild -BuildLinuxScript $BuildLinuxScript -LinuxArgs $linuxArgs

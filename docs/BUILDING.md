@@ -14,7 +14,7 @@ The primary entry point for packaging is the `build-remex.ps1` script located at
 | Windows Installer Only  | `pwsh ./build-remex.ps1 -c release -t installer` | Runs the Inno Setup compiler only (skips `publish` if already built). |
 | Android (Unified)       | `pwsh ./build-remex.ps1 -c release -t android` | Compiles the Android APK via the unified build pipeline. |
 | Android APK (Alias)     | `pwsh ./build-remex.ps1 -c release -t apk` | Alias target that compiles the Android APK. |
-| Linux Package           | `pwsh ./build-remex.ps1 -c release -t linux` | Compiles and packages the host and client binaries for Linux. |
+| Linux Package           | `pwsh ./build-remex.ps1 -c release -t linux` | Compiles and packages the single `remex-agent` Linux package. |
 
 ## Development Commands
 
@@ -22,10 +22,12 @@ Use the standard .NET CLI to run or test local code during development.
 
 | Task | Command |
 |---|---|
-| Run host in dev mode | `dotnet run --project remex.agent` |
-| Run client in dev mode | `dotnet run --project remex.desktop` |
+| Run the PC app in dev mode | `dotnet run --project remex.agent` |
 | Run entire test suite | `dotnet test Remex.sln` |
 | Run Linux host Doctor | `dotnet run --project remex.agent -- --doctor` |
+
+> `remex.desktop` is a legacy folder — it is compiled into `remex.agent` as a library and has
+> no runnable entry point of its own. Always run `remex.agent`.
 
 ## Android Development
 

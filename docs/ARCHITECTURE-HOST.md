@@ -1,5 +1,12 @@
 # Host Architecture: Two Planes (Decision Record)
 
+> **SUPERSEDED (2026-07, RemEx-aep / RemEx-u0oc):** the two planes were merged after all.
+> The PC side is now a single `remex.agent` process (UI + embedded host) on both Windows
+> (elevated user-session app started by a logon task) and Linux (per-user app started by an
+> XDG autostart entry). There is no Windows Service, no systemd unit, and no separate
+> `remex.desktop` client. Pre-login power commands were dropped as a non-goal. This record
+> is kept for the history of why the split existed.
+
 **Decision (2026-06):** keep both the headless `remex.agent` service **and** the embedded
 in-process host inside `remex.desktop`. Do not merge them — Windows makes the two
 roles physically non-mergeable:

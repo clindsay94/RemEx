@@ -5,8 +5,9 @@
 
 .DESCRIPTION
     A complete script to clean all project artifacts, restore .NET dependencies,
-    compile, publish, and package RemEx Desktop (Windows/Linux) and Android apps.
-    Consolidates APKs, AABs, and desktop installers into a single `build_output` folder.
+    compile, publish, and package the RemEx PC app (Windows installer / Linux
+    remex-agent package) and the Android app. Consolidates APKs, AABs, and PC
+    installers into a single `build_output` folder.
 
 .PARAMETER Config
     Build configuration. Valid options are 'debug' and 'release'. Defaults to 'release'.

@@ -167,6 +167,11 @@ public partial class Program
         // Windows. (RemEx-hmk)
         Remex.Agent.Services.StartupRegistrationService.RemoveLegacyWindowsRunKey();
 
+        // One-time migration: replace a legacy remex-client.desktop autostart entry with the
+        // remex-agent.desktop one pointing at this executable, so login never launches a stale
+        // pre-rename install. No-op off Linux. (RemEx-u0oc)
+        Remex.Agent.Services.StartupRegistrationService.MigrateLegacyLinuxAutostartEntry();
+
         try
         {
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
