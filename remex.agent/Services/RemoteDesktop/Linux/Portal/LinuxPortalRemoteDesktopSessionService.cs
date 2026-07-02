@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Win32.SafeHandles;
 using Tmds.DBus.Protocol;
 
 namespace Remex.Agent.Services.RemoteDesktop.Linux.Portal;
@@ -184,7 +185,14 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                 }
             }
 
-            // Step 3 — SelectSources on ScreenCast (Monitor, Embedded cursor, no persist).
+            // Step 3 — SelectSources on ScreenCast (Monitor, Embedded cursor).
+            // Request PersistUntilRevoked and replay any previously saved restore_token
+            // so the portal grants access WITHOUT re-prompting on every reconnect. This
+            // is essential for unattended/remote access where nobody can click "Share".
+            var savedRestoreToken = LoadRestoreToken();
+            if (!string.IsNullOrEmpty(savedRestoreToken))
+                _logger.LogInformation("Replaying saved portal restore_token to avoid the permission prompt.");
+
             var selectSrcResults = await PortalDbusHelper.CallPortalAsync(
                 _conn!,
                 _normalizedSender!,
@@ -211,7 +219,14 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
 
                     w.WriteDictionaryEntryStart();
                     w.WriteString("persist_mode");
-                    w.WriteVariantUInt32((uint)PortalPersistMode.DoNotPersist);
+                    w.WriteVariantUInt32((uint)PortalPersistMode.PersistUntilRevoked);
+
+                    if (!string.IsNullOrEmpty(savedRestoreToken))
+                    {
+                        w.WriteDictionaryEntryStart();
+                        w.WriteString("restore_token");
+                        w.WriteVariantString(savedRestoreToken);
+                    }
 
                     w.WriteDictionaryEnd(dictStart);
                 },
@@ -264,7 +279,30 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     "Portal Start failed: user declined permission or dialog timed out.");
             }
 
-            var nodeIds = ParseStreamNodeIds(startResults, _logger);
+            // Persist the (possibly refreshed) restore_token so the next connection
+            // skips the permission dialog entirely (unattended/remote access).
+            if (startResults.TryGetValue("restore_token", out var restoreTokenVariant))
+            {
+                try
+                {
+                    var newToken = restoreTokenVariant.GetString();
+                    if (!string.IsNullOrEmpty(newToken))
+                    {
+                        SaveRestoreToken(newToken);
+                        _logger.LogInformation("Portal returned a restore_token; saved for prompt-free reconnects.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Could not read/persist portal restore_token.");
+                }
+            }
+
+            var streams = ParseStreams(startResults, _logger);
+            var nodeIds = new List<uint>(streams.Count);
+            foreach (var s in streams)
+                nodeIds.Add(s.NodeId);
+
             if (nodeIds.Count == 0)
             {
                 _logger.LogWarning(
@@ -272,18 +310,41 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     "Capture will fall back to legacy path.");
             }
 
+            // Obtain the portal-scoped PipeWire fd on THIS connection (the one that owns
+            // the session). Passing it to the native bridge avoids the sender-scope
+            // rejection that occurs when the native library opens its own sd-bus
+            // connection — the root cause of the KDE "0 frames -> 1 FPS legacy" regression.
+            SafeFileHandle? pipeWireFd = null;
+            if (nodeIds.Count > 0)
+            {
+                try
+                {
+                    pipeWireFd = await OpenPipeWireRemoteAsync(sessionHandle, ct);
+                    _logger.LogInformation(
+                        "OpenPipeWireRemote succeeded; portal-scoped PipeWire fd acquired on the session-owning connection.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "OpenPipeWireRemote failed; native bridge will attempt its own fd acquisition (may yield 0 frames on KDE).");
+                }
+            }
+
             var result = new PortalStartResult
             {
                 Success = true,
                 SessionHandle = sessionHandle,
-                NodeIds = nodeIds,
+                NodeIds = nodeIds.AsReadOnly(),
+                Streams = streams,
+                PipeWireFd = pipeWireFd,
             };
 
             _lastResult = result;
             _state = PortalSessionState.Active;
             _logger.LogInformation(
-                "Portal session active. PipeWire node IDs: [{Ids}]",
-                string.Join(", ", nodeIds));
+                "Portal session active. Streams: [{Streams}]",
+                string.Join(", ", System.Linq.Enumerable.Select(streams,
+                    s => $"node={s.NodeId} {s.Width}x{s.Height}@({s.X},{s.Y})")));
 
             SessionStarted?.Invoke(result);
             return result;
@@ -459,38 +520,155 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
     }
 
     /// <summary>
-    /// Parses the <c>streams</c> entry from the Start Response results.
+    /// Parses the <c>streams</c> entry from the Start Response results, including each
+    /// stream's node_id and (when present) its <c>position</c> and <c>size</c> so the
+    /// caller can build a per-monitor catalog / crop to a selected monitor.
     /// Signature: <c>a(ua{sv})</c> — array of (node_id, properties) structs.
     /// </summary>
-    private static IReadOnlyList<uint> ParseStreamNodeIds(
+    private static IReadOnlyList<PortalStreamInfo> ParseStreams(
         Dictionary<string, VariantValue> results,
         ILogger logger)
     {
         if (!results.TryGetValue("streams", out var streamsVariant))
         {
             logger.LogWarning("Portal Start Response has no 'streams' entry.");
-            return Array.Empty<uint>();
+            return Array.Empty<PortalStreamInfo>();
         }
 
-        var nodeIds = new List<uint>();
+        var list = new List<PortalStreamInfo>();
         try
         {
-            // streamsVariant is a(ua{sv}) — array of structs. Each struct is a VariantValue
-            // whose first field (GetItem(0)) is the uint32 node_id.
+            // streamsVariant is a(ua{sv}) — array of structs. GetItem(0) = uint32 node_id,
+            // GetItem(1) = a{sv} properties (keys "position" (ii), "size" (ii), ...).
             var streams = streamsVariant.GetArray<VariantValue>();
             foreach (var stream in streams)
             {
-                nodeIds.Add(stream.GetItem(0).GetUInt32());
+                uint nodeId = stream.GetItem(0).GetUInt32();
+                int x = 0, y = 0, w = 0, h = 0;
+                try
+                {
+                    var props = stream.GetItem(1).GetDictionary<string, VariantValue>();
+                    if (props.TryGetValue("size", out var sizeV))
+                        (w, h) = ReadIntPair(sizeV);
+                    if (props.TryGetValue("position", out var posV))
+                        (x, y) = ReadIntPair(posV);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Could not parse geometry for stream node {NodeId}.", nodeId);
+                }
+
+                list.Add(new PortalStreamInfo
+                {
+                    NodeId = nodeId,
+                    X = x,
+                    Y = y,
+                    Width = w,
+                    Height = h,
+                });
             }
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex,
-                "Failed to parse 'streams' from portal Start Response. " +
-                "Variant type was {Type}, signature {Sig}.",
-                streamsVariant.Type, streamsVariant.GetType().Name);
+                "Failed to parse 'streams' from portal Start Response.");
         }
 
-        return nodeIds.AsReadOnly();
+        return list.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Reads a portal <c>(ii)</c> pair (position or size), unwrapping the surrounding
+    /// variant when the D-Bus value is boxed as <c>v</c>.
+    /// </summary>
+    private static (int, int) ReadIntPair(VariantValue value)
+    {
+        var inner = value;
+        try { inner = value.GetVariantValue(); }
+        catch { /* value was already the (ii) struct, not a boxed variant */ }
+        return (inner.GetItem(0).GetInt32(), inner.GetItem(1).GetInt32());
+    }
+
+    /// <summary>
+    /// Filesystem path where the portal restore_token is cached (per user), enabling
+    /// prompt-free reconnects. Opaque token string; not a secret credential but stored
+    /// user-private.
+    /// </summary>
+    private static string RestoreTokenPath() => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Remex",
+        "portal_restore_token");
+
+    private string? LoadRestoreToken()
+    {
+        try
+        {
+            var path = RestoreTokenPath();
+            if (!System.IO.File.Exists(path)) return null;
+            var token = System.IO.File.ReadAllText(path).Trim();
+            return string.IsNullOrEmpty(token) ? null : token;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not read portal restore_token cache.");
+            return null;
+        }
+    }
+
+    private void SaveRestoreToken(string token)
+    {
+        try
+        {
+            var path = RestoreTokenPath();
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            System.IO.File.WriteAllText(path, token);
+            try
+            {
+                System.IO.File.SetUnixFileMode(path,
+                    System.IO.UnixFileMode.UserRead | System.IO.UnixFileMode.UserWrite);
+            }
+            catch { /* best-effort perms */ }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not persist portal restore_token; reconnects may prompt again.");
+        }
+    }
+
+    /// <summary>
+    /// Calls <c>org.freedesktop.portal.ScreenCast.OpenPipeWireRemote</c> on THIS
+    /// connection (the session owner) and returns the portal-scoped PipeWire fd from
+    /// the method reply. Unlike CreateSession/Start this is a plain method call whose
+    /// reply carries the fd directly (type <c>h</c>) — not the Request/Response signal
+    /// pattern — so it does not use <see cref="PortalDbusHelper.CallPortalAsync"/>.
+    /// </summary>
+    private async Task<SafeFileHandle?> OpenPipeWireRemoteAsync(
+        string sessionHandle, CancellationToken ct)
+    {
+        MessageBuffer buf;
+        {
+            var writer = _conn!.GetMessageWriter();
+            writer.WriteMethodCallHeader(
+                destination: PortalDbusNames.PortalService,
+                path: PortalDbusNames.PortalPath,
+                @interface: PortalDbusNames.ScreenCastInterface,
+                member: "OpenPipeWireRemote",
+                signature: "oa{sv}");
+            writer.WriteObjectPath(sessionHandle);
+            var dictStart = writer.WriteDictionaryStart();
+            writer.WriteDictionaryEnd(dictStart); // empty options a{sv}
+            buf = writer.CreateMessage();
+        }
+
+        var fd = await _conn!.CallMethodAsync(
+            buf,
+            static (Message msg, object? state) =>
+            {
+                var reader = msg.GetBodyReader();
+                return reader.ReadHandle<SafeFileHandle>();
+            });
+
+        ct.ThrowIfCancellationRequested();
+        return fd;
     }
 }

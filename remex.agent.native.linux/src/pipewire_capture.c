@@ -78,6 +78,11 @@ typedef struct remex_pw_session
     /* Portal D-Bus session handle (owned copy, freed in destroy). */
     char *portal_session_handle;
 
+    /* Portal-scoped PipeWire fd supplied by the managed caller (via v3), already
+     * dup()'d so the session owns it. -1 when not provided. Consumed once by
+     * pw_thread_func (reset to -1); closed by destroy if never consumed. */
+    int caller_pw_fd;
+
     /* Session-owned frame copy buffer (avoids allocating per-frame). */
     void *frame_data_buf;
     size_t frame_data_cap;
@@ -278,8 +283,9 @@ static const struct pw_stream_events stream_events = {
 
 /* ── Public API implementation ────────────────────────────────────────────── */
 
-int remex_pw_session_create_v2(
+static int remex_pw_session_create_common(
     const char *portal_session_handle,
+    int pw_fd,
     uint32_t node_id,
     void **out_handle)
 {
@@ -291,12 +297,24 @@ int remex_pw_session_create_v2(
         return REMEX_ERR_GENERIC;
 
     sess->node_id = node_id;
+    sess->caller_pw_fd = -1;
+
+    /* Take an independent dup of the caller's portal fd so the caller can close
+     * its own copy immediately after this call returns. */
+    if (pw_fd >= 0)
+    {
+        sess->caller_pw_fd = dup(pw_fd);
+        if (sess->caller_pw_fd < 0)
+            fprintf(stderr, "[remex] dup(pw_fd) failed: %s\n", strerror(errno));
+    }
 
     if (portal_session_handle && *portal_session_handle)
     {
         sess->portal_session_handle = strdup(portal_session_handle);
         if (!sess->portal_session_handle)
         {
+            if (sess->caller_pw_fd >= 0)
+                close(sess->caller_pw_fd);
             free(sess);
             return REMEX_ERR_GENERIC;
         }
@@ -340,6 +358,8 @@ fail_thread:
 fail_cond:
     pthread_mutex_destroy(&sess->frame_mutex);
 fail_mutex:
+    if (sess->caller_pw_fd >= 0)
+        close(sess->caller_pw_fd);
     if (sess->pw_lib)
         dlclose(sess->pw_lib);
     free(sess->portal_session_handle);
@@ -348,9 +368,22 @@ fail_mutex:
     return REMEX_ERR_GENERIC;
 }
 
+int remex_pw_session_create_v3(int pw_fd, uint32_t node_id, void **out_handle)
+{
+    return remex_pw_session_create_common(NULL, pw_fd, node_id, out_handle);
+}
+
+int remex_pw_session_create_v2(
+    const char *portal_session_handle,
+    uint32_t node_id,
+    void **out_handle)
+{
+    return remex_pw_session_create_common(portal_session_handle, -1, node_id, out_handle);
+}
+
 int remex_pw_session_create(uint32_t node_id, void **out_handle)
 {
-    return remex_pw_session_create_v2(NULL, node_id, out_handle);
+    return remex_pw_session_create_common(NULL, -1, node_id, out_handle);
 }
 
 int remex_pw_session_acquire_frame(
@@ -429,6 +462,11 @@ void remex_pw_session_destroy(void *handle)
     free(sess->portal_session_handle);
     free(sess->frame_data_buf);
 
+    /* Close the caller-provided portal fd only if pw_thread_func never consumed it
+     * (e.g. a non-PipeWire build where the thread just parks). */
+    if (sess->caller_pw_fd >= 0)
+        close(sess->caller_pw_fd);
+
     if (sess->pw_lib)
         dlclose(sess->pw_lib);
 
@@ -447,8 +485,25 @@ static void *pw_thread_func(void *arg)
      * Without this fd, pw_context_connect will succeed but the ACL-protected
      * screencast node created by the portal will not be visible on KDE/GNOME. */
     int pw_fd = -1;
-    if (sess->portal_session_handle)
+    if (sess->caller_pw_fd >= 0)
+    {
+        /* Preferred path: the managed caller obtained the portal-scoped fd on the
+         * SAME D-Bus connection that owns the session (avoids sender-scope rejection
+         * that plagues a second, native sd-bus connection on KDE/GNOME). */
+        pw_fd = sess->caller_pw_fd;
+        sess->caller_pw_fd = -1; /* thread now owns it */
+        fprintf(stderr, "[remex] using caller-provided portal PipeWire fd (node=%u)\n",
+                sess->node_id);
+    }
+    else if (sess->portal_session_handle)
+    {
         pw_fd = open_pipewire_remote_sdbus(sess->portal_session_handle);
+        if (pw_fd < 0)
+            fprintf(stderr,
+                    "[remex] native OpenPipeWireRemote failed (portal session is likely "
+                    "owned by a different D-Bus connection); falling back to direct connect. "
+                    "Screencast node may be invisible on KDE/GNOME.\n");
+    }
 
     pw_init(NULL, NULL);
 
@@ -565,6 +620,9 @@ static void *pw_thread_func(void *arg)
         pw_main_loop_destroy(loop);
         return NULL;
     }
+
+    fprintf(stderr, "[remex] pw_stream_connect ok (node=%u); awaiting frames...\n",
+            target_id);
 
     /* Block here until remex_pw_session_destroy calls pw_main_loop_quit. */
     pw_main_loop_run(loop);

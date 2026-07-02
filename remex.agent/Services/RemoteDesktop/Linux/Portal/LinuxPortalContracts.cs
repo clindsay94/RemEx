@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace Remex.Agent.Services.RemoteDesktop.Linux.Portal;
 
@@ -56,6 +57,21 @@ public enum PortalPersistMode : uint
 }
 
 /// <summary>
+/// Geometry of a single portal ScreenCast stream (one monitor). Coordinates are in
+/// the compositor's virtual-desktop space; <see cref="Width"/>/<see cref="Height"/>
+/// are the stream's pixel dimensions. Values are 0 when the portal omitted them.
+/// </summary>
+[SupportedOSPlatform("linux")]
+public sealed record PortalStreamInfo
+{
+    public uint NodeId { get; init; }
+    public int X { get; init; }
+    public int Y { get; init; }
+    public int Width { get; init; }
+    public int Height { get; init; }
+}
+
+/// <summary>
 /// Result of a portal session Start call. Contains stream node identifiers.
 /// </summary>
 [SupportedOSPlatform("linux")]
@@ -69,6 +85,20 @@ public sealed record PortalStartResult
 
     /// <summary>The portal session D-Bus object path (for later Close calls).</summary>
     public string? SessionHandle { get; init; }
+
+    /// <summary>
+    /// Per-stream geometry (one entry per granted monitor), parsed from the portal
+    /// Start Response 'streams' properties. Used to build the per-monitor display
+    /// catalog and to crop the full-desktop PipeWire frame to a selected monitor.
+    /// </summary>
+    public IReadOnlyList<PortalStreamInfo> Streams { get; init; } = Array.Empty<PortalStreamInfo>();
+
+    /// <summary>
+    /// Portal-scoped PipeWire remote fd obtained via ScreenCast.OpenPipeWireRemote on
+    /// the SAME D-Bus connection that owns the session. Owned by this result; the
+    /// native bridge dup()s it. Null when the call failed (native fd fallback is used).
+    /// </summary>
+    public SafeFileHandle? PipeWireFd { get; init; }
 }
 
 /// <summary>

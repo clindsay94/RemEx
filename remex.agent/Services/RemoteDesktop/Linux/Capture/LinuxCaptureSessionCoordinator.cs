@@ -62,11 +62,16 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
         var portalResult = await _portal.StartSessionAsync(ct);
 
         var nodeId = portalResult.NodeIds.Count > 0 ? portalResult.NodeIds[0] : 0u;
-        _logger.LogInformation(
-            "Using PipeWire node ID {NodeId} via portal session {Handle}.",
-            nodeId, portalResult.SessionHandle ?? "(none)");
 
-        IsRunning = StartCaptureLoop(nodeId, portalResult.SessionHandle);
+        int pipeWireFd = portalResult.PipeWireFd is { IsInvalid: false, IsClosed: false } fdHandle
+            ? (int)fdHandle.DangerousGetHandle()
+            : -1;
+
+        _logger.LogInformation(
+            "Using PipeWire node ID {NodeId} via portal session {Handle} (portalFd={HasFd}).",
+            nodeId, portalResult.SessionHandle ?? "(none)", pipeWireFd >= 0);
+
+        IsRunning = StartCaptureLoop(nodeId, portalResult.SessionHandle, pipeWireFd);
         return IsRunning;
     }
 
@@ -201,13 +206,13 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
 
     // ── Private implementation ─────────────────────────────────────────
 
-    private bool StartCaptureLoop(uint nodeId, string? portalSessionHandle = null)
+    private bool StartCaptureLoop(uint nodeId, string? portalSessionHandle = null, int pipeWireFd = -1)
     {
         _captureCts?.Cancel();
         _frameSource?.Dispose();
 
         _captureCts = new CancellationTokenSource();
-        _frameSource = new LinuxPipeWireFrameSource(nodeId, portalSessionHandle, null);
+        _frameSource = new LinuxPipeWireFrameSource(nodeId, portalSessionHandle, pipeWireFd, null);
 
         bool nativeOpen = _frameSource.TryOpen();
         if (!nativeOpen)

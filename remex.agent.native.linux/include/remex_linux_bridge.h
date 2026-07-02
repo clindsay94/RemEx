@@ -103,6 +103,29 @@ extern "C"
         void **out_handle);
 
     /*
+     * remex_pw_session_create_v3
+     * Preferred entry point. Accepts a portal-scoped PipeWire fd obtained by the
+     * MANAGED caller via org.freedesktop.portal.ScreenCast.OpenPipeWireRemote on the
+     * SAME D-Bus connection that created the portal session. This avoids the
+     * sender-scoping problem where the native bridge's own sd-bus connection is
+     * rejected by the portal (the session belongs to the managed connection), which
+     * left the ACL-protected screencast node invisible on KDE/GNOME and produced
+     * zero frames.
+     *
+     * pw_fd: an open, portal-scoped PipeWire remote fd. The native library dup()s it
+     *   internally, so the caller retains ownership of the fd it passed and must close
+     *   its own copy. Pass -1 to fall back to native fd acquisition (see v2).
+     * node_id: PipeWire node ID from the portal Start result; 0 = auto-select.
+     * out_handle: receives an opaque session handle on success.
+     *
+     * Returns REMEX_OK on success, negative error code on failure.
+     */
+    REMEX_EXPORT int remex_pw_session_create_v3(
+        int pw_fd,
+        uint32_t node_id,
+        void **out_handle);
+
+    /*
      * remex_pw_session_acquire_frame
      * Acquires the latest available frame from the PipeWire stream.
      * Blocks up to timeout_ms milliseconds if no frame is ready.

@@ -33,6 +33,12 @@ internal static class LinuxNativePipeWire
         uint nodeId,
         out IntPtr handle);
 
+    [DllImport(LibName, EntryPoint = "remex_pw_session_create_v3")]
+    public static extern int SessionCreateV3(
+        int pipeWireFd,
+        uint nodeId,
+        out IntPtr handle);
+
     [DllImport(LibName, EntryPoint = "remex_pw_session_acquire_frame")]
     public static extern int AcquireFrame(IntPtr handle, out LinuxFrameBufferDescriptor descriptor, int timeoutMs);
 
@@ -88,13 +94,22 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
     /// </summary>
     public string? PortalSessionHandle { get; private init; }
 
+    /// <summary>
+    /// Portal-scoped PipeWire fd obtained by the managed portal service on the
+    /// session-owning D-Bus connection. When &gt;= 0, TryOpen uses the v3 native entry
+    /// point (the native bridge dup()s it). -1 falls back to v2 (native sd-bus) / v1.
+    /// </summary>
+    public int PipeWireFd { get; private init; } = -1;
+
     public LinuxPipeWireFrameSource(
         uint nodeId,
         string? portalSessionHandle = null,
+        int pipeWireFd = -1,
         ILogger<LinuxPipeWireFrameSource>? logger = null)
     {
         NodeId = nodeId;
         PortalSessionHandle = portalSessionHandle;
+        PipeWireFd = pipeWireFd;
         _logger = logger ?? NullLogger<LinuxPipeWireFrameSource>.Instance;
     }
 
@@ -112,26 +127,43 @@ public sealed class LinuxPipeWireFrameSource : IDisposable
 
         try
         {
-            int rc = PortalSessionHandle is not null
-                ? LinuxNativePipeWire.SessionCreateV2(PortalSessionHandle, NodeId, out _nativeHandle)
-                : LinuxNativePipeWire.SessionCreate(NodeId, out _nativeHandle);
+            // Prefer v3 (caller-provided portal fd on the session-owning connection) —
+            // this is what makes the ACL-protected screencast node visible on KDE/GNOME
+            // and actually deliver frames. Fall back to v2 (native sd-bus) then v1.
+            string variant;
+            int rc;
+            if (PipeWireFd >= 0)
+            {
+                variant = "_v3";
+                rc = LinuxNativePipeWire.SessionCreateV3(PipeWireFd, NodeId, out _nativeHandle);
+            }
+            else if (PortalSessionHandle is not null)
+            {
+                variant = "_v2";
+                rc = LinuxNativePipeWire.SessionCreateV2(PortalSessionHandle, NodeId, out _nativeHandle);
+            }
+            else
+            {
+                variant = string.Empty;
+                rc = LinuxNativePipeWire.SessionCreate(NodeId, out _nativeHandle);
+            }
 
             if (rc != 0)
             {
                 LastOpenFailure = LinuxPipeWireOpenFailureKind.SessionCreateFailed;
                 LastOpenErrorCode = rc;
-                LastOpenErrorMessage = $"remex_pw_session_create returned {rc}";
+                LastOpenErrorMessage = $"remex_pw_session_create{variant} returned {rc}";
                 _logger.LogWarning(
                     "remex_pw_session_create{Suffix} returned {Code}. PipeWire native path unavailable.",
-                    PortalSessionHandle is not null ? "_v2" : string.Empty, rc);
+                    variant, rc);
                 _nativeAvailable = false;
                 return false;
             }
 
             _nativeAvailable = true;
             _logger.LogInformation(
-                "PipeWire capture session opened for node {NodeId} (portal fd={HasFd}).",
-                NodeId, PortalSessionHandle is not null);
+                "PipeWire capture session opened for node {NodeId} (path={Variant}, portalFd={HasFd}).",
+                NodeId, variant.Length == 0 ? "direct" : variant.TrimStart('_'), PipeWireFd >= 0);
             return true;
         }
         catch (DllNotFoundException ex)
