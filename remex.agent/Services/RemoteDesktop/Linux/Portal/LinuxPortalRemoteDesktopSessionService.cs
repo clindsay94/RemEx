@@ -148,34 +148,102 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
             _sessionHandle = sessionHandle;
             _logger.LogDebug("Portal session handle: {Handle}", sessionHandle);
 
+            // Persistence: replayed into SelectDevices (RemoteDesktop portal v2) or
+            // SelectSources (legacy / ScreenCast-only) below so the portal grants access
+            // WITHOUT re-prompting on every reconnect. This is essential for
+            // unattended/remote access where nobody can click "Share".
+            var savedRestoreToken = LoadRestoreToken();
+            if (!string.IsNullOrEmpty(savedRestoreToken))
+                _logger.LogInformation("Replaying saved portal restore_token to avoid the permission prompt.");
+
             // Step 2 — SelectDevices on RemoteDesktop (Keyboard | Pointer = 3).
             // Skip this step for ScreenCast-only sessions.
+            //
+            // RemoteDesktop portal version 2 moved session persistence HERE: persist_mode +
+            // restore_token are SelectDevices options (not SelectSources ones), and the
+            // refreshed token comes back in the Start results. This is the only
+            // prompt-free-reconnect mechanism KDE Plasma accepts for remote desktop
+            // sessions — its portal rejects ScreenCast persistence on RD sessions outright
+            // (see Step 3 / RemEx-82fk). (RemEx-mswt)
+            bool persistViaSelectDevices = false;
             if (!isFallbackScreenCastOnly)
             {
-                var selectDevResults = await PortalDbusHelper.CallPortalAsync(
-                    _conn!,
-                    _normalizedSender!,
-                    PortalDbusNames.RemoteDesktopInterface,
-                    method: "SelectDevices",
-                    signature: "oa{sv}",
-                    requestTimeout: TimeSpan.FromSeconds(30),
-                    writeArgs: (ref MessageWriter w, string handleToken) =>
+                var rdVersion = await GetPortalInterfaceVersionAsync(
+                    PortalDbusNames.RemoteDesktopInterface, ct);
+                var requestDevicePersist = rdVersion >= 2;
+                if (!requestDevicePersist)
+                {
+                    _logger.LogInformation(
+                        "RemoteDesktop portal version {Version} predates SelectDevices persistence " +
+                        "(needs 2); will request ScreenCast persistence instead.", rdVersion);
+                }
+
+                PortalDbusHelper.ArgWriter selectDevicesArgs = (ref MessageWriter w, string handleToken) =>
+                {
+                    w.WriteObjectPath(sessionHandle);
+                    var dictStart = w.WriteDictionaryStart();
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("handle_token");
+                    w.WriteVariantString(handleToken);
+
+                    w.WriteDictionaryEntryStart();
+                    w.WriteString("types");
+                    w.WriteVariantUInt32((uint)(PortalDeviceType.Keyboard | PortalDeviceType.Pointer));
+
+                    if (requestDevicePersist)
                     {
-                        w.WriteObjectPath(sessionHandle);
-                        var dictStart = w.WriteDictionaryStart();
-
                         w.WriteDictionaryEntryStart();
-                        w.WriteString("handle_token");
-                        w.WriteVariantString(handleToken);
+                        w.WriteString("persist_mode");
+                        w.WriteVariantUInt32((uint)PortalPersistMode.PersistUntilRevoked);
 
-                        w.WriteDictionaryEntryStart();
-                        w.WriteString("types");
-                        w.WriteVariantUInt32((uint)(PortalDeviceType.Keyboard | PortalDeviceType.Pointer));
+                        if (!string.IsNullOrEmpty(savedRestoreToken))
+                        {
+                            w.WriteDictionaryEntryStart();
+                            w.WriteString("restore_token");
+                            w.WriteVariantString(savedRestoreToken);
+                        }
+                    }
 
-                        w.WriteDictionaryEnd(dictStart);
-                    },
-                    logger: _logger,
-                    ct: ct);
+                    w.WriteDictionaryEnd(dictStart);
+                };
+
+                Dictionary<string, VariantValue>? selectDevResults;
+                try
+                {
+                    selectDevResults = await PortalDbusHelper.CallPortalAsync(
+                        _conn!,
+                        _normalizedSender!,
+                        PortalDbusNames.RemoteDesktopInterface,
+                        method: "SelectDevices",
+                        signature: "oa{sv}",
+                        requestTimeout: TimeSpan.FromSeconds(30),
+                        writeArgs: selectDevicesArgs,
+                        logger: _logger,
+                        ct: ct);
+                }
+                catch (DBusException ex) when (requestDevicePersist && (
+                    ex.ErrorName == "org.freedesktop.portal.Error.InvalidArgument" ||
+                    (ex.Message?.Contains("persist", StringComparison.OrdinalIgnoreCase) ?? false)))
+                {
+                    // Portals must ignore unknown options, but KDE has shipped hard rejections
+                    // for persistence before (RemEx-82fk) — never let persistence take down the
+                    // session. Retry once without it; Step 3 then attempts the legacy path.
+                    _logger.LogWarning(
+                        "Portal rejected persist_mode on SelectDevices ({Error}); retrying without " +
+                        "persistence.", ex.ErrorName);
+                    requestDevicePersist = false;
+                    selectDevResults = await PortalDbusHelper.CallPortalAsync(
+                        _conn!,
+                        _normalizedSender!,
+                        PortalDbusNames.RemoteDesktopInterface,
+                        method: "SelectDevices",
+                        signature: "oa{sv}",
+                        requestTimeout: TimeSpan.FromSeconds(30),
+                        writeArgs: selectDevicesArgs,
+                        logger: _logger,
+                        ct: ct);
+                }
 
                 if (selectDevResults is null)
                 {
@@ -183,25 +251,20 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     await CloseSessionCoreAsync();
                     throw new InvalidOperationException("Portal SelectDevices failed.");
                 }
+
+                persistViaSelectDevices = requestDevicePersist;
             }
 
             // Step 3 — SelectSources on ScreenCast (Monitor, Embedded cursor).
-            // Request PersistUntilRevoked and replay any previously saved restore_token
-            // so the portal grants access WITHOUT re-prompting on every reconnect. This
-            // is essential for unattended/remote access where nobody can click "Share".
-            var savedRestoreToken = LoadRestoreToken();
-            if (!string.IsNullOrEmpty(savedRestoreToken))
-                _logger.LogInformation("Replaying saved portal restore_token to avoid the permission prompt.");
 
-            // We first request persist_mode + restore_token so reconnects skip the
-            // "Share your screen?" dialog. Some compositors (KDE Plasma's
-            // xdg-desktop-portal-kde) reject persistence for RemoteDesktop sessions with
-            // InvalidArgument "Remote desktop sessions cannot persist". Failing the whole
-            // session there would leave RD with no capture, so retry once WITHOUT
-            // persistence: RD then works everywhere, and prompt-free reconnect still
-            // functions where persist is supported (e.g. GNOME). See RemEx-82fk;
-            // prompt-free reconnect on KDE is tracked separately by RemEx-mswt.
-            var requestPersist = true;
+            // When persistence was already requested via SelectDevices (RemoteDesktop v2),
+            // it MUST NOT be repeated here: KDE's portal rejects ScreenCast persistence on
+            // remote desktop sessions with InvalidArgument "Remote desktop sessions cannot
+            // persist" (RemEx-82fk). Only legacy RD sessions (portal v1) and ScreenCast-only
+            // fallback sessions request persistence through SelectSources — and if the
+            // compositor rejects even that, retry once WITHOUT persistence so a failed
+            // persist request can never take down capture entirely.
+            var requestPersist = !persistViaSelectDevices;
             PortalDbusHelper.ArgWriter selectSourcesArgs = (ref MessageWriter w, string handleToken) =>
             {
                 w.WriteObjectPath(sessionHandle);
@@ -250,9 +313,9 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     logger: _logger,
                     ct: ct);
             }
-            catch (DBusException ex) when (
+            catch (DBusException ex) when (requestPersist && (
                 ex.ErrorName == "org.freedesktop.portal.Error.InvalidArgument" ||
-                (ex.Message?.Contains("persist", StringComparison.OrdinalIgnoreCase) ?? false))
+                (ex.Message?.Contains("persist", StringComparison.OrdinalIgnoreCase) ?? false)))
             {
                 _logger.LogWarning(
                     "Portal rejected persist_mode ({Error}); retrying SelectSources without " +
@@ -671,6 +734,53 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Could not persist portal restore_token; reconnects may prompt again.");
+        }
+    }
+
+    /// <summary>
+    /// Reads the <c>version</c> property of a portal interface (plain D-Bus Properties.Get,
+    /// not the Request/Response pattern). Portal capabilities are gated on this: e.g.
+    /// RemoteDesktop persistence (persist_mode on SelectDevices) needs version >= 2.
+    /// Returns 1 — the lowest version any live portal can be — when the property cannot
+    /// be read, so callers simply skip newer-version features.
+    /// </summary>
+    private async Task<uint> GetPortalInterfaceVersionAsync(string interfaceName, CancellationToken ct)
+    {
+        try
+        {
+            MessageBuffer buf;
+            {
+                var writer = _conn!.GetMessageWriter();
+                writer.WriteMethodCallHeader(
+                    destination: PortalDbusNames.PortalService,
+                    path: PortalDbusNames.PortalPath,
+                    @interface: "org.freedesktop.DBus.Properties",
+                    member: "Get",
+                    signature: "ss");
+                writer.WriteString(interfaceName);
+                writer.WriteString("version");
+                buf = writer.CreateMessage();
+            }
+
+            var version = await _conn!.CallMethodAsync(
+                buf,
+                static (Message msg, object? state) =>
+                {
+                    var reader = msg.GetBodyReader();
+                    return reader.ReadVariantValue().GetUInt32();
+                });
+
+            ct.ThrowIfCancellationRequested();
+            _logger.LogDebug("Portal interface {Interface} reports version {Version}.",
+                interfaceName, version);
+            return version;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogDebug(ex,
+                "Could not read the 'version' property of {Interface}; assuming version 1.",
+                interfaceName);
+            return 1;
         }
     }
 
