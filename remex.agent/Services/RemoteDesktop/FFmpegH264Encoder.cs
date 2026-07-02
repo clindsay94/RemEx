@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -42,6 +43,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     // Pending on-demand keyframe request (0/1). Set by RequestKeyframe (any thread), read-and-cleared
     // by ConsumeKeyframeRequest on the capture loop, which then forces an encoder reinit → real IDR.
     private int _keyframeRequested;
+
+    // Cache of one-shot capability-probe outcomes keyed by codec+geometry. Capability is a
+    // property of the machine (GPU/driver/ffmpeg build), not of one encoder instance, and the
+    // handler reinitializes the encoder on every on-demand keyframe — without the cache each
+    // reinit would re-pay an ffmpeg probe spawn. (RemEx: probe added for the lazy encoder-open
+    // blind spot; see ProbeCodec.)
+    private static readonly ConcurrentDictionary<string, bool> ProbeCache = new();
 
     private bool _isDisposed;
     private string? _ffmpegPath;
@@ -135,11 +143,24 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
         else // Linux
         {
-            codecsToTry = new[] { "h264_vaapi", "h264_nvenc", "libx264" };
+            // Same NVENC-native-BGRA fast path first as on Windows: it skips the per-frame CPU
+            // swscale (BGRA->YUV runs in fixed-function NVENC hardware) that otherwise caps FPS
+            // well below the target (Linux half of RemEx-whfp). h264_vaapi stays for AMD/Intel
+            // boxes — on NVIDIA it can never open (the NVIDIA VAAPI driver is decode-only), and
+            // the capability probe below skips it there instead of silently killing the stream.
+            codecsToTry = new[] { "h264_nvenc_bgra", "h264_nvenc", "h264_vaapi", "libx264" };
         }
 
         foreach (var codec in codecsToTry)
         {
+            // Probe first: a rawvideo-pipe ffmpeg only opens its encoder when the first frame
+            // arrives, so TryStartFFmpeg's early-exit watch cannot see encoder-open failures
+            // (h264_vaapi on NVIDIA was reported "initialized", died on the first real frame,
+            // and the session silently degraded to MJPEG — RemEx-h038). The one-shot probe
+            // forces that lazy open up front so fallback to the next codec is deterministic.
+            if (!ProbeCodec(codec, width, height, fps, qp))
+                continue;
+
             if (TryStartFFmpeg(codec, width, height, fps, qp))
             {
                 _logger.LogInformation("FFmpeg H.264 encoder successfully initialized using codec: {Codec}", codec);
@@ -153,75 +174,182 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         return false;
     }
 
+    /// <summary>
+    /// Builds the full ffmpeg argument string for <paramref name="codec"/>. Shared by the real
+    /// streaming process and the one-shot capability probe so the probe exercises EXACTLY the
+    /// arguments the real run will use — only the output side differs (single frame to a
+    /// discarded null muxer vs. a flushed Annex-B stream on stdout).
+    /// </summary>
+    private static string BuildEncoderArgs(string codec, int width, int height, int fps, int qp, bool forProbe)
+    {
+        var argsBuilder = new StringBuilder();
+
+        // Input: Raw BGRA frames from stdin
+        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {width}x{height} -r {fps} -i - -an ");
+
+        // Codec & Quality Optimization. qp drives constant-QP rate control (lower = better quality).
+        switch (codec)
+        {
+            case "h264_nvenc_bgra":
+                // Fast GPU path: NVENC ingests the raw BGRA frames DIRECTLY (the input above is already
+                // `-pix_fmt bgra`) and does BGRA->YUV in fixed-function hardware. No `-pix_fmt yuv420p`,
+                // so no per-frame CPU swscale (~20ms at 1440p on the plain path) and the GPU isn't idle;
+                // no CUDA filter either. Tried FIRST; falls through to the CPU-convert h264_nvenc path
+                // below if NVENC can't start. ActiveCodecName reports which path won.
+                //
+                // The previous approach used `hwupload_cuda,scale_cuda=format=nv12`, but scale_cuda in
+                // every prebuilt Windows ffmpeg (Gyan + BtbN, both --enable-cuda-llvm) lacks the
+                // RGB->NV12 kernel and dies at RUNTIME with CUDA_ERROR_NOT_FOUND ("named symbol not
+                // found" / "Unsupported conversion: rgb0 -> semiplanar8"), killing FFmpeg mid-stream —
+                // 0fps black screen. NVENC native BGRA input avoids the filter entirely. (RemEx-dptu)
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1");
+                break;
+            case "h264_nvenc":
+                // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
+                // "lowlatency" is NOT valid and makes nvenc fail to start). `-aud 1` emits Access
+                // Unit Delimiters, which the stdout reader relies on to split encoded frames.
+                // `-pix_fmt yuv420p` keeps output to 8-bit 4:2:0 that every H.264 decoder accepts.
+                // `-forced-idr 1` makes the forced keyframes emitted by `-force_key_frames` true
+                // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
+                // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1 -pix_fmt yuv420p");
+                break;
+            case "h264_vaapi":
+                // VA-API on Linux (Intel/AMD)
+                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g 60 -aud 1");
+                break;
+            case "h264_qsv":
+                // Intel Quick Sync
+                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -g 60 -forced-idr 1 -aud 1");
+                break;
+            case "h264_amf":
+                // AMD AMF
+                argsBuilder.Append($"-c:v h264_amf -quality speed -rc cqp -qp_i {qp} -qp_p {qp} -g 60 -forced-idr 1 -aud 1");
+                break;
+            default:
+                // libx264 software fallback with zero latency. libx264 has no generic
+                // `-aud` AVOption; AUD emission is requested via x264 params instead. x264 always
+                // makes a forced keyframe a true IDR, so no extra flag is needed for it.
+                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -g 60 -x264-params aud=1");
+                break;
+        }
+
+        // On-demand keyframes. `-force_key_frames` with the `expr:` form lets us request an IDR at
+        // an arbitrary point: writing to the sentinel file toggles `gte(...)` — see RequestKeyframe.
+        // The interval-expression below ('expr:gte(t,n_forced*...)') is a no-op safety net; the real
+        // trigger is the host bumping the GOP via reinit (RequestKeyframe), which the higher layer
+        // already supports. We keep the codec emitting forced IDRs (above) so that path is real.
+        //
+        // Output raw Annex B H.264 stream to stdout.
+        // -flush_packets 1 forces ffmpeg to flush stdout after every packet instead of
+        // block-buffering it, which is required for low-latency real-time piping (otherwise
+        // encoded frames sit in ffmpeg's buffer and the stream stalls).
+        //
+        // Probe mode instead encodes a single frame into a discarded null muxer: the encoder
+        // opens exactly as in the real run, and the process exits with 0 (codec works at
+        // this geometry) or nonzero (it does not).
+        argsBuilder.Append(forProbe ? " -frames:v 1 -f null -" : " -flush_packets 1 -f h264 -");
+
+        return argsBuilder.ToString();
+    }
+
+    /// <summary>
+    /// One-shot capability probe with a cached verdict: encodes a single black frame using the
+    /// exact codec arguments and input geometry of the real run, to a discarded output. A
+    /// rawvideo-pipe ffmpeg only opens its encoder when the first frame arrives, so watching the
+    /// real process for early exit can never catch encoder-open failures — the probe forces the
+    /// lazy open to happen up front. Exit code 0 means the codec genuinely encodes at this
+    /// geometry. (RemEx-h038)
+    /// </summary>
+    private bool ProbeCodec(string codec, int width, int height, int fps, int qp)
+    {
+        // qp is excluded from the key on purpose: it is clamped to a universally valid H.264
+        // range in Initialize and never decides whether an encoder can open.
+        var cacheKey = $"{codec}:{width}x{height}@{fps}";
+        if (ProbeCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        bool ok;
+        try
+        {
+            ok = RunEncoderProbe(codec, width, height, fps, qp);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "FFmpeg capability probe for {Codec} threw; treating codec as unavailable.", codec);
+            ok = false;
+        }
+
+        ProbeCache[cacheKey] = ok;
+        return ok;
+    }
+
+    private bool RunEncoderProbe(string codec, int width, int height, int fps, int qp)
+    {
+        var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, width, height, fps, qp, forProbe: true))
+        {
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        if (process == null) return false;
+
+        // Drain both output pipes concurrently so a chatty ffmpeg can never fill one and deadlock.
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        _ = process.StandardOutput.ReadToEndAsync();
+
+        try
+        {
+            // Feed exactly one black frame, then EOF. Written in small chunks so the probe never
+            // allocates a whole frame (≈19 MB at 4096x1152) on the large-object heap.
+            var stdin = process.StandardInput.BaseStream;
+            var zeros = new byte[64 * 1024];
+            long remaining = (long)width * height * 4;
+            while (remaining > 0)
+            {
+                int chunk = (int)Math.Min(zeros.Length, remaining);
+                stdin.Write(zeros, 0, chunk);
+                remaining -= chunk;
+            }
+            stdin.Close();
+        }
+        catch (IOException)
+        {
+            // Broken pipe: ffmpeg exited before consuming the frame (unknown encoder, no
+            // device, ...). The exit code below reports the failure.
+        }
+
+        // A single frame encodes in well under a second on every codec here; 5s covers slow
+        // hardware/driver initialization without letting a wedged probe stall the stream start.
+        if (!process.WaitForExit(5000))
+        {
+            try { process.Kill(entireProcessTree: true); } catch { /* best effort */ }
+            _logger.LogWarning("FFmpeg capability probe for codec {Codec} timed out; treating codec as unavailable.", codec);
+            return false;
+        }
+
+        if (process.ExitCode == 0)
+            return true;
+
+        // stderrTask is complete once the child has exited and its pipe closed.
+        var stderr = stderrTask.GetAwaiter().GetResult().Trim();
+        var stderrTail = stderr.Length > 400 ? stderr[^400..] : stderr;
+        _logger.LogWarning(
+            "FFmpeg codec {Codec} failed capability probe at {Width}x{Height}@{Fps} (exit {Code}); " +
+            "trying next codec. stderr tail: {Stderr}",
+            codec, width, height, fps, process.ExitCode, stderrTail);
+        return false;
+    }
+
     private bool TryStartFFmpeg(string codec, int width, int height, int fps, int qp)
     {
         try
         {
-            var argsBuilder = new StringBuilder();
-
-            // Input: Raw BGRA frames from stdin
-            argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {width}x{height} -r {fps} -i - -an ");
-
-            // Codec & Quality Optimization. qp drives constant-QP rate control (lower = better quality).
-            switch (codec)
-            {
-                case "h264_nvenc_bgra":
-                    // Fast GPU path: NVENC ingests the raw BGRA frames DIRECTLY (the input above is already
-                    // `-pix_fmt bgra`) and does BGRA->YUV in fixed-function hardware. No `-pix_fmt yuv420p`,
-                    // so no per-frame CPU swscale (~20ms at 1440p on the plain path) and the GPU isn't idle;
-                    // no CUDA filter either. Tried FIRST; falls through to the CPU-convert h264_nvenc path
-                    // below if NVENC can't start. ActiveCodecName reports which path won.
-                    //
-                    // The previous approach used `hwupload_cuda,scale_cuda=format=nv12`, but scale_cuda in
-                    // every prebuilt Windows ffmpeg (Gyan + BtbN, both --enable-cuda-llvm) lacks the
-                    // RGB->NV12 kernel and dies at RUNTIME with CUDA_ERROR_NOT_FOUND ("named symbol not
-                    // found" / "Unsupported conversion: rgb0 -> semiplanar8"), killing FFmpeg mid-stream —
-                    // 0fps black screen. NVENC native BGRA input avoids the filter entirely. (RemEx-dptu)
-                    argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1");
-                    break;
-                case "h264_nvenc":
-                    // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
-                    // "lowlatency" is NOT valid and makes nvenc fail to start). `-aud 1` emits Access
-                    // Unit Delimiters, which the stdout reader relies on to split encoded frames.
-                    // `-pix_fmt yuv420p` keeps output to 8-bit 4:2:0 that every H.264 decoder accepts.
-                    // `-forced-idr 1` makes the forced keyframes emitted by `-force_key_frames` true
-                    // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
-                    // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
-                    argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1 -pix_fmt yuv420p");
-                    break;
-                case "h264_vaapi":
-                    // VA-API on Linux (Intel/AMD)
-                    argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g 60 -aud 1");
-                    break;
-                case "h264_qsv":
-                    // Intel Quick Sync
-                    argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -g 60 -forced-idr 1 -aud 1");
-                    break;
-                case "h264_amf":
-                    // AMD AMF
-                    argsBuilder.Append($"-c:v h264_amf -quality speed -rc cqp -qp_i {qp} -qp_p {qp} -g 60 -forced-idr 1 -aud 1");
-                    break;
-                default:
-                    // libx264 software fallback with zero latency. libx264 has no generic
-                    // `-aud` AVOption; AUD emission is requested via x264 params instead. x264 always
-                    // makes a forced keyframe a true IDR, so no extra flag is needed for it.
-                    argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -g 60 -x264-params aud=1");
-                    break;
-            }
-
-            // On-demand keyframes. `-force_key_frames` with the `expr:` form lets us request an IDR at
-            // an arbitrary point: writing to the sentinel file toggles `gte(...)` — see RequestKeyframe.
-            // The interval-expression below ('expr:gte(t,n_forced*...)') is a no-op safety net; the real
-            // trigger is the host bumping the GOP via reinit (RequestKeyframe), which the higher layer
-            // already supports. We keep the codec emitting forced IDRs (above) so that path is real.
-            //
-            // Output raw Annex B H.264 stream to stdout.
-            // -flush_packets 1 forces ffmpeg to flush stdout after every packet instead of
-            // block-buffering it, which is required for low-latency real-time piping (otherwise
-            // encoded frames sit in ffmpeg's buffer and the stream stalls).
-            argsBuilder.Append(" -flush_packets 1 -f h264 -");
-
-            var psi = new ProcessStartInfo(_ffmpegPath!, argsBuilder.ToString())
+            var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, width, height, fps, qp, forProbe: false))
             {
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
@@ -233,19 +361,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             var process = Process.Start(psi);
             if (process == null) return false;
 
-            // Decide success/failure by watching for early process exit.
-            //
-            // Two distinct failure modes must both be caught here, otherwise the codec-fallback
-            // loop is skipped and we silently end up with a dead encoder (→ MJPEG fallback):
-            //   1. Codec not built into ffmpeg / no device → ffmpeg exits almost immediately
-            //      ("Unknown encoder", "Cannot load nvcuda").
-            //   2. Hardware encoder present but rejects the parameters (resolution above the
-            //      NVENC max, unsupported framerate, etc.) → ffmpeg starts, then fails a few
-            //      hundred ms later "while opening encoder" and exits non-zero. A 150 ms window
-            //      missed this, so it was reported as success.
-            // A healthy rawvideo-pipe encoder never exits on its own (it blocks waiting for stdin
-            // frames), so an exit within this window unambiguously means failure. The cost is a
-            // one-time startup wait for the codec that actually succeeds.
+            // Safety net: watch for early process exit ("Unknown encoder", "Cannot load
+            // nvcuda", bad option). Encoder-open failures that only surface once the first
+            // frame arrives (e.g. h264_vaapi on NVIDIA) can NOT be seen here — a rawvideo-pipe
+            // ffmpeg idles waiting for stdin until then — which is why Initialize runs
+            // ProbeCodec before ever calling this method (RemEx-h038). A healthy rawvideo-pipe
+            // encoder never exits on its own, so an exit within this window unambiguously means
+            // failure. The cost is a one-time startup wait for the codec that actually succeeds.
             if (process.WaitForExit(900))
             {
                 var error = process.StandardError.ReadToEnd();
