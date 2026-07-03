@@ -1863,7 +1863,19 @@ fun RemoteDesktopScreenContent(
 
                                 if (activeCodec == "H264" || (safeFrame != null && !safeFrame.isRecycled)) {
                                         if (activeCodec == "H264") {
-                                                key(streamPixelWidth, streamPixelHeight) {
+                                                // Rebuild the SurfaceView when the video box (imageSize) settles, not only on a
+                                                // resolution change. A SurfaceView's content sublayer freezes its buffer->view
+                                                // SCALE at creation: if the surface is first created while imageSize is
+                                                // transiently smaller (e.g. during the capture_unavailable -> reconnect churn on
+                                                // first connect, when the box is briefly ~half height), the video stays scaled to
+                                                // that stale geometry — rendered at ~0.5x in the top-left quadrant — even after the
+                                                // view bounds grow to full. Re-layout (rotation) does NOT refresh the frozen
+                                                // content scale; only a teardown+recreate does. Keying on imageSize forces a
+                                                // recreate once the box resolves to its settled size, so the final surface is
+                                                // built at correct geometry. imageSize is stable while streaming (independent of
+                                                // zoom/pan, which the Modifier.layout below applies without a rebuild), so this
+                                                // does not churn the decoder in steady state. (RemEx-4fv3)
+                                                key(streamPixelWidth, streamPixelHeight, imageSize) {
                                                 AndroidView(
                                                         factory = { context ->
                                                                 var localDecoder: H264StreamDecoder? = null
