@@ -472,7 +472,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 <!-- AUTO-MANAGED: release-gate -->
 ## RemEx 2.0 Release Gate
 
-**Status: P0/P1 GATE MET — all 14 P0 beads and all 12 original P1 beads are CLOSED.** The release is conditionally shippable on Windows. Remaining open items are a Linux runtime-parity validation (RemEx-lr9, P1, environment-blocked) and out-of-scope follow-ups (RemEx-d8s client removal, RemEx-5i9 >60fps investigation, two deferred perf beads). Full ordered edit plan archived in `REMEX_2.0_FINAL.md`.
+**Status: P0/P1 GATE MET — all 14 P0 beads and all 12 original P1 beads are CLOSED.** The release is conditionally shippable on Windows. The Linux runtime-parity validation (RemEx-lr9, P1) is CLOSED — runtime-validated on CachyOS. Remaining open items are out-of-scope follow-ups (RemEx-d8s client removal, RemEx-5i9 >60fps investigation, two deferred perf beads). Full ordered edit plan archived in `REMEX_2.0_FINAL.md`.
 
 ### Release Status Summary
 
@@ -480,7 +480,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 |------|--------|
 | All P0 beads closed | PASSED (14/14) |
 | All P1 beads closed | PASSED (12/12) |
-| Linux runtime parity | PENDING (RemEx-lr9 — in-progress, environment-blocked on Windows dev host) |
+| Linux runtime parity | PASSED (RemEx-lr9 — runtime-validated on CachyOS, closed 2026-07-01) |
 | Deferred perf (RD-6/RD-7) | DEFERRED — measurement-gated, logged on bead |
 | remex.desktop removal | DEFERRED (RemEx-d8s, P2) |
 
@@ -575,7 +575,6 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 
 | Bead | Priority | Description |
 |------|----------|-------------|
-| `RemEx-lr9` | P1 — IN PROGRESS | CachyOS/Linux runtime parity validation (IPC pipe 0600, CertPFX 0600, paired_clients.json 0600, MdnsAdvertising virtual-iface filter). Code compiles cross-platform; runtime validation environment-blocked on Windows dev host. |
 | `RemEx-d8s` | P2 — open | Remove `remex.desktop` entirely — migrate Host-used services into Host/Core, delete legacy UI. Sequence after all P0/P1 fixes. |
 | `RemEx-5i9` | P3 — open | Android RD: investigate >60fps ceiling (DXGI capture / display-refresh bound, not codec). |
 
@@ -596,7 +595,7 @@ When touching any of these files, treat as security-critical and require user si
 
 ### Cross-Platform Rule for All Orders
 
-Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileSecurity`, SIDs) **must** be guarded with `OperatingSystem.IsWindows()` and include a Linux branch using `UnixFileMode`/`SetUnixFileMode 0600` (owner-only). Linux runtime validation pending RemEx-lr9 (environment-blocked on Windows dev host).
+Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileSecurity`, SIDs) **must** be guarded with `OperatingSystem.IsWindows()` and include a Linux branch using `UnixFileMode`/`SetUnixFileMode 0600` (owner-only). Linux runtime validation is complete — runtime-validated on CachyOS (RemEx-lr9, closed).
 
 ### Design Decisions — Resolved 2026-06-22 (user-confirmed)
 
@@ -606,9 +605,9 @@ Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileS
 ### Definition of Done (release)
 
 Every P0 and P1 bead closed — COMPLETE. Remaining criteria for final sign-off:
-- Green build on Windows (verified), Linux (CachyOS via `build-remex.ps1` — compile-verified; runtime pending RemEx-lr9), and Android (`scripts/android-fresh.ps1`)
+- Green build on Windows (verified), Linux (CachyOS via `build-remex.ps1` — compile-verified; runtime-validated, RemEx-lr9 closed), and Android (`scripts/android-fresh.ps1`)
 - Green tests (`dotnet test Remex.sln`) — 428+ pass on Windows (includes 8 `DuplicationReinitThrottle` unit tests, `RemoteDesktopHandlerTests` for `IsLive = false` stale-replay path, `BgraFrameConverterTests`, and `DesktopCursorBinaryEnvelopeTests`)
-- Cross-platform parity verified for all ACL/file-permission/native code (Windows + Android verified; Linux runtime pending RemEx-lr9)
+- Cross-platform parity verified for all ACL/file-permission/native code (Windows + Android verified; Linux runtime-validated on CachyOS, RemEx-lr9 closed)
 - `CHANGELOG.md` updated under `Security`/`Fixed`/`Changed`
 - `protocolVersion` bump coordinated only if a wire-format break is taken
 
