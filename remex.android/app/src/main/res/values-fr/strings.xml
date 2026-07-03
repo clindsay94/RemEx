@@ -188,6 +188,10 @@
     <string name="cd_key_arrow_right">Flèche droite</string>
     <string name="cd_key_delete">Suppr</string>
     <string name="cd_key_windows">Touche Windows</string>
+    <string name="cd_key_ctrl">Ctrl</string>
+    <string name="cd_key_alt">Alt</string>
+    <string name="cd_key_shift">Maj</string>
+    <string name="cd_show_pc_keys">Afficher les touches PC</string>
     <string name="cd_reset_input">Réinitialiser Entrée</string>
     <string name="cd_settings">Paramètres</string>
     <string name="cd_toggle_fullscreen">Plein Écran</string>

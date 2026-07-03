@@ -29,6 +29,11 @@ class SettingsManager(val context: Context) {
                 val DESKTOP_QUALITY_KEY = intPreferencesKey("desktop_quality")
                 val DESKTOP_TARGET_FPS_KEY = intPreferencesKey("desktop_target_fps")
                 val DESKTOP_SCALE_KEY = floatPreferencesKey("desktop_scale")
+                // Which named quality preset (Unlimited/Smooth & Sharp/Balanced/Data Saver/Custom)
+                // last produced the quality/fps/scale trio above. See DesktopPreset (RemEx-vj31).
+                val DESKTOP_PRESET_KEY = stringPreferencesKey("desktop_preset")
+                val DESKTOP_UNLIMITED_WARNING_SHOWN_KEY =
+                        booleanPreferencesKey("desktop_unlimited_warning_shown")
                 val DESKTOP_DIRECT_TOUCH_KEY = booleanPreferencesKey("desktop_direct_touch")
                 val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
                 val DESKTOP_CURSOR_SCALE_KEY = floatPreferencesKey("desktop_cursor_scale")
@@ -103,15 +108,16 @@ class SettingsManager(val context: Context) {
         )
 
         data class RemoteDesktopPreferences(
-                val quality: Int = 50,
+                val quality: Int = 95,
                 val targetFps: Int = 120,
-                val scale: Float = 1.0f,
+                val scale: Float = 0.5f,
                 val directTouch: Boolean = false,
                 val pointerSpeed: Float = 1.0f,
                 val verticalScrollSensitivity: Float = 1.0f,
                 val horizontalScrollSensitivity: Float = 1.0f,
                 val cursorScale: Float = 1.0f,
-                val displayTarget: String = ""
+                val displayTarget: String = "",
+                val preset: String = "smooth_sharp"
         )
 
         data class PersonalizationPreferences(
@@ -273,9 +279,9 @@ class SettingsManager(val context: Context) {
         val remoteDesktopPreferencesFlow: Flow<RemoteDesktopPreferences> =
                 context.dataStore.data.map { preferences ->
                         RemoteDesktopPreferences(
-                                quality = preferences[DESKTOP_QUALITY_KEY] ?: 50,
+                                quality = preferences[DESKTOP_QUALITY_KEY] ?: 95,
                                 targetFps = preferences[DESKTOP_TARGET_FPS_KEY] ?: 120,
-                                scale = preferences[DESKTOP_SCALE_KEY] ?: 1.0f,
+                                scale = preferences[DESKTOP_SCALE_KEY] ?: 0.5f,
                                 directTouch = preferences[DESKTOP_DIRECT_TOUCH_KEY] ?: false,
                                 pointerSpeed = preferences[DESKTOP_POINTER_SPEED_KEY] ?: 1.0f,
                                 verticalScrollSensitivity =
@@ -283,8 +289,32 @@ class SettingsManager(val context: Context) {
                                 horizontalScrollSensitivity =
                                         preferences[HORIZONTAL_SCROLL_SENSITIVITY_KEY] ?: 1.0f,
                                 cursorScale = preferences[DESKTOP_CURSOR_SCALE_KEY] ?: 1.0f,
-                                displayTarget = preferences[DESKTOP_DISPLAY_TARGET_KEY] ?: ""
+                                displayTarget = preferences[DESKTOP_DISPLAY_TARGET_KEY] ?: "",
+                                // DESKTOP_PRESET_KEY didn't exist before RemEx-vj31. An install that
+                                // already has quality/fps/scale persisted (upgrading from the old
+                                // 3-preset system) gets "custom" — those leftover values don't match
+                                // the new named bundles, so labeling them "Smooth & Sharp" would lie
+                                // about what's actually streaming. Only a truly fresh install (nothing
+                                // ever persisted) gets the new default.
+                                preset =
+                                        preferences[DESKTOP_PRESET_KEY]
+                                                ?: if (preferences[DESKTOP_QUALITY_KEY] == null &&
+                                                        preferences[DESKTOP_TARGET_FPS_KEY] ==
+                                                                null &&
+                                                        preferences[DESKTOP_SCALE_KEY] == null
+                                                ) {
+                                                        "smooth_sharp"
+                                                } else {
+                                                        "custom"
+                                                }
                         )
+                }
+
+        /** See hasCompletedOnboardingFlow for the nullable-type rationale — not needed here since
+         *  showing the one-time overflow warning an extra time on a cold DataStore load is harmless. */
+        val unlimitedWarningShownFlow: Flow<Boolean> =
+                context.dataStore.data.map { preferences ->
+                        preferences[DESKTOP_UNLIMITED_WARNING_SHOWN_KEY] ?: false
                 }
 
         val personalizationPreferencesFlow: Flow<PersonalizationPreferences> =
@@ -330,12 +360,25 @@ class SettingsManager(val context: Context) {
                 }
         }
 
-        suspend fun saveRemoteDesktopDefaults(quality: Int, targetFps: Int, scale: Float) {
+        // preset defaults to "custom": callers that save raw quality/fps/scale without going through
+        // a named DesktopPreset (e.g. ConnectionViewModel's advanced connect form) are, by definition,
+        // not applying one of the fixed bundles.
+        suspend fun saveRemoteDesktopDefaults(
+                quality: Int,
+                targetFps: Int,
+                scale: Float,
+                preset: String = "custom"
+        ) {
                 context.dataStore.edit { preferences ->
                         preferences[DESKTOP_QUALITY_KEY] = quality.coerceIn(1, 100)
                         preferences[DESKTOP_TARGET_FPS_KEY] = targetFps.coerceIn(1, 360)
                         preferences[DESKTOP_SCALE_KEY] = scale.coerceIn(0.25f, 1.0f)
+                        preferences[DESKTOP_PRESET_KEY] = preset
                 }
+        }
+
+        suspend fun markUnlimitedWarningShown() {
+                context.dataStore.edit { it[DESKTOP_UNLIMITED_WARNING_SHOWN_KEY] = true }
         }
 
         suspend fun saveRemoteDesktopDisplayTarget(token: String) {

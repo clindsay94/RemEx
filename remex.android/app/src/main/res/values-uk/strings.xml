@@ -188,6 +188,10 @@
     <string name="cd_key_arrow_right">Стрілка вправо</string>
     <string name="cd_key_delete">Delete</string>
     <string name="cd_key_windows">Клавіша Windows</string>
+    <string name="cd_key_ctrl">Ctrl</string>
+    <string name="cd_key_alt">Alt</string>
+    <string name="cd_key_shift">Shift</string>
+    <string name="cd_show_pc_keys">Показати клавіші ПК</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_toggle_fullscreen">Toggle fullscreen</string>

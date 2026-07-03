@@ -188,6 +188,10 @@
     <string name="cd_key_arrow_right">Seta direita</string>
     <string name="cd_key_delete">Delete</string>
     <string name="cd_key_windows">Tecla Windows</string>
+    <string name="cd_key_ctrl">Ctrl</string>
+    <string name="cd_key_alt">Alt</string>
+    <string name="cd_key_shift">Shift</string>
+    <string name="cd_show_pc_keys">Mostrar teclas do PC</string>
     <string name="cd_reset_input">Resetar Entrada</string>
     <string name="cd_settings">Configurações</string>
     <string name="cd_toggle_fullscreen">Alternar tela cheia</string>

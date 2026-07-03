@@ -32,6 +32,13 @@ private const val TAG = "RemoteDesktopVM"
 private const val FRAME_WATCHDOG_POLL_MS = 1000L
 private const val FRAME_STALL_TIMEOUT_MS = 7000L
 
+/** Virtual-key codes for the four latching PC-key modifiers on the "PC keys" bar (RemEx-yi8o). */
+private const val VK_SHIFT = 16
+private const val VK_CTRL = 17
+private const val VK_ALT = 18
+private const val VK_WIN = 91
+private val MODIFIER_VIRTUAL_KEY_CODES = setOf(VK_SHIFT, VK_CTRL, VK_ALT, VK_WIN)
+
 data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTime())
 
 data class RemoteDesktopCapabilityState(
@@ -44,11 +51,49 @@ data class RemoteDesktopCapabilityState(
 )
 
 data class RemoteDesktopConfigState(
-        val quality: Int = 50,
+        val quality: Int = 95,
         val targetFps: Int = 120,
-        val scale: Float = 1.0f,
-        val codec: String = "H264"
+        val scale: Float = 0.5f,
+        val codec: String = "H264",
+        val preset: DesktopPreset = DesktopPreset.SMOOTH_SHARP
 )
+
+/**
+ * Named {quality, targetFps, scale} bundles for the remote-desktop stream (RemEx-vj31). CUSTOM has
+ * no fixed bundle — selecting it just reveals the raw sliders and leaves the current values as-is.
+ */
+enum class DesktopPreset(val id: String) {
+        UNLIMITED("unlimited"),
+        SMOOTH_SHARP("smooth_sharp"),
+        BALANCED("balanced"),
+        DATA_SAVER("data_saver"),
+        CUSTOM("custom");
+
+        companion object {
+                fun fromId(id: String): DesktopPreset = entries.find { it.id == id } ?: SMOOTH_SHARP
+        }
+}
+
+data class DesktopPresetBundle(
+        val preset: DesktopPreset,
+        val quality: Int,
+        val targetFps: Int,
+        val scale: Float
+)
+
+/**
+ * The four fixed presets in display order. Capture SCALE is the real FPS lever — host encode time
+ * scales with pixel count — so scale 0.5 reliably sustains 120fps while scale 1.0 caps well below
+ * it on a full-res monitor. Unlimited deliberately requests the uncapped/full-res bundle that can't
+ * actually sustain its own target; that mismatch is what the overflow warning explains.
+ */
+val DESKTOP_PRESET_BUNDLES =
+        listOf(
+                DesktopPresetBundle(DesktopPreset.UNLIMITED, quality = 100, targetFps = 120, scale = 1.0f),
+                DesktopPresetBundle(DesktopPreset.SMOOTH_SHARP, quality = 95, targetFps = 120, scale = 0.5f),
+                DesktopPresetBundle(DesktopPreset.BALANCED, quality = 85, targetFps = 60, scale = 0.75f),
+                DesktopPresetBundle(DesktopPreset.DATA_SAVER, quality = 60, targetFps = 30, scale = 0.65f)
+        )
 
 /**
  * A selectable remote-display target. [token] is the persisted identity:
@@ -69,6 +114,14 @@ data class DesktopWindowModel(
         val desktopNumber: Int? = null,
         val isActive: Boolean = false
 )
+
+/**
+ * Latch state of a PC-key modifier on the "PC keys" bar (RemEx-yi8o). OFF: inactive, no effect.
+ * ARMED: applies to the very next non-modifier key sent via [RemoteDesktopViewModel.sendKeyPress],
+ * then auto-releases back to OFF. LOCKED: held physically down on the host (keyDown already sent)
+ * until the chip is cycled back around to OFF.
+ */
+enum class ModifierState { OFF, ARMED, LOCKED }
 
 class RemoteDesktopViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -141,6 +194,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     private val _windowActionError = MutableStateFlow<String?>(null)
     val windowActionError: StateFlow<String?> = _windowActionError.asStateFlow()
+
+    private val _modifierStates = MutableStateFlow<Map<Int, ModifierState>>(emptyMap())
+    /** Latch state of each PC-key modifier, keyed by virtual-key code. Absent from the map == OFF. */
+    val modifierStates: StateFlow<Map<Int, ModifierState>> = _modifierStates.asStateFlow()
+
+    /** Modifiers currently held physically down on the host (keyDown sent, no keyUp yet) (RemEx-yi8o). */
+    private val physicallyDownModifiers = mutableSetOf<Int>()
 
     private val frameTimestampsMs = ArrayDeque<Long>()
     private val _fps = MutableStateFlow(0f)
@@ -354,7 +414,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         RemoteDesktopConfigState(
                                 quality = prefs.quality.coerceIn(1, 100),
                                 targetFps = prefs.targetFps.coerceIn(1, 120),
-                                scale = prefs.scale.coerceIn(0.25f, 1.0f)
+                                scale = prefs.scale.coerceIn(0.25f, 1.0f),
+                                preset = DesktopPreset.fromId(prefs.preset)
                         )
                 desiredDisplayToken = prefs.displayTarget
             }
@@ -549,6 +610,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             RemexClientManager.isConnected.collect { connected ->
                 if (!connected) {
+                    // The socket is already down, so keyUp sends below are best-effort, but the
+                    // local latch state MUST reset — otherwise a chip could read LOCKED against a
+                    // host that no longer has any idea a key is held (RemEx-yi8o).
+                    releaseAllModifiers()
                     _isStreaming.value = false
                     recycleCurrentFrame()
                     // Force a fresh catalog query on the next connection.
@@ -681,21 +746,44 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * Applies a performance preset in one shot — sets quality, target FPS, and capture scale together
-     * (persist + push once) instead of three separate slider writes. The capture SCALE is the real FPS
-     * lever: the host's rawvideo->ffmpeg encode time scales with pixel count, so a lower scale is what
-     * unlocks 120fps on a full-res monitor while the phone downscales for display anyway. (RemEx-4k4 fps)
+     * Applies a named preset in one shot — sets quality, target FPS, capture scale, and the preset
+     * id together (persist + push once) instead of three separate slider writes. The capture SCALE
+     * is the real FPS lever: the host's rawvideo->ffmpeg encode time scales with pixel count, so a
+     * lower scale is what unlocks 120fps on a full-res monitor while the phone downscales for
+     * display anyway. (RemEx-4k4 fps, RemEx-vj31 named presets)
      */
-    fun applyDesktopPreset(quality: Int, fps: Int, scale: Float) {
+    fun applyDesktopPreset(preset: DesktopPreset, quality: Int, fps: Int, scale: Float) {
         _configState.update {
             it.copy(
                 quality = quality.coerceIn(1, 100),
                 targetFps = fps.coerceIn(1, 120),
-                scale = scale.coerceIn(0.25f, 1.0f)
+                scale = scale.coerceIn(0.25f, 1.0f),
+                preset = preset
             )
         }
         persistDesktopDefaults()
         pushConfigIfStreaming()
+    }
+
+    /**
+     * Switches to Custom without touching the current quality/fps/scale — it just stops treating
+     * them as a named bundle so the raw sliders in the settings sheet become editable. (RemEx-vj31)
+     */
+    fun selectCustomPreset() {
+        _configState.update { it.copy(preset = DesktopPreset.CUSTOM) }
+        persistDesktopDefaults()
+    }
+
+    /** Whether the one-time Unlimited overflow warning has already been shown (RemEx-vj31). */
+    val hasShownUnlimitedWarning: StateFlow<Boolean> =
+            settingsManager.unlimitedWarningShownFlow.stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    false
+            )
+
+    fun markUnlimitedWarningShown() {
+        viewModelScope.launch { settingsManager.markUnlimitedWarningShown() }
     }
 
     fun updateDirectTouch(enabled: Boolean) {
@@ -921,6 +1009,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun stopStreaming() {
+        // Release any latched PC-key modifiers before tearing the session down so a LOCKED
+        // Ctrl/Alt/Shift/Win never leaves a key stuck down on the host (RemEx-yi8o).
+        releaseAllModifiers()
+
         reconnectJob?.cancel()
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
@@ -1050,19 +1142,95 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         )
     }
 
+    private fun sendKeyEvent(eventType: String, keyCode: Int) {
+        sendInput(
+                JSONObject().apply {
+                    put("eventType", eventType)
+                    put("keyCode", keyCode)
+                }
+        )
+    }
+
+    /**
+     * Sends a key press, automatically wrapping it with any ARMED or LOCKED PC-key modifiers
+     * (Ctrl/Alt/Shift/Win) currently latched via [cycleModifier] (RemEx-yi8o). A modifier not
+     * already held physically down is pressed first; LOCKED modifiers stay down afterwards, ARMED
+     * modifiers are released and reset to OFF once this key has been sent. Modifier keycodes
+     * themselves are never wrapped — they are only latched through [cycleModifier], not this
+     * function.
+     */
     fun sendKeyPress(keyCode: Int) {
-        sendInput(
-                JSONObject().apply {
-                    put("eventType", "keyDown")
-                    put("keyCode", keyCode)
+        if (keyCode in MODIFIER_VIRTUAL_KEY_CODES) {
+            sendKeyEvent("keyDown", keyCode)
+            sendKeyEvent("keyUp", keyCode)
+            return
+        }
+
+        val armedModifiers = mutableListOf<Int>()
+        _modifierStates.value.forEach { (vk, state) ->
+            if (state == ModifierState.OFF) return@forEach
+            if (physicallyDownModifiers.add(vk)) {
+                sendKeyEvent("keyDown", vk)
+            }
+            if (state == ModifierState.ARMED) armedModifiers.add(vk)
+        }
+
+        sendKeyEvent("keyDown", keyCode)
+        sendKeyEvent("keyUp", keyCode)
+
+        if (armedModifiers.isNotEmpty()) {
+            armedModifiers.forEach { vk ->
+                physicallyDownModifiers.remove(vk)
+                sendKeyEvent("keyUp", vk)
+            }
+            _modifierStates.update { current -> current - armedModifiers.toSet() }
+        }
+    }
+
+    /**
+     * Cycles a PC-key modifier through OFF → ARMED → LOCKED → OFF (RemEx-yi8o). Transitioning into
+     * LOCKED presses the key down on the host immediately and holds it; transitioning out of
+     * LOCKED releases it. ARMED presses nothing yet — [sendKeyPress] applies it lazily to the very
+     * next non-modifier key.
+     */
+    fun cycleModifier(vk: Int) {
+        val current = _modifierStates.value[vk] ?: ModifierState.OFF
+        val next =
+                when (current) {
+                    ModifierState.OFF -> ModifierState.ARMED
+                    ModifierState.ARMED -> ModifierState.LOCKED
+                    ModifierState.LOCKED -> ModifierState.OFF
                 }
-        )
-        sendInput(
-                JSONObject().apply {
-                    put("eventType", "keyUp")
-                    put("keyCode", keyCode)
+
+        when (next) {
+            ModifierState.LOCKED -> {
+                if (physicallyDownModifiers.add(vk)) {
+                    sendKeyEvent("keyDown", vk)
                 }
-        )
+            }
+            ModifierState.OFF -> {
+                if (physicallyDownModifiers.remove(vk)) {
+                    sendKeyEvent("keyUp", vk)
+                }
+            }
+            ModifierState.ARMED -> Unit // Not physically pressed yet.
+        }
+
+        _modifierStates.update { it + (vk to next) }
+    }
+
+    /**
+     * Releases every latched PC-key modifier — sending keyUp for anything physically held down on
+     * the host and resetting all latch state to OFF. Called whenever the desktop session ends
+     * (manual stop, disconnect, or ViewModel clear) so a LOCKED modifier never leaves a key stuck
+     * down on the host after the session goes away (RemEx-yi8o).
+     */
+    fun releaseAllModifiers() {
+        physicallyDownModifiers.toList().forEach { vk -> sendKeyEvent("keyUp", vk) }
+        physicallyDownModifiers.clear()
+        if (_modifierStates.value.isNotEmpty()) {
+            _modifierStates.value = emptyMap()
+        }
     }
 
     fun getHostScreenSize(): Pair<Int, Int> = Pair(hostScreenWidth, hostScreenHeight)
@@ -1233,7 +1401,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             settingsManager.saveRemoteDesktopDefaults(
                     quality = _configState.value.quality,
                     targetFps = _configState.value.targetFps,
-                    scale = _configState.value.scale
+                    scale = _configState.value.scale,
+                    preset = _configState.value.preset.id
             )
         }
     }

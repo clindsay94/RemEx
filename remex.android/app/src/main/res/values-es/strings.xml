@@ -188,6 +188,10 @@
     <string name="cd_key_arrow_right">Flecha derecha</string>
     <string name="cd_key_delete">Suprimir</string>
     <string name="cd_key_windows">Tecla Windows</string>
+    <string name="cd_key_ctrl">Control</string>
+    <string name="cd_key_alt">Alt</string>
+    <string name="cd_key_shift">Mayús</string>
+    <string name="cd_show_pc_keys">Mostrar teclas de PC</string>
     <string name="cd_reset_input">Restablecer Entrada</string>
     <string name="cd_settings">Ajustes</string>
     <string name="cd_toggle_fullscreen">Pantalla Completa</string>

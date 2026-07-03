@@ -188,6 +188,10 @@
     <string name="cd_key_arrow_right">दाईं तीर</string>
     <string name="cd_key_delete">Delete</string>
     <string name="cd_key_windows">Windows कुंजी</string>
+    <string name="cd_key_ctrl">Ctrl</string>
+    <string name="cd_key_alt">Alt</string>
+    <string name="cd_key_shift">Shift</string>
+    <string name="cd_show_pc_keys">पीसी कुंजियाँ दिखाएं</string>
     <string name="cd_reset_input">इनपुट रीसेट करें</string>
     <string name="cd_settings">सेटिंग्स</string>
     <string name="cd_toggle_fullscreen">फुलस्क्रीन टॉगल करें</string>

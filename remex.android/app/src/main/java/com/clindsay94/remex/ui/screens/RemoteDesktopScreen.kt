@@ -164,6 +164,18 @@ private fun PlainAnimatedVisibility(
         )
 }
 
+/** Localized display label for a remote-desktop quality preset (RemEx-vj31). */
+@Composable
+private fun desktopPresetLabel(preset: DesktopPreset): String =
+        when (preset) {
+                DesktopPreset.UNLIMITED -> stringResource(R.string.remote_desktop_preset_unlimited)
+                DesktopPreset.SMOOTH_SHARP ->
+                        stringResource(R.string.remote_desktop_preset_smooth_sharp)
+                DesktopPreset.BALANCED -> stringResource(R.string.remote_desktop_preset_balanced)
+                DesktopPreset.DATA_SAVER -> stringResource(R.string.remote_desktop_preset_data_saver)
+                DesktopPreset.CUSTOM -> stringResource(R.string.remote_desktop_preset_custom)
+        }
+
 /** Small uppercase-ish section heading used to group controls in the settings sheet. */
 @Composable
 private fun SettingsSectionHeader(text: String) {
@@ -255,6 +267,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val desktopMetaReady by viewModel.desktopMetaReady.collectAsStateWithLifecycle()
         val displayTargets by viewModel.displayTargets.collectAsStateWithLifecycle()
         val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsStateWithLifecycle()
+        val modifierStates by viewModel.modifierStates.collectAsStateWithLifecycle()
+        val hasShownUnlimitedWarning by viewModel.hasShownUnlimitedWarning.collectAsStateWithLifecycle()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -302,6 +316,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 },
                 onSendText = { viewModel.sendText(it) },
                 onSendKeyPress = { viewModel.sendKeyPress(it) },
+                modifierStates = modifierStates,
+                onCycleModifier = { viewModel.cycleModifier(it) },
                 onSendMouseDown = { b, x, y -> viewModel.sendMouseDown(b, x, y) },
                 onSendMouseClick = { b -> viewModel.sendMouseClick(b) },
                 onSendMouseUp = { b -> viewModel.sendMouseUp(b) },
@@ -312,7 +328,11 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 onSendPointerBatch = { viewModel.sendPointerBatch(it) },
                 onUpdateQuality = { viewModel.updateQuality(it) },
                 onUpdateTargetFps = { viewModel.updateTargetFps(it) },
-                onApplyPreset = { q, f, s -> viewModel.applyDesktopPreset(q, f, s) },
+                onUpdateScale = { viewModel.updateScale(it) },
+                onApplyPreset = { preset, q, f, s -> viewModel.applyDesktopPreset(preset, q, f, s) },
+                onSelectCustomPreset = { viewModel.selectCustomPreset() },
+                hasShownUnlimitedWarning = hasShownUnlimitedWarning,
+                onMarkUnlimitedWarningShown = { viewModel.markUnlimitedWarningShown() },
                 onUpdateDirectTouch = { viewModel.updateDirectTouch(it) },
                 onUpdatePointerSpeed = { viewModel.updatePointerSpeed(it) },
                 onUpdateScrollSensitivity = { v, h -> viewModel.updateScrollSensitivity(v, h) },
@@ -357,6 +377,8 @@ fun RemoteDesktopScreenContent(
         onStopStreaming: () -> Unit,
         onSendText: (String) -> Unit,
         onSendKeyPress: (Int) -> Unit,
+        modifierStates: Map<Int, ModifierState> = emptyMap(),
+        onCycleModifier: (Int) -> Unit = {},
         onSendMouseDown: (Int, Int?, Int?) -> Unit,
         onSendMouseClick: (Int) -> Unit,
         onSendMouseUp: (Int) -> Unit,
@@ -367,7 +389,11 @@ fun RemoteDesktopScreenContent(
         onSendPointerBatch: (String) -> Unit = {},
         onUpdateQuality: (Int) -> Unit,
         onUpdateTargetFps: (Int) -> Unit,
-        onApplyPreset: (Int, Int, Float) -> Unit = { _, _, _ -> },
+        onUpdateScale: (Float) -> Unit = {},
+        onApplyPreset: (DesktopPreset, Int, Int, Float) -> Unit = { _, _, _, _ -> },
+        onSelectCustomPreset: () -> Unit = {},
+        hasShownUnlimitedWarning: Boolean = false,
+        onMarkUnlimitedWarningShown: () -> Unit = {},
         onUpdateDirectTouch: (Boolean) -> Unit,
         onUpdatePointerSpeed: (Float) -> Unit,
         onUpdateScrollSensitivity: (Float, Float) -> Unit,
@@ -435,6 +461,12 @@ fun RemoteDesktopScreenContent(
         val keyboardController = LocalSoftwareKeyboardController.current
         var textValue by remember { mutableStateOf(TextFieldValue("")) }
         val isRemoteKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
+        // "PC keys" bar (Ctrl/Alt/Shift/Win + Esc/Tab/arrows/Del) is independent of the soft
+        // keyboard: it can be shown on its own via the toolbar toggle below, and it also shows
+        // automatically whenever the IME is open (see the AnimatedVisibility condition further
+        // down). Dismissing the IME no longer hides it if the user explicitly opened it (RemEx-yi8o).
+        var pcKeysBarVisible by rememberSaveable { mutableStateOf(false) }
 
         // Robust keyboard toggle reused by every keyboard button. The hidden BasicTextField keeps
         // Compose focus after a back-gesture IME dismiss, so a bare requestFocus()/show() no-ops and
@@ -687,6 +719,31 @@ fun RemoteDesktopScreenContent(
                                                                         )
                                                         )
                                                 }
+                                                // Independent from the Keyboard button above: this
+                                                // toggles the PC-keys (modifier) bar on its own,
+                                                // surviving IME dismissal (RemEx-yi8o).
+                                                IconButton(
+                                                        onClick = {
+                                                                pcKeysBarVisible = !pcKeysBarVisible
+                                                        }
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.KeyboardCommandKey,
+                                                                contentDescription =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .cd_show_pc_keys
+                                                                        ),
+                                                                tint =
+                                                                        if (pcKeysBarVisible)
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .primary
+                                                                        else
+                                                                                LocalContentColor
+                                                                                        .current
+                                                        )
+                                                }
                                                 IconButton(
                                                         onClick = {
                                                                 inputResetTrigger++
@@ -789,13 +846,46 @@ fun RemoteDesktopScreenContent(
                         BasicTextField(
                                 value = textValue,
                                 onValueChange = { newValue ->
+                                        // While a PC-key modifier is armed/locked, a single typed
+                                        // alphanumeric character is routed as a chord (Ctrl+C, Ctrl+V,
+                                        // Ctrl+A, Ctrl+Z, ...) via onSendKeyPress instead of as typed
+                                        // text — sendKeyPress applies the active modifier(s) itself.
+                                        // Everything else (no modifier active, or a multi-character /
+                                        // non-alphanumeric edit such as autocomplete or punctuation)
+                                        // keeps the existing text path byte-for-byte (RemEx-yi8o).
+                                        val hasActiveModifier =
+                                                modifierStates.values.any { it != ModifierState.OFF }
+                                        val chordVk =
+                                                if (hasActiveModifier) {
+                                                        singleCharacterInsertion(
+                                                                        textValue.text,
+                                                                        newValue.text
+                                                                )
+                                                                ?.let {
+                                                                        asciiAlphanumericVirtualKeyCode(
+                                                                                it
+                                                                        )
+                                                                }
+                                                } else {
+                                                        null
+                                                }
                                         textValue =
-                                                applyRemoteKeyboardEdit(
-                                                        currentValue = textValue,
-                                                        newValue = newValue,
-                                                        onSendText = onSendText,
-                                                        onSendKeyPress = onSendKeyPress
-                                                )
+                                                if (chordVk != null) {
+                                                        applyRemoteKeyboardEdit(
+                                                                        currentValue = textValue,
+                                                                        newValue = newValue,
+                                                                        onSendText = {},
+                                                                        onSendKeyPress = {}
+                                                                )
+                                                                .also { onSendKeyPress(chordVk) }
+                                                } else {
+                                                        applyRemoteKeyboardEdit(
+                                                                currentValue = textValue,
+                                                                newValue = newValue,
+                                                                onSendText = onSendText,
+                                                                onSendKeyPress = onSendKeyPress
+                                                        )
+                                                }
                                 },
                                 keyboardOptions = KeyboardOptions(
                                         keyboardType = KeyboardType.Text,
@@ -2260,6 +2350,34 @@ fun RemoteDesktopScreenContent(
                                                                         stringResource(R.string.cd_show_keyboard)
                                                         )
                                                 }
+                                                // Independent from the Keyboard button above: toggles
+                                                // the PC-keys (modifier) bar on its own, surviving IME
+                                                // dismissal (RemEx-yi8o).
+                                                FilledTonalIconButton(
+                                                        onClick = {
+                                                                pcKeysBarVisible = !pcKeysBarVisible
+                                                        },
+                                                        colors =
+                                                                IconButtonDefaults
+                                                                        .filledTonalIconButtonColors(
+                                                                                containerColor =
+                                                                                        if (pcKeysBarVisible)
+                                                                                                MaterialTheme.colorScheme.primaryContainer
+                                                                                        else
+                                                                                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                                                contentColor =
+                                                                                        if (pcKeysBarVisible)
+                                                                                                MaterialTheme.colorScheme.onPrimaryContainer
+                                                                                        else
+                                                                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.KeyboardCommandKey,
+                                                                contentDescription =
+                                                                        stringResource(R.string.cd_show_pc_keys)
+                                                        )
+                                                }
                                                 FilledTonalIconButton(
                                                         onClick = { onSetFullscreen(false) },
                                                         colors =
@@ -2343,6 +2461,28 @@ fun RemoteDesktopScreenContent(
                                         val isLandscape =
                                                 LocalConfiguration.current.orientation ==
                                                         Configuration.ORIENTATION_LANDSCAPE
+                                        // Hosted here (not in the screen's own Scaffold) because a
+                                        // ModalBottomSheet renders in its own window above the
+                                        // Scaffold — a Scaffold-hosted Snackbar would be invisible
+                                        // behind the open sheet. (RemEx-vj31)
+                                        val presetSnackbarHostState = remember { SnackbarHostState() }
+                                        val unlimitedOverflowWarning =
+                                                stringResource(
+                                                        R.string
+                                                                .remote_desktop_preset_unlimited_overflow_warning
+                                                )
+                                        LaunchedEffect(config.preset) {
+                                                if (config.preset == DesktopPreset.UNLIMITED &&
+                                                                !hasShownUnlimitedWarning
+                                                ) {
+                                                        presetSnackbarHostState.showSnackbar(
+                                                                message = unlimitedOverflowWarning,
+                                                                duration = SnackbarDuration.Long
+                                                        )
+                                                        onMarkUnlimitedWarningShown()
+                                                }
+                                        }
+                                        Box(modifier = Modifier.fillMaxWidth()) {
                                         Column(
                                                 modifier =
                                                         Modifier.fillMaxWidth()
@@ -2438,106 +2578,172 @@ fun RemoteDesktopScreenContent(
                                                                         .remote_desktop_section_stream
                                                         )
                                                 )
-                                                // Quick performance presets. Capture SCALE is the real
-                                                // FPS lever (host encode time scales with pixel count),
-                                                // so each preset bundles scale + fps + quality. A chip is
-                                                // selected when the live config matches its values.
+                                                // Named quality presets bundle {quality, targetFps,
+                                                // scale} together (persist + push once). Capture SCALE
+                                                // is the real FPS lever — host encode time scales with
+                                                // pixel count. Custom has no fixed bundle: it reveals
+                                                // the raw sliders below instead. (RemEx-vj31)
                                                 Row(
                                                         modifier =
                                                                 Modifier.fillMaxWidth()
+                                                                        .horizontalScroll(
+                                                                                rememberScrollState()
+                                                                        )
                                                                         .padding(bottom = 4.dp),
                                                         horizontalArrangement =
                                                                 Arrangement.spacedBy(8.dp)
                                                 ) {
-                                                        FilterChip(
-                                                                selected =
-                                                                        config.scale == 0.5f &&
-                                                                                config.targetFps == 120,
-                                                                onClick = {
-                                                                        onApplyPreset(85, 120, 0.5f)
-                                                                },
-                                                                label = {
-                                                                        Text(
-                                                                                stringResource(
-                                                                                        R.string.remote_desktop_preset_performance
+                                                        DESKTOP_PRESET_BUNDLES.forEach { bundle ->
+                                                                FilterChip(
+                                                                        selected =
+                                                                                config.preset ==
+                                                                                        bundle.preset,
+                                                                        onClick = {
+                                                                                onApplyPreset(
+                                                                                        bundle.preset,
+                                                                                        bundle.quality,
+                                                                                        bundle.targetFps,
+                                                                                        bundle.scale
                                                                                 )
-                                                                        )
-                                                                }
-                                                        )
-                                                        FilterChip(
-                                                                selected =
-                                                                        config.scale == 0.75f &&
-                                                                                config.targetFps == 90,
-                                                                onClick = {
-                                                                        onApplyPreset(90, 90, 0.75f)
-                                                                },
-                                                                label = {
-                                                                        Text(
-                                                                                stringResource(
-                                                                                        R.string.remote_desktop_preset_balanced
+                                                                        },
+                                                                        label = {
+                                                                                Text(
+                                                                                        desktopPresetLabel(
+                                                                                                bundle.preset
+                                                                                        )
                                                                                 )
-                                                                        )
-                                                                }
-                                                        )
+                                                                        }
+                                                                )
+                                                        }
                                                         FilterChip(
                                                                 selected =
-                                                                        config.scale == 1.0f &&
-                                                                                config.quality == 100,
-                                                                onClick = {
-                                                                        onApplyPreset(100, 120, 1.0f)
-                                                                },
+                                                                        config.preset ==
+                                                                                DesktopPreset.CUSTOM,
+                                                                onClick = onSelectCustomPreset,
                                                                 label = {
                                                                         Text(
-                                                                                stringResource(
-                                                                                        R.string.remote_desktop_preset_crisp
+                                                                                desktopPresetLabel(
+                                                                                        DesktopPreset
+                                                                                                .CUSTOM
                                                                                 )
                                                                         )
                                                                 }
                                                         )
                                                 }
-                                                SettingsPair(
-                                                        isLandscape = isLandscape,
-                                                        first = { m ->
-                                                                SettingSlider(
-                                                                        label =
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .remote_desktop_quality_label,
-                                                                                        config.quality
-                                                                                ),
-                                                                        value =
-                                                                                config.quality
-                                                                                        .toFloat(),
-                                                                        onValueChange = {
-                                                                                onUpdateQuality(
-                                                                                        it.toInt()
-                                                                                )
-                                                                        },
-                                                                        valueRange = 1f..100f,
-                                                                        modifier = m
+                                                // Persistent heads-up on Unlimited: it targets the
+                                                // technical ceiling (full resolution, uncapped fps),
+                                                // which this capture pipeline can't always sustain —
+                                                // the same overflow the one-time snackbar explains.
+                                                PlainAnimatedVisibility(
+                                                        visible =
+                                                                config.preset ==
+                                                                        DesktopPreset.UNLIMITED
+                                                ) {
+                                                        Row(
+                                                                verticalAlignment =
+                                                                        Alignment.CenterVertically,
+                                                                horizontalArrangement =
+                                                                        Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Info,
+                                                                        contentDescription = null,
+                                                                        modifier =
+                                                                                Modifier.size(16.dp),
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
                                                                 )
-                                                        },
-                                                        second = { m ->
-                                                                SettingSlider(
-                                                                        label =
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .remote_desktop_fps_label,
-                                                                                        config.targetFps
-                                                                                ),
-                                                                        value =
-                                                                                config.targetFps
-                                                                                        .toFloat(),
-                                                                        onValueChange = {
-                                                                                onUpdateTargetFps(
-                                                                                        it.toInt()
-                                                                                )
-                                                                        },
-                                                                        valueRange = 1f..120f,
-                                                                        modifier = m
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .remote_desktop_preset_unlimited_info
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodySmall,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
                                                                 )
                                                         }
-                                                )
+                                                }
+                                                PlainAnimatedVisibility(
+                                                        visible =
+                                                                config.preset ==
+                                                                        DesktopPreset.CUSTOM
+                                                ) {
+                                                        Column(
+                                                                verticalArrangement =
+                                                                        Arrangement.spacedBy(16.dp)
+                                                        ) {
+                                                                SettingsPair(
+                                                                        isLandscape = isLandscape,
+                                                                        first = { m ->
+                                                                                SettingSlider(
+                                                                                        label =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .remote_desktop_quality_label,
+                                                                                                        config.quality
+                                                                                                ),
+                                                                                        value =
+                                                                                                config.quality
+                                                                                                        .toFloat(),
+                                                                                        onValueChange = {
+                                                                                                onUpdateQuality(
+                                                                                                        it.toInt()
+                                                                                                )
+                                                                                        },
+                                                                                        valueRange =
+                                                                                                1f..100f,
+                                                                                        modifier = m
+                                                                                )
+                                                                        },
+                                                                        second = { m ->
+                                                                                SettingSlider(
+                                                                                        label =
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .remote_desktop_fps_label,
+                                                                                                        config.targetFps
+                                                                                                ),
+                                                                                        value =
+                                                                                                config.targetFps
+                                                                                                        .toFloat(),
+                                                                                        onValueChange = {
+                                                                                                onUpdateTargetFps(
+                                                                                                        it.toInt()
+                                                                                                )
+                                                                                        },
+                                                                                        valueRange =
+                                                                                                1f..120f,
+                                                                                        modifier = m
+                                                                                )
+                                                                        }
+                                                                )
+                                                                SettingSlider(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .remote_desktop_scale_label,
+                                                                                        (config.scale *
+                                                                                                        100)
+                                                                                                .toInt()
+                                                                                ),
+                                                                        value = config.scale,
+                                                                        onValueChange = {
+                                                                                onUpdateScale(it)
+                                                                        },
+                                                                        valueRange = 0.25f..1.0f,
+                                                                        modifier =
+                                                                                Modifier.fillMaxWidth()
+                                                                )
+                                                        }
+                                                }
 
                                                 HorizontalDivider()
 
@@ -3013,12 +3219,22 @@ fun RemoteDesktopScreenContent(
                                                         }
                                                 }
                                         }
+                                        SnackbarHost(
+                                                hostState = presetSnackbarHostState,
+                                                modifier =
+                                                        Modifier.align(Alignment.BottomCenter)
+                                                                .padding(bottom = 16.dp)
+                                        )
+                                        }
                                 }
                         }
 
-                        // Utility key row — shown while the remote keyboard is open
+                        // PC-keys bar — modifier chips (Ctrl/Alt/Shift/Win, latching) plus utility
+                        // keys. Independent of the soft keyboard: visible when explicitly toggled
+                        // via the toolbar (pcKeysBarVisible) OR while the IME is open, and it no
+                        // longer disappears just because the IME does (RemEx-yi8o).
                         AnimatedVisibility(
-                                visible = isRemoteKeyboardOpen,
+                                visible = pcKeysBarVisible || isRemoteKeyboardOpen,
                                 enter =
                                         slideInVertically(initialOffsetY = { it }) +
                                                 fadeIn(),
@@ -3026,6 +3242,32 @@ fun RemoteDesktopScreenContent(
                                         slideOutVertically(targetOffsetY = { it }) +
                                                 fadeOut()
                         ) {
+                                // vk -> (label, contentDescription). Latching: tapping cycles
+                                // OFF -> ARMED -> LOCKED -> OFF via onCycleModifier; sendKeyPress
+                                // applies ARMED/LOCKED modifiers to the next non-modifier key.
+                                val modifierKeys =
+                                        listOf(
+                                                Triple(
+                                                        17,
+                                                        "Ctrl",
+                                                        stringResource(R.string.cd_key_ctrl)
+                                                ),
+                                                Triple(
+                                                        18,
+                                                        "Alt",
+                                                        stringResource(R.string.cd_key_alt)
+                                                ),
+                                                Triple(
+                                                        16,
+                                                        "Shift",
+                                                        stringResource(R.string.cd_key_shift)
+                                                ),
+                                                Triple(
+                                                        91,
+                                                        "⊞",
+                                                        stringResource(R.string.cd_key_windows)
+                                                ),
+                                        )
                                 val utilKeys =
                                         listOf(
                                                 Triple(
@@ -3079,11 +3321,6 @@ fun RemoteDesktopScreenContent(
                                                         stringResource(R.string.cd_key_delete),
                                                         46
                                                 ),
-                                                Triple(
-                                                        "⊞",
-                                                        stringResource(R.string.cd_key_windows),
-                                                        91
-                                                ),
                                         )
                                 Row(
                                         modifier =
@@ -3094,6 +3331,8 @@ fun RemoteDesktopScreenContent(
                                                                         .copy(alpha = 0.95f)
                                                         )
                                                         .horizontalScroll(rememberScrollState())
+                                                        .navigationBarsPadding()
+                                                        .imePadding()
                                                         .padding(
                                                                 vertical = 6.dp,
                                                                 horizontal = 12.dp
@@ -3101,6 +3340,100 @@ fun RemoteDesktopScreenContent(
                                         horizontalArrangement =
                                                 Arrangement.spacedBy(8.dp)
                                 ) {
+                                        modifierKeys.forEach { (vk, label, cd) ->
+                                                val state =
+                                                        modifierStates[vk] ?: ModifierState.OFF
+                                                AssistChip(
+                                                        onClick = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants
+                                                                                .VIRTUAL_KEY
+                                                                )
+                                                                onCycleModifier(vk)
+                                                        },
+                                                        label = {
+                                                                Text(
+                                                                        label,
+                                                                        fontWeight =
+                                                                                if (state ==
+                                                                                                ModifierState
+                                                                                                        .LOCKED
+                                                                                )
+                                                                                        FontWeight
+                                                                                                .Bold
+                                                                                else null
+                                                                )
+                                                        },
+                                                        leadingIcon =
+                                                                if (state ==
+                                                                                ModifierState.LOCKED
+                                                                ) {
+                                                                        {
+                                                                                Icon(
+                                                                                        Icons.Default
+                                                                                                .Lock,
+                                                                                        contentDescription =
+                                                                                                null,
+                                                                                        modifier =
+                                                                                                Modifier.size(
+                                                                                                        14.dp
+                                                                                                )
+                                                                                )
+                                                                        }
+                                                                } else null,
+                                                        modifier =
+                                                                Modifier.semantics {
+                                                                        contentDescription = cd
+                                                                },
+                                                        colors =
+                                                                when (state) {
+                                                                        ModifierState.OFF ->
+                                                                                AssistChipDefaults
+                                                                                        .assistChipColors(
+                                                                                                containerColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .secondaryContainer,
+                                                                                                labelColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .onSecondaryContainer
+                                                                                        )
+                                                                        ModifierState.ARMED ->
+                                                                                AssistChipDefaults
+                                                                                        .assistChipColors(
+                                                                                                containerColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .primaryContainer,
+                                                                                                labelColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .onPrimaryContainer,
+                                                                                                leadingIconContentColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .onPrimaryContainer
+                                                                                        )
+                                                                        ModifierState.LOCKED ->
+                                                                                AssistChipDefaults
+                                                                                        .assistChipColors(
+                                                                                                containerColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .primary,
+                                                                                                labelColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .onPrimary,
+                                                                                                leadingIconContentColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .onPrimary
+                                                                                        )
+                                                                }
+                                                )
+                                        }
                                         utilKeys.forEach { (label, cd, vk) ->
                                                 AssistChip(
                                                         onClick = {
@@ -3133,6 +3466,42 @@ fun RemoteDesktopScreenContent(
                 }
         }
 }
+
+/**
+ * Detects a pure single-character insertion between [oldText] and [newText] — i.e. exactly one
+ * character was typed with no surrounding deletion or replacement, as in a normal keypress on the
+ * soft keyboard. Used to decide whether a keystroke should be routed as a PC-key chord (Ctrl+C,
+ * Ctrl+V, ...) instead of typed text, when a modifier is currently armed or locked (RemEx-yi8o).
+ * Returns null for multi-character insertions, deletions, or replacements.
+ */
+private fun singleCharacterInsertion(oldText: String, newText: String): Char? {
+        if (newText.length != oldText.length + 1) return null
+        var prefixLength = 0
+        while (prefixLength < oldText.length && oldText[prefixLength] == newText[prefixLength]) {
+                prefixLength++
+        }
+        var suffixLength = 0
+        val maxSuffix = oldText.length - prefixLength
+        while (suffixLength < maxSuffix &&
+                        oldText[oldText.length - 1 - suffixLength] ==
+                                newText[newText.length - 1 - suffixLength]
+        ) {
+                suffixLength++
+        }
+        if (prefixLength + suffixLength != oldText.length) return null // more than a pure insert
+        return newText[prefixLength]
+}
+
+/**
+ * Maps a single ASCII letter or digit to the virtual-key code sent for a PC-key chord (A-Z/a-z ->
+ * 0x41-0x5A uppercased, 0-9 -> 0x30-0x39). Returns null for anything else (RemEx-yi8o).
+ */
+private fun asciiAlphanumericVirtualKeyCode(c: Char): Int? =
+        when {
+                c in '0'..'9' -> c.code
+                c in 'A'..'Z' || c in 'a'..'z' -> c.uppercaseChar().code
+                else -> null
+        }
 
 @Preview(showBackground = true)
 @Composable
