@@ -191,6 +191,13 @@
     <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
+    <string name="cd_key_altgr">AltGr</string>
+    <string name="cd_key_home">Awal</string>
+    <string name="cd_key_end">Akhir</string>
+    <string name="cd_key_pageup">Halaman Atas</string>
+    <string name="cd_key_pagedown">Halaman Bawah</string>
+    <string name="cd_key_insert">Insert</string>
+    <string name="cd_more_keys">Tombol lainnya</string>
     <string name="cd_show_pc_keys">Tampilkan tombol PC</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Pengaturan</string>

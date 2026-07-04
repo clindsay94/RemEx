@@ -194,6 +194,13 @@
     <string name="cd_key_ctrl">Control</string>
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
+    <string name="cd_key_altgr">AltGr</string>
+    <string name="cd_key_home">Home</string>
+    <string name="cd_key_end">End</string>
+    <string name="cd_key_pageup">Page Up</string>
+    <string name="cd_key_pagedown">Page Down</string>
+    <string name="cd_key_insert">Insert</string>
+    <string name="cd_more_keys">More keys</string>
     <string name="cd_show_pc_keys">Show PC keys</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>

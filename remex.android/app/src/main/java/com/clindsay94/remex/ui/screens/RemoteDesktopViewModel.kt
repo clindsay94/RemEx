@@ -32,12 +32,18 @@ private const val TAG = "RemoteDesktopVM"
 private const val FRAME_WATCHDOG_POLL_MS = 1000L
 private const val FRAME_STALL_TIMEOUT_MS = 7000L
 
-/** Virtual-key codes for the four latching PC-key modifiers on the "PC keys" bar (RemEx-yi8o). */
-private const val VK_SHIFT = 16
-private const val VK_CTRL = 17
-private const val VK_ALT = 18
-private const val VK_WIN = 91
-private val MODIFIER_VIRTUAL_KEY_CODES = setOf(VK_SHIFT, VK_CTRL, VK_ALT, VK_WIN)
+/**
+ * Virtual-key codes for the latching PC-key modifiers on the "PC keys" bar (RemEx-yi8o).
+ * `internal` (not `private`) so [RemoteDesktopChordTest] can assert directly against the real
+ * constant set rather than a hand-copied literal that could silently drift (RemEx-9krr).
+ */
+internal const val VK_SHIFT = 16
+internal const val VK_CTRL = 17
+internal const val VK_ALT = 18
+internal const val VK_WIN = 91
+/** VK_RMENU — right-Alt only, distinct from generic VK_ALT (RemEx-9krr). */
+internal const val VK_ALTGR = 165
+internal val MODIFIER_VIRTUAL_KEY_CODES = setOf(VK_SHIFT, VK_CTRL, VK_ALT, VK_WIN, VK_ALTGR)
 
 data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTime())
 
@@ -1166,24 +1172,27 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        val armedModifiers = mutableListOf<Int>()
-        _modifierStates.value.forEach { (vk, state) ->
-            if (state == ModifierState.OFF) return@forEach
-            if (physicallyDownModifiers.add(vk)) {
-                sendKeyEvent("keyDown", vk)
-            }
-            if (state == ModifierState.ARMED) armedModifiers.add(vk)
+        val chord =
+                computeChordApplication(
+                        modifierStates = _modifierStates.value,
+                        physicallyDownModifiers = physicallyDownModifiers,
+                        keyCode = keyCode,
+                        modifierVirtualKeyCodes = MODIFIER_VIRTUAL_KEY_CODES
+                )
+        chord.toPress.forEach { vk ->
+            physicallyDownModifiers.add(vk)
+            sendKeyEvent("keyDown", vk)
         }
 
         sendKeyEvent("keyDown", keyCode)
         sendKeyEvent("keyUp", keyCode)
 
-        if (armedModifiers.isNotEmpty()) {
-            armedModifiers.forEach { vk ->
+        if (chord.toRelease.isNotEmpty()) {
+            chord.toRelease.forEach { vk ->
                 physicallyDownModifiers.remove(vk)
                 sendKeyEvent("keyUp", vk)
             }
-            _modifierStates.update { current -> current - armedModifiers.toSet() }
+            _modifierStates.value = chord.nextModifierStates
         }
     }
 

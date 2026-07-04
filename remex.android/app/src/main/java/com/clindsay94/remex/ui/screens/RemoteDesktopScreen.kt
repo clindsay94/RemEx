@@ -91,6 +91,11 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "RemoteDesktopScreen"
 
+// Fullscreen top-end overlay row spacing (RemEx-klq) — named so every icon button in the row is
+// provably consistent rather than relying on repeated inline literals.
+private val FullscreenOverlayEdgePadding = 16.dp
+private val FullscreenOverlayIconSpacing = 8.dp
+
 // Gesture timing thresholds (ms)
 private const val TAP_MAX_DURATION_MS = 250L
 private const val LONG_PRESS_THRESHOLD_MS = 500L
@@ -467,6 +472,10 @@ fun RemoteDesktopScreenContent(
         // automatically whenever the IME is open (see the AnimatedVisibility condition further
         // down). Dismissing the IME no longer hides it if the user explicitly opened it (RemEx-yi8o).
         var pcKeysBarVisible by rememberSaveable { mutableStateOf(false) }
+
+        // Expand/collapse state for the F-key/nav-key grid revealed below the compact PC-keys row
+        // (RemEx-bct remnant): F1-F12, Home/End/PgUp/PgDn, Insert.
+        var extraKeysExpanded by rememberSaveable { mutableStateOf(false) }
 
         // Robust keyboard toggle reused by every keyboard button. The hidden BasicTextField keeps
         // Compose focus after a back-gesture IME dismiss, so a bare requestFocus()/show() no-ops and
@@ -2270,12 +2279,66 @@ fun RemoteDesktopScreenContent(
                                 }
 
                                 if (uiState.isFullscreen) {
+                                        // Action order mirrors the windowed TopAppBar (Keyboard, PC-keys,
+                                        // Settings, fullscreen-toggle, Stop/Play) for the actions both
+                                        // surfaces share; FPS is fullscreen-only and slotted in without
+                                        // disturbing that shared relative order (RemEx-klq).
                                         Row(
                                                 modifier =
                                                         Modifier.align(Alignment.TopEnd)
-                                                                .padding(16.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                                .padding(FullscreenOverlayEdgePadding),
+                                                horizontalArrangement =
+                                                        Arrangement.spacedBy(
+                                                                FullscreenOverlayIconSpacing
+                                                        )
                                         ) {
+                                                // Keyboard toggle in fullscreen — same robust re-invoke
+                                                // logic so the IME comes up every time without leaving
+                                                // immersive mode (RemEx-46q).
+                                                FilledTonalIconButton(
+                                                        onClick = { toggleRemoteKeyboard() },
+                                                        colors =
+                                                                toggleIconButtonColors(
+                                                                        isRemoteKeyboardOpen
+                                                                )
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.Keyboard,
+                                                                contentDescription =
+                                                                        stringResource(R.string.cd_show_keyboard)
+                                                        )
+                                                }
+                                                // Independent from the Keyboard button above: toggles
+                                                // the PC-keys (modifier) bar on its own, surviving IME
+                                                // dismissal (RemEx-yi8o).
+                                                FilledTonalIconButton(
+                                                        onClick = {
+                                                                pcKeysBarVisible = !pcKeysBarVisible
+                                                        },
+                                                        colors = toggleIconButtonColors(pcKeysBarVisible)
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.KeyboardCommandKey,
+                                                                contentDescription =
+                                                                        stringResource(R.string.cd_show_pc_keys)
+                                                        )
+                                                }
+                                                // FPS overlay toggle — re-added to the fullscreen
+                                                // controls after the control-bar removal orphaned it
+                                                // (onToggleFpsOverlay had no caller). Fullscreen-only:
+                                                // no windowed-TopAppBar equivalent exists today.
+                                                FilledTonalIconButton(
+                                                        onClick = { onToggleFpsOverlay() },
+                                                        colors = toggleIconButtonColors(showFpsOverlay)
+                                                ) {
+                                                        Icon(
+                                                                Icons.Default.Speed,
+                                                                contentDescription =
+                                                                        stringResource(
+                                                                                R.string.remote_desktop_fps_overlay_btn
+                                                                        )
+                                                        )
+                                                }
                                                 // Settings button — open the (translucent) settings
                                                 // overlay without having to leave fullscreen first.
                                                 FilledTonalIconButton(
@@ -2291,91 +2354,8 @@ fun RemoteDesktopScreenContent(
                                                 ) {
                                                         Icon(
                                                                 Icons.Default.Tune,
-                                                                contentDescription = "Settings"
-                                                        )
-                                                }
-                                                // FPS overlay toggle — re-added to the fullscreen
-                                                // controls after the control-bar removal orphaned it
-                                                // (onToggleFpsOverlay had no caller). Highlights while
-                                                // the live frame-rate counter is shown. Theme color
-                                                // roles keep contrast correct across all four themes.
-                                                FilledTonalIconButton(
-                                                        onClick = { onToggleFpsOverlay() },
-                                                        colors =
-                                                                IconButtonDefaults
-                                                                        .filledTonalIconButtonColors(
-                                                                                containerColor =
-                                                                                        if (showFpsOverlay)
-                                                                                                MaterialTheme.colorScheme.primaryContainer
-                                                                                        else
-                                                                                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                                                contentColor =
-                                                                                        if (showFpsOverlay)
-                                                                                                MaterialTheme.colorScheme.onPrimaryContainer
-                                                                                        else
-                                                                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                                                        )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Speed,
                                                                 contentDescription =
-                                                                        stringResource(
-                                                                                R.string.remote_desktop_fps_overlay_btn
-                                                                        )
-                                                        )
-                                                }
-                                                // Keyboard toggle in fullscreen — same robust re-invoke
-                                                // logic so the IME comes up every time without leaving
-                                                // immersive mode (RemEx-46q).
-                                                FilledTonalIconButton(
-                                                        onClick = { toggleRemoteKeyboard() },
-                                                        colors =
-                                                                IconButtonDefaults
-                                                                        .filledTonalIconButtonColors(
-                                                                                containerColor =
-                                                                                        if (isRemoteKeyboardOpen)
-                                                                                                MaterialTheme.colorScheme.primaryContainer
-                                                                                        else
-                                                                                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                                                contentColor =
-                                                                                        if (isRemoteKeyboardOpen)
-                                                                                                MaterialTheme.colorScheme.onPrimaryContainer
-                                                                                        else
-                                                                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                                                        )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Keyboard,
-                                                                contentDescription =
-                                                                        stringResource(R.string.cd_show_keyboard)
-                                                        )
-                                                }
-                                                // Independent from the Keyboard button above: toggles
-                                                // the PC-keys (modifier) bar on its own, surviving IME
-                                                // dismissal (RemEx-yi8o).
-                                                FilledTonalIconButton(
-                                                        onClick = {
-                                                                pcKeysBarVisible = !pcKeysBarVisible
-                                                        },
-                                                        colors =
-                                                                IconButtonDefaults
-                                                                        .filledTonalIconButtonColors(
-                                                                                containerColor =
-                                                                                        if (pcKeysBarVisible)
-                                                                                                MaterialTheme.colorScheme.primaryContainer
-                                                                                        else
-                                                                                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                                                contentColor =
-                                                                                        if (pcKeysBarVisible)
-                                                                                                MaterialTheme.colorScheme.onPrimaryContainer
-                                                                                        else
-                                                                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                                                        )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.KeyboardCommandKey,
-                                                                contentDescription =
-                                                                        stringResource(R.string.cd_show_pc_keys)
+                                                                        stringResource(R.string.cd_settings)
                                                         )
                                                 }
                                                 FilledTonalIconButton(
@@ -3242,6 +3222,7 @@ fun RemoteDesktopScreenContent(
                                         slideOutVertically(targetOffsetY = { it }) +
                                                 fadeOut()
                         ) {
+                            Column {
                                 // vk -> (label, contentDescription). Latching: tapping cycles
                                 // OFF -> ARMED -> LOCKED -> OFF via onCycleModifier; sendKeyPress
                                 // applies ARMED/LOCKED modifiers to the next non-modifier key.
@@ -3266,6 +3247,11 @@ fun RemoteDesktopScreenContent(
                                                         91,
                                                         "⊞",
                                                         stringResource(R.string.cd_key_windows)
+                                                ),
+                                                Triple(
+                                                        165,
+                                                        "AltGr",
+                                                        stringResource(R.string.cd_key_altgr)
                                                 ),
                                         )
                                 val utilKeys =
@@ -3461,7 +3447,31 @@ fun RemoteDesktopScreenContent(
                                                                 )
                                                 )
                                         }
+                                        // Expand chevron — reveals the F-key/nav-key grid below
+                                        // (RemEx-bct remnant).
+                                        IconButton(
+                                                onClick = {
+                                                        extraKeysExpanded = !extraKeysExpanded
+                                                }
+                                        ) {
+                                                Icon(
+                                                        if (extraKeysExpanded)
+                                                                Icons.Default.KeyboardArrowUp
+                                                        else Icons.Default.KeyboardArrowDown,
+                                                        contentDescription =
+                                                                stringResource(
+                                                                        R.string.cd_more_keys
+                                                                )
+                                                )
+                                        }
                                 }
+                                if (extraKeysExpanded) {
+                                        ExtraKeysGrid(
+                                                onSendKeyPress = onSendKeyPress,
+                                                view = view
+                                        )
+                                }
+                            }
                         }
                 }
         }
@@ -3572,5 +3582,95 @@ private fun RepeatingIconButton(
 
         IconButton(onClick = {}, interactionSource = interactionSource) {
                 Icon(icon, contentDescription = description)
+        }
+}
+
+/**
+ * Shared colors for a toggle-style [FilledTonalIconButton] in the fullscreen overlay row
+ * (RemEx-klq) — dedupes the three identical active/inactive color blocks the FPS/Keyboard/PC-keys
+ * toggles previously each declared inline.
+ */
+@Composable
+private fun toggleIconButtonColors(active: Boolean): IconButtonColors =
+        IconButtonDefaults.filledTonalIconButtonColors(
+                containerColor =
+                        if (active) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor =
+                        if (active) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+/**
+ * F-key/nav-key grid revealed by the PC-keys bar's expand chevron (RemEx-bct remnant): F1-F12 plus
+ * Home/End/PgUp/PgDn/Insert. Plain (non-latching) keys routed through the same [onSendKeyPress]
+ * path `utilKeys` already uses in the compact bar, so an armed/locked modifier still wraps these
+ * (e.g. Ctrl+Home) for free via the existing chord logic — no new wiring needed here.
+ *
+ * F-key labels are literal (never localized by any OS or keyboard vendor); the five nav keys use
+ * real per-locale [stringResource] content descriptions.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExtraKeysGrid(onSendKeyPress: (Int) -> Unit, view: android.view.View) {
+        val extraKeys =
+                (1..12).map { n -> Triple("F$n", "F$n", 0x6F + n) } +
+                        listOf(
+                                Triple(
+                                        "Home",
+                                        stringResource(R.string.cd_key_home),
+                                        0x24
+                                ),
+                                Triple("End", stringResource(R.string.cd_key_end), 0x23),
+                                Triple(
+                                        "PgUp",
+                                        stringResource(R.string.cd_key_pageup),
+                                        0x21
+                                ),
+                                Triple(
+                                        "PgDn",
+                                        stringResource(R.string.cd_key_pagedown),
+                                        0x22
+                                ),
+                                Triple(
+                                        "Ins",
+                                        stringResource(R.string.cd_key_insert),
+                                        0x2D
+                                ),
+                        )
+        FlowRow(
+                modifier =
+                        Modifier.fillMaxWidth()
+                                .background(
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                alpha = 0.95f
+                                        )
+                                )
+                                .navigationBarsPadding()
+                                .padding(vertical = 6.dp, horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+                extraKeys.forEach { (label, cd, vk) ->
+                        AssistChip(
+                                onClick = {
+                                        view.performHapticFeedback(
+                                                HapticFeedbackConstants.VIRTUAL_KEY
+                                        )
+                                        onSendKeyPress(vk)
+                                },
+                                label = { Text(label) },
+                                modifier = Modifier.semantics { contentDescription = cd },
+                                colors =
+                                        AssistChipDefaults.assistChipColors(
+                                                containerColor =
+                                                        MaterialTheme.colorScheme
+                                                                .secondaryContainer,
+                                                labelColor =
+                                                        MaterialTheme.colorScheme
+                                                                .onSecondaryContainer
+                                        )
+                        )
+                }
         }
 }

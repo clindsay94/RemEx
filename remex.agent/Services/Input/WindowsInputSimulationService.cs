@@ -151,7 +151,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 ki = new KEYBDINPUT
                 {
                     wVk = virtualKey.Value,
-                    dwFlags = 0,
+                    dwFlags = IsExtendedVirtualKey(virtualKey.Value) ? KEYEVENTF_EXTENDEDKEY : 0,
                 }
             }
         };
@@ -175,7 +175,7 @@ public class WindowsInputSimulationService : IInputSimulationService
                 ki = new KEYBDINPUT
                 {
                     wVk = virtualKey.Value,
-                    dwFlags = KEYEVENTF_KEYUP,
+                    dwFlags = KEYEVENTF_KEYUP | (IsExtendedVirtualKey(virtualKey.Value) ? KEYEVENTF_EXTENDEDKEY : 0),
                 }
             }
         };
@@ -268,6 +268,7 @@ public class WindowsInputSimulationService : IInputSimulationService
     private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
     private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
 
+    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
     private const uint KEYEVENTF_KEYUP = 0x0002;
     private const uint KEYEVENTF_UNICODE = 0x0004;
 
@@ -463,6 +464,22 @@ public class WindowsInputSimulationService : IInputSimulationService
         LeftAlt = 118,
         RightAlt = 119
     }
+
+    /// <summary>
+    /// True for the Win32-documented "extended" virtual keys that need KEYEVENTF_EXTENDEDKEY
+    /// set on the synthetic KEYBDINPUT event, so Windows can tell them apart from their
+    /// non-extended counterpart (RemEx-9krr). Scoped to only the virtual keys newly introduced
+    /// by the AltGr modifier and the F-key/nav-key grid — arrows/Delete/RCONTROL already ship
+    /// without this flag and already work, so they are intentionally left alone here.
+    /// </summary>
+    internal static bool IsExtendedVirtualKey(ushort vk) => vk switch
+    {
+        0xA5 => true,          // VK_RMENU (AltGr) — without the flag this can register as left-Alt
+        0x24 or 0x23 => true,  // VK_HOME, VK_END
+        0x21 or 0x22 => true,  // VK_PRIOR (Page Up), VK_NEXT (Page Down)
+        0x2D => true,          // VK_INSERT
+        _ => false,
+    };
 
     /// <summary>
     /// Maps an incoming protocol-level key code to a Win32 virtual-key code suitable
