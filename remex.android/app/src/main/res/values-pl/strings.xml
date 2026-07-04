@@ -486,6 +486,15 @@
     <string name="qr_error_setup_failed">Konfiguracja QR nie powiodła się</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
+    <string name="remote_desktop_presets_label">Presety</string>
+    <string name="remote_desktop_preset_unlimited">Bez limitu</string>
+    <string name="remote_desktop_preset_smooth_sharp">Płynny i ostry</string>
+    <string name="remote_desktop_preset_balanced">Zrównoważony</string>
+    <string name="remote_desktop_preset_data_saver">Oszczędzanie danych</string>
+    <string name="remote_desktop_preset_custom">Niestandardowy</string>
+    <string name="remote_desktop_preset_unlimited_info">Brak limitu jakości i liczby klatek na sekundę — wykorzystuje pełnię możliwości Twojego urządzenia i połączenia. Wydajność może się różnić.</string>
+    <string name="remote_desktop_preset_unlimited_overflow_warning">Tryb Bez limitu może zużywać dużo przepustowości i baterii oraz może powodować zacinanie się, jeśli Twoja sieć lub komputer nie nadążają. Jeśli tak się stanie, wypróbuj ustawienie Płynny i ostry.</string>
+    <string name="remote_desktop_scale_label">Skala rozdzielczości: %1$d%%</string>
     <string name="remote_desktop_left_initial">L</string>
     <string name="remote_desktop_left_btn">Lewy</string>
     <string name="remote_desktop_middle_initial">Ś</string>

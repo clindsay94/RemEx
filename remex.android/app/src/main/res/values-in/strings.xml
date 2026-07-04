@@ -486,6 +486,15 @@
     <string name="qr_error_setup_failed">Penyusunan QR gagal</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
+    <string name="remote_desktop_presets_label">Prasetel</string>
+    <string name="remote_desktop_preset_unlimited">Tanpa batas</string>
+    <string name="remote_desktop_preset_smooth_sharp">Mulus &amp; Tajam</string>
+    <string name="remote_desktop_preset_balanced">Seimbang</string>
+    <string name="remote_desktop_preset_data_saver">Penghemat Data</string>
+    <string name="remote_desktop_preset_custom">Kustom</string>
+    <string name="remote_desktop_preset_unlimited_info">Tidak ada batas kualitas atau kecepatan bingkai — menggunakan semua yang dapat ditangani oleh perangkat dan koneksi Anda. Performa mungkin bervariasi.</string>
+    <string name="remote_desktop_preset_unlimited_overflow_warning">Mode Tanpa batas dapat menggunakan banyak bandwidth dan baterai, serta dapat menyebabkan tersendat jika jaringan atau PC Anda tidak mampu mengimbanginya. Coba gunakan Mulus &amp; Tajam jika itu terjadi.</string>
+    <string name="remote_desktop_scale_label">Skala resolusi: %1$d%%</string>
     <string name="remote_desktop_left_initial">K</string>
     <string name="remote_desktop_left_btn">Kiri</string>
     <string name="remote_desktop_middle_initial">T</string>

@@ -486,6 +486,15 @@
     <string name="qr_error_setup_failed">Échec de la configuration du QR</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
+    <string name="remote_desktop_presets_label">Préréglages</string>
+    <string name="remote_desktop_preset_unlimited">Illimité</string>
+    <string name="remote_desktop_preset_smooth_sharp">Fluide et net</string>
+    <string name="remote_desktop_preset_balanced">Équilibré</string>
+    <string name="remote_desktop_preset_data_saver">Économiseur de données</string>
+    <string name="remote_desktop_preset_custom">Personnalisé</string>
+    <string name="remote_desktop_preset_unlimited_info">Aucune limite de qualité ou de fréquence d\'images — utilise tout ce que votre appareil et votre connexion peuvent supporter. Les performances peuvent varier.</string>
+    <string name="remote_desktop_preset_unlimited_overflow_warning">Le mode Illimité peut consommer beaucoup de bande passante et de batterie, et peut provoquer des saccades si votre réseau ou votre PC ne suit pas. Essayez Fluide et net si cela se produit.</string>
+    <string name="remote_desktop_scale_label">Échelle de résolution : %1$d%%</string>
     <string name="remote_desktop_left_initial">G</string>
     <string name="remote_desktop_left_btn">Gauche</string>
     <string name="remote_desktop_middle_initial">M</string>

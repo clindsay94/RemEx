@@ -486,6 +486,15 @@
     <string name="qr_error_setup_failed">QR kurulumu başarısız oldu</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
+    <string name="remote_desktop_presets_label">Ön ayarlar</string>
+    <string name="remote_desktop_preset_unlimited">Sınırsız</string>
+    <string name="remote_desktop_preset_smooth_sharp">Akıcı ve Keskin</string>
+    <string name="remote_desktop_preset_balanced">Dengeli</string>
+    <string name="remote_desktop_preset_data_saver">Veri Tasarrufu</string>
+    <string name="remote_desktop_preset_custom">Özel</string>
+    <string name="remote_desktop_preset_unlimited_info">Kalite veya kare hızı sınırı yok — cihazınızın ve bağlantınızın kaldırabileceği her şeyi kullanır. Performans değişiklik gösterebilir.</string>
+    <string name="remote_desktop_preset_unlimited_overflow_warning">Sınırsız modu çok fazla bant genişliği ve pil tüketebilir; ağınız veya bilgisayarınız yetişemezse takılmalar olabilir. Böyle bir durumda Akıcı ve Keskin modunu deneyin.</string>
+    <string name="remote_desktop_scale_label">Çözünürlük ölçeği: %1$d%%</string>
     <string name="remote_desktop_left_initial">S</string>
     <string name="remote_desktop_left_btn">Sol</string>
     <string name="remote_desktop_middle_initial">O</string>

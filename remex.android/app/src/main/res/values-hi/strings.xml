@@ -486,6 +486,15 @@
     <string name="qr_error_setup_failed">क्यूआर सेटअप विफल रहा</string>
     <string name="remote_desktop_fps_overlay">%1$d एफपीएस</string>
     <string name="remote_desktop_fps_overlay_btn">एफपीएस</string>
+    <string name="remote_desktop_presets_label">प्रीसेट्स</string>
+    <string name="remote_desktop_preset_unlimited">असीमित</string>
+    <string name="remote_desktop_preset_smooth_sharp">स्मूथ और शार्प</string>
+    <string name="remote_desktop_preset_balanced">संतुलित</string>
+    <string name="remote_desktop_preset_data_saver">डेटा सेवर</string>
+    <string name="remote_desktop_preset_custom">कस्टम</string>
+    <string name="remote_desktop_preset_unlimited_info">क्वालिटी या फ्रेमरेट की कोई सीमा नहीं — यह आपके डिवाइस और कनेक्शन की पूरी क्षमता का उपयोग करता है। प्रदर्शन अलग-अलग हो सकता है।</string>
+    <string name="remote_desktop_preset_unlimited_overflow_warning">असीमित मोड बहुत अधिक बैंडविड्थ और बैटरी की खपत कर सकता है, और यदि आपका नेटवर्क या PC इसका सामना नहीं कर पाता है तो इसमें रुकावट आ सकती है। यदि ऐसा होता है, तो स्मूथ और शार्प मोड आज़माएं।</string>
+    <string name="remote_desktop_scale_label">रिज़ॉल्यूशन स्केल: %1$d%%</string>
     <string name="remote_desktop_left_initial">बा</string>
     <string name="remote_desktop_left_btn">बायें</string>
     <string name="remote_desktop_middle_initial">म</string>

@@ -486,6 +486,15 @@
     <string name="qr_error_setup_failed">Не вдалося налаштувати QR</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
+    <string name="remote_desktop_presets_label">Пресети</string>
+    <string name="remote_desktop_preset_unlimited">Безлімітний</string>
+    <string name="remote_desktop_preset_smooth_sharp">Плавний і чіткий</string>
+    <string name="remote_desktop_preset_balanced">Збалансований</string>
+    <string name="remote_desktop_preset_data_saver">Економія трафіку</string>
+    <string name="remote_desktop_preset_custom">Спеціальний</string>
+    <string name="remote_desktop_preset_unlimited_info">Без обмежень якості чи частоти кадрів — використовує все, що можуть забезпечити ваш пристрій і з’єднання. Продуктивність може відрізнятися.</string>
+    <string name="remote_desktop_preset_unlimited_overflow_warning">Режим Безлімітний може споживати багато трафіку та заряду акумулятора, а також викликати затримки, якщо ваша мережа або ПК не справляються. Якщо це стається, спробуйте режим Плавний і чіткий.</string>
+    <string name="remote_desktop_scale_label">Масштаб роздільної здатності: %1$d%%</string>
     <string name="remote_desktop_left_initial">Л</string>
     <string name="remote_desktop_left_btn">Ліва</string>
     <string name="remote_desktop_middle_initial">С</string>
