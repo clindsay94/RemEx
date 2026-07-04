@@ -38,6 +38,9 @@ namespace Remex.Desktop.Localization {
             set { resourceCulture = value; }
         }
 
+        // Validation
+        public static string Connection_PcAddressRequired => ResourceManager.GetString("Connection_PcAddressRequired", resourceCulture)!;
+
         // Navigation
         public static string Nav_Home => ResourceManager.GetString("Nav_Home", resourceCulture)!;
         public static string Nav_Sensors => ResourceManager.GetString("Nav_Sensors", resourceCulture)!;

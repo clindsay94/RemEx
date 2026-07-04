@@ -33,6 +33,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -502,11 +503,12 @@ fun PersonalizationScreenContent(
                                     modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    if (option == "RemexCommand") 
-                                        stringResource(R.string.personalization_splash_original) 
-                                    else 
-                                        stringResource(R.string.personalization_splash_cosmic), 
-                                    maxLines = 1
+                                    if (option == "RemexCommand")
+                                        stringResource(R.string.personalization_splash_original)
+                                    else
+                                        stringResource(R.string.personalization_splash_cosmic),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -555,23 +557,12 @@ fun PersonalizationScreenContent(
                     AnimatedVisibility(
                             visible = palette == "custom",
                             enter =
-                                    expandVertically(
-                                            animationSpec =
-                                                    androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
-                                    ) +
-                                            fadeIn(
-                                                    animationSpec =
-                                                            androidx.compose.animation.core.tween(durationMillis = 200)
-                                            ),
+                                    expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                                            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
                             exit =
-                                    shrinkVertically(
-                                            animationSpec =
-                                                    androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
-                                    ) +
-                                            fadeOut(
-                                                    animationSpec =
-                                                            androidx.compose.animation.core.tween(durationMillis = 200)
-                                            )
+                                    shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                                            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                            label = "customPaletteEditor"
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             val currentHct =

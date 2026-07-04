@@ -67,6 +67,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             RemexClientManager.isConnected.collect { connected ->
                 if (connected) {
+                    // Clear any stale error once a (re)connection succeeds, otherwise the UI
+                    // shows "Connected" alongside an outdated error card after auto-reconnect.
+                    _connectionError.value = null
                     _connectionStatus.value = res.getString(R.string.status_connected)
                 } else if (!_isConnecting.value) {
                     _connectionStatus.value = res.getString(R.string.status_disconnected)

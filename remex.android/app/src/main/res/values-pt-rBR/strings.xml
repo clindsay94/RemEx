@@ -87,10 +87,10 @@
     <string name="status_connected">Conectado</string>
     <string name="status_connecting">Conectando a %1$s:%2$d…</string>
     <string name="status_error">Erro: %1$s</string>
-    <string name="status_awaiting_metadata">Aguardando metadados do host</string>
-    <string name="status_metadata_unavailable">Metadados do host indisponíveis</string>
+    <string name="status_awaiting_metadata">Aguardando detalhes do PC</string>
+    <string name="status_metadata_unavailable">Detalhes do PC indisponíveis</string>
     <string name="status_native_lib_not_loaded">Biblioteca nativa não carregada</string>
-    <string name="error_no_host_found">Nenhum host RemEx encontrado na rede</string>
+    <string name="error_no_host_found">Nenhum PC com RemEx encontrado na rede</string>
     <string name="error_discovery_failed">Falha na descoberta: %1$s</string>
     <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
          to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
@@ -238,7 +238,7 @@
     <string name="dashboard_card_drawer_title">Gaveta de Cards</string>
     <string name="dashboard_card_drawer_hint">Marque para colocar o card, desmarque para remover, ou arraste um card para a tela.</string>
     <string name="dashboard_drop_to_place">Solte para colocar %1$s</string>
-    <string name="dashboard_host_online">HOST ONLINE</string>
+    <string name="dashboard_host_online">PC ONLINE</string>
     <string name="dashboard_connecting">CONECTANDO…</string>
     <string name="dashboard_tap_to_connect">TOQUE PARA CONECTAR</string>
     <string name="dashboard_wake_pc_button">LIGAR PC</string>
@@ -255,10 +255,10 @@
     <string name="cd_dismiss_error">Descartar</string>
     <string name="connection_auto_discover_title">Autodescoberta na LAN</string>
     <string name="connection_auto_discover_hint">Certifique-se de que o seu PC esteja rodando o app RemEx Host e ambos os dispositivos estejam na mesma rede Wi-Fi.</string>
-    <string name="connection_searching">Buscando por RemEx Host…</string>
+    <string name="connection_searching">Buscando seu PC…</string>
     <string name="connection_found_host">Encontrado: %1$s — Buscar Novamente</string>
     <string name="connection_discover_button">Descobrir Automaticamente</string>
-    <string name="connection_host_found">Host encontrado e campos preenchidos abaixo.</string>
+    <string name="connection_host_found">PC encontrado e campos preenchidos abaixo.</string>
     <string name="connection_scan_qr_code">Escanear código QR</string>
     <string name="connection_help_title">Como conectar manualmente</string>
     <string name="connection_help_step1_title">Instale o RemEx Host no seu PC</string>
@@ -407,7 +407,7 @@
     <string name="tile_sleep_label">Suspender PC</string>
     <string name="tile_hibernate_label">Hibernar PC</string>
     <string name="tile_monitor_off_label">Desligar Monitor</string>
-    <string name="tile_wol_label">Wake On LAN</string>
+    <string name="tile_wol_label">Wake-on-LAN</string>
 
     <!-- ═══ File Transfer Screen ═══ -->
     <string name="screen_file_transfer_title">Transferência de Arquivos</string>
@@ -649,4 +649,18 @@
     <string name="rd_err_target_unavailable">A tela selecionada não está mais disponível.</string>
     <string name="rd_err_target_switch_unsupported">Esta sessão não pode trocar de tela durante a transmissão.</string>
     <string name="rd_err_runtime_unavailable">A área de trabalho remota não está disponível no PC host no momento.</string>
+    <string name="cd_clear_search">Limpar pesquisa</string>
+    <string name="pairing_error_timeout">O PC não respondeu. Verifique se ele está ligado e conectado à mesma rede e tente novamente.</string>
+    <string name="host_discovered_snackbar">PC encontrado: %1$s</string>
+    <string name="widget_refresh">Atualizar</string>
+    <string name="widget_toast_refreshing">Atualizando…</string>
+    <string name="widget_toast_refreshed">Telemetria atualizada</string>
+    <string name="widget_toast_connecting">Conectando ao PC…</string>
+    <string name="widget_config_poll_interval_label">Atualizar a cada %1$d s</string>
+    <string name="widget_config_poll_interval_hint">Com que frequência o widget consulta o PC para obter telemetria atualizada enquanto conectado.</string>
+    <string name="remote_desktop_display_label">Tela</string>
+    <string name="remote_desktop_display_primary">Tela principal</string>
+    <string name="remote_desktop_display_numbered">Tela %1$d</string>
+    <string name="remote_desktop_display_both">Ambas as telas</string>
+    <string name="cd_display_picker_icon">Escolha qual tela visualizar</string>
 </resources>

@@ -2,6 +2,10 @@ package com.clindsay94.remex.ui.screens
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -25,11 +29,13 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.security.PinnedHostStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 data class PairingUiState(
     val isLoading: Boolean = false,
@@ -57,8 +63,20 @@ class PairingViewModel : ViewModel() {
         _uiState.value = PairingUiState(isLoading = true)
 
         val result =
-                withContext(Dispatchers.IO) {
-                    RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: ""
+                try {
+                    withTimeout(15_000) {
+                        withContext(Dispatchers.IO) {
+                            RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: ""
+                        }
+                    }
+                } catch (_: TimeoutCancellationException) {
+                    _uiState.value =
+                            PairingUiState(
+                                    isLoading = false,
+                                    pairingError =
+                                            context.getString(R.string.pairing_error_timeout)
+                            )
+                    return false
                 }
 
         if (result.startsWith("OK:")) {
@@ -114,10 +132,28 @@ class PairingViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = PairingUiState(isLoading = true)
             val result =
-                    withContext(Dispatchers.IO) {
-                        RemexCoreClient.StartPairing(hostUrl, clientName, clientVersion, clientId)
-                                .getOrNull()
-                                ?: ""
+                    try {
+                        withTimeout(15_000) {
+                            withContext(Dispatchers.IO) {
+                                RemexCoreClient.StartPairing(
+                                                hostUrl,
+                                                clientName,
+                                                clientVersion,
+                                                clientId
+                                        )
+                                        .getOrNull()
+                                        ?: ""
+                            }
+                        }
+                    } catch (_: TimeoutCancellationException) {
+                        startPairingInFlight = false
+                        _uiState.value =
+                                PairingUiState(
+                                        isLoading = false,
+                                        pairingError =
+                                                context.getString(R.string.pairing_error_timeout)
+                                )
+                        return@launch
                     }
             startPairingInFlight = false
             if (result == "OK") {
@@ -301,14 +337,33 @@ fun PairingScreenContent(
                     modifier = Modifier.fillMaxWidth()
             )
 
-            AnimatedVisibility(visible = state.pairingError != null) {
+            AnimatedVisibility(
+                    visible = state.pairingError != null,
+                    enter =
+                            expandVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeIn(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    exit =
+                            shrinkVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeOut(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    label = "pairingError"
+            ) {
                 Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 16.dp)
                 ) {
                     Icon(
                             Icons.Default.ErrorOutline,
-                            contentDescription = "Error",
+                            contentDescription = stringResource(R.string.cd_error_icon),
                             tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(Modifier.width(8.dp))
@@ -329,7 +384,9 @@ fun PairingScreenContent(
                 OutlinedButton(
                         onClick = onCancel,
                         modifier = Modifier.weight(1f),
-                        enabled = !state.isLoading
+                        // Always enabled: if pairing hangs (PC offline mid-pairing), Cancel must
+                        // remain the user's way out of the loading state.
+                        enabled = true
                 ) { Text(stringResource(R.string.pairing_cancel)) }
 
                 Button(

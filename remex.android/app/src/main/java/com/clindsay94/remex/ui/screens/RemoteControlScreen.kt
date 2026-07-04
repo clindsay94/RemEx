@@ -244,7 +244,7 @@ fun RemoteControlScreenContent(
                             category = category
                     )
                 }
-                items(categoryCards) { cmdCard ->
+                items(categoryCards, key = { it.id }) { cmdCard ->
                     CommandCard(
                             card = cmdCard,
                             isAwaitingConfirmation = activeConfirmationId == cmdCard.id,
@@ -427,7 +427,8 @@ private fun CommandCard(
             modifier =
                     Modifier.fillMaxWidth()
                             .animateContentSize(
-                                    animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                                    animationSpec =
+                                            MaterialTheme.motionScheme.fastSpatialSpec()
                             ),
             shape = shape,
             colors =

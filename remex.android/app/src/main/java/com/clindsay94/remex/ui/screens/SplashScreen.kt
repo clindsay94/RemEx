@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
@@ -132,6 +133,9 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         val onPrimary = MaterialTheme.colorScheme.onPrimary
         val surface = MaterialTheme.colorScheme.surface
         val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+        // Icy accent reads well on dark backgrounds; on light themes fall back to onBackground
+        // so the CosmicZoom subtitle stays legible (the splash renders in both themes).
+        val cosmicSubColor = if (background.luminance() < 0.5f) Color(0xFFDCF0FF) else onBackground
 
         // Animation States
         val scanProgress = remember { Animatable(0f) }
@@ -155,13 +159,17 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         // Text Measurement
         val density = LocalDensity.current
         val textMeasurer = rememberTextMeasurer(cacheSize = 16)
+        // Raw px-per-dp for canvas art drawn in fixed unit space (the R-logo path and its
+        // companion offsets): dp-sized text scales with density but raw px paths don't, so
+        // without this factor the logo renders ~3x too small next to its text on real phones.
+        val pixelDensity = density.density
 
         // 54.dp.toSp()
         val remFontSize = with(density) { 54.dp.toSp() }
         val remTracking = with(density) { 4.dp.toSp() }
-        val remStyle = remember(remFontSize, remTracking) {
+        val remStyle = remember(remFontSize, remTracking, onBackground) {
                 TextStyle(
-                        color = Color.White,
+                        color = onBackground,
                         fontSize = remFontSize,
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace,
@@ -198,9 +206,6 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
 
         val remMeasured = remember(remStyle) { textMeasurer.measure("REM", remStyle) }
         val emMeasured = remember(remStyle) { textMeasurer.measure("EM", remStyle) }
-        val remoteMeasured = remember(remStyle) { textMeasurer.measure("REMOTE", remStyle) }
-        val executionMeasured = remember(exStyle) { textMeasurer.measure("EXECUTION", exStyle) }
-        val commandCenterMeasured = remember(completionStyle) { textMeasurer.measure("⚡ COMMAND CENTER", completionStyle) }
         val oteMeasured = remember(completionStyle) { textMeasurer.measure("ote", completionStyle) }
         val exMeasured = remember(exStyle) { textMeasurer.measure("EX", exStyle) }
         val ecuMeasured = remember(completionStyle) { textMeasurer.measure("ecution", completionStyle) }
@@ -210,9 +215,9 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         // 38.dp.toSp()
         val cosmicTitleFontSize = with(density) { 38.dp.toSp() }
         val cosmicTitleTracking = with(density) { 4.dp.toSp() }
-        val cosmicTitleStyle = remember(cosmicTitleFontSize, cosmicTitleTracking) {
+        val cosmicTitleStyle = remember(cosmicTitleFontSize, cosmicTitleTracking, onBackground) {
                 TextStyle(
-                        color = Color.White,
+                        color = onBackground,
                         fontSize = cosmicTitleFontSize,
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace,
@@ -224,9 +229,9 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         // 11.dp.toSp()
         val cosmicSubFontSize = with(density) { 11.dp.toSp() }
         val cosmicSubTracking = with(density) { 1.dp.toSp() }
-        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking) {
+        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking, cosmicSubColor) {
                 TextStyle(
-                        color = Color(0xFFDCF0FF),
+                        color = cosmicSubColor,
                         fontSize = cosmicSubFontSize,
                         fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily.Monospace,
@@ -315,8 +320,10 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                 }
         }
 
-        // Haptic "thud" fired once, synced to the lightning strike at elapsed ≈ 1.8s.
+        // Haptic "thud" fired once, synced to the CosmicZoom lightning strike at elapsed ≈ 1.8s.
+        // RemexCommand has no strike — an unexplained buzz there reads as a glitch.
         LaunchedEffect(Unit) {
+                if (splashStyle != "CosmicZoom") return@LaunchedEffect
                 snapshotFlow { elapsed >= 1.8f }.first { it }
                 if (!isSkipping) {
                         view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
@@ -416,7 +423,9 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                 }
 
                 if (splashStyle == "CosmicZoom") {
-                        delay(3000L)
+                        // 100ms past the 3.0s exit-fade completion so a dropped frame can't
+                        // start navigation with the fade still visibly short of 100%.
+                        delay(3100L)
                         if (!isSkipping) {
                                 finishOnce()
                         }
@@ -468,12 +477,14 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                                                 tween(700, easing = FastOutSlowInEasing)
                                                         )
                                                 }
-                                                // Fade overlay starts slightly after zoom begins
-                                                delay(300)
+                                                // Let the zoom payoff land before covering it:
+                                                // 450ms of the 700ms pull-in stays visible, then
+                                                // a quick 300ms fade — same total as before.
+                                                delay(450)
                                                 if (!isSkipping) {
                                                         fadeOverlay.animateTo(
                                                                 1f,
-                                                                tween(400, easing = LinearEasing)
+                                                                tween(300, easing = LinearEasing)
                                                         )
                                                         finishOnce()
                                                 }
@@ -622,10 +633,11 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                 }
 
                                 // Draw Zoomed Brand Logo in center (Applying global scale & shudder displacement)
+                                // pixelDensity keeps the px-space logo proportional to dp-sized text.
                                 drawStylizedRLogo(
                                         w = width,
                                         h = height,
-                                        scale = zoomScaleVal,
+                                        scale = zoomScaleVal * pixelDensity,
                                         accentColor = primary,
                                         opacity = 1.0f,
                                         lightningFade = if (elapsed > 1.8f) ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f) else 0f,
@@ -635,37 +647,46 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         yOffset = -30f
                                 )
 
-                                // Fading title text "REMOTE EXECUTION"
+                                // Fading title text "REMOTE EXECUTION" — staggered line entrance
+                                // (fade + 12dp rise per line, 150ms apart; the last line settles at
+                                // 2.5s, exactly when the exit fade begins).
                                 if (elapsed > 1.8f) {
-                                        val titleFade = ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f)
-                                        
+                                        fun lineIn(start: Float) =
+                                                FastOutSlowInEasing.transform(
+                                                        ((elapsed - start) / 0.35f).coerceIn(0f, 1f)
+                                                )
+                                        val remoteIn = lineIn(1.85f)
+                                        val executionIn = lineIn(2.0f)
+                                        val subIn = lineIn(2.15f)
+                                        val rise = 12.dp.toPx()
+
                                         val remoteW = remoteCosmicMeasured.size.width.toFloat()
                                         val remoteH = remoteCosmicMeasured.size.height.toFloat()
                                         val executionW = executionCosmicMeasured.size.width.toFloat()
                                         val executionH = executionCosmicMeasured.size.height.toFloat()
                                         val subW = commandCenterCosmicMeasured.size.width.toFloat()
-                                        
+
                                         val remoteX = cx - remoteW / 2f
                                         val remoteY = cy + 50.dp.toPx()
                                         val executionX = cx - executionW / 2f
                                         val executionY = remoteY + remoteH * 1.05f
                                         val subX = cx - subW / 2f
                                         val subY = executionY + executionH * 1.1f
-                                        
+
                                         drawText(
                                                 remoteCosmicMeasured,
-                                                color = Color.White.copy(alpha = titleFade),
-                                                topLeft = Offset(remoteX, remoteY)
+                                                color = onBackground.copy(alpha = remoteIn),
+                                                topLeft = Offset(remoteX, remoteY + (1f - remoteIn) * rise)
                                         )
                                         drawText(
                                                 executionCosmicMeasured,
-                                                color = primary.copy(alpha = titleFade),
-                                                topLeft = Offset(executionX, executionY)
+                                                color = primary.copy(alpha = executionIn),
+                                                topLeft = Offset(executionX, executionY + (1f - executionIn) * rise)
                                         )
                                         drawText(
                                                 commandCenterCosmicMeasured,
-                                                color = Color(0xFFDCF0FF).copy(alpha = titleFade * 0.6f),
-                                                topLeft = Offset(subX, subY)
+                                                color = cosmicSubColor.copy(alpha = subIn * 0.6f),
+                                                topLeft = Offset(subX, subY + (1f - subIn) * rise)
                                         )
                                 }
 
@@ -767,8 +788,10 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                         val textBlockCx = width * 0.50f
 
                         // Line 1: [R Logo] + "EM" + "(ote)"
-                        val emXOffset = 88f // px offset to clear R logo loop
-                        val rBarOffset = 22f // px offset of R logo vertical bar
+                        // Offsets are design-space px (1x) — scaled by pixelDensity to track the
+                        // density-scaled R logo and text on every screen.
+                        val emXOffset = 88f * pixelDensity // clears the R logo loop
+                        val rBarOffset = 22f * pixelDensity // aligns with the R logo vertical bar
                         
                         val line1W = emXOffset + emMeasured.size.width.toFloat() + oteMeasured.size.width.toFloat()
                         val remXPos = textBlockCx - line1W / 2f
@@ -1637,7 +1660,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         drawStylizedRLogo(
                                                 w = width,
                                                 h = height,
-                                                scale = 0.8f,
+                                                scale = 0.8f * pixelDensity,
                                                 accentColor = primary,
                                                 opacity = 1.0f,
                                                 lightningFade = 1.0f,
@@ -1646,12 +1669,12 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         )
                                         drawText(
                                                 emMeasured,
-                                                color = Color.White,
+                                                color = onBackground,
                                                 topLeft = Offset(emXPos, remYPos)
                                         )
                                         drawText(
                                                 exMeasured,
-                                                color = Color.White,
+                                                color = onBackground,
                                                 topLeft = Offset(exXPos, exYPos)
                                         )
                                         drawText(
@@ -1716,7 +1739,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         drawStylizedRLogo(
                                                 w = width,
                                                 h = height,
-                                                scale = 0.8f,
+                                                scale = 0.8f * pixelDensity,
                                                 accentColor = primary,
                                                 opacity = 1.0f,
                                                 lightningFade = 1.0f,
@@ -1725,12 +1748,12 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                         )
                                         drawText(
                                                 emMeasured,
-                                                color = Color.White,
+                                                color = onBackground,
                                                 topLeft = Offset(emXPos, remYPos)
                                         )
                                         drawText(
                                                 exMeasured,
-                                                color = Color.White,
+                                                color = onBackground,
                                                 topLeft = Offset(exXPos, exYPos)
                                         )
                                         // Baseline-align completions with their bold counterparts

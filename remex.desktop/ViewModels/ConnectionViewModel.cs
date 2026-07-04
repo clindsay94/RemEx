@@ -62,7 +62,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
-    [Required(ErrorMessage = "Host address is required")]
+    [Required(ErrorMessageResourceType = typeof(Localization.Strings), ErrorMessageResourceName = nameof(Localization.Strings.Connection_PcAddressRequired))]
     [ValidWebSocketUri]
     private string _hostAddress = $"wss://localhost:{RemexConstants.DefaultPort}{RemexConstants.WebSocketPath}";
 

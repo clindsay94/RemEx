@@ -186,7 +186,7 @@
     <value>WINDOWS SERVICE</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX DAEMON (SYSTEMD)</value>
+    <value>LINUX BACKGROUND SERVICE</value>
   </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>सेवा लॉगिन</value>
@@ -733,7 +733,10 @@
     <value>होस्ट मिला: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>{0} होस्ट मिले। (चयन योग्य खोज अभी तक लागू नहीं हुई है)</value>
+    <value>आपके नेटवर्क पर {0} RemEx पीसी मिले।</value>
+  </data>
+  <data name="Connection_PcAddressRequired" xml:space="preserve">
+    <value>पीसी का पता आवश्यक है।</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
     <value>होस्ट से कनेक्टेड</value>

@@ -332,13 +332,24 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                         "RemexManager",
                                         "Automatic pairing PIN submission failed: $submitResult"
                                 )
-                                _connectionError.tryEmit("Pairing failed: $submitResult")
+                                // Emit the cleaned native reason (localized on the native side)
+                                // instead of wrapping it in a hardcoded English prefix.
+                                _connectionError.tryEmit(
+                                        submitResult
+                                                .removePrefix("ERROR: ")
+                                                .ifBlank { "Pairing failed" }
+                                )
                                 _isConnecting.value = false
                                 return
                             }
                         } else {
                             Log.e("RemexManager", "Automatic pairing start failed: $pairResult")
-                            _connectionError.tryEmit("Pairing failed: $pairResult")
+                            _connectionError.tryEmit(
+                                    pairResult
+                                            .orEmpty()
+                                            .removePrefix("ERROR: ")
+                                            .ifBlank { "Pairing failed" }
+                            )
                             _isConnecting.value = false
                             return
                         }
@@ -375,10 +386,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             "RemexManager",
                             "InitRemex returned blank — possible native-side failure for $host:$port"
                     )
+                    _connectionError.tryEmit("Connection failed: no response received")
                     _isConnecting.value = false
                 } else {
                     val json = JSONObject(result)
                     if (!json.optBoolean("success", false)) {
+                        // Surface the native failure reason instead of silently stopping the
+                        // spinner with no error shown to the user.
+                        _connectionError.tryEmit(
+                                json.optString("reason").ifBlank { "Connection failed" }
+                        )
                         _isConnecting.value = false
                     }
                 }

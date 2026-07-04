@@ -186,7 +186,7 @@
     <value>WINDOWS SERVICE</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX DAEMON (SYSTEMD)</value>
+    <value>LINUX BACKGROUND SERVICE</value>
   </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>ВХІД СЛУЖБИ</value>
@@ -733,7 +733,10 @@
     <value>Знайдено хост: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Знайдено {0} хостів. (Вибір хостів ще не реалізовано)</value>
+    <value>У вашій мережі знайдено {0} ПК RemEx.</value>
+  </data>
+  <data name="Connection_PcAddressRequired" xml:space="preserve">
+    <value>Потрібна адреса ПК.</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
     <value>Підключено до хоста</value>
@@ -2130,7 +2133,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>З'єднати</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>Remex Десктоп - Віддалене виконання</value>
+    <value>RemEx Десктоп - Віддалене виконання</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Палітра команд</value>

@@ -186,7 +186,7 @@
     <value>WINDOWS SERVICE</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX DAEMON (SYSTEMD)</value>
+    <value>LINUX BACKGROUND SERVICE</value>
   </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>CONNEXION AU SERVICE</value>
@@ -733,7 +733,10 @@
     <value>Hôte trouvé : {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>{0} hôtes trouvés. (Découverte sélectionnable non encore implémentée)</value>
+    <value>{0} PC RemEx trouvés sur votre réseau.</value>
+  </data>
+  <data name="Connection_PcAddressRequired" xml:space="preserve">
+    <value>L'adresse du PC est requise.</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
     <value>Connecté à l'hôte</value>
@@ -2130,7 +2133,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Connecter</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>Remex Bureau - Exécution à Distance</value>
+    <value>RemEx Bureau - Exécution à Distance</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Palette de Commandes</value>

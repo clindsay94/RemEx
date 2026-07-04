@@ -266,7 +266,12 @@ fun ConnectionScreenContent(
         val scrollBehavior = rememberRemexTopBarScrollBehavior()
         LaunchedEffect(discoveredHost) {
                 if (discoveredHost != null) {
-                        snackbarHostState.showSnackbar("Host discovered: ${discoveredHost.host}")
+                        snackbarHostState.showSnackbar(
+                                context.getString(
+                                        R.string.host_discovered_snackbar,
+                                        discoveredHost.host
+                                )
+                        )
                 }
         }
         Scaffold(
@@ -1154,7 +1159,7 @@ fun ConnectionScreenContent(
                                                                 ),
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color =
-                                                                if (status == "Connected")
+                                                                if (isConnected)
                                                                         MaterialTheme.colorScheme
                                                                                 .primary
                                                                 else

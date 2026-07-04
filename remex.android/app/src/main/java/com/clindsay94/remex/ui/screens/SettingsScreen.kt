@@ -195,7 +195,7 @@ private fun SettingsCategoryList(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(SettingsCategory.entries) { category ->
+            items(SettingsCategory.entries, key = { it.name }) { category ->
                 ExpressiveSettingsRow(
                     category = category,
                     selected = category == selectedCategory,

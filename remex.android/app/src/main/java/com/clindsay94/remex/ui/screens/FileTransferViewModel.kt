@@ -102,6 +102,10 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private val pendingRootManageOps = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
 
     private var pendingBrowseRequestId: String? = null
+    // Timeout watchdogs for roots/browse requests (completed by the response handlers),
+    // mirroring the withTimeout(30_000) pattern used by the manage operations above.
+    private var pendingRootsDeferred: CompletableDeferred<Unit>? = null
+    private var pendingBrowseDeferred: CompletableDeferred<Unit>? = null
     private var activeTransferId: String? = null
     private var activeTransferFileName: String? = null
     private var activeDownload: ActiveDownload? = null
@@ -153,12 +157,26 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     fun loadRemoteRoots() {
         _isLoading.value = true
         _statusText.value = ""
+        val deferred = CompletableDeferred<Unit>()
+        pendingRootsDeferred = deferred
         sendMessage(
                 JSONObject().apply {
                     put("type", "file_roots_request")
                     put("fileRootsRequest", JSONObject())
                 }
         )
+        viewModelScope.launch {
+            try {
+                withTimeout(30_000) { deferred.await() }
+            } catch (_: TimeoutCancellationException) {
+                if (pendingRootsDeferred === deferred) {
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
+                    _isLoading.value = false
+                }
+            } finally {
+                if (pendingRootsDeferred === deferred) pendingRootsDeferred = null
+            }
+        }
     }
 
     fun selectRoot(rootId: String) {
@@ -182,6 +200,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isLoading.value = true
         _statusText.value = ""
 
+        val deferred = CompletableDeferred<Unit>()
+        pendingBrowseDeferred = deferred
         sendMessage(
                 JSONObject().apply {
                     put("type", "file_browse_request")
@@ -196,6 +216,20 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                     )
                 }
         )
+        viewModelScope.launch {
+            try {
+                withTimeout(30_000) { deferred.await() }
+            } catch (_: TimeoutCancellationException) {
+                // Only reset if this request is still the active one; a newer browse
+                // supersedes this watchdog.
+                if (pendingBrowseRequestId == requestId) {
+                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
+                    _isLoading.value = false
+                }
+            } finally {
+                if (pendingBrowseDeferred === deferred) pendingBrowseDeferred = null
+            }
+        }
     }
 
     fun navigateInto(entry: RemoteFileEntry) {
@@ -686,6 +720,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun handleRootsResponse(obj: JSONObject) {
+        pendingRootsDeferred?.complete(Unit)
         _isLoading.value = false
         val response = obj.optJSONObject("fileRootsResponse") ?: return
         val errorMessage = response.optMeaningfulString("errorMessage")
@@ -709,6 +744,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val response = obj.optJSONObject("fileBrowseResponse") ?: return
         if (response.optString("requestId") != pendingBrowseRequestId) return
 
+        pendingBrowseDeferred?.complete(Unit)
         _isLoading.value = false
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {

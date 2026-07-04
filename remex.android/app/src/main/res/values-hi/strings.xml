@@ -87,10 +87,10 @@
     <string name="status_connected">कनेक्ट हो गया</string>
     <string name="status_connecting">%1$s:%2$d से कनेक्ट हो रहा है…</string>
     <string name="status_error">त्रुटि: %1$s</string>
-    <string name="status_awaiting_metadata">होस्ट मेटाडेटा की प्रतीक्षा है</string>
-    <string name="status_metadata_unavailable">होस्ट मेटाडेटा उपलब्ध नहीं है</string>
+    <string name="status_awaiting_metadata">पीसी के विवरण की प्रतीक्षा है</string>
+    <string name="status_metadata_unavailable">पीसी के विवरण उपलब्ध नहीं हैं</string>
     <string name="status_native_lib_not_loaded">नेटिव लाइब्रेरी लोड नहीं हुई</string>
-    <string name="error_no_host_found">नेटवर्क पर कोई RemEx होस्ट नहीं मिला</string>
+    <string name="error_no_host_found">नेटवर्क पर कोई RemEx पीसी नहीं मिला</string>
     <string name="error_discovery_failed">खोज विफल रही: %1$s</string>
     <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
          to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
@@ -238,7 +238,7 @@
     <string name="dashboard_card_drawer_title">कार्ड दराज</string>
     <string name="dashboard_card_drawer_hint">कार्ड रखने के लिए चेक करें, हटाने के लिए अनचेक करें, या कार्ड को कैनवास पर खींचें।</string>
     <string name="dashboard_drop_to_place">%1$s रखने के लिए छोड़ें</string>
-    <string name="dashboard_host_online">होस्ट ऑनलाइन</string>
+    <string name="dashboard_host_online">पीसी ऑनलाइन</string>
     <string name="dashboard_connecting">कनेक्ट हो रहा है…</string>
     <string name="dashboard_tap_to_connect">कनेक्ट करने के लिए टैप करें</string>
     <string name="dashboard_wake_pc_button">पीसी जगाएं</string>
@@ -255,10 +255,10 @@
     <string name="cd_dismiss_error">हटाएं</string>
     <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
     <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपका पीसी RemEx होस्ट ऐप चला रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
-    <string name="connection_searching">RemEx होस्ट खोजा जा रहा है…</string>
+    <string name="connection_searching">आपका पीसी खोजा जा रहा है…</string>
     <string name="connection_found_host">मिला: %1$s — फिर से खोजें</string>
     <string name="connection_discover_button">स्वचालित रूप से खोजें</string>
-    <string name="connection_host_found">होस्ट मिल गया और नीचे फ़ील्ड भर दी गई हैं।</string>
+    <string name="connection_host_found">पीसी मिल गया और नीचे फ़ील्ड भर दी गई हैं।</string>
     <string name="connection_scan_qr_code">QR कोड स्कैन करें</string>
     <string name="connection_help_title">मैन्युअल रूप से कैसे कनेक्ट करें</string>
     <string name="connection_help_step1_title">अपने पीसी पर RemEx होस्ट इंस्टॉल करें</string>
@@ -649,4 +649,18 @@
     <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
     <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता।</string>
     <string name="rd_err_runtime_unavailable">इस समय होस्ट पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
+    <string name="cd_clear_search">खोज साफ़ करें</string>
+    <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>
+    <string name="widget_refresh">रिफ़्रेश करें</string>
+    <string name="widget_toast_refreshing">रिफ़्रेश हो रहा है…</string>
+    <string name="widget_toast_refreshed">टेलीमेट्री रिफ़्रेश हो गई</string>
+    <string name="widget_toast_connecting">पीसी से कनेक्ट हो रहा है…</string>
+    <string name="widget_config_poll_interval_label">हर %1$d सेकंड में रिफ़्रेश करें</string>
+    <string name="widget_config_poll_interval_hint">कनेक्ट रहते हुए विजेट कितनी बार पीसी से ताज़ा टेलीमेट्री मांगता है।</string>
+    <string name="remote_desktop_display_label">डिस्प्ले</string>
+    <string name="remote_desktop_display_primary">प्राथमिक डिस्प्ले</string>
+    <string name="remote_desktop_display_numbered">डिस्प्ले %1$d</string>
+    <string name="remote_desktop_display_both">दोनों स्क्रीन</string>
+    <string name="cd_display_picker_icon">चुनें कि कौन सा डिस्प्ले देखना है</string>
 </resources>

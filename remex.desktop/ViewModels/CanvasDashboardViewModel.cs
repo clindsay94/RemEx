@@ -452,7 +452,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             var card = new CanvasCardViewModel
             {
                 CardType = "Connection",
-                CardTitle = "Connection",
+                CardTitle = LocalizationService.Instance["Canvas_Connection"],
                 Connection = Connection,
                 PositionX = 20,
                 PositionY = 20,
@@ -469,7 +469,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             var card = new CanvasCardViewModel
             {
                 CardType = "Actions",
-                CardTitle = "Actions",
+                CardTitle = LocalizationService.Instance["Canvas_Actions"],
                 Connection = Connection,
                 PositionX = 280,
                 PositionY = 20,
@@ -486,7 +486,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             var card = new CanvasCardViewModel
             {
                 CardType = "Latency",
-                CardTitle = "Latency",
+                CardTitle = LocalizationService.Instance["Canvas_Latency"],
                 Connection = Connection,
                 PositionX = 540,
                 PositionY = 20,

@@ -295,7 +295,11 @@ private fun SearchBar(query: String, onUpdateQuery: (String) -> Unit, shape: Sha
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onUpdateQuery("") }) {
-                            Icon(Icons.Default.Close, contentDescription = null)
+                            Icon(
+                                    Icons.Default.Close,
+                                    contentDescription =
+                                            stringResource(R.string.cd_clear_search)
+                            )
                         }
                     }
                 },

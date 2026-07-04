@@ -186,7 +186,7 @@
     <value>WINDOWS SERVICE</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX DAEMON (SYSTEMD)</value>
+    <value>LINUX BACKGROUND SERVICE</value>
   </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>INICIO DE SESIÓN DEL SERVICIO</value>
@@ -733,7 +733,10 @@
     <value>Found host: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>Se encontraron {0} PCs RemEx en tu red.</value>
+  </data>
+  <data name="Connection_PcAddressRequired" xml:space="preserve">
+    <value>Se requiere la dirección del PC.</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
     <value>Conectado al host</value>
@@ -2149,7 +2152,7 @@ Chrome)</value>
     <value>Conectar</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>Remex Escritorio - Ejecución Remota</value>
+    <value>RemEx Escritorio - Ejecución Remota</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Paleta de Comandos</value>

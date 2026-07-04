@@ -1536,34 +1536,39 @@ private fun ConnectionOrbCard(
                                         label = "orb_color"
                                 )
 
-                        val infiniteTransition = rememberInfiniteTransition(label = "glow")
-                        val glowAlpha by
-                                infiniteTransition.animateFloat(
-                                        initialValue = 0.3f,
-                                        targetValue = 0.8f,
-                                        animationSpec =
-                                                infiniteRepeatable(
-                                                        animation =
-                                                                tween(1500, easing = LinearEasing),
-                                                        repeatMode = RepeatMode.Reverse
-                                                ),
-                                        label = "glow_alpha"
-                                )
+                        // Only run the infinite glow transition while its value is actually
+                        // used (connected/connecting); when disconnected the orb is opaque and
+                        // the animation would just burn battery. Conditional composable call is
+                        // fine here: the branch is keyed by stable state.
+                        val glowAlpha =
+                                if (isConnected || isConnecting) {
+                                        val infiniteTransition =
+                                                rememberInfiniteTransition(label = "glow")
+                                        infiniteTransition
+                                                .animateFloat(
+                                                        initialValue = 0.3f,
+                                                        targetValue = 0.8f,
+                                                        animationSpec =
+                                                                infiniteRepeatable(
+                                                                        animation =
+                                                                                tween(
+                                                                                        1500,
+                                                                                        easing =
+                                                                                                LinearEasing
+                                                                                ),
+                                                                        repeatMode =
+                                                                                RepeatMode.Reverse
+                                                                ),
+                                                        label = "glow_alpha"
+                                                )
+                                                .value
+                                } else 1f
 
                         Box(
                                 modifier =
                                         Modifier.size(72.dp)
                                                 .clip(cardShape(animatedShapePreset, cornerRadius))
-                                                .background(
-                                                        orbColor.copy(
-                                                                alpha =
-                                                                        if (isConnected ||
-                                                                                        isConnecting
-                                                                        )
-                                                                                glowAlpha
-                                                                        else 1f
-                                                        )
-                                                )
+                                                .background(orbColor.copy(alpha = glowAlpha))
                                                 .clickable {
                                                         when {
                                                                 isConnected -> onToggle()

@@ -1146,6 +1146,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     put("text", text)
                 }
         )
+        spendArmedModifiers()
     }
 
     private fun sendKeyEvent(eventType: String, keyCode: Int) {
@@ -1239,6 +1240,22 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         physicallyDownModifiers.clear()
         if (_modifierStates.value.isNotEmpty()) {
             _modifierStates.value = emptyMap()
+        }
+    }
+
+    /**
+     * Resets every ARMED (one-shot) PC-key modifier to OFF without touching LOCKED ones and
+     * without sending any key events — ARMED modifiers are never physically held down
+     * (RemEx-rimh). Text injection bypasses key events entirely, so an ARMED modifier can never
+     * apply to it; its one-shot chance is spent, and leaving it latched would silently attach it
+     * to a later, unrelated keystroke.
+     */
+    private fun spendArmedModifiers() {
+        if (_modifierStates.value.none { it.value == ModifierState.ARMED }) return
+        _modifierStates.update { states ->
+            states.mapValues { (_, state) ->
+                if (state == ModifierState.ARMED) ModifierState.OFF else state
+            }
         }
     }
 

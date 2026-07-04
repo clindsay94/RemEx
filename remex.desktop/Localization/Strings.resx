@@ -186,7 +186,7 @@
     <value>WINDOWS SERVICE</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX DAEMON (SYSTEMD)</value>
+    <value>LINUX BACKGROUND SERVICE</value>
   </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>SERVICE LOGIN</value>
@@ -733,7 +733,10 @@
     <value>Found host: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Found {0} hosts. (Selectable discovery not yet implemented)</value>
+    <value>Found {0} RemEx PCs on your network.</value>
+  </data>
+  <data name="Connection_PcAddressRequired" xml:space="preserve">
+    <value>PC address is required.</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
     <value>Connected to host</value>
@@ -1956,10 +1959,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Intense</value>
   </data>
   <data name="Custom_AddCustomColorTooltip" xml:space="preserve">
-    <value>Add custom colour</value>
+    <value>Add custom color</value>
   </data>
   <data name="Custom_CustomAccentColorTitle" xml:space="preserve">
-    <value>Custom accent colour</value>
+    <value>Custom accent color</value>
   </data>
   <data name="Custom_SchemeVariant" xml:space="preserve">
     <value>Scheme Variant</value>
@@ -2130,7 +2133,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Connect</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>Remex Desktop - Remote Execution</value>
+    <value>RemEx Desktop - Remote Execution</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Command Palette</value>

@@ -186,7 +186,7 @@
     <value>WINDOWS SERVICE</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX DAEMON (SYSTEMD)</value>
+    <value>LINUX BACKGROUND SERVICE</value>
   </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>LOGIN LAYANAN</value>
@@ -733,7 +733,10 @@
     <value>Host ditemukan: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
-    <value>Ditemukan {0} host. (Pemilihan host saat penemuan belum tersedia)</value>
+    <value>Ditemukan {0} PC RemEx di jaringan Anda.</value>
+  </data>
+  <data name="Connection_PcAddressRequired" xml:space="preserve">
+    <value>Alamat PC harus diisi.</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
     <value>Terhubung ke host</value>
@@ -2130,7 +2133,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Hubungkan</value>
   </data>
   <data name="Tray_TooltipDefault" xml:space="preserve">
-    <value>Remex Desktop - Eksekusi Jarak Jauh</value>
+    <value>RemEx Desktop - Eksekusi Jarak Jauh</value>
   </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Palet Perintah</value>

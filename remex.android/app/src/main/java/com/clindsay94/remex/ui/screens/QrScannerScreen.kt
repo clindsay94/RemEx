@@ -10,6 +10,10 @@ import androidx.camera.core.Preview as CameraPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -235,8 +239,18 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                              } catch (
                                                                                      e:
                                                                                              Exception) {
+                                                                                 // Never surface
+                                                                                 // raw exception
+                                                                                 // text to users;
+                                                                                 // log it instead.
+                                                                                 android.util.Log
+                                                                                         .e(
+                                                                                                 "QrScanner",
+                                                                                                 "QR pairing setup failed",
+                                                                                                 e
+                                                                                         )
                                                                                  errorMessage =
-                                                                                         e.message ?: context.getString(R.string.qr_error_setup_failed)
+                                                                                         context.getString(R.string.qr_error_setup_failed)
                                                                                  scannedOnce
                                                                                          .value =
                                                                                          false
@@ -316,7 +330,28 @@ fun QrScannerScreenContent(
                 // Error message overlay
                 AnimatedVisibility(
                         visible = errorMessage != null,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        enter =
+                                expandVertically(
+                                        animationSpec =
+                                                MaterialTheme.motionScheme.fastSpatialSpec()
+                                ) +
+                                        fadeIn(
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .fastEffectsSpec()
+                                        ),
+                        exit =
+                                shrinkVertically(
+                                        animationSpec =
+                                                MaterialTheme.motionScheme.fastSpatialSpec()
+                                ) +
+                                        fadeOut(
+                                                animationSpec =
+                                                        MaterialTheme.motionScheme
+                                                                .fastEffectsSpec()
+                                        ),
+                        label = "qrError"
                 ) {
                     Surface(
                             shape = MaterialTheme.shapes.medium,

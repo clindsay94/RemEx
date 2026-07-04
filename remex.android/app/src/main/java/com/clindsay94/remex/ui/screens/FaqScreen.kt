@@ -169,19 +169,19 @@ private fun FaqCard(item: FaqItem) {
                     visible = expanded,
                     enter =
                             expandVertically(
-                                    animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
                             ) +
                                     fadeIn(
                                             animationSpec =
-                                                    androidx.compose.animation.core.tween(durationMillis = 200)
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
                                     ),
                     exit =
                             shrinkVertically(
-                                    animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
                             ) +
                                     fadeOut(
                                             animationSpec =
-                                                    androidx.compose.animation.core.tween(durationMillis = 200)
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
                                     )
             ) {
                 Column {
