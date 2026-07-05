@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "embedded",
-  "dolt_database": "RemEx",
-  "project_id": "1989a412-2e2a-4c42-82c6-27b1b6c974dc"
-}
