@@ -125,10 +125,7 @@ review-report.md
 /build_output/
 
 # Claude agent files
-/.claude/Agents/
-/.claude/skills/
-.claude/settings.local.json
-
+/.claude/
 # Firebase
 remex.android/app/google-services.json
 
@@ -147,5 +144,5 @@ remex.android/app/google-services.json
 .token-savior-cache.json
 FINAL_AUDIT_OPUS.md
 FINAL_AUDIT_SONNET.md
-.beads/*
+/.beads/
 /docs/OLD DOCS
