@@ -131,15 +131,20 @@ The client must send a UTF-8 encoded JSON string matching the following structur
 ```
 
 > **Note:** No first-party RemEx client uses the 8338 channel — the Android app connects over `/ws`
-> (port 5005) and the local tray/dashboard UI uses the named pipe. Port 8338 exists solely for
-> third-party/external script ingress, which is why the `ClientId` requirement is a documentation and
-> integration concern rather than a coordinated client release.
+> (port 5005) and the dashboard UI runs *in the same process* as the host (so it uses no network
+> channel at all). Port 8338 exists solely for third-party/external script ingress, which is why the
+> `ClientId` requirement is a documentation and integration concern rather than a coordinated client
+> release.
 
 ---
 
-## 5. Local IPC (Named Pipe)
+## 5. Local IPC — removed in 2.0
 
-(No changes in 2.0)
+RemEx 2.0 merged the dashboard UI and the host into a **single process**. The former
+`RemExLocalIPC` / `RemExHostControl` named pipes and the `LocalIpcServerService` are **gone** — the
+UI now resolves host services in-process through dependency injection (`EmbeddedHostServiceLocator`).
+There is no local IPC socket or pipe left to document, secure, or connect to. (See CHANGELOG entry
+for RemEx-aep.)
 
 ---
 
