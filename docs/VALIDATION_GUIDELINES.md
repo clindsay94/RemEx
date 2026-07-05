@@ -64,7 +64,7 @@ using System.ComponentModel.DataAnnotations;
 
 ### Custom RemEx Attributes
 
-Defined in `Remex.Core/Validation/ValidationRules.cs`:
+Defined in `remex.core/Validation/ValidationRules.cs`:
 
 #### [ValidWebSocketUri]
 Validates WebSocket URI format (ws:// or wss://)

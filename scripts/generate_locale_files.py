@@ -12,7 +12,7 @@ import re
 
 BASE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "RemEx.Android", "app", "src", "main", "res",
+    "remex.android", "app", "src", "main", "res",
 )
 
 MASTER_PATH = os.path.join(BASE_DIR, "values", "strings.xml")

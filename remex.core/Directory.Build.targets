@@ -1,0 +1,19 @@
+<Project>
+  <!--
+    Workaround for Microsoft.Android.Sdk.Linux 36.x SDK bug.
+
+    Xamarin.Android.Common.targets unconditionally declares:
+      <Target Name="_GenerateEnvironmentFiles"
+              DependsOnTargets="_AndroidConfigureHotReloadEnvironment">
+
+    But _AndroidConfigureHotReloadEnvironment is only imported when
+    AndroidApplication == 'true'. NativeLib projects (like this one) never
+    set that property, so the target never gets defined and MSBuild fails with
+    MSB4057.
+
+    This stub satisfies the dependency without any side effects.
+    Remove this file when a fixed SDK version ships.
+  -->
+  <Target Name="_AndroidConfigureHotReloadEnvironment"
+          Condition="'$(TargetFramework)' == 'net10.0-android'" />
+</Project>

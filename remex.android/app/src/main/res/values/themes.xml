@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set the splash screen background -->
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <!-- Use the app icon for the splash screen -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
+        <!-- Switch back to normal theme -->
+        <item name="postSplashScreenTheme">@style/Theme.RemEx</item>
+    </style>
+
+    <style name="Theme.RemEx" parent="Theme.AppCompat.Light.NoActionBar" />
+</resources>

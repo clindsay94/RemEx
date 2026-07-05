@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Windows-only WGC (Windows.Graphics.Capture) screen-capture backend.
+
+    Isolated into its own Windows-versioned TFM project because WGC's CsWinRT projections
+    (Windows.Graphics.Capture / Windows.Graphics.DirectX.Direct3D11) require a
+    net10.0-windowsXX.X.XXXXX.X target. Remex.Agent itself stays a pure net10.0 (OS-agnostic)
+    assembly and references this project ONLY on Windows (conditional ProjectReference +
+    WGC_CAPTURE define). This project is NOT added to Remex.sln — it is pulled in transitively
+    on Windows and never referenced on Linux, keeping cross-platform build parity.
+
+    The Windows SDK TFM auto-provides the WinRT projections, so NO Microsoft.Windows.CsWinRT
+    package reference is needed.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- System.Drawing readback mirrors DxgiDesktopCapture; this project is Windows-only so it is safe. -->
+    <RootNamespace>Remex.Agent.Windows</RootNamespace>
+    <AssemblyName>Remex.Agent.Windows</AssemblyName>
+    <UseWindowsForms>false</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- IWgcCaptureSource + CaptureScaling. Does NOT reference Remex.Agent (would be a cycle). -->
+    <ProjectReference Include="..\remex.core\remex.core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ILogger comes transitively via Remex.Core, but reference it explicitly for clarity. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- BGRA readback + bilinear scaling, identical to the DXGI backend's path. -->
+    <PackageReference Include="System.Drawing.Common" />
+  </ItemGroup>
+
+</Project>

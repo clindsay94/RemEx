@@ -1,0 +1,90 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using Remex.Core.Models;
+using Remex.Core.Serialization;
+
+namespace Remex.Core.Services;
+
+public interface ILauncherStorageService
+{
+    Task<List<AppEntry>> LoadEntriesAsync();
+    Task SaveEntriesAsync(IEnumerable<AppEntry> entries);
+}
+
+/// <summary>
+/// Service to manage persistent storage for launcher applications.
+/// </summary>
+public class LauncherStorageService : ILauncherStorageService
+{
+    private readonly string _configFilePath;
+
+    public LauncherStorageService() : this(null) { }
+
+    public LauncherStorageService(string? storageFolderPath)
+    {
+        string folder;
+        if (storageFolderPath is not null)
+        {
+            folder = storageFolderPath;
+            Directory.CreateDirectory(folder);
+        }
+        else
+        {
+            // Per-user folder used historically; ResolveDirectory relocates only Windows to the
+            // machine-wide ProgramData location so the LocalSystem host service and the interactive
+            // session agree. Android keeps its app-private Personal folder unchanged.
+            var legacyFolder = Path.Combine(
+                OperatingSystem.IsAndroid()
+                    ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
+                    : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Remex");
+            folder = RemexDataPaths.ResolveDirectory(legacyFolder);
+            RemexDataPaths.TryMigrateWindowsFile("launchers.json");
+        }
+
+        _configFilePath = Path.Combine(folder, "launchers.json");
+    }
+
+    /// <summary>
+    /// Loads the stored app entries. Returns an empty list if no file exists.
+    /// </summary>
+    public async Task<List<AppEntry>> LoadEntriesAsync()
+    {
+        if (!File.Exists(_configFilePath))
+        {
+            return new List<AppEntry>();
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(_configFilePath);
+            var entries = await RemexJson.DeserializeAsync(stream, RemexJson.TypeInfo<List<AppEntry>>());
+            return entries ?? new List<AppEntry>();
+        }
+        catch (Exception)
+        {
+            // Log or handle deserialization errors as needed.
+            // Return empty on failure so we don't crash.
+            return new List<AppEntry>();
+        }
+    }
+
+    /// <summary>
+    /// Saves the given entries to storage.
+    /// </summary>
+    public async Task SaveEntriesAsync(IEnumerable<AppEntry> entries)
+    {
+        try
+        {
+            var entryList = entries as List<AppEntry> ?? new List<AppEntry>(entries);
+            using var stream = File.Create(_configFilePath);
+            await RemexJson.SerializeIndentedAsync(stream, entryList, RemexJson.TypeInfo<List<AppEntry>>());
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+}

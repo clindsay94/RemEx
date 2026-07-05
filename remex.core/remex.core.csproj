@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <RootNamespace>Remex.Core</RootNamespace>
+    <AssemblyName>Remex.Core</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <AndroidAvoidEmitForPerformance>true</AndroidAvoidEmitForPerformance>
+    <NativeLib>Shared</NativeLib>
+    <AssemblyName>libRemexCore</AssemblyName>
+    <AndroidNativeAotGenerateJniOnLoad>false</AndroidNativeAotGenerateJniOnLoad>
+    <NativeLibLinkerArgs>-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384</NativeLibLinkerArgs>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <LinkerArg Include="-Wl,-z,max-page-size=16384" />
+    <LinkerArg Include="-Wl,-z,common-page-size=16384" />
+    <LinkerArg Include="-Wl,--allow-multiple-definition" />
+  </ItemGroup>
+
+  <Target Name="NormalizeAndroidNativeAotTrimmerCustomData" Condition="'$(TargetFramework)' == 'net10.0-android'" AfterTargets="_PrepareLinking">
+    <ItemGroup>
+      <_TrimmerCustomData Remove="AndroidHttpClientHandlerType" />
+      <_TrimmerCustomData Remove="AndroidCustomViewMapFile" />
+      <_TrimmerCustomData Include="AndroidHttpClientHandlerType" Value="Xamarin.Android.Net.AndroidMessageHandler" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Makaretu.Dns.Multicast" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

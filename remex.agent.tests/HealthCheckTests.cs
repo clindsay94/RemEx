@@ -1,0 +1,39 @@
+using System.Net;
+using System.Net.WebSockets;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Remex.Core.Messages;
+
+namespace Remex.Agent.Tests;
+
+public class HealthCheckTests : IClassFixture<RemexHostFactory>
+{
+    private readonly RemexHostFactory _factory;
+
+    public HealthCheckTests(RemexHostFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task GetRoot_ReturnsOkWithServiceInfo()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Remex.Agent", body);
+        Assert.Contains("running", body);
+    }
+
+    [Fact]
+    public async Task GetWsEndpoint_WithoutWebSocket_Returns400()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/ws");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+}

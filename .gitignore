@@ -64,11 +64,12 @@ coverage.opencover.xml
 local.properties
 proguard/
 .gradle/
-RemEx.Android/build/
+remex.android/build/
 .externalNativeBuild
 .cxx
 *.keystore
 *.iml
+google-services.json
 
 # macOS
 .DS_Store
@@ -79,11 +80,14 @@ test_*.txt
 run_*.txt
 hwinfo_reg.txt
 publish/
-RemEx.Android/app/src/main/jniLibs/
-*.agent/*
+remex.android/app/src/main/jniLibs/
+remex.android/conductor/
+
+# AI tool directories
+.gemini/
 .gemini_security/
 .superpowers/
-conductor/
+.antigravitycli/
 
 # Misc
 .gitconfig
@@ -105,19 +109,40 @@ Thumbs.db
 build/tmp-host-verify/
 *.dm
 *.lscache
-*.lscache
-Remex.Client.Desktop/Remex.Client.Desktop.csproj.lscache
-/.claude/agents
-/.claude/agent-memory
+*.xml~
+
+# Planning and review documents
 docs/android-ui-refactor-prd-notes.md
-.gitignore
-.gitignore
 docs/android-ui-refactor-tech.md
 docs/ui-evaluation-report.md
-/.claude
-AGENTS.md
-CLAUDE.md
-.claude/settings.local.json
+docs/prd-*.md
+docs/superpowers/
+review-report.md
 
-#Installer output
+# Installer output
+/installer/Output/
 /installer/output/
+/build_output/
+
+# Claude agent files
+/.claude/
+# Firebase
+remex.android/app/google-services.json
+
+# Claude Code auto-memory
+.claude/auto-memory/dirty-files*
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+/remex.agent.native.linux/build
+/.ralph
+/.claude-commit-validation.txt
+.claude-session
+.token-savior-cache.json
+FINAL_AUDIT_OPUS.md
+FINAL_AUDIT_SONNET.md
+/.beads/
+/docs/OLD DOCS

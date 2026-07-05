@@ -1,0 +1,112 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:conv="using:Remex.Desktop.Converters"
+    xmlns:ctrl="using:Remex.Desktop.Controls"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="360" SizeToContent="Height" MaxHeight="540" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="AcrylicBlur, Mica, None" SystemDecorations="None">
+
+    <Window.Styles>
+        <Style Selector="Border.widget-card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusLarge}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.widget-card:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
+
+        <Style Selector="Button.tray-btn">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Styles>
+
+    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="0 12 40 0 #60000000">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+            <!-- Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{local:Localize Tray_LiveHeader}" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
+                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" FontWeight="SemiBold"/>
+                </StackPanel>
+                <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0">
+                    <Ellipse.Fill>
+                        <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
+                    </Ellipse.Fill>
+                    <Ellipse.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Fill" Duration="0:0:0.4"/>
+                        </Transitions>
+                    </Ellipse.Transitions>
+                </Ellipse>
+            </Grid>
+
+            <!-- Widget List -->
+            <ScrollViewer Grid.Row="1" Margin="0,20" VerticalScrollBarVisibility="Hidden" MaxHeight="380">
+                <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SensorViewModel">
+                            <Border Classes="widget-card" Margin="0,0,0,12" Height="90">
+                                <Panel>
+                                    <!-- Background Sparkline -->
+                                    <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Opacity="0.2" VerticalAlignment="Bottom" Height="60" Margin="-10,0,-10,-10"/>
+
+                                    <Grid ColumnDefinitions="*,Auto" Margin="20,14">
+                                        <StackPanel VerticalAlignment="Center" Spacing="4">
+                                            <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Black" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock FontSize="32" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" FontFamily="{StaticResource JetBrainsMono}">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                                            <Binding Path="Value"/>
+                                                            <Binding Path="Unit"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Unit}" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Status Indicator -->
+                                        <Border Grid.Column="1" Width="36" Height="36" CornerRadius="18" Background="{DynamicResource CardBackgroundBrush}" VerticalAlignment="Center">
+                                            <Path Data="{StaticResource IconFlash}" Fill="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.8"/>
+                                        </Border>
+                                    </Grid>
+                                </Panel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </ScrollViewer>
+
+            <!-- Actions -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="{local:Localize TrayFlyout_Home}" Classes="tray-btn" Command="{Binding NavigateToHomeCommand}" Click="OnOpenMainApp"/>
+                    <Button Content="{local:Localize TrayFlyout_Workspace}" Classes="tray-btn" Command="{Binding NavigateToCanvasCommand}" Click="OnOpenMainApp"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="✕" Classes="tray-btn" Click="OnCloseFlyout" Padding="12,8"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

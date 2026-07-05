@@ -1,0 +1,81 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.Versioning;
+
+namespace Remex.Agent.Services.RemoteDesktop.Linux;
+
+/// <summary>
+/// Categories of repair action that may be required.
+/// </summary>
+public enum LinuxRepairActionKind
+{
+    /// <summary>Install a missing package via the system package manager.</summary>
+    InstallPackage,
+
+    /// <summary>Start or restart a user-level systemd service.</summary>
+    RestartUserService,
+
+    /// <summary>Add the current user to the <c>input</c> group for uinput access.</summary>
+    AddUserToInputGroup,
+
+    /// <summary>Set a udev rule to grant write access to <c>/dev/uinput</c>.</summary>
+    AddUinputUdevRule,
+
+    /// <summary>
+    /// Restart <c>xdg-desktop-portal.service</c> after re-importing the
+    /// session env from a live desktop process. Required when the portal
+    /// frontend started in a bare environment and froze its interface list
+    /// without the KDE / GNOME backend.
+    /// </summary>
+    RestartPortalFrontend,
+
+    /// <summary>Manual step that requires user action outside the app.</summary>
+    Manual,
+}
+
+/// <summary>
+/// A single concrete action in a repair plan.
+/// </summary>
+/// <param name="Kind">Action category.</param>
+/// <param name="Description">Human-readable description shown in the repair UI.</param>
+/// <param name="Command">
+/// Whitespace-separated command line. Split with <c>Split(' ', 2)</c> by the
+/// executor — fine for simple commands, but does NOT understand shell quoting
+/// (single quotes pass through literally). For multi-token arguments or shell
+/// scripts, use <paramref name="ArgumentList"/> instead.
+/// </param>
+/// <param name="RequiresElevation">True when the action invokes sudo or modifies system files.</param>
+/// <param name="ArgumentList">
+/// Optional pre-tokenized argument list. When non-null the executor uses
+/// <c>ProcessStartInfo.ArgumentList</c> instead of parsing
+/// <paramref name="Command"/>, which lets arguments contain spaces and shell
+/// metacharacters without quoting hazards. The first element is the executable.
+/// </param>
+[SupportedOSPlatform("linux")]
+public sealed record LinuxRepairAction(
+    LinuxRepairActionKind Kind,
+    string Description,
+    string? Command = null,
+    bool RequiresElevation = false,
+    IReadOnlyList<string>? ArgumentList = null);
+
+/// <summary>
+/// An ordered repair plan produced by <see cref="LinuxRemoteDesktopPrerequisites"/>
+/// and consumed by <see cref="LinuxDependencyRepairService"/>.
+/// </summary>
+[SupportedOSPlatform("linux")]
+public sealed record LinuxPrerequisiteRepairPlan
+{
+    public IReadOnlyList<LinuxRepairAction> Actions { get; init; } = Array.Empty<LinuxRepairAction>();
+
+    /// <summary>
+    /// True when at least one repair action is available and the host is on an
+    /// Arch-family distribution where automated package installs are supported.
+    /// </summary>
+    public bool HasAutomatedRepair { get; init; }
+
+    /// <summary>True when any repair action requires elevated (root) access.</summary>
+    public bool RequiresElevation => Actions.Count > 0 && ((List<LinuxRepairAction>)Actions).Exists(a => a.RequiresElevation);
+
+    public static LinuxPrerequisiteRepairPlan Empty { get; } = new();
+}

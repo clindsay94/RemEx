@@ -1,0 +1,433 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:conv="using:Remex.Desktop.Converters"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:svc="using:Remex.Desktop.Services"
+    xmlns:ctrl="using:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="ctrl|DraggableCard.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="{DynamicResource AccentPrimary}" BlurRadius="16" Opacity="0.6"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- ═══ Sensor alert flash ═══ -->
+        <Style Selector="ctrl|DraggableCard.alert-active">
+            <Setter Property="BorderBrush" Value="#FF4444"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#FF4444" BlurRadius="20" Opacity="0.85"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- ═══ DraggableCard chrome ═══ -->
+        <Style Selector="ctrl|DraggableCard">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="ClipToBounds" Value="False"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" BoxShadow="0 8 32 0 #40000000" Padding="0">
+                        <Grid>
+                            <ContentPresenter Content="{TemplateBinding Content}" Margin="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static conv:CornerRadiusToMarginConverter.Instance}}"/>
+                            <!-- Resize grip -->
+                            <Thumb Name="PART_ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="16" Height="16" Opacity="0.4" Cursor="BottomRightCorner">
+                                <Thumb.Template>
+                                    <ControlTemplate>
+                                        <Canvas Width="12" Height="12" Margin="2">
+                                            <Line StartPoint="8,12" EndPoint="12,8" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                            <Line StartPoint="4,12" EndPoint="12,4" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                            <Line StartPoint="0,12" EndPoint="12,0" Stroke="#6666AA" StrokeThickness="1.5"/>
+                                        </Canvas>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- ═══ Toolbar buttons ═══ -->
+        <Style Selector="Button.back-btn">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12 8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.back-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
+
+        <!-- ═══ Staging drawer buttons ═══ -->
+        <Style Selector="Button.stage-btn">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10 6"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.stage-btn:pointerover">
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="Button.stage-mini-btn">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="6 2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.stage-mini-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
+
+        <!-- ═══ Action buttons inside cards ═══ -->
+        <Style Selector="Button.card-action">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14 8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.card-action:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
+        </Style>
+        <Style Selector="Button.card-action-accent">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.card-action-accent:pointerover">
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="Button.card-action-danger">
+            <Setter Property="Background" Value="#3A1A1A"/>
+            <Setter Property="Foreground" Value="#FF6B6B"/>
+        </Style>
+        <Style Selector="Button.card-action-danger:pointerover">
+            <Setter Property="Background" Value="#4A2A2A"/>
+        </Style>
+
+        <!-- ═══ Latency bar ═══ -->
+        <Style Selector="Border.lat-bar">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Margin" Value="1 0"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="MinHeight" Value="2"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Height" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="Transparent" RowDefinitions="Auto,*">
+
+        <!-- ═══ Toolbar ═══ -->
+        <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                <Button Classes="back-btn" Content="{local:Localize Canvas_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" IsHitTestVisible="False" Background="Transparent"/>
+                <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Button Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Undo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="4" Classes="back-btn" Command="{Binding RedoCommand}" ToolTip.Tip="{local:Localize Canvas_RedoTooltip}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="&#8618;" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Redo}" FontSize="12" IsVisible="{Binding $parent[SplitView].IsPaneOpen, FallbackValue=False}"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="5" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Save}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="6" Classes="back-btn" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="7" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconImport}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock FontSize="12">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                    <Binding Path="[Canvas_Sensors]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                    <Binding Path="StagedCards.Count"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="8" Classes="back-btn" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_ResetView}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="9" Classes="back-btn" Command="{Binding ToggleMinimapCommand}" ToolTip.Tip="{local:Localize Canvas_ToggleMinimapTooltip}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="&#9741;" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Map}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <!-- P8-I: Snapshot export -->
+                <Button Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="{local:Localize Canvas_Export}" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <StackPanel Grid.Column="11" Orientation="Vertical" VerticalAlignment="Center">
+                    <Button Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
+                        <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
+                    </Button>
+                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="#4ADE80" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Main content ═══ -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+
+            <!-- ═══ CANVAS ═══ -->
+            <Grid Grid.Column="0">
+                <ctrl:ZoomableCanvas x:Name="MainCanvas" Background="Transparent">
+                    <ItemsControl ItemsSource="{Binding Cards}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas Width="4000" Height="4000" Background="Transparent"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.Styles>
+                            <Style Selector="ContentPresenter" x:DataType="vm:CanvasCardViewModel">
+                                <Setter Property="Canvas.Left" Value="{Binding PositionX}"/>
+                                <Setter Property="Canvas.Top" Value="{Binding PositionY}"/>
+                                <Setter Property="ZIndex" Value="{Binding ZIndex}"/>
+                            </Style>
+                        </ItemsControl.Styles>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CanvasCardViewModel">
+                                <ctrl:DraggableCard Width="{Binding Width}" Height="{Binding Height}">
+                                    <ctrl:DraggableCard.ContextMenu>
+                                        <ContextMenu IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
+                                            <MenuItem Header="{local:Localize Canvas_GraphType}">
+                                                <MenuItem Header="{local:Localize Canvas_GraphSmart}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Auto"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphBar}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Bar"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphLine}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphArea}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphGauge}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
+                                            </MenuItem>
+                                            <Separator/>
+                                            <MenuItem Header="{local:Localize Canvas_TogglePinToHome}" Command="{Binding TogglePinToHomeCommand}">
+                                                <MenuItem.Icon>
+                                                    <TextBlock Text="📌" IsVisible="{Binding IsPinnedToHome}"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <Separator/>
+                                            <MenuItem Header="{local:Localize Canvas_SetAlert}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).SetAlertCommand}" CommandParameter="{Binding}"/>
+
+                                        </ContextMenu>
+                                    </ctrl:DraggableCard.ContextMenu>
+
+                                    <Grid>
+                                        <!-- ═══ CONNECTION ═══ -->
+                                        <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
+                                            <TextBlock Text="{local:Localize Canvas_Connection}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Ellipse Width="10" Height="10" AutomationProperties.Name="{Binding Connection.StatusText}">
+                                                    <Ellipse.Fill>
+                                                        <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
+                                                    </Ellipse.Fill>
+                                                </Ellipse>
+                                                <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </StackPanel>
+                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8 6" FontSize="12" FontFamily="Consolas, monospace" Watermark="wss://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                        </StackPanel>
+
+                                        <!-- ═══ ACTIONS ═══ -->
+                                        <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
+                                            <TextBlock Text="{local:Localize Canvas_Actions}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                            <Button Classes="card-action card-action-accent" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="White"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_Ping}" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_LockPC}" Command="{Binding Connection.LockCommand}"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_RebootUefi}" Command="{Binding Connection.RestartToUefiCommand}"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White"/>
+                                        </StackPanel>
+
+                                        <!-- ═══ LATENCY ═══ -->
+                                        <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsLatency}}">
+                                            <TextBlock Text="{local:Localize Canvas_Latency}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Connection.LatencyText}" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,8,0,0">
+                                                <StackPanel>
+                                                    <TextBlock Text="{local:Localize Canvas_Avg}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.AverageLatency, StringFormat={}{0:F1} ms}"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="{local:Localize Canvas_Max}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                    <TextBlock Foreground="{DynamicResource SystemError}" FontSize="13" FontWeight="SemiBold" Text="{Binding Connection.MaxLatency, StringFormat={}{0:F1} ms}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Margin="0,10,0,0" Padding="6" Height="60">
+                                                <ItemsControl ItemsSource="{Binding Connection.LatencyHistory}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Spacing="2"/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Classes="lat-bar" Width="10" Height="{Binding ., Converter={x:Static conv:LatencyToHeightConverter.Instance}}" Background="{DynamicResource AccentPrimaryBrush}"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- ═══ SENSOR ═══ -->
+                                        <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
+                                            <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.35"/>
+
+                                            <Viewbox Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6">
+                                                <StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="📌" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
+                                                        <TextBlock Text="{Binding Sensor.Name, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                                                        <TextBlock FontSize="18" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                                                    <Binding Path="Sensor.Value"/>
+                                                                    <Binding Path="Sensor.Unit"/>
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Viewbox>
+                                        </Grid>
+                                    </Grid>
+                                </ctrl:DraggableCard>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ctrl:ZoomableCanvas>
+
+                <!-- Minimap overlay -->
+                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" IsVisible="{Binding IsMinimapVisible}" CornerRadius="8" ClipToBounds="True" BoxShadow="0 4 24 0 #50000000">
+                    <ctrl:CanvasMinimap x:Name="Minimap" Width="200" Height="160" Cards="{Binding Cards}" ViewportRect="{Binding MinimapViewportRect}"/>
+                </Border>
+            </Grid>
+
+            <!-- ═══ STAGING DRAWER ═══ -->
+            <Border Grid.Column="1" Background="{DynamicResource GlassBaseMediumBrush}" Width="260" IsVisible="{Binding IsStagingDrawerOpen}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1,0,0,0" Padding="12">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+                        <TextBlock Text="{local:Localize Canvas_ActiveSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+
+                        <Border Classes="glass-card" Padding="8" IsVisible="{Binding SensorActivationItems.Count}">
+                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                                <ListBox ItemsSource="{Binding SensorActivationItems}" Background="Transparent" BorderThickness="0" Padding="0">
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem">
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </ListBox.Styles>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SensorActivationItem">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <Button Grid.Column="2" Classes="stage-mini-btn" Content="↑" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
+                                                <Button Grid.Column="3" Classes="stage-mini-btn" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </ScrollViewer>
+                        </Border>
+
+                        <TextBlock Text="{local:Localize Canvas_NewSensors}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <ScrollViewer>
+                        <ListBox ItemsSource="{Binding StagedCards}" Background="Transparent" BorderThickness="0" Padding="0">
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CanvasCardViewModel">
+                                    <Border Classes="glass-card interactive" Padding="12" Margin="0,0,0,8">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                <TextBlock FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                                            <Binding Path="Sensor.Value"/>
+                                                            <Binding Path="Sensor.Unit"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            </StackPanel>
+                                            <Button Classes="stage-btn" Content="{local:Localize Canvas_AddCard}" Command="{Binding $parent[ListBox].((vm:CanvasDashboardViewModel)DataContext).PlaceFromStagingCommand}" CommandParameter="{Binding}" Background="{DynamicResource AccentPrimaryBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+        </Grid>
+    </Grid>
+</UserControl>

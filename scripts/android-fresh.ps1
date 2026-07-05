@@ -10,8 +10,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$gradleRoot = Join-Path $repoRoot "RemEx.Android"
-$gradlew = Join-Path $gradleRoot "gradlew.bat"
+$gradleRoot = Join-Path $repoRoot "remex.android"
+# Cross-platform: the Windows wrapper is gradlew.bat; Linux/macOS use the POSIX `gradlew` script.
+$gradlew = Join-Path $gradleRoot ($IsWindows ? "gradlew.bat" : "gradlew")
 
 if (-not (Test-Path $gradlew)) {
     throw "Gradle wrapper was not found: $gradlew"
@@ -38,14 +39,21 @@ Write-Host "Command: $gradlew $($args -join ' ')" -ForegroundColor DarkCyan
 
 Push-Location $gradleRoot
 try {
-    & $gradlew @args
+    if ($IsWindows) {
+        & $gradlew @args
+    }
+    else {
+        # Invoke the POSIX wrapper via sh so it runs regardless of the file's executable bit
+        # (git may not preserve +x on a shared drive / after a fresh checkout).
+        & sh $gradlew @args
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "Gradle task failed with exit code $LASTEXITCODE"
     }
 
     if ($Install -and $Configuration -eq "Release") {
         Write-Host "Installing signed Release APK..." -ForegroundColor Cyan
-        $apkPath = Join-Path $gradleRoot "app\build\outputs\apk\release\app-release.apk"
+        $apkPath = Join-Path $gradleRoot "app/build/outputs/apk/release/app-release.apk"
         if (Test-Path $apkPath) {
             & adb install -r $apkPath
             if ($LASTEXITCODE -ne 0) {

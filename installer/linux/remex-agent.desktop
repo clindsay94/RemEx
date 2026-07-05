@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RemEx
+GenericName=Remote Desktop
+Comment=Control this PC from your phone — remote desktop, power and monitoring
+Exec=REMEX_INSTALL_DIR/Remex.Agent
+Icon=remex
+Categories=Network;RemoteAccess;
+Keywords=remote;desktop;monitor;telemetry;
+StartupNotify=true
+StartupWMClass=Remex.Agent

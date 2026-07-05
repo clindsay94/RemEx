@@ -75,23 +75,23 @@ sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 echo ""
 echo "✓ SDK components installed"
 
-# Create local.properties for RemEx.Android project
+# Create local.properties for remex.android project
 if [ -n "$GITHUB_WORKSPACE" ]; then
     # Running in GitHub Actions
-    LOCAL_PROPS_DIR="$GITHUB_WORKSPACE/RemEx.Android"
-elif [ -d "$(dirname "$0")/../RemEx.Android" ]; then
+    LOCAL_PROPS_DIR="$GITHUB_WORKSPACE/remex.android"
+elif [ -d "$(dirname "$0")/../remex.android" ]; then
     # Running from scripts/ directory
-    LOCAL_PROPS_DIR="$(dirname "$0")/../RemEx.Android"
+    LOCAL_PROPS_DIR="$(dirname "$0")/../remex.android"
 else
-    # Fallback: try to find RemEx.Android directory
-    if [ -d "./RemEx.Android" ]; then
-        LOCAL_PROPS_DIR="./RemEx.Android"
-    elif [ -d "../RemEx.Android" ]; then
-        LOCAL_PROPS_DIR="../RemEx.Android"
+    # Fallback: try to find remex.android directory
+    if [ -d "./remex.android" ]; then
+        LOCAL_PROPS_DIR="./remex.android"
+    elif [ -d "../remex.android" ]; then
+        LOCAL_PROPS_DIR="../remex.android"
     else
-        echo "⚠ Warning: Could not locate RemEx.Android directory"
+        echo "⚠ Warning: Could not locate remex.android directory"
         echo "  Please create local.properties manually:"
-        echo "  echo 'sdk.dir=$ANDROID_SDK_ROOT' > RemEx.Android/local.properties"
+        echo "  echo 'sdk.dir=$ANDROID_SDK_ROOT' > remex.android/local.properties"
         LOCAL_PROPS_DIR=""
     fi
 fi
@@ -117,6 +117,6 @@ echo "  export PATH=\$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin"
 echo "  export PATH=\$PATH:$ANDROID_SDK_ROOT/platform-tools"
 echo ""
 echo "Verify installation:"
-echo "  cd RemEx.Android"
+echo "  cd remex.android"
 echo "  dotnet build"
 echo ""

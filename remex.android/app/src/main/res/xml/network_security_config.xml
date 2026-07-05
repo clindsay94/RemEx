@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- Self-signed RemEx host certs are pinned via SPKI in PinnedHostStore;
+         we deliberately do not declare them as trusted here, because the JNI/NSec
+         layer handles validation independently of OS trust. -->
+</network-security-config>
