@@ -33,9 +33,9 @@
 
 Most remote tools make you choose: smooth *or* secure, simple *or* powerful, Windows *or* Linux. RemEx refuses the trade‑off.
 
-It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264 pipeline, injects pixel‑perfect touch, stylus, and keyboard input — even into elevated admin windows — and does it all over a **TLS 1.3** channel locked to *your* device with cryptographic pairing and certificate pinning. The host runs as a hardened background service on Windows **and** Linux; the client is a gorgeous, glassmorphic Android app that speaks eight languages and adapts to your phone live.
+It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264 pipeline, injects pixel‑perfect touch, stylus, and keyboard input — even into elevated admin windows — and does it all over a **TLS 1.3** channel locked to *your* device with cryptographic pairing and certificate pinning. The host runs as a hardened, always‑elevated app **inside your own signed‑in desktop session** on Windows **and** Linux; the client is a gorgeous, glassmorphic Android app that speaks eight languages and adapts to your phone live.
 
-> **Architecture in one line:** the PC runs `remex.agent` (the entire PC side — service + dashboard UI), and your Android phone is the one and only client. The connection is always direct, non‑loopback, and encrypted.
+> **Architecture in one line:** the PC runs `remex.agent` (the entire PC side — the always‑elevated in‑session app *and* the dashboard UI, in one process), and your Android phone is the one and only client. The connection is always direct, non‑loopback, and encrypted.
 
 ---
 
@@ -107,7 +107,7 @@ RemEx 2.0 is a ground‑up overhaul of the streaming and input pipeline. The hea
 - Android can host shared folders the PC can reach.
 
 ### 🔌 Cross‑Platform Host
-- One `remex.agent` codebase runs as a **Windows Service (LocalSystem, Session 0)** or a **Linux daemon**.
+- One `remex.agent` codebase runs as an **always‑elevated app inside your signed‑in desktop session** — auto‑started with no prompt by a Windows Task Scheduler logon task or a Linux XDG autostart entry. No Windows Service, no daemon, no Session 0.
 - Linux remote input via **Wayland portal** integration; `--doctor` flag checks PipeWire/X11/VAAPI prerequisites.
 
 ---
@@ -127,7 +127,7 @@ flowchart TB
 
     subgraph PC["🖥️ remex.agent · the entire PC side"]
         direction TB
-        SVC["Windows Service (Session 0) / Linux daemon<br/>.NET 10 · ASP.NET Minimal API · mDNS discovery"]
+        SVC["Elevated in-session app<br/>(Windows logon task / Linux autostart)<br/>.NET 10 · ASP.NET Minimal API · mDNS discovery"]
         CAP["Screen capture → H.264 / MJPEG encode"]
         INP["Input injection · UIPI-aware · multi-monitor"]
         TEL["Telemetry · HWiNFO / lmsensors"]
@@ -153,7 +153,7 @@ flowchart TB
 | Project | Role |
 |---|---|
 | **`Remex.Core`** | Shared models, the `RemexMessage` envelope, Guards, validation, source‑generated JSON. Also compiled as a **NativeAOT JNI** library (`libRemexCore.so`) for Android — so client and host share one source of truth for the wire format. |
-| **`remex.agent`** | The **entire PC side** — Windows Service / Linux daemon plus all PC functionality (capture, encode, input, telemetry, file transfer, dashboard UI). Android connects *to* this. |
+| **`remex.agent`** | The **entire PC side** — one always‑elevated app running inside your signed‑in session, containing all PC functionality (capture, encode, input, telemetry, file transfer, dashboard UI) in a single process. Android connects *to* this. |
 | **`remex.android`** | The **only** network client. Kotlin + Jetpack Compose, calling into `libRemexCore.so` over JNI. |
 
 ---
@@ -164,10 +164,9 @@ flowchart TB
 |---|---|---|---|
 | **WSS** | `/ws` | `5005` | Telemetry, power commands, pairing, file transfer |
 | **WSS** | `/ws/desktop` | `5005` | H.264 / MJPEG remote‑desktop stream |
-| **TCP (TLS)** | — | `8338` | External script command ingress |
-| **Named Pipe** | `RemExLocalIPC` | — | Local IPC between the dashboard UI and the Windows Service |
+| **TCP (TLS)** | — | `8338` | External script command ingress (paired clients only) |
 
-All `/ws` traffic rides the **`RemexMessage` JSON envelope** at `protocolVersion: 2`. Mismatched majors fail loudly rather than silently corrupting state. Hosts are discovered automatically on the LAN via **mDNS**.
+All `/ws` traffic rides the **`RemexMessage` JSON envelope** at `protocolVersion: 2`. Mismatched majors fail loudly rather than silently corrupting state. Hosts are discovered automatically on the LAN via **mDNS**. The dashboard UI and the host run in the **same process**, so there is no local pipe or socket between them to secure — one of several attack surfaces that simply no longer exists in 2.0.
 
 ---
 
@@ -179,10 +178,11 @@ RemEx is built so that the only way in is the way *you* authorized.
 - **Certificate pinning.** At pairing time the Android client pins the host's **SHA‑256 SPKI hash**. If the host certificate ever changes without a deliberate re‑pair, the connection is refused — fail closed, never silently downgrade.
 - **Encrypted transport.** Every channel is **TLS 1.3 / WSS**. Cleartext traffic is disabled in the Android network‑security config.
 - **Authorization gate.** Pairing is enforced on *all* connections, including `/ws/desktop`. `PairedClientRegistry` is the single authentication path in production.
-- **Session‑0 hardening.** On Windows the host runs as **LocalSystem in Session 0**, stores state in `HKLM`/`ProgramData` (never `HKCU`/`%APPDATA%`), and bridges to the tray UI through an ACL'd named pipe.
+- **Rate‑limited pairing.** The 6‑digit PIN expires after **120 seconds**, and repeated pairing attempts from a device are throttled with an escalating back‑off — so guessing the PIN by brute force isn't practical.
+- **Elevation hardening.** On Windows the host runs **elevated (high integrity) inside your signed‑in session**, auto‑started with no UAC prompt by a Task Scheduler logon task. Security‑sensitive machine‑wide state (`cert.pfx`, `paired_clients.json`) lives in `ProgramData` under an ACL restricted to **LocalSystem + Administrators**, so a normal (non‑elevated) program can't read your private key or your paired‑device list.
 - **Auditable, opt‑in escalation.** The keep‑session‑unlocked feature is *off by default*, engages only for an authenticated stream, and logs every unlock/re‑lock.
 
-> See [`docs/SECURITY.md`](docs/SECURITY.md) for the full threat model and disclosure policy.
+> **New to this?** Read [**How RemEx keeps you safe**](docs/SECURITY_EXPLAINED.md) — a plain‑English (and, if you want it, deeply technical) walkthrough of every security feature. For supported versions and how to report a vulnerability, see [`docs/SECURITY.md`](docs/SECURITY.md).
 
 ---
 
@@ -198,28 +198,36 @@ RemEx is built so that the only way in is the way *you* authorized.
 
 ### 1. Install the host on your PC
 
-**Windows** — run the host service:
-```powershell
-dotnet run --project remex.agent
-```
-A friendly ANSI startup banner prints the active ports, platform, and state. The dashboard UI lets you view the pairing PIN and manage devices.
+**Windows — the easy way (no coding required):**
 
-**Linux** — check prerequisites first, then run:
+1. Download the installer — **`RemEx-v2.0.0-Setup.exe`** — from the project's [**GitHub Releases**](https://github.com/clindsay94/RemEx/releases) page.
+2. Double‑click it and follow the wizard. Leave **"Launch RemEx when you sign in"** ticked so RemEx starts by itself every time you log in.
+3. RemEx opens its dashboard. The **6‑digit pairing PIN** you'll need in step 3 is shown right there.
+
+> RemEx installs as a normal desktop app that runs with administrator rights inside your own session. There's nothing to configure by hand and no separate background service to manage.
+
+**Linux:** download the release package and run its included `install.sh`, or follow the friendly step‑by‑step in [`docs/LINUX_INSTALL.md`](docs/LINUX_INSTALL.md). To check your system's screen‑capture prerequisites first, run `remex-agent --doctor` (verifies PipeWire / X11 / VAAPI).
+
+<details>
+<summary><b>For developers — run from source instead of installing</b></summary>
+
 ```bash
-dotnet run --project remex.agent -- --doctor   # verifies PipeWire / X11 / VAAPI
-dotnet run --project remex.agent
+dotnet run --project remex.agent -- --doctor   # Linux: verify PipeWire / X11 / VAAPI
+dotnet run --project remex.agent               # start the host straight from source
 ```
-See [`docs/LINUX_INSTALL.md`](docs/LINUX_INSTALL.md) for packaged installs.
+
+A friendly ANSI startup banner prints the active ports, platform, and state. See [`docs/BUILDING.md`](docs/BUILDING.md) for the full build matrix.
+</details>
 
 ### 2. Install the Android app
 
 Install the RemEx APK on your phone — grab the latest build from the project's **GitHub Releases** page. On first launch you'll be guided through the Local Network permission and battery‑optimization onboarding. See [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md).
 
-### 3. Pair
+### 3. Pair your phone with your PC
 
-1. Open RemEx on your phone — it discovers your PC automatically over the LAN (or scan the QR code shown by the host).
-2. Enter the **6‑digit PIN** displayed on the PC.
-3. Done. Your phone pins the host certificate and reconnects automatically from then on.
+1. Open RemEx on your phone. It automatically finds your PC on your home network and shows it in the list. *(Nothing showing up? Make sure the phone and PC are on the **same Wi‑Fi**, then pull down to refresh — or scan the QR code on the PC's dashboard.)*
+2. Tap your PC, then type the **6‑digit PIN** shown on the PC screen. You have about **2 minutes** before that PIN refreshes to a new one.
+3. That's it. Your phone securely remembers your PC and reconnects on its own from now on — you won't need to type the PIN again unless you deliberately unpair.
 
 ---
 
@@ -277,7 +285,8 @@ RemEx is meant to look as good as it performs — for technical and non‑techni
 | Topic | Document |
 |---|---|
 | 🧱 Host architecture (PC side) | [`docs/ARCHITECTURE-HOST.md`](docs/ARCHITECTURE-HOST.md) |
-| 🔐 Security & responsible disclosure | [`docs/SECURITY.md`](docs/SECURITY.md) |
+| 🛡️ How RemEx keeps you safe (beginner → deep‑technical) | [`docs/SECURITY_EXPLAINED.md`](docs/SECURITY_EXPLAINED.md) |
+| 🔐 Security policy & responsible disclosure | [`docs/SECURITY.md`](docs/SECURITY.md) |
 | 🛠️ Building from source | [`docs/BUILDING.md`](docs/BUILDING.md) |
 | 📱 Android setup | [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md) |
 | 🐧 Linux install | [`docs/LINUX_INSTALL.md`](docs/LINUX_INSTALL.md) |
@@ -293,7 +302,7 @@ RemEx is meant to look as good as it performs — for technical and non‑techni
 ```
 remex.core/         Shared models, RemexMessage envelope, Guards, validation, source-gen JSON
                     ↳ also compiled as libRemexCore.so (NativeAOT JNI) for Android
-remex.agent/         ★ THE PC SIDE — Windows Service / Linux daemon + all PC functionality
+remex.agent/         ★ THE PC SIDE — one always-elevated in-session app + all PC functionality
                     ↳ Views/ + ViewModels/ (MVVM) · Services/ · Themes/ · Localization/
 remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
 docs/               Architecture, security, build, contributing, changelog, guidelines

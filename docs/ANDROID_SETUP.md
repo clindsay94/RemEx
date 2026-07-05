@@ -319,9 +319,9 @@ See [scripts/setup-android-sdk.sh](../scripts/setup-android-sdk.sh) for details.
 ## 🛡️ Security & Credentials
 
 ### Encrypted Storage
-RemEx 2.0 uses `EncryptedSharedPreferences` to securely store pinned host certificate hashes. This prevents unauthorized access to your paired device list.
-- **Dependency:** `androidx.security:security-crypto:1.1.0-alpha06`
-- **Location:** `remex_pinned_hosts.xml` (excluded from Android Auto Backup)
+RemEx stores its **pinned host SPKI hashes** and **per-host reconnect secrets** in two separate Jetpack **DataStore** files (`remex_pinned_hosts` and `remex_reconnect_secrets`). Every value is encrypted with **Tink AES-256-GCM AEAD** before it is written, and the Tink keyset is itself sealed by an **Android Keystore**–backed key (`android-keystore://remex_pinned_host_key`) — so your paired-device list cannot be read off the device.
+- **Dependencies:** `com.google.crypto.tink:tink-android:1.21.0`, `androidx.datastore:datastore-preferences:1.3.0-alpha09`
+- **Note:** The deprecated `androidx.security:security-crypto` (`EncryptedSharedPreferences` / `MasterKey`) is intentionally **not** used.
 
 ---
 

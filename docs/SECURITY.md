@@ -1,5 +1,7 @@
 # Security Policy
 
+> Looking for a plain‑English explanation of *how* RemEx is secured — at beginner, intermediate, and full‑technical depth? See [**SECURITY_EXPLAINED.md**](SECURITY_EXPLAINED.md). **This** document is the security *policy*: which versions are supported and how to report a vulnerability.
+
 ## Supported Versions
 
 RemEx is a remote access and command execution tool. We take security seriously and support the latest versions with security updates.
@@ -29,17 +31,17 @@ If you discover a security vulnerability in RemEx, please **do not** open a publ
 
 RemEx 2.0+ uses **TLS 1.3 with certificate pinning** and **ECDH NIST P-256 key exchange** for secure device pairing:
 
-- **Transport Encryption:** All WebSocket connections use `wss://` (TLS 1.3) with self-signed RSA 2048 certificates generated on first host start
+- **Transport Encryption:** All WebSocket connections use `wss://` (TLS 1.3) with a self-signed **RSA-2048** certificate (SHA-256 signature, 5-year validity) generated on the host's first start
 - **Certificate Pinning:** Clients pin the SHA-256 hash of the host's certificate SPKI (SubjectPublicKeyInfo), preventing man-in-the-middle attacks
 - **Pairing Protocol:** First-time connection requires ECDH NIST P-256 key exchange with a 6-digit PIN displayed on the host (120-second TTL)
 - **Session Key Derivation:** HKDF-SHA256 derives a 32-byte session key from the shared secret, using the certificate SPKI hash as salt
 - **Paired Client Storage:**
-  - **.NET Desktop:** `LocalApplicationData/Remex/pinned_hosts.json` (JSON dictionary of hostId → SPKI hash)
-  - **Android:** `EncryptedSharedPreferences` via androidx.security:security-crypto
+  - **Host (`remex.agent`):** `paired_clients.json` holds each paired client's 32-byte reconnect secret. It is written machine-wide under an ACL restricted to **LocalSystem + Administrators** (Windows) or `0600` owner-only (Linux/macOS), so no non-elevated local user can read it.
+  - **Android:** each pinned host's SPKI hash is stored in a Jetpack **DataStore**, encrypted with **Tink AES-256-GCM AEAD** under an **Android Keystore**-backed master key. (The deprecated `EncryptedSharedPreferences`/`MasterKey` APIs are intentionally *not* used.)
 
 **TCP Command Port (Port 8338):**
 
-The TCP command port is TLS 1.3 encrypted (server-only certificate) and **default-deny** (PROTO-1 / RemEx-htt). Because server-only TLS cannot identify the caller, authentication happens at the application layer: every `CommandRequest` must carry a `ClientId` that is registered in the host's paired-client registry (the same registry used by the `/ws` channel). A request with a missing or unknown `ClientId` is rejected with `Unauthorized` and the connection is closed before any power action runs. No first-party client uses 8338 (Android uses `/ws`; the local UI uses the named pipe); external automation scripts must pair first and include their paired `ClientId` on every command. See `docs/API_CONTRACTS.md` §4 for the payload.
+The TCP command port is TLS 1.3 encrypted (server-only certificate) and **default-deny** (PROTO-1 / RemEx-htt). Because server-only TLS cannot identify the caller, authentication happens at the application layer: every `CommandRequest` must carry a `ClientId` that is registered in the host's paired-client registry (the same registry used by the `/ws` channel). A request with a missing or unknown `ClientId` is rejected with `Unauthorized` and the connection is closed before any power action runs. No first-party client uses 8338 (Android uses `/ws`; the dashboard UI runs in the *same process* as the host, so it needs no network channel at all); external automation scripts must pair first and include their paired `ClientId` on every command. See `docs/API_CONTRACTS.md` §4 for the payload.
 
 ### 1.x Security Model (Legacy, End-of-Life)
 
